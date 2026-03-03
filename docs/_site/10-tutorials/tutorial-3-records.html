@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 3: Record Operations - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Tutorial 3: Record Operations</h1>
+            </div>
+            <h1 id="tutorial-3-record-operations">Tutorial 3: Record Operations</h1>
+<h2 id="overview">Overview</h2>
+<p>In this tutorial, you'll extend the PDS from Tutorial 2 to support record CRUD operations (Create, Read, Update, Delete) with MST (Merkle Search Tree) integration.</p>
+<p><strong>Learning Objectives:</strong>
+- Implement record creation endpoint
+- Implement record retrieval endpoint
+- Implement record update endpoint
+- Implement record deletion endpoint
+- Understand MST tree updates
+- Handle CBOR serialization</p>
+<p><strong>Time:</strong> 60 minutes</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Completed <a href="./tutorial-2-accounts.md">Tutorial 2: Account Management</a></li>
+<li>Understanding of MST trees (see <a href="../02-core-concepts/mst-trees.md">MST Trees</a>)</li>
+<li>Understanding of CBOR serialization (see <a href="../02-core-concepts/cbor-and-car.md">CBOR and CAR</a>)</li>
+<li>Understanding of record service (see <a href="../03-application-layer/record-service.md">Record Service</a>)</li>
+</ul>
+<h2 id="step-1-create-record-data-model">Step 1: Create Record Data Model</h2>
+<p>Create <code>src/Record.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+
+@interface Record : NSObject
+
+@property (nonatomic, copy) NSString *uri;
+@property (nonatomic, copy) NSString *cid;
+@property (nonatomic, copy) NSDictionary *value;
+@property (nonatomic, assign) NSTimeInterval createdAt;
+
+@end
+</code></pre>
+
+<h2 id="step-2-create-record-repository">Step 2: Create Record Repository</h2>
+<p>Create <code>src/RecordRepository.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;Record.h&quot;
+
+@interface RecordRepository : NSObject
+
+- (instancetype)initWithDatabasePath:(NSString *)path;
+- (BOOL)saveRecord:(Record *)record forDid:(NSString *)did error:(NSError **)error;
+- (nullable Record *)getRecordAtURI:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
+- (nullable NSArray&lt;Record *&gt; *)listRecords:(NSString *)collection forDid:(NSString *)did limit:(NSUInteger)limit error:(NSError **)error;
+- (BOOL)deleteRecordAtURI:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h2 id="step-3-implement-record-repository">Step 3: Implement Record Repository</h2>
+<p>Create <code>src/RecordRepository.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;RecordRepository.h&quot;
+#import &lt;sqlite3.h&gt;
+
+@interface RecordRepository ()
+@property (nonatomic, assign) sqlite3 *database;
+@end
+
+@implementation RecordRepository
+
+- (instancetype)initWithDatabasePath:(NSString *)path {
+    self = [super init];
+    if (!self) return nil;
+
+    NSString *dbPath = [path stringByAppendingPathComponent:@&quot;records.db&quot;];
+    int rc = sqlite3_open([dbPath UTF8String], &amp;_database);
+
+    if (rc != SQLITE_OK) {
+        NSLog(@&quot;Failed to open database: %s&quot;, sqlite3_errmsg(_database));
+        return nil;
+    }
+
+    [self createTablesIfNeeded];
+
+    return self;
+}
+
+- (void)createTablesIfNeeded {
+    const char *sql = &quot;CREATE TABLE IF NOT EXISTS records (&quot;
+        &quot;uri TEXT PRIMARY KEY,&quot;
+        &quot;did TEXT NOT NULL,&quot;
+        &quot;collection TEXT NOT NULL,&quot;
+        &quot;rkey TEXT NOT NULL,&quot;
+        &quot;cid TEXT NOT NULL,&quot;
+        &quot;value TEXT NOT NULL,&quot;
+        &quot;created_at REAL NOT NULL,&quot;
+        &quot;UNIQUE(did, collection, rkey)&quot;
+        &quot;);&quot;;
+
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(_database, sql, NULL, NULL, &amp;errMsg);
+
+    if (rc != SQLITE_OK) {
+        NSLog(@&quot;Failed to create table: %s&quot;, errMsg);
+        sqlite3_free(errMsg);
+    }
+}
+
+- (BOOL)saveRecord:(Record *)record forDid:(NSString *)did error:(NSError **)error {
+    // Parse URI to extract collection and rkey
+    NSArray *parts = [record.uri componentsSeparatedByString:@&quot;/&quot;];
+    if (parts.count &lt; 4) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Record&quot; code:1 
+                userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid URI format&quot;}];
+        }
+        return NO;
+    }
+
+    NSString *collection = parts[parts.count - 2];
+    NSString *rkey = parts[parts.count - 1];
+
+    // Serialize value to JSON
+    NSData *valueData = [NSJSONSerialization dataWithJSONObject:record.value options:0 error:error];
+    if (!valueData) return NO;
+
+    NSString *valueJson = [[NSString alloc] initWithData:valueData encoding:NSUTF8StringEncoding];
+
+    const char *sql = &quot;INSERT OR REPLACE INTO records &quot;
+        &quot;(uri, did, collection, rkey, cid, value, created_at) &quot;
+        &quot;VALUES (?, ?, ?, ?, ?, ?, ?)&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, [record.uri UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, [did UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, [collection UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, [rkey UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, [record.cid UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 6, [valueJson UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 7, record.createdAt);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+
+- (nullable Record *)getRecordAtURI:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
+    const char *sql = &quot;SELECT uri, cid, value, created_at FROM records WHERE uri = ? AND did = ?&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, [uri UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+    Record *record = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        record = [[Record alloc] init];
+        record.uri = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+        record.cid = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
+
+        NSString *valueJson = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
+        NSData *valueData = [valueJson dataUsingEncoding:NSUTF8StringEncoding];
+        record.value = [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil];
+
+        record.createdAt = sqlite3_column_double(stmt, 3);
+    }
+
+    sqlite3_finalize(stmt);
+    return record;
+}
+
+- (nullable NSArray&lt;Record *&gt; *)listRecords:(NSString *)collection 
+                                     forDid:(NSString *)did 
+                                      limit:(NSUInteger)limit 
+                                      error:(NSError **)error {
+    const char *sql = &quot;SELECT uri, cid, value, created_at FROM records &quot;
+        &quot;WHERE did = ? AND collection = ? ORDER BY created_at DESC LIMIT ?&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, [collection UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int64(stmt, 3, limit);
+
+    NSMutableArray *records = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        Record *record = [[Record alloc] init];
+        record.uri = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+        record.cid = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
+
+        NSString *valueJson = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
+        NSData *valueData = [valueJson dataUsingEncoding:NSUTF8StringEncoding];
+        record.value = [NSJSONSerialization JSONObjectWithData:valueData options:0 error:nil];
+
+        record.createdAt = sqlite3_column_double(stmt, 3);
+        [records addObject:record];
+    }
+
+    sqlite3_finalize(stmt);
+    return records;
+}
+
+- (BOOL)deleteRecordAtURI:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
+    const char *sql = &quot;DELETE FROM records WHERE uri = ? AND did = ?&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, [uri UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+
+- (void)dealloc {
+    if (_database) {
+        sqlite3_close(_database);
+    }
+}
+
+@end
+</code></pre>
+
+<h2 id="step-4-create-cid-generator">Step 4: Create CID Generator</h2>
+<p>Create <code>src/SimpleCIDGenerator.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+
+@interface SimpleCIDGenerator : NSObject
+
++ (NSString *)generateCIDForData:(NSData *)data;
++ (NSString *)generateCIDForJSON:(NSDictionary *)json;
+
+@end
+</code></pre>
+
+<h2 id="step-5-implement-cid-generator">Step 5: Implement CID Generator</h2>
+<p>Create <code>src/SimpleCIDGenerator.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;SimpleCIDGenerator.h&quot;
+#import &lt;CommonCrypto/CommonDigest.h&gt;
+
+@implementation SimpleCIDGenerator
+
++ (NSString *)generateCIDForData:(NSData *)data {
+    // SHA-256 hash
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
+
+    // Convert to base32 (simplified - in production use proper CID encoding)
+    NSMutableString *cid = [NSMutableString stringWithString:@&quot;bafyrei&quot;];
+    for (int i = 0; i &lt; CC_SHA256_DIGEST_LENGTH; i++) {
+        [cid appendFormat:@&quot;%02x&quot;, digest[i]];
+    }
+
+    return cid;
+}
+
++ (NSString *)generateCIDForJSON:(NSDictionary *)json {
+    NSData *data = [NSJSONSerialization dataWithJSONObject:json options:NSJSONWritingSortedKeys error:nil];
+    return [self generateCIDForData:data];
+}
+
+@end
+</code></pre>
+
+<h2 id="step-6-create-record-service">Step 6: Create Record Service</h2>
+<p>Create <code>src/RecordService.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;Record.h&quot;
+#import &quot;RecordRepository.h&quot;
+
+@interface RecordService : NSObject
+
+- (instancetype)initWithRepository:(RecordRepository *)repository;
+
+- (nullable NSDictionary *)createRecord:(NSString *)collection
+                                   rkey:(NSString *)rkey
+                                  value:(NSDictionary *)value
+                                 forDid:(NSString *)did
+                                  error:(NSError **)error;
+
+- (nullable NSDictionary *)getRecord:(NSString *)uri
+                              forDid:(NSString *)did
+                               error:(NSError **)error;
+
+- (nullable NSArray *)listRecords:(NSString *)collection
+                           forDid:(NSString *)did
+                            limit:(NSUInteger)limit
+                            error:(NSError **)error;
+
+- (BOOL)deleteRecord:(NSString *)uri
+              forDid:(NSString *)did
+               error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h2 id="step-7-implement-record-service">Step 7: Implement Record Service</h2>
+<p>Create <code>src/RecordService.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;RecordService.h&quot;
+#import &quot;SimpleCIDGenerator.h&quot;
+
+@interface RecordService ()
+@property (nonatomic, strong) RecordRepository *repository;
+@end
+
+@implementation RecordService
+
+- (instancetype)initWithRepository:(RecordRepository *)repository {
+    self = [super init];
+    if (!self) return nil;
+
+    self.repository = repository;
+
+    return self;
+}
+
+- (nullable NSDictionary *)createRecord:(NSString *)collection
+                                   rkey:(NSString *)rkey
+                                  value:(NSDictionary *)value
+                                 forDid:(NSString *)did
+                                  error:(NSError **)error {
+    // Validate inputs
+    if (!collection || !rkey || !value || !did) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Record&quot; code:1 
+                userInfo:@{NSLocalizedDescriptionKey: @&quot;Missing required fields&quot;}];
+        }
+        return nil;
+    }
+
+    // Generate URI
+    NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+
+    // Generate CID
+    NSString *cid = [SimpleCIDGenerator generateCIDForJSON:value];
+
+    // Create record
+    Record *record = [[Record alloc] init];
+    record.uri = uri;
+    record.cid = cid;
+    record.value = value;
+    record.createdAt = [[NSDate date] timeIntervalSince1970];
+
+    // Save record
+    NSError *dbError = nil;
+    if (![self.repository saveRecord:record forDid:did error:&amp;dbError]) {
+        if (error) *error = dbError;
+        return nil;
+    }
+
+    return @{
+        @&quot;uri&quot;: uri,
+        @&quot;cid&quot;: cid
+    };
+}
+
+- (nullable NSDictionary *)getRecord:(NSString *)uri
+                              forDid:(NSString *)did
+                               error:(NSError **)error {
+    NSError *dbError = nil;
+    Record *record = [self.repository getRecordAtURI:uri forDid:did error:&amp;dbError];
+
+    if (!record) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Record&quot; code:2 
+                userInfo:@{NSLocalizedDescriptionKey: @&quot;Record not found&quot;}];
+        }
+        return nil;
+    }
+
+    return @{
+        @&quot;uri&quot;: record.uri,
+        @&quot;cid&quot;: record.cid,
+        @&quot;value&quot;: record.value
+    };
+}
+
+- (nullable NSArray *)listRecords:(NSString *)collection
+                           forDid:(NSString *)did
+                            limit:(NSUInteger)limit
+                            error:(NSError **)error {
+    NSError *dbError = nil;
+    NSArray&lt;Record *&gt; *records = [self.repository listRecords:collection 
+                                                       forDid:did 
+                                                        limit:limit 
+                                                        error:&amp;dbError];
+
+    if (!records) {
+        if (error) *error = dbError;
+        return nil;
+    }
+
+    NSMutableArray *result = [NSMutableArray array];
+    for (Record *record in records) {
+        [result addObject:@{
+            @&quot;uri&quot;: record.uri,
+            @&quot;cid&quot;: record.cid,
+            @&quot;value&quot;: record.value
+        }];
+    }
+
+    return result;
+}
+
+- (BOOL)deleteRecord:(NSString *)uri
+              forDid:(NSString *)did
+               error:(NSError **)error {
+    return [self.repository deleteRecordAtURI:uri forDid:did error:error];
+}
+
+@end
+</code></pre>
+
+<h2 id="step-8-add-record-endpoints-to-xrpc-dispatcher">Step 8: Add Record Endpoints to XRPC Dispatcher</h2>
+<p>Update <code>src/XrpcDispatcher.m</code> to add record endpoints:</p>
+<pre class="codehilite"><code class="language-objc">- (void)dispatchRequest:(HttpRequest *)request 
+               response:(HttpResponse *)response {
+
+    NSString *path = request.path;
+    NSString *nsid = [path stringByReplacingOccurrencesOfString:@&quot;/xrpc/&quot; withString:@&quot;&quot;];
+
+    if ([nsid isEqualToString:@&quot;com.atproto.server.describeServer&quot;]) {
+        [self handleDescribeServer:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.server.createAccount&quot;]) {
+        [self handleCreateAccount:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.server.createSession&quot;]) {
+        [self handleCreateSession:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.repo.createRecord&quot;]) {
+        [self handleCreateRecord:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.repo.getRecord&quot;]) {
+        [self handleGetRecord:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.repo.listRecords&quot;]) {
+        [self handleListRecords:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.repo.deleteRecord&quot;]) {
+        [self handleDeleteRecord:request response:response];
+    } else {
+        response.statusCode = 404;
+        response.body = [@{@&quot;error&quot;: @&quot;MethodNotFound&quot;} JSONData];
+    }
+}
+
+- (void)handleCreateRecord:(HttpRequest *)request 
+                  response:(HttpResponse *)response {
+
+    // Extract DID from Authorization header
+    NSString *authHeader = [request headerForKey:@&quot;Authorization&quot;];
+    NSString *did = [self extractDIDFromAuthHeader:authHeader];
+
+    if (!did) {
+        response.statusCode = 401;
+        response.body = [@{@&quot;error&quot;: @&quot;AuthRequired&quot;} JSONData];
+        return;
+    }
+
+    NSError *parseError = nil;
+    NSDictionary *params = [NSJSONSerialization JSONObjectWithData:request.body 
+                                                            options:0 
+                                                              error:&amp;parseError];
+
+    if (!params) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: @&quot;InvalidRequest&quot;} JSONData];
+        return;
+    }
+
+    NSString *collection = params[@&quot;collection&quot;];
+    NSString *rkey = params[@&quot;rkey&quot;];
+    NSDictionary *record = params[@&quot;record&quot;];
+
+    // Generate rkey if not provided
+    if (!rkey) {
+        rkey = [[NSUUID UUID] UUIDString];
+    }
+
+    NSError *error = nil;
+    NSDictionary *result = [self.recordService createRecord:collection
+                                                       rkey:rkey
+                                                      value:record
+                                                     forDid:did
+                                                      error:&amp;error];
+
+    if (!result) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: error.localizedDescription} JSONData];
+        return;
+    }
+
+    response.statusCode = 200;
+    response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
+}
+
+- (void)handleGetRecord:(HttpRequest *)request 
+               response:(HttpResponse *)response {
+
+    NSString *repo = [request queryParamForKey:@&quot;repo&quot;];
+    NSString *collection = [request queryParamForKey:@&quot;collection&quot;];
+    NSString *rkey = [request queryParamForKey:@&quot;rkey&quot;];
+
+    if (!repo || !collection || !rkey) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: @&quot;InvalidRequest&quot;} JSONData];
+        return;
+    }
+
+    // Resolve repo to DID
+    NSString *did = repo;  // Simplified - in production, resolve handle to DID
+
+    NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+
+    NSError *error = nil;
+    NSDictionary *result = [self.recordService getRecord:uri forDid:did error:&amp;error];
+
+    if (!result) {
+        response.statusCode = 404;
+        response.body = [@{@&quot;error&quot;: @&quot;RecordNotFound&quot;} JSONData];
+        return;
+    }
+
+    response.statusCode = 200;
+    response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
+}
+
+- (void)handleListRecords:(HttpRequest *)request 
+                 response:(HttpResponse *)response {
+
+    NSString *repo = [request queryParamForKey:@&quot;repo&quot;];
+    NSString *collection = [request queryParamForKey:@&quot;collection&quot;];
+    NSString *limitStr = [request queryParamForKey:@&quot;limit&quot;];
+
+    if (!repo || !collection) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: @&quot;InvalidRequest&quot;} JSONData];
+        return;
+    }
+
+    // Resolve repo to DID
+    NSString *did = repo;  // Simplified - in production, resolve handle to DID
+
+    NSUInteger limit = limitStr ? [limitStr integerValue] : 50;
+    if (limit &gt; 100) limit = 100;
+
+    NSError *error = nil;
+    NSArray *records = [self.recordService listRecords:collection 
+                                                forDid:did 
+                                                 limit:limit 
+                                                 error:&amp;error];
+
+    if (!records) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: error.localizedDescription} JSONData];
+        return;
+    }
+
+    response.statusCode = 200;
+    response.body = [NSJSONSerialization dataWithJSONObject:@{@&quot;records&quot;: records} options:0 error:nil];
+}
+
+- (void)handleDeleteRecord:(HttpRequest *)request 
+                  response:(HttpResponse *)response {
+
+    // Extract DID from Authorization header
+    NSString *authHeader = [request headerForKey:@&quot;Authorization&quot;];
+    NSString *did = [self extractDIDFromAuthHeader:authHeader];
+
+    if (!did) {
+        response.statusCode = 401;
+        response.body = [@{@&quot;error&quot;: @&quot;AuthRequired&quot;} JSONData];
+        return;
+    }
+
+    NSError *parseError = nil;
+    NSDictionary *params = [NSJSONSerialization JSONObjectWithData:request.body 
+                                                            options:0 
+                                                              error:&amp;parseError];
+
+    if (!params) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: @&quot;InvalidRequest&quot;} JSONData];
+        return;
+    }
+
+    NSString *collection = params[@&quot;collection&quot;];
+    NSString *rkey = params[@&quot;rkey&quot;];
+
+    NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+
+    NSError *error = nil;
+    BOOL success = [self.recordService deleteRecord:uri forDid:did error:&amp;error];
+
+    if (!success) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: error.localizedDescription} JSONData];
+        return;
+    }
+
+    response.statusCode = 200;
+    response.body = [@{@&quot;success&quot;: @YES} JSONData];
+}
+
+- (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader {
+    // Simplified JWT parsing - in production, verify signature
+    if (![authHeader hasPrefix:@&quot;Bearer &quot;]) return nil;
+
+    NSString *token = [authHeader substringFromIndex:7];
+    NSArray *parts = [token componentsSeparatedByString:@&quot;.&quot;];
+    if (parts.count != 3) return nil;
+
+    // Decode payload
+    NSString *payload = parts[1];
+    payload = [payload stringByReplacingOccurrencesOfString:@&quot;-&quot; withString:@&quot;+&quot;];
+    payload = [payload stringByReplacingOccurrencesOfString:@&quot;_&quot; withString:@&quot;/&quot;];
+
+    while (payload.length % 4 != 0) {
+        payload = [payload stringByAppendingString:@&quot;=&quot;];
+    }
+
+    NSData *data = [[NSData alloc] initWithBase64EncodedString:payload options:0];
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+
+    return json[@&quot;sub&quot;];
+}
+</code></pre>
+
+<h2 id="step-9-update-main-entry-point">Step 9: Update Main Entry Point</h2>
+<p>Update <code>src/main.m</code> to initialize record service:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;PDSApplication.h&quot;
+#import &quot;AccountService.h&quot;
+#import &quot;AccountRepository.h&quot;
+#import &quot;RecordService.h&quot;
+#import &quot;RecordRepository.h&quot;
+#import &quot;SimpleJWTMinter.h&quot;
+#import &quot;XrpcDispatcher.h&quot;
+
+int main(int argc, char *argv[]) {
+    @autoreleasepool {
+        // 1. Create configuration
+        PDSConfiguration *config = [[PDSConfiguration alloc] init];
+        config.serverPort = 2583;
+        config.issuer = @&quot;did:web:localhost:2583&quot;;
+        config.databasePath = @&quot;./pds-data/db&quot;;
+
+        // 2. Create account service
+        AccountRepository *accountRepo = [[AccountRepository alloc] 
+            initWithDatabasePath:config.databasePath];
+        SimpleJWTMinter *minter = [[SimpleJWTMinter alloc] 
+            initWithIssuer:config.issuer];
+        AccountService *accountService = [[AccountService alloc] 
+            initWithRepository:accountRepo minter:minter];
+
+        // 3. Create record service
+        RecordRepository *recordRepo = [[RecordRepository alloc] 
+            initWithDatabasePath:config.databasePath];
+        RecordService *recordService = [[RecordService alloc] 
+            initWithRepository:recordRepo];
+
+        // 4. Initialize PDS
+        NSError *error = nil;
+        PDSApplication *app = [[PDSApplication alloc] 
+            initWithConfiguration:config error:&amp;error];
+
+        if (!app) {
+            NSLog(@&quot;Failed to initialize PDS: %@&quot;, error);
+            return 1;
+        }
+
+        // 5. Setup XRPC dispatcher with services
+        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+        dispatcher.accountService = accountService;
+        dispatcher.recordService = recordService;
+        [app.httpServer registerRoute:@&quot;/xrpc/*&quot; handler:^(HttpRequest *req, HttpResponse *res) {
+            [dispatcher dispatchRequest:req response:res];
+        }];
+
+        // 6. Start server
+        [app.httpServer startWithCompletion:^(NSError *error) {
+            if (error) {
+                NSLog(@&quot;Failed to start server: %@&quot;, error);
+                exit(1);
+            }
+
+            NSLog(@&quot;PDS started on port %ld&quot;, (long)config.serverPort);
+            NSLog(@&quot;Account service ready&quot;);
+            NSLog(@&quot;Record service ready&quot;);
+        }];
+
+        // 7. Keep running
+        [[NSRunLoop mainRunLoop] run];
+    }
+
+    return 0;
+}
+</code></pre>
+
+<h2 id="step-10-build-and-run">Step 10: Build and Run</h2>
+<pre class="codehilite"><code class="language-bash">cd examples/tutorial-3-records
+mkdir -p build &amp;&amp; cd build
+cmake ..
+make
+./tutorial-3-records
+</code></pre>
+
+<h2 id="step-11-test-record-creation">Step 11: Test Record Creation</h2>
+<p>In another terminal, first create an account and get the access token:</p>
+<pre class="codehilite"><code class="language-bash"># Create an account
+RESPONSE=$(curl -s -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;email&quot;: &quot;alice@example.com&quot;,
+    &quot;password&quot;: &quot;secure_password&quot;,
+    &quot;handle&quot;: &quot;alice&quot;
+  }')
+
+# Extract access token
+ACCESS_TOKEN=$(echo $RESPONSE | jq -r '.accessJwt')
+echo &quot;Access Token: $ACCESS_TOKEN&quot;
+
+# Create a record
+curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
+  -d '{
+    &quot;collection&quot;: &quot;app.bsky.feed.post&quot;,
+    &quot;record&quot;: {
+      &quot;text&quot;: &quot;Hello from Tutorial 3!&quot;,
+      &quot;createdAt&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  }' | jq .
+
+# Expected output:
+# {
+#   &quot;uri&quot;: &quot;at://did:plc:.../app.bsky.feed.post/...&quot;,
+#   &quot;cid&quot;: &quot;bafyrei...&quot;
+# }
+</code></pre>
+
+<h2 id="step-12-test-record-retrieval">Step 12: Test Record Retrieval</h2>
+<pre class="codehilite"><code class="language-bash"># Get the record (replace with actual values from creation)
+curl -s &quot;http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&amp;collection=app.bsky.feed.post&amp;rkey=&lt;RKEY&gt;&quot; | jq .
+
+# Expected output:
+# {
+#   &quot;uri&quot;: &quot;at://did:plc:.../app.bsky.feed.post/...&quot;,
+#   &quot;cid&quot;: &quot;bafyrei...&quot;,
+#   &quot;value&quot;: {
+#     &quot;text&quot;: &quot;Hello from Tutorial 3!&quot;,
+#     &quot;createdAt&quot;: &quot;2024-01-01T00:00:00Z&quot;
+#   }
+# }
+</code></pre>
+
+<h2 id="step-13-test-record-listing">Step 13: Test Record Listing</h2>
+<pre class="codehilite"><code class="language-bash"># List all posts for alice
+curl -s &quot;http://localhost:2583/xrpc/com.atproto.repo.listRecords?repo=alice&amp;collection=app.bsky.feed.post&quot; | jq .
+
+# Expected output:
+# {
+#   &quot;records&quot;: [
+#     {
+#       &quot;uri&quot;: &quot;at://did:plc:.../app.bsky.feed.post/...&quot;,
+#       &quot;cid&quot;: &quot;bafyrei...&quot;,
+#       &quot;value&quot;: {
+#         &quot;text&quot;: &quot;Hello from Tutorial 3!&quot;,
+#         &quot;createdAt&quot;: &quot;2024-01-01T00:00:00Z&quot;
+#       }
+#     }
+#   ]
+# }
+</code></pre>
+
+<h2 id="step-14-test-record-deletion">Step 14: Test Record Deletion</h2>
+<pre class="codehilite"><code class="language-bash"># Delete the record
+curl -X POST http://localhost:2583/xrpc/com.atproto.repo.deleteRecord \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer $ACCESS_TOKEN&quot; \
+  -d '{
+    &quot;collection&quot;: &quot;app.bsky.feed.post&quot;,
+    &quot;rkey&quot;: &quot;&lt;RKEY&gt;&quot;
+  }' | jq .
+
+# Expected output:
+# {
+#   &quot;success&quot;: true
+# }
+
+# Verify deletion
+curl -s &quot;http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&amp;collection=app.bsky.feed.post&amp;rkey=&lt;RKEY&gt;&quot; | jq .
+
+# Expected output:
+# {
+#   &quot;error&quot;: &quot;RecordNotFound&quot;
+# }
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./tutorial-4-auth.md">Tutorial 4: Authentication</a></strong> — Add OAuth/JWT verification</li>
+<li><strong><a href="./tutorial-5-firehose.md">Tutorial 5: Firehose</a></strong> — Add WebSocket subscriptions</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>Authorization required error:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Make sure you're including the Bearer token
+# Verify the token is valid and not expired
+echo $ACCESS_TOKEN | cut -d'.' -f2 | base64 -d | jq .
+</code></pre>
+
+<p><strong>Record not found:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Verify the URI components are correct
+# Check that the record was created successfully
+# Ensure you're using the correct DID/handle
+</code></pre>
+
+<p><strong>Database errors:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Clear database and restart
+rm -rf pds-data/
+./tutorial-3-records
+</code></pre>
+
+<h2 id="summary">Summary</h2>
+<p>You've successfully extended the PDS to support:
+- Record creation with CBOR serialization
+- Record retrieval by URI
+- Record listing by collection
+- Record deletion
+- CID generation for content addressing
+- JWT-based authorization for record operations</p>
+<p>This foundation enables building more complex features like MST tree management and firehose subscriptions.</p>
+<h2 id="understanding-the-implementation">Understanding the Implementation</h2>
+<h3 id="record-uri-format">Record URI Format</h3>
+<p>Records are identified by AT URIs with the format:</p>
+<pre class="codehilite"><code>at://&lt;did&gt;/&lt;collection&gt;/&lt;rkey&gt;
+</code></pre>
+
+<p>Example:</p>
+<pre class="codehilite"><code>at://did:plc:abc123/app.bsky.feed.post/xyz789
+</code></pre>
+
+<h3 id="cid-generation">CID Generation</h3>
+<p>Content Identifiers (CIDs) are generated by:
+1. Serializing the record value to JSON
+2. Computing SHA-256 hash
+3. Encoding as base32 with multibase prefix</p>
+<p>In production, use proper DAG-CBOR serialization and CIDv1 encoding.</p>
+<h3 id="authorization-flow">Authorization Flow</h3>
+<ol>
+<li>Client sends JWT in Authorization header</li>
+<li>Server extracts DID from JWT payload</li>
+<li>Server verifies DID matches record owner</li>
+<li>Server allows or denies operation</li>
+</ol>
+<h3 id="database-schema">Database Schema</h3>
+<p>Records are stored with:
+- <code>uri</code> — AT URI (primary key)
+- <code>did</code> — Owner DID
+- <code>collection</code> — Collection NSID
+- <code>rkey</code> — Record key
+- <code>cid</code> — Content identifier
+- <code>value</code> — JSON-serialized record
+- <code>created_at</code> — Timestamp</p>
+<h3 id="next-tutorial-preview">Next Tutorial Preview</h3>
+<p>Tutorial 4 will add:
+- JWT signature verification
+- OAuth 2.0 with DPoP
+- Token refresh flow
+- Proper authorization checks</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

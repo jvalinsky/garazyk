@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DID Document Updates - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>DID Document Updates</h1>
+            </div>
+            <h1 id="did-document-updates">DID Document Updates</h1>
+<p>This guide explains how DID documents are updated in the PLC directory, including the operation workflow, verification process, and propagation mechanisms.</p>
+<h2 id="overview">Overview</h2>
+<p>DID documents in the PLC (Public Ledger of Credentials) directory are updated through a chain of cryptographically signed operations. Each operation references the previous operation, forming an immutable audit log that can be replayed to compute the current DID state.</p>
+<h2 id="operation-chain-structure">Operation Chain Structure</h2>
+<h3 id="hash-linked-chain">Hash-Linked Chain</h3>
+<p>PLC operations form a hash-linked chain similar to a blockchain:</p>
+<pre class="codehilite"><code>Genesis Operation (prev: null)
+    ↓ (CID: bafyreiabc...)
+Update Operation #1 (prev: bafyreiabc...)
+    ↓ (CID: bafyreidef...)
+Update Operation #2 (prev: bafyreidef...)
+    ↓ (CID: bafyreighi...)
+Current State
+</code></pre>
+
+<p>Each operation contains:
+- <code>did</code>: The DID this operation belongs to
+- <code>prev</code>: CID of the previous operation (null for genesis)
+- <code>sig</code>: Base64-encoded signature of the operation hash
+- <code>data</code>: Operation payload (rotation keys, services, etc.)
+- <code>type</code>: Operation type (<code>plc_operation</code>)</p>
+<h3 id="operation-structure">Operation Structure</h3>
+<pre class="codehilite"><code class="language-objective-c">@interface PLCOperation : NSObject
+
+@property (nonatomic, copy) NSString *did;
+@property (nonatomic, copy, nullable) NSString *prev;
+@property (nonatomic, copy) NSString *sig;
+@property (nonatomic, copy) NSDictionary *data;
+@property (nonatomic, copy, nullable) NSString *cid;
+@property (nonatomic, strong, nullable) NSDate *createdAt;
+@property (nonatomic, assign) BOOL nullified;
+
+@end
+</code></pre>
+
+<h2 id="did-creation-genesis-operation">DID Creation (Genesis Operation)</h2>
+<h3 id="step-1-generate-keys">Step 1: Generate Keys</h3>
+<pre class="codehilite"><code class="language-objective-c">#import &quot;Auth/Secp256k1.h&quot;
+
+// Generate secp256k1 key pair for signing
+Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+NSString *didKey = [keyPair didKeyString];
+// Example: &quot;did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX&quot;
+</code></pre>
+
+<h3 id="step-2-create-genesis-operation-data">Step 2: Create Genesis Operation Data</h3>
+<pre class="codehilite"><code class="language-objective-c">NSDictionary *createData = @{
+    @&quot;type&quot;: @&quot;plc_operation&quot;,
+    @&quot;rotationKeys&quot;: @[didKey],                    // Keys that can sign updates
+    @&quot;verificationMethods&quot;: @{
+        @&quot;atproto&quot;: didKey                         // Key for AT Protocol operations
+    },
+    @&quot;alsoKnownAs&quot;: @[@&quot;at://alice.bsky.social&quot;], // Handle
+    @&quot;services&quot;: @{
+        @&quot;atproto_pds&quot;: @{
+            @&quot;type&quot;: @&quot;AtprotoPersonalDataServer&quot;,
+            @&quot;endpoint&quot;: @&quot;https://pds.example.com&quot;
+        }
+    },
+    @&quot;prev&quot;: [NSNull null]                         // Genesis has no previous operation
+};
+</code></pre>
+
+<h3 id="step-3-calculate-did">Step 3: Calculate DID</h3>
+<p>The DID is deterministically derived from the genesis operation data:</p>
+<pre class="codehilite"><code class="language-objective-c">NSString *did = [PLCOperation calculateDIDForData:createData];
+// Example: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;
+</code></pre>
+
+<p><strong>DID Calculation Process</strong>:
+1. Encode operation data as DAG-CBOR
+2. Compute SHA-256 hash of CBOR bytes
+3. Encode hash as base32
+4. Take first 24 characters
+5. Prepend <code>did:plc:</code> prefix</p>
+<h3 id="step-4-sign-operation">Step 4: Sign Operation</h3>
+<pre class="codehilite"><code class="language-objective-c">#import &quot;Core/ATProtoCBORSerialization.h&quot;
+#import &quot;Auth/CryptoUtils.h&quot;
+
+// Encode operation as CBOR
+NSError *error = nil;
+NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:createData error:&amp;error];
+
+// Hash the CBOR bytes
+NSData *hash = [CryptoUtils sha256:cbor];
+
+// Sign the hash
+NSData *signature = [keyPair signHash:hash error:&amp;error];
+
+// Encode signature as base64
+NSString *sigBase64 = [signature base64EncodedStringWithOptions:0];
+</code></pre>
+
+<h3 id="step-5-create-operation-object">Step 5: Create Operation Object</h3>
+<pre class="codehilite"><code class="language-objective-c">PLCOperation *createOp = [[PLCOperation alloc] init];
+createOp.did = did;
+createOp.prev = nil;
+createOp.sig = sigBase64;
+createOp.data = createData;
+</code></pre>
+
+<h3 id="step-6-submit-to-plc-server">Step 6: Submit to PLC Server</h3>
+<pre class="codehilite"><code class="language-objective-c">DIDPLCResolver *resolver = [[DIDPLCResolver alloc] 
+    initWithPlcUrl:@&quot;https://plc.directory&quot;];
+
+NSInteger statusCode = 0;
+NSData *response = [resolver submitOperation:[createOp toDictionary]
+                                         did:did
+                                  statusCode:&amp;statusCode
+                                       error:&amp;error];
+
+if (statusCode == 200) {
+    NSLog(@&quot;DID created successfully: %@&quot;, did);
+} else {
+    NSLog(@&quot;Failed to create DID: %ld&quot;, (long)statusCode);
+}
+</code></pre>
+
+<h2 id="updating-did-documents">Updating DID Documents</h2>
+<h3 id="common-update-scenarios">Common Update Scenarios</h3>
+<h4 id="1-update-handle">1. Update Handle</h4>
+<pre class="codehilite"><code class="language-objective-c">// Fetch current DID document to get latest state
+NSDictionary *currentDoc = [resolver resolveDID:did error:&amp;error];
+
+// Get audit log to find latest operation CID
+NSArray *auditLog = [resolver resolveAuditLogForDID:did error:&amp;error];
+PLCOperation *latestOp = [PLCOperation operationFromDictionary:auditLog.lastObject 
+                                                         error:&amp;error];
+NSString *prevCid = latestOp.cid;
+
+// Create update operation
+NSDictionary *updateData = @{
+    @&quot;type&quot;: @&quot;plc_operation&quot;,
+    @&quot;rotationKeys&quot;: currentDoc[@&quot;rotationKeys&quot;],
+    @&quot;verificationMethods&quot;: currentDoc[@&quot;verificationMethods&quot;],
+    @&quot;alsoKnownAs&quot;: @[@&quot;at://alice-new.bsky.social&quot;],  // New handle
+    @&quot;services&quot;: currentDoc[@&quot;services&quot;],
+    @&quot;prev&quot;: prevCid
+};
+
+// Sign and submit (same process as genesis)
+NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:updateData error:&amp;error];
+NSData *hash = [CryptoUtils sha256:cbor];
+NSData *signature = [keyPair signHash:hash error:&amp;error];
+
+PLCOperation *updateOp = [[PLCOperation alloc] init];
+updateOp.did = did;
+updateOp.prev = prevCid;
+updateOp.sig = [signature base64EncodedStringWithOptions:0];
+updateOp.data = updateData;
+
+[resolver submitOperation:[updateOp toDictionary]
+                      did:did
+               statusCode:&amp;statusCode
+                    error:&amp;error];
+</code></pre>
+
+<h4 id="2-update-pds-endpoint">2. Update PDS Endpoint</h4>
+<pre class="codehilite"><code class="language-objective-c">NSDictionary *updateData = @{
+    @&quot;type&quot;: @&quot;plc_operation&quot;,
+    @&quot;rotationKeys&quot;: currentDoc[@&quot;rotationKeys&quot;],
+    @&quot;verificationMethods&quot;: currentDoc[@&quot;verificationMethods&quot;],
+    @&quot;alsoKnownAs&quot;: currentDoc[@&quot;alsoKnownAs&quot;],
+    @&quot;services&quot;: @{
+        @&quot;atproto_pds&quot;: @{
+            @&quot;type&quot;: @&quot;AtprotoPersonalDataServer&quot;,
+            @&quot;endpoint&quot;: @&quot;https://new-pds.example.com&quot;  // New PDS
+        }
+    },
+    @&quot;prev&quot;: prevCid
+};
+</code></pre>
+
+<h4 id="3-rotate-keys">3. Rotate Keys</h4>
+<pre class="codehilite"><code class="language-objective-c">// Generate new key pair
+Secp256k1KeyPair *newKeyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+NSString *newDidKey = [newKeyPair didKeyString];
+
+NSDictionary *updateData = @{
+    @&quot;type&quot;: @&quot;plc_operation&quot;,
+    @&quot;rotationKeys&quot;: @[newDidKey],                     // New rotation key
+    @&quot;verificationMethods&quot;: @{
+        @&quot;atproto&quot;: newDidKey                          // New verification key
+    },
+    @&quot;alsoKnownAs&quot;: currentDoc[@&quot;alsoKnownAs&quot;],
+    @&quot;services&quot;: currentDoc[@&quot;services&quot;],
+    @&quot;prev&quot;: prevCid
+};
+
+// IMPORTANT: Sign with OLD key (the one in current rotationKeys)
+// The new key becomes active only after this operation is accepted
+NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:updateData error:&amp;error];
+NSData *hash = [CryptoUtils sha256:cbor];
+NSData *signature = [oldKeyPair signHash:hash error:&amp;error];  // Use OLD key
+</code></pre>
+
+<h2 id="state-replay-and-verification">State Replay and Verification</h2>
+<h3 id="computing-current-state">Computing Current State</h3>
+<p>The PLC server and clients compute the current DID state by replaying the operation history:</p>
+<pre class="codehilite"><code class="language-objective-c">@interface PLCStateReplayer : NSObject
+
++ (nullable PLCDIDState *)replayHistory:(NSArray&lt;PLCOperation *&gt; *)history 
+                                  error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h3 id="replay-process">Replay Process</h3>
+<pre class="codehilite"><code class="language-objective-c">// Fetch complete audit log
+NSArray *auditLog = [resolver resolveAuditLogForDID:did error:&amp;error];
+
+// Parse operations
+NSMutableArray *operations = [NSMutableArray array];
+for (NSDictionary *entry in auditLog) {
+    PLCOperation *op = [PLCOperation operationFromDictionary:entry error:&amp;error];
+    if (op) [operations addObject:op];
+}
+
+// Replay to compute current state
+PLCDIDState *state = [PLCStateReplayer replayHistory:operations error:&amp;error];
+
+// Convert to DID document
+NSDictionary *didDocument = [state toDIDDocument];
+</code></pre>
+
+<h3 id="verification-steps">Verification Steps</h3>
+<p>During replay, the system verifies:</p>
+<ol>
+<li><strong>Chain Integrity</strong>: Each operation's <code>prev</code> field matches the CID of the previous operation</li>
+<li><strong>Signature Validity</strong>: Each operation is signed by a key in the previous state's <code>rotationKeys</code></li>
+<li><strong>Format Validation</strong>: All fields conform to PLC specification</li>
+<li><strong>Size Limits</strong>: CBOR encoding does not exceed 7500 bytes</li>
+</ol>
+<pre class="codehilite"><code class="language-objective-c">// Verify operation chain
+for (NSInteger i = 1; i &lt; operations.count; i++) {
+    PLCOperation *current = operations[i];
+    PLCOperation *previous = operations[i - 1];
+
+    // Verify prev link
+    NSString *expectedPrev = [PLCOperation calculateCIDForOperation:[previous toDictionary] 
+                                                              error:&amp;error];
+    if (![current.prev isEqualToString:expectedPrev]) {
+        NSLog(@&quot;Chain integrity violation at operation %ld&quot;, (long)i);
+        return nil;
+    }
+
+    // Verify signature (simplified - actual implementation more complex)
+    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:current.data 
+                                                                error:&amp;error];
+    NSData *hash = [CryptoUtils sha256:cbor];
+    NSData *signature = [[NSData alloc] initWithBase64EncodedString:current.sig 
+                                                            options:0];
+
+    // Extract public key from previous state's rotationKeys
+    // Verify signature with that key
+    // (Implementation details omitted for brevity)
+}
+</code></pre>
+
+<h2 id="did-document-format">DID Document Format</h2>
+<h3 id="computed-did-document">Computed DID Document</h3>
+<p>After replaying operations, the resulting DID document follows the W3C DID Core specification:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://www.w3.org/ns/did/v1&quot;,
+    &quot;https://w3id.org/security/multikey/v1&quot;,
+    &quot;https://w3id.org/security/suites/secp256k1-2019/v1&quot;
+  ],
+  &quot;id&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+  &quot;alsoKnownAs&quot;: [
+    &quot;at://alice.bsky.social&quot;
+  ],
+  &quot;verificationMethod&quot;: [
+    {
+      &quot;id&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur#atproto&quot;,
+      &quot;type&quot;: &quot;Multikey&quot;,
+      &quot;controller&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+      &quot;publicKeyMultibase&quot;: &quot;zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX&quot;
+    }
+  ],
+  &quot;service&quot;: [
+    {
+      &quot;id&quot;: &quot;#atproto_pds&quot;,
+      &quot;type&quot;: &quot;AtprotoPersonalDataServer&quot;,
+      &quot;serviceEndpoint&quot;: &quot;https://pds.example.com&quot;
+    }
+  ]
+}
+</code></pre>
+
+<h3 id="did-state-object">DID State Object</h3>
+<pre class="codehilite"><code class="language-objective-c">@interface PLCDIDState : NSObject
+
+@property (nonatomic, copy) NSString *did;
+@property (nonatomic, strong) NSArray&lt;NSString *&gt; *rotationKeys;
+@property (nonatomic, strong) NSDictionary&lt;NSString *, NSString *&gt; *verificationMethods;
+@property (nonatomic, strong) NSArray&lt;NSString *&gt; *alsoKnownAs;
+@property (nonatomic, strong) NSDictionary *services;
+@property (nonatomic, assign) BOOL tombstoned;
+
+- (NSDictionary *)toDIDDocument;
+
+@end
+</code></pre>
+
+<h2 id="propagation-and-caching">Propagation and Caching</h2>
+<h3 id="plc-server-propagation">PLC Server Propagation</h3>
+<p>When an operation is submitted to the PLC server:</p>
+<ol>
+<li><strong>Validation</strong>: Server validates signature, chain integrity, and format</li>
+<li><strong>Storage</strong>: Operation is appended to the DID's audit log</li>
+<li><strong>Indexing</strong>: Current state is recomputed and indexed</li>
+<li><strong>Response</strong>: Server returns 200 OK with operation CID</li>
+</ol>
+<h3 id="client-side-caching">Client-Side Caching</h3>
+<p>September's <code>DIDPLCResolver</code> caches resolved DID documents:</p>
+<pre class="codehilite"><code class="language-objective-c">@property (nonatomic, strong) NSCache&lt;NSString *, NSDictionary *&gt; *cache;
+
+- (NSDictionary *)resolveDID:(NSString *)did error:(NSError **)error {
+    // Check cache first
+    NSDictionary *cached = [self.cache objectForKey:did];
+    if (cached) return cached;
+
+    // Fetch from PLC server
+    NSDictionary *doc = [self fetchFromPLC:did error:error];
+
+    // Cache on success
+    if (doc) {
+        [self.cache setObject:doc forKey:did];
+    }
+
+    return doc;
+}
+</code></pre>
+
+<p><strong>Cache Considerations</strong>:
+- Cache has no TTL (entries persist until evicted by LRU policy)
+- Cache is memory-only (lost on restart)
+- No invalidation mechanism for stale entries</p>
+<p><strong>Production Recommendation</strong>: Implement cache TTL or periodic refresh for frequently-accessed DIDs.</p>
+<h3 id="propagation-delays">Propagation Delays</h3>
+<p>Updates to DID documents may take time to propagate:</p>
+<ol>
+<li><strong>PLC Server</strong>: Immediate (operation accepted and indexed)</li>
+<li><strong>PDS Instances</strong>: Depends on cache TTL and refresh strategy</li>
+<li><strong>Clients</strong>: Depends on local cache and resolution frequency</li>
+</ol>
+<p><strong>Best Practice</strong>: After updating a DID document, wait a few seconds before relying on the new state being visible to all clients.</p>
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="common-errors">Common Errors</h3>
+<h4 id="invalid-signature">Invalid Signature</h4>
+<pre class="codehilite"><code class="language-objective-c">// Error: Signature verification failed
+// Cause: Operation signed with wrong key or corrupted signature
+// Solution: Ensure operation is signed with current rotation key
+</code></pre>
+
+<h4 id="chain-integrity-violation">Chain Integrity Violation</h4>
+<pre class="codehilite"><code class="language-objective-c">// Error: prev field does not match previous operation CID
+// Cause: Concurrent updates or incorrect prev value
+// Solution: Fetch latest audit log and use correct prev CID
+</code></pre>
+
+<h4 id="size-limit-exceeded">Size Limit Exceeded</h4>
+<pre class="codehilite"><code class="language-objective-c">// Error: Operation exceeds 7500 bytes DAG-CBOR limit
+// Cause: Too much data in operation (e.g., large service endpoints)
+// Solution: Reduce operation size or split into multiple updates
+</code></pre>
+
+<h4 id="invalid-did-format">Invalid DID Format</h4>
+<pre class="codehilite"><code class="language-objective-c">// Error: DID must be exactly 32 characters long
+// Cause: Malformed DID string
+// Solution: Validate DID format before submission
+if (![PLCOperation isValidDidPlc:did]) {
+    NSLog(@&quot;Invalid DID format: %@&quot;, did);
+    return;
+}
+</code></pre>
+
+<h2 id="security-considerations">Security Considerations</h2>
+<h3 id="key-management">Key Management</h3>
+<ul>
+<li><strong>Rotation Keys</strong>: Store securely, never commit to version control</li>
+<li><strong>Key Rotation</strong>: Rotate keys periodically (recommended: annually)</li>
+<li><strong>Backup</strong>: Maintain secure backups of rotation keys (loss = permanent DID loss)</li>
+</ul>
+<h3 id="signature-verification">Signature Verification</h3>
+<p>Always verify signatures when processing operations:</p>
+<pre class="codehilite"><code class="language-objective-c">// Verify operation signature before accepting
+BOOL verified = [self verifyOperationSignature:operation 
+                                    withPubKey:rotationKey 
+                                         error:&amp;error];
+if (!verified) {
+    NSLog(@&quot;Invalid signature, rejecting operation&quot;);
+    return;
+}
+</code></pre>
+
+<h3 id="replay-attacks">Replay Attacks</h3>
+<p>The <code>prev</code> field prevents replay attacks:
+- Each operation references the previous operation's CID
+- Operations cannot be reordered or replayed
+- Concurrent updates are detected (conflicting <code>prev</code> values)</p>
+<h2 id="testing">Testing</h2>
+<h3 id="unit-test-example">Unit Test Example</h3>
+<pre class="codehilite"><code class="language-objective-c">- (void)testHandleUpdate {
+    // Generate key pair
+    Secp256k1KeyPair *keyPair = [[Secp256k1 shared] generateKeyPairWithError:nil];
+    NSString *didKey = [keyPair didKeyString];
+
+    // Create genesis operation
+    NSDictionary *createData = @{
+        @&quot;type&quot;: @&quot;plc_operation&quot;,
+        @&quot;rotationKeys&quot;: @[didKey],
+        @&quot;verificationMethods&quot;: @{@&quot;atproto&quot;: didKey},
+        @&quot;alsoKnownAs&quot;: @[@&quot;at://oldhandle.bsky.social&quot;],
+        @&quot;services&quot;: @{},
+        @&quot;prev&quot;: [NSNull null]
+    };
+
+    NSString *did = [PLCOperation calculateDIDForData:createData];
+
+    PLCOperation *createOp = [[PLCOperation alloc] init];
+    createOp.did = did;
+    createOp.prev = nil;
+    createOp.sig = @&quot;test_sig&quot;;
+    createOp.data = createData;
+
+    // Calculate CID for prev link
+    NSString *prevCid = [PLCOperation calculateCIDForOperation:[createOp toDictionary] 
+                                                         error:nil];
+
+    // Create update operation
+    NSDictionary *updateData = @{
+        @&quot;type&quot;: @&quot;plc_operation&quot;,
+        @&quot;rotationKeys&quot;: @[didKey],
+        @&quot;verificationMethods&quot;: @{@&quot;atproto&quot;: didKey},
+        @&quot;alsoKnownAs&quot;: @[@&quot;at://newhandle.bsky.social&quot;],
+        @&quot;services&quot;: @{},
+        @&quot;prev&quot;: prevCid
+    };
+
+    PLCOperation *updateOp = [[PLCOperation alloc] init];
+    updateOp.did = did;
+    updateOp.prev = prevCid;
+    updateOp.sig = @&quot;test_sig&quot;;
+    updateOp.data = updateData;
+
+    // Replay history
+    PLCDIDState *state = [PLCStateReplayer replayHistory:@[createOp, updateOp] 
+                                                   error:nil];
+
+    // Verify handle was updated
+    XCTAssertEqualObjects(state.alsoKnownAs.firstObject, @&quot;at://newhandle.bsky.social&quot;);
+}
+</code></pre>
+
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a href="plc-directory.md">PLC Directory Concepts</a></li>
+<li><a href="../11-reference/plc-server-operations.md">PLC Server Operations</a></li>
+<li><a href="../11-reference/plc-failover.md">PLC Failover Strategies</a></li>
+<li><a href="cryptography.md">Cryptography Overview</a></li>
+<li><a href="cbor-and-car.md">CBOR Serialization</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

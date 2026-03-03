@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Audit Guide - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Security Audit Guide</h1>
+            </div>
+            <h1 id="security-audit-guide">Security Audit Guide</h1>
+<p>This guide explains how to use September PDS's security audit skills to identify and remediate common vulnerabilities in Objective-C code. The repository includes specialized audit tools in <code>.opencode/skills/</code> that automate vulnerability detection.</p>
+<h2 id="overview">Overview</h2>
+<p>September PDS includes 12 security-focused audit skills that scan for specific vulnerability classes:</p>
+<ol>
+<li><strong>Cryptographic Security</strong> — Weak algorithms, hardcoded keys, timing attacks</li>
+<li><strong>SQL Injection</strong> — Dynamic SQL construction, unsafe query building</li>
+<li><strong>Parser Hardening</strong> — Bounds checks, integer overflow, malformed input</li>
+<li><strong>Log Redaction</strong> — Sensitive data exposure in logs</li>
+<li><strong>OAuth/DPoP Conformance</strong> — Authentication protocol compliance</li>
+<li><strong>Rate Limiting &amp; DoS</strong> — Request throttling, resource exhaustion</li>
+<li><strong>Concurrency Bugs</strong> — Race conditions, data races</li>
+<li><strong>Locking &amp; Queues</strong> — Deadlocks, queue safety</li>
+<li><strong>Reentrancy</strong> — Callback reentrancy issues</li>
+<li><strong>Secrets Detection</strong> — Hardcoded credentials, API keys</li>
+<li><strong>Service Boundaries</strong> — Input validation at service layer</li>
+<li><strong>XRPC Contract</strong> — Protocol compliance, schema validation</li>
+</ol>
+<h2 id="quick-start">Quick Start</h2>
+<p>Each audit skill follows a consistent workflow:</p>
+<pre class="codehilite"><code class="language-bash"># 1. Run the audit script
+./skills/&lt;skill-name&gt;/scripts/scan_*.sh . /tmp/&lt;skill-name&gt;
+
+# 2. Review the summary report
+cat /tmp/&lt;skill-name&gt;/summary.md
+
+# 3. Validate findings with the checklist
+cat .opencode/skills/&lt;skill-name&gt;/references/*-checklist.md
+</code></pre>
+
+<h2 id="audit-skills-reference">Audit Skills Reference</h2>
+<h3 id="1-cryptographic-security-audit">1. Cryptographic Security Audit</h3>
+<p><strong>Purpose:</strong> Detect weak cryptographic algorithms, hardcoded keys, improper IV usage, timing attacks, and insecure random number generation.</p>
+<p><strong>When to use:</strong> Reviewing authentication, encryption, signing, or any security-sensitive crypto code.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-cryptographic-security-audit/scripts/scan_crypto.sh . /tmp/crypto-audit
+cat /tmp/crypto-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Weak hash algorithms (MD5, SHA1)
+- Weak encryption (DES, RC4, ECB mode)
+- Hardcoded encryption keys or IVs
+- Non-constant-time secret comparison
+- Non-cryptographic random for security contexts</p>
+<p><strong>Triage priorities:</strong>
+- <strong>P0:</strong> Weak crypto for authentication, secrets, or signing
+- <strong>P1:</strong> Hardcoded encryption keys or IVs
+- <strong>P1:</strong> Timing-vulnerable secret comparison
+- <strong>P2:</strong> Non-crypto random for security purposes
+- <strong>P3:</strong> SHA1/MD5 for non-security uses (check context)</p>
+<p><strong>Fix patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Bad: Weak hash algorithm
+CC_MD5(data.bytes, data.length, hash);
+
+// Good: Strong hash algorithm
+CC_SHA256(data.bytes, data.length, hash);
+
+// Bad: Hardcoded key
+NSData *key = [@&quot;my-secret-key&quot; dataUsingEncoding:NSUTF8StringEncoding];
+
+// Good: Generated key
+NSMutableData *key = [NSMutableData dataWithLength:32];
+SecRandomCopyBytes(kSecRandomDefault, 32, key.mutableBytes);
+
+// Bad: Timing-vulnerable comparison
+if ([token isEqualToString:expectedToken]) { /* ... */ }
+
+// Good: Constant-time comparison
+if (CCHmacTimingSafeCompare(token, expectedToken)) { /* ... */ }
+
+// Bad: Non-crypto random
+int nonce = rand();
+
+// Good: Crypto-secure random
+uint32_t nonce;
+SecRandomCopyBytes(kSecRandomDefault, sizeof(nonce), &amp;nonce);
+</code></pre>
+
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-cryptographic-security-audit/references/crypto-security-checklist.md</code></p>
+<h3 id="2-sql-injection-deep-audit">2. SQL Injection Deep Audit</h3>
+<p><strong>Purpose:</strong> Find SQL injection vulnerabilities beyond basic pattern matching, including dynamic SQL construction and raw query execution.</p>
+<p><strong>When to use:</strong> Reviewing database query construction, dynamic SQL, or any code that builds SQL strings from user input.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-sql-injection-deep-audit/scripts/scan_sql_injection.sh . /tmp/sql-audit
+cat /tmp/sql-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- User input directly concatenated into SQL
+- String formatting in SQL context
+- Dynamic table/column names without validation
+- Missing parameterization
+- Unsafe <code>PRAGMA</code> usage</p>
+<p><strong>Triage priorities:</strong>
+- <strong>P0:</strong> User input directly concatenated into SQL
+- <strong>P1:</strong> Dynamic SQL construction with string formatting
+- <strong>P2:</strong> Missing input validation before SQL operations
+- <strong>P3:</strong> Indirect injection via configuration or file paths</p>
+<p><strong>Fix patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Bad: String concatenation
+NSString *sql = [NSString stringWithFormat:@&quot;SELECT * FROM users WHERE did = '%@'&quot;, did];
+[database executeQuery:sql];
+
+// Good: Parameterized query
+NSString *sql = @&quot;SELECT * FROM users WHERE did = ?&quot;;
+[database executeQuery:sql params:@[did] error:&amp;error];
+
+// Bad: Dynamic table name
+NSString *sql = [NSString stringWithFormat:@&quot;SELECT * FROM %@&quot;, tableName];
+
+// Good: Whitelist validation
+NSSet *allowedTables = [NSSet setWithArray:@[@&quot;users&quot;, @&quot;posts&quot;, @&quot;follows&quot;]];
+if (![allowedTables containsObject:tableName]) {
+    return nil;  // Reject invalid table name
+}
+NSString *sql = [NSString stringWithFormat:@&quot;SELECT * FROM %@&quot;, tableName];
+</code></pre>
+
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-sql-injection-deep-audit/references/sql-injection-checklist.md</code></p>
+<h3 id="3-parser-hardening-audit">3. Parser Hardening Audit</h3>
+<p><strong>Purpose:</strong> Audit parsing and decoding code for bounds checks, integer overflow risks, malformed input handling, and unsafe memory operations.</p>
+<p><strong>When to use:</strong> Reviewing parser security, fuzzing gaps, or crash-prone decoding paths.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-parser-hardening-audit/scripts/scan_parser_hardening.sh . /tmp/parser-audit
+cat /tmp/parser-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Unchecked length/offset before memory access
+- Integer conversion or arithmetic overflow risk
+- Malformed input paths with partial state mutation
+- Missing bounds checks in parsers</p>
+<p><strong>Triage priorities:</strong>
+- <strong>P0:</strong> Unchecked length/offset before memory access
+- <strong>P1:</strong> Integer conversion or arithmetic overflow risk
+- <strong>P2:</strong> Malformed input path with partial state mutation
+- <strong>P3:</strong> Low-confidence parser smell</p>
+<p><strong>Fix patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Bad: No bounds check
+uint8_t *data = buffer.bytes;
+uint32_t length = *(uint32_t *)(data + offset);  // Could read past end
+
+// Good: Bounds check
+if (offset + sizeof(uint32_t) &gt; buffer.length) {
+    return nil;  // Fail safely
+}
+uint8_t *data = buffer.bytes;
+uint32_t length = *(uint32_t *)(data + offset);
+
+// Bad: Integer overflow
+NSUInteger totalSize = count * itemSize;  // Could overflow
+NSMutableData *result = [NSMutableData dataWithLength:totalSize];
+
+// Good: Overflow check
+if (count &gt; 0 &amp;&amp; itemSize &gt; NSUIntegerMax / count) {
+    return nil;  // Overflow would occur
+}
+NSUInteger totalSize = count * itemSize;
+NSMutableData *result = [NSMutableData dataWithLength:totalSize];
+</code></pre>
+
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-parser-hardening-audit/references/parser-hardening-checklist.md</code></p>
+<h3 id="4-log-redaction-audit">4. Log Redaction Audit</h3>
+<p><strong>Purpose:</strong> Detect logging paths that may leak credentials, tokens, authorization headers, or personally identifiable information.</p>
+<p><strong>When to use:</strong> Reviewing security hardening, incident response, or logging policy compliance.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-log-redaction-audit/scripts/scan_log_redaction.sh . /tmp/log-audit
+cat /tmp/log-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Direct logging of tokens, secrets, or authorization headers
+- Logs that can reconstruct credentials/session context
+- Inconsistent masking across code paths
+- PII exposure in logs</p>
+<p><strong>Triage priorities:</strong>
+- <strong>P0:</strong> Direct logging of tokens, secrets, or authorization headers
+- <strong>P1:</strong> Logs that can reconstruct credentials/session context
+- <strong>P2:</strong> Inconsistent masking across code paths
+- <strong>P3:</strong> Uncertain sensitive-field logging</p>
+<p><strong>Fix patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Bad: Logging sensitive data
+PDS_LOG_INFO(@&quot;Request headers: %@&quot;, request.allHTTPHeaderFields);
+PDS_LOG_DEBUG(@&quot;JWT token: %@&quot;, token);
+
+// Good: Redacted logging
+PDS_LOG_INFO(@&quot;Request headers: %@&quot;, [self redactedHeaders:request.allHTTPHeaderFields]);
+PDS_LOG_DEBUG(@&quot;JWT token: %@&quot;, [self maskToken:token]);
+
+// Redaction helper
+- (NSString *)maskToken:(NSString *)token {
+    if (token.length &lt;= 8) {
+        return @&quot;[REDACTED]&quot;;
+    }
+    NSString *prefix = [token substringToIndex:4];
+    NSString *suffix = [token substringFromIndex:token.length - 4];
+    return [NSString stringWithFormat:@&quot;%@...%@&quot;, prefix, suffix];
+}
+
+// Header redaction
+- (NSDictionary *)redactedHeaders:(NSDictionary *)headers {
+    NSMutableDictionary *redacted = [headers mutableCopy];
+    NSArray *sensitiveKeys = @[@&quot;Authorization&quot;, @&quot;Cookie&quot;, @&quot;X-API-Key&quot;];
+    for (NSString *key in sensitiveKeys) {
+        if (redacted[key]) {
+            redacted[key] = @&quot;[REDACTED]&quot;;
+        }
+    }
+    return redacted;
+}
+</code></pre>
+
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-log-redaction-audit/references/log-redaction-checklist.md</code></p>
+<h3 id="5-oauthdpop-conformance-audit">5. OAuth/DPoP Conformance Audit</h3>
+<p><strong>Purpose:</strong> Verify OAuth 2.0 and DPoP implementation conforms to RFC specifications.</p>
+<p><strong>When to use:</strong> Reviewing authentication flows, token handling, or OAuth/DPoP implementation changes.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-oauth-dpop-conformance-audit/scripts/scan_oauth_dpop.sh . /tmp/oauth-audit
+cat /tmp/oauth-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Missing DPoP proof validation
+- Incorrect token binding
+- Missing nonce/timestamp checks
+- Non-compliant error responses
+- Insecure token storage</p>
+<p><strong>Key compliance checks:</strong>
+- DPoP proof signature verification
+- Token binding to DPoP key
+- Replay protection (nonce/timestamp)
+- PKCE for public clients
+- Secure token storage</p>
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-oauth-dpop-conformance-audit/references/oauth-dpop-checklist.md</code></p>
+<h3 id="6-rate-limiting-dos-audit">6. Rate Limiting &amp; DoS Audit</h3>
+<p><strong>Purpose:</strong> Identify missing rate limits, resource exhaustion vectors, and DoS vulnerabilities.</p>
+<p><strong>When to use:</strong> Reviewing endpoint handlers, resource-intensive operations, or DoS protection.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-rate-limiting-dos-audit/scripts/scan_rate_limiting.sh . /tmp/rate-limit-audit
+cat /tmp/rate-limit-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Endpoints without rate limiting
+- Unbounded resource allocation
+- Missing request size limits
+- CPU-intensive operations without throttling
+- Memory exhaustion vectors</p>
+<p><strong>Fix patterns:</strong></p>
+<pre class="codehilite"><code class="language-objc">// Add rate limiting to endpoints
+- (void)handleRequest:(XrpcRequest *)request response:(XrpcResponse *)response {
+    // Check rate limit
+    if (![self.rateLimiter allowRequest:request.did]) {
+        [response sendError:429 message:@&quot;Too many requests&quot;];
+        return;
+    }
+
+    // Enforce request size limit
+    if (request.body.length &gt; 1024 * 1024) {  // 1 MB
+        [response sendError:413 message:@&quot;Request too large&quot;];
+        return;
+    }
+
+    // Process request
+    // ...
+}
+</code></pre>
+
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-rate-limiting-dos-audit/references/rate-limiting-checklist.md</code></p>
+<h3 id="7-concurrency-bug-audit">7. Concurrency Bug Audit</h3>
+<p><strong>Purpose:</strong> Detect race conditions, data races, and thread-safety violations.</p>
+<p><strong>When to use:</strong> Reviewing multi-threaded code, shared state access, or concurrency-related bugs.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-concurrency-bug-audit/scripts/scan_concurrency.sh . /tmp/concurrency-audit
+cat /tmp/concurrency-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Unsynchronized shared state access
+- Race conditions in check-then-act patterns
+- Missing atomic operations
+- Thread-unsafe collection mutations</p>
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-concurrency-bug-audit/references/concurrency-checklist.md</code></p>
+<h3 id="8-locking-queue-audit">8. Locking &amp; Queue Audit</h3>
+<p><strong>Purpose:</strong> Identify deadlock risks, lock ordering violations, and queue safety issues.</p>
+<p><strong>When to use:</strong> Reviewing locking patterns, dispatch queue usage, or deadlock investigations.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-locking-queue-audit/scripts/scan_locking.sh . /tmp/locking-audit
+cat /tmp/locking-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Potential deadlocks (lock ordering violations)
+- Recursive lock usage
+- Dispatch queue misuse
+- Lock held across async operations</p>
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-locking-queue-audit/references/locking-checklist.md</code></p>
+<h3 id="9-reentrancy-audit">9. Reentrancy Audit</h3>
+<p><strong>Purpose:</strong> Detect reentrancy issues where callbacks can cause unexpected state mutations.</p>
+<p><strong>When to use:</strong> Reviewing callback-heavy code, delegate patterns, or state machine implementations.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-reentrancy-audit/scripts/scan_reentrancy.sh . /tmp/reentrancy-audit
+cat /tmp/reentrancy-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Callbacks that can trigger reentrancy
+- State mutations during iteration
+- Delegate calls with mutable state
+- Completion handlers that modify caller state</p>
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-reentrancy-audit/references/reentrancy-checklist.md</code></p>
+<h3 id="10-secrets-detection-audit">10. Secrets Detection Audit</h3>
+<p><strong>Purpose:</strong> Find hardcoded credentials, API keys, tokens, and other secrets in source code.</p>
+<p><strong>When to use:</strong> Pre-commit checks, security reviews, or compliance audits.</p>
+<p><strong>Quick start:</strong></p>
+<pre class="codehilite"><code class="language-bash">./.opencode/skills/objc-secrets-detection-audit/scripts/scan_secrets.sh . /tmp/secrets-audit
+cat /tmp/secrets-audit/summary.md
+</code></pre>
+
+<p><strong>What it finds:</strong>
+- Hardcoded passwords and API keys
+- Embedded tokens and credentials
+- Private keys in source
+- Database connection strings with credentials</p>
+<p><strong>Reference:</strong> <code>.opencode/skills/objc-secrets-detection-audit/references/secrets-checklist.md</code></p>
+<h2 id="common-vulnerability-patterns">Common Vulnerability Patterns</h2>
+<h3 id="1-input-validation-failures">1. Input Validation Failures</h3>
+<p><strong>Symptoms:</strong>
+- Crashes on malformed input
+- Unexpected behavior with edge cases
+- Buffer overflows or out-of-bounds access</p>
+<p><strong>Detection:</strong>
+- Run parser hardening audit
+- Review input validation at service boundaries
+- Check for missing bounds checks</p>
+<p><strong>Remediation:</strong>
+- Validate all inputs at entry points
+- Use allowlists over denylists
+- Fail securely on invalid input
+- Add fuzzing for parsers</p>
+<h3 id="2-authentication-bypass">2. Authentication Bypass</h3>
+<p><strong>Symptoms:</strong>
+- Missing authentication checks
+- Incorrect token validation
+- Session fixation vulnerabilities</p>
+<p><strong>Detection:</strong>
+- Run OAuth/DPoP conformance audit
+- Review authentication middleware
+- Check token validation logic</p>
+<p><strong>Remediation:</strong>
+- Validate tokens on every protected endpoint
+- Implement proper DPoP proof verification
+- Use constant-time comparison for secrets
+- Enforce token expiration</p>
+<h3 id="3-information-disclosure">3. Information Disclosure</h3>
+<p><strong>Symptoms:</strong>
+- Sensitive data in logs
+- Detailed error messages to clients
+- Unredacted debug output</p>
+<p><strong>Detection:</strong>
+- Run log redaction audit
+- Review error handling code
+- Check debug logging paths</p>
+<p><strong>Remediation:</strong>
+- Redact sensitive fields in logs
+- Return generic error messages to clients
+- Disable verbose logging in production
+- Use structured logging with redaction</p>
+<h3 id="4-injection-attacks">4. Injection Attacks</h3>
+<p><strong>Symptoms:</strong>
+- Dynamic SQL construction
+- Unsanitized user input in queries
+- Command injection vectors</p>
+<p><strong>Detection:</strong>
+- Run SQL injection audit
+- Review query construction code
+- Check for string concatenation in SQL</p>
+<p><strong>Remediation:</strong>
+- Use parameterized queries exclusively
+- Validate and whitelist dynamic identifiers
+- Never pass user input to shell commands
+- Escape output for HTML/JavaScript contexts</p>
+<h3 id="5-cryptographic-weaknesses">5. Cryptographic Weaknesses</h3>
+<p><strong>Symptoms:</strong>
+- Weak hash algorithms (MD5, SHA1)
+- Hardcoded encryption keys
+- Predictable random numbers</p>
+<p><strong>Detection:</strong>
+- Run cryptographic security audit
+- Review key generation and storage
+- Check random number usage</p>
+<p><strong>Remediation:</strong>
+- Use SHA-256 or stronger for hashing
+- Generate keys with <code>SecRandomCopyBytes</code>
+- Store keys in Keychain (macOS) or secure storage
+- Use crypto-secure random for security contexts</p>
+<h2 id="audit-workflow">Audit Workflow</h2>
+<h3 id="pre-release-security-review">Pre-Release Security Review</h3>
+<ol>
+<li><strong>Run all audit skills:</strong></li>
+</ol>
+<pre class="codehilite"><code class="language-bash">for skill in .opencode/skills/objc-*/; do
+    skill_name=$(basename &quot;$skill&quot;)
+    echo &quot;Running $skill_name...&quot;
+    &quot;$skill/scripts/scan_&quot;*.sh . &quot;/tmp/$skill_name&quot;
+done
+</code></pre>
+
+<ol>
+<li><strong>Review summary reports:</strong></li>
+</ol>
+<pre class="codehilite"><code class="language-bash">for report in /tmp/objc-*/summary.md; do
+    echo &quot;=== $(dirname &quot;$report&quot;) ===&quot;
+    cat &quot;$report&quot;
+    echo
+done
+</code></pre>
+
+<ol>
+<li><strong>Triage findings by priority:</strong></li>
+<li>P0: Critical security issues (fix immediately)</li>
+<li>P1: High-risk vulnerabilities (fix before release)</li>
+<li>P2: Medium-risk issues (fix in next sprint)</li>
+<li>
+<p>P3: Low-risk or false positives (review and document)</p>
+</li>
+<li>
+<p><strong>Validate and fix:</strong></p>
+</li>
+<li>Review each finding with the corresponding checklist</li>
+<li>Implement fixes following the documented patterns</li>
+<li>Add tests to prevent regression</li>
+<li>Re-run audit to verify fix</li>
+</ol>
+<h3 id="continuous-security-monitoring">Continuous Security Monitoring</h3>
+<p>Add audit skills to CI/CD pipeline:</p>
+<pre class="codehilite"><code class="language-yaml"># .github/workflows/security.yml
+name: Security Audit
+
+on: [push, pull_request]
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run cryptographic audit
+        run: |
+          ./.opencode/skills/objc-cryptographic-security-audit/scripts/scan_crypto.sh . /tmp/crypto
+          cat /tmp/crypto/summary.md
+
+      - name: Run SQL injection audit
+        run: |
+          ./.opencode/skills/objc-sql-injection-deep-audit/scripts/scan_sql_injection.sh . /tmp/sql
+          cat /tmp/sql/summary.md
+
+      # Add more audits as needed
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-regular-audits">1. Regular Audits</h3>
+<ul>
+<li>Run security audits before each release</li>
+<li>Include audits in code review process</li>
+<li>Schedule quarterly comprehensive security reviews</li>
+</ul>
+<h3 id="2-prioritize-findings">2. Prioritize Findings</h3>
+<ul>
+<li>Focus on P0/P1 issues first</li>
+<li>Consider attack surface and exploitability</li>
+<li>Document accepted risks for P3 findings</li>
+</ul>
+<h3 id="3-fix-patterns">3. Fix Patterns</h3>
+<ul>
+<li>Follow documented fix patterns</li>
+<li>Add tests for security fixes</li>
+<li>Document security decisions in code comments</li>
+</ul>
+<h3 id="4-false-positive-management">4. False Positive Management</h3>
+<ul>
+<li>Review findings with checklists</li>
+<li>Document false positives</li>
+<li>Improve audit scripts to reduce noise</li>
+</ul>
+<h3 id="5-security-culture">5. Security Culture</h3>
+<ul>
+<li>Train developers on common vulnerabilities</li>
+<li>Share audit findings in team meetings</li>
+<li>Celebrate security improvements</li>
+</ul>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a href="../04-network-layer/input-validation.md">Input Validation</a> — Validation strategies and patterns</li>
+<li><a href="../06-authentication/security-best-practices.md">Security Best Practices</a> — Defense in depth</li>
+<li><a href="../06-authentication/secrets-management.md">Secrets Management</a> — Key storage and rotation</li>
+<li><a href="../04-network-layer/rate-limiting.md">Rate Limiting</a> — DoS protection</li>
+</ul>
+<h2 id="external-resources">External Resources</h2>
+<ul>
+<li>OWASP Top 10: https://owasp.org/www-project-top-ten/</li>
+<li>CWE Top 25: https://cwe.mitre.org/top25/</li>
+<li>NIST Secure Software Development Framework: https://csrc.nist.gov/projects/ssdf</li>
+<li>AT Protocol Security Considerations: https://atproto.com/specs/security</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

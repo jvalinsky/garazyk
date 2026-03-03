@@ -361,45 +361,261 @@ CREATE INDEX idx_repo_sequence_created_at ON repo_sequence(created_at);
 </code></pre>
 
 <h2 id="pdsservicedatabases-class">PDSServiceDatabases Class</h2>
-<p>The <code>PDSServiceDatabases</code> class manages all service databases:</p>
-<pre class="codehilite"><code class="language-objc">@interface PDSServiceDatabases : NSObject
+<p>The <code>PDSServiceDatabases</code> class manages all service databases. It uses a pool-based architecture with separate pools for service, DID cache, and sequencer databases.</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Service/ServiceDatabases.m</code></p>
+<h3 id="initialization-pattern">Initialization Pattern</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 65-85: Initialization with database pools
+- (instancetype)initWithDirectory:(NSString *)directory 
+                     serviceMaxSize:(NSUInteger)serviceMaxSize
+                   didCacheMaxSize:(NSUInteger)didCacheMaxSize
+                 sequencerMaxSize:(NSUInteger)sequencerMaxSize {
+    self = [super init];
+    if (self) {
+        PDSDataPaths *paths = [PDSDataPaths pathsForBaseDirectory:directory];
+        [paths createDirectoriesWithError:nil];
 
-// Database access
-@property (nonatomic, strong, readonly) PDSDatabase *serviceDatabase;
-@property (nonatomic, strong, readonly) PDSDatabase *didCacheDatabase;
-@property (nonatomic, strong, readonly) PDSDatabase *sequencerDatabase;
+        _serviceDbPath = paths.serviceDirectory;
+        _didCacheDbPath = paths.didCacheDirectory;
+        _sequencerDbPath = paths.sequencerDirectory;
 
-// Initialization
-- (instancetype)initWithDatabaseDirectory:(NSString *)directory;
+        _servicePool = [[PDSDatabasePool alloc] initWithDbDirectory:_serviceDbPath maxSize:serviceMaxSize];
+        _didCachePool = [[PDSDatabasePool alloc] initWithDbDirectory:_didCacheDbPath maxSize:didCacheMaxSize];
+        _sequencerPool = [[PDSDatabasePool alloc] initWithDbDirectory:_sequencerDbPath maxSize:sequencerMaxSize];
 
-// Account operations
-- (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
-- (nullable NSDictionary *)getAccountForHandle:(NSString *)handle error:(NSError **)error;
-- (nullable NSDictionary *)getAccountForEmail:(NSString *)email error:(NSError **)error;
-- (BOOL)createAccount:(NSDictionary *)account error:(NSError **)error;
-- (BOOL)updateAccount:(NSDictionary *)account error:(NSError **)error;
-- (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
+        [self applyPerformancePragmasOnPool:_servicePool];
+        [self applyPerformancePragmasOnPool:_didCachePool];
+        [self applyPerformancePragmasOnPool:_sequencerPool];
+        [self initializeServiceSchema:nil];
+        [self initializeDidCacheSchema:nil];
+        [self initializeSequencerSchema:nil];
+    }
+    return self;
+}
+</code></pre>
 
-// Invite code operations
-- (nullable NSString *)createInviteCode:(NSString *)createdBy error:(NSError **)error;
-- (BOOL)useInviteCode:(NSString *)code forDid:(NSString *)did error:(NSError **)error;
+<h3 id="performance-configuration">Performance Configuration</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 88-95: Apply WAL and performance pragmas
+- (void)applyPerformancePragmasOnPool:(PDSDatabasePool *)pool {
+    static NSString *const pragmaSQL =
+        @&quot;PRAGMA journal_mode=WAL;&quot;
+        @&quot;PRAGMA synchronous=NORMAL;&quot;
+        @&quot;PRAGMA cache_size=-32000;&quot;
+        @&quot;PRAGMA temp_store=MEMORY;&quot;;
+    [self executeSQL:pragmaSQL onPool:pool error:nil];
+}
+</code></pre>
 
-// Refresh token operations
-- (BOOL)storeRefreshToken:(NSString *)tokenHash forDid:(NSString *)did error:(NSError **)error;
-- (BOOL)validateRefreshToken:(NSString *)tokenHash forDid:(NSString *)did error:(NSError **)error;
-- (BOOL)revokeRefreshToken:(NSString *)tokenHash error:(NSError **)error;
+<h3 id="account-creation-pattern">Account Creation Pattern</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 130-145: Create single account with transaction
+- (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *blockError = nil;
 
-// DID cache operations
-- (nullable NSDictionary *)getCachedDidDocument:(NSString *)did error:(NSError **)error;
-- (BOOL)cacheDidDocument:(NSDictionary *)document forDid:(NSString *)did error:(NSError **)error;
-- (nullable NSString *)resolveCachedHandle:(NSString *)handle error:(NSError **)error;
-- (BOOL)cacheHandle:(NSString *)handle forDid:(NSString *)did error:(NSError **)error;
+    [self.servicePool transactWithDid:@&quot;__service__&quot; block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        success = [store createAccount:account error:innerError];
+    } error:&amp;blockError];
 
-// Sequencer operations
-- (NSInteger)getNextSequenceNumber:(NSError **)error;
-- (BOOL)recordRepoUpdate:(NSString *)did rootCid:(NSData *)rootCid error:(NSError **)error;
+    if (!success &amp;&amp; blockError) {
+        if (error) *error = blockError;
+    }
 
-@end
+    return success;
+}
+</code></pre>
+
+<h3 id="batch-account-creation">Batch Account Creation</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 147-167: Create multiple accounts in batch
+- (BOOL)createAccounts:(NSArray&lt;PDSDatabaseAccount *&gt; *)accounts error:(NSError **)error {
+    __block BOOL success = YES;
+    __block NSError *localError = nil;
+
+    [self.servicePool transactWithDid:@&quot;__service__&quot; block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+
+        for (PDSDatabaseAccount *account in accounts) {
+            BOOL accountSuccess = [store createAccount:account error:innerError];
+            if (!accountSuccess) {
+                success = NO;
+                break;
+            }
+        }
+    } error:&amp;localError];
+
+    if (!success &amp;&amp; localError) {
+        if (error) *error = localError;
+    }
+
+    return success;
+}
+</code></pre>
+
+<h3 id="account-retrieval-pattern">Account Retrieval Pattern</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 169-189: Get account by DID with prepared statement
+- (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [self.servicePool storeForDid:@&quot;__service__&quot; error:nil];
+    if (!store) {
+        return nil;
+    }
+
+    NSString *sql = @&quot;SELECT * FROM accounts WHERE did = ?&quot;;
+    __autoreleasing NSError *stmtError = nil;
+    sqlite3_stmt *stmt = [store prepareStatement:sql error:&amp;stmtError];
+    if (!stmt) {
+        if (error) *error = stmtError;
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+
+    PDSDatabaseAccount *account = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [store accountFromStatement:stmt];
+    }
+
+    [store finalizeStatement:stmt];
+    return account;
+}
+</code></pre>
+
+<h3 id="refresh-token-management">Refresh Token Management</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 245-270: Store refresh token with expiration
+- (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+
+    [self.servicePool transactWithDid:@&quot;__service__&quot; block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *sql = @&quot;INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)&quot;;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) { success = NO; return; }
+
+        sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 3, [[NSDate date] timeIntervalSince1970]);
+
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSUInteger refreshTokenTtl = config.refreshTokenTtlSeconds &gt; 0 ? config.refreshTokenTtlSeconds : (30 * 24 * 60 * 60);
+        sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:refreshTokenTtl] timeIntervalSince1970]);
+
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+    } error:&amp;localError];
+
+    if (!success &amp;&amp; localError) {
+        if (error) *error = localError;
+    }
+
+    return success;
+}
+</code></pre>
+
+<h3 id="invite-code-creation">Invite Code Creation</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 330-355: Create invite code with max uses
+- (BOOL)createInviteCode:(NSString *)code
+              forAccount:(NSString *)accountDid
+               maxUses:(NSInteger)maxUses
+                 error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+
+    [self.servicePool transactWithDid:@&quot;__service__&quot; block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *sql = @&quot;INSERT INTO invite_codes (id, code, account_did, created_at, max_uses) &quot;
+                        @&quot;VALUES (?, ?, ?, ?, ?)&quot;;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) { success = NO; return; }
+
+        NSString *uuid = [[NSUUID UUID] UUIDString];
+        sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, code.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 4, [[NSDate date] timeIntervalSince1970]);
+        sqlite3_bind_int64(stmt, 5, maxUses);
+
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+    } error:&amp;localError];
+
+    if (!success &amp;&amp; localError) {
+        if (error) *error = localError;
+    }
+
+    return success;
+}
+</code></pre>
+
+<h3 id="app-password-creation">App Password Creation</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 430-485: Create app password with PBKDF2 hashing
+- (nullable NSDictionary *)createAppPasswordForAccount:(NSString *)accountDid
+                                                 name:(NSString *)name
+                                           privileged:(BOOL)privileged
+                                                error:(NSError **)error {
+    if (accountDid.length == 0 || name.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Missing accountDid or name&quot;}];
+        }
+        return nil;
+    }
+
+    __block NSDictionary *result = nil;
+    __block NSError *localError = nil;
+
+    [self.servicePool transactWithDid:@&quot;__service__&quot; block:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+
+        NSString *password = appPasswordGenerateSecret();
+        NSData *salt = appPasswordGenerateSalt();
+        NSData *hash = appPasswordHash(password, salt);
+        if (!hash) {
+            if (innerError) {
+                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                                 code:-1
+                                             userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to hash app password&quot;}];
+            }
+            return;
+        }
+
+        NSTimeInterval createdAt = [[NSDate date] timeIntervalSince1970];
+
+        NSString *sql = @&quot;INSERT INTO app_passwords (id, account_did, name, password_hash, password_salt, privileged, created_at) &quot;
+                        @&quot;VALUES (?, ?, ?, ?, ?, ?, ?)&quot;;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+
+        NSString *uuid = [[NSUUID UUID] UUIDString];
+        sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, name.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 4, hash.bytes, (int)hash.length, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 5, salt.bytes, (int)salt.length, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 6, privileged ? 1 : 0);
+        sqlite3_bind_double(stmt, 7, createdAt);
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            if (innerError) {
+                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                                 code:sqlite3_errcode(store.db)
+                                             userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to insert app password&quot;}];
+            }
+            return;
+        }
+
+        NSString *createdAtString = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]];
+        result = @{
+            @&quot;name&quot;: name,
+            @&quot;password&quot;: password,
+            @&quot;createdAt&quot;: createdAtString ?: @&quot;&quot;,
+            @&quot;privileged&quot;: @(privileged)
+        };
+    } error:&amp;localError];
+
+    if (!result &amp;&amp; localError) {
+        if (error) *error = localError;
+    }
+
+    return result;
+}
 </code></pre>
 
 <h2 id="account-management">Account Management</h2>
@@ -461,7 +677,7 @@ if (success) {
 }
 </code></pre>
 
-<h2 id="refresh-token-management">Refresh Token Management</h2>
+<h2 id="refresh-token-management_1">Refresh Token Management</h2>
 <h3 id="storing-refresh-tokens">Storing Refresh Tokens</h3>
 <pre class="codehilite"><code class="language-objc">NSString *tokenHash = [self hashToken:refreshToken];
 
@@ -677,7 +893,7 @@ return @{
 <li><a href="./sqlite-architecture.md">SQLite Architecture</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

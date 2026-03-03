@@ -249,112 +249,220 @@ Example: 12 20 &lt;32-byte-sha256-hash&gt;
 </code></pre>
 
 <h2 id="cid-class">CID Class</h2>
+<p>The <code>CID</code> class provides methods for creating, parsing, and working with content identifiers:</p>
 <pre class="codehilite"><code class="language-objc">@interface CID : NSObject
 
-// Creating CIDs
-+ (nullable NSString *)createCIDv1:(NSData *)hash
-                             codec:(NSString *)codec
-                             error:(NSError **)error;
+// Creating CIDs from digest and codec
++ (nullable instancetype)cidWithDigest:(NSData *)digest codec:(NSUInteger)codec;
 
-+ (nullable NSString *)createCIDv0:(NSData *)hash error:(NSError **)error;
+// Creating CIDs from multihash
++ (nullable instancetype)cidWithMultihash:(NSData *)multihash codec:(NSUInteger)codec;
 
-// Parsing CIDs
-+ (nullable NSDictionary *)parseCID:(NSString *)cid error:(NSError **)error;
+// Parsing CIDs from string or bytes
++ (nullable instancetype)cidFromString:(NSString *)string;
++ (nullable instancetype)cidFromBytes:(NSData *)data;
 
-// Validation
-+ (BOOL)isValidCID:(NSString *)cid error:(NSError **)error;
+// Properties
+@property (nonatomic, readonly) NSUInteger version;
+@property (nonatomic, readonly) NSUInteger codec;
+@property (nonatomic, readonly) NSData *multihash;
+@property (nonatomic, readonly) NSData *bytes;
+@property (nonatomic, readonly) NSString *stringValue;
 
-// Conversion
-+ (nullable NSString *)convertCIDv0toV1:(NSString *)cidv0 error:(NSError **)error;
+// Comparison
+- (BOOL)isEqualToCID:(CID *)other;
+
+// Hashing
++ (CID *)sha256:(NSData *)data;
++ (NSData *)sha256Digest:(NSData *)data;
 
 @end
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 1-150)</p>
 <h2 id="hashing">Hashing</h2>
 <h3 id="sha-256-hashing">SHA-256 Hashing</h3>
 <pre class="codehilite"><code class="language-objc">// 1. Encode record to CBOR
-NSData *cborData = [ATProtoCBORSerialization encodeRecord:record error:&amp;error];
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record 
+                                                                error:&amp;error];
 
 // 2. Hash with SHA-256
-NSData *hash = [CryptoUtils sha256:cborData];
+NSData *hash = [CID sha256Digest:cborData];
 
-// 3. Create CID
-NSString *cid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
+// 3. Create CID with dag-cbor codec (0x71)
+CID *cid = [CID cidWithDigest:hash codec:0x71];
+NSString *cidString = cid.stringValue;  // &quot;bafy2bzaced...&quot;
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 280-295)</p>
 <h2 id="creating-cids">Creating CIDs</h2>
+<h3 id="from-digest-and-codec">From Digest and Codec</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Hash content with SHA-256
+NSData *content = [@&quot;Hello, world!&quot; dataUsingEncoding:NSUTF8StringEncoding];
+NSData *hash = [CID sha256Digest:content];
+
+// 2. Create CID with dag-cbor codec (0x71)
+CID *cid = [CID cidWithDigest:hash codec:0x71];
+
+// 3. Get string representation
+NSString *cidString = cid.stringValue;  // &quot;bafy2bzaced...&quot;
+
+// 4. Get binary representation
+NSData *cidBytes = cid.bytes;
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 35-50, 155-175)</p>
 <h3 id="for-records">For Records</h3>
-<pre class="codehilite"><code class="language-objc">// 1. Encode record
+<pre class="codehilite"><code class="language-objc">// 1. Create record
 NSDictionary *post = @{
     @&quot;text&quot;: @&quot;Hello!&quot;,
     @&quot;createdAt&quot;: @&quot;2025-01-15T10:30:00Z&quot;
 };
 
-NSData *cborData = [ATProtoCBORSerialization encodeRecord:post error:&amp;error];
-
-// 2. Hash
-NSData *hash = [CryptoUtils sha256:cborData];
-
-// 3. Create CID
-NSString *recordCid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
-
-// 4. Store record with CID
-[recordService putRecord:@&quot;app.bsky.feed.post&quot;
-                   rkey:@&quot;abc123&quot;
-                  value:post
-                 forDid:userDid
-               actorDid:userDid
-         validationMode:PDSValidationModeOptimistic
-                  error:&amp;error];
-</code></pre>
-
-<h3 id="for-blocks">For Blocks</h3>
-<pre class="codehilite"><code class="language-objc">// 1. Encode block (CBOR or JSON)
-NSData *blockData = [ATProtoCBORSerialization encodeObject:blockObject error:&amp;error];
-
-// 2. Hash
-NSData *hash = [CryptoUtils sha256:blockData];
-
-// 3. Create CID
-NSString *blockCid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
-
-// 4. Store block
-[blobService storeBlock:blockData forCID:blockCid];
-</code></pre>
-
-<h2 id="parsing-cids">Parsing CIDs</h2>
-<pre class="codehilite"><code class="language-objc">// 1. Parse CID
+// 2. Encode to DAG-CBOR
 NSError *error = nil;
-NSDictionary *cidInfo = [CID parseCID:@&quot;bafy2bzaced...&quot; error:&amp;error];
-
-if (cidInfo) {
-    NSString *version = cidInfo[@&quot;version&quot;];      // &quot;1&quot;
-    NSString *codec = cidInfo[@&quot;codec&quot;];          // &quot;dag-cbor&quot;
-    NSString *hashFunction = cidInfo[@&quot;hash&quot;];    // &quot;sha256&quot;
-    NSData *digest = cidInfo[@&quot;digest&quot;];          // hash bytes
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:post 
+                                                                error:&amp;error];
+if (!cborData) {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
+    return;
 }
+
+// 3. Hash with SHA-256
+NSData *hash = [CID sha256Digest:cborData];
+
+// 4. Create CID (0x71 = dag-cbor codec)
+CID *recordCid = [CID cidWithDigest:hash codec:0x71];
+
+// 5. Use CID for storage and retrieval
+NSString *cidString = recordCid.stringValue;  // &quot;bafy2bzaced...&quot;
 </code></pre>
 
-<h2 id="validation">Validation</h2>
-<h3 id="verifying-content">Verifying Content</h3>
-<pre class="codehilite"><code class="language-objc">// 1. Get content by CID
-NSData *content = [blobService getBlob:cidData forDid:userDid error:&amp;error];
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 35-50, 155-175, 280-295)</p>
+<h3 id="for-blocks">For Blocks</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Encode block to DAG-CBOR
+NSError *error = nil;
+NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:blockObject 
+                                                                 error:&amp;error];
+if (!blockData) {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
+    return;
+}
 
-// 2. Hash content
-NSData *hash = [CryptoUtils sha256:content];
+// 2. Hash with SHA-256
+NSData *hash = [CID sha256Digest:blockData];
 
-// 3. Parse CID to get expected hash
-NSDictionary *cidInfo = [CID parseCID:cidString error:&amp;error];
-NSData *expectedHash = cidInfo[@&quot;digest&quot;];
+// 3. Create CID
+CID *blockCid = [CID cidWithDigest:hash codec:0x71];
 
-// 4. Verify
-if ([hash isEqualToData:expectedHash]) {
-    // Content matches CID
+// 4. Create CAR block
+CARBlock *carBlock = [CARBlock blockWithCID:blockCid data:blockData];
+
+// 5. Add to CAR archive
+CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+[writer addBlock:carBlock];
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 35-50, 155-175, 280-295); <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 280-320)</p>
+<h2 id="parsing-cids">Parsing CIDs</h2>
+<h3 id="from-string">From String</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Parse CID from string (base32 encoded with 'b' prefix)
+NSError *error = nil;
+CID *cid = [CID cidFromString:@&quot;bafy2bzaced4ueelaegfs5fq4a3fvh2ijmmq7xjlmakivezbsxyhynaiksqq&quot;];
+
+if (cid) {
+    NSUInteger version = cid.version;           // 1
+    NSUInteger codec = cid.codec;               // 0x71 (dag-cbor)
+    NSData *multihash = cid.multihash;          // hash bytes
+    NSString *cidString = cid.stringValue;      // &quot;bafy2bzaced...&quot;
+
+    NSLog(@&quot;CID Version: %lu&quot;, (unsigned long)version);
+    NSLog(@&quot;CID Codec: 0x%lx&quot;, (unsigned long)codec);
+    NSLog(@&quot;CID String: %@&quot;, cidString);
 } else {
-    // Content corrupted or wrong
+    NSLog(@&quot;Failed to parse CID&quot;);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 65-85, 155-175)</p>
+<h3 id="from-bytes">From Bytes</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Parse CID from binary bytes
+NSData *cidBytes = /* ... */;
+CID *cidFromBytes = [CID cidFromBytes:cidBytes];
+
+if (cidFromBytes) {
+    // Access CID properties
+    NSData *binaryForm = cidFromBytes.bytes;
+    NSString *stringForm = cidFromBytes.stringValue;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 87-110, 155-175)</p>
+<h3 id="comparing-cids">Comparing CIDs</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Compare two CIDs
+CID *cid1 = [CID cidFromString:@&quot;bafy2bzaced...&quot;];
+CID *cid2 = [CID cidFromString:@&quot;bafy2bzaced...&quot;];
+
+if ([cid1 isEqualToCID:cid2]) {
+    NSLog(@&quot;CIDs match&quot;);
+} else {
+    NSLog(@&quot;CIDs differ&quot;);
+}
+
+// 2. Use in collections
+NSMutableSet *cidSet = [NSMutableSet set];
+[cidSet addObject:cid1];
+
+if ([cidSet containsObject:cid2]) {
+    NSLog(@&quot;CID found in set&quot;);
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 177-195)</p>
+<h2 id="validation">Validation</h2>
+<h3 id="verifying-content-integrity">Verifying Content Integrity</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Get content by CID
+NSError *error = nil;
+CID *cid = [CID cidFromString:cidString];
+if (!cid) {
+    NSLog(@&quot;Invalid CID&quot;);
+    return NO;
+}
+
+// 2. Retrieve content (from storage, network, etc.)
+NSData *content = [blobService getBlob:cid forDid:userDid error:&amp;error];
+if (!content) {
+    NSLog(@&quot;Failed to retrieve content: %@&quot;, error);
+    return NO;
+}
+
+// 3. Hash the retrieved content
+NSData *hash = [CID sha256Digest:content];
+
+// 4. Extract the digest from the CID's multihash
+// Multihash format: [hash-function-code][digest-length][digest]
+// For SHA-256: 0x12 (code) + 0x20 (32 bytes) + [32-byte digest]
+NSData *multihash = cid.multihash;
+if (multihash.length &lt; 34) {
+    NSLog(@&quot;Invalid multihash length&quot;);
+    return NO;
+}
+
+// Skip the first 2 bytes (hash code and length) to get the digest
+NSData *cidDigest = [multihash subdataWithRange:NSMakeRange(2, 32)];
+
+// 5. Verify the hashes match
+if ([hash isEqualToData:cidDigest]) {
+    NSLog(@&quot;Content verified!&quot;);
+    return YES;
+} else {
+    NSLog(@&quot;Content corrupted!&quot;);
+    return NO;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 280-295); <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 95-115)</p>
 <h2 id="cidv0-vs-cidv1">CIDv0 vs CIDv1</h2>
 <h3 id="cidv0-legacy">CIDv0 (Legacy)</h3>
 <pre class="codehilite"><code>Qm... (base58 encoded)
@@ -421,33 +529,57 @@ NSDictionary *post = @{
 };
 
 // 2. Encode and hash
-NSData *cborData = [ATProtoCBORSerialization encodeRecord:post error:&amp;error];
-NSData *hash = [CryptoUtils sha256:cborData];
-NSString *cid = [CID createCIDv1:hash codec:@&quot;dag-cbor&quot; error:&amp;error];
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:post 
+                                                                error:&amp;error];
+if (!cborData) {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
+    return;
+}
 
-// 3. Store record
-[recordService putRecord:@&quot;app.bsky.feed.post&quot;
-                   rkey:@&quot;abc123&quot;
-                  value:post
-                 forDid:userDid
-               actorDid:userDid
-         validationMode:PDSValidationModeOptimistic
-                  error:&amp;error];
+NSData *hash = [CID sha256Digest:cborData];
+CID *cid = [CID cidWithDigest:hash codec:0x71];
+
+// 3. Store record (service layer handles persistence)
+// The CID is used as the record's content address
+NSString *cidString = cid.stringValue;
 
 // 4. Return CID to client
-response[@&quot;uri&quot;] = [NSString stringWithFormat:@&quot;at://%@/app.bsky.feed.post/abc123&quot;, userDid];
-response[@&quot;cid&quot;] = cid;
+NSDictionary *response = @{
+    @&quot;uri&quot;: [NSString stringWithFormat:@&quot;at://%@/app.bsky.feed.post/abc123&quot;, userDid],
+    @&quot;cid&quot;: cidString
+};
 </code></pre>
 
-<h3 id="verifying-content-integrity">Verifying Content Integrity</h3>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 35-50, 155-175, 280-295)</p>
+<h3 id="verifying-content-integrity_1">Verifying Content Integrity</h3>
 <pre class="codehilite"><code class="language-objc">// 1. Get content
 NSData *content = [blobService getBlob:cidData forDid:userDid error:&amp;error];
+if (!content) {
+    NSLog(@&quot;Failed to retrieve content: %@&quot;, error);
+    return NO;
+}
 
 // 2. Verify CID
-NSData *hash = [CryptoUtils sha256:content];
-NSDictionary *cidInfo = [CID parseCID:cidString error:&amp;error];
+NSData *hash = [CID sha256Digest:content];
+CID *cid = [CID cidFromString:cidString];
 
-if (![hash isEqualToData:cidInfo[@&quot;digest&quot;]]) {
+if (!cid) {
+    NSLog(@&quot;Invalid CID&quot;);
+    return NO;
+}
+
+// 3. Extract digest from multihash
+NSData *multihash = cid.multihash;
+if (multihash.length &lt; 34) {
+    NSLog(@&quot;Invalid multihash&quot;);
+    return NO;
+}
+
+NSData *cidDigest = [multihash subdataWithRange:NSMakeRange(2, 32)];
+
+// 4. Compare hashes
+if (![hash isEqualToData:cidDigest]) {
     NSLog(@&quot;Content corrupted!&quot;);
     return NO;
 }
@@ -455,6 +587,7 @@ if (![hash isEqualToData:cidInfo[@&quot;digest&quot;]]) {
 return YES;
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 280-295); <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 95-115)</p>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="./cbor-serialization.md">CBOR Serialization</a></li>
@@ -462,7 +595,7 @@ return YES;
 <li><a href="./blob-storage.md">Blob Storage</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

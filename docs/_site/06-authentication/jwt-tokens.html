@@ -262,122 +262,231 @@
 
 <h2 id="token-generation">Token Generation</h2>
 <h3 id="creating-access-tokens">Creating Access Tokens</h3>
-<pre class="codehilite"><code class="language-objc">// In JWTMinter.m
-- (NSString *)mintAccessToken:(NSString *)userDID 
-                       scope:(NSString *)scope
-                  expiresIn:(NSTimeInterval)expiresIn
-                       error:(NSError **)error {
-    // 1. Create header
-    NSDictionary *header = @{
-        @&quot;alg&quot;: @&quot;ES256&quot;,
-        @&quot;typ&quot;: @&quot;JWT&quot;
-    };
+<p>The <code>JWTMinter</code> class handles token generation with proper signing and encoding:</p>
+<pre class="codehilite"><code class="language-objc">// In JWTMinter.m (ATProtoPDS/Sources/Auth/JWT.m)
+- (JWT *)mintAccessTokenForDID:(NSString *)did
+                        handle:(NSString *)handle
+                        scopes:(NSArray&lt;NSString *&gt; *)scopes
+             dpopKeyThumbprint:(nullable NSString *)jkt
+                           error:(NSError **)error {
+    // 1. Create payload with standard claims
+    JWTPayload *payload = [[JWTPayload alloc] init];
+    payload.iss = self.issuer;
+    payload.sub = did;
+    payload.aud = self.audience;
+    payload.did = did;
+    payload.handle = handle;
+    payload.scope = [scopes componentsJoinedByString:@&quot; &quot;];
+    payload.iat = [NSDate date];
+    payload.exp = [NSDate dateWithTimeIntervalSinceNow:self.defaultExpiration];
+    payload.jti = [[NSUUID UUID] UUIDString];
 
-    // 2. Create payload
-    NSDate *now = [NSDate date];
-    NSDictionary *payload = @{
-        @&quot;iss&quot;: self.issuerDID,
-        @&quot;sub&quot;: userDID,
-        @&quot;iat&quot;: @((long)[now timeIntervalSince1970]),
-        @&quot;exp&quot;: @((long)([now timeIntervalSince1970] + expiresIn)),
-        @&quot;scope&quot;: scope
-    };
+    // 2. Add DPoP key thumbprint if provided (for DPoP binding)
+    if (jkt) {
+        payload.cnf = @{@&quot;jkt&quot;: jkt};
+    }
 
-    // 3. Encode header and payload
-    NSData *headerData = [ATProtoCBORSerialization encodeObject:header error:error];
-    NSData *payloadData = [ATProtoCBORSerialization encodeObject:payload error:error];
+    // 3. Create header with algorithm and key ID
+    JWTHeader *header = [[JWTHeader alloc] init];
+    header.alg = self.signingAlgorithm;
+    header.typ = @&quot;at+jwt&quot;;
 
-    NSString *headerB64 = [self base64urlEncode:headerData];
-    NSString *payloadB64 = [self base64urlEncode:payloadData];
+    // 4. Sign the payload using configured key manager
+    NSData *signatureData = [self signData:[NSString stringWithFormat:@&quot;%@.%@&quot;, 
+        [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] 
+            options:0 error:error] error:error] ?: @&quot;&quot;, 
+        [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] 
+            options:0 error:error] error:error] ?: @&quot;&quot;] error:error];
+    NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
 
-    // 4. Create signature
-    NSString *message = [NSString stringWithFormat:@&quot;%@.%@&quot;, headerB64, payloadB64];
-    NSData *messageData = [message dataUsingEncoding:NSUTF8StringEncoding];
-
-    NSData *signature = [self signData:messageData withKey:self.signingKey];
-    NSString *signatureB64 = [self base64urlEncode:signature];
-
-    // 5. Combine into JWT
-    NSString *jwt = [NSString stringWithFormat:@&quot;%@.%@.%@&quot;, headerB64, payloadB64, signatureB64];
-
-    return jwt;
+    // 5. Return complete JWT
+    return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/JWT.m</code> lines 280-310</p>
 <h3 id="creating-refresh-tokens">Creating Refresh Tokens</h3>
-<pre class="codehilite"><code class="language-objc">// In JWTMinter.m
-- (NSString *)mintRefreshToken:(NSString *)userDID 
-                        error:(NSError **)error {
-    return [self mintAccessToken:userDID 
-                          scope:@&quot;atproto_refresh&quot;
-                     expiresIn:30 * 24 * 60 * 60  // 30 days
-                         error:error];
+<p>Refresh tokens have longer expiration (30 days) and are used to obtain new access tokens:</p>
+<pre class="codehilite"><code class="language-objc">// In JWTMinter.m (ATProtoPDS/Sources/Auth/JWT.m)
+- (JWT *)mintRefreshTokenForDID:(NSString *)did
+                         handle:(NSString *)handle
+                         scopes:(NSArray&lt;NSString *&gt; *)scopes
+                           error:(NSError **)error {
+    // 1. Create payload with refresh token claims
+    JWTPayload *payload = [[JWTPayload alloc] init];
+    payload.iss = self.issuer;
+    payload.sub = did;
+    payload.aud = self.audience;
+    payload.did = did;
+    payload.handle = handle;
+    payload.scope = [scopes componentsJoinedByString:@&quot; &quot;];
+    payload.iat = [NSDate date];
+    payload.exp = [NSDate dateWithTimeIntervalSinceNow:86400 * 30];  // 30 days
+    payload.jti = [[NSUUID UUID] UUIDString];
+
+    // 2. Create header
+    JWTHeader *header = [[JWTHeader alloc] init];
+    header.alg = self.signingAlgorithm;
+    header.typ = @&quot;refresh+jwt&quot;;
+
+    // 3. Sign and return
+    NSData *signatureData = [self signData:[NSString stringWithFormat:@&quot;%@.%@&quot;, 
+        [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] 
+            options:0 error:error] error:error] ?: @&quot;&quot;, 
+        [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] 
+            options:0 error:error] error:error] ?: @&quot;&quot;] error:error];
+    NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
+
+    return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/JWT.m</code> lines 312-335</p>
 <h2 id="token-verification">Token Verification</h2>
 <h3 id="verifying-access-tokens">Verifying Access Tokens</h3>
-<pre class="codehilite"><code class="language-objc">// In JWTVerifier.m
-- (NSDictionary *)verifyAccessToken:(NSString *)token 
-                              error:(NSError **)error {
-    // 1. Verify JWT structure and signature
-    NSDictionary *payload = [self verifyJWT:token error:error];
-    if (!payload) return nil;
-
-    // 2. Verify scope
-    NSString *scope = payload[@&quot;scope&quot;];
-    if (![scope isEqualToString:@&quot;atproto_repo&quot;]) {
-        *error = [NSError errorWithDomain:@&quot;JWT&quot; code:1 
-            userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid scope&quot;}];
-        return nil;
+<p>The <code>JWTVerifier</code> class validates JWT structure, signature, and claims:</p>
+<pre class="codehilite"><code class="language-objc">// In JWTVerifier.m (ATProtoPDS/Sources/Auth/JWT.m)
+- (BOOL)verifyJWT:(JWT *)jwt error:(NSError **)error {
+    // 1. Check algorithm is allowed
+    if (self.allowedAlgorithms &amp;&amp; ![self.allowedAlgorithms containsObject:jwt.header.alg ?: @&quot;&quot;]) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidAlgorithm
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Algorithm not allowed&quot;}];
+        }
+        return NO;
     }
 
-    // 3. Verify expiration
-    NSNumber *exp = payload[@&quot;exp&quot;];
-    if ([exp longValue] &lt; [[NSDate date] timeIntervalSince1970]) {
-        *error = [NSError errorWithDomain:@&quot;JWT&quot; code:2 
-            userInfo:@{NSLocalizedDescriptionKey: @&quot;Token expired&quot;}];
-        return nil;
+    // 2. Prepare data for signature verification
+    NSData *signingInputData = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
+    if (!signatureData) return NO;
+
+    // 3. Verify signature based on algorithm
+    BOOL verified = NO;
+    NSString *alg = jwt.header.alg ?: @&quot;&quot;;
+    if ([alg isEqualToString:@&quot;ES256K&quot;]) {
+        // ES256K (secp256k1) signature verification
+        if (self.publicKey) {
+            Secp256k1 *secp = [Secp256k1 shared];
+            unsigned char hash[32];
+            CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+            NSData *hashData = [NSData dataWithBytes:hash length:32];
+            verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:self.publicKey error:error];
+        } else if (self.keyManager) {
+            NSString *kid = jwt.header.kid;
+            if (kid) {
+                verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
+            } else {
+                // Legacy path: use active key if no kid specified
+                id&lt;PDSKeyPair&gt; active = [self.keyManager getActiveKeyPair:error];
+                if (active) {
+                    verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:active.keyID error:error];
+                }
+            }
+        }
+    } else {
+        // Other algorithms (ES256, etc.) require key manager with kid
+        if (!self.keyManager) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorNoPublicKey
+                                         userInfo:@{NSLocalizedDescriptionKey: @&quot;No key manager configured&quot;}];
+            }
+            return NO;
+        }
+        NSString *kid = jwt.header.kid;
+        if (!kid) {
+            if (error) {
+                *error = [NSError errorWithDomain:JWTErrorDomain
+                                             code:JWTErrorInvalidHeader
+                                         userInfo:@{NSLocalizedDescriptionKey: @&quot;Missing 'kid' in header&quot;}];
+            }
+            return NO;
+        }
+        verified = [self.keyManager verifySignature:signatureData forData:signingInputData withKeyID:kid error:error];
     }
 
-    return payload;
-}
-
-- (NSDictionary *)verifyJWT:(NSString *)token error:(NSError **)error {
-    // 1. Split token into parts
-    NSArray *parts = [token componentsSeparatedByString:@&quot;.&quot;];
-    if (parts.count != 3) {
-        *error = [NSError errorWithDomain:@&quot;JWT&quot; code:1 
-            userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid token format&quot;}];
-        return nil;
+    if (!verified) {
+        if (error &amp;&amp; !*error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidSignature
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid JWT signature&quot;}];
+        }
+        return NO;
     }
 
-    NSString *headerB64 = parts[0];
-    NSString *payloadB64 = parts[1];
-    NSString *signatureB64 = parts[2];
-
-    // 2. Decode and verify signature
-    NSData *headerData = [self base64urlDecode:headerB64];
-    NSData *payloadData = [self base64urlDecode:payloadB64];
-    NSData *signature = [self base64urlDecode:signatureB64];
-
-    NSString *message = [NSString stringWithFormat:@&quot;%@.%@&quot;, headerB64, payloadB64];
-    NSData *messageData = [message dataUsingEncoding:NSUTF8StringEncoding];
-
-    if (![self verifySignature:signature forData:messageData withKey:self.publicKey]) {
-        *error = [NSError errorWithDomain:@&quot;JWT&quot; code:2 
-            userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid signature&quot;}];
-        return nil;
+    // 4. Validate claims (expiration, issuer, audience, etc.)
+    if (![self validateClaims:jwt.payload ofJWT:jwt error:error]) {
+        return NO;
     }
 
-    // 3. Decode payload
-    NSDictionary *payload = [ATProtoCBORSerialization decodeData:payloadData error:error];
-    if (!payload) return nil;
-
-    return payload;
+    return YES;
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/JWT.m</code> lines 150-220</p>
+<h3 id="validating-claims">Validating Claims</h3>
+<p>Claims validation ensures the token is still valid and meets requirements:</p>
+<pre class="codehilite"><code class="language-objc">// In JWTVerifier.m (ATProtoPDS/Sources/Auth/JWT.m)
+- (BOOL)validateClaims:(JWTPayload *)payload ofJWT:(JWT *)jwt error:(NSError **)error {
+    NSDate *now = [NSDate date];
+
+    // 1. Check expiration
+    if (payload.exp &amp;&amp; [payload.exp compare:now] == NSOrderedAscending) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorTokenExpired
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Token has expired&quot;}];
+        }
+        return NO;
+    }
+
+    // 2. Check not-before time
+    if (payload.nbf &amp;&amp; [payload.nbf compare:now] == NSOrderedDescending) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorTokenNotYetValid
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Token is not yet valid&quot;}];
+        }
+        return NO;
+    }
+
+    // 3. Verify issuer
+    if (self.expectedIssuer &amp;&amp; payload.iss &amp;&amp; ![payload.iss isEqualToString:self.expectedIssuer]) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidIssuer
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid issuer&quot;}];
+        }
+        return NO;
+    }
+
+    // 4. Verify audience
+    if (self.expectedAudience &amp;&amp; payload.aud &amp;&amp; ![payload.aud isEqualToString:self.expectedAudience]) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorInvalidAudience
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid audience&quot;}];
+        }
+        return NO;
+    }
+
+    // 5. Verify subject is present
+    if (!payload.sub &amp;&amp; !payload.did &amp;&amp; !self.allowMissingSubject) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorMissingRequiredClaim
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Missing subject claim&quot;}];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Auth/JWT.m</code> lines 222-270</p>
 <h2 id="token-refresh-flow">Token Refresh Flow</h2>
 <h3 id="refreshing-access-tokens">Refreshing Access Tokens</h3>
 <pre class="codehilite"><code class="language-objc">// In PDSAccountService.m
@@ -525,14 +634,16 @@
 <li><strong>Rotation</strong> — Rotate signing keys periodically</li>
 <li><strong>Validation</strong> — Always validate tokens before use</li>
 </ol>
-<h2 id="next-steps">Next Steps</h2>
-<ul>
-<li><strong><a href="./oauth2-dpop.md">OAuth 2.0 with DPoP</a></strong> — OAuth implementation</li>
-<li><strong><a href="./key-rotation.md">Key Rotation</a></strong> — Key management</li>
-<li><strong><a href="../04-network-layer/auth-helpers.md">Authentication Helpers</a></strong> — Auth verification</li>
-</ul>
+<h2 id="see-also">See Also</h2>
+<p><strong>Basic Topics:</strong>
+- <a href="./oauth2-dpop.md">OAuth 2.0 with DPoP</a> — OAuth implementation
+- <a href="./key-rotation.md">Key Rotation</a> — Key management
+- <a href="../04-network-layer/auth-helpers.md">Authentication Helpers</a> — Auth verification</p>
+<p><strong>Advanced Topics:</strong>
+- <a href="./secrets-management.md">Secrets Management</a> — Key storage and rotation
+- <a href="./security-best-practices.md">Security Best Practices</a> — Defense in depth</p>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

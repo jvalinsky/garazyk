@@ -242,6 +242,8 @@
 <li><a href="02-core-concepts/cbor-and-car.md">CBOR and CAR</a></li>
 <li><a href="02-core-concepts/mst-trees.md">Merkle Search Trees</a></li>
 <li><a href="02-core-concepts/cryptography.md">Cryptography</a></li>
+<li><a href="02-core-concepts/plc-directory.md">PLC Directory</a></li>
+<li><a href="02-core-concepts/did-document-updates.md">DID Document Updates</a></li>
 </ul>
 <h3 id="03-application-layer">03 Application Layer</h3>
 <ul>
@@ -262,6 +264,10 @@
 <li><a href="04-network-layer/domain-methods.md">Domain Methods</a></li>
 <li><a href="04-network-layer/auth-helpers.md">Auth Helpers</a></li>
 <li><a href="04-network-layer/error-handling.md">Error Handling</a></li>
+<li><a href="04-network-layer/input-validation.md">Input Validation</a></li>
+<li><a href="04-network-layer/rate-limiting.md">Rate Limiting</a></li>
+<li><a href="04-network-layer/dos-protection.md">DoS Protection</a></li>
+<li><a href="04-network-layer/request-throttling.md">Request Throttling</a></li>
 </ul>
 <h3 id="05-database-layer">05 Database Layer</h3>
 <ul>
@@ -270,6 +276,10 @@
 <li><a href="05-database-layer/actor-databases.md">Actor Databases</a></li>
 <li><a href="05-database-layer/migrations.md">Migrations</a></li>
 <li><a href="05-database-layer/wal-mode.md">WAL Mode</a></li>
+<li><a href="05-database-layer/migration-strategy.md">Migration Strategy</a></li>
+<li><a href="05-database-layer/migration-rollback.md">Migration Rollback</a></li>
+<li><a href="05-database-layer/data-integrity.md">Data Integrity</a></li>
+<li><a href="05-database-layer/zero-downtime-migrations.md">Zero-Downtime Migrations</a></li>
 </ul>
 <h3 id="06-authentication">06 Authentication</h3>
 <ul>
@@ -277,6 +287,8 @@
 <li><a href="06-authentication/oauth2-dpop.md">OAuth 2.0 with DPoP</a></li>
 <li><a href="06-authentication/key-rotation.md">Key Rotation</a></li>
 <li><a href="06-authentication/totp-webauthn.md">TOTP and WebAuthn</a></li>
+<li><a href="06-authentication/secrets-management.md">Secrets Management</a></li>
+<li><a href="06-authentication/security-best-practices.md">Security Best Practices</a></li>
 </ul>
 <h3 id="07-repository-protocol">07 Repository &amp; Protocol</h3>
 <ul>
@@ -285,6 +297,10 @@
 <li><a href="07-repository-protocol/car-format.md">CAR Format</a></li>
 <li><a href="07-repository-protocol/cid-and-hashing.md">CID and Hashing</a></li>
 <li><a href="07-repository-protocol/blob-storage.md">Blob Storage</a></li>
+<li><a href="07-repository-protocol/blob-lifecycle.md">Blob Lifecycle</a></li>
+<li><a href="07-repository-protocol/blob-optimization.md">Blob Optimization</a></li>
+<li><a href="07-repository-protocol/blob-garbage-collection.md">Blob Garbage Collection</a></li>
+<li><a href="07-repository-protocol/blob-quotas.md">Blob Quotas</a></li>
 </ul>
 <h3 id="08-sync-firehose">08 Sync &amp; Firehose</h3>
 <ul>
@@ -292,6 +308,7 @@
 <li><a href="08-sync-firehose/websocket-server.md">WebSocket Server</a></li>
 <li><a href="08-sync-firehose/commit-broadcasting.md">Commit Broadcasting</a></li>
 <li><a href="08-sync-firehose/backpressure.md">Backpressure</a></li>
+<li><a href="08-sync-firehose/firehose-rate-limiting.md">Firehose Rate Limiting</a></li>
 </ul>
 <h3 id="09-platform-compatibility">09 Platform Compatibility</h3>
 <ul>
@@ -303,6 +320,11 @@
 <h3 id="10-tutorials">10 Tutorials</h3>
 <ul>
 <li><a href="10-tutorials/tutorial-1-hello-pds.md">Tutorial 1: Hello PDS</a></li>
+<li><a href="10-tutorials/tutorial-2-accounts.md">Tutorial 2: Accounts</a></li>
+<li><a href="10-tutorials/tutorial-3-records.md">Tutorial 3: Records</a></li>
+<li><a href="10-tutorials/tutorial-4-auth.md">Tutorial 4: Authentication</a></li>
+<li><a href="10-tutorials/tutorial-5-firehose.md">Tutorial 5: Firehose</a></li>
+<li><a href="10-tutorials/tutorial-6-deployment.md">Tutorial 6: Deployment</a></li>
 </ul>
 <h3 id="11-reference">11 Reference</h3>
 <ul>
@@ -310,20 +332,36 @@
 <li><a href="11-reference/config-reference.md">Config Reference</a></li>
 <li><a href="11-reference/cli-reference.md">CLI Reference</a></li>
 <li><a href="11-reference/troubleshooting.md">Troubleshooting</a></li>
+<li><a href="11-reference/metrics-collection.md">Metrics Collection</a></li>
+<li><a href="11-reference/logging-strategy.md">Logging Strategy</a></li>
+<li><a href="11-reference/performance-monitoring.md">Performance Monitoring</a></li>
+<li><a href="11-reference/alerting.md">Alerting</a></li>
+<li><a href="11-reference/security-audit-guide.md">Security Audit Guide</a></li>
+<li><a href="11-reference/plc-server-operations.md">PLC Server Operations</a></li>
+<li><a href="11-reference/plc-failover.md">PLC Failover</a></li>
 </ul>
 <h3 id="12-diagrams">12 Diagrams</h3>
 <ul>
 <li><a href="12-diagrams/system-architecture.svg">System Architecture</a></li>
 <li><a href="12-diagrams/request-flow.svg">Request Flow</a></li>
 <li><a href="12-diagrams/database-schema.svg">Database Schema</a></li>
-<li><a href="12-diagrams/auth-flow.svg">Auth Flow</a></li>
-<li><a href="12-diagrams/firehose-flow.svg">Firehose Flow</a></li>
+<li><a href="12-diagrams/jwt-token-flow.svg">JWT Token Flow</a></li>
+<li><a href="12-diagrams/oauth2-dpop-flow.svg">OAuth 2.0 with DPoP Flow</a></li>
+<li><a href="12-diagrams/commit-broadcasting-flow.svg">Commit Broadcasting Flow</a></li>
+<li><a href="12-diagrams/websocket-upgrade-flow.svg">WebSocket Upgrade Flow</a></li>
+<li><a href="12-diagrams/rate-limiting-algorithm.svg">Rate Limiting Algorithm</a></li>
+<li><a href="12-diagrams/request-throttling-flow.svg">Request Throttling Flow</a></li>
+<li><a href="12-diagrams/dos-mitigation-architecture.svg">DoS Mitigation Architecture</a></li>
+<li><a href="12-diagrams/secrets-management-flow.svg">Secrets Management Flow</a></li>
+<li><a href="12-diagrams/plc-directory-architecture.svg">PLC Directory Architecture</a></li>
+<li><a href="12-diagrams/did-resolution-flow.svg">DID Resolution Flow</a></li>
+<li><a href="12-diagrams/plc-failover-mechanism.svg">PLC Failover Mechanism</a></li>
 </ul>
 <hr />
 <h2 id="glossary">Glossary</h2>
 <p>See <a href="GLOSSARY.md">GLOSSARY.md</a> for terminology definitions.</p>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

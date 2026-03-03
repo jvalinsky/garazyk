@@ -283,26 +283,200 @@ CREATE INDEX idx_ipld_blocks_cid ON ipld_blocks(cid);
 </code></pre>
 
 <h2 id="database-pool">Database Pool</h2>
-<p>The <code>PDSDatabasePool</code> manages multiple actor databases with LRU caching:</p>
-<pre class="codehilite"><code class="language-objc">@interface PDSDatabasePool : NSObject
+<p>The <code>PDSDatabasePool</code> manages multiple actor databases with LRU caching and automatic eviction.</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Database/Pool/DatabasePool.m</code></p>
+<h3 id="pool-initialization">Pool Initialization</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 18-40: Initialize pool with directory and max size
+- (instancetype)initWithDbDirectory:(NSString *)dbDirectory maxSize:(NSUInteger)maxSize {
+    self = [super init];
+    if (self) {
+        _dbDirectory = [dbDirectory copy];
+        _maxSize = maxSize;
+        _stores = [NSMutableDictionary dictionary];
+        _lastAccessTime = [NSMutableDictionary dictionary];
+        _poolQueue = dispatch_queue_create(&quot;com.atproto.pds.databasepool&quot;, DISPATCH_QUEUE_SERIAL);
+        _evictionQueue = dispatch_queue_create(&quot;com.atproto.pds.databasepool.eviction&quot;, DISPATCH_QUEUE_SERIAL);
+        _openFileHandleCount = 0;
 
-// Initialization
-- (instancetype)initWithDatabaseDirectory:(NSString *)directory;
+        NSFileManager *fm = [NSFileManager defaultManager];
+        if (![fm fileExistsAtPath:dbDirectory]) {
+            NSError *error = nil;
+            [fm createDirectoryAtPath:dbDirectory withIntermediateDirectories:YES attributes:nil error:&amp;error];
+            if (error) {
+                PDS_LOG_DB_ERROR(@&quot;Failed to create database directory: %@ (error: %@)&quot;, dbDirectory, error);
+            }
+        }
 
-// Database access
-- (nullable PDSActorDatabase *)databaseForDid:(NSString *)did error:(NSError **)error;
+        _evictionTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
+                                                          target:self
+                                                        selector:@selector(evictionTimerFired:)
+                                                        userInfo:nil
+                                                         repeats:YES];
+    }
+    return self;
+}
+</code></pre>
 
-// Batch operations
-- (BOOL)executeForDid:(NSString *)did
-             block:(BOOL (^)(PDSActorDatabase *db, NSError **error))block
-             error:(NSError **)error;
+<h3 id="did-based-database-path-sharding">DID-Based Database Path Sharding</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 50-80: Shard databases by DID method and prefix
+- (NSString *)dbPathForDid:(NSString *)did {
+    if ([did isEqualToString:@&quot;__service__&quot;]) {
+        return [self.dbDirectory stringByAppendingPathComponent:@&quot;service.db&quot;];
+    }
 
-// Pool management
-- (void)evictDatabase:(NSString *)did;
-- (void)evictAllDatabases;
-- (NSUInteger)currentPoolSize;
+    // Shard by DID method and 2-char prefix of the method-specific identifier:
+    // did:plc:z72i7h... → {dbDir}/plc/z7/did:plc:z72i7h...
+    NSString *method = nil;
+    NSString *identifier = nil;
+    NSRange firstColon = [did rangeOfString:@&quot;:&quot;];
+    if (firstColon.location != NSNotFound) {
+        NSRange rest = NSMakeRange(firstColon.location + 1, did.length - firstColon.location - 1);
+        NSRange secondColon = [did rangeOfString:@&quot;:&quot; options:0 range:rest];
+        if (secondColon.location != NSNotFound) {
+            method = [did substringWithRange:NSMakeRange(firstColon.location + 1,
+                                                         secondColon.location - firstColon.location - 1)];
+            identifier = [did substringFromIndex:secondColon.location + 1];
+        }
+    }
 
-@end
+    NSString *prefixDir;
+    if (method.length &gt; 0 &amp;&amp; identifier.length &gt; 0) {
+        NSString *prefix = [identifier substringToIndex:MIN(2, identifier.length)];
+        NSString *methodDir = [self.dbDirectory stringByAppendingPathComponent:method];
+        prefixDir = [methodDir stringByAppendingPathComponent:prefix];
+    } else {
+        NSString *prefix = [did substringToIndex:MIN(2, did.length)];
+        prefixDir = [self.dbDirectory stringByAppendingPathComponent:prefix];
+    }
+
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm fileExistsAtPath:prefixDir]) {
+        [fm createDirectoryAtPath:prefixDir withIntermediateDirectories:YES attributes:nil error:nil];
+    }
+
+    return [prefixDir stringByAppendingPathComponent:did];
+}
+</code></pre>
+
+<h3 id="store-retrieval-with-lru-caching">Store Retrieval with LRU Caching</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 82-115: Get or create store with LRU eviction
+- (nullable PDSActorStore *)storeForDid:(NSString *)did error:(NSError **)error {
+    __block PDSActorStore *store = nil;
+    __block NSError *blockError = nil;
+    __block NSString *dbPath = nil;
+
+    dispatch_sync(self.poolQueue, ^{
+        store = self.stores[did];
+
+        if (store) {
+            self.lastAccessTime[did] = [NSDate date];
+            return;
+        }
+
+        if (self.stores.count &gt;= self.maxSize) {
+            [self evictLRUStore];
+        }
+
+        dbPath = [self dbPathForDid:did];
+        PDS_LOG_DB_DEBUG(@&quot;Opening store at path: %@ (exists: %d)&quot;, dbPath,
+                         [[NSFileManager defaultManager] fileExistsAtPath:dbPath]);
+
+        store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&amp;blockError];
+
+        if (store) {
+            self.stores[did] = store;
+            self.lastAccessTime[did] = [NSDate date];
+            self.openFileHandleCount++;
+        } else {
+            PDS_LOG_DB_ERROR(@&quot;Failed to open store for %@: %@&quot;, did, blockError);
+        }
+    });
+
+    if (error &amp;&amp; blockError) {
+        *error = blockError;
+    }
+
+    return store;
+}
+</code></pre>
+
+<h3 id="lru-eviction">LRU Eviction</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 130-145: Evict least recently used store
+- (void)evictLRUStore {
+    if (self.lastAccessTime.count == 0) {
+        return;
+    }
+
+    NSString *lruDid = nil;
+    NSDate *lruTime = [NSDate distantFuture];
+
+    for (NSString *did in self.lastAccessTime) {
+        NSDate *accessTime = self.lastAccessTime[did];
+        if ([accessTime compare:lruTime] == NSOrderedAscending) {
+            lruTime = accessTime;
+            lruDid = did;
+        }
+    }
+
+    if (lruDid) {
+        [self evictStoreForDidInternal:lruDid];
+    }
+}
+</code></pre>
+
+<h3 id="transaction-support">Transaction Support</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 165-180: Execute transaction on actor store
+- (void)transactWithDid:(NSString *)did 
+                  block:(void (^)(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **error))block 
+                  error:(NSError **)error {
+    PDSActorStore *store = [self storeForDid:did error:error];
+    if (!store) {
+        return;
+    }
+
+    [store transactWithBlock:block error:error];
+}
+
+- (void)readWithDid:(NSString *)did 
+              block:(void (^)(id&lt;PDSActorStoreReader&gt; reader, NSError **error))block 
+              error:(NSError **)error {
+    PDSActorStore *store = [self storeForDid:did error:error];
+    if (!store) {
+        return;
+    }
+
+    [store readWithBlock:block error:error];
+}
+</code></pre>
+
+<h3 id="pool-metrics">Pool Metrics</h3>
+<pre class="codehilite"><code class="language-objc">// Lines 210-235: Collect pool metrics for monitoring
+- (NSDictionary&lt;NSString *, id&gt; *)collectMetrics {
+    __block NSDictionary *metrics = nil;
+
+    dispatch_sync(self.poolQueue, ^{
+        NSMutableDictionary *m = [NSMutableDictionary dictionary];
+        m[@&quot;max_size&quot;] = @(self.maxSize);
+        m[@&quot;current_size&quot;] = @(self.stores.count);
+        m[@&quot;open_file_handles&quot;] = @(self.openFileHandleCount);
+
+        NSMutableDictionary *stores = [NSMutableDictionary dictionary];
+        for (NSString *did in self.stores) {
+            PDSActorStore *store = self.stores[did];
+            NSDate *lastAccess = self.lastAccessTime[did];
+            stores[did] = @{
+                @&quot;is_open&quot;: @(store.isOpen),
+                @&quot;db_path&quot;: store.dbPath ?: @&quot;&quot;,
+                @&quot;last_access&quot;: lastAccess ?: [NSDate distantPast]
+            };
+        }
+        m[@&quot;stores&quot;] = stores;
+
+        metrics = [m copy];
+    });
+
+    return metrics;
+}
 </code></pre>
 
 <h2 id="pdsactordatabase-class">PDSActorDatabase Class</h2>
@@ -644,7 +818,7 @@ NSArray *records = [databasePool executeForDid:userDid
 <li><a href="./sqlite-architecture.md">SQLite Architecture</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

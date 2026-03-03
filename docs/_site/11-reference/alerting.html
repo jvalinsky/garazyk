@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerting - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Alerting</h1>
+            </div>
+            <h1 id="alerting">Alerting</h1>
+<p>This guide covers alerting strategies for September PDS, including alert rules, thresholds, notification channels, and best practices for production monitoring.</p>
+<h2 id="overview">Overview</h2>
+<p>Effective alerting helps you:</p>
+<ul>
+<li><strong>Detect issues early</strong>: Catch problems before users notice</li>
+<li><strong>Reduce downtime</strong>: Respond quickly to incidents</li>
+<li><strong>Track SLOs</strong>: Monitor service level objectives</li>
+<li><strong>Prevent outages</strong>: Identify trends before they become critical</li>
+<li><strong>On-call efficiency</strong>: Alert on actionable issues only</li>
+</ul>
+<h2 id="alerting-philosophy">Alerting Philosophy</h2>
+<h3 id="alert-on-symptoms-not-causes">Alert on Symptoms, Not Causes</h3>
+<p><strong>Good</strong>: "API error rate &gt; 5%" (user-facing symptom)<br />
+<strong>Bad</strong>: "Database connection pool exhausted" (internal cause)</p>
+<p>Users care about symptoms. Root cause analysis happens during incident response.</p>
+<h3 id="actionable-alerts-only">Actionable Alerts Only</h3>
+<p>Every alert should require human action. If an alert doesn't need immediate response, it's not an alert—it's a dashboard metric.</p>
+<p><strong>Questions to ask</strong>:
+- Does this require immediate action?
+- Can this wait until business hours?
+- Is this already covered by another alert?</p>
+<h3 id="avoid-alert-fatigue">Avoid Alert Fatigue</h3>
+<p>Too many alerts → ignored alerts → missed incidents</p>
+<p><strong>Strategies</strong>:
+- Set appropriate thresholds
+- Use alert aggregation
+- Implement alert suppression during maintenance
+- Review and tune alerts regularly</p>
+<h2 id="alert-categories">Alert Categories</h2>
+<h3 id="critical-alerts-page-immediately">Critical Alerts (Page Immediately)</h3>
+<p>Issues requiring immediate response:</p>
+<ul>
+<li><strong>Service down</strong>: Server not responding</li>
+<li><strong>High error rate</strong>: &gt; 5% of requests failing</li>
+<li><strong>Data loss risk</strong>: Database corruption, backup failures</li>
+<li><strong>Security breach</strong>: Unauthorized access attempts</li>
+<li><strong>Resource exhaustion</strong>: Disk full, memory exhausted</li>
+</ul>
+<h3 id="warning-alerts-notify-dont-page">Warning Alerts (Notify, Don't Page)</h3>
+<p>Issues requiring attention but not immediate:</p>
+<ul>
+<li><strong>Elevated error rate</strong>: 1-5% of requests failing</li>
+<li><strong>Performance degradation</strong>: P95 latency &gt; 2x baseline</li>
+<li><strong>Resource pressure</strong>: Disk &gt; 80% full</li>
+<li><strong>Certificate expiration</strong>: SSL cert expires in &lt; 7 days</li>
+<li><strong>Backup delays</strong>: Last backup &gt; 24 hours old</li>
+</ul>
+<h3 id="informational-alerts-log-only">Informational Alerts (Log Only)</h3>
+<p>Noteworthy events that don't require action:</p>
+<ul>
+<li><strong>Deployment completed</strong>: New version deployed</li>
+<li><strong>Scheduled maintenance</strong>: Planned downtime</li>
+<li><strong>Configuration changes</strong>: Config updated</li>
+<li><strong>Capacity changes</strong>: Scaled up/down</li>
+</ul>
+<h2 id="prometheus-alert-rules">Prometheus Alert Rules</h2>
+<p>September PDS exports metrics in Prometheus format. Configure alerts in Prometheus:</p>
+<h3 id="service-availability">Service Availability</h3>
+<pre class="codehilite"><code class="language-yaml">groups:
+  - name: pds_availability
+    interval: 30s
+    rules:
+      - alert: PDSDown
+        expr: up{job=&quot;september-pds&quot;} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: &quot;PDS instance is down&quot;
+          description: &quot;PDS instance {{ $labels.instance }} has been down for more than 1 minute.&quot;
+
+      - alert: PDSHighErrorRate
+        expr: |
+          (
+            rate(pds_http_responses_total{status=~&quot;5..&quot;}[5m])
+            /
+            rate(pds_http_responses_total[5m])
+          ) &gt; 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: &quot;High error rate on PDS&quot;
+          description: &quot;Error rate is {{ $value | humanizePercentage }} (threshold: 5%)&quot;
+</code></pre>
+
+<h3 id="performance-degradation">Performance Degradation</h3>
+<pre class="codehilite"><code class="language-yaml">  - name: pds_performance
+    interval: 1m
+    rules:
+      - alert: PDSHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(pds_http_request_duration_seconds_bucket[5m])
+          ) &gt; 2.0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;High request latency on PDS&quot;
+          description: &quot;P95 latency is {{ $value }}s (threshold: 2s)&quot;
+
+      - alert: PDSSlowDatabaseQueries
+        expr: pds_database_query_duration_seconds &gt; 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;Slow database queries detected&quot;
+          description: &quot;Database queries taking &gt; 1s&quot;
+</code></pre>
+
+<h3 id="resource-utilization">Resource Utilization</h3>
+<pre class="codehilite"><code class="language-yaml">  - name: pds_resources
+    interval: 1m
+    rules:
+      - alert: PDSDiskSpaceHigh
+        expr: |
+          (
+            pds_blob_storage_bytes + pds_database_size_bytes
+          ) / (100 * 1024 * 1024 * 1024) &gt; 0.80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;PDS disk usage high&quot;
+          description: &quot;Disk usage is {{ $value | humanizePercentage }} (threshold: 80%)&quot;
+
+      - alert: PDSDiskSpaceCritical
+        expr: |
+          (
+            pds_blob_storage_bytes + pds_database_size_bytes
+          ) / (100 * 1024 * 1024 * 1024) &gt; 0.95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: &quot;PDS disk space critical&quot;
+          description: &quot;Disk usage is {{ $value | humanizePercentage }} (threshold: 95%)&quot;
+</code></pre>
+
+<h3 id="repository-operations">Repository Operations</h3>
+<pre class="codehilite"><code class="language-yaml">  - name: pds_repository
+    interval: 1m
+    rules:
+      - alert: PDSRepositoryCreationFailed
+        expr: |
+          rate(pds_repository_creation_errors_total[5m]) &gt; 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;Repository creation failures&quot;
+          description: &quot;{{ $value }} repository creation failures per second&quot;
+
+      - alert: PDSBlobUploadFailed
+        expr: |
+          rate(pds_blob_upload_errors_total[5m]) &gt; 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;Blob upload failures&quot;
+          description: &quot;{{ $value }} blob upload failures per second&quot;
+</code></pre>
+
+<h3 id="firehose-health">Firehose Health</h3>
+<pre class="codehilite"><code class="language-yaml">  - name: pds_firehose
+    interval: 1m
+    rules:
+      - alert: PDSFirehoseSubscribersHigh
+        expr: pds_firehose_active_subscribers &gt; 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;High number of firehose subscribers&quot;
+          description: &quot;{{ $value }} active subscribers (threshold: 100)&quot;
+
+      - alert: PDSFirehoseBackpressure
+        expr: pds_firehose_backpressure_events_total &gt; 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;Firehose experiencing backpressure&quot;
+          description: &quot;Backpressure events detected, subscribers may be slow&quot;
+</code></pre>
+
+<h3 id="authentication-issues">Authentication Issues</h3>
+<pre class="codehilite"><code class="language-yaml">  - name: pds_auth
+    interval: 1m
+    rules:
+      - alert: PDSHighAuthFailureRate
+        expr: |
+          (
+            rate(pds_auth_failures_total[5m])
+            /
+            rate(pds_auth_attempts_total[5m])
+          ) &gt; 0.20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: &quot;High authentication failure rate&quot;
+          description: &quot;Auth failure rate is {{ $value | humanizePercentage }} (threshold: 20%)&quot;
+
+      - alert: PDSPossibleBruteForce
+        expr: |
+          rate(pds_auth_failures_total[1m]) &gt; 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: &quot;Possible brute force attack&quot;
+          description: &quot;{{ $value }} auth failures per second&quot;
+</code></pre>
+
+<h2 id="notification-channels">Notification Channels</h2>
+<h3 id="alertmanager-configuration">Alertmanager Configuration</h3>
+<p>Configure Alertmanager to route alerts to appropriate channels:</p>
+<pre class="codehilite"><code class="language-yaml"># alertmanager.yml
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'default'
+  routes:
+    # Critical alerts go to PagerDuty
+    - match:
+        severity: critical
+      receiver: 'pagerduty'
+      continue: true
+
+    # Warning alerts go to Slack
+    - match:
+        severity: warning
+      receiver: 'slack'
+
+    # Informational alerts go to email
+    - match:
+        severity: info
+      receiver: 'email'
+
+receivers:
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:5001/'
+
+  - name: 'pagerduty'
+    pagerduty_configs:
+      - service_key: '&lt;pagerduty-integration-key&gt;'
+        description: '{{ .GroupLabels.alertname }}'
+
+  - name: 'slack'
+    slack_configs:
+      - api_url: '&lt;slack-webhook-url&gt;'
+        channel: '#pds-alerts'
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  - name: 'email'
+    email_configs:
+      - to: 'ops@example.com'
+        from: 'alertmanager@example.com'
+        smarthost: 'smtp.example.com:587'
+        auth_username: 'alertmanager@example.com'
+        auth_password: '&lt;password&gt;'
+
+inhibit_rules:
+  # Inhibit warning if critical is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+</code></pre>
+
+<h3 id="pagerduty-integration">PagerDuty Integration</h3>
+<p>For critical alerts requiring immediate response:</p>
+<pre class="codehilite"><code class="language-yaml">receivers:
+  - name: 'pagerduty'
+    pagerduty_configs:
+      - service_key: '&lt;integration-key&gt;'
+        description: '{{ .CommonAnnotations.summary }}'
+        details:
+          firing: '{{ .Alerts.Firing | len }}'
+          resolved: '{{ .Alerts.Resolved | len }}'
+          instance: '{{ .CommonLabels.instance }}'
+        severity: '{{ .CommonLabels.severity }}'
+</code></pre>
+
+<h3 id="slack-integration">Slack Integration</h3>
+<p>For warning alerts and team notifications:</p>
+<pre class="codehilite"><code class="language-yaml">receivers:
+  - name: 'slack'
+    slack_configs:
+      - api_url: '&lt;webhook-url&gt;'
+        channel: '#pds-alerts'
+        username: 'Alertmanager'
+        icon_emoji: ':warning:'
+        title: '{{ .CommonAnnotations.summary }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Labels.alertname }}
+          *Severity:* {{ .Labels.severity }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        actions:
+          - type: button
+            text: 'View in Prometheus'
+            url: '{{ .GeneratorURL }}'
+          - type: button
+            text: 'Silence'
+            url: '{{ .SilenceURL }}'
+</code></pre>
+
+<h3 id="email-integration">Email Integration</h3>
+<p>For informational alerts and daily summaries:</p>
+<pre class="codehilite"><code class="language-yaml">receivers:
+  - name: 'email'
+    email_configs:
+      - to: 'ops-team@example.com'
+        from: 'alertmanager@example.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'alertmanager@example.com'
+        auth_password: '&lt;app-password&gt;'
+        headers:
+          Subject: '[PDS Alert] {{ .GroupLabels.alertname }}'
+        html: |
+          &lt;h2&gt;{{ .CommonAnnotations.summary }}&lt;/h2&gt;
+          &lt;table&gt;
+          {{ range .Alerts }}
+            &lt;tr&gt;
+              &lt;td&gt;{{ .Labels.alertname }}&lt;/td&gt;
+              &lt;td&gt;{{ .Annotations.description }}&lt;/td&gt;
+              &lt;td&gt;{{ .StartsAt }}&lt;/td&gt;
+            &lt;/tr&gt;
+          {{ end }}
+          &lt;/table&gt;
+</code></pre>
+
+<h2 id="alert-thresholds">Alert Thresholds</h2>
+<h3 id="determining-thresholds">Determining Thresholds</h3>
+<p>Use historical data to set appropriate thresholds:</p>
+<pre class="codehilite"><code class="language-promql"># Calculate P95 latency over last 30 days
+histogram_quantile(0.95,
+  rate(pds_http_request_duration_seconds_bucket[30d])
+)
+
+# Calculate typical error rate
+rate(pds_http_responses_total{status=~&quot;5..&quot;}[30d])
+/
+rate(pds_http_responses_total[30d])
+
+# Calculate typical resource usage
+avg_over_time(pds_blob_storage_bytes[30d])
+</code></pre>
+
+<h3 id="threshold-guidelines">Threshold Guidelines</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Warning</th>
+<th>Critical</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Error rate</td>
+<td>1%</td>
+<td>5%</td>
+<td>Percentage of 5xx responses</td>
+</tr>
+<tr>
+<td>P95 latency</td>
+<td>2x baseline</td>
+<td>5x baseline</td>
+<td>Compared to 30-day average</td>
+</tr>
+<tr>
+<td>Disk usage</td>
+<td>80%</td>
+<td>95%</td>
+<td>Of total available space</td>
+</tr>
+<tr>
+<td>Memory usage</td>
+<td>80%</td>
+<td>90%</td>
+<td>Of allocated memory</td>
+</tr>
+<tr>
+<td>CPU usage</td>
+<td>70%</td>
+<td>90%</td>
+<td>Sustained over 5 minutes</td>
+</tr>
+<tr>
+<td>Auth failures</td>
+<td>10%</td>
+<td>20%</td>
+<td>Of total auth attempts</td>
+</tr>
+<tr>
+<td>Database connections</td>
+<td>80%</td>
+<td>95%</td>
+<td>Of pool size</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dynamic-thresholds">Dynamic Thresholds</h3>
+<p>Use anomaly detection for dynamic thresholds:</p>
+<pre class="codehilite"><code class="language-promql"># Alert if current value is 3 standard deviations from mean
+abs(
+  rate(pds_http_requests_total[5m])
+  -
+  avg_over_time(rate(pds_http_requests_total[5m])[1h:5m])
+) &gt; 3 * stddev_over_time(rate(pds_http_requests_total[5m])[1h:5m])
+</code></pre>
+
+<h2 id="alert-runbooks">Alert Runbooks</h2>
+<p>Every alert should have a runbook with:</p>
+<ol>
+<li><strong>Description</strong>: What the alert means</li>
+<li><strong>Impact</strong>: How it affects users</li>
+<li><strong>Diagnosis</strong>: How to investigate</li>
+<li><strong>Resolution</strong>: How to fix it</li>
+<li><strong>Prevention</strong>: How to avoid it</li>
+</ol>
+<h3 id="example-runbook-pdsdown">Example Runbook: PDSDown</h3>
+<p><strong>Description</strong>: The PDS server is not responding to health checks.</p>
+<p><strong>Impact</strong>: All API requests are failing. Users cannot access the service.</p>
+<p><strong>Diagnosis</strong>:</p>
+<pre class="codehilite"><code class="language-bash"># Check if process is running
+ps aux | grep kaszlak
+
+# Check server logs
+tail -f /var/log/pds/server.log
+
+# Check system resources
+top
+df -h
+
+# Test connectivity
+curl http://localhost:2583/xrpc/com.atproto.server.describeServer
+</code></pre>
+
+<p><strong>Resolution</strong>:</p>
+<pre class="codehilite"><code class="language-bash"># Restart the service
+cd DEPLOY_DIR/objpds/docker/pds
+docker compose restart pds
+
+# If that fails, check for port conflicts
+lsof -i :2583
+
+# Check Docker logs
+docker compose logs pds
+</code></pre>
+
+<p><strong>Prevention</strong>:
+- Monitor resource usage trends
+- Set up auto-restart on failure
+- Implement health check endpoints
+- Review logs for warnings before failures</p>
+<h3 id="example-runbook-pdshigherrorrate">Example Runbook: PDSHighErrorRate</h3>
+<p><strong>Description</strong>: More than 5% of requests are returning 5xx errors.</p>
+<p><strong>Impact</strong>: Users experiencing intermittent failures.</p>
+<p><strong>Diagnosis</strong>:</p>
+<pre class="codehilite"><code class="language-bash"># Check error distribution
+curl -s http://localhost:2583/_pds/admin/metrics | grep pds_http_responses_total
+
+# Check recent errors in logs
+grep ERROR /var/log/pds/server.log | tail -20
+
+# Check database connectivity
+sqlite3 data/service.db &quot;SELECT 1&quot;
+
+# Check disk space
+df -h
+</code></pre>
+
+<p><strong>Resolution</strong>:
+- If database errors: Check database integrity
+- If memory errors: Restart service to clear memory
+- If disk full: Clean up old logs, rotate databases
+- If external dependency: Check relay/PLC connectivity</p>
+<p><strong>Prevention</strong>:
+- Monitor error trends
+- Set up database backups
+- Implement circuit breakers for external dependencies
+- Add retry logic with exponential backoff</p>
+<h2 id="alert-silencing">Alert Silencing</h2>
+<h3 id="planned-maintenance">Planned Maintenance</h3>
+<p>Silence alerts during maintenance windows:</p>
+<pre class="codehilite"><code class="language-bash"># Silence all alerts for 1 hour
+amtool silence add \
+  --alertmanager.url=http://localhost:9093 \
+  --author=&quot;ops-team&quot; \
+  --comment=&quot;Planned maintenance&quot; \
+  --duration=1h \
+  alertname=~&quot;.+&quot;
+
+# Silence specific alert
+amtool silence add \
+  --alertmanager.url=http://localhost:9093 \
+  --author=&quot;ops-team&quot; \
+  --comment=&quot;Database migration&quot; \
+  --duration=30m \
+  alertname=&quot;PDSHighLatency&quot;
+</code></pre>
+
+<h3 id="flapping-alerts">Flapping Alerts</h3>
+<p>For alerts that fire and resolve repeatedly:</p>
+<pre class="codehilite"><code class="language-yaml"># Add inhibition rule
+inhibit_rules:
+  - source_match:
+      alertname: 'PDSHighLatency'
+      severity: 'warning'
+    target_match:
+      alertname: 'PDSHighLatency'
+      severity: 'warning'
+    equal: ['instance']
+</code></pre>
+
+<p>Or increase the <code>for</code> duration:</p>
+<pre class="codehilite"><code class="language-yaml">- alert: PDSHighLatency
+  expr: pds_latency &gt; 2.0
+  for: 15m  # Increased from 5m to reduce flapping
+</code></pre>
+
+<h2 id="alert-testing">Alert Testing</h2>
+<h3 id="testing-alert-rules">Testing Alert Rules</h3>
+<p>Validate alert rules before deploying:</p>
+<pre class="codehilite"><code class="language-bash"># Check syntax
+promtool check rules alerts.yml
+
+# Test alert expression
+promtool query instant http://localhost:9090 \
+  'rate(pds_http_responses_total{status=~&quot;5..&quot;}[5m]) / rate(pds_http_responses_total[5m]) &gt; 0.05'
+
+# Simulate alert firing
+curl -X POST http://localhost:9093/api/v1/alerts \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '[{
+    &quot;labels&quot;: {
+      &quot;alertname&quot;: &quot;PDSHighErrorRate&quot;,
+      &quot;severity&quot;: &quot;critical&quot;,
+      &quot;instance&quot;: &quot;localhost:2583&quot;
+    },
+    &quot;annotations&quot;: {
+      &quot;summary&quot;: &quot;Test alert&quot;,
+      &quot;description&quot;: &quot;This is a test&quot;
+    }
+  }]'
+</code></pre>
+
+<h3 id="alert-drills">Alert Drills</h3>
+<p>Regularly test alert response:</p>
+<ol>
+<li><strong>Trigger test alert</strong>: Simulate failure condition</li>
+<li><strong>Verify notification</strong>: Confirm alert reaches on-call</li>
+<li><strong>Follow runbook</strong>: Execute resolution steps</li>
+<li><strong>Document issues</strong>: Update runbook if needed</li>
+<li><strong>Review timing</strong>: Measure time to detection and resolution</li>
+</ol>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="dos">Do's</h3>
+<ul>
+<li><strong>Alert on user-facing symptoms</strong>: Error rate, latency, availability</li>
+<li><strong>Include context in alerts</strong>: Instance, severity, description</li>
+<li><strong>Link to runbooks</strong>: Every alert should have resolution steps</li>
+<li><strong>Test alerts regularly</strong>: Ensure notifications work</li>
+<li><strong>Review and tune</strong>: Adjust thresholds based on experience</li>
+<li><strong>Use alert grouping</strong>: Reduce notification spam</li>
+<li><strong>Set appropriate severity</strong>: Critical for pages, warning for notifications</li>
+</ul>
+<h3 id="donts">Don'ts</h3>
+<ul>
+<li><strong>Don't alert on everything</strong>: Only actionable issues</li>
+<li><strong>Don't use static thresholds blindly</strong>: Consider baselines</li>
+<li><strong>Don't ignore alerts</strong>: Fix or remove noisy alerts</li>
+<li><strong>Don't alert without runbooks</strong>: Responders need guidance</li>
+<li><strong>Don't forget to silence</strong>: During maintenance windows</li>
+<li><strong>Don't alert on predictions</strong>: Alert on current state</li>
+<li><strong>Don't duplicate alerts</strong>: One alert per issue</li>
+</ul>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a href="metrics-collection.md">Metrics Collection</a> - Metrics for alerting</li>
+<li><a href="logging-strategy.md">Logging Strategy</a> - Diagnostic information</li>
+<li><a href="performance-monitoring.md">Performance Monitoring</a> - Performance baselines</li>
+<li><a href="troubleshooting.md">Troubleshooting</a> - Common issues and solutions</li>
+</ul>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="https://prometheus.io/docs/alerting/latest/overview/">Prometheus Alerting</a></li>
+<li><a href="https://prometheus.io/docs/alerting/latest/alertmanager/">Alertmanager Documentation</a></li>
+<li><a href="https://sre.google/sre-book/monitoring-distributed-systems/">Google SRE Book - Monitoring</a></li>
+<li><a href="https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/edit">My Philosophy on Alerting</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

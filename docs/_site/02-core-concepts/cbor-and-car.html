@@ -239,6 +239,7 @@
 - <strong>Deterministic</strong> — Essential for cryptographic hashing
 - <strong>Type-safe</strong> — Preserves data types during serialization
 - <strong>Efficient</strong> — Fast to encode and decode</p>
+<p><img alt="CBOR Encoding Process" src="../12-diagrams/cbor-encoding-example.svg" /></p>
 <h3 id="cbor-data-types">CBOR Data Types</h3>
 <table>
 <thead>
@@ -282,29 +283,37 @@
 </tbody>
 </table>
 <h3 id="cbor-in-code">CBOR in Code</h3>
-<pre class="codehilite"><code class="language-objc">// In ATProtoCBORSerialization.m
-- (NSData *)encodeObject:(id)object error:(NSError **)error {
-    NSMutableData *data = [NSMutableData data];
+<p>The <code>ATProtoCBORSerialization</code> class provides the main interface for encoding and decoding CBOR data:</p>
+<h4 id="basic-encoding-and-decoding">Basic Encoding and Decoding</h4>
+<pre class="codehilite"><code class="language-objc">// Encode a JSON object to CBOR
+NSDictionary *record = @{
+    @&quot;text&quot;: @&quot;Hello, world!&quot;,
+    @&quot;createdAt&quot;: @&quot;2024-01-01T00:00:00Z&quot;
+};
 
-    if ([object isKindOfClass:[NSNumber class]]) {
-        [self encodeNumber:(NSNumber *)object intoData:data];
-    } else if ([object isKindOfClass:[NSString class]]) {
-        [self encodeString:(NSString *)object intoData:data];
-    } else if ([object isKindOfClass:[NSArray class]]) {
-        [self encodeArray:(NSArray *)object intoData:data];
-    } else if ([object isKindOfClass:[NSDictionary class]]) {
-        [self encodeMap:(NSDictionary *)object intoData:data];
-    }
-
-    return data;
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record 
+                                                                error:&amp;error];
+if (!cborData) {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
+    return;
 }
 
-- (id)decodeData:(NSData *)data error:(NSError **)error {
-    NSUInteger offset = 0;
-    return [self decodeFromData:data offset:&amp;offset error:error];
+// Decode CBOR back to JSON
+NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData 
+                                                                error:&amp;error];
+if (!decoded) {
+    NSLog(@&quot;Decoding failed: %@&quot;, error);
+    return;
+}
+
+// Verify round-trip
+if ([decoded isEqualToDictionary:record]) {
+    NSLog(@&quot;Round-trip successful!&quot;);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 8-20)</p>
 <h3 id="dag-cbor-directed-acyclic-graph-cbor">DAG-CBOR (Directed Acyclic Graph CBOR)</h3>
 <p>DAG-CBOR is a restricted subset of CBOR used in AT Protocol:
 - <strong>Deterministic encoding</strong> — Canonical form for hashing
@@ -319,6 +328,67 @@
 <li><strong>Maps</strong> — Keys sorted lexicographically</li>
 <li><strong>No undefined values</strong> — Use null instead</li>
 </ol>
+<h3 id="handling-special-types">Handling Special Types</h3>
+<p>The CBOR serializer handles AT Protocol's special types:</p>
+<h4 id="cid-links-cbor-tag-42">CID Links (CBOR Tag 42)</h4>
+<pre class="codehilite"><code class="language-objc">// CID links are encoded as CBOR Tag 42
+// Input: {&quot;$link&quot;: &quot;bafy2bzaced...&quot;}
+// Output: CBOR Tag 42 with CID bytes
+
+NSDictionary *recordWithLink = @{
+    @&quot;text&quot;: @&quot;Hello!&quot;,
+    @&quot;parent&quot;: @{@&quot;$link&quot;: @&quot;bafy2bzaced4ueelaegfs5fq4a3fvh2ijmmq7xjlmakivezbsxyhynaiksqq&quot;}
+};
+
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:recordWithLink 
+                                                                error:&amp;error];
+
+// When decoded, the CBOR Tag 42 is converted back to {&quot;$link&quot;: &quot;bafy...&quot;}
+NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData 
+                                                                error:&amp;error];
+// decoded[@&quot;parent&quot;] == @{@&quot;$link&quot;: @&quot;bafy2bzaced...&quot;}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 47-60)</p>
+<h4 id="byte-strings-base64-encoding">Byte Strings (Base64 Encoding)</h4>
+<pre class="codehilite"><code class="language-objc">// Byte strings are encoded with base64
+// Input: {&quot;$bytes&quot;: &quot;aGVsbG8=&quot;}
+// Output: CBOR byte string
+
+NSDictionary *recordWithBytes = @{
+    @&quot;text&quot;: @&quot;Hello!&quot;,
+    @&quot;signature&quot;: @{@&quot;$bytes&quot;: @&quot;aGVsbG8gd29ybGQ=&quot;}  // &quot;hello world&quot; in base64
+};
+
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:recordWithBytes 
+                                                                error:&amp;error];
+
+// When decoded, byte strings are converted back to {&quot;$bytes&quot;: &quot;base64...&quot;}
+NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData 
+                                                                error:&amp;error];
+// decoded[@&quot;signature&quot;] == @{@&quot;$bytes&quot;: @&quot;aGVsbG8gd29ybGQ=&quot;}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 61-70)</p>
+<h4 id="map-key-sorting-lexicographic-order">Map Key Sorting (Lexicographic Order)</h4>
+<pre class="codehilite"><code class="language-objc">// Maps are sorted by key (lexicographic order) for deterministic encoding
+NSDictionary *record = @{
+    @&quot;z&quot;: @&quot;last&quot;,
+    @&quot;a&quot;: @&quot;first&quot;,
+    @&quot;m&quot;: @&quot;middle&quot;
+};
+
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record 
+                                                                error:&amp;error];
+
+// The CBOR encoding will have keys in order: a, m, z
+// This ensures deterministic hashing for CID generation
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 71-85)</p>
 <h3 id="example-encoding-a-record">Example: Encoding a Record</h3>
 <pre class="codehilite"><code class="language-objc">// Original record
 NSDictionary *record = @{
@@ -364,58 +434,70 @@ Data: &lt;block data&gt; (raw bytes, length - CID_length)
 
 <p>The length field encodes the total size of the CID and data combined.</p>
 <h3 id="car-in-code">CAR in Code</h3>
-<pre class="codehilite"><code class="language-objc">// In CAR.m
-- (NSData *)encodeWithRoots:(NSArray *)roots blocks:(NSArray *)blocks {
-    NSMutableData *car = [NSMutableData data];
-
-    // 1. Write version
-    uint8_t version = 1;
-    [car appendBytes:&amp;version length:1];
-
-    // 2. Write roots (CBOR encoded)
-    NSData *rootsData = [ATProtoCBORSerialization encodeObject:roots error:nil];
-    [car appendData:rootsData];
-
-    // 3. Write blocks
-    for (CARBlock *block in blocks) {
-        // Write CID
-        NSData *cidData = [ATProtoCBORSerialization encodeObject:block.cid error:nil];
-        [car appendData:cidData];
-
-        // Write data
-        [car appendData:block.data];
-    }
-
-    return car;
+<h4 id="reading-a-car-file">Reading a CAR File</h4>
+<pre class="codehilite"><code class="language-objc">// Read CAR from file
+NSError *error = nil;
+CARReader *reader = [CARReader readFromPath:@&quot;/path/to/archive.car&quot; error:&amp;error];
+if (!reader) {
+    NSLog(@&quot;Failed to read CAR: %@&quot;, error);
+    return;
 }
 
-- (void)decodeCAR:(NSData *)carData 
-       completion:(void (^)(NSArray *roots, NSArray *blocks, NSError *error))completion {
-    NSUInteger offset = 0;
+// Access root CID and blocks
+CID *rootCID = reader.rootCID;
+NSArray&lt;CARBlock *&gt; *blocks = reader.blocks;
 
-    // 1. Read version
-    uint8_t version = ((uint8_t *)carData.bytes)[offset];
-    offset += 1;
+// Iterate through blocks
+for (CARBlock *block in blocks) {
+    CID *blockCID = block.cid;
+    NSData *blockData = block.data;
 
-    // 2. Read roots
-    NSArray *roots = [ATProtoCBORSerialization decodeFromData:carData 
-                                                       offset:&amp;offset 
-                                                        error:nil];
-
-    // 3. Read blocks
-    NSMutableArray *blocks = [NSMutableArray array];
-    while (offset &lt; carData.length) {
-        NSString *cid = [ATProtoCBORSerialization decodeFromData:carData 
-                                                           offset:&amp;offset 
-                                                            error:nil];
-        NSData *blockData = [carData subdataWithRange:NSMakeRange(offset, ...)];
-        [blocks addObject:@{@&quot;cid&quot;: cid, @&quot;data&quot;: blockData}];
+    // Process block data
+    NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:blockData 
+                                                                    error:&amp;error];
+    if (decoded) {
+        NSLog(@&quot;Block CID: %@&quot;, blockCID.stringValue);
     }
+}
 
-    completion(roots, blocks, nil);
+// Find a specific block by CID
+CARBlock *block = [reader blockWithCID:someCID];
+if (block) {
+    NSData *blockData = block.data;
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 180-220)</p>
+<h4 id="writing-a-car-file">Writing a CAR File</h4>
+<pre class="codehilite"><code class="language-objc">// Create a CAR writer with root CID
+CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+
+// Add blocks
+for (NSData *blockData in blockDataArray) {
+    // Calculate CID for the block
+    NSData *hash = [CID sha256Digest:blockData];
+    CID *blockCID = [CID cidWithDigest:hash codec:0x71];  // 0x71 = dag-cbor
+
+    // Create and add block
+    CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
+    [writer addBlock:block];
+}
+
+// Serialize to file
+NSError *error = nil;
+if (![writer writeToPath:@&quot;/path/to/output.car&quot; error:&amp;error]) {
+    NSLog(@&quot;Failed to write CAR: %@&quot;, error);
+    return;
+}
+
+// Or get as NSData
+NSData *carData = [writer encodeWithError:&amp;error];
+if (!carData) {
+    NSLog(@&quot;Failed to encode CAR: %@&quot;, error);
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 300-350)</p>
 <h3 id="car-use-cases">CAR Use Cases</h3>
 <p><strong>1. Repository Export</strong></p>
 <pre class="codehilite"><code>Export user's entire repository as CAR file
@@ -525,7 +607,7 @@ Data: &lt;block data&gt; (raw bytes, length - CID_length)
 <li><strong><a href="../07-repository-protocol/repository-basics.md">Repository Protocol</a></strong> — Repository operations</li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

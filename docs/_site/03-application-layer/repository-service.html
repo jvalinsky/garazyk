@@ -279,7 +279,21 @@
 - <code>did</code>: Decentralized identifier of repository owner
 - <code>error</code>: Error pointer for loading failures</p>
 <p><strong>Returns:</strong> MST instance or nil if repository doesn't exist</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRepositoryService.m lines 30-50):</strong></p>
+<p>The service loads all records and constructs the MST:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return nil;
+
+    NSArray&lt;PDSDatabaseRecord *&gt; *records = [self loadAllRecordsForStore:store did:did error:error];
+    if (!records &amp;&amp; error &amp;&amp; *error) {
+        return nil;
+    }
+    return [self mstFromRecords:records ?: @[]];
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 MST *mst = [repositoryService loadMSTForDid:@&quot;did:plc:user123&quot; error:&amp;error];
 
@@ -303,7 +317,44 @@ if (mst) {
 - <code>cid</code>: Content identifier of record value, or nil to delete
 - <code>error</code>: Error pointer for update failures</p>
 <p><strong>Returns:</strong> YES on success, NO on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRepositoryService.m lines 50-100):</strong></p>
+<p>The service updates the MST and persists the new root CID:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error {
+    MST *mst = [self loadMSTForDid:did error:error];
+    if (!mst) return NO;
+
+    if (cid) {
+        [mst put:key valueCID:cid subKey:nil];
+    } else {
+        [mst delete:key];
+    }
+
+    CID *repoRoot = mst.rootCID;
+    if (!repoRoot) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.repo&quot;
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to compute repo root CID&quot;}];
+        }
+        return NO;
+    }
+
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return NO;
+
+    __block BOOL success = NO;
+    [store transactWithBlock:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **blockError) {
+        success = [transactor updateRepoRoot:did
+                                     rootCid:[repoRoot bytes]
+                                         rev:[TID tid].stringValue
+                                       error:blockError];
+    } error:error];
+
+    return success;
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">// Create a new record
 NSError *error = nil;
 CID *recordCid = [self generateCIDForRecord:recordData];
@@ -329,7 +380,33 @@ success = [repositoryService updateMSTForDid:@&quot;did:plc:user123&quot;
 - <code>did</code>: Repository owner DID
 - <code>error</code>: Error pointer for retrieval failures</p>
 <p><strong>Returns:</strong> CAR-encoded commit root data or nil if not found</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRepositoryService.m lines 100-150):</strong></p>
+<p>The service retrieves the stored repo root and associated block data:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
+    PDS_LOG_DB_DEBUG(@&quot;Looking up repo root for DID: %@&quot;, did);
+
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) {
+        PDS_LOG_DB_DEBUG(@&quot;storeForDid returned nil for: %@&quot;, did);
+        return nil;
+    }
+
+    __block NSData *rootData = nil;
+    [store readWithBlock:^(id&lt;PDSActorStoreReader&gt; reader, NSError **blockError) {
+        NSData *rootCidBytes = [reader getRepoRootForDid:did error:blockError];
+        if (rootCidBytes) {
+            NSData *blockData = [reader getBlockForCID:rootCidBytes forDid:did error:blockError];
+            if (blockData) {
+                rootData = blockData;
+            }
+        }
+    } error:error];
+
+    return rootData;
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 NSData *rootData = [repositoryService getRepoRoot:@&quot;did:plc:user123&quot; error:&amp;error];
 
@@ -351,7 +428,18 @@ if (rootData) {
 - <code>sinceRev</code>: Previous commit revision for incremental sync (nil for full export)
 - <code>error</code>: Error pointer for export failures</p>
 <p><strong>Returns:</strong> CAR-encoded repository blocks or nil on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRepositoryService.m lines 200-220):</strong></p>
+<p>The service builds a CAR writer and serializes the repository:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error {
+    CARWriter *writer = [self buildRepoWriterForDid:did since:sinceRev error:error];
+    if (!writer) {
+        return nil;
+    }
+    return [writer serialize];
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">// Full export
 NSError *error = nil;
 NSData *carData = [repositoryService getRepoContents:@&quot;did:plc:user123&quot;
@@ -378,7 +466,81 @@ NSData *deltaData = [repositoryService getRepoContents:@&quot;did:plc:user123&qu
 - <code>path</code>: Output file path
 - <code>error</code>: Error pointer for export failures</p>
 <p><strong>Returns:</strong> YES on success, NO on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRepositoryService.m lines 220-300):</strong></p>
+<p>The service streams repository data directly to a file handle:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)writeRepoContents:(NSString *)did since:(nullable NSString *)sinceRev toPath:(NSString *)path error:(NSError **)error {
+    PDSActorStore *store = nil;
+    MST *mst = nil;
+    CID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray&lt;NSString *&gt; *changedMSTKeys = nil;
+    NSArray&lt;NSString *&gt; *recordCIDStrings = nil;
+    NSDictionary&lt;NSString *, PDSDatabaseRecord *&gt; *recordByCID = nil;
+    NSDictionary&lt;NSString *, NSData *&gt; *materializedBlocks = nil;
+
+    if (![self prepareRepoExportForDid:did
+                                 since:sinceRev
+                                 store:&amp;store
+                                   mst:&amp;mst
+                             commitCID:&amp;commitCID
+                           commitBlock:&amp;commitBlock
+                        noChangesSince:&amp;noChangesSince
+                        includeFullMST:&amp;includeFullMST
+                        changedMSTKeys:&amp;changedMSTKeys
+                       recordCIDStrings:&amp;recordCIDStrings
+                            recordByCID:&amp;recordByCID
+                    materializedBlocks:&amp;materializedBlocks
+                                 error:error]) {
+        return NO;
+    }
+
+    if (![[NSFileManager defaultManager] createFileAtPath:path contents:nil attributes:nil]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.repo&quot;
+                                         code:7
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to create repo CAR file&quot;}];
+        }
+        return NO;
+    }
+
+    NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:path];
+    if (!fileHandle) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.repo&quot;
+                                         code:8
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to open repo CAR file&quot;}];
+        }
+        return NO;
+    }
+
+    @try {
+        if (![CARWriter writeHeaderWithRootCID:commitCID toFileHandle:fileHandle error:error]) {
+            [fileHandle closeFile];
+            return NO;
+        }
+
+        if (noChangesSince) {
+            [fileHandle closeFile];
+            return YES;
+        }
+
+        if (![CARWriter writeBlock:[CARBlock blockWithCID:commitCID data:commitBlock]
+                      toFileHandle:fileHandle
+                             error:error]) {
+            [fileHandle closeFile];
+            return NO;
+        }
+    } @finally {
+        [fileHandle closeFile];
+    }
+
+    return YES;
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 BOOL success = [repositoryService writeRepoContents:@&quot;did:plc:user123&quot;
                                               since:nil
@@ -475,6 +637,82 @@ if (success) {
 - <code>did</code>: Repository DID
 - <code>error</code>: Error pointer</p>
 <p><strong>Returns:</strong> Dictionary with @"cid" and @"rev" keys</p>
+<p><strong>Implementation pattern (from PDSRepositoryService.m lines 150-200):</strong></p>
+<p>The service retrieves the stored commit metadata or rebuilds it if needed:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) {
+        if (error &amp;&amp; !*error) {
+            *error = [NSError errorWithDomain:@&quot;com.atproto.sync&quot;
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Repo not found&quot;}];
+        }
+        return nil;
+    }
+
+    // Fast path: use already-persisted signed head commit metadata
+    CID *storedCommitCID = nil;
+    NSData *unusedCommitBlock = nil;
+    CID *unusedDataCID = nil;
+    NSString *storedCommitRev = nil;
+    BOOL storedCommitIsSigned = NO;
+    BOOL hasStoredHead = [self loadStoredHeadCommitForDid:did
+                                                    store:store
+                                                commitCID:&amp;storedCommitCID
+                                              commitBlock:&amp;unusedCommitBlock
+                                                  dataCID:&amp;unusedDataCID
+                                                      rev:&amp;storedCommitRev
+                                                 isSigned:&amp;storedCommitIsSigned];
+    if (hasStoredHead &amp;&amp; storedCommitIsSigned &amp;&amp; storedCommitCID.stringValue.length &gt; 0) {
+        NSString *rev = [store getRepoRevisionForDid:did error:nil];
+        if (rev.length == 0) {
+            rev = storedCommitRev ?: @&quot;&quot;;
+        }
+        return @{@&quot;cid&quot;: storedCommitCID.stringValue, @&quot;rev&quot;: rev ?: @&quot;&quot;};
+    }
+
+    // Slow path: rebuild export state, self-heal head commit if needed
+    MST *mst = nil;
+    CID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray&lt;NSString *&gt; *changedMSTKeys = nil;
+    NSArray&lt;NSString *&gt; *recordCIDStrings = nil;
+    NSDictionary&lt;NSString *, PDSDatabaseRecord *&gt; *recordByCID = nil;
+    NSDictionary&lt;NSString *, NSData *&gt; *materializedBlocks = nil;
+
+    if (![self prepareRepoExportForDid:did
+                                 since:nil
+                                 store:&amp;store
+                                   mst:&amp;mst
+                             commitCID:&amp;commitCID
+                           commitBlock:&amp;commitBlock
+                        noChangesSince:&amp;noChangesSince
+                        includeFullMST:&amp;includeFullMST
+                        changedMSTKeys:&amp;changedMSTKeys
+                       recordCIDStrings:&amp;recordCIDStrings
+                            recordByCID:&amp;recordByCID
+                    materializedBlocks:&amp;materializedBlocks
+                                 error:error]) {
+        return nil;
+    }
+
+    NSString *rev = [store getRepoRevisionForDid:did error:nil] ?: @&quot;&quot;;
+    return @{@&quot;cid&quot;: commitCID.stringValue ?: @&quot;&quot;, @&quot;rev&quot;: rev};
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSDictionary *commit = [repositoryService getLatestCommitForDid:@&quot;did:plc:user123&quot; error:&amp;error];
+
+if (commit) {
+    NSString *cid = commit[@&quot;cid&quot;];
+    NSString *rev = commit[@&quot;rev&quot;];
+}
+</code></pre>
+
 <h3 id="initialize-repository">Initialize Repository</h3>
 <pre class="codehilite"><code class="language-objc">- (BOOL)initializeRepoForDid:(NSString *)did error:(NSError **)error;
 </code></pre>
@@ -484,7 +722,7 @@ if (success) {
 - <code>did</code>: Repository owner DID
 - <code>error</code>: Error pointer for initialization failures</p>
 <p><strong>Returns:</strong> YES on success, NO on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 BOOL success = [repositoryService initializeRepoForDid:@&quot;did:plc:user123&quot;
                                                  error:&amp;error];
@@ -646,7 +884,7 @@ if (deltaCAR) {
 <li><a href="../07-repository-protocol/car-format.md">CAR Format</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

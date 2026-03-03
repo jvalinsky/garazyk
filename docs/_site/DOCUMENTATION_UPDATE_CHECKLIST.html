@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Update Checklist - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Documentation Update Checklist</h1>
+            </div>
+            <h1 id="documentation-update-checklist">Documentation Update Checklist</h1>
+<p>This checklist ensures documentation stays synchronized with code changes and maintains accuracy across the PDS Objective-C Implementation Guide.</p>
+<h2 id="when-documentation-updates-are-required">When Documentation Updates Are Required</h2>
+<p>Documentation MUST be updated when:</p>
+<ul>
+<li>[ ] <strong>New XRPC endpoints</strong> are added or modified</li>
+<li>[ ] <strong>Service layer changes</strong> (new services, modified service APIs)</li>
+<li>[ ] <strong>Database schema changes</strong> (new tables, columns, migrations)</li>
+<li>[ ] <strong>Authentication mechanisms</strong> are added or modified</li>
+<li>[ ] <strong>Configuration options</strong> are added, removed, or changed</li>
+<li>[ ] <strong>CLI commands</strong> are added or modified</li>
+<li>[ ] <strong>Platform compatibility</strong> changes (macOS/Linux differences)</li>
+<li>[ ] <strong>Build process</strong> changes (CMake, Xcode, dependencies)</li>
+<li>[ ] <strong>API contracts</strong> change (request/response formats)</li>
+<li>[ ] <strong>Architecture changes</strong> (new components, refactored patterns)</li>
+</ul>
+<p>Documentation SHOULD be updated when:</p>
+<ul>
+<li>[ ] <strong>Implementation patterns</strong> change significantly</li>
+<li>[ ] <strong>Error handling</strong> approaches are improved</li>
+<li>[ ] <strong>Performance optimizations</strong> affect usage patterns</li>
+<li>[ ] <strong>Security best practices</strong> are updated</li>
+<li>[ ] <strong>Common issues</strong> are discovered and resolved</li>
+</ul>
+<h2 id="pre-commit-checklist">Pre-Commit Checklist</h2>
+<p>Before committing code changes, verify:</p>
+<h3 id="1-code-examples">1. Code Examples</h3>
+<ul>
+<li>[ ] All affected code examples still compile</li>
+<li>[ ] Code examples reflect current API signatures</li>
+<li>[ ] Line references to source files are still accurate</li>
+<li>[ ] Example output matches current behavior</li>
+</ul>
+<h3 id="2-architecture-documentation">2. Architecture Documentation</h3>
+<ul>
+<li>[ ] Architecture diagrams reflect current component structure</li>
+<li>[ ] Service interaction patterns are still accurate</li>
+<li>[ ] Request flow diagrams match current routing</li>
+<li>[ ] Database schema diagrams are up-to-date</li>
+</ul>
+<h3 id="3-reference-documentation">3. Reference Documentation</h3>
+<ul>
+<li>[ ] API reference includes new/modified endpoints</li>
+<li>[ ] Configuration reference lists all current options</li>
+<li>[ ] CLI reference documents all commands and flags</li>
+<li>[ ] Error codes and messages are current</li>
+</ul>
+<h3 id="4-tutorial-accuracy">4. Tutorial Accuracy</h3>
+<ul>
+<li>[ ] Tutorials still build and run successfully</li>
+<li>[ ] Tutorial steps match current APIs</li>
+<li>[ ] Expected output matches actual output</li>
+<li>[ ] Dependencies and setup instructions are current</li>
+</ul>
+<h2 id="documentation-update-process">Documentation Update Process</h2>
+<h3 id="step-1-identify-affected-documentation">Step 1: Identify Affected Documentation</h3>
+<p>Run this command to find potentially affected docs:</p>
+<pre class="codehilite"><code class="language-bash"># Search for references to changed files/components
+grep -r &quot;YourChangedComponent&quot; docs/
+grep -r &quot;yourChangedFunction&quot; docs/
+</code></pre>
+
+<p>Check these sections based on your changes:</p>
+<table>
+<thead>
+<tr>
+<th>Change Type</th>
+<th>Affected Sections</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XRPC endpoint</td>
+<td><code>04-network-layer/</code>, <code>11-reference/api-reference.md</code></td>
+</tr>
+<tr>
+<td>Service layer</td>
+<td><code>03-application-layer/</code>, relevant tutorials</td>
+</tr>
+<tr>
+<td>Database</td>
+<td><code>05-database-layer/</code>, <code>12-diagrams/database-schema.svg</code></td>
+</tr>
+<tr>
+<td>Authentication</td>
+<td><code>06-authentication/</code>, <code>10-tutorials/tutorial-4-auth.md</code></td>
+</tr>
+<tr>
+<td>Repository/Protocol</td>
+<td><code>07-repository-protocol/</code></td>
+</tr>
+<tr>
+<td>Firehose/Sync</td>
+<td><code>08-sync-firehose/</code></td>
+</tr>
+<tr>
+<td>Platform compat</td>
+<td><code>09-platform-compatibility/</code></td>
+</tr>
+<tr>
+<td>Configuration</td>
+<td><code>11-reference/config-reference.md</code></td>
+</tr>
+<tr>
+<td>CLI</td>
+<td><code>11-reference/cli-reference.md</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="step-2-update-documentation-files">Step 2: Update Documentation Files</h3>
+<p>For each affected file:</p>
+<ol>
+<li><strong>Update prose descriptions</strong></li>
+<li>[ ] Revise conceptual explanations</li>
+<li>[ ] Update implementation details</li>
+<li>
+<p>[ ] Adjust best practices if needed</p>
+</li>
+<li>
+<p><strong>Update code examples</strong></p>
+</li>
+<li>[ ] Extract new examples from source</li>
+<li>[ ] Update line references</li>
+<li>[ ] Test examples compile and run</li>
+<li>
+<p>[ ] Update example output</p>
+</li>
+<li>
+<p><strong>Update diagrams</strong></p>
+</li>
+<li>[ ] Modify SVG diagrams if architecture changed</li>
+<li>[ ] Update ASCII art representations</li>
+<li>
+<p>[ ] Verify diagram labels are accurate</p>
+</li>
+<li>
+<p><strong>Update cross-references</strong></p>
+</li>
+<li>[ ] Check internal links still work</li>
+<li>[ ] Update "See also" sections</li>
+<li>[ ] Verify glossary terms are current</li>
+</ol>
+<h3 id="step-3-verify-documentation-accuracy">Step 3: Verify Documentation Accuracy</h3>
+<p>Run automated checks:</p>
+<pre class="codehilite"><code class="language-bash"># Verify all links work
+python3 scripts/test-doc-links.py
+
+# Test code examples compile (if applicable)
+./scripts/verify-doc-examples.sh
+
+# Check for broken references
+grep -r &quot;TODO\|FIXME\|XXX&quot; docs/
+</code></pre>
+
+<p>Manual verification:</p>
+<ul>
+<li>[ ] Read through updated sections for clarity</li>
+<li>[ ] Verify technical accuracy against code</li>
+<li>[ ] Check for consistency with related sections</li>
+<li>[ ] Ensure terminology matches glossary</li>
+</ul>
+<h3 id="step-4-update-related-documentation">Step 4: Update Related Documentation</h3>
+<p>Check if these need updates:</p>
+<ul>
+<li>[ ] <code>docs/SUMMARY.md</code> (if new pages added)</li>
+<li>[ ] <code>docs/GLOSSARY.md</code> (if new terms introduced)</li>
+<li>[ ] <code>docs/index.md</code> (if major sections changed)</li>
+<li>[ ] <code>README.md</code> (if getting started changed)</li>
+<li>[ ] <code>AGENTS.md</code> (if architecture or commands changed)</li>
+</ul>
+<h3 id="step-5-test-documentation-build">Step 5: Test Documentation Build</h3>
+<pre class="codehilite"><code class="language-bash"># Build documentation site
+./scripts/build-docs.sh
+
+# Verify no build errors
+# Check generated site in _site/ directory
+
+# Test locally
+cd _site &amp;&amp; python3 -m http.server 8000
+# Visit http://localhost:8000 and verify changes
+</code></pre>
+
+<h2 id="code-review-integration">Code Review Integration</h2>
+<h3 id="for-code-authors">For Code Authors</h3>
+<p>When submitting a PR that affects documentation:</p>
+<ol>
+<li><strong>In PR description, list documentation changes:</strong>
+   ```markdown
+   ## Documentation Updates</li>
+<li>Updated <code>docs/04-network-layer/method-registry.md</code> for new registration pattern</li>
+<li>Added example to <code>docs/10-tutorials/tutorial-2-accounts.md</code></li>
+<li>
+<p>Updated <code>docs/12-diagrams/system-architecture.svg</code>
+   ```</p>
+</li>
+<li>
+<p><strong>Include documentation checklist:</strong></p>
+</li>
+<li>[ ] Identified all affected documentation sections</li>
+<li>[ ] Updated code examples and verified they compile</li>
+<li>[ ] Updated diagrams if architecture changed</li>
+<li>[ ] Ran link checker and fixed broken links</li>
+<li>[ ] Built documentation site and verified changes</li>
+</ol>
+<h3 id="for-code-reviewers">For Code Reviewers</h3>
+<p>When reviewing PRs, verify:</p>
+<ul>
+<li>[ ] Documentation changes are included for code changes</li>
+<li>[ ] Code examples match the actual implementation</li>
+<li>[ ] Diagrams accurately reflect the changes</li>
+<li>[ ] No broken links or references</li>
+<li>[ ] Terminology is consistent</li>
+<li>[ ] Changes are clear and well-explained</li>
+</ul>
+<h2 id="consistency-guidelines">Consistency Guidelines</h2>
+<h3 id="terminology">Terminology</h3>
+<p>Use consistent terms throughout documentation:</p>
+<table>
+<thead>
+<tr>
+<th>Preferred Term</th>
+<th>Avoid</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XRPC endpoint</td>
+<td>RPC method, API endpoint</td>
+</tr>
+<tr>
+<td>Service layer</td>
+<td>Business logic layer</td>
+</tr>
+<tr>
+<td>Actor database</td>
+<td>User database, per-user DB</td>
+</tr>
+<tr>
+<td>Service database</td>
+<td>Shared database, global DB</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td>Repo (except in code)</td>
+</tr>
+<tr>
+<td>Firehose</td>
+<td>Event stream, WebSocket feed</td>
+</tr>
+<tr>
+<td>DPoP</td>
+<td>DPOP, dpop</td>
+</tr>
+</tbody>
+</table>
+<h3 id="code-example-format">Code Example Format</h3>
+<p>All code examples should follow this format:</p>
+<pre class="codehilite"><code class="language-objc">// Brief description of what this code does
+// Source: ATProtoPDS/Sources/Path/To/File.m (lines 123-145)
+
+- (void)exampleMethod {
+    // Implementation with comments
+}
+</code></pre>
+
+<h3 id="diagram-standards">Diagram Standards</h3>
+<ul>
+<li>Use SVG format for all diagrams</li>
+<li>Include text descriptions for accessibility</li>
+<li>Use consistent colors and shapes</li>
+<li>Label all components clearly</li>
+<li>Include diagram source files (if using tools like draw.io)</li>
+</ul>
+<h2 id="version-specific-documentation">Version-Specific Documentation</h2>
+<h3 id="for-release-versions">For Release Versions</h3>
+<p>When cutting a release:</p>
+<ol>
+<li>
+<p><strong>Tag documentation with version:</strong>
+   <code>bash
+   git tag -a docs-v1.0.0 -m "Documentation for v1.0.0"</code></p>
+</li>
+<li>
+<p><strong>Update version references:</strong></p>
+</li>
+<li>[ ] Update version numbers in examples</li>
+<li>[ ] Update compatibility notes</li>
+<li>
+<p>[ ] Update changelog references</p>
+</li>
+<li>
+<p><strong>Archive old version docs:</strong></p>
+</li>
+<li>[ ] Create versioned documentation branch if needed</li>
+<li>[ ] Update "Version" selector in docs site</li>
+</ol>
+<h3 id="for-development-documentation">For Development Documentation</h3>
+<ul>
+<li>Mark unstable features clearly: <code>⚠️ **Experimental**: This feature is under development</code></li>
+<li>Use version badges: <code>Since v1.2.0</code> or <code>Deprecated in v2.0.0</code></li>
+<li>Link to relevant issues/PRs for context</li>
+</ul>
+<h2 id="troubleshooting-documentation-issues">Troubleshooting Documentation Issues</h2>
+<h3 id="broken-links">Broken Links</h3>
+<pre class="codehilite"><code class="language-bash"># Find broken internal links
+python3 scripts/test-doc-links.py
+
+# Fix by updating paths or removing dead links
+</code></pre>
+
+<h3 id="outdated-code-examples">Outdated Code Examples</h3>
+<pre class="codehilite"><code class="language-bash"># Find examples that reference changed files
+grep -r &quot;Sources/OldFileName&quot; docs/
+
+# Update to new file names and verify examples still work
+</code></pre>
+
+<h3 id="inconsistent-terminology">Inconsistent Terminology</h3>
+<pre class="codehilite"><code class="language-bash"># Find inconsistent terms
+grep -r &quot;RPC method&quot; docs/  # Should be &quot;XRPC endpoint&quot;
+grep -r &quot;user database&quot; docs/  # Should be &quot;actor database&quot;
+</code></pre>
+
+<h2 id="documentation-quality-metrics">Documentation Quality Metrics</h2>
+<p>Track these metrics to ensure documentation quality:</p>
+<ul>
+<li><strong>Coverage</strong>: % of components with documentation</li>
+<li><strong>Freshness</strong>: Days since last update for each section</li>
+<li><strong>Accuracy</strong>: % of code examples that compile</li>
+<li><strong>Completeness</strong>: % of checklist items completed per PR</li>
+<li><strong>Link health</strong>: % of links that work</li>
+</ul>
+<h2 id="emergency-documentation-updates">Emergency Documentation Updates</h2>
+<p>For critical fixes that need immediate documentation updates:</p>
+<ol>
+<li>
+<p><strong>Create hotfix branch:</strong>
+   <code>bash
+   git checkout -b docs-hotfix-issue-123</code></p>
+</li>
+<li>
+<p><strong>Make minimal necessary changes</strong></p>
+</li>
+<li>Focus only on the critical issue</li>
+<li>
+<p>Don't refactor or improve unrelated content</p>
+</li>
+<li>
+<p><strong>Fast-track review:</strong></p>
+</li>
+<li>Request expedited review</li>
+<li>
+<p>Merge directly to main if urgent</p>
+</li>
+<li>
+<p><strong>Follow up:</strong></p>
+</li>
+<li>Create issue for comprehensive review</li>
+<li>Schedule time for full documentation audit</li>
+</ol>
+<h2 id="maintenance-schedule">Maintenance Schedule</h2>
+<h3 id="weekly">Weekly</h3>
+<ul>
+<li>[ ] Check for new issues labeled "documentation"</li>
+<li>[ ] Review recent PRs for missing doc updates</li>
+<li>[ ] Run link checker</li>
+</ul>
+<h3 id="monthly">Monthly</h3>
+<ul>
+<li>[ ] Review documentation metrics</li>
+<li>[ ] Update troubleshooting guide with new issues</li>
+<li>[ ] Verify all tutorials still work</li>
+</ul>
+<h3 id="quarterly">Quarterly</h3>
+<ul>
+<li>[ ] Full documentation audit</li>
+<li>[ ] Update all diagrams for accuracy</li>
+<li>[ ] Review and update glossary</li>
+<li>[ ] Check for outdated content</li>
+</ul>
+<h3 id="per-release">Per Release</h3>
+<ul>
+<li>[ ] Update version-specific content</li>
+<li>[ ] Verify all examples work with new version</li>
+<li>[ ] Update changelog and migration guides</li>
+<li>[ ] Tag documentation with release version</li>
+</ul>
+<h2 id="resources">Resources</h2>
+<ul>
+<li><strong>Documentation source</strong>: <code>docs/</code> directory</li>
+<li><strong>Build script</strong>: <code>scripts/build-docs.sh</code></li>
+<li><strong>Link checker</strong>: <code>scripts/test-doc-links.py</code></li>
+<li><strong>Example validator</strong>: <code>scripts/verify-doc-examples.sh</code> (if exists)</li>
+<li><strong>Style guide</strong>: Follow this checklist for consistency</li>
+<li><strong>Issue tracker</strong>: Label issues with <code>documentation</code> tag</li>
+</ul>
+<h2 id="questions">Questions?</h2>
+<p>If you're unsure whether documentation needs updating:</p>
+<ol>
+<li>Ask yourself: "Would this change confuse someone reading the docs?"</li>
+<li>If yes, update the documentation</li>
+<li>If unsure, ask in PR review or create a documentation issue</li>
+<li>When in doubt, update it — better to over-document than under-document</li>
+</ol>
+<hr />
+<p><strong>Remember</strong>: Documentation is code. Treat it with the same care and rigor as the implementation.</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
