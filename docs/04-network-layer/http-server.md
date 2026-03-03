@@ -398,8 +398,15 @@ response.headers[@"Cache-Control"] = @"public, max-age=3600";
 response.headers[@"ETag"] = [self calculateETag:response.body];
 ```
 
-## Next Steps
+## See Also
 
-- **[XRPC Dispatch](./xrpc-dispatch.md)** — XRPC routing
-- **[Method Registry](./method-registry.md)** — Method registration
-- **[Authentication](../06-authentication/jwt-tokens.md)** — Authentication details
+**Basic Topics:**
+- [XRPC Dispatch](./xrpc-dispatch.md) — XRPC routing
+- [Method Registry](./method-registry.md) — Method registration
+- [Authentication](../06-authentication/jwt-tokens.md) — Authentication details
+
+**Advanced Topics:**
+- [Rate Limiting](./rate-limiting.md) — Request rate control
+- [DoS Protection](./dos-protection.md) — Attack mitigation
+- [Request Throttling](./request-throttling.md) — Traffic management
+- [Input Validation](./input-validation.md) — Request validation

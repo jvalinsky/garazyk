@@ -254,6 +254,58 @@ Event sent to all subscribed clients
 Clients receive commit event
 </code></pre>
 
+<p><strong>ASCII Diagram: Commit Broadcasting Flow</strong></p>
+<pre class="codehilite"><code>┌─────────────────────────────────────────────────────────┐
+│  Record Operation                                       │
+│  (create/update/delete via XRPC endpoint)              │
+└────────────────────┬────────────────────────────────────┘
+                     │
+        ┌────────────▼────────────┐
+        │  PDSRecordService       │
+        │  - Validate record      │
+        │  - Check permissions    │
+        └────────────┬────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  PDSRepositoryService           │
+        │  - Update MST                   │
+        │  - Create commit                │
+        │  - Calculate root CID           │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  Get next sequence number       │
+        │  From PDSServiceDatabases       │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  Store commit in sequencer      │
+        │  seq, did, commit, rebase, etc  │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  Format firehose event          │
+        │  {t: &quot;#commit&quot;, commit, seq...} │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  Encode as JSON                 │
+        │  NSJSONSerialization            │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  Get all subscriptions          │
+        │  From CommitBroadcaster         │
+        └────────────┬─────────────────────┘
+                     │
+        ┌────────────▼────────────────────┐
+        │  For each subscription:         │
+        │  - Check filter match           │
+        │  - Send to client               │
+        │  - Handle backpressure          │
+        └─────────────────────────────────┘
+</code></pre>
+
 <h3 id="event-flow">Event Flow</h3>
 <pre class="codehilite"><code>┌─────────────────────────────────────────────────────────┐
 │                  Record Operation                       │
@@ -385,64 +437,85 @@ Clients receive commit event
 </code></pre>
 
 <h3 id="broadcasting-commits">Broadcasting Commits</h3>
-<pre class="codehilite"><code class="language-objc">// In CommitBroadcaster.m
-- (void)broadcastCommit:(NSDictionary *)commit 
-                   did:(NSString *)did
-                   seq:(NSInteger)seq
-                  rebase:(BOOL)rebase
-                 tooBig:(BOOL)tooBig {
+<p>The SubscribeReposHandler broadcasts repository commits to all connected clients:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Broadcasting repository commits
+- (void)broadcastRepositoryCommit:(RepoCommit *)commit
+                          forRepo:(NSString *)repoDid
+                              ops:(NSArray&lt;NSDictionary *&gt; *)ops
+                            blobs:(NSArray&lt;CID *&gt; *)blobs {
+  if (self.stopping) {
+    return;
+  }
+  dispatch_async(self.eventQueue, ^{
+    [self ensureSequenceInitialized];
+    self.sequenceNumber++;
 
-    dispatch_async(self.eventQueue, ^{
-        // 1. Create event
-        NSDictionary *event = @{
-            @&quot;t&quot;: @&quot;#commit&quot;,
-            @&quot;commit&quot;: commit,
-            @&quot;seq&quot;: @(seq),
-            @&quot;time&quot;: [self formatTimestamp:[NSDate date]],
-            @&quot;rebase&quot;: @(rebase),
-            @&quot;tooBig&quot;: @(tooBig)
-        };
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
 
-        // 2. Encode as JSON
-        NSError *error = nil;
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:event 
-                                                           options:0 
-                                                             error:&amp;error];
-        if (error) {
-            NSLog(@&quot;Failed to encode event: %@&quot;, error);
-            return;
-        }
+    // Required fields per subscribeRepos lexicon
+    event.seq = self.sequenceNumber;
+    event.rebase = NO; // Deprecated, always false
+    event.tooBig = NO; // Deprecated, always false
+    event.repo = repoDid;
+    event.commit = commit.computeCID;
+    event.rev = commit.rev;
+    event.since =
+        self.lastCommitRevByDID[repoDid]; // Previous commit rev for this repo
+    event.blocks =
+        [self buildCARBlocksForCommit:commit ops:ops]; // Real CAR bytes
+    event.ops = ops;
+    event.blobs = blobs ?: @[]; // Already CID array
+    event.time = [SubscribeReposHandler rfc3339Timestamp];
+    event.prevData = commit.prevCID ?: nil; // Previous MST root CID
 
-        // 3. Send to all subscribed clients
-        [self sendEventToSubscribers:jsonData commit:commit];
-    });
-}
-
-- (void)sendEventToSubscribers:(NSData *)eventData 
-                       commit:(NSDictionary *)commit {
-
-    [self.subscriptionLock lock];
-    NSArray *subscriptions = [self.subscriptions copy];
-    [self.subscriptionLock unlock];
-
-    for (SubscriptionContext *context in subscriptions) {
-        // 1. Check if subscription matches repository filter
-        if (![self subscriptionMatches:context commit:commit]) {
-            continue;
-        }
-
-        // 2. Send event
-        NSError *error = nil;
-        [context.connection sendMessage:eventData opcode:0x1 fin:YES error:&amp;error];
-
-        if (error) {
-            NSLog(@&quot;Failed to send event: %@&quot;, error);
-            // Connection will be cleaned up by error handler
-        }
+    // Update the per-DID tracking for next event's since field
+    if (commit.rev) {
+      self.lastCommitRevByDID[repoDid] = commit.rev;
     }
+
+    NSString *eventType = @&quot;commit&quot;;
+    NSError *error = nil;
+    NSData *eventData =
+        [self.eventFormatter encodeCommitEvent:event error:&amp;error];
+    if (!eventData) {
+      PDS_LOG_SYNC_WARN(
+          @&quot;Commit event encoding failed for %@ at seq %lu (%@), falling back &quot;
+          @&quot;to #sync&quot;,
+          repoDid, (unsigned long)self.sequenceNumber, error);
+      FirehoseSyncEvent *syncEvent = [[FirehoseSyncEvent alloc] init];
+      syncEvent.seq = self.sequenceNumber;
+      syncEvent.did = repoDid;
+      syncEvent.blocks = [self buildCARBlocksForSyncCommitOnly:commit];
+      syncEvent.rev = commit.rev ?: @&quot;&quot;;
+      syncEvent.time = event.time;
+
+      NSError *syncError = nil;
+      eventData = [self.eventFormatter encodeSyncEvent:syncEvent error:&amp;syncError];
+      if (!eventData) {
+        PDS_LOG_SYNC_ERROR(@&quot;Failed to encode sync fallback event: %@&quot;,
+                           syncError);
+        return;
+      }
+      eventType = @&quot;sync&quot;;
+    }
+
+    NSError *persistError = nil;
+    if (![self.serviceDatabases persistEvent:self.sequenceNumber
+                                        type:eventType
+                                        data:eventData
+                                       error:&amp;persistError]) {
+      PDS_LOG_SYNC_ERROR(@&quot;Failed to persist %@ event: %@&quot;, eventType,
+                         persistError);
+    }
+
+    [self broadcastEventData:eventData];
+    PDS_LOG_SYNC_INFO(@&quot;Broadcast %@ event for repo %@, seq %lu&quot;, eventType,
+                      repoDid, (unsigned long)self.sequenceNumber);
+  });
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 400-470)</p>
 <h3 id="subscription-filtering">Subscription Filtering</h3>
 <pre class="codehilite"><code class="language-objc">// In CommitBroadcaster.m
 - (BOOL)subscriptionMatches:(SubscriptionContext *)context 
@@ -820,7 +893,7 @@ Clients receive commit event
 <li><strong><a href="./firehose-overview.md">Firehose Overview</a></strong> — Architecture overview</li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

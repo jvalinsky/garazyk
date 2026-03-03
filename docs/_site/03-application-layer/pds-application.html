@@ -246,60 +246,74 @@
 </code></pre>
 
 <h3 id="initialization-flow">Initialization Flow</h3>
+<p>The actual initialization in PDSApplication.m follows this pattern (lines 1-150):</p>
 <pre class="codehilite"><code class="language-objc">// In PDSApplication.m
-- (instancetype)initWithConfiguration:(PDSConfiguration *)config 
-                                error:(NSError **)error {
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
     self = [super init];
-    if (!self) return nil;
+    if (self) {
+        _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
+        _dataDirectory = _configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory];
+        _httpPort = _configuration.serverPort &gt; 0 ? _configuration.serverPort : 2583;
+        _running = NO;
 
-    self.configuration = config;
+        // Catch unhandled ObjC exceptions before they silently crash
+        NSSetUncaughtExceptionHandler(&amp;PDSApplicationUncaughtExceptionHandler);
 
-    // 1. Initialize databases
-    self.serviceDatabases = [[PDSServiceDatabases alloc] 
-        initWithPath:config.database.path error:error];
-    if (!self.serviceDatabases) return nil;
+        // Configure logging from configuration
+        [self configureLogging];
 
-    self.databasePool = [[PDSDatabasePool alloc] 
-        initWithServiceDatabases:self.serviceDatabases error:error];
-    if (!self.databasePool) return nil;
+        // Configure rate limiter
+        [self configureRateLimiter];
 
-    // 2. Initialize services
-    self.accountService = [[PDSAccountService alloc] 
-        initWithApplication:self];
+        PDS_LOG_INFO_C(PDSLogComponentCore, @&quot;PDSApplication initializing with data directory: %@&quot;, _dataDirectory);
 
-    self.recordService = [[PDSRecordService alloc] 
-        initWithApplication:self];
+        // Initialize infrastructure (databases, JWT minter)
+        [self initializeInfrastructure];
 
-    self.blobService = [[PDSBlobService alloc] 
-        initWithApplication:self];
+        // Initialize services
+        [self initializeServices];
 
-    self.repositoryService = [[PDSRepositoryService alloc] 
-        initWithApplication:self];
-
-    self.adminController = [[PDSAdminController alloc] 
-        initWithApplication:self];
-
-    self.relayService = [[PDSRelayService alloc] 
-        initWithApplication:self];
-
-    // 3. Initialize HTTP server
-    self.httpServer = [[HttpServer alloc] 
-        initWithPort:config.server.port error:error];
-    if (!self.httpServer) return nil;
-
-    // 4. Register XRPC methods
-    XrpcMethodRegistry *registry = [[XrpcMethodRegistry alloc] 
-        initWithApplication:self];
-    [registry registerMethods];
-
-    self.xrpcDispatcher = [[XrpcDispatcher alloc] 
-        initWithRegistry:registry];
-
-    // 5. Setup HTTP routes
-    [self setupHTTPRoutes];
-
+        // Load lexicons
+        [self loadLexicons];
+    }
     return self;
 }
+</code></pre>
+
+<p><strong>Key initialization steps (from PDSApplication.m lines 150-250):</strong></p>
+<ol>
+<li><strong>Database initialization:</strong></li>
+</ol>
+<pre class="codehilite"><code class="language-objc">_serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:_dataDirectory
+                                                     serviceMaxSize:serviceMaxSize
+                                                   didCacheMaxSize:didCacheSize
+                                                 sequencerMaxSize:sequencerSize];
+
+_userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
+</code></pre>
+
+<ol>
+<li><strong>JWT Minter setup:</strong></li>
+</ol>
+<pre class="codehilite"><code class="language-objc">_jwtMinter = [[JWTMinter alloc] init];
+_jwtMinter.issuer = [_configuration canonicalIssuerWithPortHint:_httpPort];
+_jwtMinter.signingAlgorithm = @&quot;ES256K&quot;;
+
+// Load or create signing key
+id&lt;PDSKeyManager&gt; keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[_serviceDatabases serviceDatabaseWithError:nil]];
+id&lt;PDSKeyPair&gt; activeKey = [keyManager getActiveKeyPair:&amp;serverKeyError];
+if (activeKey) {
+    _jwtMinter.keyManager = keyManager;
+}
+</code></pre>
+
+<ol>
+<li><strong>Service initialization:</strong></li>
+</ol>
+<pre class="codehilite"><code class="language-objc">_accountService = [[PDSAccountService alloc] initWithDatabasePool:_userDatabasePool];
+_recordService = [[PDSRecordService alloc] initWithDatabasePool:_userDatabasePool];
+_blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
+_repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
 </code></pre>
 
 <h2 id="service-access">Service Access</h2>
@@ -548,7 +562,7 @@ if (!app) {
 <li><strong><a href="../04-network-layer/http-server.md">Network Layer</a></strong> — HTTP and XRPC</li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

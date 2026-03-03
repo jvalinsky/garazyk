@@ -235,6 +235,8 @@
 <p><strong>Blob</strong> — Binary large object. User-uploaded files (images, videos, etc.) stored in the PDS.</p>
 <p><strong>BlobService</strong> — Service responsible for blob upload, retrieval, and deletion.</p>
 <p><strong>Backpressure</strong> — Flow control mechanism to prevent overwhelming consumers with data.</p>
+<p><strong>Blob Garbage Collection</strong> — Process of identifying and removing unreferenced blobs to free storage space.</p>
+<p><strong>Blob Quota</strong> — Storage limit enforced per user or per PDS instance.</p>
 <h2 id="c">C</h2>
 <p><strong>CAR</strong> — Content Addressable aRchive. Format for storing and transmitting DAG-CBOR data.</p>
 <p><strong>CBOR</strong> — Concise Binary Object Representation. Efficient binary serialization format used by AT Protocol.</p>
@@ -245,7 +247,10 @@
 <p><strong>DAG</strong> — Directed Acyclic Graph. Data structure used to represent repository history.</p>
 <p><strong>DAG-CBOR</strong> — CBOR encoding with specific rules for canonical representation.</p>
 <p><strong>Database Pool</strong> — Collection of database connections managed for reuse.</p>
+<p><strong>Data Integrity</strong> — Ensuring consistency and correctness of data through validation and verification.</p>
+<p><strong>Defense in Depth</strong> — Security strategy using multiple layers of protection.</p>
 <p><strong>DID</strong> — Decentralized Identifier. Unique identifier for an actor in the AT Protocol.</p>
+<p><strong>DoS</strong> — Denial of Service. Attack that attempts to make a service unavailable.</p>
 <p><strong>DPoP</strong> — Demonstration of Proof-of-Possession. OAuth 2.0 extension for binding tokens to keys.</p>
 <h2 id="e">E</h2>
 <p><strong>ECDSA</strong> — Elliptic Curve Digital Signature Algorithm. Cryptographic signature scheme used for JWT signing.</p>
@@ -258,11 +263,13 @@
 <p><strong>GUID</strong> — Globally Unique Identifier. Used for various identifiers in the system.</p>
 <h2 id="h">H</h2>
 <p><strong>Handle</strong> — Human-readable username for an actor (e.g., alice.bsky.social).</p>
+<p><strong>Hardware Security Module (HSM)</strong> — Physical device for secure key storage and cryptographic operations.</p>
 <p><strong>HTTP</strong> — HyperText Transfer Protocol. Protocol for client-server communication.</p>
 <p><strong>HttpServer</strong> — Custom HTTP server implementation in the PDS.</p>
 <h2 id="i">I</h2>
 <p><strong>Identity</strong> — Information about an actor including DID, handle, and public keys.</p>
 <p><strong>IdentityService</strong> — Service responsible for DID and handle resolution.</p>
+<p><strong>Input Validation</strong> — Process of verifying and sanitizing user input to prevent attacks.</p>
 <h2 id="j">J</h2>
 <p><strong>JWT</strong> — JSON Web Token. Standard format for representing claims between parties.</p>
 <p><strong>JWTMinter</strong> — Component that creates JWT tokens.</p>
@@ -275,35 +282,47 @@
 <p><strong>LabelService</strong> — Service for managing labels and moderation.</p>
 <h2 id="m">M</h2>
 <p><strong>Merkle Search Tree (MST)</strong> — Efficient data structure for storing and verifying repository contents.</p>
+<p><strong>Metrics</strong> — Quantitative measurements of system behavior and performance.</p>
 <p><strong>Method</strong> — XRPC endpoint handler that processes requests.</p>
 <p><strong>MethodRegistry</strong> — Component that registers and routes XRPC methods.</p>
 <p><strong>Migration</strong> — Database schema change applied in sequence.</p>
+<p><strong>Migration Rollback</strong> — Process of reverting a database migration to a previous state.</p>
 <h2 id="n">N</h2>
 <p><strong>NSID</strong> — Namespace Identifier. Hierarchical identifier for XRPC methods (e.g., com.atproto.repo.createRecord).</p>
 <p><strong>Network Transport</strong> — Platform-specific layer for HTTP/WebSocket communication.</p>
 <h2 id="o">O</h2>
 <p><strong>OAuth 2.0</strong> — Authorization framework for delegated access.</p>
 <p><strong>OAuthProvider</strong> — Component implementing OAuth 2.0 server.</p>
+<p><strong>Observability</strong> — Ability to understand system state through metrics, logs, and traces.</p>
+<p><strong>Orphan Blob</strong> — Blob that is no longer referenced by any record.</p>
 <h2 id="p">P</h2>
 <p><strong>PDS</strong> — Personal Data Server. Server that stores and manages user data in AT Protocol.</p>
 <p><strong>PDSApplication</strong> — Main application facade coordinating all services.</p>
 <p><strong>PDSConfiguration</strong> — Configuration object loaded from config.json.</p>
 <p><strong>PDSController</strong> — Legacy facade (use PDSApplication instead).</p>
+<p><strong>PLC</strong> — Public Ledger of Credentials. Directory service for DID documents.</p>
+<p><strong>PLC Directory</strong> — Centralized directory for DID document storage and resolution.</p>
 <p><strong>Prepared Statement</strong> — Pre-compiled SQL query for efficient execution.</p>
 <h2 id="r">R</h2>
+<p><strong>Rate Limiting</strong> — Technique to control the rate of requests to prevent abuse.</p>
 <p><strong>Record</strong> — Data object stored in a repository (e.g., a post, profile).</p>
 <p><strong>RecordService</strong> — Service for record CRUD operations.</p>
 <p><strong>Repository</strong> — Collection of records and metadata for an actor.</p>
 <p><strong>RepositoryService</strong> — Service for repository operations and MST management.</p>
 <p><strong>Relay</strong> — External service notified of repository updates.</p>
 <p><strong>RelayService</strong> — Service for notifying external relays.</p>
+<p><strong>Retry Policy</strong> — Strategy for retrying failed operations with backoff.</p>
 <h2 id="s">S</h2>
+<p><strong>Secrets Management</strong> — Secure storage and handling of cryptographic keys and sensitive data.</p>
+<p><strong>Security Audit</strong> — Systematic review of code for security vulnerabilities.</p>
 <p><strong>Service</strong> — Component providing specific functionality (Account, Record, Blob, etc.).</p>
 <p><strong>ServiceDatabase</strong> — Shared database for service-level data.</p>
 <p><strong>Signature</strong> — Cryptographic proof of authenticity and non-repudiation.</p>
 <p><strong>SQLite</strong> — Embedded SQL database engine used for persistence.</p>
+<p><strong>Structured Logging</strong> — Logging format with consistent fields for parsing and analysis.</p>
 <p><strong>SubscribeRepos</strong> — XRPC method providing real-time repository updates via WebSocket.</p>
 <h2 id="t">T</h2>
+<p><strong>Throttling</strong> — Limiting the rate of operations to prevent resource exhaustion.</p>
 <p><strong>TOTP</strong> — Time-based One-Time Password. Multi-factor authentication method.</p>
 <p><strong>Transaction</strong> — Atomic database operation ensuring consistency.</p>
 <p><strong>TLS</strong> — Transport Layer Security. Protocol for encrypted communication.</p>
@@ -325,6 +344,7 @@
 <p><strong>XrpcResponse</strong> — Encapsulation of an XRPC response.</p>
 <h2 id="z">Z</h2>
 <p><strong>Zero-Copy</strong> — Optimization technique avoiding unnecessary data copying.</p>
+<p><strong>Zero-Downtime Migration</strong> — Database migration performed without service interruption.</p>
 <hr />
 <h2 id="acronyms">Acronyms</h2>
 <table>
@@ -364,6 +384,10 @@
 <td>Decentralized Identifier</td>
 </tr>
 <tr>
+<td>DoS</td>
+<td>Denial of Service</td>
+</tr>
+<tr>
 <td>DPoP</td>
 <td>Demonstration of Proof-of-Possession</td>
 </tr>
@@ -374,6 +398,10 @@
 <tr>
 <td>GNUstep</td>
 <td>GNU Objective-C Runtime Environment</td>
+</tr>
+<tr>
+<td>HSM</td>
+<td>Hardware Security Module</td>
 </tr>
 <tr>
 <td>HTTP</td>
@@ -400,6 +428,10 @@
 <td>Personal Data Server</td>
 </tr>
 <tr>
+<td>PLC</td>
+<td>Public Ledger of Credentials</td>
+</tr>
+<tr>
 <td>SQL</td>
 <td>Structured Query Language</td>
 </tr>
@@ -422,7 +454,7 @@
 </tbody>
 </table>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

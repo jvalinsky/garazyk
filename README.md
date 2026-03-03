@@ -87,6 +87,17 @@ The guide covers:
 - Platform compatibility (macOS and Linux/GNUstep)
 - Production deployment and operations
 
+### Advanced Topics
+
+The guide includes comprehensive coverage of production-ready features:
+
+- **Security & Hardening** — [Secrets management](https://jvalinsky.github.io/September/06-authentication/secrets-management.html), [input validation](https://jvalinsky.github.io/September/04-network-layer/input-validation.html), [security best practices](https://jvalinsky.github.io/September/06-authentication/security-best-practices.html)
+- **Performance & Reliability** — [Rate limiting](https://jvalinsky.github.io/September/04-network-layer/rate-limiting.html), [DoS protection](https://jvalinsky.github.io/September/04-network-layer/dos-protection.html), [blob optimization](https://jvalinsky.github.io/September/07-repository-protocol/blob-optimization.html)
+- **Operations & Monitoring** — [Metrics collection](https://jvalinsky.github.io/September/11-reference/metrics-collection.html), [logging strategy](https://jvalinsky.github.io/September/11-reference/logging-strategy.html), [alerting](https://jvalinsky.github.io/September/11-reference/alerting.html)
+- **Database Management** — [Migration strategy](https://jvalinsky.github.io/September/05-database-layer/migration-strategy.html), [zero-downtime migrations](https://jvalinsky.github.io/September/05-database-layer/zero-downtime-migrations.html), [data integrity](https://jvalinsky.github.io/September/05-database-layer/data-integrity.html)
+- **Blob Management** — [Lifecycle](https://jvalinsky.github.io/September/07-repository-protocol/blob-lifecycle.html), [garbage collection](https://jvalinsky.github.io/September/07-repository-protocol/blob-garbage-collection.html), [quotas](https://jvalinsky.github.io/September/07-repository-protocol/blob-quotas.html)
+- **Identity & PLC** — [PLC directory](https://jvalinsky.github.io/September/02-core-concepts/plc-directory.html), [DID updates](https://jvalinsky.github.io/September/02-core-concepts/did-document-updates.html), [failover strategies](https://jvalinsky.github.io/September/11-reference/plc-failover.html)
+
 ## Building from Source
 
 ### Using XcodeGen & CMake (Recommended)

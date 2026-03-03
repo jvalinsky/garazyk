@@ -284,7 +284,74 @@
 - <code>did</code>: Optional pre-generated DID; if nil, one is generated automatically
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> Dictionary with account info or nil on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSAccountService.m lines 50-150):</strong></p>
+<p>The service validates the handle, generates cryptographic keys, registers with PLC, and stores the account:</p>
+<pre class="codehilite"><code class="language-objc">// Validate Handle
+if (![ATProtoHandleValidator validateHandle:handle error:error]) {
+    return nil;
+}
+handle = [ATProtoHandleValidator normalizeHandle:handle];
+
+// Generate signing and rotation keys
+Secp256k1KeyPair *userKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+if (!userKeyPair) return nil;
+
+Secp256k1KeyPair *rotationKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
+if (!rotationKeyPair) return nil;
+
+// Register DID with PLC or use provided DID
+NSString *resolvedDid;
+if (did) {
+    resolvedDid = did;
+} else {
+    resolvedDid = [self _registerDIDWithPLCWithHandle:handle
+                                           signingKey:userKeyPair
+                                          rotationKey:rotationKeyPair
+                                                error:error];
+    if (!resolvedDid) return nil;
+}
+
+// Generate password hash
+NSData *salt = [self generateSalt];
+NSData *passwordHash = [self hashPassword:password salt:salt];
+
+// Create and save account
+PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+account.email = email;
+account.handle = handle;
+account.did = resolvedDid;
+account.passwordHash = passwordHash;
+account.passwordSalt = salt;
+account.createdAt = [[NSDate date] timeIntervalSince1970];
+account.updatedAt = [[NSDate date] timeIntervalSince1970];
+
+NSError *createError = nil;
+if (![_accountRepository saveAccount:account error:&amp;createError]) {
+    if (error) *error = createError;
+    return nil;
+}
+
+// Generate JWT tokens
+JWT *jwt = [self.minter mintAccessTokenForDID:resolvedDid handle:handle scopes:@[@&quot;atproto&quot;] error:nil];
+NSString *accessToken = [jwt encodedToken];
+NSString *refreshToken = [[NSUUID UUID] UUIDString];
+
+// Store tokens
+account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
+account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
+[_accountRepository saveAccount:account error:nil];
+[_sessionRepository storeRefreshToken:refreshToken forAccountDid:resolvedDid error:nil];
+
+return @{
+    @&quot;did&quot;: resolvedDid,
+    @&quot;handle&quot;: handle,
+    @&quot;email&quot;: email,
+    @&quot;accessJwt&quot;: accessToken,
+    @&quot;refreshJwt&quot;: refreshToken
+};
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 NSDictionary *account = [accountService createAccountForEmail:@&quot;user@example.com&quot;
                                                      password:@&quot;secure_password&quot;
@@ -293,7 +360,7 @@ NSDictionary *account = [accountService createAccountForEmail:@&quot;user@exampl
                                                        error:&amp;error];
 if (account) {
     NSString *did = account[@&quot;did&quot;];
-    NSString *accessToken = account[@&quot;accessToken&quot;];
+    NSString *accessToken = account[@&quot;accessJwt&quot;];
 }
 </code></pre>
 
@@ -309,14 +376,101 @@ if (account) {
 - <code>password</code>: Account password
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> Dictionary with tokens and account info or nil on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSAccountService.m lines 200-280):</strong></p>
+<p>The service looks up the account by email or handle, verifies the password, and generates new tokens:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
+                                      password:(NSString *)password
+                                         error:(NSError **)error {
+    if (!identifier) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeMissingParameter
+                                       message:@&quot;Missing identifier&quot;];
+        }
+        return nil;
+    }
+
+    // Look up account by email or handle
+    NSError *dbError = nil;
+    PDSDatabaseAccount *account = nil;
+    if ([identifier containsString:@&quot;@&quot;]) {
+        account = [_accountRepository accountForEmail:identifier error:&amp;dbError];
+    } else {
+        account = [_accountRepository accountForHandle:identifier error:&amp;dbError];
+    }
+
+    if (dbError) {
+        if (error) *error = dbError;
+        return nil;
+    }
+
+    if (!account) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotFound
+                                       message:@&quot;Account not found&quot;];
+        }
+        return nil;
+    }
+
+    return [self loginWithAccount:account password:password error:error];
+}
+
+- (nullable NSDictionary *)loginWithAccount:(PDSDatabaseAccount *)account
+                                   password:(NSString *)password
+                                      error:(NSError **)error {
+    // Verify password using constant-time comparison
+    NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
+    BOOL isPasswordCorrect = PDSConstantTimeEqualData(passwordHash, account.passwordHash);
+
+    // Also check app passwords if available
+    if (!isPasswordCorrect &amp;&amp; self.serviceDatabases) {
+        NSError *appPasswordError = nil;
+        if ([self.serviceDatabases verifyAppPasswordForAccount:account.did 
+                                                      password:password 
+                                                         error:&amp;appPasswordError]) {
+            isPasswordCorrect = YES;
+        }
+    }
+
+    if (!isPasswordCorrect) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                       message:@&quot;Invalid password&quot;];
+        }
+        return nil;
+    }
+
+    // Generate new tokens
+    JWT *jwt = [self.minter mintAccessTokenForDID:account.did 
+                                           handle:account.handle 
+                                           scopes:@[@&quot;atproto&quot;] 
+                                            error:nil];
+    NSString *accessToken = [jwt encodedToken];
+    NSString *refreshToken = [[NSUUID UUID] UUIDString];
+
+    // Store tokens
+    account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
+    account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
+    [_accountRepository saveAccount:account error:nil];
+    [_sessionRepository storeRefreshToken:refreshToken forAccountDid:account.did error:nil];
+
+    return @{
+        @&quot;did&quot;: account.did,
+        @&quot;handle&quot;: account.handle,
+        @&quot;email&quot;: account.email,
+        @&quot;accessJwt&quot;: accessToken,
+        @&quot;refreshJwt&quot;: refreshToken
+    };
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 NSDictionary *session = [accountService loginWithIdentifier:@&quot;alice&quot;
                                                    password:@&quot;secure_password&quot;
                                                       error:&amp;error];
 if (session) {
-    NSString *accessToken = session[@&quot;accessToken&quot;];
-    NSString *refreshToken = session[@&quot;refreshToken&quot;];
+    NSString *accessToken = session[@&quot;accessJwt&quot;];
+    NSString *refreshToken = session[@&quot;refreshJwt&quot;];
 }
 </code></pre>
 
@@ -535,7 +689,7 @@ if (session) {
 <li><a href="./pds-application.md">PDSApplication</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>
