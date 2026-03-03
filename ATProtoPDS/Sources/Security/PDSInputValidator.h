@@ -10,6 +10,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Compat/PDSTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
