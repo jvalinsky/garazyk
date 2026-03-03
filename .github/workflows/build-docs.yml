@@ -48,6 +48,21 @@ jobs:
             exit 1
           fi
 
+      - name: Validate Code Examples
+        run: |
+          chmod +x scripts/validate-doc-code-examples.sh
+          ./scripts/validate-doc-code-examples.sh
+
+      - name: Validate Internal Links
+        run: |
+          chmod +x scripts/validate-doc-links.sh
+          ./scripts/validate-doc-links.sh
+
+      - name: Validate Diagrams
+        run: |
+          chmod +x scripts/validate-doc-diagrams.sh
+          ./scripts/validate-doc-diagrams.sh
+
       - name: Upload Documentation Artifact
         uses: actions/upload-artifact@v4
         if: always()

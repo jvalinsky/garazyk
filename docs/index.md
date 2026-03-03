@@ -100,8 +100,10 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [System Architecture](12-diagrams/system-architecture.svg)
 - [Request Flow](12-diagrams/request-flow.svg)
 - [Database Schema](12-diagrams/database-schema.svg)
-- [Auth Flow](12-diagrams/auth-flow.svg)
-- [Firehose Flow](12-diagrams/firehose-flow.svg)
+- [JWT Token Flow](12-diagrams/jwt-token-flow.svg)
+- [OAuth 2.0 with DPoP Flow](12-diagrams/oauth2-dpop-flow.svg)
+- [Commit Broadcasting Flow](12-diagrams/commit-broadcasting-flow.svg)
+- [WebSocket Upgrade Flow](12-diagrams/websocket-upgrade-flow.svg)
 
 ## Learning Path
 
