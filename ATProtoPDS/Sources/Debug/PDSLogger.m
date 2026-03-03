@@ -1,7 +1,7 @@
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 
-#if __has_include(<os/log.h>)
+#if defined(__APPLE__) && __has_include(<os/log.h>)
 #import <os/log.h>
 #define PDS_HAS_OS_LOG 1
 #endif
