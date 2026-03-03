@@ -54,12 +54,14 @@
 #define PDS_DISPATCH_QUEUE_STRONG assign
 #endif
 
-#ifndef DEPRECATED_MSG_ATTRIBUTE
+#ifdef DEPRECATED_MSG_ATTRIBUTE
+#undef DEPRECATED_MSG_ATTRIBUTE
+#endif
+
 #if defined(__APPLE__)
 #define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
 #else
-#define DEPRECATED_MSG_ATTRIBUTE(s)
-#endif
+#define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
 #endif
 
 #if !defined(__APPLE__)
