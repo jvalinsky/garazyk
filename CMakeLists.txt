@@ -349,6 +349,30 @@ set_target_properties(atproto-plc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+# Tutorial 1: Hello PDS Example
+add_executable(hello-pds
+  ${ATProtoPDS_SOURCES}
+  examples/tutorial-1-hello-pds/src/main.m
+)
+
+target_include_directories(hello-pds PRIVATE
+  ATProtoPDS/Sources
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(hello-pds PRIVATE
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+)
+
+target_compile_definitions(hello-pds PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(hello-pds PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
 #=============================
 # Fuzzer Targets
 #=============================

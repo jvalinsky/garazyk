@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLite Architecture - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>SQLite Architecture</h1>
+            </div>
+            <h1 id="sqlite-architecture">SQLite Architecture</h1>
+<h2 id="overview">Overview</h2>
+<p>The PDS uses SQLite for persistent storage with:
+- <strong>Service Database</strong> — Shared data (users, DIDs, configuration)
+- <strong>Actor Databases</strong> — Per-user repositories (one per user)
+- <strong>WAL Mode</strong> — Write-Ahead Logging for concurrent access
+- <strong>Prepared Statements</strong> — Prevent SQL injection and improve performance</p>
+<h2 id="database-design">Database Design</h2>
+<h3 id="service-database">Service Database</h3>
+<p>The service database stores shared data:</p>
+<pre class="codehilite"><code class="language-sql">-- Users table
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    did TEXT UNIQUE NOT NULL,
+    handle TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- DID cache
+CREATE TABLE did_cache (
+    did TEXT PRIMARY KEY,
+    document TEXT NOT NULL,  -- JSON
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sequencer (for firehose)
+CREATE TABLE sequencer (
+    seq INTEGER PRIMARY KEY,
+    did TEXT NOT NULL,
+    commit_cid TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Configuration
+CREATE TABLE config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+</code></pre>
+
+<h3 id="actor-database">Actor Database</h3>
+<p>Each user has a separate database containing their repository data:</p>
+<pre class="codehilite"><code class="language-sql">-- Records
+CREATE TABLE records (
+    id INTEGER PRIMARY KEY,
+    collection TEXT NOT NULL,
+    rkey TEXT NOT NULL,
+    cid TEXT NOT NULL,
+    data BLOB NOT NULL,  -- CBOR encoded
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(collection, rkey)
+);
+
+-- Blobs
+CREATE TABLE blobs (
+    id INTEGER PRIMARY KEY,
+    cid TEXT UNIQUE NOT NULL,
+    data BLOB NOT NULL,
+    size INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- MST nodes
+CREATE TABLE mst_nodes (
+    id INTEGER PRIMARY KEY,
+    key TEXT UNIQUE NOT NULL,
+    value TEXT NOT NULL,  -- CID
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Commits
+CREATE TABLE commits (
+    id INTEGER PRIMARY KEY,
+    cid TEXT UNIQUE NOT NULL,
+    root_cid TEXT NOT NULL,
+    prev_cid TEXT,
+    signature TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+</code></pre>
+
+<h2 id="wal-mode">WAL Mode</h2>
+<h3 id="what-is-wal">What is WAL?</h3>
+<p>Write-Ahead Logging (WAL) is a technique that:
+- Writes changes to a log file first
+- Then applies changes to the main database
+- Allows concurrent reads while writes are in progress
+- Improves performance for write-heavy workloads</p>
+<h3 id="enabling-wal">Enabling WAL</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSServiceDatabases.m
+- (void)enableWALMode:(sqlite3 *)db error:(NSError **)error {
+    const char *sql = &quot;PRAGMA journal_mode=WAL;&quot;;
+    char *errMsg = NULL;
+
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &amp;errMsg);
+    if (rc != SQLITE_OK) {
+        *error = [NSError errorWithDomain:@&quot;SQLite&quot; code:rc 
+            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg]}];
+        sqlite3_free(errMsg);
+        return;
+    }
+
+    // Set WAL checkpoint interval
+    sqlite3_wal_autocheckpoint(db, 1000);
+}
+</code></pre>
+
+<h3 id="wal-checkpoint">WAL Checkpoint</h3>
+<pre class="codehilite"><code class="language-objc">// Checkpoint WAL periodically
+- (void)checkpointWAL:(sqlite3 *)db {
+    sqlite3_wal_checkpoint(db, SQLITE_CHECKPOINT_RESTART);
+}
+</code></pre>
+
+<h2 id="connection-management">Connection Management</h2>
+<h3 id="database-pool">Database Pool</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSDatabasePool.m
+- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases 
+                                   error:(NSError **)error {
+    self = [super init];
+    if (!self) return nil;
+
+    self.serviceDatabases = serviceDatabases;
+    self.actorDatabases = [NSMutableDictionary dictionary];
+    self.lock = [[NSLock alloc] init];
+
+    return self;
+}
+
+- (PDSActorDatabase *)databaseForDID:(NSString *)did 
+                               error:(NSError **)error {
+    [self.lock lock];
+
+    // Check if database is already open
+    PDSActorDatabase *db = self.actorDatabases[did];
+    if (db) {
+        [self.lock unlock];
+        return db;
+    }
+
+    // Create new database
+    NSString *dbPath = [NSString stringWithFormat:@&quot;%@/%@.db&quot;, self.basePath, did];
+    db = [[PDSActorDatabase alloc] initWithPath:dbPath error:error];
+
+    if (db) {
+        self.actorDatabases[did] = db;
+    }
+
+    [self.lock unlock];
+    return db;
+}
+</code></pre>
+
+<h2 id="prepared-statements">Prepared Statements</h2>
+<h3 id="benefits">Benefits</h3>
+<ul>
+<li><strong>Security</strong> — Prevent SQL injection</li>
+<li><strong>Performance</strong> — Compiled once, executed many times</li>
+<li><strong>Type safety</strong> — Automatic type conversion</li>
+</ul>
+<h3 id="using-prepared-statements">Using Prepared Statements</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (void)createRecord:(NSDictionary *)record 
+          collection:(NSString *)collection
+                rkey:(NSString *)rkey
+                 did:(NSString *)did
+          completion:(void (^)(NSString *uri, NSError *error))completion {
+
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
+
+    // 1. Prepare statement
+    const char *sql = &quot;INSERT INTO records (collection, rkey, cid, data) VALUES (?, ?, ?, ?)&quot;;
+    sqlite3_stmt *stmt;
+
+    int rc = sqlite3_prepare_v2(db.connection, sql, -1, &amp;stmt, NULL);
+    if (rc != SQLITE_OK) {
+        completion(nil, [NSError errorWithDomain:@&quot;SQLite&quot; code:rc userInfo:nil]);
+        return;
+    }
+
+    // 2. Bind parameters
+    NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:nil];
+    NSString *cid = [CID calculateCIDForData:cbor];
+
+    sqlite3_bind_text(stmt, 1, [collection UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, [rkey UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, [cid UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 4, cbor.bytes, (int)cbor.length, SQLITE_TRANSIENT);
+
+    // 3. Execute statement
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        completion(nil, [NSError errorWithDomain:@&quot;SQLite&quot; code:rc userInfo:nil]);
+        sqlite3_finalize(stmt);
+        return;
+    }
+
+    // 4. Finalize statement
+    sqlite3_finalize(stmt);
+
+    completion(cid, nil);
+}
+</code></pre>
+
+<h2 id="transactions">Transactions</h2>
+<h3 id="acid-properties">ACID Properties</h3>
+<p>SQLite provides ACID guarantees:
+- <strong>Atomicity</strong> — All or nothing
+- <strong>Consistency</strong> — Valid state before and after
+- <strong>Isolation</strong> — Concurrent transactions don't interfere
+- <strong>Durability</strong> — Committed data survives crashes</p>
+<h3 id="transaction-management">Transaction Management</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRepositoryService.m
+- (void)updateRepositoryWithChanges:(NSArray *)changes 
+                                did:(NSString *)did
+                         completion:(void (^)(NSError *error))completion {
+
+    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
+
+    // 1. Begin transaction
+    sqlite3_exec(db.connection, &quot;BEGIN TRANSACTION&quot;, NULL, NULL, NULL);
+
+    @try {
+        // 2. Apply changes
+        for (NSDictionary *change in changes) {
+            NSString *collection = change[@&quot;collection&quot;];
+            NSString *rkey = change[@&quot;rkey&quot;];
+            NSDictionary *record = change[@&quot;record&quot;];
+
+            [self insertRecord:record 
+                   collection:collection 
+                         rkey:rkey 
+                           db:db];
+        }
+
+        // 3. Update MST
+        NSString *rootCID = [self calculateMSTRootCID:db];
+
+        // 4. Create commit
+        [self createCommitWithRootCID:rootCID db:db];
+
+        // 5. Commit transaction
+        sqlite3_exec(db.connection, &quot;COMMIT&quot;, NULL, NULL, NULL);
+
+        completion(nil);
+    } @catch (NSException *exception) {
+        // 6. Rollback on error
+        sqlite3_exec(db.connection, &quot;ROLLBACK&quot;, NULL, NULL, NULL);
+
+        NSError *error = [NSError errorWithDomain:@&quot;Database&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: exception.reason}];
+        completion(error);
+    }
+}
+</code></pre>
+
+<h2 id="indexing">Indexing</h2>
+<h3 id="creating-indexes">Creating Indexes</h3>
+<pre class="codehilite"><code class="language-sql">-- Index for fast lookups by collection
+CREATE INDEX idx_records_collection ON records(collection);
+
+-- Index for fast lookups by DID (in service database)
+CREATE INDEX idx_users_did ON users(did);
+
+-- Index for fast lookups by handle
+CREATE INDEX idx_users_handle ON users(handle);
+
+-- Index for sequencer queries
+CREATE INDEX idx_sequencer_timestamp ON sequencer(timestamp);
+</code></pre>
+
+<h3 id="query-optimization">Query Optimization</h3>
+<pre class="codehilite"><code class="language-objc">// Use indexes for efficient queries
+const char *sql = &quot;SELECT * FROM records WHERE collection = ? ORDER BY rkey LIMIT ?&quot;;
+sqlite3_stmt *stmt;
+sqlite3_prepare_v2(db.connection, sql, -1, &amp;stmt, NULL);
+
+sqlite3_bind_text(stmt, 1, [collection UTF8String], -1, SQLITE_TRANSIENT);
+sqlite3_bind_int(stmt, 2, (int)limit);
+
+// This query uses the idx_records_collection index
+</code></pre>
+
+<h2 id="migrations">Migrations</h2>
+<h3 id="schema-versioning">Schema Versioning</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSMigration.m
++ (void)runMigrations:(sqlite3 *)db error:(NSError **)error {
+    // Get current schema version
+    int currentVersion = [self getSchemaVersion:db];
+
+    // Run migrations in order
+    if (currentVersion &lt; 1) {
+        [self migration_001_CreateTables:db error:error];
+    }
+
+    if (currentVersion &lt; 2) {
+        [self migration_002_AddIndexes:db error:error];
+    }
+
+    // Update schema version
+    [self setSchemaVersion:2 db:db];
+}
+
+- (void)migration_001_CreateTables:(sqlite3 *)db error:(NSError **)error {
+    const char *sql = &quot;CREATE TABLE records (...)&quot;;
+    char *errMsg = NULL;
+
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &amp;errMsg);
+    if (rc != SQLITE_OK) {
+        *error = [NSError errorWithDomain:@&quot;Migration&quot; code:1 userInfo:nil];
+        sqlite3_free(errMsg);
+    }
+}
+</code></pre>
+
+<h2 id="performance-tuning">Performance Tuning</h2>
+<h3 id="pragma-settings">PRAGMA Settings</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSServiceDatabases.m
+- (void)optimizePerformance:(sqlite3 *)db {
+    // Increase cache size
+    sqlite3_exec(db, &quot;PRAGMA cache_size = 10000&quot;, NULL, NULL, NULL);
+
+    // Use memory-mapped I/O
+    sqlite3_exec(db, &quot;PRAGMA mmap_size = 30000000&quot;, NULL, NULL, NULL);
+
+    // Synchronous mode (balance safety and performance)
+    sqlite3_exec(db, &quot;PRAGMA synchronous = NORMAL&quot;, NULL, NULL, NULL);
+
+    // Temporary storage in memory
+    sqlite3_exec(db, &quot;PRAGMA temp_store = MEMORY&quot;, NULL, NULL, NULL);
+}
+</code></pre>
+
+<h2 id="backup-and-recovery">Backup and Recovery</h2>
+<h3 id="backup">Backup</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSBackup.m
+- (void)backupDatabase:(sqlite3 *)sourceDB 
+            toPath:(NSString *)backupPath
+         completion:(void (^)(NSError *error))completion {
+
+    sqlite3 *backupDB;
+    sqlite3_open([backupPath UTF8String], &amp;backupDB);
+
+    sqlite3_backup *backup = sqlite3_backup_init(backupDB, &quot;main&quot;, sourceDB, &quot;main&quot;);
+
+    int rc = sqlite3_backup_step(backup, -1);
+    sqlite3_backup_finish(backup);
+
+    sqlite3_close(backupDB);
+
+    if (rc == SQLITE_OK) {
+        completion(nil);
+    } else {
+        NSError *error = [NSError errorWithDomain:@&quot;Backup&quot; code:rc userInfo:nil];
+        completion(error);
+    }
+}
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./service-databases.md">Service Databases</a></strong> — Shared database details</li>
+<li><strong><a href="./actor-databases.md">Actor Databases</a></strong> — Per-user database details</li>
+<li><strong><a href="./migrations.md">Migrations</a></strong> — Schema versioning</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

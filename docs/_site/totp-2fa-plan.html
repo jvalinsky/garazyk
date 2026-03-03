@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOTP 2FA Plan: Current State & Next Steps - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>TOTP 2FA Plan: Current State & Next Steps</h1>
+            </div>
+            <h1 id="totp-2fa-plan-current-state-next-steps">TOTP 2FA Plan: Current State &amp; Next Steps</h1>
+<h2 id="what-exists-today">What Exists Today</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Status</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>TOTPGenerator</code></strong></td>
+<td>✅ Complete</td>
+<td>RFC 6238, SHA-256, 6 digits, 30s period, dynamic truncation</td>
+</tr>
+<tr>
+<td><strong><code>TOTPService</code></strong></td>
+<td>✅ Complete</td>
+<td>Secret generation (160-bit), QR code (macOS CoreImage / Linux libqrencode), verification with ±30s drift</td>
+</tr>
+<tr>
+<td><strong>DB Schema</strong></td>
+<td>✅ Complete</td>
+<td><code>tfa_enabled</code>, <code>tfa_secret</code>, <code>recovery_codes</code> columns + migration ALTERs</td>
+</tr>
+<tr>
+<td><strong>OAuth2 token exchange</strong></td>
+<td>✅ Complete</td>
+<td>Checks <code>account.tfaEnabled</code>, requires <code>tfa_code</code> param, returns <code>interaction_required</code> error</td>
+</tr>
+<tr>
+<td><strong>Unit tests</strong></td>
+<td>✅ Complete</td>
+<td>Base32, generation, verification, QR format, YubiKey fallback</td>
+</tr>
+</tbody>
+</table>
+<h2 id="whats-missing">What's Missing</h2>
+<h3 id="1-enrollment-endpoints-no-way-to-turn-2fa-onoff">1. Enrollment Endpoints (No way to turn 2FA on/off)</h3>
+<p>There are <strong>zero XRPC endpoints</strong> for 2FA lifecycle management. You need:</p>
+<ul>
+<li><strong><code>com.atproto.server.enableTwoFactor</code></strong> (procedure, auth required)</li>
+<li>Client calls with empty body (or <code>{ "type": "totp" }</code>)</li>
+<li>PDS generates a secret via <code>TOTPService generateSecret</code></li>
+<li>PDS generates QR PNG via <code>generateQRCodeImageForSecret:accountName:issuer:</code></li>
+<li>PDS returns <code>{ "secret": "&lt;base32&gt;", "qrCode": "&lt;base64-png&gt;", "uri": "otpauth://totp/..." }</code> — but does <strong>not</strong> set <code>tfa_enabled</code> yet</li>
+<li>
+<p>This is a "pending enrollment" state — secret stored temporarily (e.g., in a time-limited cache or a <code>tfa_pending_secret</code> column) until confirmed</p>
+</li>
+<li>
+<p><strong><code>com.atproto.server.confirmTwoFactor</code></strong> (procedure, auth required)</p>
+</li>
+<li>Client sends <code>{ "code": "123456" }</code> — the code from their authenticator app after scanning QR</li>
+<li>PDS verifies the code against the pending secret</li>
+<li>On success: sets <code>tfa_enabled = 1</code>, persists <code>tfa_secret</code>, generates recovery codes, returns <code>{ "recoveryCodes": ["xxxx-xxxx", ...] }</code></li>
+<li>
+<p>On failure: returns error, does not enable 2FA</p>
+</li>
+<li>
+<p><strong><code>com.atproto.server.disableTwoFactor</code></strong> (procedure, auth required)</p>
+</li>
+<li>Client sends <code>{ "code": "123456" }</code> (current TOTP code) or <code>{ "recoveryCode": "xxxx-xxxx" }</code></li>
+<li>
+<p>PDS verifies, then clears <code>tfa_enabled</code>, <code>tfa_secret</code>, <code>recovery_codes</code></p>
+</li>
+<li>
+<p><strong><code>com.atproto.server.regenerateRecoveryCodes</code></strong> (procedure, auth required)</p>
+</li>
+<li>Requires a valid TOTP code to authorize</li>
+<li>Generates new set of recovery codes, invalidates old ones</li>
+</ul>
+<h3 id="2-recovery-codes-implementation">2. Recovery Codes Implementation</h3>
+<p>The <code>recovery_codes</code> BLOB column exists but is never populated or checked.</p>
+<ul>
+<li>Generate 8–10 single-use codes at enrollment confirmation (e.g., <code>XXXX-XXXX</code> format, cryptographically random)</li>
+<li>Store as a JSON array of bcrypt hashes (not plaintext) in the <code>recovery_codes</code> column</li>
+<li>When used, remove the hash from the array (single-use)</li>
+<li>Recovery codes should work anywhere a TOTP code works (OAuth2 token exchange, disabling 2FA)</li>
+<li>Add <code>TOTPService +verifyRecoveryCode:againstHashes:</code> and a method to mark codes as consumed in <code>PDSDatabase</code></li>
+</ul>
+<h3 id="3-createsession-2fa-gap">3. <code>createSession</code> 2FA Gap</h3>
+<p>The legacy <code>com.atproto.server.createSession</code> handler (XrpcServerMethods.m:515) <strong>does not check <code>tfa_enabled</code> at all</strong>. A user with 2FA enabled can bypass it entirely through the legacy session flow.</p>
+<p>Options:
+- <strong>(Recommended)</strong> Add the same check: if <code>account.tfaEnabled &amp;&amp; !body[@"authFactorToken"]</code>, return <code>{ "error": "AuthFactorTokenRequired" }</code>. The AT Protocol uses <code>authFactorToken</code> in the <code>createSession</code> input for this purpose.
+- Alternatively, if the PDS is OAuth2-only, deprecate/remove <code>createSession</code> password flow entirely.</p>
+<h3 id="4-rate-limiting-on-2fa-attempts">4. Rate Limiting on 2FA Attempts</h3>
+<p>Currently there's no rate limiting on TOTP verification. An attacker with a valid auth code grant could brute-force the 6-digit code (1M possibilities) rapidly.</p>
+<ul>
+<li>Add per-account rate limiting: max 5 failed 2FA attempts per 15-minute window</li>
+<li>After exceeding: lock out 2FA attempts for that account for a cooldown period</li>
+<li>Track in-memory (dispatch queue + dictionary) or add a <code>tfa_failed_attempts</code> / <code>tfa_lockout_until</code> column</li>
+</ul>
+<h3 id="5-totp-code-replay-protection">5. TOTP Code Replay Protection</h3>
+<p>Within the ±30s verification window, the same code can be replayed. RFC 6238 §5.2 recommends rejecting reused codes.</p>
+<ul>
+<li>Track the last successfully used counter value per account (add <code>tfa_last_used_counter INTEGER</code> column)</li>
+<li>Reject codes whose counter ≤ the last used counter</li>
+</ul>
+<h3 id="6-getsession-should-surface-2fa-status">6. <code>getSession</code> Should Surface 2FA Status</h3>
+<p>The <code>com.atproto.server.getSession</code> response should include a field like <code>"twoFactorEnabled": true</code> so clients know whether the account has 2FA active.</p>
+<h2 id="client-integration-guide">Client Integration Guide</h2>
+<h3 id="enrollment-flow">Enrollment Flow</h3>
+<pre class="codehilite"><code>Client                                PDS
+  |                                    |
+  |-- POST enableTwoFactor -----------&gt;|
+  |&lt;-- { secret, qrCode, uri } --------|
+  |                                    |
+  | [User scans QR in authenticator]   |
+  |                                    |
+  |-- POST confirmTwoFactor { code } -&gt;|
+  |&lt;-- { recoveryCodes: [...] } -------|
+  |                                    |
+  | [Client displays recovery codes    |
+  |  and asks user to save them]       |
+</code></pre>
+
+<h3 id="login-flow-oauth2">Login Flow (OAuth2)</h3>
+<pre class="codehilite"><code>Client                                PDS
+  |                                    |
+  |-- POST /oauth/token { code } -----&gt;|
+  |&lt;-- 400 { error: &quot;interaction_required&quot;,
+  |          error_description: &quot;Two-factor authentication code required&quot; }
+  |                                    |
+  | [Client shows TOTP input field]    |
+  |                                    |
+  |-- POST /oauth/token { code,        |
+  |        tfa_code: &quot;123456&quot; } ------&gt;|
+  |&lt;-- 200 { access_token, ... } ------|
+</code></pre>
+
+<h3 id="login-flow-legacy-createsession">Login Flow (Legacy <code>createSession</code>)</h3>
+<pre class="codehilite"><code>Client                                PDS
+  |                                    |
+  |-- POST createSession { id, pw } --&gt;|
+  |&lt;-- 401 { error: &quot;AuthFactorTokenRequired&quot; }
+  |                                    |
+  |-- POST createSession { id, pw,     |
+  |        authFactorToken: &quot;123456&quot; }-&gt;|
+  |&lt;-- 200 { did, handle, tokens } ----|
+</code></pre>
+
+<h3 id="recovery-code-flow">Recovery Code Flow</h3>
+<p>Same as above, but client sends a recovery code in place of the TOTP code. The PDS should accept either.</p>
+<h2 id="suggested-implementation-order">Suggested Implementation Order</h2>
+<ol>
+<li><strong>Enrollment endpoints</strong> (<code>enableTwoFactor</code> + <code>confirmTwoFactor</code>) — critical missing piece; without it there's no way to enroll</li>
+<li><strong>Recovery codes</strong> — must ship alongside enrollment so users aren't locked out</li>
+<li><strong><code>createSession</code> 2FA check</strong> — close the bypass gap</li>
+<li><strong><code>disableTwoFactor</code> endpoint</strong> — users need an off switch</li>
+<li><strong>Rate limiting</strong> on 2FA attempts</li>
+<li><strong>Replay protection</strong> (last-used counter)</li>
+<li><strong><code>getSession</code> 2FA status</strong> field</li>
+<li><strong>E2E tests</strong> — enrollment → login → recovery → disable cycle</li>
+</ol>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

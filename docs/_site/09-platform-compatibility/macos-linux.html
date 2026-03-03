@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>macOS and Linux Compatibility - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>macOS and Linux Compatibility</h1>
+            </div>
+            <h1 id="macos-and-linux-compatibility">macOS and Linux Compatibility</h1>
+<h2 id="overview">Overview</h2>
+<p>The PDS targets both macOS and Linux (GNUstep). This document covers platform-specific considerations.</p>
+<h2 id="platform-differences">Platform Differences</h2>
+<h3 id="macos">macOS</h3>
+<p><strong>Advantages:</strong>
+- Native Objective-C runtime
+- Xcode IDE support
+- System frameworks (Security.framework, CommonCrypto)
+- Better performance</p>
+<p><strong>Disadvantages:</strong>
+- Limited to Apple hardware
+- Requires Xcode for development</p>
+<h3 id="linux-gnustep">Linux (GNUstep)</h3>
+<p><strong>Advantages:</strong>
+- Runs on any Linux distribution
+- Open-source runtime
+- Portable to many architectures</p>
+<p><strong>Disadvantages:</strong>
+- Slower than macOS
+- Fewer system frameworks
+- Requires compatibility shims</p>
+<h2 id="build-configuration">Build Configuration</h2>
+<h3 id="macos-build">macOS Build</h3>
+<pre class="codehilite"><code class="language-bash">mkdir -p build &amp;&amp; cd build
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_OBJC_COMPILER=clang \
+  -DBUILD_SECP256K1=ON \
+  -DBUILD_TESTS=ON
+
+make -j$(sysctl -n hw.ncpu)
+</code></pre>
+
+<h3 id="linux-build">Linux Build</h3>
+<pre class="codehilite"><code class="language-bash">mkdir build-linux &amp;&amp; cd build-linux
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_OBJC_COMPILER=clang \
+  -DBUILD_SECP256K1=ON \
+  -DBUILD_TESTS=ON
+
+make -j$(nproc)
+</code></pre>
+
+<h2 id="conditional-compilation">Conditional Compilation</h2>
+<h3 id="platform-guards">Platform Guards</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSNetworkTransport.m
+#if TARGET_OS_LINUX
+    // Linux-specific code
+    #include &lt;sys/socket.h&gt;
+    #include &lt;netinet/in.h&gt;
+#elif __APPLE__
+    // macOS-specific code
+    #include &lt;sys/socket.h&gt;
+    #include &lt;netinet/in.h&gt;
+#endif
+</code></pre>
+
+<h3 id="platform-specific-implementations">Platform-Specific Implementations</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSNetworkTransport.m
+#if TARGET_OS_LINUX
+- (void)setupNetworkTransport {
+    // Use custom network I/O for GNUstep
+    self.transport = [[PDSNetworkTransportLinux alloc] init];
+}
+#elif __APPLE__
+- (void)setupNetworkTransport {
+    // Use NSURLSession on macOS
+    self.transport = [[PDSNetworkTransportMac alloc] init];
+}
+#endif
+</code></pre>
+
+<h2 id="compatibility-layer">Compatibility Layer</h2>
+<h3 id="compat-directory">Compat Directory</h3>
+<pre class="codehilite"><code>ATProtoPDS/Sources/Compat/
+├── os_log_compat.h      — Logging compatibility
+├── Security_compat.h    — Security framework shims
+├── CommonCrypto_compat.h — Crypto compatibility
+└── Foundation_compat.h  — Foundation extensions
+</code></pre>
+
+<h3 id="logging-compatibility">Logging Compatibility</h3>
+<pre class="codehilite"><code class="language-objc">// In os_log_compat.h
+#if TARGET_OS_LINUX
+    // GNUstep doesn't have os_log
+    #define os_log(log, format, ...) NSLog(format, ##__VA_ARGS__)
+    #define os_log_error(log, format, ...) NSLog(format, ##__VA_ARGS__)
+#else
+    // macOS has os_log
+    #import &lt;os/log.h&gt;
+#endif
+</code></pre>
+
+<h3 id="security-framework-compatibility">Security Framework Compatibility</h3>
+<pre class="codehilite"><code class="language-objc">// In Security_compat.h
+#if TARGET_OS_LINUX
+    // GNUstep doesn't have Security.framework
+    // Use OpenSSL instead
+    #include &lt;openssl/evp.h&gt;
+    #include &lt;openssl/ec.h&gt;
+#else
+    // macOS has Security.framework
+    #import &lt;Security/Security.h&gt;
+#endif
+</code></pre>
+
+<h3 id="cryptography-compatibility">Cryptography Compatibility</h3>
+<pre class="codehilite"><code class="language-objc">// In CommonCrypto_compat.h
+#if TARGET_OS_LINUX
+    // GNUstep uses OpenSSL
+    #include &lt;openssl/sha.h&gt;
+    #include &lt;openssl/hmac.h&gt;
+
+    #define CC_SHA256_DIGEST_LENGTH SHA256_DIGEST_LENGTH
+    #define CC_SHA256(data, len, md) SHA256(data, len, md)
+#else
+    // macOS uses CommonCrypto
+    #import &lt;CommonCrypto/CommonCrypto.h&gt;
+#endif
+</code></pre>
+
+<h2 id="network-io">Network I/O</h2>
+<h3 id="macos-network-transport">macOS Network Transport</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSNetworkTransportMac.m
+- (void)sendRequest:(NSURLRequest *)request 
+         completion:(void (^)(NSData *data, NSError *error))completion {
+
+    NSURLSession *session = [NSURLSession sharedSession];
+    NSURLSessionDataTask *task = [session dataTaskWithRequest:request 
+                                            completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        completion(data, error);
+    }];
+
+    [task resume];
+}
+</code></pre>
+
+<h3 id="linux-network-transport">Linux Network Transport</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSNetworkTransportLinux.m
+- (void)sendRequest:(NSURLRequest *)request 
+         completion:(void (^)(NSData *data, NSError *error))completion {
+
+    // Use custom socket implementation
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    // Connect to host
+    struct sockaddr_in addr;
+    memset(&amp;addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(80);
+
+    connect(sock, (struct sockaddr *)&amp;addr, sizeof(addr));
+
+    // Send request
+    NSString *requestStr = [self formatRequest:request];
+    send(sock, [requestStr UTF8String], requestStr.length, 0);
+
+    // Receive response
+    char buffer[4096];
+    ssize_t n = recv(sock, buffer, sizeof(buffer), 0);
+    NSData *data = [NSData dataWithBytes:buffer length:n];
+
+    close(sock);
+
+    completion(data, nil);
+}
+</code></pre>
+
+<h2 id="arc-runtime">ARC Runtime</h2>
+<h3 id="automatic-reference-counting">Automatic Reference Counting</h3>
+<p>Both platforms support ARC:</p>
+<pre class="codehilite"><code class="language-objc">// ARC is enabled on both macOS and GNUstep
+@interface MyClass : NSObject
+@property (nonatomic, strong) NSString *name;  // Strong reference
+@property (nonatomic, weak) MyDelegate *delegate;  // Weak reference
+@end
+
+// Memory is automatically managed
+MyClass *obj = [[MyClass alloc] init];  // Retained
+obj = nil;  // Released automatically
+</code></pre>
+
+<h3 id="memory-management">Memory Management</h3>
+<pre class="codehilite"><code class="language-objc">// Avoid manual retain/release
+// BAD (manual memory management)
+MyClass *obj = [[MyClass alloc] init];
+[obj retain];
+[obj release];
+
+// GOOD (ARC)
+MyClass *obj = [[MyClass alloc] init];
+// Automatically released when out of scope
+</code></pre>
+
+<h2 id="testing">Testing</h2>
+<h3 id="platform-specific-tests">Platform-Specific Tests</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSNetworkTransportTests.m
+#if TARGET_OS_LINUX
+- (void)testLinuxNetworkTransport {
+    PDSNetworkTransportLinux *transport = [[PDSNetworkTransportLinux alloc] init];
+    // Test Linux-specific implementation
+}
+#elif __APPLE__
+- (void)testMacNetworkTransport {
+    PDSNetworkTransportMac *transport = [[PDSNetworkTransportMac alloc] init];
+    // Test macOS-specific implementation
+}
+#endif
+</code></pre>
+
+<h3 id="cross-platform-tests">Cross-Platform Tests</h3>
+<pre class="codehilite"><code class="language-objc">// Tests that run on both platforms
+- (void)testRecordCreation {
+    // This test runs on both macOS and Linux
+    PDSRecordService *service = [[PDSRecordService alloc] initWithApplication:self.app];
+
+    [service createRecord:@{@&quot;text&quot;: @&quot;Hello&quot;}
+              collection:@&quot;app.bsky.feed.post&quot;
+                     did:@&quot;did:plc:test123&quot;
+              completion:^(NSString *uri, NSError *error) {
+        XCTAssertNil(error);
+        XCTAssertNotNil(uri);
+    }];
+}
+</code></pre>
+
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="macos-performance">macOS Performance</h3>
+<ul>
+<li>Faster due to native runtime</li>
+<li>Better system integration</li>
+<li>More efficient memory management</li>
+</ul>
+<h3 id="linux-performance">Linux Performance</h3>
+<ul>
+<li>Slower due to GNUstep overhead</li>
+<li>More memory usage</li>
+<li>Longer startup time</li>
+</ul>
+<h3 id="optimization-tips">Optimization Tips</h3>
+<ol>
+<li><strong>Profile on both platforms</strong> — Performance characteristics differ</li>
+<li><strong>Use platform-specific optimizations</strong> — Leverage native features</li>
+<li><strong>Test thoroughly</strong> — Ensure compatibility</li>
+<li><strong>Monitor resource usage</strong> — Track memory and CPU</li>
+</ol>
+<h2 id="deployment">Deployment</h2>
+<h3 id="macos-deployment">macOS Deployment</h3>
+<pre class="codehilite"><code class="language-bash"># Build for macOS
+mkdir -p build &amp;&amp; cd build
+cmake ..
+make -j$(sysctl -n hw.ncpu)
+
+# Binary location
+./bin/kaszlak
+</code></pre>
+
+<h3 id="linux-deployment">Linux Deployment</h3>
+<pre class="codehilite"><code class="language-bash"># Build for Linux
+mkdir build-linux &amp;&amp; cd build-linux
+cmake ..
+make -j$(nproc)
+
+# Binary location
+./bin/september
+
+# Or use Docker
+docker build -f docker/Dockerfile.gnustep -t atprotopds:latest .
+docker run -p 2583:2583 atprotopds:latest
+</code></pre>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="macos-issues">macOS Issues</h3>
+<p><strong>Issue:</strong> Xcode not found</p>
+<pre class="codehilite"><code class="language-bash">xcode-select --install
+</code></pre>
+
+<p><strong>Issue:</strong> CMake not found</p>
+<pre class="codehilite"><code class="language-bash">brew install cmake
+</code></pre>
+
+<h3 id="linux-issues">Linux Issues</h3>
+<p><strong>Issue:</strong> GNUstep not found</p>
+<pre class="codehilite"><code class="language-bash">sudo apt-get install gnustep-make libgnustep-base-dev
+</code></pre>
+
+<p><strong>Issue:</strong> Clang not found</p>
+<pre class="codehilite"><code class="language-bash">sudo apt-get install clang
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Use conditional compilation</strong> — Guard platform-specific code</li>
+<li><strong>Test on both platforms</strong> — Ensure compatibility</li>
+<li><strong>Use compatibility layer</strong> — Abstract platform differences</li>
+<li><strong>Document platform differences</strong> — Help developers understand</li>
+<li><strong>Monitor performance</strong> — Track metrics on both platforms</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./compatibility-layer.md">Compatibility Layer</a></strong> — Compat shims</li>
+<li><strong><a href="./network-transport.md">Network Transport</a></strong> — Network I/O</li>
+<li><strong><a href="./arc-runtime.md">ARC Runtime</a></strong> — Memory management</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

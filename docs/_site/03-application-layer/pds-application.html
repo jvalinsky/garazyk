@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDSApplication Facade - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>PDSApplication Facade</h1>
+            </div>
+            <h1 id="pdsapplication-facade">PDSApplication Facade</h1>
+<h2 id="overview">Overview</h2>
+<p><code>PDSApplication</code> is the primary facade for the PDS. It:
+- Composes all services
+- Manages server lifecycle
+- Provides a unified interface to the entire system
+- Handles initialization and configuration</p>
+<h2 id="architecture">Architecture</h2>
+<h3 id="service-composition">Service Composition</h3>
+<pre class="codehilite"><code>PDSApplication
+├── PDSAccountService
+├── PDSRecordService
+├── PDSBlobService
+├── PDSRepositoryService
+├── PDSAdminController
+├── PDSRelayService
+├── PDSServiceDatabases
+└── PDSDatabasePool
+</code></pre>
+
+<h3 id="initialization-flow">Initialization Flow</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (instancetype)initWithConfiguration:(PDSConfiguration *)config 
+                                error:(NSError **)error {
+    self = [super init];
+    if (!self) return nil;
+
+    self.configuration = config;
+
+    // 1. Initialize databases
+    self.serviceDatabases = [[PDSServiceDatabases alloc] 
+        initWithPath:config.database.path error:error];
+    if (!self.serviceDatabases) return nil;
+
+    self.databasePool = [[PDSDatabasePool alloc] 
+        initWithServiceDatabases:self.serviceDatabases error:error];
+    if (!self.databasePool) return nil;
+
+    // 2. Initialize services
+    self.accountService = [[PDSAccountService alloc] 
+        initWithApplication:self];
+
+    self.recordService = [[PDSRecordService alloc] 
+        initWithApplication:self];
+
+    self.blobService = [[PDSBlobService alloc] 
+        initWithApplication:self];
+
+    self.repositoryService = [[PDSRepositoryService alloc] 
+        initWithApplication:self];
+
+    self.adminController = [[PDSAdminController alloc] 
+        initWithApplication:self];
+
+    self.relayService = [[PDSRelayService alloc] 
+        initWithApplication:self];
+
+    // 3. Initialize HTTP server
+    self.httpServer = [[HttpServer alloc] 
+        initWithPort:config.server.port error:error];
+    if (!self.httpServer) return nil;
+
+    // 4. Register XRPC methods
+    XrpcMethodRegistry *registry = [[XrpcMethodRegistry alloc] 
+        initWithApplication:self];
+    [registry registerMethods];
+
+    self.xrpcDispatcher = [[XrpcDispatcher alloc] 
+        initWithRegistry:registry];
+
+    // 5. Setup HTTP routes
+    [self setupHTTPRoutes];
+
+    return self;
+}
+</code></pre>
+
+<h2 id="service-access">Service Access</h2>
+<h3 id="getting-services">Getting Services</h3>
+<pre class="codehilite"><code class="language-objc">// Access services through PDSApplication
+PDSApplication *app = ...;
+
+// Account operations
+[app.accountService createAccountWithEmail:@&quot;user@example.com&quot; 
+                                   handle:@&quot;user.example.com&quot;
+                                 password:@&quot;password&quot;
+                               completion:^(NSString *did, NSError *error) {
+    // Handle result
+}];
+
+// Record operations
+[app.recordService createRecord:@{@&quot;text&quot;: @&quot;Hello&quot;}
+                    collection:@&quot;app.bsky.feed.post&quot;
+                           did:userDID
+                    completion:^(NSString *uri, NSError *error) {
+    // Handle result
+}];
+
+// Blob operations
+[app.blobService uploadBlob:imageData
+                 completion:^(NSString *blobCID, NSError *error) {
+    // Handle result
+}];
+</code></pre>
+
+<h2 id="lifecycle-management">Lifecycle Management</h2>
+<h3 id="starting-the-server">Starting the Server</h3>
+<pre class="codehilite"><code class="language-objc">// In main.m or CLI dispatcher
+PDSApplication *app = [[PDSApplication alloc] 
+    initWithConfiguration:config error:&amp;error];
+
+if (!app) {
+    NSLog(@&quot;Failed to initialize PDS: %@&quot;, error);
+    exit(1);
+}
+
+// Start HTTP server
+[app.httpServer startWithCompletion:^(NSError *error) {
+    if (error) {
+        NSLog(@&quot;Failed to start server: %@&quot;, error);
+        exit(1);
+    }
+
+    NSLog(@&quot;PDS started on port %ld&quot;, (long)app.configuration.server.port);
+}];
+
+// Keep server running
+[[NSRunLoop mainRunLoop] run];
+</code></pre>
+
+<h3 id="stopping-the-server">Stopping the Server</h3>
+<pre class="codehilite"><code class="language-objc">// Graceful shutdown
+[app.httpServer stopWithCompletion:^(NSError *error) {
+    if (error) {
+        NSLog(@&quot;Error stopping server: %@&quot;, error);
+    }
+
+    // Close databases
+    [app.serviceDatabases close];
+    [app.databasePool close];
+
+    NSLog(@&quot;PDS stopped&quot;);
+    exit(0);
+}];
+</code></pre>
+
+<h2 id="configuration">Configuration</h2>
+<h3 id="configuration-file">Configuration File</h3>
+<pre class="codehilite"><code class="language-json">{
+  &quot;server&quot;: {
+    &quot;host&quot;: &quot;0.0.0.0&quot;,
+    &quot;port&quot;: 2583,
+    &quot;issuer&quot;: &quot;https://pds.example.com&quot;
+  },
+  &quot;database&quot;: {
+    &quot;path&quot;: &quot;./pds-data/db&quot;
+  },
+  &quot;plc&quot;: {
+    &quot;url&quot;: &quot;https://plc.directory&quot;
+  },
+  &quot;session&quot;: {
+    &quot;invite_code_required&quot;: true
+  },
+  &quot;debug&quot;: {
+    &quot;verbose&quot;: false,
+    &quot;log_level&quot;: &quot;info&quot;
+  }
+}
+</code></pre>
+
+<h3 id="loading-configuration">Loading Configuration</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSConfiguration.m
++ (instancetype)loadFromFile:(NSString *)path error:(NSError **)error {
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    if (!data) {
+        *error = [NSError errorWithDomain:@&quot;Config&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;File not found&quot;}];
+        return nil;
+    }
+
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data 
+                                                          options:0 
+                                                            error:error];
+    if (!json) return nil;
+
+    PDSConfiguration *config = [[PDSConfiguration alloc] init];
+    config.serverHost = json[@&quot;server&quot;][@&quot;host&quot;] ?: @&quot;0.0.0.0&quot;;
+    config.serverPort = [json[@&quot;server&quot;][@&quot;port&quot;] integerValue] ?: 2583;
+    config.issuer = json[@&quot;server&quot;][@&quot;issuer&quot;];
+    config.databasePath = json[@&quot;database&quot;][@&quot;path&quot;];
+    config.plcURL = json[@&quot;plc&quot;][@&quot;url&quot;];
+    config.inviteCodeRequired = [json[@&quot;session&quot;][@&quot;invite_code_required&quot;] boolValue];
+
+    return config;
+}
+</code></pre>
+
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="standardized-errors">Standardized Errors</h3>
+<pre class="codehilite"><code class="language-objc">// In XrpcErrorHelper.m
++ (NSDictionary *)errorResponseForError:(NSError *)error {
+    NSString *errorCode = @&quot;InternalServerError&quot;;
+    NSString *message = error.localizedDescription;
+
+    if ([error.domain isEqualToString:@&quot;XRPC&quot;]) {
+        switch (error.code) {
+            case 1:
+                errorCode = @&quot;InvalidRequest&quot;;
+                break;
+            case 2:
+                errorCode = @&quot;Unauthorized&quot;;
+                break;
+            case 3:
+                errorCode = @&quot;Forbidden&quot;;
+                break;
+            case 4:
+                errorCode = @&quot;NotFound&quot;;
+                break;
+            case 5:
+                errorCode = @&quot;Conflict&quot;;
+                break;
+        }
+    }
+
+    return @{
+        @&quot;error&quot;: errorCode,
+        @&quot;message&quot;: message
+    };
+}
+</code></pre>
+
+<h2 id="logging">Logging</h2>
+<h3 id="structured-logging">Structured Logging</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (void)logMessage:(NSString *)message 
+             level:(NSString *)level 
+           context:(NSDictionary *)context {
+    if (self.configuration.debug.verbose) {
+        NSMutableString *log = [NSMutableString stringWithFormat:@&quot;[%@] %@&quot;, level, message];
+
+        if (context) {
+            [log appendFormat:@&quot; %@&quot;, context];
+        }
+
+        NSLog(@&quot;%@&quot;, log);
+    }
+}
+
+// Usage
+[app logMessage:@&quot;Record created&quot; 
+          level:@&quot;INFO&quot; 
+        context:@{@&quot;did&quot;: userDID, @&quot;collection&quot;: @&quot;app.bsky.feed.post&quot;}];
+</code></pre>
+
+<h2 id="monitoring-and-metrics">Monitoring and Metrics</h2>
+<h3 id="request-metrics">Request Metrics</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (void)recordRequestMetric:(NSString *)method 
+                   duration:(NSTimeInterval)duration 
+                    success:(BOOL)success {
+    @synchronized(self.metrics) {
+        NSMutableDictionary *methodMetrics = self.metrics[method];
+        if (!methodMetrics) {
+            methodMetrics = [NSMutableDictionary dictionary];
+            self.metrics[method] = methodMetrics;
+        }
+
+        methodMetrics[@&quot;count&quot;] = @([methodMetrics[@&quot;count&quot;] integerValue] + 1);
+        methodMetrics[@&quot;totalDuration&quot;] = @([methodMetrics[@&quot;totalDuration&quot;] doubleValue] + duration);
+
+        if (!success) {
+            methodMetrics[@&quot;errors&quot;] = @([methodMetrics[@&quot;errors&quot;] integerValue] + 1);
+        }
+    }
+}
+
+// Get metrics
+- (NSDictionary *)getMetrics {
+    @synchronized(self.metrics) {
+        return [self.metrics copy];
+    }
+}
+</code></pre>
+
+<h2 id="health-checks">Health Checks</h2>
+<h3 id="server-health">Server Health</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (BOOL)isHealthy:(NSError **)error {
+    // Check database connectivity
+    if (![self.serviceDatabases isConnected]) {
+        *error = [NSError errorWithDomain:@&quot;Health&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Database not connected&quot;}];
+        return NO;
+    }
+
+    // Check HTTP server
+    if (![self.httpServer isRunning]) {
+        *error = [NSError errorWithDomain:@&quot;Health&quot; code:2 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;HTTP server not running&quot;}];
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Use PDSApplication for all access</strong> — Don't access services directly</li>
+<li><strong>Handle errors properly</strong> — Always check for errors</li>
+<li><strong>Log important events</strong> — For debugging and monitoring</li>
+<li><strong>Monitor metrics</strong> — Track performance</li>
+<li><strong>Graceful shutdown</strong> — Clean up resources</li>
+<li><strong>Configuration validation</strong> — Validate on startup</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./services-overview.md">Services Overview</a></strong> — Service architecture</li>
+<li><strong><a href="./account-service.md">Account Service</a></strong> — Account management</li>
+<li><strong><a href="./record-service.md">Record Service</a></strong> — Record operations</li>
+<li><strong><a href="../04-network-layer/http-server.md">Network Layer</a></strong> — HTTP and XRPC</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

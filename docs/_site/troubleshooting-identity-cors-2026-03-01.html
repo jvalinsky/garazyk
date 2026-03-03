@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshooting: Identity Resolution & CORS — 2026-03-01 - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Troubleshooting: Identity Resolution & CORS — 2026-03-01</h1>
+            </div>
+            <h1 id="troubleshooting-identity-resolution-cors-2026-03-01">Troubleshooting: Identity Resolution &amp; CORS — 2026-03-01</h1>
+<h2 id="overview">Overview</h2>
+<p>This session covered two major areas: (1) fixing <code>com.atproto.identity.updateHandle</code>
+to match the AT Protocol reference implementation, and (2) implementing dynamic CORS
+headers across all PDS HTTP handlers.</p>
+<hr />
+<h2 id="part-1-updatehandle-spec-compliance">Part 1: updateHandle Spec Compliance</h2>
+<h3 id="background">Background</h3>
+<p>A code review comparing <code>XrpcIdentityMethods.m</code> against the reference TypeScript
+implementation (<code>packages/pds/src/api/com/atproto/identity/updateHandle.ts</code> in
+<code>bluesky-social/atproto</code>) found six spec deviations.</p>
+<h3 id="issue-1-missing-per-endpoint-rate-limiting-high">Issue 1: Missing Per-Endpoint Rate Limiting (HIGH)</h3>
+<p><strong>Spec requirement:</strong> 10 requests per 5 minutes + 50 per day, per DID.</p>
+<p><strong>What existed:</strong> Only global per-IP rate limiting (3000 req/5min) via <code>RateLimiter</code>.
+No per-endpoint or per-DID limits.</p>
+<p><strong>Fix:</strong> Added a generic <code>checkRateLimitForKey:limit:windowSeconds:</code> method to
+<code>RateLimiter</code> that accepts an arbitrary composite key, limit, and window duration.
+The <code>updateHandle</code> handler now checks two keys before processing:</p>
+<pre class="codehilite"><code class="language-objc">// 10 requests per 5 minutes per DID
+RateLimitResult *shortLimit = [[RateLimiter sharedLimiter]
+    checkRateLimitForKey:[NSString stringWithFormat:@&quot;identity.updateHandle:5m:%@&quot;, did]
+                   limit:10
+           windowSeconds:300];
+
+// 50 requests per day per DID
+RateLimitResult *longLimit = [[RateLimiter sharedLimiter]
+    checkRateLimitForKey:[NSString stringWithFormat:@&quot;identity.updateHandle:1d:%@&quot;, did]
+                   limit:50
+           windowSeconds:86400];
+</code></pre>
+
+<p><strong>Files:</strong> <code>RateLimiter.h</code>, <code>RateLimiter.m</code>, <code>XrpcIdentityMethods.m</code></p>
+<h3 id="issue-2-same-handle-ownership-case-medium">Issue 2: Same-Handle Ownership Case (MEDIUM)</h3>
+<p><strong>Spec requirement:</strong> When the requester already owns the requested handle, skip PLC
+update and DB write but still emit an <code>#identity</code> firehose event.</p>
+<p><strong>What existed:</strong> The code performed the full PLC update + DB write even when the user
+re-claimed their own handle.</p>
+<p><strong>Fix:</strong> Added a <code>needsUpdate</code> flag after the uniqueness check:</p>
+<pre class="codehilite"><code class="language-objc">BOOL needsUpdate = YES;
+if (existingAccount &amp;&amp; [existingAccount.did isEqualToString:did]) {
+    needsUpdate = NO;  // Already owns this handle, just re-sequence
+} else if (existingAccount) {
+    // 409 HandleAlreadyTaken
+    return;
+}
+
+if (needsUpdate) {
+    // PLC update, DB update
+}
+
+// ALWAYS broadcast identity event
+[subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
+</code></pre>
+
+<p><strong>File:</strong> <code>XrpcIdentityMethods.m</code></p>
+<h3 id="issue-3-alsoknownas-preservation-medium">Issue 3: alsoKnownAs Preservation (MEDIUM)</h3>
+<p><strong>Spec requirement:</strong> When updating PLC, preserve existing non-<code>at://</code> entries in
+<code>alsoKnownAs</code> and only replace the <code>at://</code> handle entry.</p>
+<p><strong>What existed:</strong> The code overwrote all <code>alsoKnownAs</code> entries with just the new handle:</p>
+<pre class="codehilite"><code class="language-objc">op[@&quot;alsoKnownAs&quot;] = @[@&quot;at://handle&quot;];  // destroyed other aliases
+</code></pre>
+
+<p><strong>Fix:</strong> Read existing aliases from the current PLC state, filter out old <code>at://</code>
+entries, prepend the new handle:</p>
+<pre class="codehilite"><code class="language-objc">NSMutableArray *newAlsoKnownAs = [NSMutableArray array];
+NSString *newAtHandle = [NSString stringWithFormat:@&quot;at://%@&quot;, normalizedHandle];
+for (NSString *aka in currentState.alsoKnownAs) {
+    if (![aka hasPrefix:@&quot;at://&quot;]) {
+        [newAlsoKnownAs addObject:aka];
+    }
+}
+[newAlsoKnownAs insertObject:newAtHandle atIndex:0];
+op[@&quot;alsoKnownAs&quot;] = newAlsoKnownAs;
+</code></pre>
+
+<p><strong>File:</strong> <code>XrpcIdentityMethods.m</code></p>
+<h3 id="issue-4-identity-event-always-sequenced-medium">Issue 4: Identity Event Always Sequenced (MEDIUM)</h3>
+<p><strong>Spec requirement:</strong> An <code>#identity</code> firehose event must always be emitted after
+<code>updateHandle</code>, even when the user already owns the handle.</p>
+<p><strong>What existed:</strong> The broadcast call was gated on the DB update path, so the
+same-handle case returned early without emitting any event.</p>
+<p><strong>Fix:</strong> Moved the <code>broadcastIdentityChange:</code> call outside the <code>needsUpdate</code> guard
+so it always runs. See Issue 2 code above.</p>
+<p><strong>File:</strong> <code>XrpcIdentityMethods.m</code></p>
+<h3 id="issue-5-takedown-check-false-positive">Issue 5: Takedown Check (FALSE POSITIVE)</h3>
+<p>Initial review flagged missing takedown check. On closer inspection,
+<code>XrpcAuthHelper.extractDIDFromAuthHeader:</code> at line 307–317 already calls
+<code>[adminController isAccountTakedownActive:did]</code> and returns <code>nil</code> (401) if active.
+No code change needed.</p>
+<h3 id="issue-6-admin-updatehandle-documentation-low">Issue 6: Admin updateHandle Documentation (LOW)</h3>
+<p>Added a clarifying comment to <code>PDSAdminService.m</code> noting the admin <code>updateHandle:</code>
+method intentionally bypasses PLC and firehose:</p>
+<pre class="codehilite"><code class="language-objc">// Direct DB update only — does NOT update PLC directory or emit firehose identity events.
+// For full protocol-compliant updates, use com.atproto.identity.updateHandle XRPC endpoint.
+</code></pre>
+
+<p><strong>File:</strong> <code>PDSAdminService.m</code></p>
+<h3 id="tests">Tests</h3>
+<p>Added two new test cases to <code>RepoAuthIdentityTests.m</code>:
+- <code>testIdentityUpdateHandleRateLimiting</code> — verifies 429 after exceeding 10 req/5min
+- <code>testIdentityUpdateHandleSameHandleStillBroadcasts</code> — verifies identity event is
+  emitted even when re-claiming own handle</p>
+<p>All 8 <code>RepoAuthIdentityTests</code> pass with 0 failures.</p>
+<p><strong>Commits:</strong> <code>b092b24</code> (initial spec fixes), then follow-up for robust PLC parsing.</p>
+<hr />
+<h2 id="part-1b-vm-handle-update-debugging">Part 1b: VM Handle Update Debugging</h2>
+<h3 id="symptom">Symptom</h3>
+<p>After deploying the spec fixes, handle updates via the web UI still failed on the
+production VM. The PDS returned success but the PLC directory wasn't updated.</p>
+<h3 id="debugging-steps">Debugging Steps</h3>
+<ol>
+<li><strong><code>docker logs nspds | grep updateHandle</code></strong> — found the handler was called
+   but PLC operation submission failed silently.</li>
+<li><strong><code>curl -s https://plc.directory/did:plc:.../log/audit | jq .</code></strong> — confirmed
+   no new operations were appearing in PLC.</li>
+<li><strong>Code review of PLC audit log parsing</strong> — found the <code>PLCOperation</code> parser
+   was silently returning <code>nil</code> for certain operation formats without logging.</li>
+<li><strong>Added diagnostic logging</strong> to the PLC operation parse loop and the signing
+   code path.</li>
+</ol>
+<h3 id="root-cause">Root Cause</h3>
+<p>The PLC audit log response format had fields that the parser didn't handle
+robustly. Certain dictionary keys were expected in a specific format but the
+real PLC directory returned slightly different structures.</p>
+<h3 id="fix">Fix</h3>
+<p>Updated <code>XrpcIdentityMethods.m</code> and <code>PLCOperation.m</code> with more robust JSON
+parsing and better error logging for PLC operation construction failures.</p>
+<h3 id="additional-build-fix">Additional Build Fix</h3>
+<p>The Linux/GNUstep Docker build failed because <code>PDSAppleKeyManager.m</code> (which uses
+<code>Security.framework</code>) was included in the CMake source list unconditionally.</p>
+<p><strong>Fix:</strong> Excluded <code>PDSAppleKeyManager.m</code> on non-Apple platforms in <code>CMakeLists.txt</code>.</p>
+<p><strong>Commit:</strong> <code>b092b24</code> (CMakeLists fix)</p>
+<hr />
+<h2 id="part-2-dynamic-cors-headers">Part 2: Dynamic CORS Headers</h2>
+<h3 id="background_1">Background</h3>
+<p>Browser console errors when using <code>witchsky.app</code> (Bluesky web client) pointed at
+<code>pds.garazyk.xyz</code>:</p>
+<pre class="codehilite"><code>Access to fetch at 'https://pds.garazyk.xyz/xrpc/com.atproto.server.createSession'
+from origin 'https://witchsky.app' has been blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present on the requested resource.
+</code></pre>
+
+<p>The previous CORS fix (2026-02-27, see <code>troubleshooting-cors-ratelimit-2026-02-27.md</code>)
+used hardcoded <code>Access-Control-Allow-Origin: *</code> everywhere. This needed to be replaced
+with dynamic origin-reflecting CORS to support credentialed requests and configurable
+allowed origins.</p>
+<h3 id="changes">Changes</h3>
+<p>Replaced all hardcoded CORS headers with a shared <code>setCorsHeaders:forRequest:</code> method
+in each handler layer:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What Changed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>XrpcHandler.m</code></td>
+<td>Added <code>setCorsHeaders:</code> that reads <code>cors.allowed_origins</code> from config, reflects <code>Origin</code> header when wildcard is configured</td>
+</tr>
+<tr>
+<td><code>OAuth2Handler.m</code></td>
+<td>Added same <code>setCorsHeaders:</code> pattern; applied to <code>/oauth/token</code>, <code>/oauth/revoke</code>, <code>/.well-known/oauth-*</code>, <code>/oauth/jwks</code>, <code>/oauth/par</code>, and preflight handlers</td>
+</tr>
+<tr>
+<td><code>PDSHttpServerBuilder.m</code></td>
+<td>Added <code>setCorsHeaders:</code> using existing <code>getCorsAllowedOrigins</code> helpers; applied to OPTIONS <code>/xrpc</code>, <code>/xrpc/:method</code>, prefix handler, and subscribeRepos</td>
+</tr>
+<tr>
+<td><code>NodeInfoHandler.m</code></td>
+<td>Added <code>setCorsHeaders:</code> for NodeInfo discovery/2.0/2.1 endpoints (previously hardcoded <code>*</code>)</td>
+</tr>
+<tr>
+<td><code>PDSConfiguration.h/.m</code></td>
+<td>Added <code>arrayForKey:</code> method to support reading <code>cors.allowed_origins</code> as an array from config.json</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cors-header-behavior">CORS Header Behavior</h3>
+<pre class="codehilite"><code>Origin: https://witchsky.app
+→ Access-Control-Allow-Origin: https://witchsky.app  (reflected)
+→ Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD
+→ Access-Control-Allow-Headers: DPoP, Authorization, Content-Type, *
+→ Access-Control-Max-Age: 86400
+→ Access-Control-Expose-Headers: DPoP-Nonce, WWW-Authenticate
+→ Vary: Origin
+</code></pre>
+
+<p>All values are configurable via <code>config.json</code>:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;cors&quot;: {
+    &quot;allowed_origins&quot;: [&quot;*&quot;],
+    &quot;allowed_methods&quot;: &quot;GET, POST, PUT, DELETE, OPTIONS, HEAD&quot;,
+    &quot;allowed_headers&quot;: &quot;DPoP, Authorization, Content-Type, *&quot;,
+    &quot;max_age&quot;: 86400
+  }
+}
+</code></pre>
+
+<p>Default is <code>["*"]</code> (allow all origins with reflection).</p>
+<h3 id="additional-comatprotoidentityresolvedid-endpoint">Additional: <code>com.atproto.identity.resolveDid</code> Endpoint</h3>
+<p>Added the missing <code>com.atproto.identity.resolveDid</code> XRPC endpoint in
+<code>XrpcIdentityMethods.m</code>. Accepts a <code>did</code> query parameter, resolves via
+<code>XrpcIdentityHelper</code>, returns the DID document or 404.</p>
+<h3 id="verification">Verification</h3>
+<p><strong>PDS direct (localhost:2583):</strong> ✅ CORS headers present on all responses</p>
+<pre class="codehilite"><code class="language-bash">ssh crimson-comet.exe.xyz &quot;curl -v -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
+  -H 'Origin: https://witchsky.app' -H 'Content-Type: application/json' \
+  -d '{\&quot;identifier\&quot;:\&quot;test\&quot;, \&quot;password\&quot;:\&quot;test\&quot;}'&quot;
+# → Access-Control-Allow-Origin: https://witchsky.app ✅
+</code></pre>
+
+<p><strong>Through nginx (localhost:3000):</strong> ✅ Headers pass through</p>
+<pre class="codehilite"><code class="language-bash">ssh crimson-comet.exe.xyz &quot;curl -v -X POST http://localhost:3000/xrpc/com.atproto.server.createSession \
+  -H 'Host: pds.garazyk.xyz' -H 'Origin: https://witchsky.app' ...&quot;
+# → Access-Control-Allow-Origin: https://witchsky.app ✅
+</code></pre>
+
+<p><strong>Through exe.dev TLS proxy (HTTPS):</strong> ❌ POST+Origin blocked (see Known Issue)</p>
+<pre class="codehilite"><code class="language-bash">curl -v -X POST https://pds.garazyk.xyz/xrpc/com.atproto.server.createSession \
+  -H 'Origin: https://witchsky.app' ...
+# → 403 &quot;cross-origin request denied&quot; (from exe.dev proxy, not PDS)
+</code></pre>
+
+<h3 id="known-issue-exedev-tls-proxy-blocks-cross-origin-post">Known Issue: exe.dev TLS Proxy Blocks Cross-Origin POST</h3>
+<p>The exe.dev platform's TLS termination proxy (at <code>s001.exe.xyz</code>, upstream of the VM)
+actively blocks non-GET/non-OPTIONS requests that include an <code>Origin</code> header. This is
+a platform-level security feature, not a PDS or nginx issue.</p>
+<p><strong>Evidence:</strong>
+- <code>OPTIONS + Origin</code> → passes through ✅ (preflight works)
+- <code>GET + Origin</code> → passes through ✅ (CORS headers visible)
+- <code>POST + Origin</code> → blocked with <code>403 "cross-origin request denied"</code> ❌
+- <code>POST</code> without <code>Origin</code> → passes through ✅ (returns 401 with CORS headers)
+- Response body is <code>"cross-origin request denied"</code> (plain text, not JSON — not from PDS)</p>
+<p><strong>Workaround options:</strong>
+1. Contact exe.dev support to whitelist cross-origin POST for <code>pds.garazyk.xyz</code>
+2. Use a different TLS terminator (Cloudflare, self-hosted reverse proxy)
+3. Move the PDS to hosting without platform-level CORS enforcement</p>
+<p><strong>Commit:</strong> <code>d631877</code></p>
+<hr />
+<h2 id="pre-existing-test-failures-not-related">Pre-existing Test Failures (Not Related)</h2>
+<blockquote>
+<p>[!NOTE]
+<strong>Update 2026-03-01 (Stabilization):</strong> All failures listed below, along with over 1200 other transient/pre-existing issues, have been resolved. See the <a href="test-suite-stabilization-report-2026-03-01.md">Test Suite Stabilization Report</a> for details.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Failure</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PLCServerTests.testPostDID</code></td>
+<td>400 instead of 200</td>
+<td>PLC server test infrastructure issue</td>
+</tr>
+<tr>
+<td><code>XrpcMethodRegistryTests.testExtractDIDFromAuthHeaderDPoPNonceChallengeAndRetry</code></td>
+<td>Missing nonce challenge headers</td>
+<td>DPoP nonce flow not fully wired</td>
+</tr>
+<tr>
+<td><code>XrpcProxyTests.testAtprotoProxyHeaderOverridesLocalHandler</code></td>
+<td>Proxy not returning expected JSON</td>
+<td>Proxy test infrastructure issue</td>
+</tr>
+<tr>
+<td><code>XrpcProxyTests.testUnknownAppBskyMethodFallsBackToConfiguredProxy</code></td>
+<td>404 instead of 200</td>
+<td>Fallback proxy routing not configured in test</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="debugging-methodology">Debugging Methodology</h2>
+<ol>
+<li><strong>Spec comparison</strong>: Read the reference TypeScript <code>updateHandle.ts</code> from <code>bluesky-social/atproto</code> and compared line-by-line with the Objective-C implementation</li>
+<li><strong>Formal code review</strong>: Used structured code review to systematically identify all 6 deviations</li>
+<li><strong>Layer-by-layer curl testing</strong>: Tested CORS at each network layer (PDS:2583 → nginx:3000 → exe.dev HTTPS) to isolate where headers were lost</li>
+<li><strong>Docker logs + grep</strong>: <code>docker logs nspds 2&gt;&amp;1 | grep -i 'updateHandle'</code> to trace PLC operation failures on the VM</li>
+<li><strong>PLC directory API</strong>: <code>curl -s https://plc.directory/did:plc:.../log/audit | jq .</code> to verify operations were/weren't reaching the directory</li>
+<li><strong>git stash comparison</strong>: Stashed changes, ran tests, confirmed all 4 failures were pre-existing</li>
+</ol>
+<h2 id="files-modified">Files Modified</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RateLimiter.h</code> / <code>.m</code></td>
+<td>Added generic <code>checkRateLimitForKey:limit:windowSeconds:</code></td>
+</tr>
+<tr>
+<td><code>XrpcIdentityMethods.m</code></td>
+<td>Per-endpoint rate limiting, same-handle early return, alsoKnownAs preservation, identity event always sequenced, <code>resolveDid</code> endpoint, robust PLC parsing</td>
+</tr>
+<tr>
+<td><code>PDSAdminService.m</code></td>
+<td>Clarifying comment on admin <code>updateHandle:</code></td>
+</tr>
+<tr>
+<td><code>RepoAuthIdentityTests.m</code></td>
+<td>Two new test cases</td>
+</tr>
+<tr>
+<td><code>XrpcHandler.m</code></td>
+<td>Dynamic CORS via <code>setCorsHeaders:</code></td>
+</tr>
+<tr>
+<td><code>OAuth2Handler.m</code></td>
+<td>Dynamic CORS for all OAuth endpoints</td>
+</tr>
+<tr>
+<td><code>PDSHttpServerBuilder.m</code></td>
+<td>Dynamic CORS for XRPC OPTIONS and prefix handlers</td>
+</tr>
+<tr>
+<td><code>NodeInfoHandler.m</code></td>
+<td>Dynamic CORS for NodeInfo endpoints</td>
+</tr>
+<tr>
+<td><code>PDSConfiguration.h</code> / <code>.m</code></td>
+<td>Added <code>arrayForKey:</code> for config array access</td>
+</tr>
+<tr>
+<td><code>CMakeLists.txt</code></td>
+<td>Excluded <code>PDSAppleKeyManager.m</code> on non-Apple platforms</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="part-3-handle-resolution-cors-well-known">Part 3: Handle Resolution CORS (.well-known)</h2>
+<h3 id="background_2">Background</h3>
+<p>After fixing the main RPC CORS headers, handle resolution on <code>pdsls.dev</code> for subdomains (e.g., <code>newvmtest.garazyk.xyz</code>) was still failing. </p>
+<p>Browser behavior on <code>pdsls.dev</code>:
+1. Attempts to fetch <code>https://newvmtest.garazyk.xyz/.well-known/atproto-did</code>.
+2. Sends an <code>OPTIONS</code> preflight request.
+3. PDS returned <code>404 Not Found</code> for <code>OPTIONS /.well-known/atproto-did</code>.</p>
+<h3 id="root-cause_1">Root Cause</h3>
+<p>In <code>PDSHttpServerBuilder.m</code>, the <code>.well-known</code> routes were registered using method-specific <code>addRoute:path:handler:</code> calls (GET/HEAD). While the XRPC layer had catch-all CORS handling, the <code>.well-known</code> endpoints were outside that dispatcher and lacked an <code>OPTIONS</code> handler.</p>
+<p>Initial attempt to add a specific <code>OPTIONS</code> route via <code>addRoute:@"OPTIONS" ...</code> failed because the router's exact matching logic sometimes conflicted with how the PDS handles subdomains vs main domains.</p>
+<h3 id="fix-method-agnostic-path-handler">Fix: Method-Agnostic Path Handler</h3>
+<p>Changed the registration from method-specific routes to a method-agnostic path handler using <code>addHandlerForPath:</code>. This mirrors the robust pattern used for the <code>/xrpc</code> prefix.</p>
+<p><strong>File:</strong> <code>PDSHttpServerBuilder.m</code></p>
+<pre class="codehilite"><code class="language-objc">[server addHandlerForPath:@&quot;/.well-known/atproto-did&quot;
+                  handler:^(HttpRequest *request, HttpResponse *response) {
+                    [self setCorsHeaders:response forRequest:request];
+                    NSString *method = request.methodString.uppercaseString;
+                    if ([method isEqualToString:@&quot;OPTIONS&quot;]) {
+                      response.statusCode = HttpStatusOK;
+                    } else {
+                      handleWellKnownAtprotoDid(request, response,
+                                                [method isEqualToString:@&quot;GET&quot;]);
+                    }
+                  }];
+</code></pre>
+
+<p>This ensures:
+1. <code>OPTIONS</code> requests are caught and return 200 OK + CORS headers.
+2. <code>GET</code>/<code>HEAD</code> requests continue to serve the DID, but now with proper CORS headers.
+3. The <code>setCorsHeaders:</code> helper matches the origin against <code>config.json</code> allowed origins.</p>
+<hr />
+<h2 id="deployment-build-orchestration">Deployment &amp; Build Orchestration</h2>
+<h3 id="workflow-refinement">Workflow Refinement</h3>
+<p>Deploying these fixes to the production VM required several steps and surfaced some environmental nuances:</p>
+<ol>
+<li><strong>Git Workflow</strong>: Local changes were committed and pushed, then pulled on the server.</li>
+<li><strong>Docker Rebuild</strong>: Because the fix involved Objective-C source code, a simple container restart was insufficient. A full rebuild was required:
+   <code>bash
+   docker compose up --build -d</code></li>
+<li><strong>Container Conflict Resolution</strong>: Encountered issues where <code>docker compose</code> would fail if a container with the same name (<code>nspds</code>) already existed but wasn't part of the current compose state. 
+   <strong>Fix</strong>: Manually removed the conflicting container: <code>docker rm -f nspds</code>.</li>
+<li><strong>Command Transition</strong>: Noted that the server uses modern <code>docker compose</code> (V2) rather than the legacy <code>docker-compose</code> (Python).</li>
+</ol>
+<h3 id="verification_1">Verification</h3>
+<p>Final verification using <code>curl</code> confirmed success for both XRPC and <code>.well-known</code> endpoints:</p>
+<pre class="codehilite"><code class="language-bash"># Verify Handle Resolution OPTIONS
+curl -v -X OPTIONS https://newvmtest.garazyk.xyz/.well-known/atproto-did \
+  -H &quot;Origin: https://pdsls.dev&quot;
+# -&gt; HTTP 200 OK
+# -&gt; access-control-allow-origin: https://pdsls.dev ✅
+</code></pre>
+
+<p><strong>Commits:</strong> <code>1af4d9d</code> (initial OPTIONS route), <code>bd3c9a4</code> (final <code>addHandlerForPath</code> fix).</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

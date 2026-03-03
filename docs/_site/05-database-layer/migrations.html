@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Migrations - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Database Migrations</h1>
+            </div>
+            <h1 id="database-migrations">Database Migrations</h1>
+<h2 id="overview">Overview</h2>
+<p>Database migrations manage schema changes and data transformations as the PDS evolves. The migration system ensures databases can be upgraded safely without data loss or corruption.</p>
+<h2 id="migration-strategy">Migration Strategy</h2>
+<p>The PDS uses a version-based migration system:</p>
+<pre class="codehilite"><code>Current Schema Version: 1
+├── Migration 1: Initial schema
+├── Migration 2: Add new table
+├── Migration 3: Add column to existing table
+└── Migration 4: Rename column
+</code></pre>
+
+<h2 id="migration-files">Migration Files</h2>
+<p>Migrations are organized by database type:</p>
+<pre class="codehilite"><code>ATProtoPDS/Sources/Database/Migration/
+├── ServiceDatabaseMigrations/
+│   ├── Migration_001_InitialSchema.m
+│   ├── Migration_002_AddInviteCodes.m
+│   └── Migration_003_AddSessions.m
+├── ActorDatabaseMigrations/
+│   ├── Migration_001_InitialSchema.m
+│   ├── Migration_002_AddRecordsTable.m
+│   └── Migration_003_AddBlocksTable.m
+└── MigrationManager.m
+</code></pre>
+
+<h2 id="migration-execution">Migration Execution</h2>
+<h3 id="service-database-migrations">Service Database Migrations</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_001_InitialSchema.sql
+CREATE TABLE accounts (
+    did TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    handle TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    status TEXT DEFAULT 'active'
+);
+
+CREATE TABLE invite_codes (
+    code TEXT PRIMARY KEY,
+    created_by TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    used_by TEXT,
+    used_at DATETIME,
+    expires_at DATETIME
+);
+
+-- Migration_002_AddSessions.sql
+CREATE TABLE sessions (
+    session_id TEXT PRIMARY KEY,
+    did TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    expires_at DATETIME NOT NULL,
+    last_activity DATETIME,
+    FOREIGN KEY (did) REFERENCES accounts(did)
+);
+
+CREATE INDEX idx_sessions_did ON sessions(did);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+</code></pre>
+
+<h3 id="actor-database-migrations">Actor Database Migrations</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_001_InitialSchema.sql
+CREATE TABLE repo_root (
+    cid BLOB PRIMARY KEY,
+    updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE records (
+    uri TEXT PRIMARY KEY,
+    collection TEXT NOT NULL,
+    rkey TEXT NOT NULL,
+    cid BLOB NOT NULL,
+    value BLOB,
+    indexed_at DATETIME NOT NULL
+);
+
+CREATE INDEX idx_records_collection_rkey ON records(collection, rkey);
+
+-- Migration_002_AddBlocksTable.sql
+CREATE TABLE ipld_blocks (
+    cid BLOB PRIMARY KEY,
+    block BLOB NOT NULL,
+    size INTEGER NOT NULL
+);
+
+CREATE INDEX idx_ipld_blocks_cid ON ipld_blocks(cid);
+</code></pre>
+
+<h2 id="migration-manager">Migration Manager</h2>
+<p>The <code>PDSMigrationManager</code> orchestrates migrations:</p>
+<pre class="codehilite"><code class="language-objc">@interface PDSMigrationManager : NSObject
+
+// Singleton
++ (instancetype)sharedManager;
+
+// Migration execution
+- (BOOL)migrateServiceDatabase:(PDSDatabase *)database error:(NSError **)error;
+- (BOOL)migrateActorDatabase:(PDSActorDatabase *)database error:(NSError **)error;
+
+// Migration status
+- (NSInteger)currentSchemaVersion:(PDSDatabase *)database error:(NSError **)error;
+- (NSInteger)targetSchemaVersion;
+
+// Progress tracking
+@property (nonatomic, copy) void (^progressBlock)(double progress, NSString *status);
+
+@end
+</code></pre>
+
+<h2 id="schema-versioning">Schema Versioning</h2>
+<p>Each database tracks its schema version:</p>
+<pre class="codehilite"><code class="language-sql">CREATE TABLE schema_version (
+    version INTEGER PRIMARY KEY,
+    applied_at DATETIME NOT NULL,
+    description TEXT
+);
+
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (1, datetime('now'), 'Initial schema');
+</code></pre>
+
+<h2 id="migration-patterns">Migration Patterns</h2>
+<h3 id="adding-a-new-table">Adding a New Table</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_004_AddLabelsTable.sql
+CREATE TABLE labels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target TEXT NOT NULL,
+    label TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    created_by TEXT NOT NULL,
+    UNIQUE(target, label)
+);
+
+CREATE INDEX idx_labels_target ON labels(target);
+CREATE INDEX idx_labels_label ON labels(label);
+
+-- Update schema version
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (4, datetime('now'), 'Add labels table');
+</code></pre>
+
+<h3 id="adding-a-column">Adding a Column</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_005_AddAccountStatus.sql
+ALTER TABLE accounts ADD COLUMN status TEXT DEFAULT 'active';
+
+-- Update schema version
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (5, datetime('now'), 'Add account status column');
+</code></pre>
+
+<h3 id="renaming-a-column">Renaming a Column</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_006_RenameColumn.sql
+-- SQLite doesn't support direct column rename, use workaround:
+
+-- 1. Create new table with correct schema
+CREATE TABLE accounts_new (
+    did TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    handle TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    account_status TEXT DEFAULT 'active'  -- renamed from 'status'
+);
+
+-- 2. Copy data
+INSERT INTO accounts_new SELECT * FROM accounts;
+
+-- 3. Drop old table
+DROP TABLE accounts;
+
+-- 4. Rename new table
+ALTER TABLE accounts_new RENAME TO accounts;
+
+-- 5. Recreate indexes
+CREATE INDEX idx_accounts_email ON accounts(email);
+CREATE INDEX idx_accounts_handle ON accounts(handle);
+
+-- Update schema version
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (6, datetime('now'), 'Rename status column to account_status');
+</code></pre>
+
+<h3 id="data-transformation">Data Transformation</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_007_NormalizeHandles.sql
+-- Convert handles to lowercase
+
+UPDATE accounts SET handle = LOWER(handle);
+
+-- Update schema version
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (7, datetime('now'), 'Normalize handles to lowercase');
+</code></pre>
+
+<h2 id="migration-execution-flow">Migration Execution Flow</h2>
+<pre class="codehilite"><code>1. Check current schema version
+   ↓
+2. Determine target schema version
+   ↓
+3. For each migration from current to target:
+   a. Begin transaction
+   b. Execute migration SQL
+   c. Update schema_version table
+   d. Commit transaction
+   ↓
+4. Verify schema integrity
+   ↓
+5. Report success/failure
+</code></pre>
+
+<h2 id="rollback-strategy">Rollback Strategy</h2>
+<p>Migrations are designed to be forward-only. Rollback is not supported:</p>
+<pre class="codehilite"><code class="language-objc">// Rollback is NOT supported
+// To revert a migration, create a new migration that undoes the changes
+</code></pre>
+
+<p>If a migration fails:</p>
+<ol>
+<li>Transaction is rolled back automatically</li>
+<li>Database remains at previous schema version</li>
+<li>Error is reported with details</li>
+<li>Administrator must fix the issue and retry</li>
+</ol>
+<h2 id="migration-testing">Migration Testing</h2>
+<h3 id="test-migration-execution">Test Migration Execution</h3>
+<pre class="codehilite"><code class="language-objc">// Create test database
+PDSDatabase *testDb = [[PDSDatabase alloc] initWithPath:@&quot;/tmp/test.db&quot;];
+
+// Run migrations
+NSError *error = nil;
+BOOL success = [[PDSMigrationManager sharedManager] migrateServiceDatabase:testDb
+                                                                     error:&amp;error];
+
+// Verify schema
+NSInteger version = [[PDSMigrationManager sharedManager] currentSchemaVersion:testDb
+                                                                        error:&amp;error];
+XCTAssertEqual(version, 7);
+</code></pre>
+
+<h3 id="test-data-preservation">Test Data Preservation</h3>
+<pre class="codehilite"><code class="language-objc">// Insert test data
+[testDb executeUpdate:@&quot;INSERT INTO accounts (did, email, handle, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)&quot;
+         withParameters:@[@&quot;did:plc:test&quot;, @&quot;test@example.com&quot;, @&quot;test&quot;, @&quot;hash&quot;, @&quot;2025-01-01&quot;, @&quot;2025-01-01&quot;]];
+
+// Run migrations
+NSError *error = nil;
+[[PDSMigrationManager sharedManager] migrateServiceDatabase:testDb error:&amp;error];
+
+// Verify data is preserved
+NSArray *results = [testDb executeQuery:@&quot;SELECT * FROM accounts WHERE did = ?&quot;, @&quot;did:plc:test&quot;];
+XCTAssertEqual(results.count, 1);
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Migration Design</strong></li>
+<li>Keep migrations small and focused</li>
+<li>One logical change per migration</li>
+<li>Include descriptive comments</li>
+<li>
+<p>Test thoroughly before deployment</p>
+</li>
+<li>
+<p><strong>Schema Changes</strong></p>
+</li>
+<li>Always add new columns with DEFAULT values</li>
+<li>Use NOT NULL only when necessary</li>
+<li>Create indexes for frequently queried columns</li>
+<li>
+<p>Document schema changes</p>
+</li>
+<li>
+<p><strong>Data Transformation</strong></p>
+</li>
+<li>Validate data before transformation</li>
+<li>Preserve data integrity</li>
+<li>Test with production-like data volumes</li>
+<li>
+<p>Include rollback plan (new migration)</p>
+</li>
+<li>
+<p><strong>Deployment</strong></p>
+</li>
+<li>Run migrations before deploying new code</li>
+<li>Monitor migration execution time</li>
+<li>Have rollback plan ready</li>
+<li>
+<p>Test on staging environment first</p>
+</li>
+<li>
+<p><strong>Monitoring</strong></p>
+</li>
+<li>Log all migration executions</li>
+<li>Track migration duration</li>
+<li>Alert on migration failures</li>
+<li>Verify schema after migration</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="adding-a-new-feature">Adding a New Feature</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_008_AddModeration.sql
+
+-- 1. Add moderation table
+CREATE TABLE moderation_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target TEXT NOT NULL,
+    action TEXT NOT NULL,
+    reason TEXT,
+    created_at DATETIME NOT NULL,
+    created_by TEXT NOT NULL
+);
+
+CREATE INDEX idx_moderation_target ON moderation_events(target);
+CREATE INDEX idx_moderation_created_at ON moderation_events(created_at);
+
+-- 2. Add moderation status to accounts
+ALTER TABLE accounts ADD COLUMN moderation_status TEXT DEFAULT 'none';
+
+-- 3. Update schema version
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (8, datetime('now'), 'Add moderation support');
+</code></pre>
+
+<h3 id="optimizing-performance">Optimizing Performance</h3>
+<pre class="codehilite"><code class="language-sql">-- Migration_009_OptimizeIndexes.sql
+
+-- 1. Add missing indexes
+CREATE INDEX idx_records_indexed_at ON records(indexed_at);
+CREATE INDEX idx_ipld_blocks_size ON ipld_blocks(size);
+
+-- 2. Analyze table statistics
+ANALYZE;
+
+-- 3. Update schema version
+INSERT INTO schema_version (version, applied_at, description)
+VALUES (9, datetime('now'), 'Add performance indexes');
+</code></pre>
+
+<h2 id="migration-checklist">Migration Checklist</h2>
+<p>Before deploying a migration:</p>
+<ul>
+<li>[ ] Migration is tested on staging database</li>
+<li>[ ] Data is backed up</li>
+<li>[ ] Rollback plan is documented</li>
+<li>[ ] Migration duration is acceptable</li>
+<li>[ ] Schema integrity is verified</li>
+<li>[ ] Indexes are created</li>
+<li>[ ] Statistics are updated</li>
+<li>[ ] Monitoring is in place</li>
+</ul>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./service-databases.md">Service Databases</a></li>
+<li><a href="./actor-databases.md">Actor Databases</a></li>
+<li><a href="./wal-mode.md">WAL Mode</a></li>
+<li><a href="./sqlite-architecture.md">SQLite Architecture</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

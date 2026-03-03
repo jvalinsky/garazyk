@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRPC Dispatch - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>XRPC Dispatch</h1>
+            </div>
+            <h1 id="xrpc-dispatch">XRPC Dispatch</h1>
+<h2 id="overview">Overview</h2>
+<p>XRPC (ATProto RPC) dispatch is the routing mechanism that directs incoming HTTP requests to the appropriate handler based on the NSID (Namespace Identifier). The dispatcher is the central hub that receives all XRPC requests and routes them to domain-specific method handlers.</p>
+<h2 id="architecture">Architecture</h2>
+<pre class="codehilite"><code>┌──────────────────────────────────────────┐
+│   HTTP Request                           │
+│  POST /xrpc/com.atproto.repo.createRecord
+└────────────────┬─────────────────────────┘
+                 │
+┌────────────────▼─────────────────────────┐
+│   HttpServer                             │
+│  (Route matching)                        │
+└────────────────┬─────────────────────────┘
+                 │
+┌────────────────▼─────────────────────────┐
+│   XRPC Dispatcher                        │
+│  - Parse NSID from path                  │
+│  - Look up handler                       │
+│  - Verify authentication                 │
+│  - Call handler                          │
+└────────────────┬─────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+┌───────▼──────────┐  ┌──▼──────────────┐
+│ Domain Handler   │  │ Auth Verification
+│ (e.g., Repo)     │  │ (JWT/DPoP)
+└──────────────────┘  └──────────────────┘
+        │
+        └────────┬────────┘
+                 │
+        ┌────────▼────────────┐
+        │ Service Layer       │
+        │ (Business Logic)    │
+        └─────────────────────┘
+</code></pre>
+
+<h2 id="nsid-format">NSID Format</h2>
+<p>NSIDs (Namespace Identifiers) follow a hierarchical format:</p>
+<pre class="codehilite"><code>com.atproto.repo.createRecord
+│    │      │    │
+│    │      │    └─ Method name
+│    │      └─────── Namespace
+│    └────────────── Domain
+└─────────────────── Reverse domain
+</code></pre>
+
+<p>Common NSID prefixes:</p>
+<table>
+<thead>
+<tr>
+<th>Prefix</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>com.atproto.server.*</code></td>
+<td>Account and server operations</td>
+</tr>
+<tr>
+<td><code>com.atproto.repo.*</code></td>
+<td>Record CRUD operations</td>
+</tr>
+<tr>
+<td><code>com.atproto.sync.*</code></td>
+<td>Repository synchronization</td>
+</tr>
+<tr>
+<td><code>com.atproto.identity.*</code></td>
+<td>DID and handle resolution</td>
+</tr>
+<tr>
+<td><code>com.atproto.admin.*</code></td>
+<td>Administrative operations</td>
+</tr>
+<tr>
+<td><code>com.atproto.label.*</code></td>
+<td>Labeling operations</td>
+</tr>
+<tr>
+<td><code>app.bsky.*</code></td>
+<td>Bluesky-specific operations</td>
+</tr>
+</tbody>
+</table>
+<h2 id="request-flow">Request Flow</h2>
+<h3 id="1-http-request-reception">1. HTTP Request Reception</h3>
+<pre class="codehilite"><code>POST /xrpc/com.atproto.repo.createRecord HTTP/1.1
+Host: pds.example.com
+Authorization: Bearer &lt;token&gt;
+Content-Type: application/json
+
+{
+  &quot;repo&quot;: &quot;did:plc:user123&quot;,
+  &quot;collection&quot;: &quot;app.bsky.feed.post&quot;,
+  &quot;record&quot;: { &quot;text&quot;: &quot;Hello!&quot; }
+}
+</code></pre>
+
+<h3 id="2-route-matching">2. Route Matching</h3>
+<p>The HTTP server matches the path <code>/xrpc/*</code> and routes to the XRPC dispatcher.</p>
+<h3 id="3-nsid-extraction">3. NSID Extraction</h3>
+<p>The dispatcher extracts the NSID from the path:</p>
+<pre class="codehilite"><code>/xrpc/com.atproto.repo.createRecord
+      └─ NSID: com.atproto.repo.createRecord
+</code></pre>
+
+<h3 id="4-handler-lookup">4. Handler Lookup</h3>
+<p>The dispatcher looks up the handler for the NSID in the method registry:</p>
+<pre class="codehilite"><code class="language-objc">XrpcHandler handler = [registry handlerForNSID:@&quot;com.atproto.repo.createRecord&quot;];
+</code></pre>
+
+<h3 id="5-authentication-verification">5. Authentication Verification</h3>
+<p>If the endpoint requires authentication, the dispatcher verifies the Authorization header:</p>
+<pre class="codehilite"><code class="language-objc">NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
+NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                              jwtMinter:jwtMinter
+                                        adminController:adminController
+                                                request:request];
+</code></pre>
+
+<h3 id="6-handler-invocation">6. Handler Invocation</h3>
+<p>The dispatcher calls the handler with the request and response:</p>
+<pre class="codehilite"><code class="language-objc">handler(request, response);
+</code></pre>
+
+<h3 id="7-response-serialization">7. Response Serialization</h3>
+<p>The handler populates the response with:
+- HTTP status code
+- Response headers
+- Response body (JSON or binary)</p>
+<h3 id="8-http-response-transmission">8. HTTP Response Transmission</h3>
+<p>The HTTP server sends the response back to the client.</p>
+<h2 id="handler-registration">Handler Registration</h2>
+<p>Handlers are registered with the dispatcher during initialization:</p>
+<pre class="codehilite"><code class="language-objc">[dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+    // Handle request
+} forNSID:@&quot;com.atproto.repo.createRecord&quot;];
+</code></pre>
+
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="authentication-errors">Authentication Errors</h3>
+<p>If authentication fails:</p>
+<pre class="codehilite"><code>HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  &quot;error&quot;: &quot;AuthRequired&quot;,
+  &quot;message&quot;: &quot;Authentication required&quot;
+}
+</code></pre>
+
+<h3 id="not-found-errors">Not Found Errors</h3>
+<p>If the NSID is not registered:</p>
+<pre class="codehilite"><code>HTTP/1.1 404 Not Found
+Content-Type: application/json
+
+{
+  &quot;error&quot;: &quot;MethodNotFound&quot;,
+  &quot;message&quot;: &quot;Method not found: com.atproto.repo.unknownMethod&quot;
+}
+</code></pre>
+
+<h3 id="validation-errors">Validation Errors</h3>
+<p>If the request is invalid:</p>
+<pre class="codehilite"><code>HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  &quot;error&quot;: &quot;InvalidRequest&quot;,
+  &quot;message&quot;: &quot;Missing required parameter: repo&quot;
+}
+</code></pre>
+
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="implementing-a-simple-handler">Implementing a Simple Handler</h3>
+<pre class="codehilite"><code class="language-objc">[dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+    // 1. Extract authentication
+    NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
+    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                  jwtMinter:jwtMinter
+                                            adminController:adminController
+                                                    request:request];
+
+    if (!did) {
+        [XrpcErrorHelper setAuthenticationError:response];
+        return;
+    }
+
+    // 2. Parse request body
+    NSError *parseError = nil;
+    NSDictionary *params = [NSJSONSerialization JSONObjectWithData:request.body
+                                                            options:0
+                                                              error:&amp;parseError];
+
+    if (!params) {
+        [XrpcErrorHelper setValidationError:response message:@&quot;Invalid JSON&quot;];
+        return;
+    }
+
+    // 3. Validate parameters
+    NSString *repo = params[@&quot;repo&quot;];
+    if (!repo) {
+        [XrpcErrorHelper setValidationError:response message:@&quot;Missing repo parameter&quot;];
+        return;
+    }
+
+    // 4. Call service layer
+    NSError *serviceError = nil;
+    NSDictionary *result = [recordService createRecord:repo
+                                            collection:params[@&quot;collection&quot;]
+                                                 value:params[@&quot;record&quot;]
+                                                 error:&amp;serviceError];
+
+    if (!result) {
+        [XrpcErrorHelper setInternalServerError:response message:serviceError.localizedDescription];
+        return;
+    }
+
+    // 5. Serialize response
+    NSData *responseData = [NSJSONSerialization dataWithJSONObject:result
+                                                           options:0
+                                                             error:nil];
+
+    response.statusCode = 200;
+    response.body = responseData;
+    [response setHeaderValue:@&quot;application/json&quot; forName:@&quot;Content-Type&quot;];
+
+} forNSID:@&quot;com.atproto.repo.createRecord&quot;];
+</code></pre>
+
+<h3 id="handling-optional-authentication">Handling Optional Authentication</h3>
+<p>Some endpoints allow both authenticated and unauthenticated access:</p>
+<pre class="codehilite"><code class="language-objc">[dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+    // 1. Try to extract authentication (optional)
+    NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
+    NSString *did = nil;
+
+    if (authHeader) {
+        did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                            jwtMinter:jwtMinter
+                                      adminController:adminController
+                                              request:request];
+    }
+
+    // 2. Proceed with or without authentication
+    NSError *error = nil;
+    NSDictionary *result = [recordService getRecord:params[@&quot;uri&quot;]
+                                          forDid:did
+                                           error:&amp;error];
+
+    // ... serialize response
+
+} forNSID:@&quot;com.atproto.repo.getRecord&quot;];
+</code></pre>
+
+<h3 id="handling-different-http-methods">Handling Different HTTP Methods</h3>
+<pre class="codehilite"><code class="language-objc">[dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+    if ([request.method isEqualToString:@&quot;GET&quot;]) {
+        // Handle GET
+    } else if ([request.method isEqualToString:@&quot;POST&quot;]) {
+        // Handle POST
+    } else {
+        [XrpcErrorHelper setMethodNotAllowedError:response
+                                    allowedMethod:@&quot;GET, POST&quot;];
+    }
+} forNSID:@&quot;com.atproto.repo.listRecords&quot;];
+</code></pre>
+
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="handler-lookup">Handler Lookup</h3>
+<p>Handler lookup is O(1) using a hash table:</p>
+<pre class="codehilite"><code class="language-objc">@property (nonatomic, strong) NSMutableDictionary&lt;NSString *, XrpcHandler&gt; *handlers;
+</code></pre>
+
+<h3 id="request-parsing">Request Parsing</h3>
+<p>Request parsing is done once and cached:</p>
+<pre class="codehilite"><code class="language-objc">@property (nonatomic, strong, nullable) NSDictionary *parsedBody;
+</code></pre>
+
+<h3 id="response-buffering">Response Buffering</h3>
+<p>Responses are buffered before transmission to allow setting headers:</p>
+<pre class="codehilite"><code class="language-objc">@property (nonatomic, strong) NSMutableData *body;
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Handler Organization</strong></li>
+<li>Group related handlers by domain</li>
+<li>Use domain-specific handler classes</li>
+<li>
+<p>Delegate to service layer</p>
+</li>
+<li>
+<p><strong>Error Handling</strong></p>
+</li>
+<li>Always set appropriate HTTP status codes</li>
+<li>Use standardized error codes</li>
+<li>
+<p>Include helpful error messages</p>
+</li>
+<li>
+<p><strong>Authentication</strong></p>
+</li>
+<li>Verify authentication early</li>
+<li>Use XrpcAuthHelper for consistency</li>
+<li>
+<p>Handle DPoP nonce challenges</p>
+</li>
+<li>
+<p><strong>Validation</strong></p>
+</li>
+<li>Validate all required parameters</li>
+<li>Check parameter types</li>
+<li>
+<p>Provide clear validation errors</p>
+</li>
+<li>
+<p><strong>Performance</strong></p>
+</li>
+<li>Minimize handler complexity</li>
+<li>Delegate to service layer</li>
+<li>Use async operations for long-running tasks</li>
+</ol>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./method-registry.md">Method Registry</a></li>
+<li><a href="./domain-methods.md">Domain Methods</a></li>
+<li><a href="./auth-helpers.md">Auth Helpers</a></li>
+<li><a href="./error-handling.md">Error Handling</a></li>
+<li><a href="./http-server.md">HTTP Server</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
