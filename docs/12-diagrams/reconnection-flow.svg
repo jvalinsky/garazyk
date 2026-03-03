@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700" width="900" height="700">
+  <defs>
+    <style>
+      .title { font: bold 20px sans-serif; fill: #333; }
+      .label { font: 14px sans-serif; fill: #333; }
+      .small { font: 12px sans-serif; fill: #666; }
+      .box { fill: #e3f2fd; stroke: #1976d2; stroke-width: 2; }
+      .client { fill: #fff3e0; stroke: #f57c00; stroke-width: 2; }
+      .server { fill: #e8f5e9; stroke: #388e3c; stroke-width: 2; }
+      .error { fill: #ffebee; stroke: #c62828; stroke-width: 2; }
+      .success { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
+      .arrow { fill: none; stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+      .arrow-error { fill: none; stroke: #c62828; stroke-width: 2; marker-end: url(#arrowhead-error); }
+      .arrow-success { fill: none; stroke: #2e7d32; stroke-width: 2; marker-end: url(#arrowhead-success); }
+      .decision { fill: #fff9c4; stroke: #f57f17; stroke-width: 2; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+    <marker id="arrowhead-error" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#c62828" />
+    </marker>
+    <marker id="arrowhead-success" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#2e7d32" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" class="title">Firehose Reconnection Flow</text>
+  <text x="450" y="50" text-anchor="middle" class="small">Cursor-Based State Recovery</text>
+
+  <!-- Client Column -->
+  <text x="200" y="80" text-anchor="middle" class="label" font-weight="bold">Client</text>
+  
+  <!-- Server Column -->
+  <text x="700" y="80" text-anchor="middle" class="label" font-weight="bold">Server</text>
+
+  <!-- Step 1: Disconnection -->
+  <rect x="100" y="100" width="200" height="50" class="error" rx="5"/>
+  <text x="200" y="120" text-anchor="middle" class="label">Connection Lost</text>
+  <text x="200" y="138" text-anchor="middle" class="small">lastSeq = 12345</text>
+
+  <!-- Step 2: Save Cursor -->
+  <rect x="100" y="170" width="200" height="50" class="client" rx="5"/>
+  <text x="200" y="190" text-anchor="middle" class="label">Save Cursor</text>
+  <text x="200" y="208" text-anchor="middle" class="small">persist(cursor=12345)</text>
+
+  <path d="M 200 150 L 200 170" class="arrow"/>
+
+  <!-- Step 3: Exponential Backoff -->
+  <rect x="100" y="240" width="200" height="50" class="client" rx="5"/>
+  <text x="200" y="260" text-anchor="middle" class="label">Exponential Backoff</text>
+  <text x="200" y="278" text-anchor="middle" class="small">wait 1s, 2s, 4s, 8s...</text>
+
+  <path d="M 200 220 L 200 240" class="arrow"/>
+
+  <!-- Step 4: Reconnect with Cursor -->
+  <rect x="100" y="310" width="200" height="50" class="client" rx="5"/>
+  <text x="200" y="330" text-anchor="middle" class="label">Reconnect</text>
+  <text x="200" y="348" text-anchor="middle" class="small">?cursor=12345</text>
+
+  <path d="M 200 290 L 200 310" class="arrow"/>
+
+  <!-- Arrow to server -->
+  <path d="M 300 335 L 600 335" class="arrow"/>
+  <text x="450" y="330" text-anchor="middle" class="small">WebSocket Upgrade</text>
+
+  <!-- Step 5: Server Validates Cursor -->
+  <rect x="600" y="310" width="200" height="50" class="server" rx="5"/>
+  <text x="700" y="330" text-anchor="middle" class="label">Validate Cursor</text>
+  <text x="700" y="348" text-anchor="middle" class="small">parseCursorString()</text>
+
+  <!-- Decision: Valid? -->
+  <path d="M 700 360 L 700 390" class="arrow"/>
+  
+  <polygon points="700,390 750,420 700,450 650,420" class="decision"/>
+  <text x="700" y="425" text-anchor="middle" class="small">Valid?</text>
+
+  <!-- Invalid Path -->
+  <path d="M 650 420 L 500 420 L 500 480" class="arrow-error"/>
+  <text x="575" y="415" text-anchor="middle" class="small" fill="#c62828">No</text>
+  
+  <rect x="400" y="480" width="200" height="50" class="error" rx="5"/>
+  <text x="500" y="500" text-anchor="middle" class="label">Send Error</text>
+  <text x="500" y="518" text-anchor="middle" class="small">InvalidCursor</text>
+
+  <path d="M 400 505 L 300 505 L 300 380" class="arrow-error"/>
+  <text x="350" y="500" text-anchor="middle" class="small" fill="#c62828">Close</text>
+
+  <!-- Valid Path -->
+  <path d="M 750 420 L 850 420 L 850 480" class="arrow-success"/>
+  <text x="800" y="415" text-anchor="middle" class="small" fill="#2e7d32">Yes</text>
+
+  <!-- Decision: Future Cursor? -->
+  <polygon points="850,480 900,510 850,540 800,510" class="decision"/>
+  <text x="850" y="512" text-anchor="middle" class="small">Future?</text>
+  <text x="850" y="525" text-anchor="middle" class="small" font-size="10">cursor > seq</text>
+
+  <!-- Future Cursor Path -->
+  <path d="M 850 540 L 850 570 L 500 570 L 500 550" class="arrow-error"/>
+  <text x="675" y="565" text-anchor="middle" class="small" fill="#c62828">Yes</text>
+
+  <!-- Not Future Path -->
+  <path d="M 800 510 L 700 510 L 700 560" class="arrow-success"/>
+  <text x="750" y="505" text-anchor="middle" class="small" fill="#2e7d32">No</text>
+
+  <!-- Step 6: Check if Outdated -->
+  <rect x="600" y="560" width="200" height="50" class="server" rx="5"/>
+  <text x="700" y="580" text-anchor="middle" class="label">Check Replay Window</text>
+  <text x="700" y="598" text-anchor="middle" class="small">effectiveReplayCursor()</text>
+
+  <!-- Decision: Outdated? -->
+  <path d="M 700 610 L 700 630" class="arrow"/>
+  
+  <polygon points="700,630 750,660 700,690 650,660" class="decision"/>
+  <text x="700" y="665" text-anchor="middle" class="small">Outdated?</text>
+
+  <!-- Outdated Path -->
+  <path d="M 650 660 L 500 660" class="arrow"/>
+  <text x="575" y="655" text-anchor="middle" class="small">Yes</text>
+  
+  <rect x="300" y="635" width="200" height="50" class="server" rx="5"/>
+  <text x="400" y="655" text-anchor="middle" class="label">Send Info Event</text>
+  <text x="400" y="673" text-anchor="middle" class="small">OutdatedCursor</text>
+
+  <path d="M 300 660 L 200 660 L 200 620" class="arrow"/>
+
+  <!-- Not Outdated Path -->
+  <path d="M 750 660 L 850 660" class="arrow-success"/>
+  <text x="800" y="655" text-anchor="middle" class="small" fill="#2e7d32">No</text>
+
+  <!-- Step 7: Replay Events -->
+  <rect x="850" y="635" width="200" height="50" class="success" rx="5"/>
+  <text x="950" y="655" text-anchor="middle" class="label">Replay Events</text>
+  <text x="950" y="673" text-anchor="middle" class="small">replayEventsAfterCursor()</text>
+
+  <!-- Arrow back to client -->
+  <path d="M 850 660 L 300 660 L 300 590" class="arrow-success"/>
+  <text x="575" y="655" text-anchor="middle" class="small" fill="#2e7d32">Events 12346-12999</text>
+
+  <!-- Step 8: Client Processes Events -->
+  <rect x="100" y="560" width="200" height="50" class="success" rx="5"/>
+  <text x="200" y="580" text-anchor="middle" class="label">Process Events</text>
+  <text x="200" y="598" text-anchor="middle" class="small">Update lastSeq</text>
+
+  <path d="M 200 380 L 200 560" class="arrow-success"/>
+
+  <!-- Step 9: Live Mode -->
+  <rect x="100" y="380" width="200" height="50" class="success" rx="5"/>
+  <text x="200" y="400" text-anchor="middle" class="label">Live Event Mode</text>
+  <text x="200" y="418" text-anchor="middle" class="small">Caught up!</text>
+
+  <path d="M 200 610 L 200 430" class="arrow-success"/>
+</svg>

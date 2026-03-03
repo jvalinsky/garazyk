@@ -34,6 +34,8 @@
 
 **Cryptographic Hash** — One-way function that produces a fixed-size digest from input data.
 
+**Cursor** — Position marker (sequence number) in the firehose event stream that allows clients to resume from a specific point after disconnection.
+
 ## D
 
 **DAG** — Directed Acyclic Graph. Data structure used to represent repository history.
@@ -172,6 +174,8 @@
 
 **Retry Policy** — Strategy for retrying failed operations with backoff.
 
+**Replay Window** — Maximum number of historical events that can be replayed to reconnecting clients.
+
 ## S
 
 **Secrets Management** — Secure storage and handling of cryptographic keys and sensitive data.
@@ -189,6 +193,8 @@
 **Structured Logging** — Logging format with consistent fields for parsing and analysis.
 
 **SubscribeRepos** — XRPC method providing real-time repository updates via WebSocket.
+
+**Sequence Number** — Monotonically increasing integer assigned to each firehose event that defines canonical ordering.
 
 ## T
 

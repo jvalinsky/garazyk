@@ -92,6 +92,10 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [Commit Broadcasting](08-sync-firehose/commit-broadcasting.md) — Event streaming
 - [Backpressure](08-sync-firehose/backpressure.md) — Flow control
 - [Firehose Rate Limiting](08-sync-firehose/firehose-rate-limiting.md) — Subscriber limits
+- [Event Ordering](08-sync-firehose/event-ordering.md) — Sequence number guarantees
+- [Reconnection Strategy](08-sync-firehose/reconnection-strategy.md) — Handling disconnections
+- [Event Replay](08-sync-firehose/event-replay.md) — Cursor-based catch-up
+- [Reliability Guarantees](08-sync-firehose/reliability-guarantees.md) — Delivery semantics
 
 ### Platform Compatibility
 - [macOS vs Linux](09-platform-compatibility/macos-linux.md) — Platform differences
@@ -133,6 +137,9 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [PLC Directory Architecture](12-diagrams/plc-directory-architecture.svg)
 - [DID Resolution Flow](12-diagrams/did-resolution-flow.svg)
 - [PLC Failover Mechanism](12-diagrams/plc-failover-mechanism.svg)
+- [Event Ordering Guarantee](12-diagrams/event-ordering-guarantee.svg)
+- [Reconnection Flow](12-diagrams/reconnection-flow.svg)
+- [Event Replay Mechanism](12-diagrams/event-replay-mechanism.svg)
 
 ## Learning Path
 
