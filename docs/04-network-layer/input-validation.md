@@ -108,7 +108,8 @@ The `ATProtoValidator` class provides static methods for validating AT Protocol 
         return NO;
     }
 
-    // Regex: ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
+    // Regex pattern for handle validation:
+    // ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
     NSRegularExpression *regex = [NSRegularExpression 
         regularExpressionWithPattern:@"^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$" 
         options:0 

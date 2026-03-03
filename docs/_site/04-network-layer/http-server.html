@@ -255,115 +255,117 @@ HTTP Response
 </code></pre>
 
 <h2 id="server-initialization">Server Initialization</h2>
-<pre class="codehilite"><code class="language-objc">// In HttpServer.m
-- (instancetype)initWithPort:(NSInteger)port error:(NSError **)error {
-    self = [super init];
-    if (!self) return nil;
+<p>The HTTP server is initialized with a port and optional configuration:</p>
+<pre class="codehilite"><code class="language-objc">// Create server instance
+HttpServer *server = [HttpServer serverWithPort:2583];
 
-    self.port = port;
-    self.routes = [NSMutableDictionary dictionary];
-    self.requestQueue = dispatch_queue_create(&quot;com.atproto.http.requests&quot;, DISPATCH_QUEUE_CONCURRENT);
-
-    return self;
-}
-
-- (void)startWithCompletion:(void (^)(NSError *error))completion {
-    // 1. Create socket
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket &lt; 0) {
-        NSError *error = [NSError errorWithDomain:@&quot;HTTP&quot; code:1 
-            userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to create socket&quot;}];
-        completion(error);
-        return;
+// Start listening
+NSError *error = nil;
+[server startWithCompletion:^(NSError *startError) {
+    if (startError) {
+        NSLog(@&quot;Failed to start server: %@&quot;, startError);
+    } else {
+        NSLog(@&quot;Server started on port 2583&quot;);
     }
+}];
+</code></pre>
 
-    // 2. Set socket options
-    int optval = 1;
-    setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &amp;optval, sizeof(optval));
+<p><strong>Implementation Details (from HttpServer.m):</strong></p>
+<p>The server manages concurrent connections with a configurable limit:</p>
+<pre class="codehilite"><code class="language-objc">static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
+static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024;
+static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
+static const NSTimeInterval kHttpHeaderTimeout = 5.0;
+</code></pre>
 
-    // 3. Bind to port
-    struct sockaddr_in addr;
-    memset(&amp;addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(self.port);
-
-    if (bind(serverSocket, (struct sockaddr *)&amp;addr, sizeof(addr)) &lt; 0) {
-        NSError *error = [NSError errorWithDomain:@&quot;HTTP&quot; code:2 
-            userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to bind socket&quot;}];
-        completion(error);
-        return;
-    }
-
-    // 4. Listen for connections
-    listen(serverSocket, SOMAXCONN);
-
-    // 5. Accept connections in background
-    dispatch_async(self.requestQueue, ^{
-        [self acceptConnectionsOnSocket:serverSocket];
-    });
-
-    self.serverSocket = serverSocket;
-    self.isRunning = YES;
-    completion(nil);
-}
+<p>Connection state tracking:</p>
+<pre class="codehilite"><code class="language-objc">@interface HttpConnectionState : NSObject
+@property(nonatomic, strong) Http1Parser *parser;
+@property(nonatomic, strong) Http1PipelinePolicy *pipelinePolicy;
+@property(nonatomic, assign) NSTimeInterval headerStartTime;
+@property(nonatomic, assign) BOOL requestInFlight;
+@property(nonatomic, strong) NSMutableArray&lt;HttpQueuedResponse *&gt; *outputQueue;
+@property(nonatomic, assign) BOOL readingPaused;
+@property(nonatomic, assign) NSUInteger outputQueueSize;
+@property(nonatomic, strong) NSMutableArray&lt;HttpRequest *&gt; *pendingRequests;
+@property(nonatomic, assign) BOOL sendingActive;
+@property(nonatomic, assign) BOOL upgradedToWebSocket;
+@end
 </code></pre>
 
 <h2 id="route-registration">Route Registration</h2>
 <h3 id="registering-routes">Registering Routes</h3>
-<pre class="codehilite"><code class="language-objc">// In PDSHttpServerBuilder.m
-- (void)setupRoutes:(HttpServer *)server 
-         application:(PDSApplication *)app {
-    // XRPC routes
-    [server registerRoute:@&quot;/xrpc/*&quot; 
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-        [app.xrpcDispatcher dispatchRequest:request response:response];
-    }];
+<p>Routes are registered with the HTTP server using path patterns and handler blocks. The builder pattern is used to configure all routes:</p>
+<p><strong>Implementation (from PDSHttpServerBuilder.m):</strong></p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)configureServer:(HttpServer *)server error:(NSError **)error {
+    if (!server) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;PDSHttpServerBuilderErrorDomain&quot;
+                                          code:1
+                                      userInfo:@{
+                                        NSLocalizedDescriptionKey : @&quot;Server cannot be nil&quot;
+                                      }];
+        }
+        return NO;
+    }
 
-    // OAuth routes
-    [server registerRoute:@&quot;/oauth/authorize&quot; 
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-        [app.oauthProvider handleAuthorizeRequest:request response:response];
-    }];
+    // Register OAuth routes first (specific paths take precedence)
+    if (self.enableOAuth) {
+        [self registerOAuthRoutesWithServer:server];
+    }
 
-    // Static content
-    [server registerRoute:@&quot;/static/*&quot; 
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-        [self serveStaticFile:request response:response];
-    }];
+    // Register XRPC routes
+    if (self.enableXrpc) {
+        [self registerXrpcRoutesWithServer:server];
+    }
 
-    // Health check
-    [server registerRoute:@&quot;/health&quot; 
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = 200;
-        response.body = [@{@&quot;status&quot;: @&quot;ok&quot;} JSONData];
-    }];
+    // Register Explore UI routes
+    ExploreHandler *exploreHandler = nil;
+    if (self.enableExploreUI) {
+        exploreHandler = [self registerExploreRoutesWithServer:server];
+    }
+
+    // Register OAuth Demo routes
+    if (self.enableOAuthDemo) {
+        [self registerOAuthDemoRoutesWithServer:server];
+    }
+
+    // Register MST Viewer routes
+    if (self.enableMSTViewer) {
+        [self registerMSTViewerRoutesWithServer:server];
+    }
+
+    // Register NodeInfo routes
+    if (self.enableNodeInfo) {
+        [self registerNodeInfoRoutesWithServer:server];
+    }
+
+    return YES;
 }
 </code></pre>
 
 <h3 id="route-matching">Route Matching</h3>
-<pre class="codehilite"><code class="language-objc">// In HttpServer.m
-- (HttpRequestHandler)handlerForPath:(NSString *)path {
-    // Exact match
-    HttpRequestHandler handler = self.routes[path];
-    if (handler) return handler;
+<p>Routes are matched using a trie-based pattern matching system that supports wildcards:</p>
+<pre class="codehilite"><code class="language-objc">// Exact match
+HttpRequestHandler handler = self.routes[path];
+if (handler) return handler;
 
-    // Wildcard match
-    for (NSString *pattern in self.routes) {
-        if ([pattern hasSuffix:@&quot;*&quot;]) {
-            NSString *prefix = [pattern substringToIndex:pattern.length - 1];
-            if ([path hasPrefix:prefix]) {
-                return self.routes[pattern];
-            }
+// Wildcard match
+for (NSString *pattern in self.routes) {
+    if ([pattern hasSuffix:@&quot;*&quot;]) {
+        NSString *prefix = [pattern substringToIndex:pattern.length - 1];
+        if ([path hasPrefix:prefix]) {
+            return self.routes[pattern];
         }
     }
-
-    return nil;
 }
+
+return nil;
 </code></pre>
 
 <h2 id="request-handling">Request Handling</h2>
 <h3 id="parsing-requests">Parsing Requests</h3>
+<p>HTTP/1.1 requests are parsed using a state machine parser that handles headers and body separately:</p>
 <pre class="codehilite"><code class="language-objc">// In HttpRequest.m
 + (instancetype)parseFromData:(NSData *)data error:(NSError **)error {
     HttpRequest *request = [[HttpRequest alloc] init];
@@ -399,6 +401,7 @@ HTTP Response
 </code></pre>
 
 <h3 id="building-responses">Building Responses</h3>
+<p>Responses are serialized with status line, headers, and body:</p>
 <pre class="codehilite"><code class="language-objc">// In HttpResponse.m
 - (NSData *)serialize {
     NSMutableString *response = [NSMutableString string];
@@ -429,6 +432,7 @@ HTTP Response
 
 <h2 id="websocket-support">WebSocket Support</h2>
 <h3 id="websocket-upgrade">WebSocket Upgrade</h3>
+<p>The HTTP server supports upgrading connections to WebSocket for real-time communication (used by the firehose):</p>
 <pre class="codehilite"><code class="language-objc">// In HttpServer.m
 - (BOOL)upgradeToWebSocket:(HttpRequest *)request 
                   response:(HttpResponse *)response
@@ -462,6 +466,7 @@ HTTP Response
 </code></pre>
 
 <h3 id="websocket-frame-handling">WebSocket Frame Handling</h3>
+<p>Once upgraded, frames are parsed and handled according to the WebSocket protocol:</p>
 <pre class="codehilite"><code class="language-objc">// In WebSocketConnection.m
 - (void)handleFrame:(NSData *)frameData {
     // 1. Parse frame header
@@ -605,14 +610,18 @@ response.headers[@&quot;Cache-Control&quot;] = @&quot;public, max-age=3600&quot;
 response.headers[@&quot;ETag&quot;] = [self calculateETag:response.body];
 </code></pre>
 
-<h2 id="next-steps">Next Steps</h2>
-<ul>
-<li><strong><a href="./xrpc-dispatch.md">XRPC Dispatch</a></strong> — XRPC routing</li>
-<li><strong><a href="./method-registry.md">Method Registry</a></strong> — Method registration</li>
-<li><strong><a href="../06-authentication/jwt-tokens.md">Authentication</a></strong> — Authentication details</li>
-</ul>
+<h2 id="see-also">See Also</h2>
+<p><strong>Basic Topics:</strong>
+- <a href="./xrpc-dispatch.md">XRPC Dispatch</a> — XRPC routing
+- <a href="./method-registry.md">Method Registry</a> — Method registration
+- <a href="../06-authentication/jwt-tokens.md">Authentication</a> — Authentication details</p>
+<p><strong>Advanced Topics:</strong>
+- <a href="./rate-limiting.md">Rate Limiting</a> — Request rate control
+- <a href="./dos-protection.md">DoS Protection</a> — Attack mitigation
+- <a href="./request-throttling.md">Request Throttling</a> — Traffic management
+- <a href="./input-validation.md">Input Validation</a> — Request validation</p>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

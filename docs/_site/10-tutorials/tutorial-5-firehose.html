@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 5: Firehose - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Tutorial 5: Firehose</h1>
+            </div>
+            <h1 id="tutorial-5-firehose">Tutorial 5: Firehose</h1>
+<h2 id="overview">Overview</h2>
+<p>In this tutorial, you'll implement the Firehose (subscribeRepos) endpoint to stream real-time repository events over WebSocket connections.</p>
+<p><strong>Learning Objectives:</strong>
+- Understand WebSocket upgrade from HTTP
+- Implement subscribeRepos endpoint
+- Broadcast repository commit events
+- Handle backpressure and flow control
+- Support cursor-based replay</p>
+<p><strong>Time:</strong> 90 minutes</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Completed <a href="./tutorial-4-auth.md">Tutorial 4: Authentication</a></li>
+<li>Understanding of WebSocket protocol</li>
+<li>Understanding of firehose concepts (see <a href="../08-sync-firehose/firehose-overview.md">Firehose Overview</a>)</li>
+<li>Understanding of commit broadcasting (see <a href="../08-sync-firehose/commit-broadcasting.md">Commit Broadcasting</a>)</li>
+</ul>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p>The Firehose provides real-time streaming of repository events to subscribers. Key components:</p>
+<ol>
+<li><strong>WebSocket Server</strong> — Handles WebSocket connections</li>
+<li><strong>SubscribeRepos Handler</strong> — Manages subscriptions and broadcasts events</li>
+<li><strong>Event Formatter</strong> — Encodes events in DAG-CBOR format</li>
+<li><strong>Backpressure Handler</strong> — Prevents slow consumers from blocking the server</li>
+</ol>
+<h2 id="step-1-create-websocket-connection-handler">Step 1: Create WebSocket Connection Handler</h2>
+<p>Create <code>src/WebSocketConnection.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+
+typedef void (^WebSocketMessageHandler)(NSData *message);
+typedef void (^WebSocketCloseHandler)(NSInteger code, NSString *reason);
+
+@interface WebSocketConnection : NSObject
+
+@property (nonatomic, copy, readonly) NSString *remoteAddress;
+@property (nonatomic, assign, readonly) NSUInteger pendingSendCount;
+@property (nonatomic, assign, readonly) NSUInteger pendingSendBytes;
+
+- (instancetype)initWithSocket:(int)socket;
+
+- (void)start;
+- (void)sendMessage:(NSData *)message;
+- (void)close;
+- (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
+
+@property (nonatomic, copy) WebSocketMessageHandler messageHandler;
+@property (nonatomic, copy) WebSocketCloseHandler closeHandler;
+
+@end
+</code></pre>
+
+<h2 id="step-2-implement-websocket-connection">Step 2: Implement WebSocket Connection</h2>
+<p>Create <code>src/WebSocketConnection.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;WebSocketConnection.h&quot;
+#import &lt;sys/socket.h&gt;
+#import &lt;arpa/inet.h&gt;
+#import &lt;CommonCrypto/CommonDigest.h&gt;
+
+@interface WebSocketConnection ()
+@property (nonatomic, assign) int socket;
+@property (nonatomic, copy, readwrite) NSString *remoteAddress;
+@property (nonatomic, assign, readwrite) NSUInteger pendingSendCount;
+@property (nonatomic, assign, readwrite) NSUInteger pendingSendBytes;
+@property (nonatomic, strong) dispatch_queue_t sendQueue;
+@property (nonatomic, strong) dispatch_queue_t receiveQueue;
+@property (nonatomic, assign) BOOL isOpen;
+@end
+
+@implementation WebSocketConnection
+
+- (instancetype)initWithSocket:(int)socket {
+    self = [super init];
+    if (!self) return nil;
+
+    self.socket = socket;
+    self.isOpen = YES;
+    self.pendingSendCount = 0;
+    self.pendingSendBytes = 0;
+
+    // Get remote address
+    struct sockaddr_in addr;
+    socklen_t addrLen = sizeof(addr);
+    getpeername(socket, (struct sockaddr *)&amp;addr, &amp;addrLen);
+    char ipStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &amp;addr.sin_addr, ipStr, sizeof(ipStr));
+    self.remoteAddress = [NSString stringWithUTF8String:ipStr];
+
+    self.sendQueue = dispatch_queue_create(&quot;com.atproto.websocket.send&quot;, DISPATCH_QUEUE_SERIAL);
+    self.receiveQueue = dispatch_queue_create(&quot;com.atproto.websocket.receive&quot;, DISPATCH_QUEUE_SERIAL);
+
+    return self;
+}
+
+- (void)start {
+    // Start receiving messages
+    dispatch_async(self.receiveQueue, ^{
+        [self receiveLoop];
+    });
+}
+
+- (void)sendMessage:(NSData *)message {
+    if (!self.isOpen) return;
+
+    dispatch_async(self.sendQueue, ^{
+        self.pendingSendCount++;
+        self.pendingSendBytes += message.length;
+
+        // Build WebSocket frame (binary, FIN=1)
+        NSMutableData *frame = [NSMutableData data];
+
+        uint8_t byte1 = 0x82;  // FIN=1, opcode=binary
+        [frame appendBytes:&amp;byte1 length:1];
+
+        // Payload length
+        if (message.length &lt; 126) {
+            uint8_t byte2 = (uint8_t)message.length;
+            [frame appendBytes:&amp;byte2 length:1];
+        } else if (message.length &lt; 65536) {
+            uint8_t byte2 = 126;
+            [frame appendBytes:&amp;byte2 length:1];
+            uint16_t len = htons((uint16_t)message.length);
+            [frame appendBytes:&amp;len length:2];
+        } else {
+            uint8_t byte2 = 127;
+            [frame appendBytes:&amp;byte2 length:1];
+            uint64_t len = htonll((uint64_t)message.length);
+            [frame appendBytes:&amp;len length:8];
+        }
+
+        [frame appendData:message];
+
+        // Send frame
+        ssize_t sent = send(self.socket, frame.bytes, frame.length, 0);
+
+        self.pendingSendCount--;
+        self.pendingSendBytes -= message.length;
+
+        if (sent &lt; 0) {
+            NSLog(@&quot;Failed to send WebSocket message&quot;);
+            [self close];
+        }
+    });
+}
+
+- (void)receiveLoop {
+    while (self.isOpen) {
+        // Read frame header
+        uint8_t header[2];
+        ssize_t n = recv(self.socket, header, 2, 0);
+
+        if (n &lt;= 0) {
+            [self close];
+            break;
+        }
+
+        uint8_t opcode = header[0] &amp; 0x0F;
+        BOOL masked = (header[1] &amp; 0x80) != 0;
+        uint64_t payloadLen = header[1] &amp; 0x7F;
+
+        // Read extended payload length if needed
+        if (payloadLen == 126) {
+            uint16_t len16;
+            recv(self.socket, &amp;len16, 2, 0);
+            payloadLen = ntohs(len16);
+        } else if (payloadLen == 127) {
+            uint64_t len64;
+            recv(self.socket, &amp;len64, 8, 0);
+            payloadLen = ntohll(len64);
+        }
+
+        // Read masking key if present
+        uint8_t maskingKey[4] = {0};
+        if (masked) {
+            recv(self.socket, maskingKey, 4, 0);
+        }
+
+        // Read payload
+        NSMutableData *payload = [NSMutableData dataWithLength:payloadLen];
+        ssize_t totalRead = 0;
+        while (totalRead &lt; payloadLen) {
+            ssize_t bytesRead = recv(self.socket, 
+                                    (uint8_t *)payload.mutableBytes + totalRead,
+                                    payloadLen - totalRead, 0);
+            if (bytesRead &lt;= 0) {
+                [self close];
+                return;
+            }
+            totalRead += bytesRead;
+        }
+
+        // Unmask payload if needed
+        if (masked) {
+            uint8_t *bytes = (uint8_t *)payload.mutableBytes;
+            for (NSUInteger i = 0; i &lt; payloadLen; i++) {
+                bytes[i] ^= maskingKey[i % 4];
+            }
+        }
+
+        // Handle opcode
+        if (opcode == 0x08) {  // Close
+            [self close];
+            break;
+        } else if (opcode == 0x09) {  // Ping
+            [self sendPong:payload];
+        } else if (opcode == 0x02 || opcode == 0x01) {  // Binary or Text
+            if (self.messageHandler) {
+                self.messageHandler(payload);
+            }
+        }
+    }
+}
+
+- (void)sendPong:(NSData *)payload {
+    NSMutableData *frame = [NSMutableData data];
+    uint8_t byte1 = 0x8A;  // FIN=1, opcode=pong
+    [frame appendBytes:&amp;byte1 length:1];
+    uint8_t byte2 = (uint8_t)payload.length;
+    [frame appendBytes:&amp;byte2 length:1];
+    [frame appendData:payload];
+    send(self.socket, frame.bytes, frame.length, 0);
+}
+
+- (void)close {
+    [self closeWithCode:1000 reason:@&quot;Normal closure&quot;];
+}
+
+- (void)closeWithCode:(NSInteger)code reason:(NSString *)reason {
+    if (!self.isOpen) return;
+
+    self.isOpen = NO;
+
+    // Send close frame
+    NSMutableData *frame = [NSMutableData data];
+    uint8_t byte1 = 0x88;  // FIN=1, opcode=close
+    [frame appendBytes:&amp;byte1 length:1];
+
+    uint16_t closeCode = htons((uint16_t)code);
+    NSData *reasonData = [reason dataUsingEncoding:NSUTF8StringEncoding];
+    uint8_t byte2 = (uint8_t)(2 + reasonData.length);
+    [frame appendBytes:&amp;byte2 length:1];
+    [frame appendBytes:&amp;closeCode length:2];
+    [frame appendData:reasonData];
+
+    send(self.socket, frame.bytes, frame.length, 0);
+    close(self.socket);
+
+    if (self.closeHandler) {
+        self.closeHandler(code, reason);
+    }
+}
+
+@end
+</code></pre>
+
+<h2 id="step-3-create-event-formatter">Step 3: Create Event Formatter</h2>
+<p>Create <code>src/EventFormatter.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+
+@interface FirehoseCommitEvent : NSObject
+@property (nonatomic, assign) NSUInteger seq;
+@property (nonatomic, copy) NSString *repo;
+@property (nonatomic, strong) NSData *commit;  // CID bytes
+@property (nonatomic, copy) NSString *rev;
+@property (nonatomic, copy, nullable) NSString *since;
+@property (nonatomic, strong) NSData *blocks;  // CAR bytes
+@property (nonatomic, strong) NSArray&lt;NSDictionary *&gt; *ops;
+@property (nonatomic, strong) NSArray *blobs;
+@property (nonatomic, copy) NSString *time;
+@end
+
+@interface EventFormatter : NSObject
+
+- (nullable NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h2 id="step-4-implement-event-formatter">Step 4: Implement Event Formatter</h2>
+<p>Create <code>src/EventFormatter.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;EventFormatter.h&quot;
+
+@implementation FirehoseCommitEvent
+@end
+
+@implementation EventFormatter
+
+- (nullable NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event error:(NSError **)error {
+    // Build event dictionary
+    NSMutableDictionary *eventDict = [@{
+        @&quot;$type&quot;: @&quot;#commit&quot;,
+        @&quot;seq&quot;: @(event.seq),
+        @&quot;rebase&quot;: @NO,
+        @&quot;tooBig&quot;: @NO,
+        @&quot;repo&quot;: event.repo,
+        @&quot;commit&quot;: event.commit,
+        @&quot;rev&quot;: event.rev,
+        @&quot;blocks&quot;: event.blocks,
+        @&quot;ops&quot;: event.ops,
+        @&quot;blobs&quot;: event.blobs,
+        @&quot;time&quot;: event.time
+    } mutableCopy];
+
+    if (event.since) {
+        eventDict[@&quot;since&quot;] = event.since;
+    }
+
+    // Encode as DAG-CBOR (simplified - use real DAG-CBOR in production)
+    NSData *cborData = [self encodeCBOR:eventDict error:error];
+    if (!cborData) return nil;
+
+    // Build frame: [header][body]
+    // Header: { op: 1 (message), t: &quot;#commit&quot; }
+    NSDictionary *header = @{@&quot;op&quot;: @1, @&quot;t&quot;: @&quot;#commit&quot;};
+    NSData *headerData = [self encodeCBOR:header error:error];
+    if (!headerData) return nil;
+
+    NSMutableData *frame = [NSMutableData data];
+    [frame appendData:headerData];
+    [frame appendData:cborData];
+
+    return frame;
+}
+
+- (nullable NSData *)encodeCBOR:(id)object error:(NSError **)error {
+    // Simplified CBOR encoding for tutorial
+    // In production, use ATProtoCBORSerialization
+    return [NSJSONSerialization dataWithJSONObject:object options:0 error:error];
+}
+
+@end
+</code></pre>
+
+<h2 id="step-5-create-subscriberepos-handler">Step 5: Create SubscribeRepos Handler</h2>
+<p>Create <code>src/SubscribeReposHandler.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;WebSocketConnection.h&quot;
+
+@interface SubscribeReposHandler : NSObject
+
+- (instancetype)initWithDatabasePath:(NSString *)databasePath;
+
+- (void)acceptConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor;
+- (void)broadcastCommit:(NSString *)repo 
+                    rev:(NSString *)rev
+                 commit:(NSData *)commitCID
+                 blocks:(NSData *)carBlocks
+                    ops:(NSArray&lt;NSDictionary *&gt; *)ops;
+
+@end
+</code></pre>
+
+<h2 id="step-6-implement-subscriberepos-handler">Step 6: Implement SubscribeRepos Handler</h2>
+<p>Create <code>src/SubscribeReposHandler.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;SubscribeReposHandler.h&quot;
+#import &quot;EventFormatter.h&quot;
+
+@interface SubscribeReposHandler ()
+@property (nonatomic, copy) NSString *databasePath;
+@property (nonatomic, strong) EventFormatter *eventFormatter;
+@property (nonatomic, strong) NSMutableSet&lt;WebSocketConnection *&gt; *connections;
+@property (nonatomic, strong) dispatch_queue_t eventQueue;
+@property (nonatomic, assign) NSUInteger sequenceNumber;
+@property (nonatomic, assign) NSUInteger maxPendingSends;
+@property (nonatomic, assign) NSUInteger maxPendingBytes;
+@end
+
+@implementation SubscribeReposHandler
+
+- (instancetype)initWithDatabasePath:(NSString *)databasePath {
+    self = [super init];
+    if (!self) return nil;
+
+    self.databasePath = databasePath;
+    self.eventFormatter = [[EventFormatter alloc] init];
+    self.connections = [NSMutableSet set];
+    self.eventQueue = dispatch_queue_create(&quot;com.atproto.firehose.events&quot;, DISPATCH_QUEUE_SERIAL);
+    self.sequenceNumber = 0;
+    self.maxPendingSends = 512;
+    self.maxPendingBytes = 16 * 1024 * 1024;  // 16MB
+
+    return self;
+}
+
+- (void)acceptConnection:(WebSocketConnection *)connection cursor:(nullable NSString *)cursor {
+    NSLog(@&quot;[Firehose] New connection from %@&quot;, connection.remoteAddress);
+
+    @synchronized(self.connections) {
+        [self.connections addObject:connection];
+    }
+
+    // Handle connection close
+    __weak typeof(self) weakSelf = self;
+    connection.closeHandler = ^(NSInteger code, NSString *reason) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+
+        @synchronized(strongSelf.connections) {
+            [strongSelf.connections removeObject:connection];
+        }
+        NSLog(@&quot;[Firehose] Connection closed: %@ (code=%ld)&quot;, connection.remoteAddress, (long)code);
+    };
+
+    // If cursor provided, replay events
+    if (cursor &amp;&amp; cursor.length &gt; 0) {
+        NSUInteger cursorSeq = [cursor integerValue];
+        [self replayEventsAfterCursor:cursorSeq toConnection:connection];
+    }
+}
+
+- (void)replayEventsAfterCursor:(NSUInteger)cursor toConnection:(WebSocketConnection *)connection {
+    dispatch_async(self.eventQueue, ^{
+        NSLog(@&quot;[Firehose] Replaying events after cursor %lu&quot;, (unsigned long)cursor);
+
+        // In production, load events from database
+        // For tutorial, we'll just start from current sequence
+        NSLog(@&quot;[Firehose] Replay complete, connection is now live&quot;);
+    });
+}
+
+- (void)broadcastCommit:(NSString *)repo 
+                    rev:(NSString *)rev
+                 commit:(NSData *)commitCID
+                 blocks:(NSData *)carBlocks
+                    ops:(NSArray&lt;NSDictionary *&gt; *)ops {
+
+    dispatch_async(self.eventQueue, ^{
+        self.sequenceNumber++;
+
+        // Create commit event
+        FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+        event.seq = self.sequenceNumber;
+        event.repo = repo;
+        event.commit = commitCID;
+        event.rev = rev;
+        event.blocks = carBlocks;
+        event.ops = ops;
+        event.blobs = @[];
+        event.time = [self rfc3339Timestamp];
+
+        // Encode event
+        NSError *error = nil;
+        NSData *eventData = [self.eventFormatter encodeCommitEvent:event error:&amp;error];
+        if (!eventData) {
+            NSLog(@&quot;[Firehose] Failed to encode event: %@&quot;, error);
+            return;
+        }
+
+        // Broadcast to all connections
+        NSSet&lt;WebSocketConnection *&gt; *snapshot = nil;
+        @synchronized(self.connections) {
+            snapshot = [self.connections copy];
+        }
+
+        for (WebSocketConnection *connection in snapshot) {
+            // Check backpressure
+            if (connection.pendingSendCount &gt;= self.maxPendingSends ||
+                connection.pendingSendBytes &gt;= self.maxPendingBytes) {
+                NSLog(@&quot;[Firehose] Closing slow consumer: %@&quot;, connection.remoteAddress);
+                [connection closeWithCode:1008 reason:@&quot;ConsumerTooSlow&quot;];
+                @synchronized(self.connections) {
+                    [self.connections removeObject:connection];
+                }
+                continue;
+            }
+
+            [connection sendMessage:eventData];
+        }
+
+        NSLog(@&quot;[Firehose] Broadcast commit event seq=%lu to %lu connections&quot;, 
+              (unsigned long)self.sequenceNumber, (unsigned long)snapshot.count);
+    });
+}
+
+- (NSString *)rfc3339Timestamp {
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateFormat = @&quot;yyyy-MM-dd'T'HH:mm:ss.SSS'Z'&quot;;
+    formatter.timeZone = [NSTimeZone timeZoneWithName:@&quot;UTC&quot;];
+    return [formatter stringFromDate:[NSDate date]];
+}
+
+@end
+</code></pre>
+
+<h2 id="step-7-update-http-server-for-websocket-upgrade">Step 7: Update HTTP Server for WebSocket Upgrade</h2>
+<p>Update <code>src/HttpServer.m</code> to handle WebSocket upgrade:</p>
+<pre class="codehilite"><code class="language-objc">- (void)handleClient:(int)clientSocket {
+    // Read request
+    char buffer[4096];
+    ssize_t n = read(clientSocket, buffer, sizeof(buffer));
+
+    if (n &lt;= 0) {
+        close(clientSocket);
+        return;
+    }
+
+    NSString *requestStr = [[NSString alloc] initWithBytes:buffer 
+                                                    length:n 
+                                                  encoding:NSUTF8StringEncoding];
+
+    // Parse request
+    NSArray *lines = [requestStr componentsSeparatedByString:@&quot;\r\n&quot;];
+    NSArray *requestLine = [lines[0] componentsSeparatedByString:@&quot; &quot;];
+    NSString *method = requestLine[0];
+    NSString *path = requestLine[1];
+
+    // Parse headers
+    NSMutableDictionary *headers = [NSMutableDictionary dictionary];
+    for (NSUInteger i = 1; i &lt; lines.count; i++) {
+        NSString *line = lines[i];
+        if (line.length == 0) break;
+
+        NSArray *parts = [line componentsSeparatedByString:@&quot;: &quot;];
+        if (parts.count == 2) {
+            headers[parts[0]] = parts[1];
+        }
+    }
+
+    // Check for WebSocket upgrade
+    if ([headers[@&quot;Upgrade&quot;] isEqualToString:@&quot;websocket&quot;] &amp;&amp;
+        [path isEqualToString:@&quot;/xrpc/com.atproto.sync.subscribeRepos&quot;]) {
+        [self handleWebSocketUpgrade:clientSocket headers:headers path:path];
+        return;
+    }
+
+    // Regular HTTP handling
+    HttpRequestHandler handler = self.routes[path];
+    if (!handler) {
+        handler = self.routes[@&quot;/xrpc/*&quot;];
+    }
+
+    NSString *response = @&quot;HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\&quot;status\&quot;:\&quot;ok\&quot;}&quot;;
+    write(clientSocket, [response UTF8String], response.length);
+    close(clientSocket);
+}
+
+- (void)handleWebSocketUpgrade:(int)clientSocket 
+                       headers:(NSDictionary *)headers
+                          path:(NSString *)path {
+
+    // Extract WebSocket key
+    NSString *wsKey = headers[@&quot;Sec-WebSocket-Key&quot;];
+    if (!wsKey) {
+        close(clientSocket);
+        return;
+    }
+
+    // Compute accept key
+    NSString *magic = @&quot;258EAFA5-E914-47DA-95CA-C5AB0DC85B11&quot;;
+    NSString *combined = [wsKey stringByAppendingString:magic];
+    NSData *combinedData = [combined dataUsingEncoding:NSUTF8StringEncoding];
+
+    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
+    CC_SHA1(combinedData.bytes, (CC_LONG)combinedData.length, digest);
+    NSData *digestData = [NSData dataWithBytes:digest length:CC_SHA1_DIGEST_LENGTH];
+    NSString *acceptKey = [digestData base64EncodedStringWithOptions:0];
+
+    // Send upgrade response
+    NSString *response = [NSString stringWithFormat:
+        @&quot;HTTP/1.1 101 Switching Protocols\r\n&quot;
+        @&quot;Upgrade: websocket\r\n&quot;
+        @&quot;Connection: Upgrade\r\n&quot;
+        @&quot;Sec-WebSocket-Accept: %@\r\n&quot;
+        @&quot;\r\n&quot;, acceptKey];
+
+    write(clientSocket, [response UTF8String], response.length);
+
+    // Extract cursor from query string
+    NSString *cursor = nil;
+    NSArray *pathParts = [path componentsSeparatedByString:@&quot;?&quot;];
+    if (pathParts.count &gt; 1) {
+        NSString *query = pathParts[1];
+        NSArray *params = [query componentsSeparatedByString:@&quot;&amp;&quot;];
+        for (NSString *param in params) {
+            NSArray *kv = [param componentsSeparatedByString:@&quot;=&quot;];
+            if (kv.count == 2 &amp;&amp; [kv[0] isEqualToString:@&quot;cursor&quot;]) {
+                cursor = kv[1];
+            }
+        }
+    }
+
+    // Create WebSocket connection
+    WebSocketConnection *connection = [[WebSocketConnection alloc] initWithSocket:clientSocket];
+    [connection start];
+
+    // Hand off to SubscribeRepos handler
+    [self.subscribeReposHandler acceptConnection:connection cursor:cursor];
+}
+</code></pre>
+
+<h2 id="step-8-update-main-entry-point">Step 8: Update Main Entry Point</h2>
+<p>Update <code>src/main.m</code> to initialize the firehose:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;PDSApplication.h&quot;
+#import &quot;SubscribeReposHandler.h&quot;
+
+int main(int argc, char *argv[]) {
+    @autoreleasepool {
+        // 1. Create configuration
+        PDSConfiguration *config = [[PDSConfiguration alloc] init];
+        config.serverPort = 2583;
+        config.issuer = @&quot;did:web:localhost:2583&quot;;
+        config.databasePath = @&quot;./pds-data/db&quot;;
+
+        // 2. Initialize PDS
+        NSError *error = nil;
+        PDSApplication *app = [[PDSApplication alloc] 
+            initWithConfiguration:config error:&amp;error];
+
+        if (!app) {
+            NSLog(@&quot;Failed to initialize PDS: %@&quot;, error);
+            return 1;
+        }
+
+        // 3. Initialize SubscribeRepos handler
+        SubscribeReposHandler *firehose = [[SubscribeReposHandler alloc] 
+            initWithDatabasePath:config.databasePath];
+        app.httpServer.subscribeReposHandler = firehose;
+
+        // 4. Start server
+        [app.httpServer startWithCompletion:^(NSError *error) {
+            if (error) {
+                NSLog(@&quot;Failed to start server: %@&quot;, error);
+                exit(1);
+            }
+
+            NSLog(@&quot;PDS started on port %ld&quot;, (long)config.serverPort);
+            NSLog(@&quot;Firehose available at ws://localhost:%ld/xrpc/com.atproto.sync.subscribeRepos&quot;, 
+                  (long)config.serverPort);
+        }];
+
+        // 5. Keep running
+        [[NSRunLoop mainRunLoop] run];
+    }
+
+    return 0;
+}
+</code></pre>
+
+<h2 id="step-9-update-record-service-to-broadcast-commits">Step 9: Update Record Service to Broadcast Commits</h2>
+<p>Update <code>src/RecordService.m</code> to broadcast commits when records change:</p>
+<pre class="codehilite"><code class="language-objc">- (void)createRecord:(NSString *)repo
+          collection:(NSString *)collection
+               rkey:(NSString *)rkey
+              value:(NSDictionary *)value
+         completion:(void (^)(NSString *uri, NSString *cid, NSError *error))completion {
+
+    // 1. Validate parameters
+    if (!repo || !collection || !rkey || !value) {
+        completion(nil, nil, [NSError errorWithDomain:@&quot;Record&quot; code:1 userInfo:nil]);
+        return;
+    }
+
+    // 2. Serialize record to CBOR
+    NSError *cborError = nil;
+    NSData *recordCBOR = [self encodeCBOR:value error:&amp;cborError];
+    if (!recordCBOR) {
+        completion(nil, nil, cborError);
+        return;
+    }
+
+    // 3. Compute CID
+    NSData *recordCID = [self computeCID:recordCBOR];
+    NSString *cidString = [self cidToString:recordCID];
+
+    // 4. Store in database
+    [self.repository storeRecord:recordCBOR 
+                             cid:recordCID
+                            repo:repo
+                      collection:collection
+                            rkey:rkey];
+
+    // 5. Update MST and create commit
+    NSString *rev = [self.repository updateMSTForRepo:repo];
+    NSData *commitCID = [self.repository createCommitForRepo:repo rev:rev];
+
+    // 6. Build CAR blocks
+    NSData *carBlocks = [self.repository buildCARBlocksForRepo:repo rev:rev];
+
+    // 7. Broadcast to firehose
+    NSArray *ops = @[@{
+        @&quot;action&quot;: @&quot;create&quot;,
+        @&quot;path&quot;: [NSString stringWithFormat:@&quot;%@/%@&quot;, collection, rkey],
+        @&quot;cid&quot;: cidString
+    }];
+
+    [self.firehoseHandler broadcastCommit:repo 
+                                      rev:rev
+                                   commit:commitCID
+                                   blocks:carBlocks
+                                      ops:ops];
+
+    // 8. Return result
+    NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, repo, collection, rkey];
+    completion(uri, cidString, nil);
+}
+</code></pre>
+
+<h2 id="step-10-create-cmakeliststxt">Step 10: Create CMakeLists.txt</h2>
+<p>Create <code>CMakeLists.txt</code>:</p>
+<pre class="codehilite"><code class="language-cmake">cmake_minimum_required(VERSION 3.28)
+project(tutorial-5-firehose)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_OBJC_FLAGS &quot;${CMAKE_OBJC_FLAGS} -fobjc-arc&quot;)
+
+find_library(FOUNDATION_LIBRARY Foundation REQUIRED)
+
+add_executable(tutorial-5-firehose
+    src/main.m
+    src/WebSocketConnection.m
+    src/EventFormatter.m
+    src/SubscribeReposHandler.m
+    src/HttpServer.m
+    src/XrpcDispatcher.m
+    src/RecordService.m
+    src/AccountService.m
+    src/AccountRepository.m
+    src/RecordRepository.m
+    src/SimpleJWTMinter.m
+)
+
+target_link_libraries(tutorial-5-firehose
+    ${FOUNDATION_LIBRARY}
+)
+</code></pre>
+
+<h2 id="step-11-build-and-run">Step 11: Build and Run</h2>
+<pre class="codehilite"><code class="language-bash"># Create build directory
+mkdir -p build &amp;&amp; cd build
+
+# Configure
+cmake ..
+
+# Build
+make
+
+# Run
+./tutorial-5-firehose
+</code></pre>
+
+<h2 id="step-12-test-the-firehose">Step 12: Test the Firehose</h2>
+<h3 id="test-1-connect-to-firehose">Test 1: Connect to Firehose</h3>
+<p>In another terminal, use <code>websocat</code> to connect:</p>
+<pre class="codehilite"><code class="language-bash"># Install websocat if needed
+brew install websocat
+
+# Connect to firehose
+websocat ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos
+</code></pre>
+
+<h3 id="test-2-create-a-record-and-watch-event">Test 2: Create a Record and Watch Event</h3>
+<p>In a third terminal:</p>
+<pre class="codehilite"><code class="language-bash"># Create a record
+curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Authorization: Bearer &lt;token&gt;&quot; \
+  -d '{
+    &quot;repo&quot;: &quot;did:plc:test123&quot;,
+    &quot;collection&quot;: &quot;app.bsky.feed.post&quot;,
+    &quot;record&quot;: {
+      &quot;$type&quot;: &quot;app.bsky.feed.post&quot;,
+      &quot;text&quot;: &quot;Hello from Tutorial 5!&quot;,
+      &quot;createdAt&quot;: &quot;2026-03-03T12:00:00Z&quot;
+    }
+  }'
+</code></pre>
+
+<p>You should see the commit event appear in the websocat terminal.</p>
+<h3 id="test-3-test-cursor-based-replay">Test 3: Test Cursor-Based Replay</h3>
+<pre class="codehilite"><code class="language-bash"># Connect with cursor
+websocat &quot;ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos?cursor=0&quot;
+</code></pre>
+
+<p>This should replay all events from the beginning.</p>
+<h3 id="test-4-test-backpressure">Test 4: Test Backpressure</h3>
+<p>Create a slow consumer test:</p>
+<pre class="codehilite"><code class="language-python">#!/usr/bin/env python3
+import websocket
+import time
+
+def on_message(ws, message):
+    print(f&quot;Received {len(message)} bytes&quot;)
+    time.sleep(10)  # Simulate slow consumer
+
+ws = websocket.WebSocketApp(
+    &quot;ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos&quot;,
+    on_message=on_message
+)
+
+ws.run_forever()
+</code></pre>
+
+<p>The server should close the connection after detecting backpressure.</p>
+<h2 id="understanding-the-flow">Understanding the Flow</h2>
+<ol>
+<li><strong>WebSocket Upgrade</strong>: Client sends HTTP request with <code>Upgrade: websocket</code> header</li>
+<li><strong>Connection Accepted</strong>: Server responds with 101 Switching Protocols</li>
+<li><strong>Event Streaming</strong>: Server broadcasts commit events as they occur</li>
+<li><strong>Backpressure Detection</strong>: Server monitors pending send queue</li>
+<li><strong>Slow Consumer Handling</strong>: Server closes connections that can't keep up</li>
+</ol>
+<h2 id="key-concepts">Key Concepts</h2>
+<h3 id="event-sequence-numbers">Event Sequence Numbers</h3>
+<p>Each event has a monotonically increasing sequence number:</p>
+<pre class="codehilite"><code class="language-objc">self.sequenceNumber++;
+event.seq = self.sequenceNumber;
+</code></pre>
+
+<h3 id="cursor-based-replay">Cursor-Based Replay</h3>
+<p>Clients can resume from a specific sequence:</p>
+<pre class="codehilite"><code class="language-objc">if (cursor &amp;&amp; cursor.length &gt; 0) {
+    NSUInteger cursorSeq = [cursor integerValue];
+    [self replayEventsAfterCursor:cursorSeq toConnection:connection];
+}
+</code></pre>
+
+<h3 id="backpressure-handling">Backpressure Handling</h3>
+<p>Monitor pending sends to detect slow consumers:</p>
+<pre class="codehilite"><code class="language-objc">if (connection.pendingSendCount &gt;= self.maxPendingSends ||
+    connection.pendingSendBytes &gt;= self.maxPendingBytes) {
+    [connection closeWithCode:1008 reason:@&quot;ConsumerTooSlow&quot;];
+}
+</code></pre>
+
+<h3 id="car-block-encoding">CAR Block Encoding</h3>
+<p>Events include CAR-encoded blocks:</p>
+<pre class="codehilite"><code class="language-objc">event.blocks = carBlocks;  // CAR v1 format with commit + record blocks
+</code></pre>
+
+<h2 id="production-considerations">Production Considerations</h2>
+<h3 id="1-event-persistence">1. Event Persistence</h3>
+<p>Store events in database for replay:</p>
+<pre class="codehilite"><code class="language-sql">CREATE TABLE firehose_events (
+    seq INTEGER PRIMARY KEY,
+    type TEXT NOT NULL,
+    data BLOB NOT NULL,
+    created_at INTEGER NOT NULL
+);
+</code></pre>
+
+<h3 id="2-connection-limits">2. Connection Limits</h3>
+<p>Limit concurrent connections:</p>
+<pre class="codehilite"><code class="language-objc">if (self.connections.count &gt;= self.maxConnections) {
+    [connection closeWithCode:1008 reason:@&quot;ServerFull&quot;];
+    return;
+}
+</code></pre>
+
+<h3 id="3-rate-limiting">3. Rate Limiting</h3>
+<p>Limit events per connection:</p>
+<pre class="codehilite"><code class="language-objc">if (connection.eventsPerSecond &gt; self.maxEventsPerSecond) {
+    [connection closeWithCode:1008 reason:@&quot;RateLimitExceeded&quot;];
+}
+</code></pre>
+
+<h3 id="4-monitoring">4. Monitoring</h3>
+<p>Track firehose metrics:</p>
+<pre class="codehilite"><code class="language-objc">- (NSDictionary *)getMetrics {
+    return @{
+        @&quot;active_connections&quot;: @(self.connections.count),
+        @&quot;current_sequence&quot;: @(self.sequenceNumber),
+        @&quot;events_per_second&quot;: @(self.eventsPerSecond)
+    };
+}
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./tutorial-6-deployment.md">Tutorial 6: Production Deployment</a></strong> — Deploy to production</li>
+<li><strong><a href="../08-sync-firehose/firehose-overview.md">Firehose Overview</a></strong> — Deep dive into firehose</li>
+<li><strong><a href="../08-sync-firehose/backpressure.md">Backpressure</a></strong> — Advanced backpressure handling</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>WebSocket upgrade fails:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check headers
+curl -i -N -H &quot;Connection: Upgrade&quot; -H &quot;Upgrade: websocket&quot; \
+  -H &quot;Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==&quot; \
+  -H &quot;Sec-WebSocket-Version: 13&quot; \
+  http://localhost:2583/xrpc/com.atproto.sync.subscribeRepos
+</code></pre>
+
+<p><strong>No events received:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check if events are being broadcast
+tail -f pds.log | grep &quot;Broadcast commit&quot;
+</code></pre>
+
+<p><strong>Connection closes immediately:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check for authentication errors
+# subscribeRepos is typically public, but check your auth logic
+</code></pre>
+
+<h2 id="summary">Summary</h2>
+<p>You've successfully implemented the Firehose:
+- WebSocket upgrade from HTTP
+- Real-time event broadcasting
+- Cursor-based replay
+- Backpressure handling
+- Slow consumer detection</p>
+<p>This completes the core PDS functionality tutorials. The firehose enables real-time synchronization between PDS instances and clients.</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

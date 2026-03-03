@@ -247,6 +247,7 @@
 <h2 id="domain-module-pattern">Domain Module Pattern</h2>
 <p>Each domain module follows a consistent pattern:</p>
 <h3 id="1-initialization">1. Initialization</h3>
+<p><strong>Implementation (from XrpcRepoMethods.m):</strong></p>
 <pre class="codehilite"><code class="language-objc">@interface XrpcRepoMethods : NSObject
 
 @property (nonatomic, strong) PDSRecordService *recordService;
@@ -261,16 +262,26 @@
 </code></pre>
 
 <h3 id="2-registration">2. Registration</h3>
+<p>Domain modules register their methods with the dispatcher:</p>
 <pre class="codehilite"><code class="language-objc">- (void)registerMethodsWithRegistry:(XrpcDispatcher *)dispatcher {
     [dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
         [self handleCreateRecord:request response:response];
     } forNSID:@&quot;com.atproto.repo.createRecord&quot;];
+
+    [dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleGetRecord:request response:response];
+    } forNSID:@&quot;com.atproto.repo.getRecord&quot;];
+
+    [dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleDeleteRecord:request response:response];
+    } forNSID:@&quot;com.atproto.repo.deleteRecord&quot;];
 
     // ... more methods
 }
 </code></pre>
 
 <h3 id="3-handler-implementation">3. Handler Implementation</h3>
+<p>Each handler follows a consistent pattern for request processing:</p>
 <pre class="codehilite"><code class="language-objc">- (void)handleCreateRecord:(HttpRequest *)request response:(HttpResponse *)response {
     // 1. Extract authentication
     // 2. Parse request parameters
@@ -295,6 +306,7 @@ if (!did) {
 </code></pre>
 
 <h3 id="step-2-parse-request-parameters">Step 2: Parse Request Parameters</h3>
+<p><strong>Implementation (from XrpcRepoMethods.m):</strong></p>
 <pre class="codehilite"><code class="language-objc">// Parse JSON body
 NSError *parseError = nil;
 NSDictionary *params = [NSJSONSerialization JSONObjectWithData:request.body
@@ -353,6 +365,69 @@ if (!result) {
 </code></pre>
 
 <h3 id="step-5-serialize-response">Step 5: Serialize Response</h3>
+<pre class="codehilite"><code class="language-objc">// Serialize to JSON
+NSError *serializeError = nil;
+NSData *responseData = [NSJSONSerialization dataWithJSONObject:result
+                                                       options:0
+                                                         error:&amp;serializeError];
+
+if (!responseData) {
+    [XrpcErrorHelper setInternalServerError:response];
+    return;
+}
+
+// Set response
+response.statusCode = 200;
+response.body = responseData;
+[response setHeaderValue:@&quot;application/json&quot; forName:@&quot;Content-Type&quot;];
+</code></pre>
+
+<p>NSString <em>repo = params[@"repo"];
+NSString </em>collection = params[@"collection"];
+NSDictionary *record = params[@"record"];</p>
+<pre class="codehilite"><code>### Step 3: Validate Parameters
+
+```objc
+// Check required parameters
+if (!repo || !collection || !record) {
+    [XrpcErrorHelper setValidationError:response 
+                                message:@&quot;Missing required parameters&quot;];
+    return;
+}
+
+// Validate parameter types
+if (![repo isKindOfClass:[NSString class]]) {
+    [XrpcErrorHelper setValidationError:response 
+                                message:@&quot;repo must be a string&quot;];
+    return;
+}
+
+// Validate parameter values
+if (![repo hasPrefix:@&quot;did:&quot;]) {
+    [XrpcErrorHelper setValidationError:response 
+                                message:@&quot;repo must be a valid DID&quot;];
+    return;
+}
+</code></pre>
+
+<h3 id="step-4-call-service-layer_1">Step 4: Call Service Layer</h3>
+<pre class="codehilite"><code class="language-objc">NSError *serviceError = nil;
+NSDictionary *result = [self.recordService putRecord:collection
+                                                rkey:rkey
+                                               value:record
+                                              forDid:repo
+                                            actorDid:did
+                                      validationMode:PDSValidationModeOptimistic
+                                               error:&amp;serviceError];
+
+if (!result) {
+    [XrpcErrorHelper setInternalServerError:response 
+                                    message:serviceError.localizedDescription];
+    return;
+}
+</code></pre>
+
+<h3 id="step-5-serialize-response_1">Step 5: Serialize Response</h3>
 <pre class="codehilite"><code class="language-objc">// Serialize to JSON
 NSError *serializeError = nil;
 NSData *responseData = [NSJSONSerialization dataWithJSONObject:result
@@ -589,7 +664,7 @@ response.body = blobData;
 <li><a href="./error-handling.md">Error Handling</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

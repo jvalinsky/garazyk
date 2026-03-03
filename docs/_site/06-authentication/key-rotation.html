@@ -290,88 +290,239 @@ Day 34: Remove old key
 
 <h2 id="implementation">Implementation</h2>
 <h3 id="key-rotation-manager">Key Rotation Manager</h3>
-<pre class="codehilite"><code class="language-objc">@interface KeyRotationManager : NSObject
+<p>The <code>PLCRotationKeyManager</code> handles secure key generation, storage, and rotation:</p>
+<pre class="codehilite"><code class="language-objc">@interface PLCRotationKeyManager : NSObject
 
-// Rotation operations
-- (BOOL)rotateAccountSigningKey:(NSString *)did error:(NSError **)error;
-- (BOOL)rotateOAuthClientSecret:(NSString *)clientId error:(NSError **)error;
-- (BOOL)rotateJWTSigningKey:(NSError **)error;
+// Singleton instance
++ (instancetype)sharedManager;
 
-// Key status
-- (nullable NSDictionary *)getKeyStatus:(NSString *)keyId error:(NSError **)error;
-- (NSArray *)getActiveKeys:(NSError **)error;
-- (NSArray *)getDeprecatedKeys:(NSError **)error;
+// Initialize with storage path
+- (instancetype)initWithStoragePath:(nullable NSString *)path;
 
-// Cleanup
-- (BOOL)cleanupExpiredKeys:(NSError **)error;
+// Load or generate rotation key
+- (BOOL)loadOrGenerateKeyWithError:(NSError **)error;
+
+// Sign data with rotation key
+- (BOOL)signHash:(NSData *)hash result:(NSData * _Nullable * _Nullable)result error:(NSError **)error;
+
+// Clear key from memory and storage
+- (void)clearKey;
+
+// Get the DID key string representation
+@property (nonatomic, copy, readonly, nullable) NSString *rotationKeyDidKey;
 
 @end
 </code></pre>
 
-<h3 id="rotating-account-signing-key">Rotating Account Signing Key</h3>
-<pre class="codehilite"><code class="language-objc">- (BOOL)rotateAccountSigningKey:(NSString *)did error:(NSError **)error {
-    // 1. Generate new key
-    SecKeyRef newKey = [self generateSigningKey];
-    NSString *newKeyId = [self generateKeyId];
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m</code></p>
+<h3 id="loading-or-generating-keys">Loading or Generating Keys</h3>
+<p>Keys are loaded from secure storage or generated if they don't exist:</p>
+<pre class="codehilite"><code class="language-objc">// In PLCRotationKeyManager.m (ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m)
+- (BOOL)loadOrGenerateKeyWithError:(NSError **)error {
+    if (self.rotationKeyPair) {
+        return YES;
+    }
 
-    // 2. Store new key (not yet active)
-    [self storeKey:newKey withId:newKeyId forDid:did status:@&quot;staged&quot;];
+    NSString *keyPath = [self keyFilePath];
 
-    // 3. Update DID document
-    NSDictionary *didDoc = [self getDidDocument:did];
-    NSMutableArray *publicKeys = [didDoc[@&quot;publicKey&quot;] mutableCopy];
-    [publicKeys addObject:@{
-        @&quot;id&quot;: newKeyId,
-        @&quot;type&quot;: @&quot;EcdsaSecp256r1VerificationKey2019&quot;,
-        @&quot;publicKeyPem&quot;: [self exportPublicKey:newKey]
-    }];
+    if (keyPath) {
+        // Proactively secure permissions if the file already exists
+        [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
+        NSString *directory = [keyPath stringByDeletingLastPathComponent];
+        [self ensureSecurePermissionsForPath:directory isDirectory:YES];
+    }
 
-    [self updateDidDocument:did withPublicKeys:publicKeys];
+    // 1. Check if key file exists
+    if ([[NSFileManager defaultManager] fileExistsAtPath:keyPath]) {
+        NSData *keyData = [NSData dataWithContentsOfFile:keyPath];
+        NSData *privateKeyData = nil;
 
-    // 4. Activate new key
-    [self activateKey:newKeyId forDid:did];
+        // 2. Handle legacy unencrypted keys
+        if (keyData.length == 32) {
+            privateKeyData = keyData;
+            PDS_LOG_INFO(@&quot;Detected legacy unencrypted rotation key.&quot;);
 
-    // 5. Mark old key as deprecated
-    NSString *oldKeyId = [self getCurrentKeyId:did];
-    [self deprecateKey:oldKeyId forDid:did];
+            // Migrate to encrypted if master secret is available
+            NSData *encKey = [self encryptionKeyWithError:nil];
+            if (encKey) {
+                NSData *encrypted = [CryptoUtils encryptData:privateKeyData withKey:encKey];
+                if (encrypted) {
+                    if ([encrypted writeToFile:keyPath atomically:YES]) {
+                        PDS_LOG_INFO(@&quot;Successfully migrated rotation key to encrypted storage.&quot;);
+                        [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
+                    }
+                }
+            }
+        } else if (keyData.length &gt; 32) {
+            // 3. Decrypt encrypted key
+            NSData *encKey = [self encryptionKeyWithError:error];
+            if (encKey) {
+                privateKeyData = [CryptoUtils decryptData:keyData withKey:encKey];
+                if (!privateKeyData) {
+                    PDS_LOG_ERROR(@&quot;Failed to decrypt rotation key. Possible invalid master secret.&quot;);
+                    if (error &amp;&amp; !*error) {
+                        *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
+                                                     code:PLCRotationKeyManagerErrorKeyStorageFailed
+                                                 userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to decrypt rotation key&quot;}];
+                    }
+                    return NO;
+                }
+            } else {
+                return NO;
+            }
+        }
 
-    // 6. Schedule cleanup
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 30*24*3600*NSEC_PER_SEC),
-                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        [self removeKey:oldKeyId forDid:did];
-    });
+        // 4. Reconstruct key pair from private key data
+        if (privateKeyData &amp;&amp; privateKeyData.length == 32) {
+            NSError *keyError = nil;
+            self.rotationKeyPair = [[Secp256k1 shared] keyPairFromPrivateKey:privateKeyData error:&amp;keyError];
+            if (self.rotationKeyPair) {
+                self.rotationKeyDidKey = self.rotationKeyPair.didKeyString;
+                PDS_LOG_INFO(@&quot;Loaded rotation key: %@&quot;, self.rotationKeyDidKey);
+                return YES;
+            }
+            PDS_LOG_ERROR(@&quot;Failed to reconstruct rotation key: %@&quot;, keyError);
+        }
+    }
+
+    // 5. Generate new key if none exists
+    NSError *genError = nil;
+    self.rotationKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&amp;genError];
+    if (!self.rotationKeyPair) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
+                                         code:PLCRotationKeyManagerErrorKeyGenerationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: genError.localizedDescription ?: @&quot;Failed to generate rotation key&quot;}];
+        }
+        return NO;
+    }
+
+    self.rotationKeyDidKey = self.rotationKeyPair.didKeyString;
+
+    // 6. Save new key to secure storage
+    if (keyPath) {
+        NSString *directory = [keyPath stringByDeletingLastPathComponent];
+        NSError *dirError = nil;
+        if (![[NSFileManager defaultManager] fileExistsAtPath:directory]) {
+            NSDictionary *attrs = @{NSFilePosixPermissions: @(0700)};
+            [[NSFileManager defaultManager] createDirectoryAtPath:directory
+                                      withIntermediateDirectories:YES
+                                                       attributes:attrs
+                                                            error:&amp;dirError];
+        } else {
+            [self ensureSecurePermissionsForPath:directory isDirectory:YES];
+        }
+
+        NSData *dataToSave = self.rotationKeyPair.privateKey;
+        NSData *encKey = [self encryptionKeyWithError:nil];
+        if (encKey) {
+            NSData *encrypted = [CryptoUtils encryptData:dataToSave withKey:encKey];
+            if (encrypted) {
+                dataToSave = encrypted;
+            }
+        }
+
+        if (![dataToSave writeToFile:keyPath atomically:YES]) {
+            PDS_LOG_ERROR(@&quot;Failed to write rotation key to: %@&quot;, keyPath);
+        } else {
+            [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
+            PDS_LOG_INFO(@&quot;Generated and saved new PLC rotation key: %@&quot;, self.rotationKeyDidKey);
+        }
+    }
 
     return YES;
 }
 </code></pre>
 
-<h3 id="rotating-oauth-client-secret">Rotating OAuth Client Secret</h3>
-<pre class="codehilite"><code class="language-objc">- (BOOL)rotateOAuthClientSecret:(NSString *)clientId error:(NSError **)error {
-    // 1. Generate new secret
-    NSString *newSecret = [self generateClientSecret];
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m</code> lines 40-130</p>
+<h3 id="signing-with-rotation-key">Signing with Rotation Key</h3>
+<p>The rotation key is used to sign PLC operations:</p>
+<pre class="codehilite"><code class="language-objc">// In PLCRotationKeyManager.m (ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m)
+- (BOOL)signHash:(NSData *)hash result:(NSData * _Nullable * _Nullable)result error:(NSError **)error {
+    // 1. Ensure key is loaded
+    if (!self.rotationKeyPair) {
+        if (![self loadOrGenerateKeyWithError:error]) {
+            return NO;
+        }
+    }
 
-    // 2. Store new secret (not yet active)
-    [self storeClientSecret:newSecret forClientId:clientId status:@&quot;staged&quot;];
+    // 2. Validate hash is 32 bytes (SHA-256)
+    if (!hash || hash.length != 32) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
+                                         code:PLCRotationKeyManagerErrorInvalidKey
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid hash (must be 32 bytes)&quot;}];
+        }
+        return NO;
+    }
 
-    // 3. Activate new secret
-    [self activateClientSecret:newSecret forClientId:clientId];
+    // 3. Sign hash with private key
+    NSError *signError = nil;
+    NSData *signature = [[Secp256k1 shared] signHash:hash withPrivateKey:self.rotationKeyPair.privateKey error:&amp;signError];
+    if (!signature) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
+                                         code:PLCRotationKeyManagerErrorKeyStorageFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: signError.localizedDescription ?: @&quot;Failed to sign hash&quot;}];
+        }
+        return NO;
+    }
 
-    // 4. Mark old secret as deprecated
-    NSString *oldSecret = [self getCurrentClientSecret:clientId];
-    [self deprecateClientSecret:oldSecret forClientId:clientId];
-
-    // 5. Schedule cleanup
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 7*24*3600*NSEC_PER_SEC),
-                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        [self removeClientSecret:oldSecret forClientId:clientId];
-    });
-
+    // 4. Return signature
+    if (result) {
+        *result = signature;
+    }
     return YES;
 }
 </code></pre>
 
-<h2 id="key-storage">Key Storage</h2>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m</code> lines 132-160</p>
 <h3 id="secure-key-storage">Secure Key Storage</h3>
+<p>Keys are stored with restricted file permissions and optional encryption:</p>
+<pre class="codehilite"><code class="language-objc">// In PLCRotationKeyManager.m (ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m)
+- (void)ensureSecurePermissionsForPath:(NSString *)path isDirectory:(BOOL)isDir {
+    if (!path) return;
+
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm fileExistsAtPath:path]) return;
+
+    // 1. Set restrictive permissions
+    short mode = isDir ? 0700 : 0600;  // Owner read/write only
+    NSDictionary *attrs = @{NSFilePosixPermissions: @(mode)};
+
+    // 2. Apply permissions
+    NSError *error = nil;
+    if (![fm setAttributes:attrs ofItemAtPath:path error:&amp;error]) {
+        PDS_LOG_ERROR(@&quot;Failed to set secure permissions (mode %o) on %@: %@&quot;, mode, path, error);
+    } else {
+        PDS_LOG_DEBUG(@&quot;Set secure permissions (mode %o) on %@&quot;, mode, path);
+    }
+}
+
+- (nullable NSData *)encryptionKeyWithError:(NSError **)error {
+    // 1. Get master secret from configuration
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *secret = config.masterSecret;
+    if (secret.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
+                                         code:PLCRotationKeyManagerErrorKeyStorageFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;PDS_MASTER_SECRET not configured&quot;}];
+        }
+        return nil;
+    }
+
+    // 2. Derive encryption key from master secret using fixed salt
+    static uint8_t saltBytes[] = { 0x41, 0x54, 0x50, 0x52, 0x4f, 0x54, 0x4f, 0x5f, 0x50, 0x44, 0x53, 0x5f, 0x4b, 0x45, 0x59, 0x53 };
+    NSData *salt = [NSData dataWithBytes:saltBytes length:sizeof(saltBytes)];
+
+    return [CryptoUtils deriveKeyFromPassword:secret salt:salt];
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m</code> lines 162-210</p>
+<h2 id="key-storage">Key Storage</h2>
+<h3 id="secure-key-storage_1">Secure Key Storage</h3>
 <p>Keys are stored securely:</p>
 <pre class="codehilite"><code class="language-objc">// Store in Keychain (macOS)
 SecKeychainItemRef item = nil;
@@ -567,7 +718,7 @@ if (success) {
 <li><a href="./totp-webauthn.md">TOTP and WebAuthn</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

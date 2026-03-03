@@ -290,7 +290,102 @@
 - <code>mode</code>: Validation mode (Required, Optimistic, or Off)
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> YES on success, NO on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRecordService.m lines 150-250):</strong></p>
+<p>The service validates authorization, performs lexicon validation, generates a CID, and stores the record:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)putRecord:(NSString *)collection
+              rkey:(NSString *)rkey
+             value:(NSDictionary *)value
+            forDid:(NSString *)did
+          actorDid:(NSString *)actorDid
+    validationMode:(PDSValidationMode)mode
+             error:(NSError **)error {
+
+    // Check authorization
+    if (![self checkAuthorizationForDid:did actorDid:actorDid error:error]) {
+        return NO;
+    }
+
+    // Validate collection NSID format
+    NSError *nsidError = nil;
+    if (![ATProtoValidator validateNSID:collection error:&amp;nsidError]) {
+        PDS_LOG_ERROR(@&quot;[PDSRecordService] Invalid collection NSID: %@&quot;, collection);
+        if (error) *error = nsidError;
+        return NO;
+    }
+
+    // Lexicon validation
+    if (mode != PDSValidationModeOff) {
+        ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
+            initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+
+        NSError *validationError = nil;
+        if (![validator validateRecord:value
+                            collection:collection
+                                  mode:(ATProtoValidationMode)mode
+                                 error:&amp;validationError]) {
+            PDS_LOG_ERROR(@&quot;[PDSRecordService] Lexicon validation failed for %@: %@&quot;,
+                          collection, validationError.localizedDescription);
+            if (error) *error = validationError;
+            return NO;
+        }
+    }
+
+    // Validate createdAt timestamp coherence
+    if (!validateCreatedAtCoherence(collection, rkey, value, mode, error)) {
+        return NO;
+    }
+
+    // Generate CID using DAG-CBOR encoding
+    NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+    NSError *cidError;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:&amp;cidError];
+    if (!cborData) {
+        if (error) *error = cidError;
+        return NO;
+    }
+
+    NSString *cidString = [self generateCIDForData:cborData error:&amp;cidError];
+    if (!cidString) {
+        if (error) *error = cidError;
+        return NO;
+    }
+
+    // Store record in database
+    PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+    record.uri = uri;
+    record.did = did;
+    record.collection = collection;
+    record.rkey = rkey;
+    record.cid = cidString;
+    record.createdAt = [NSDate date];
+    record.rev = [TID tid].stringValue;
+
+    // Save to database
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return NO;
+
+    __block BOOL success = NO;
+    [store transactWithBlock:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **blockError) {
+        success = [transactor putRecord:record error:blockError];
+    } error:error];
+
+    if (success) {
+        // Post notification
+        [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
+                                                            object:self
+                                                          userInfo:@{
+                                                              @&quot;did&quot;: did,
+                                                              @&quot;collection&quot;: collection,
+                                                              @&quot;rkey&quot;: rkey,
+                                                              @&quot;action&quot;: @&quot;create&quot;
+                                                          }];
+    }
+
+    return success;
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSDictionary *post = @{
     @&quot;text&quot;: @&quot;Hello, ATProto!&quot;,
     @&quot;createdAt&quot;: @&quot;2025-01-15T10:30:00Z&quot;,
@@ -344,13 +439,49 @@ BOOL deleted = [recordService deleteRecord:@&quot;app.bsky.feed.post&quot;
 - <code>did</code>: Repository owner DID
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> Record dictionary or nil if not found</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRecordService.m lines 100-150):</strong></p>
+<p>The service retrieves the record from the database and parses the value:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
+    PDSDatabaseRecord *record = [_databasePool getRecord:uri forDid:did error:error];
+
+    if (!record) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;PDSController&quot; code:1004
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Record not found&quot;}];
+        }
+        return nil;
+    }
+
+    NSDictionary *parsedValue = @{};
+    if (record.value) {
+        if ([record.value respondsToSelector:@selector(dataUsingEncoding:)]) {
+            NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+            if (data) {
+                parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+            }
+        } else if ([record.value isKindOfClass:[NSDictionary class]]) {
+            parsedValue = (NSDictionary *)record.value;
+        }
+    }
+
+    return @{
+        @&quot;uri&quot;: record.uri,
+        @&quot;cid&quot;: record.cid,
+        @&quot;collection&quot;: record.collection,
+        @&quot;rkey&quot;: record.rkey,
+        @&quot;value&quot;: parsedValue
+    };
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 NSDictionary *record = [recordService getRecord:@&quot;at://did:plc:user123/app.bsky.feed.post/abc123&quot;
                                         forDid:@&quot;did:plc:user123&quot;
                                          error:&amp;error];
 if (record) {
-    NSString *text = record[@&quot;text&quot;];
+    NSString *text = record[@&quot;value&quot;][@&quot;text&quot;];
+    NSString *cid = record[@&quot;cid&quot;];
 }
 </code></pre>
 
@@ -370,7 +501,51 @@ if (record) {
 - <code>cursor</code>: Pagination cursor from previous response
 - <code>error</code>: Error pointer for failure details</p>
 <p><strong>Returns:</strong> Array of records or nil on failure</p>
-<p><strong>Example:</strong></p>
+<p><strong>Implementation pattern (from PDSRecordService.m lines 150-200):</strong></p>
+<p>The service retrieves records from the database and formats them for the response:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSArray *)listRecords:(NSString *)collection
+                          forDid:(NSString *)did
+                           limit:(NSUInteger)limit
+                          cursor:(nullable NSString *)cursor
+                          error:(NSError **)error {
+
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return nil;
+
+    NSArray&lt;PDSDatabaseRecord *&gt; *records = [store listRecordsForDid:did
+                                                          collection:collection
+                                                               limit:limit
+                                                              offset:0
+                                                               error:error];
+
+    NSMutableArray *result = [NSMutableArray array];
+    for (PDSDatabaseRecord *record in records) {
+        NSDictionary *parsedValue = @{};
+        if (record.value) {
+            if ([record.value respondsToSelector:@selector(dataUsingEncoding:)]) {
+                NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+                if (data) {
+                    parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+                }
+            } else if ([record.value isKindOfClass:[NSDictionary class]]) {
+                parsedValue = (NSDictionary *)record.value;
+            }
+        }
+
+        [result addObject:@{
+            @&quot;uri&quot;: record.uri,
+            @&quot;cid&quot;: record.cid,
+            @&quot;collection&quot;: record.collection,
+            @&quot;rkey&quot;: record.rkey,
+            @&quot;value&quot;: parsedValue
+        }];
+    }
+
+    return result;
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
 <pre class="codehilite"><code class="language-objc">NSError *error = nil;
 NSArray *records = [recordService listRecords:@&quot;app.bsky.feed.post&quot;
                                       forDid:@&quot;did:plc:user123&quot;
@@ -379,12 +554,14 @@ NSArray *records = [recordService listRecords:@&quot;app.bsky.feed.post&quot;
                                        error:&amp;error];
 
 // For next page
-NSString *nextCursor = records.lastObject[@&quot;cursor&quot;];
-NSArray *nextPage = [recordService listRecords:@&quot;app.bsky.feed.post&quot;
-                                       forDid:@&quot;did:plc:user123&quot;
-                                        limit:50
-                                       cursor:nextCursor
-                                        error:&amp;error];
+if (records.count &gt; 0) {
+    NSString *nextCursor = records.lastObject[@&quot;cursor&quot;];
+    NSArray *nextPage = [recordService listRecords:@&quot;app.bsky.feed.post&quot;
+                                           forDid:@&quot;did:plc:user123&quot;
+                                            limit:50
+                                           cursor:nextCursor
+                                            error:&amp;error];
+}
 </code></pre>
 
 <h3 id="batch-writes">Batch Writes</h3>
@@ -620,7 +797,7 @@ if (!result &amp;&amp; error.code == 409) {
 <li><a href="../07-repository-protocol/repository-basics.md">Repository Basics</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>
