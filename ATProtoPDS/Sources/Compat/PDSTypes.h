@@ -55,10 +55,10 @@
 #endif
 
 #ifndef DEPRECATED_MSG_ATTRIBUTE
-#if defined(__GNUC__)
+#if defined(__APPLE__)
 #define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
 #else
-#define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated))
+#define DEPRECATED_MSG_ATTRIBUTE(s)
 #endif
 #endif
 
