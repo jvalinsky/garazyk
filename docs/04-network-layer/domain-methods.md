@@ -481,7 +481,7 @@ response.body = blobData;
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch.md)
-- [Method Registry](./method-registry.md)
-- [Auth Helpers](./auth-helpers.md)
-- [Error Handling](./error-handling.md)
+- [XRPC Dispatch](./xrpc-dispatch)
+- [Method Registry](./method-registry)
+- [Auth Helpers](./auth-helpers)
+- [Error Handling](./error-handling)

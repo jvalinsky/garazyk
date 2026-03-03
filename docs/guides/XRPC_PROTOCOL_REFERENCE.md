@@ -127,9 +127,9 @@ wss://pds.example.com/xrpc/com.atproto.sync.subscribeRepos
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE.md)** - Adding new XRPC endpoints
-- **[XRPC Protocol Reference (Architecture)](../architecture/XRPC_PROTOCOL_REFERENCE.md)** - Detailed protocol specification
-- **[PDS Architecture](../architecture/atproto_pds_architecture.md)** - XRPC API endpoints overview
-- **[Data Models](../architecture/atproto_data_models.md)** - DID, CID, and record structures
-- **[OAuth 2.0 Overview](../oauth2/README.md)** - Authentication for XRPC calls
-- **[Testing Guide](../TESTING.md)** - XRPC endpoint testing
+- **[Developer Guide](DEVELOPER_GUIDE)** - Adding new XRPC endpoints
+- **[XRPC Protocol Reference (Architecture)](../architecture/XRPC_PROTOCOL_REFERENCE)** - Detailed protocol specification
+- **[PDS Architecture](../architecture/atproto_pds_architecture)** - XRPC API endpoints overview
+- **[Data Models](../architecture/atproto_data_models)** - DID, CID, and record structures
+- **[OAuth 2.0 Overview](../oauth2/README)** - Authentication for XRPC calls
+- **[Testing Guide](../TESTING)** - XRPC endpoint testing

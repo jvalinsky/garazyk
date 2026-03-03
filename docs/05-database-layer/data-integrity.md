@@ -902,9 +902,9 @@ Notify administrators of critical integrity issues:
 
 ## See Also
 
-- [Migration Strategy](./migration-strategy.md) — Versioning and compatibility
-- [Migration Rollback](./migration-rollback.md) — Rollback procedures
-- [Zero-Downtime Migrations](./zero-downtime-migrations.md) — Online migration strategies
-- [WAL Mode](./wal-mode.md) — Write-Ahead Logging benefits
-- [SQLite Architecture](./sqlite-architecture.md) — Database design patterns
+- [Migration Strategy](./migration-strategy) — Versioning and compatibility
+- [Migration Rollback](./migration-rollback) — Rollback procedures
+- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migration strategies
+- [WAL Mode](./wal-mode) — Write-Ahead Logging benefits
+- [SQLite Architecture](./sqlite-architecture) — Database design patterns
 

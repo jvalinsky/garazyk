@@ -621,10 +621,10 @@ Validation logic should be thoroughly tested with both valid and invalid inputs:
 
 ## Related Documentation
 
-- [Error Handling](error-handling.md) — Standardized error responses
-- [Rate Limiting](rate-limiting.md) — Request throttling and DoS protection
-- [Security Best Practices](../06-authentication/security-best-practices.md) — Defense in depth
-- [Security Audit Guide](../11-reference/security-audit-guide.md) — Using audit skills
+- [Error Handling](error-handling) — Standardized error responses
+- [Rate Limiting](rate-limiting) — Request throttling and DoS protection
+- [Security Best Practices](../06-authentication/security-best-practices) — Defense in depth
+- [Security Audit Guide](../11-reference/security-audit-guide) — Using audit skills
 
 ## References
 

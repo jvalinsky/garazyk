@@ -6,9 +6,9 @@ Tests for SQLite-based persistence: actor stores, service databases, and connect
 
 | File | Description |
 |------|-------------|
-| [actor-store.md](actor-store.md) | Per-user SQLite storage for accounts, records, blocks, blobs, signing keys |
-| [service-databases.md](service-databases.md) | Global service databases for accounts, invite codes, DID cache, handle reservations |
-| [pool-integration.md](pool-integration.md) | Connection pooling with LRU eviction, concurrent access, health checks |
+| [actor-store.md](actor-store) | Per-user SQLite storage for accounts, records, blocks, blobs, signing keys |
+| [service-databases.md](service-databases) | Global service databases for accounts, invite codes, DID cache, handle reservations |
+| [pool-integration.md](pool-integration) | Connection pooling with LRU eviction, concurrent access, health checks |
 
 ## Test Classes
 
@@ -47,9 +47,9 @@ Tests for SQLite-based persistence: actor stores, service databases, and connect
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
-- [Repository Tests](../01-repository/README.md) - MST and CAR persistence
-- [Application Tests](../04-application/README.md) - Services using databases
-- [Integration Tests](../06-integration/README.md) - E2E database operations
-- [SQLite Invariant Audit](../../skills/objc-sqlite-invariant-audit/SKILL.md) - SQLite correctness
+- [Test Index](../README) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture) - System architecture
+- [Repository Tests](../01-repository/README) - MST and CAR persistence
+- [Application Tests](../04-application/README) - Services using databases
+- [Integration Tests](../06-integration/README) - E2E database operations
+- [SQLite Invariant Audit](../../skills/objc-sqlite-invariant-audit/SKILL) - SQLite correctness

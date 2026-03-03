@@ -385,7 +385,7 @@ This  testing expansion plan will transform ATProtoPDS from basic test coverage 
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Tests Docs](../../tests/README.md) - Testing documentation</content>
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Tests Docs](../../tests/README) - Testing documentation</content>
 <parameter name="filePath">/Users/jack/Software/objpds/docs/plans/-testing-expansion-plan.md

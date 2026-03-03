@@ -355,6 +355,6 @@ A commit contains:
 
 ## Next Steps
 
-- **[CBOR Serialization](./cbor-serialization.md)** — Data encoding
-- **[CAR Format](./car-format.md)** — Archive format
-- **[CID and Hashing](./cid-and-hashing.md)** — Content addressing
+- **[CBOR Serialization](./cbor-serialization)** — Data encoding
+- **[CAR Format](./car-format)** — Archive format
+- **[CID and Hashing](./cid-and-hashing)** — Content addressing

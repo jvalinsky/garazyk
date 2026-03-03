@@ -478,6 +478,6 @@ if (session) {
 
 ## See Also
 
-- [JWT Tokens](../06-authentication/jwt-tokens.md)
-- [Services Overview](./services-overview.md)
-- [PDSApplication](./pds-application.md)
+- [JWT Tokens](../06-authentication/jwt-tokens)
+- [Services Overview](./services-overview)
+- [PDSApplication](./pds-application)

@@ -343,14 +343,14 @@ stateDiagram-v2
 ## Related Documentation
 
 ### Architecture Documents
-- [README.md](README.md) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Component analysis for diagrams above
+- [README.md](README) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis for diagrams above
 
 ### Diagram Documents
-- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - Protocol flow diagrams
-- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) - Diagram selection guide
-- [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) - Development process diagrams
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - Protocol flow diagrams
+- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) - Diagram selection guide
+- [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) - Development process diagrams
 
 ### Related Guides
-- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE.md) - Developer onboarding guide
+- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE) - Developer onboarding guide
 ```

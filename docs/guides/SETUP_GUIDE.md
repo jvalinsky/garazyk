@@ -519,10 +519,10 @@ CMD ["/app/kaszlak", "serve", "--port", "2583"]
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE.md)** - API extension and contribution guidelines
-- **[User Guide](USER_GUIDE.md)** - Web explorer and CLI commands
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment with TLS
-- **[Architecture Overview](../architecture/ARCHITECTURE_ANALYSIS.md)** - System design and components
-- **[Testing Guide](../TESTING.md)** - Test suite documentation
-- **[OAuth 2.0 Implementation](../oauth2/README.md)** - Authentication setup
-- **[Script Development](SCRIPT_DEVELOPMENT.md)** - Shell script standards
+- **[Developer Guide](DEVELOPER_GUIDE)** - API extension and contribution guidelines
+- **[User Guide](USER_GUIDE)** - Web explorer and CLI commands
+- **[Deployment Guide](DEPLOYMENT)** - Production deployment with TLS
+- **[Architecture Overview](../architecture/ARCHITECTURE_ANALYSIS)** - System design and components
+- **[Testing Guide](../TESTING)** - Test suite documentation
+- **[OAuth 2.0 Implementation](../oauth2/README)** - Authentication setup
+- **[Script Development](SCRIPT_DEVELOPMENT)** - Shell script standards

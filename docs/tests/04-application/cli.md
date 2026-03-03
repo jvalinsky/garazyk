@@ -149,9 +149,9 @@ kaszlak invite revoke <code>
 
 ## Related Documentation
 
-- [Folder README](README.md) - Application tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Services Tests](services.md) - Account and invite services
-- [Controller Tests](controller.md) - Application lifecycle
-- [Database Tests](../03-database/service-databases.md) - Invite code storage
-- [Utilities Tests](../09-utilities/debug.md) - Debug tools
+- [Folder README](README) - Application tests overview
+- [Test Index](../README) - Main test documentation index
+- [Services Tests](services) - Account and invite services
+- [Controller Tests](controller) - Application lifecycle
+- [Database Tests](../03-database/service-databases) - Invite code storage
+- [Utilities Tests](../09-utilities/debug) - Debug tools

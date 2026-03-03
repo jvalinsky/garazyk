@@ -884,9 +884,9 @@ Schedule migrations during low-traffic periods:
 
 ## See Also
 
-- [Migration Strategy](./migration-strategy.md) — Versioning and compatibility
-- [Migration Rollback](./migration-rollback.md) — Rollback procedures
-- [Data Integrity](./data-integrity.md) — Verification and consistency checks
-- [WAL Mode](./wal-mode.md) — Write-Ahead Logging benefits
-- [SQLite Architecture](./sqlite-architecture.md) — Database design patterns
+- [Migration Strategy](./migration-strategy) — Versioning and compatibility
+- [Migration Rollback](./migration-rollback) — Rollback procedures
+- [Data Integrity](./data-integrity) — Verification and consistency checks
+- [WAL Mode](./wal-mode) — Write-Ahead Logging benefits
+- [SQLite Architecture](./sqlite-architecture) — Database design patterns
 

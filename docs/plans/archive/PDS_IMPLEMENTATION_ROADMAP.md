@@ -216,6 +216,6 @@ This roadmap provides a structured path to production-ready ATProto PDS implemen
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Architecture Docs](../../architecture/README.md) - System architecture documentation
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Architecture Docs](../../architecture/README) - System architecture documentation

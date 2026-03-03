@@ -15,9 +15,9 @@ In this tutorial, you'll extend the PDS from Tutorial 1 to support account creat
 
 ## Prerequisites
 
-- Completed [Tutorial 1: Hello PDS](./tutorial-1-hello-pds.md)
-- Understanding of JWT tokens (see [JWT Tokens](../06-authentication/jwt-tokens.md))
-- Understanding of account service (see [Account Service](../03-application-layer/account-service.md))
+- Completed [Tutorial 1: Hello PDS](./tutorial-1-hello-pds)
+- Understanding of JWT tokens (see [JWT Tokens](../06-authentication/jwt-tokens))
+- Understanding of account service (see [Account Service](../03-application-layer/account-service))
 
 ## Step 1: Create Account Data Model
 
@@ -742,8 +742,8 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
 
 ## Next Steps
 
-- **[Tutorial 3: Record Operations](./tutorial-3-records.md)** — Add record CRUD
-- **[Tutorial 4: Authentication](./tutorial-4-auth.md)** — Add JWT verification
+- **[Tutorial 3: Record Operations](./tutorial-3-records)** — Add record CRUD
+- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add JWT verification
 
 ## Troubleshooting
 

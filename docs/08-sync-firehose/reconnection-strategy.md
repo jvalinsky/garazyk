@@ -585,9 +585,9 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 
 ## See Also
 
-- [Event Ordering](./event-ordering.md) — Sequence number guarantees
-- [Event Replay](./event-replay.md) — Cursor-based catch-up mechanism
-- [Reliability Guarantees](./reliability-guarantees.md) — Delivery semantics
-- [Backpressure](./backpressure.md) — Flow control
-- [Firehose Overview](./firehose-overview.md) — Architecture overview
+- [Event Ordering](./event-ordering) — Sequence number guarantees
+- [Event Replay](./event-replay) — Cursor-based catch-up mechanism
+- [Reliability Guarantees](./reliability-guarantees) — Delivery semantics
+- [Backpressure](./backpressure) — Flow control
+- [Firehose Overview](./firehose-overview) — Architecture overview
 

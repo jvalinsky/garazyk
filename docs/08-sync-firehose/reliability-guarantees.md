@@ -506,9 +506,9 @@ Set up alerts for:
 
 ## See Also
 
-- [Event Ordering](./event-ordering.md) — Sequence number guarantees
-- [Reconnection Strategy](./reconnection-strategy.md) — Handling disconnections
-- [Event Replay](./event-replay.md) — Cursor-based catch-up
-- [Backpressure](./backpressure.md) — Flow control
-- [Firehose Overview](./firehose-overview.md) — Architecture overview
+- [Event Ordering](./event-ordering) — Sequence number guarantees
+- [Reconnection Strategy](./reconnection-strategy) — Handling disconnections
+- [Event Replay](./event-replay) — Cursor-based catch-up
+- [Backpressure](./backpressure) — Flow control
+- [Firehose Overview](./firehose-overview) — Architecture overview
 

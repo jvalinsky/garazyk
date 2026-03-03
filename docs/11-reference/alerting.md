@@ -632,10 +632,10 @@ Regularly test alert response:
 
 ## Related Documentation
 
-- [Metrics Collection](metrics-collection.md) - Metrics for alerting
-- [Logging Strategy](logging-strategy.md) - Diagnostic information
-- [Performance Monitoring](performance-monitoring.md) - Performance baselines
-- [Troubleshooting](troubleshooting.md) - Common issues and solutions
+- [Metrics Collection](metrics-collection) - Metrics for alerting
+- [Logging Strategy](logging-strategy) - Diagnostic information
+- [Performance Monitoring](performance-monitoring) - Performance baselines
+- [Troubleshooting](troubleshooting) - Common issues and solutions
 
 ## See Also
 

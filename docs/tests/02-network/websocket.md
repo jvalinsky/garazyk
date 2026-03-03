@@ -138,10 +138,10 @@ Client                          Server
 
 ## Related Documentation
 
-- [Folder README](README.md) - Network tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [HTTP Stack Tests](http-stack.md) - HTTP server tests
-- [XRPC Tests](xrpc.md) - XRPC protocol tests
-- [Integration Tests](../06-integration/e2e.md) - E2E firehose testing
-- [Federation Tests](../06-integration/federation.md) - Relay synchronization
-- [Repository Tests](../01-repository/mst.md) - Repository sync with CAR
+- [Folder README](README) - Network tests overview
+- [Test Index](../README) - Main test documentation index
+- [HTTP Stack Tests](http-stack) - HTTP server tests
+- [XRPC Tests](xrpc) - XRPC protocol tests
+- [Integration Tests](../06-integration/e2e) - E2E firehose testing
+- [Federation Tests](../06-integration/federation) - Relay synchronization
+- [Repository Tests](../01-repository/mst) - Repository sync with CAR

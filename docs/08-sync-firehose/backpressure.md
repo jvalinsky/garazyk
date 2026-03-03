@@ -616,7 +616,7 @@ static const NSUInteger MAX_STALL_COUNT = 12;                       // 60 second
 
 ## Next Steps
 
-- **[Commit Broadcasting](./commit-broadcasting.md)** — Broadcasting events
-- **[WebSocket Server](./websocket-server.md)** — WebSocket implementation
-- **[Firehose Overview](./firehose-overview.md)** — Architecture overview
+- **[Commit Broadcasting](./commit-broadcasting)** — Broadcasting events
+- **[WebSocket Server](./websocket-server)** — WebSocket implementation
+- **[Firehose Overview](./firehose-overview)** — Architecture overview
 

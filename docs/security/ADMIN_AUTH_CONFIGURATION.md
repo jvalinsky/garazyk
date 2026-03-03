@@ -105,9 +105,9 @@ Before enabling production traffic:
 
 ## Related Documentation
 
-- [Security Documentation Index](README.md) - Overview of all security docs
-- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation
-- [Admin Auth Details](../oauth2/admin-auth.md) - Admin authentication in OAuth2 context
-- [Token Management](../oauth2/token-management.md) - Token lifecycle and rotation
-- [DPoP Implementation](../oauth2/dpop.md) - DPoP proof generation and validation
-- [Security Analysis Report](SECURITY_ANALYSIS_REPORT.md) - Static analysis findings
+- [Security Documentation Index](README) - Overview of all security docs
+- [OAuth2 Security](../oauth2/security) - OAuth2 security implementation
+- [Admin Auth Details](../oauth2/admin-auth) - Admin authentication in OAuth2 context
+- [Token Management](../oauth2/token-management) - Token lifecycle and rotation
+- [DPoP Implementation](../oauth2/dpop) - DPoP proof generation and validation
+- [Security Analysis Report](SECURITY_ANALYSIS_REPORT) - Static analysis findings

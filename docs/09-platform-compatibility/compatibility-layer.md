@@ -1079,7 +1079,7 @@ Both macOS and GNUstep support ARC, but with different runtime implementations.
 
 ## Next Steps
 
-- **[Network Transport](./network-transport.md)** — Platform-specific network I/O
-- **[ARC Runtime](./arc-runtime.md)** — ARC considerations
-- **[macOS/Linux](./macos-linux.md)** — Platform overview
+- **[Network Transport](./network-transport)** — Platform-specific network I/O
+- **[ARC Runtime](./arc-runtime)** — ARC considerations
+- **[macOS/Linux](./macos-linux)** — Platform overview
 

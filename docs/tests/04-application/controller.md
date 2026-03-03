@@ -157,10 +157,10 @@ NSArray *accounts = [manager listAccountsWithCursor:nil limit:10];
 
 ## Related Documentation
 
-- [Folder README](README.md) - Application tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Services Tests](services.md) - Business services
-- [Admin Tests](admin.md) - Admin operations
-- [HTTP Stack Tests](../02-network/http-stack.md) - HTTP server
-- [Database Tests](../03-database/README.md) - Database initialization
-- [Utilities Tests](../09-utilities/config-metrics.md) - Configuration details
+- [Folder README](README) - Application tests overview
+- [Test Index](../README) - Main test documentation index
+- [Services Tests](services) - Business services
+- [Admin Tests](admin) - Admin operations
+- [HTTP Stack Tests](../02-network/http-stack) - HTTP server
+- [Database Tests](../03-database/README) - Database initialization
+- [Utilities Tests](../09-utilities/config-metrics) - Configuration details

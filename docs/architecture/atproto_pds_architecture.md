@@ -261,19 +261,19 @@ GitHub: `DavidBuchanan314/millipds` (149 stars)
 ## Related Documentation
 
 ### Architecture Documents
-- [README.md](README.md) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Deep code analysis and component details
-- [atproto_data_models.md](atproto_data_models.md) - DID, MST, and repository structure
-- [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) - XRPC method quick reference
+- [README.md](README) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Deep code analysis and component details
+- [atproto_data_models.md](atproto_data_models) - DID, MST, and repository structure
+- [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) - XRPC method quick reference
 
 ### Diagram Documents
-- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - OAuth2 and record lifecycle diagrams
-- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) - System architecture diagrams
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - OAuth2 and record lifecycle diagrams
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS) - System architecture diagrams
 
 ### Related Tests
-- [../tests/00-identity-auth/oauth.md](../tests/00-identity-auth/oauth.md) - OAuth and DPoP test documentation
-- [../tests/01-repository/mst.md](../tests/01-repository/mst.md) - MST test documentation
-- [../tests/02-network/xrpc.md](../tests/02-network/xrpc.md) - XRPC test documentation
+- [../tests/00-identity-auth/oauth.md](../tests/00-identity-auth/oauth) - OAuth and DPoP test documentation
+- [../tests/01-repository/mst.md](../tests/01-repository/mst) - MST test documentation
+- [../tests/02-network/xrpc.md](../tests/02-network/xrpc) - XRPC test documentation
 
 ### Security Documentation
 - [../security/](../security/) - Security audit and hardening guides

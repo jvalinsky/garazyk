@@ -479,6 +479,6 @@ for (NSDictionary *blob in allBlobs) {
 
 ## See Also
 
-- [Repository Service](./repository-service.md)
-- [Services Overview](./services-overview.md)
-- [Blob Storage](../07-repository-protocol/blob-storage.md)
+- [Repository Service](./repository-service)
+- [Services Overview](./services-overview)
+- [Blob Storage](../07-repository-protocol/blob-storage)

@@ -511,10 +511,10 @@ jobs:
 
 ## Related Documentation
 
-- [Security Documentation Index](README.md) - Overview of all security docs
-- [Security Testing Plan](SECURITY_TESTING_PLAN.md) - Detailed fuzzing strategies
-- [Security Analysis Report](SECURITY_ANALYSIS_REPORT.md) - Current findings
-- [Security Test Results](security_test_results.md) - Test execution results
-- [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT.md) - SQL vulnerabilities
-- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation
-- [Security Tests](../tests/05-security/README.md) - Security test documentation
+- [Security Documentation Index](README) - Overview of all security docs
+- [Security Testing Plan](SECURITY_TESTING_PLAN) - Detailed fuzzing strategies
+- [Security Analysis Report](SECURITY_ANALYSIS_REPORT) - Current findings
+- [Security Test Results](security_test_results) - Test execution results
+- [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT) - SQL vulnerabilities
+- [OAuth2 Security](../oauth2/security) - OAuth2 security implementation
+- [Security Tests](../tests/05-security/README) - Security test documentation
