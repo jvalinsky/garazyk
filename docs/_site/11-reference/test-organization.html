@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Organization - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Test Organization</h1>
+            </div>
+            <h1 id="test-organization">Test Organization</h1>
+<p>September PDS uses a comprehensive test suite with over 1,000 tests organized by functional area. This document describes the test structure, naming conventions, and discovery mechanism.</p>
+<h2 id="test-directory-structure">Test Directory Structure</h2>
+<p>Tests mirror the source code organization under <code>ATProtoPDS/Tests/</code>:</p>
+<pre class="codehilite"><code>ATProtoPDS/Tests/
+├── Admin/              # Admin endpoints &amp; moderation tests
+├── App/                # Application layer tests
+├── Auth/               # Authentication &amp; OAuth tests
+├── Blob/               # Blob storage tests
+├── CharacterizationTests/  # Characterization tests
+├── CLI/                # CLI command tests
+├── Core/               # Core protocol tests (CBOR, CAR, CID, MST)
+├── Database/           # Database layer tests
+├── Email/              # Email provider tests
+├── Identity/           # DID &amp; handle resolution tests
+├── Integration/        # Integration tests
+├── Interop/            # Interoperability tests
+├── Lexicon/            # Lexicon validation tests
+├── Metrics/            # Metrics collection tests
+├── Network/            # HTTP server &amp; XRPC tests
+├── PLC/                # PLC directory tests
+├── Repository/         # Repository operations tests
+├── Security/           # Security hardening tests
+├── Services/           # Service layer tests
+├── Sync/               # Firehose &amp; WebSocket tests
+├── XRPC/               # XRPC protocol tests
+├── fixtures/           # Test fixtures and data
+└── test_main.m         # Test runner entry point
+</code></pre>
+
+<h2 id="test-discovery-mechanism">Test Discovery Mechanism</h2>
+<p>September uses Objective-C runtime reflection for test discovery. The test runner (<code>test_main.m</code>) discovers test methods dynamically:</p>
+<h3 id="discovery-algorithm">Discovery Algorithm</h3>
+<pre class="codehilite"><code class="language-objective-c">NSArray *discoverTestMethodsForClass(Class testClass) {
+  NSMutableArray *methods = [NSMutableArray array];
+  unsigned int methodCount;
+  Method *methodList = class_copyMethodList(testClass, &amp;methodCount);
+
+  for (unsigned int i = 0; i &lt; methodCount; i++) {
+    Method method = methodList[i];
+    SEL selector = method_getName(method);
+    NSString *methodName = NSStringFromSelector(selector);
+
+    // Match methods starting with &quot;test&quot;
+    if ([methodName hasPrefix:@&quot;test&quot;]) {
+      char *returnType = method_copyReturnType(method);
+      int numArgs = method_getNumberOfArguments(method);
+
+      // Must return void and take no arguments (except self, _cmd)
+      if (returnType &amp;&amp; strcmp(returnType, &quot;v&quot;) == 0 &amp;&amp; numArgs == 2) {
+        [methods addObject:methodName];
+      }
+      free(returnType);
+    }
+  }
+  free(methodList);
+  return [methods copy];
+}
+</code></pre>
+
+<h3 id="test-class-registration">Test Class Registration</h3>
+<p>Test classes must be registered in the <code>testClasses</code> array in <code>test_main.m</code>:</p>
+<pre class="codehilite"><code class="language-objective-c">NSArray *testClasses = @[
+  @&quot;MSTInteropTests&quot;,
+  @&quot;CARInteropTests&quot;,
+  @&quot;OAuthIntegrationTests&quot;,
+  @&quot;FirehoseIntegrationTests&quot;,
+  // ... 150+ test classes
+];
+</code></pre>
+
+<p><strong>Adding a new test class:</strong></p>
+<ol>
+<li>Create test class inheriting from <code>XCTestCase</code></li>
+<li>Add class name to <code>testClasses</code> array in <code>test_main.m</code></li>
+<li>Rebuild and run tests</li>
+</ol>
+<h2 id="naming-conventions">Naming Conventions</h2>
+<h3 id="test-class-names">Test Class Names</h3>
+<p>Test classes follow the pattern: <code>&lt;Component&gt;&lt;TestType&gt;Tests</code></p>
+<p>Examples:
+- <code>MSTInteropTests</code> - MST interoperability tests
+- <code>OAuthIntegrationTests</code> - OAuth integration tests
+- <code>PDSAccountServiceTests</code> - PDSAccountService unit tests
+- <code>ActorStoreCharacterizationTests</code> - ActorStore characterization tests</p>
+<h3 id="test-method-names">Test Method Names</h3>
+<p>Test methods must:
+- Start with <code>test</code> prefix
+- Use camelCase
+- Be descriptive of what is being tested
+- Return <code>void</code>
+- Take no parameters</p>
+<p>Examples:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testCreateAccount;
+- (void)testBroadcastCommitCARContainsRecordBlocks;
+- (void)testFullOAuthFlow;
+- (void)testHandleResolutionWithSSRFProtection;
+</code></pre>
+
+<h3 id="test-categories">Test Categories</h3>
+<p>Tests are organized into several categories:</p>
+<ol>
+<li><strong>Unit Tests</strong> - Test individual components in isolation</li>
+<li>
+<p>Example: <code>PDSAccountServiceTests</code>, <code>JWTTests</code></p>
+</li>
+<li>
+<p><strong>Integration Tests</strong> - Test multiple components working together</p>
+</li>
+<li>Example: <code>OAuthIntegrationTests</code>, <code>FirehoseIntegrationTests</code></li>
+<li>
+<p>Located in <code>ATProtoPDS/Tests/Integration/</code></p>
+</li>
+<li>
+<p><strong>Interoperability Tests</strong> - Test compliance with AT Protocol specs</p>
+</li>
+<li>Example: <code>MSTInteropTests</code>, <code>CARInteropTests</code></li>
+<li>
+<p>Located in <code>ATProtoPDS/Tests/Interop/</code></p>
+</li>
+<li>
+<p><strong>Characterization Tests</strong> - Document existing behavior</p>
+</li>
+<li>Example: <code>ActorStoreCharacterizationTests</code>, <code>MSTCharacterizationTests</code></li>
+<li>
+<p>Located in <code>ATProtoPDS/Tests/CharacterizationTests/</code></p>
+</li>
+<li>
+<p><strong>Security Tests</strong> - Test security hardening and attack prevention</p>
+</li>
+<li>Example: <code>CBORSecurityTests</code>, <code>HandleResolverSSRFTests</code></li>
+<li>Located in <code>ATProtoPDS/Tests/Security/</code></li>
+</ol>
+<h2 id="test-fixtures">Test Fixtures</h2>
+<p>Test fixtures are stored in <code>ATProtoPDS/Tests/fixtures/</code>:</p>
+<pre class="codehilite"><code>fixtures/
+├── car/           # CAR file test data
+├── cbor/          # CBOR encoding test data
+├── did/           # DID document fixtures
+├── lexicons/      # Lexicon schema fixtures
+└── mst/           # MST tree fixtures
+</code></pre>
+
+<h3 id="using-fixtures">Using Fixtures</h3>
+<pre class="codehilite"><code class="language-objective-c">NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+NSString *fixturePath = [bundle pathForResource:@&quot;test-car&quot; ofType:@&quot;car&quot;];
+NSData *carData = [NSData dataWithContentsOfFile:fixturePath];
+</code></pre>
+
+<h2 id="test-environment-configuration">Test Environment Configuration</h2>
+<p>The test runner configures the environment for non-interactive testing:</p>
+<pre class="codehilite"><code class="language-objective-c">// Disable interactive features
+setenv(&quot;PDS_RUNNING_TESTS&quot;, &quot;1&quot;, 1);
+setenv(&quot;PDS_USE_KEYCHAIN&quot;, &quot;0&quot;, 1);
+setenv(&quot;PDS_USE_SECURE_ENCLAVE&quot;, &quot;0&quot;, 1);
+setenv(&quot;PDS_USE_BIOMETRIC_PROTECTION&quot;, &quot;0&quot;, 1);
+
+// Bind to loopback to avoid macOS network permission prompts
+setenv(&quot;PDS_LISTEN_HOST&quot;, &quot;127.0.0.1&quot;, 1);
+
+// Disable rate limiting
+RateLimiterSetDisabledGlobally(YES);
+[RateLimiter sharedLimiter].enabled = NO;
+
+// Disable biometric protection
+[PDSConfiguration sharedConfiguration].useBiometricProtection = NO;
+[PDSConfiguration sharedConfiguration].useKeychain = NO;
+</code></pre>
+
+<h2 id="running-tests">Running Tests</h2>
+<h3 id="run-all-tests">Run All Tests</h3>
+<pre class="codehilite"><code class="language-bash">./build/tests/AllTests
+</code></pre>
+
+<h3 id="run-specific-test-class">Run Specific Test Class</h3>
+<pre class="codehilite"><code class="language-bash">./build/tests/AllTests -XCTest MSTInteropTests
+</code></pre>
+
+<h3 id="run-multiple-test-classes">Run Multiple Test Classes</h3>
+<pre class="codehilite"><code class="language-bash">./build/tests/AllTests -XCTest MSTInteropTests,CARInteropTests
+</code></pre>
+
+<h3 id="build-and-run-tests-macos">Build and Run Tests (macOS)</h3>
+<pre class="codehilite"><code class="language-bash">xcodebuild -scheme AllTests build
+./build/tests/AllTests
+</code></pre>
+
+<h2 id="test-output">Test Output</h2>
+<p>The test runner provides detailed output:</p>
+<pre class="codehilite"><code>=== Starting Test Suite: All Tests ===
+Test suites: 150
+
+Test Case '-[MSTInteropTests testBasicTreeOperations]' started.
+Test Case '-[MSTInteropTests testBasicTreeOperations]' passed (0.023 seconds).
+
+Test Case '-[OAuthIntegrationTests testFullOAuthFlow]' started.
+Test Case '-[OAuthIntegrationTests testFullOAuthFlow]' passed (0.156 seconds).
+
+=== Test Suite Finished ===
+Tests run: 1017
+Failures: 0
+</code></pre>
+
+<h3 id="failure-output">Failure Output</h3>
+<p>When tests fail, detailed diagnostics are provided:</p>
+<pre class="codehilite"><code>FAIL: -[HandleResolverTests testSSRFProtection] at HandleResolverTests.m:45: 
+Expected private IP to be rejected
+</code></pre>
+
+<h2 id="test-lifecycle">Test Lifecycle</h2>
+<h3 id="setup-and-teardown">Setup and Teardown</h3>
+<pre class="codehilite"><code class="language-objective-c">@interface MyTests : XCTestCase
+@property (nonatomic, strong) PDSController *controller;
+@property (nonatomic, copy) NSString *tempDir;
+@end
+
+@implementation MyTests
+
+- (void)setUp {
+    [super setUp];
+
+    // Create temporary directory
+    NSString *guid = [[NSProcessInfo processInfo] globallyUniqueString];
+    self.tempDir = [NSTemporaryDirectory() stringByAppendingPathComponent:guid];
+    [[NSFileManager defaultManager] createDirectoryAtPath:self.tempDir 
+                              withIntermediateDirectories:YES 
+                                               attributes:nil 
+                                                    error:nil];
+
+    // Initialize controller
+    self.controller = [[PDSController alloc] initWithDirectory:self.tempDir
+                                                serviceMaxSize:5
+                                              userDatabaseSize:5];
+}
+
+- (void)tearDown {
+    // Cleanup
+    [self.controller stopServer];
+    if (self.tempDir) {
+        [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
+    }
+    [super tearDown];
+}
+
+- (void)testSomething {
+    // Test implementation
+}
+
+@end
+</code></pre>
+
+<h2 id="platform-specific-tests">Platform-Specific Tests</h2>
+<p>Some tests are platform-specific and use conditional compilation:</p>
+<pre class="codehilite"><code class="language-objective-c">#ifndef GNUSTEP
+- (void)testMacOSSpecificFeature {
+    // macOS-only test
+}
+#endif
+
+#ifdef __linux__
+- (void)testLinuxSpecificFeature {
+    // Linux-only test
+}
+#endif
+</code></pre>
+
+<h2 id="test-skipping">Test Skipping</h2>
+<p>Tests can be skipped conditionally:</p>
+<pre class="codehilite"><code class="language-objective-c">- (void)testRequiresNetworkAccess {
+    if (getenv(&quot;PDS_SKIP_NETWORK_TESTS&quot;)) {
+        XCTSkip(@&quot;Network tests disabled&quot;);
+    }
+    // Test implementation
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Isolation</strong> - Each test should be independent and not rely on other tests</li>
+<li><strong>Cleanup</strong> - Always clean up resources in <code>tearDown</code></li>
+<li><strong>Descriptive Names</strong> - Test names should clearly describe what is being tested</li>
+<li><strong>Fast Execution</strong> - Keep tests fast; use mocks for slow operations</li>
+<li><strong>Deterministic</strong> - Tests should produce the same result every time</li>
+<li><strong>Temporary Files</strong> - Use unique temporary directories for each test</li>
+<li><strong>Error Messages</strong> - Provide clear failure messages with context</li>
+</ol>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="property-based-testing.md">Property-Based Testing</a> - PBT framework and generators</li>
+<li><a href="e2e-testing.md">E2E Testing</a> - End-to-end test scenarios</li>
+<li><a href="test-coverage-goals.md">Test Coverage Goals</a> - Coverage targets and gaps</li>
+<li><a href="troubleshooting.md">Troubleshooting</a> - Common test failures and solutions</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

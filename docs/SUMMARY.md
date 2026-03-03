@@ -106,6 +106,10 @@
 - [Security Audit Guide](11-reference/security-audit-guide.md)
 - [PLC Server Operations](11-reference/plc-server-operations.md)
 - [PLC Failover](11-reference/plc-failover.md)
+- [Test Organization](11-reference/test-organization.md)
+- [Property-Based Testing](11-reference/property-based-testing.md)
+- [E2E Testing](11-reference/e2e-testing.md)
+- [Test Coverage Goals](11-reference/test-coverage-goals.md)
 
 ### 12 Diagrams
 - [System Architecture](12-diagrams/system-architecture.svg)
@@ -125,6 +129,9 @@
 - [Event Ordering Guarantee](12-diagrams/event-ordering-guarantee.svg)
 - [Reconnection Flow](12-diagrams/reconnection-flow.svg)
 - [Event Replay Mechanism](12-diagrams/event-replay-mechanism.svg)
+- [Test Organization Structure](12-diagrams/test-organization-structure.svg)
+- [Property-Based Testing Flow](12-diagrams/property-based-testing-flow.svg)
+- [E2E Test Architecture](12-diagrams/e2e-test-architecture.svg)
 
 ---
 
