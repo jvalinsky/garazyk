@@ -49,8 +49,6 @@
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) TestAccountServicePreservation *accountService;
 @property (nonatomic, copy) NSString *databasePath;
-@property (nonatomic, assign) SecKeyRef dpopPrivateKey;
-@property (nonatomic, assign) SecKeyRef dpopPublicKey;
 @end
 
 @implementation OAuth2PreservationTests
@@ -97,22 +95,9 @@
     self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.accountService = self.accountService;
     
-    // Generate DPoP key pair for testing
-    NSDictionary *attributes = @{
-        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
-        (id)kSecAttrKeySizeInBits: @256
-    };
-    CFErrorRef error = NULL;
-    self.dpopPrivateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &error);
-    if (self.dpopPrivateKey) {
-        self.dpopPublicKey = SecKeyCopyPublicKey(self.dpopPrivateKey);
-    }
 }
 
 - (void)tearDown {
-    if (self.dpopPrivateKey) CFRelease(self.dpopPrivateKey);
-    if (self.dpopPublicKey) CFRelease(self.dpopPublicKey);
-    
     [self.database close];
     self.database = nil;
     self.handler = nil;
