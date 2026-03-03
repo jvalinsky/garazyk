@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="900" height="800" viewBox="0 0 900 800">
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .decision-box { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .db-box { fill: #f0e6ff; stroke: #6600cc; stroke-width: 2; }
+      .success-box { fill: #e6ffe6; stroke: #00cc00; stroke-width: 2; }
+      .error-box { fill: #ffe6e6; stroke: #cc0000; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-success { stroke: #00cc00; stroke-width: 2; fill: none; marker-end: url(#arrowhead-success); }
+      .arrow-error { stroke: #cc0000; stroke-width: 2; fill: none; marker-end: url(#arrowhead-error); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+    <marker id="arrowhead-success" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#00cc00" />
+    </marker>
+    <marker id="arrowhead-error" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#cc0000" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" class="title" font-size="20">Rate Limiting Algorithm (Sliding Window)</text>
+
+  <!-- Step 1: Incoming Request -->
+  <rect x="300" y="60" width="300" height="60" class="box" rx="5"/>
+  <text x="450" y="85" text-anchor="middle" class="title">Incoming Request</text>
+  <text x="450" y="105" text-anchor="middle" class="label">Extract DID or IP</text>
+
+  <!-- Arrow down -->
+  <path d="M 450 120 L 450 160" class="arrow"/>
+
+  <!-- Step 2: Query SQLite -->
+  <rect x="300" y="160" width="300" height="80" class="db-box" rx="5"/>
+  <text x="450" y="185" text-anchor="middle" class="title">Query SQLite</text>
+  <text x="450" y="205" text-anchor="middle" class="label">SELECT request_count, window_start</text>
+  <text x="450" y="225" text-anchor="middle" class="label">WHERE identifier = ? AND window_start > ?</text>
+
+  <!-- Arrow down -->
+  <path d="M 450 240 L 450 280" class="arrow"/>
+
+  <!-- Step 3: Calculate Window -->
+  <rect x="300" y="280" width="300" height="80" class="box" rx="5"/>
+  <text x="450" y="305" text-anchor="middle" class="title">Calculate Window</text>
+  <text x="450" y="325" text-anchor="middle" class="label">now = current_timestamp</text>
+  <text x="450" y="345" text-anchor="middle" class="label">window_start = now - window_seconds</text>
+
+  <!-- Arrow down -->
+  <path d="M 450 360 L 450 400" class="arrow"/>
+
+  <!-- Step 4: Check Limit (Decision) -->
+  <polygon points="450,400 600,450 450,500 300,450" class="decision-box"/>
+  <text x="450" y="445" text-anchor="middle" class="title">request_count</text>
+  <text x="450" y="465" text-anchor="middle" class="title">&gt;= limit?</text>
+
+  <!-- Arrow left (Limit Exceeded) -->
+  <path d="M 300 450 L 150 450 L 150 550" class="arrow-error"/>
+  <text x="220" y="445" text-anchor="middle" class="label" fill="#cc0000">YES</text>
+
+  <!-- Step 5a: Rate Limited -->
+  <rect x="50" y="550" width="200" height="100" class="error-box" rx="5"/>
+  <text x="150" y="575" text-anchor="middle" class="title">Rate Limited</text>
+  <text x="150" y="595" text-anchor="middle" class="label">Return 429</text>
+  <text x="150" y="615" text-anchor="middle" class="label">allowed = false</text>
+  <text x="150" y="635" text-anchor="middle" class="label">retryAfter = reset_time</text>
+
+  <!-- Arrow right (Allowed) -->
+  <path d="M 600 450 L 750 450 L 750 550" class="arrow-success"/>
+  <text x="680" y="445" text-anchor="middle" class="label" fill="#00cc00">NO</text>
+
+  <!-- Step 5b: Increment Counter -->
+  <rect x="650" y="550" width="200" height="100" class="db-box" rx="5"/>
+  <text x="750" y="575" text-anchor="middle" class="title">Increment Counter</text>
+  <text x="750" y="595" text-anchor="middle" class="label">INSERT OR UPDATE</text>
+  <text x="750" y="615" text-anchor="middle" class="label">request_count += 1</text>
+  <text x="750" y="635" text-anchor="middle" class="label">window_start = now</text>
+
+  <!-- Arrow down from increment -->
+  <path d="M 750 650 L 750 690" class="arrow-success"/>
+
+  <!-- Step 6: Allow Request -->
+  <rect x="650" y="690" width="200" height="80" class="success-box" rx="5"/>
+  <text x="750" y="715" text-anchor="middle" class="title">Allow Request</text>
+  <text x="750" y="735" text-anchor="middle" class="label">allowed = true</text>
+  <text x="750" y="755" text-anchor="middle" class="label">remaining = limit - count - 1</text>
+
+  <!-- Legend -->
+  <text x="50" y="750" text-anchor="start" class="title" font-size="14">Rate Limit Types:</text>
+  <text x="50" y="770" text-anchor="start" class="label">• DID: 5000 requests / hour</text>
+  <text x="50" y="785" text-anchor="start" class="label">• IP: 100 requests / minute</text>
+  <text x="50" y="800" text-anchor="start" class="label">• Blob: 50 uploads / hour</text>
+
+  <!-- Implementation Note -->
+  <text x="450" y="750" text-anchor="start" class="label" font-style="italic">Implementation: RateLimiter.m</text>
+  <text x="450" y="770" text-anchor="start" class="label" font-style="italic">Database: ratelimits.db (SQLite)</text>
+  <text x="450" y="790" text-anchor="start" class="label" font-style="italic">Thread Safety: Serial dispatch queue</text>
+
+</svg>
