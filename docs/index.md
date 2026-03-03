@@ -123,6 +123,10 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [Security Audit Guide](11-reference/security-audit-guide.md) — Vulnerability scanning
 - [PLC Server Operations](11-reference/plc-server-operations.md) — Running campagnola
 - [PLC Failover](11-reference/plc-failover.md) — Redundancy strategies
+- [Test Organization](11-reference/test-organization.md) — Test structure and discovery
+- [Property-Based Testing](11-reference/property-based-testing.md) — PBT framework
+- [E2E Testing](11-reference/e2e-testing.md) — Integration tests
+- [Test Coverage Goals](11-reference/test-coverage-goals.md) — Coverage targets
 
 ### Diagrams
 - [System Architecture](12-diagrams/system-architecture.svg)
@@ -140,6 +144,9 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [Event Ordering Guarantee](12-diagrams/event-ordering-guarantee.svg)
 - [Reconnection Flow](12-diagrams/reconnection-flow.svg)
 - [Event Replay Mechanism](12-diagrams/event-replay-mechanism.svg)
+- [Test Organization Structure](12-diagrams/test-organization-structure.svg)
+- [Property-Based Testing Flow](12-diagrams/property-based-testing-flow.svg)
+- [E2E Test Architecture](12-diagrams/e2e-test-architecture.svg)
 
 ## Learning Path
 
@@ -206,6 +213,12 @@ This guide includes comprehensive coverage of production-ready features:
 - [DID Document Updates](02-core-concepts/did-document-updates.md) — Update workflow
 - [PLC Server Operations](11-reference/plc-server-operations.md) — Running campagnola
 - [PLC Failover](11-reference/plc-failover.md) — Redundancy strategies
+
+**Testing Infrastructure:**
+- [Test Organization](11-reference/test-organization.md) — Test structure and discovery
+- [Property-Based Testing](11-reference/property-based-testing.md) — PBT framework and generators
+- [E2E Testing](11-reference/e2e-testing.md) — Integration tests and CI
+- [Test Coverage Goals](11-reference/test-coverage-goals.md) — Coverage targets and quality metrics
 
 ## Documentation Structure
 

@@ -372,47 +372,47 @@ nee# PDS Objective-C Implementation Guide — Implementation Tasks
   - [x] 19.3.2 Create DID resolution flow diagram
   - [x] 19.3.3 Create PLC failover mechanism diagram
 
-## Phase 20: Advanced Topics - Firehose Reliability (Optional - Skipped)
+## Phase 20: Advanced Topics - Firehose Reliability
 
-- [x]* 20.1 Write firehose reliability documentation
-  - [x]* 20.1.1 Write docs/08-sync-firehose/event-ordering.md (ordering guarantees, sequence numbers)
-  - [x]* 20.1.2 Write docs/08-sync-firehose/reconnection-strategy.md (subscriber reconnection, state recovery)
-  - [x]* 20.1.3 Write docs/08-sync-firehose/event-replay.md (catch-up mechanisms, cursor management)
-  - [x]* 20.1.4 Write docs/08-sync-firehose/reliability-guarantees.md (at-least-once, exactly-once semantics)
+- [x] 20.1 Write firehose reliability documentation
+  - [x] 20.1.1 Write docs/08-sync-firehose/event-ordering.md (ordering guarantees, sequence numbers)
+  - [x] 20.1.2 Write docs/08-sync-firehose/reconnection-strategy.md (subscriber reconnection, state recovery)
+  - [x] 20.1.3 Write docs/08-sync-firehose/event-replay.md (catch-up mechanisms, cursor management)
+  - [x] 20.1.4 Write docs/08-sync-firehose/reliability-guarantees.md (at-least-once, exactly-once semantics)
 
-- [x]* 20.2 Extract firehose reliability code examples
-  - [x]* 20.2.1 Extract event ordering patterns from Sync/ directory
-  - [x]* 20.2.2 Extract reconnection patterns from WebSocketServer.m
-  - [x]* 20.2.3 Extract event replay patterns from firehose handlers
-  - [x]* 20.2.4 Extract cursor management patterns
+- [x] 20.2 Extract firehose reliability code examples
+  - [x] 20.2.1 Extract event ordering patterns from Sync/ directory
+  - [x] 20.2.2 Extract reconnection patterns from WebSocketServer.m
+  - [x] 20.2.3 Extract event replay patterns from firehose handlers
+  - [x] 20.2.4 Extract cursor management patterns
 
-- [x]* 20.3 Create firehose reliability diagrams
-  - [x]* 20.3.1 Create event ordering guarantee diagram
-  - [x]* 20.3.2 Create reconnection flow diagram
-  - [x]* 20.3.3 Create event replay mechanism diagram
+- [x] 20.3 Create firehose reliability diagrams
+  - [x] 20.3.1 Create event ordering guarantee diagram
+  - [x] 20.3.2 Create reconnection flow diagram
+  - [x] 20.3.3 Create event replay mechanism diagram
 
-## Phase 21: Advanced Topics - Testing Infrastructure (Optional - Skipped)
+## Phase 21: Advanced Topics - Testing Infrastructure
 
-- [x]* 21.1 Write testing infrastructure documentation
-  - [x]* 21.1.1 Write docs/11-reference/test-organization.md (test structure, naming conventions, discovery)
-  - [x]* 21.1.2 Write docs/11-reference/property-based-testing.md (PBT framework, generators, properties)
-  - [x]* 21.1.3 Write docs/11-reference/e2e-testing.md (Playwright tests, test scenarios, CI integration)
-  - [x]* 21.1.4 Write docs/11-reference/test-coverage-goals.md (coverage targets, critical paths, gaps)
+- [x] 21.1 Write testing infrastructure documentation
+  - [x] 21.1.1 Write docs/11-reference/test-organization.md (test structure, naming conventions, discovery)
+  - [x] 21.1.2 Write docs/11-reference/property-based-testing.md (PBT framework, generators, properties)
+  - [x] 21.1.3 Write docs/11-reference/e2e-testing.md (Playwright tests, test scenarios, CI integration)
+  - [x] 21.1.4 Write docs/11-reference/test-coverage-goals.md (coverage targets, critical paths, gaps)
 
-- [x]* 21.2 Extract testing code examples
-  - [x]* 21.2.1 Extract test organization patterns from Tests/ directory
-  - [x]* 21.2.2 Extract property-based test examples from test suite
-  - [x]* 21.2.3 Extract e2e test patterns from Tests/e2e/
-  - [x]* 21.2.4 Extract test runner patterns from test_main.m
+- [x] 21.2 Extract testing code examples
+  - [x] 21.2.1 Extract test organization patterns from Tests/ directory
+  - [x] 21.2.2 Extract property-based test examples from test suite
+  - [x] 21.2.3 Extract e2e test patterns from Tests/e2e/
+  - [x] 21.2.4 Extract test runner patterns from test_main.m
 
-- [x]* 21.3 Create testing diagrams
-  - [x]* 21.3.1 Create test organization structure diagram
-  - [x]* 21.3.2 Create property-based testing flow diagram
-  - [x]* 21.3.3 Create e2e test architecture diagram
+- [x] 21.3 Create testing diagrams
+  - [x] 21.3.1 Create test organization structure diagram
+  - [x] 21.3.2 Create property-based testing flow diagram
+  - [x] 21.3.3 Create e2e test architecture diagram
 
 ## Phase 22: Final Review & Integration
 
-- [-] 22.1 Review all new advanced topics documentation
+- [x] 22.1 Review all new advanced topics documentation
   - [x] 22.1.1 Verify accuracy of blob management documentation
   - [x] 22.1.2 Verify accuracy of rate limiting documentation
   - [x] 22.1.3 Verify accuracy of database migration documentation
@@ -428,7 +428,7 @@ nee# PDS Objective-C Implementation Guide — Implementation Tasks
   - [x] 22.2.3 Add cross-references between basic and advanced topics
   - [x] 22.2.4 Update GLOSSARY.md with new terminology
 
-- [-] 22.3 Quality assurance for advanced topics
+- [x] 22.3 Quality assurance for advanced topics
   - [x] 22.3.1 Verify all code examples compile and run
   - [x] 22.3.2 Test all links and cross-references
   - [x] 22.3.3 Verify all diagrams are clear and accurate
