@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 2.0 with DPoP - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>OAuth 2.0 with DPoP</h1>
+            </div>
+            <h1 id="oauth-20-with-dpop">OAuth 2.0 with DPoP</h1>
+<h2 id="overview">Overview</h2>
+<p>The PDS implements OAuth 2.0 with Demonstration of Proof-of-Possession (DPoP) for secure token-based authentication. DPoP binds access tokens to a specific client's public key, preventing token theft and replay attacks.</p>
+<h2 id="oauth-20-flow">OAuth 2.0 Flow</h2>
+<pre class="codehilite"><code>┌─────────────┐                                    ┌──────────────┐
+│   Client    │                                    │   PDS        │
+└──────┬──────┘                                    └──────┬───────┘
+       │                                                  │
+       │ 1. Authorization Request                        │
+       ├─────────────────────────────────────────────────&gt;│
+       │    (client_id, redirect_uri, scope)             │
+       │                                                  │
+       │ 2. User Login &amp; Consent                         │
+       │&lt;─────────────────────────────────────────────────┤
+       │    (redirect to login page)                      │
+       │                                                  │
+       │ 3. Authorization Code                           │
+       │&lt;─────────────────────────────────────────────────┤
+       │    (code, state)                                 │
+       │                                                  │
+       │ 4. Token Request                                │
+       ├─────────────────────────────────────────────────&gt;│
+       │    (code, client_id, client_secret)             │
+       │                                                  │
+       │ 5. Access Token + Refresh Token                 │
+       │&lt;─────────────────────────────────────────────────┤
+       │    (access_token, refresh_token, expires_in)    │
+       │                                                  │
+       │ 6. API Request with DPoP Proof                  │
+       ├─────────────────────────────────────────────────&gt;│
+       │    (Authorization: DPoP &lt;token&gt;)                 │
+       │    (DPoP: &lt;proof&gt;)                               │
+       │                                                  │
+       │ 7. API Response                                 │
+       │&lt;─────────────────────────────────────────────────┤
+       │                                                  │
+</code></pre>
+
+<h2 id="dpop-demonstration-of-proof-of-possession">DPoP (Demonstration of Proof-of-Possession)</h2>
+<p>DPoP proves the client possesses a specific private key:</p>
+<h3 id="dpop-proof-structure">DPoP Proof Structure</h3>
+<pre class="codehilite"><code class="language-json">{
+  &quot;typ&quot;: &quot;dpop+jwt&quot;,
+  &quot;alg&quot;: &quot;ES256&quot;,
+  &quot;jwk&quot;: {
+    &quot;kty&quot;: &quot;EC&quot;,
+    &quot;crv&quot;: &quot;P-256&quot;,
+    &quot;x&quot;: &quot;base64url-encoded-x&quot;,
+    &quot;y&quot;: &quot;base64url-encoded-y&quot;
+  }
+}
+.
+{
+  &quot;jti&quot;: &quot;unique-request-id&quot;,
+  &quot;htm&quot;: &quot;POST&quot;,
+  &quot;htu&quot;: &quot;https://pds.example.com/xrpc/com.atproto.repo.createRecord&quot;,
+  &quot;iat&quot;: 1631551600,
+  &quot;exp&quot;: 1631551660,
+  &quot;nonce&quot;: &quot;server-provided-nonce&quot;
+}
+.
+&lt;signature&gt;
+</code></pre>
+
+<h3 id="dpop-verification">DPoP Verification</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Parse DPoP proof
+NSDictionary *dpopHeader = [JWT parseHeader:dpopProof];
+NSDictionary *dpopPayload = [JWT parsePayload:dpopProof];
+
+// 2. Verify DPoP signature
+SecKeyRef dpopKey = [self extractPublicKeyFromJWK:dpopHeader[@&quot;jwk&quot;]];
+BOOL dpopValid = [JWT verifySignature:dpopProof withKey:dpopKey];
+
+// 3. Verify DPoP claims
+BOOL methodMatches = [dpopPayload[@&quot;htm&quot;] isEqualToString:request.method];
+BOOL urlMatches = [dpopPayload[@&quot;htu&quot;] isEqualToString:request.url];
+BOOL nonceValid = [self validateNonce:dpopPayload[@&quot;nonce&quot;]];
+BOOL timestampValid = [self validateTimestamp:dpopPayload[@&quot;iat&quot;]];
+
+// 4. Extract thumbprint
+NSString *thumbprint = [self generateThumbprint:dpopHeader[@&quot;jwk&quot;]];
+
+// 5. Verify access token binding
+BOOL thumbprintMatches = [accessTokenPayload[@&quot;cnf&quot;][@&quot;jkt&quot;] isEqualToString:thumbprint];
+</code></pre>
+
+<h2 id="implementation">Implementation</h2>
+<h3 id="oauth-20-handler">OAuth 2.0 Handler</h3>
+<pre class="codehilite"><code class="language-objc">@interface OAuth2Handler : NSObject
+
+// Authorization endpoint
+- (void)handleAuthorizationRequest:(HttpRequest *)request
+                          response:(HttpResponse *)response;
+
+// Token endpoint
+- (void)handleTokenRequest:(HttpRequest *)request
+                  response:(HttpResponse *)response;
+
+// Refresh token endpoint
+- (void)handleRefreshTokenRequest:(HttpRequest *)request
+                         response:(HttpResponse *)response;
+
+@end
+</code></pre>
+
+<h3 id="authorization-request">Authorization Request</h3>
+<pre class="codehilite"><code class="language-objc">- (void)handleAuthorizationRequest:(HttpRequest *)request
+                          response:(HttpResponse *)response {
+    // 1. Parse parameters
+    NSString *clientId = [request parameterForName:@&quot;client_id&quot;];
+    NSString *redirectUri = [request parameterForName:@&quot;redirect_uri&quot;];
+    NSString *scope = [request parameterForName:@&quot;scope&quot;];
+    NSString *state = [request parameterForName:@&quot;state&quot;];
+
+    // 2. Validate client
+    NSDictionary *client = [self getClientForId:clientId];
+    if (!client || ![client[@&quot;redirect_uris&quot;] containsObject:redirectUri]) {
+        [XrpcErrorHelper setValidationError:response message:@&quot;Invalid client&quot;];
+        return;
+    }
+
+    // 3. Redirect to login
+    NSString *loginUrl = [NSString stringWithFormat:@&quot;/oauth/login?client_id=%@&amp;state=%@&quot;,
+                         clientId, state];
+    response.statusCode = 302;
+    [response setHeaderValue:loginUrl forName:@&quot;Location&quot;];
+}
+</code></pre>
+
+<h3 id="token-request">Token Request</h3>
+<pre class="codehilite"><code class="language-objc">- (void)handleTokenRequest:(HttpRequest *)request
+                  response:(HttpResponse *)response {
+    // 1. Parse request
+    NSDictionary *body = [NSJSONSerialization JSONObjectWithData:request.body
+                                                         options:0
+                                                           error:nil];
+
+    NSString *grantType = body[@&quot;grant_type&quot;];
+    NSString *code = body[@&quot;code&quot;];
+    NSString *clientId = body[@&quot;client_id&quot;];
+    NSString *clientSecret = body[@&quot;client_secret&quot;];
+
+    // 2. Validate authorization code
+    NSDictionary *authCode = [self getAuthorizationCode:code];
+    if (!authCode || ![authCode[@&quot;client_id&quot;] isEqualToString:clientId]) {
+        [XrpcErrorHelper setValidationError:response message:@&quot;Invalid code&quot;];
+        return;
+    }
+
+    // 3. Generate tokens
+    NSString *accessToken = [self generateAccessToken:authCode[@&quot;did&quot;]];
+    NSString *refreshToken = [self generateRefreshToken:authCode[@&quot;did&quot;]];
+
+    // 4. Return tokens
+    NSDictionary *response = @{
+        @&quot;access_token&quot;: accessToken,
+        @&quot;refresh_token&quot;: refreshToken,
+        @&quot;token_type&quot;: @&quot;DPoP&quot;,
+        @&quot;expires_in&quot;: @3600
+    };
+
+    response.statusCode = 200;
+    response.body = [NSJSONSerialization dataWithJSONObject:response options:0 error:nil];
+}
+</code></pre>
+
+<h2 id="dpop-utilities">DPoP Utilities</h2>
+<h3 id="generating-dpop-proofs">Generating DPoP Proofs</h3>
+<pre class="codehilite"><code class="language-objc">@interface DPoPUtil : NSObject
+
++ (NSString *)generateDPoPProof:(NSString *)method
+                           uri:(NSString *)uri
+                      clientKey:(SecKeyRef)clientKey
+                         nonce:(nullable NSString *)nonce
+                         error:(NSError **)error;
+
++ (NSString *)generateThumbprint:(NSDictionary *)jwk error:(NSError **)error;
+
++ (BOOL)verifyDPoPProof:(NSString *)proof
+                method:(NSString *)method
+                   uri:(NSString *)uri
+                 error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h3 id="example-generating-dpop-proof">Example: Generating DPoP Proof</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Generate client key pair
+SecKeyRef publicKey = nil;
+SecKeyRef privateKey = nil;
+[CryptoUtils generateECKeyPairWithCurve:kSecAttrKeyTypeECSECP256R1
+                              publicKey:&amp;publicKey
+                             privateKey:&amp;privateKey];
+
+// 2. Generate DPoP proof
+NSError *error = nil;
+NSString *dpopProof = [DPoPUtil generateDPoPProof:@&quot;POST&quot;
+                                             uri:@&quot;https://pds.example.com/xrpc/com.atproto.repo.createRecord&quot;
+                                        clientKey:privateKey
+                                           nonce:nil
+                                           error:&amp;error];
+
+// 3. Use in request
+[request setHeaderValue:[NSString stringWithFormat:@&quot;DPoP %@&quot;, accessToken]
+              forName:@&quot;Authorization&quot;];
+[request setHeaderValue:dpopProof forName:@&quot;DPoP&quot;];
+</code></pre>
+
+<h2 id="nonce-management">Nonce Management</h2>
+<p>DPoP nonces prevent replay attacks:</p>
+<pre class="codehilite"><code class="language-objc">@interface PDSNonceManager : NSObject
+
++ (NSString *)generateNonce;
+
++ (BOOL)validateNonce:(NSString *)nonce error:(NSError **)error;
+
++ (void)invalidateNonce:(NSString *)nonce;
+
+@end
+</code></pre>
+
+<h3 id="nonce-challenge">Nonce Challenge</h3>
+<p>If DPoP verification fails due to missing nonce:</p>
+<pre class="codehilite"><code>HTTP/1.1 401 Unauthorized
+WWW-Authenticate: DPoP error=&quot;use_dpop_nonce&quot;
+DPoP-Nonce: server-generated-nonce
+</code></pre>
+
+<p>Client must retry with nonce in DPoP proof.</p>
+<h2 id="token-structure">Token Structure</h2>
+<h3 id="access-token-claims">Access Token Claims</h3>
+<pre class="codehilite"><code class="language-json">{
+  &quot;sub&quot;: &quot;did:plc:user123&quot;,
+  &quot;aud&quot;: &quot;did:web:pds.example.com&quot;,
+  &quot;exp&quot;: 1631555200,
+  &quot;iat&quot;: 1631551600,
+  &quot;cnf&quot;: {
+    &quot;jkt&quot;: &quot;thumbprint-of-client-key&quot;
+  }
+}
+</code></pre>
+
+<h3 id="refresh-token-claims">Refresh Token Claims</h3>
+<pre class="codehilite"><code class="language-json">{
+  &quot;sub&quot;: &quot;did:plc:user123&quot;,
+  &quot;aud&quot;: &quot;did:web:pds.example.com&quot;,
+  &quot;exp&quot;: 1640000000,
+  &quot;iat&quot;: 1631551600,
+  &quot;type&quot;: &quot;refresh&quot;
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Token Security</strong></li>
+<li>Use short-lived access tokens (15-60 minutes)</li>
+<li>Use longer-lived refresh tokens (days/weeks)</li>
+<li>Rotate refresh tokens on use</li>
+<li>
+<p>Revoke tokens on logout</p>
+</li>
+<li>
+<p><strong>DPoP Handling</strong></p>
+</li>
+<li>Verify DPoP proof on every request</li>
+<li>Validate method and URL</li>
+<li>Check timestamp freshness</li>
+<li>
+<p>Implement nonce challenge</p>
+</li>
+<li>
+<p><strong>Client Registration</strong></p>
+</li>
+<li>Validate redirect URIs</li>
+<li>Store client secrets securely</li>
+<li>Implement client authentication</li>
+<li>
+<p>Track client usage</p>
+</li>
+<li>
+<p><strong>Error Handling</strong></p>
+</li>
+<li>Return appropriate error codes</li>
+<li>Include error descriptions</li>
+<li>Set DPoP-Nonce header on 401</li>
+<li>Log authentication failures</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="oauth-20-authorization-code-flow">OAuth 2.0 Authorization Code Flow</h3>
+<pre class="codehilite"><code class="language-objc">// 1. User clicks &quot;Login with PDS&quot;
+// 2. Redirect to authorization endpoint
+NSString *authUrl = [NSString stringWithFormat:
+    @&quot;https://pds.example.com/oauth/authorize?client_id=%@&amp;redirect_uri=%@&amp;scope=%@&amp;state=%@&quot;,
+    clientId, redirectUri, scope, state];
+
+// 3. User logs in and grants permission
+// 4. Redirect back with authorization code
+// 5. Exchange code for tokens
+NSString *tokenUrl = @&quot;https://pds.example.com/oauth/token&quot;;
+NSDictionary *tokenRequest = @{
+    @&quot;grant_type&quot;: @&quot;authorization_code&quot;,
+    @&quot;code&quot;: authorizationCode,
+    @&quot;client_id&quot;: clientId,
+    @&quot;client_secret&quot;: clientSecret
+};
+
+// 6. Store tokens securely
+[self storeAccessToken:accessToken];
+[self storeRefreshToken:refreshToken];
+</code></pre>
+
+<h3 id="using-dpop-with-api-requests">Using DPoP with API Requests</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Generate DPoP proof
+NSString *dpopProof = [DPoPUtil generateDPoPProof:@&quot;POST&quot;
+                                             uri:apiUrl
+                                        clientKey:clientKey
+                                           nonce:nil
+                                           error:&amp;error];
+
+// 2. Make API request
+NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:apiUrl]];
+[request setHTTPMethod:@&quot;POST&quot;];
+[request setValue:[NSString stringWithFormat:@&quot;DPoP %@&quot;, accessToken]
+   forHTTPHeaderField:@&quot;Authorization&quot;];
+[request setValue:dpopProof forHTTPHeaderField:@&quot;DPoP&quot;];
+
+// 3. Handle response
+NSURLResponse *response = nil;
+NSError *error = nil;
+NSData *data = [NSURLConnection sendSynchronousRequest:request
+                                     returningResponse:&amp;response
+                                                 error:&amp;error];
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./jwt-tokens.md">JWT Tokens</a></li>
+<li><a href="./key-rotation.md">Key Rotation</a></li>
+<li><a href="./totp-webauthn.md">TOTP and WebAuthn</a></li>
+<li><a href="../04-network-layer/auth-helpers.md">Auth Helpers</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

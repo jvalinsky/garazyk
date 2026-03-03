@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="1400" viewBox="0 0 1200 1400">
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .active-box { fill: #e6f7e6; stroke: #00aa00; stroke-width: 3; }
+      .staged-box { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .deprecated-box { fill: #ffe6e6; stroke: #cc0000; stroke-width: 2; }
+      .process-box { fill: #f0e6ff; stroke: #6600cc; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 5,5; }
+      .timeline-label { font-family: Arial, sans-serif; font-size: 11px; fill: #666; }
+      .step-number { font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; fill: white; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" class="title" font-size="20">Key Rotation Flow</text>
+
+  <!-- ===== ROTATION TIMELINE SECTION ===== -->
+  <text x="50" y="70" class="title" font-size="14">1. Rotation Timeline (34 Days)</text>
+
+  <!-- Timeline -->
+  <line x1="100" y1="120" x2="1100" y2="120" stroke="#333" stroke-width="2"/>
+
+  <!-- Day 1 -->
+  <circle cx="100" cy="120" r="6" fill="#ff9900"/>
+  <text x="100" y="145" text-anchor="middle" class="timeline-label">Day 1</text>
+  <text x="100" y="160" text-anchor="middle" class="timeline-label">Generate</text>
+  <text x="100" y="175" text-anchor="middle" class="timeline-label">New Key</text>
+
+  <!-- Day 2 -->
+  <circle cx="300" cy="120" r="6" fill="#ff9900"/>
+  <text x="300" y="145" text-anchor="middle" class="timeline-label">Day 2</text>
+  <text x="300" y="160" text-anchor="middle" class="timeline-label">Publish in</text>
+  <text x="300" y="175" text-anchor="middle" class="timeline-label">DID Doc</text>
+
+  <!-- Day 3 -->
+  <circle cx="500" cy="120" r="6" fill="#00aa00"/>
+  <text x="500" y="145" text-anchor="middle" class="timeline-label">Day 3</text>
+  <text x="500" y="160" text-anchor="middle" class="timeline-label">Activate</text>
+  <text x="500" y="175" text-anchor="middle" class="timeline-label">New Key</text>
+
+  <!-- Day 4-33 -->
+  <circle cx="700" cy="120" r="6" fill="#cc0000"/>
+  <text x="700" y="145" text-anchor="middle" class="timeline-label">Day 4-33</text>
+  <text x="700" y="160" text-anchor="middle" class="timeline-label">Keep Old</text>
+  <text x="700" y="175" text-anchor="middle" class="timeline-label">Key Valid</text>
+
+  <!-- Day 34 -->
+  <circle cx="900" cy="120" r="6" fill="#cc0000"/>
+  <text x="900" y="145" text-anchor="middle" class="timeline-label">Day 34</text>
+  <text x="900" y="160" text-anchor="middle" class="timeline-label">Remove</text>
+  <text x="900" y="175" text-anchor="middle" class="timeline-label">Old Key</text>
+
+  <!-- ===== KEY STATES SECTION ===== -->
+  <text x="50" y="240" class="title" font-size="14">2. Key States During Rotation</text>
+
+  <!-- Current Key (Active) -->
+  <rect x="100" y="260" width="280" height="100" class="active-box" rx="5"/>
+  <text x="240" y="285" text-anchor="middle" class="text" font-weight="bold">Current Key (Active)</text>
+  <text x="240" y="310" text-anchor="middle" class="label">Status: ACTIVE</text>
+  <text x="240" y="330" text-anchor="middle" class="label">Used for signing new commits</text>
+  <text x="240" y="350" text-anchor="middle" class="label">Published in DID document</text>
+
+  <!-- Arrow -->
+  <path d="M 380 310 L 440 310" class="arrow"/>
+
+  <!-- New Key (Staged) -->
+  <rect x="440" y="260" width="280" height="100" class="staged-box" rx="5"/>
+  <text x="580" y="285" text-anchor="middle" class="text" font-weight="bold">New Key (Staged)</text>
+  <text x="580" y="310" text-anchor="middle" class="label">Status: STAGED</text>
+  <text x="580" y="330" text-anchor="middle" class="label">Generated before rotation</text>
+  <text x="580" y="350" text-anchor="middle" class="label">Published in DID document</text>
+
+  <!-- Arrow -->
+  <path d="M 720 310 L 780 310" class="arrow"/>
+
+  <!-- Old Key (Deprecated) -->
+  <rect x="780" y="260" width="280" height="100" class="deprecated-box" rx="5"/>
+  <text x="920" y="285" text-anchor="middle" class="text" font-weight="bold">Old Key (Deprecated)</text>
+  <text x="920" y="310" text-anchor="middle" class="label">Status: DEPRECATED</text>
+  <text x="920" y="330" text-anchor="middle" class="label">Still valid for verification</text>
+  <text x="920" y="350" text-anchor="middle" class="label">Kept for 30 days</text>
+
+  <!-- ===== ROTATION PROCESS SECTION ===== -->
+  <text x="50" y="430" class="title" font-size="14">3. Rotation Process Steps</text>
+
+  <!-- Step 1: Generate New Key -->
+  <rect x="100" y="450" width="200" height="80" class="process-box" rx="5"/>
+  <circle cx="115" cy="465" r="12" fill="#6600cc"/>
+  <text x="115" y="470" text-anchor="middle" class="step-number">1</text>
+  <text x="200" y="480" text-anchor="middle" class="text">Generate</text>
+  <text x="200" y="500" text-anchor="middle" class="label">New Key Pair</text>
+  <text x="200" y="520" text-anchor="middle" class="label">(EC P-256)</text>
+
+  <!-- Arrow -->
+  <path d="M 300 490 L 360 490" class="arrow"/>
+
+  <!-- Step 2: Store Securely -->
+  <rect x="360" y="450" width="200" height="80" class="process-box" rx="5"/>
+  <circle cx="375" cy="465" r="12" fill="#6600cc"/>
+  <text x="375" y="470" text-anchor="middle" class="step-number">2</text>
+  <text x="460" y="480" text-anchor="middle" class="text">Store New Key</text>
+  <text x="460" y="500" text-anchor="middle" class="label">Securely</text>
+  <text x="460" y="520" text-anchor="middle" class="label">(Encrypted)</text>
+
+  <!-- Arrow -->
+  <path d="M 560 490 L 620 490" class="arrow"/>
+
+  <!-- Step 3: Publish in DID -->
+  <rect x="620" y="450" width="200" height="80" class="process-box" rx="5"/>
+  <circle cx="635" cy="465" r="12" fill="#6600cc"/>
+  <text x="635" y="470" text-anchor="middle" class="step-number">3</text>
+  <text x="720" y="480" text-anchor="middle" class="text">Publish New</text>
+  <text x="720" y="500" text-anchor="middle" class="label">Key in DID</text>
+  <text x="720" y="520" text-anchor="middle" class="label">Document</text>
+
+  <!-- Arrow -->
+  <path d="M 820 490 L 880 490" class="arrow"/>
+
+  <!-- Step 4: Activate New Key -->
+  <rect x="880" y="450" width="200" height="80" class="active-box" rx="5"/>
+  <circle cx="895" cy="465" r="12" fill="#00aa00"/>
+  <text x="895" y="470" text-anchor="middle" class="step-number">4</text>
+  <text x="980" y="480" text-anchor="middle" class="text">Activate</text>
+  <text x="980" y="500" text-anchor="middle" class="label">New Key</text>
+  <text x="980" y="520" text-anchor="middle" class="label">(Start Using)</text>
+
+  <!-- ===== KEY STORAGE SECTION ===== -->
+  <text x="50" y="610" class="title" font-size="14">4. Secure Key Storage</text>
+
+  <!-- File System Storage -->
+  <rect x="100" y="630" width="280" height="100" class="box" rx="5"/>
+  <text x="240" y="655" text-anchor="middle" class="text" font-weight="bold">File System</text>
+  <text x="240" y="680" text-anchor="middle" class="label">Location: ~/.pds/keys/</text>
+  <text x="240" y="700" text-anchor="middle" class="label">Permissions: 0600</text>
+  <text x="240" y="720" text-anchor="middle" class="label">(Owner read/write only)</text>
+
+  <!-- Arrow -->
+  <path d="M 380 680 L 440 680" class="arrow"/>
+
+  <!-- Encryption -->
+  <rect x="440" y="630" width="280" height="100" class="process-box" rx="5"/>
+  <text x="580" y="655" text-anchor="middle" class="text" font-weight="bold">Encryption</text>
+  <text x="580" y="680" text-anchor="middle" class="label">Master Secret:</text>
+  <text x="580" y="700" text-anchor="middle" class="label">PDS_MASTER_SECRET</text>
+  <text x="580" y="720" text-anchor="middle" class="label">Algorithm: AES-256</text>
+
+  <!-- Arrow -->
+  <path d="M 720 680 L 780 680" class="arrow"/>
+
+  <!-- Secure Storage -->
+  <rect x="780" y="630" width="280" height="100" class="process-box" rx="5"/>
+  <text x="920" y="655" text-anchor="middle" class="text" font-weight="bold">Secure Storage</text>
+  <text x="920" y="680" text-anchor="middle" class="label">macOS: Keychain</text>
+  <text x="920" y="700" text-anchor="middle" class="label">Linux: Encrypted File</text>
+  <text x="920" y="720" text-anchor="middle" class="label">Never in Memory</text>
+
+  <!-- ===== KEY USAGE SECTION ===== -->
+  <text x="50" y="800" class="title" font-size="14">5. Key Usage During Rotation</text>
+
+  <!-- Active Key Usage -->
+  <rect x="100" y="820" width="280" height="100" class="active-box" rx="5"/>
+  <text x="240" y="845" text-anchor="middle" class="text" font-weight="bold">Active Key</text>
+  <text x="240" y="870" text-anchor="middle" class="label">Sign new commits</text>
+  <text x="240" y="890" text-anchor="middle" class="label">Sign new records</text>
+  <text x="240" y="910" text-anchor="middle" class="label">Sign PLC operations</text>
+
+  <!-- Arrow -->
+  <path d="M 380 870 L 440 870" class="arrow"/>
+
+  <!-- Old Key Usage -->
+  <rect x="440" y="820" width="280" height="100" class="deprecated-box" rx="5"/>
+  <text x="580" y="845" text-anchor="middle" class="text" font-weight="bold">Old Key (30 days)</text>
+  <text x="580" y="870" text-anchor="middle" class="label">Verify old commits</text>
+  <text x="580" y="890" text-anchor="middle" class="label">Verify old records</text>
+  <text x="580" y="910" text-anchor="middle" class="label">Backward compatibility</text>
+
+  <!-- Arrow -->
+  <path d="M 720 870 L 780 870" class="arrow"/>
+
+  <!-- Removed Key -->
+  <rect x="780" y="820" width="280" height="100" class="box" rx="5" style="fill: #f5f5f5; stroke: #999;"/>
+  <text x="920" y="845" text-anchor="middle" class="text" font-weight="bold">Removed Key</text>
+  <text x="920" y="870" text-anchor="middle" class="label">No longer used</text>
+  <text x="920" y="890" text-anchor="middle" class="label">Deleted from storage</text>
+  <text x="920" y="910" text-anchor="middle" class="label">After 30 days</text>
+
+  <!-- ===== ROTATION TRIGGERS SECTION ===== -->
+  <text x="50" y="990" class="title" font-size="14">6. Rotation Triggers</text>
+
+  <!-- Scheduled Rotation -->
+  <rect x="100" y="1010" width="280" height="80" class="box" rx="5"/>
+  <text x="240" y="1035" text-anchor="middle" class="text" font-weight="bold">Scheduled</text>
+  <text x="240" y="1055" text-anchor="middle" class="label">Annually (365 days)</text>
+  <text x="240" y="1075" text-anchor="middle" class="label">Automatic rotation</text>
+
+  <!-- Arrow -->
+  <path d="M 380 1050 L 440 1050" class="arrow"/>
+
+  <!-- Manual Rotation -->
+  <rect x="440" y="1010" width="280" height="80" class="box" rx="5"/>
+  <text x="580" y="1035" text-anchor="middle" class="text" font-weight="bold">Manual</text>
+  <text x="580" y="1055" text-anchor="middle" class="label">On demand</text>
+  <text x="580" y="1075" text-anchor="middle" class="label">Admin command</text>
+
+  <!-- Arrow -->
+  <path d="M 720 1050 L 780 1050" class="arrow"/>
+
+  <!-- Emergency Rotation -->
+  <rect x="780" y="1010" width="280" height="80" class="deprecated-box" rx="5"/>
+  <text x="920" y="1035" text-anchor="middle" class="text" font-weight="bold">Emergency</text>
+  <text x="920" y="1055" text-anchor="middle" class="label">Key compromise</text>
+  <text x="920" y="1075" text-anchor="middle" class="label">Immediate rotation</text>
+
+  <!-- ===== MONITORING SECTION ===== -->
+  <text x="50" y="1160" class="title" font-size="14">7. Monitoring & Audit</text>
+
+  <!-- Audit Log -->
+  <rect x="100" y="1180" width="350" height="100" class="box" rx="5"/>
+  <text x="275" y="205" text-anchor="middle" class="text" font-weight="bold">Audit Log</text>
+  <text x="275" y="1225" text-anchor="middle" class="label">Track all rotations</text>
+  <text x="275" y="1245" text-anchor="middle" class="label">Old key ID → New key ID</text>
+  <text x="275" y="1265" text-anchor="middle" class="label">Timestamp, reason, admin</text>
+
+  <!-- Arrow -->
+  <path d="M 450 1230 L 510 1230" class="arrow"/>
+
+  <!-- Monitoring -->
+  <rect x="510" y="1180" width="350" height="100" class="box" rx="5"/>
+  <text x="685" y="1205" text-anchor="middle" class="text" font-weight="bold">Monitoring</text>
+  <text x="685" y="1225" text-anchor="middle" class="label">Alert on rotation failures</text>
+  <text x="685" y="1245" text-anchor="middle" class="label">Monitor key expiration</text>
+  <text x="685" y="1265" text-anchor="middle" class="label">Track key usage</text>
+
+  <!-- ===== LEGEND SECTION ===== -->
+  <g transform="translate(50, 1340)">
+    <rect x="0" y="0" width="20" height="20" class="active-box"/>
+    <text x="30" y="15" class="label">Active Key</text>
+    
+    <rect x="200" y="0" width="20" height="20" class="staged-box"/>
+    <text x="230" y="15" class="label">Staged Key</text>
+    
+    <rect x="400" y="0" width="20" height="20" class="deprecated-box"/>
+    <text x="430" y="15" class="label">Deprecated Key</text>
+  </g>
+
+  <!-- ASCII Art Comment for Fallback -->
+  <!-- 
+  Key Rotation Flow:
+  
+  TIMELINE (34 Days):
+  Day 1: Generate New Key
+  Day 2: Publish in DID Document
+  Day 3: Activate New Key (Start Using)
+  Day 4-33: Keep Old Key Valid (Backward Compatibility)
+  Day 34: Remove Old Key
+  
+  KEY STATES:
+  Current Key (Active) → New Key (Staged) → Old Key (Deprecated)
+  
+  ROTATION PROCESS:
+  1. Generate New Key Pair (EC P-256)
+  2. Store Securely (Encrypted with Master Secret)
+  3. Publish in DID Document
+  4. Activate New Key (Start Using for Signing)
+  
+  SECURE STORAGE:
+  File System (0600 permissions) → Encryption (AES-256) → Secure Storage
+  
+  KEY USAGE:
+  Active Key: Sign new commits, records, PLC operations
+  Old Key (30 days): Verify old commits, backward compatibility
+  Removed Key: Deleted after 30 days
+  
+  ROTATION TRIGGERS:
+  - Scheduled: Annually (365 days)
+  - Manual: On demand by admin
+  - Emergency: Immediate (key compromise)
+  
+  MONITORING:
+  - Audit log: Track all rotations
+  - Alerts: Rotation failures, expiration
+  - Usage tracking: Monitor key usage
+  -->
+</svg>

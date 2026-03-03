@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Documentation - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Architecture Documentation</h1>
+            </div>
+            <h1 id="architecture-documentation">Architecture Documentation</h1>
+<p>Comprehensive architecture documentation for the ATProto PDS implementation, including system diagrams, data models, protocol references, and development workflows.</p>
+<h2 id="documentation-index">Documentation Index</h2>
+<h3 id="markdown-documents">Markdown Documents</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Title</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="ARCHITECTURE_ANALYSIS.md">ARCHITECTURE_ANALYSIS.md</a></td>
+<td>ATProto PDS Deep Code Analysis</td>
+<td>System overview, component analysis, design patterns, data flows, security model, performance considerations, and refactoring recommendations</td>
+</tr>
+<tr>
+<td><a href="ARCHITECTURE_DIAGRAMS.md">ARCHITECTURE_DIAGRAMS.md</a></td>
+<td>ATProto PDS Architecture Diagrams</td>
+<td>Mermaid diagrams for system overview, OpenAPI generation, API endpoints, data flows, and component dependencies</td>
+</tr>
+<tr>
+<td><a href="DIAGRAMS_MERMAID.md">DIAGRAMS_MERMAID.md</a></td>
+<td>ATProto PDS Mermaid Diagrams</td>
+<td>XRPC request flow, record creation protocol, data models, OAuth2 token flow, session management, WebSocket firehose, and blob storage</td>
+</tr>
+<tr>
+<td><a href="atproto_data_models.md">atproto_data_models.md</a></td>
+<td>atproto Data Models Research</td>
+<td>DID implementation, repository structure (MST), Lexicon schemas, record types, commit/signature verification, AT URI resolution, collections, and sync protocols</td>
+</tr>
+<tr>
+<td><a href="atproto_pds_architecture.md">atproto_pds_architecture.md</a></td>
+<td>AT Protocol PDS Architecture and Specifications</td>
+<td>PDS role in ecosystem, XRPC API endpoints, OAuth 2.1 authentication, data storage requirements, repository structure, event stream/firehose, and existing implementations</td>
+</tr>
+<tr>
+<td><a href="DEVELOPMENT_WORKFLOWS.md">DEVELOPMENT_WORKFLOWS.md</a></td>
+<td>Development Workflow Diagrams</td>
+<td>Build/run process, test pyramid, code organization, debugging flowcharts, OAuth2 flow, database transactions, and quick reference commands</td>
+</tr>
+<tr>
+<td><a href="DIAGRAM_QUICK_REFERENCE.md">DIAGRAM_QUICK_REFERENCE.md</a></td>
+<td>Diagram Quick Reference</td>
+<td>Condensed guide to all diagrams with use-case mapping, color legend, and common Mermaid patterns</td>
+</tr>
+<tr>
+<td><a href="XRPC_PROTOCOL_REFERENCE.md">XRPC_PROTOCOL_REFERENCE.md</a></td>
+<td>ATProto XRPC Protocol Reference</td>
+<td>NSID naming, method patterns, Lexicon NSIDs, data types, error codes, and curl command examples</td>
+</tr>
+<tr>
+<td><a href="2026-01-10-integration-test-findings.md">2026-01-10-integration-test-findings.md</a></td>
+<td>PDS Integration Test Results</td>
+<td>Integration test findings, token format analysis, getRecord issues, CID format compliance, and resolved issues</td>
+</tr>
+</tbody>
+</table>
+<h3 id="graphviz-diagrams-dot-files">Graphviz Diagrams (.dot files)</h3>
+<p>Generate PNGs with: <code>dot -Tpng &lt;file&gt;.dot -o &lt;file&gt;.png</code></p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="high_level_architecture.dot">high_level_architecture.dot</a></td>
+<td>Complete system overview with all layers (client, network, application, repository, data)</td>
+</tr>
+<tr>
+<td><a href="request_flow.dot">request_flow.dot</a></td>
+<td>HTTP request processing pipeline from server to database</td>
+</tr>
+<tr>
+<td><a href="database_schema.dot">database_schema.dot</a></td>
+<td>SQLite schema with entity relationships</td>
+</tr>
+<tr>
+<td><a href="authentication_flow.dot">authentication_flow.dot</a></td>
+<td>Multi-factor authentication process (JWT, OAuth2, TOTP, WebAuthn)</td>
+</tr>
+<tr>
+<td><a href="repository_engine.dot">repository_engine.dot</a></td>
+<td>MST and CAR content-addressable storage engine</td>
+</tr>
+<tr>
+<td><a href="firehose_sync.dot">firehose_sync.dot</a></td>
+<td>Real-time event streaming and WebSocket subscriptions</td>
+</tr>
+<tr>
+<td><a href="module_dependencies.dot">module_dependencies.dot</a></td>
+<td>Inter-module dependency graph from Foundation to CLI</td>
+</tr>
+</tbody>
+</table>
+<h2 id="quick-navigation-by-task">Quick Navigation by Task</h2>
+<h3 id="understanding-the-system">Understanding the System</h3>
+<ol>
+<li><a href="ARCHITECTURE_ANALYSIS.md">ARCHITECTURE_ANALYSIS.md</a> - Start here for comprehensive overview</li>
+<li><a href="high_level_architecture.dot">high_level_architecture.dot</a> - Visual system structure</li>
+<li><a href="module_dependencies.dot">module_dependencies.dot</a> - Module relationships</li>
+</ol>
+<h3 id="atproto-protocol-development">ATProto Protocol Development</h3>
+<ol>
+<li><a href="atproto_pds_architecture.md">atproto_pds_architecture.md</a> - PDS specifications</li>
+<li><a href="atproto_data_models.md">atproto_data_models.md</a> - Data structures and models</li>
+<li><a href="XRPC_PROTOCOL_REFERENCE.md">XRPC_PROTOCOL_REFERENCE.md</a> - Quick protocol reference</li>
+</ol>
+<h3 id="development-workflows">Development Workflows</h3>
+<ol>
+<li><a href="DEVELOPMENT_WORKFLOWS.md">DEVELOPMENT_WORKFLOWS.md</a> - Build, test, debug processes</li>
+<li><a href="DIAGRAM_QUICK_REFERENCE.md">DIAGRAM_QUICK_REFERENCE.md</a> - Diagram selection guide</li>
+</ol>
+<h3 id="authentication-security">Authentication &amp; Security</h3>
+<ol>
+<li><a href="authentication_flow.dot">authentication_flow.dot</a> - Auth flow diagram</li>
+<li><a href="atproto_pds_architecture.md#3-authentication-and-authorization-mechanisms">atproto_pds_architecture.md</a> - OAuth 2.1 profile</li>
+</ol>
+<h3 id="database-storage">Database &amp; Storage</h3>
+<ol>
+<li><a href="database_schema.dot">database_schema.dot</a> - Schema relationships</li>
+<li><a href="repository_engine.dot">repository_engine.dot</a> - MST/CAR storage</li>
+</ol>
+<h2 id="related-documentation">Related Documentation</h2>
+<h3 id="architecture-documents">Architecture Documents</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="ARCHITECTURE_ANALYSIS.md">ARCHITECTURE_ANALYSIS.md</a></td>
+<td>Deep code analysis, component details, and design patterns</td>
+</tr>
+<tr>
+<td><a href="atproto_pds_architecture.md">atproto_pds_architecture.md</a></td>
+<td>PDS specifications, XRPC endpoints, and OAuth 2.1 profile</td>
+</tr>
+<tr>
+<td><a href="atproto_data_models.md">atproto_data_models.md</a></td>
+<td>DID implementation, MST, Lexicon schemas, and CBOR encoding</td>
+</tr>
+<tr>
+<td><a href="XRPC_PROTOCOL_REFERENCE.md">XRPC_PROTOCOL_REFERENCE.md</a></td>
+<td>Quick reference for XRPC methods and error codes</td>
+</tr>
+<tr>
+<td><a href="DEVELOPMENT_WORKFLOWS.md">DEVELOPMENT_WORKFLOWS.md</a></td>
+<td>Build/test/debug workflow diagrams</td>
+</tr>
+</tbody>
+</table>
+<h3 id="diagram-documents">Diagram Documents</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="ARCHITECTURE_DIAGRAMS.md">ARCHITECTURE_DIAGRAMS.md</a></td>
+<td>System overview and component diagrams</td>
+</tr>
+<tr>
+<td><a href="DIAGRAMS_MERMAID.md">DIAGRAMS_MERMAID.md</a></td>
+<td>Protocol flows and data model diagrams</td>
+</tr>
+<tr>
+<td><a href="DIAGRAM_QUICK_REFERENCE.md">DIAGRAM_QUICK_REFERENCE.md</a></td>
+<td>Guide to selecting the right diagram</td>
+</tr>
+</tbody>
+</table>
+<h3 id="other-directories">Other Directories</h3>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../guides/">../guides/</a></td>
+<td>Development guides, Objective-C patterns, and how-to documentation</td>
+</tr>
+<tr>
+<td><a href="../security/">../security/</a></td>
+<td>Security documentation, audit skills, and hardening guides</td>
+</tr>
+<tr>
+<td><a href="../tests/">../tests/</a></td>
+<td>Test documentation and coverage reports</td>
+</tr>
+<tr>
+<td><a href="../plans/">../plans/</a></td>
+<td>Implementation plans and project roadmaps</td>
+</tr>
+<tr>
+<td><a href="../examples/">../examples/</a></td>
+<td>Example code and usage patterns</td>
+</tr>
+</tbody>
+</table>
+<h2 id="key-architecture-insights">Key Architecture Insights</h2>
+<ol>
+<li><strong>Layered Architecture</strong>: Clear separation from Foundation → Core → Application</li>
+<li><strong>Central Coordinator</strong>: <code>PDSController</code> acts as a facade for all operations</li>
+<li><strong>Content-Addressable Storage</strong>: MST + CAR ensures cryptographic data integrity</li>
+<li><strong>Real-time Sync</strong>: WebSocket firehose enables live updates across federation</li>
+<li><strong>Multi-Factor Auth</strong>: JWT + OAuth2 + TOTP + WebAuthn for secure authentication</li>
+<li><strong>Protocol Compliant</strong>: Complete XRPC implementation for AT Protocol</li>
+</ol>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

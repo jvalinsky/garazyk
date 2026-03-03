@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATProto PDS Deep Code Analysis - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>ATProto PDS Deep Code Analysis</h1>
+            </div>
+            <h1 id="atproto-pds-deep-code-analysis">ATProto PDS Deep Code Analysis</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>This document analyzes the ATProto Personal Data Server (PDS) implementation in Objective-C. The system uses a layered architecture with separation between presentation, application, domain, data, and infrastructure concerns.</p>
+<h2 id="system-overview">System Overview</h2>
+<h3 id="what-is-atproto-pds">What is ATProto PDS?</h3>
+<p>The AT Protocol (Authenticated Transfer Protocol) is a decentralized social networking protocol. A Personal Data Server (PDS) is the user's data host in this ecosystem, responsible for:
+- Storing user data (records, blobs)
+- Authenticating users and issuing tokens
+- Syncing data with other PDS instances (federation)
+- Streaming updates to subscribers (firehose)</p>
+<h3 id="key-statistics">Key Statistics</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lines of Code</td>
+<td>~61,000</td>
+</tr>
+<tr>
+<td>Unit Tests</td>
+<td>158 passing</td>
+</tr>
+<tr>
+<td>Main Entry Points</td>
+<td>2 (CLI, Server)</td>
+</tr>
+<tr>
+<td>Core Modules</td>
+<td>21</td>
+</tr>
+<tr>
+<td>Database Tables</td>
+<td>6+</td>
+</tr>
+<tr>
+<td>Authentication Methods</td>
+<td>5 (JWT, OAuth2, TOTP, WebAuthn, DID)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="architecture-diagrams">Architecture Diagrams</h2>
+<h3 id="1-high-level-architecture-high_level_architecturedot">1. High-Level Architecture (<code>high_level_architecture.dot</code>)</h3>
+<p>Shows the complete system structure including:
+- <strong>Client Applications</strong>: Bluesky, other ATProto apps
+- <strong>Network Layer</strong>: HTTP server (port 2583), WebSocket (port 8081)
+- <strong>Application Layer</strong>: PDSController and services
+- <strong>Authentication Layer</strong>: JWT, OAuth2, KeyManager, TOTP, WebAuthn
+- <strong>Repository Layer</strong>: MST, CAR, CBOR
+- <strong>Data Layer</strong>: SQLite database, ActorStore
+- <strong>Identity Layer</strong>: DID resolver, Handle resolver
+- <strong>Sync Layer</strong>: Firehose, subscriptions, federation relay</p>
+<h3 id="2-request-flow-request_flowdot">2. Request Flow (<code>request_flow.dot</code>)</h3>
+<p>Detailed request processing pipeline:</p>
+<pre class="codehilite"><code>HTTP Request → Route Matching → XRPC Dispatcher → Auth Middleware → JWT Validation → PDSController → Services → Database → Repository Engine
+</code></pre>
+
+<p>Key flows:
+- <strong>Read Path</strong>: HTTP → XRPC → Auth → Controller → Service → ActorStore → MST → CAR → Response
+- <strong>Write Path</strong>: HTTP → XRPC → Auth → Controller → Service → ActorStore → MST Update → CAR Export → Database</p>
+<h3 id="3-database-schema-database_schemadot">3. Database Schema (<code>database_schema.dot</code>)</h3>
+<p>SQLite schema with tables:
+- <strong>account</strong>: User accounts with authentication data
+- <strong>repo</strong>: Repository metadata (root CID per user)
+- <strong>record</strong>: Individual records (ATURI, collection, rkey)
+- <strong>blob</strong>: Blob metadata (CID, MIME type, dimensions)
+- <strong>block</strong>: Content blocks (CID → binary data)
+- <strong>collection</strong>: Record collections per user
+- <strong>record_key</strong>: Record key management
+- <strong>subscription</strong>: WebSocket subscription state</p>
+<h3 id="4-authentication-flow-authentication_flowdot">4. Authentication Flow (<code>authentication_flow.dot</code>)</h3>
+<p>Multi-factor authentication system:
+1. <strong>Credential Validation</strong>: Handle/DID + Password
+2. <strong>JWT Operations</strong>: RS256/ES256 signing and verification
+3. <strong>Key Management</strong>: Public/private key storage
+4. <strong>2FA Support</strong>: TOTP and WebAuthn
+5. <strong>OAuth2</strong>: Authorization flow</p>
+<p><strong>Token Types</strong>:
+- <strong>Access Token</strong>: Short-lived JWT for API access
+- <strong>Refresh Token</strong>: Long-lived encrypted JWT for session renewal
+- <strong>DID Token</strong>: Signed DID document for identity verification</p>
+<h3 id="5-repository-engine-repository_enginedot">5. Repository Engine (<code>repository_engine.dot</code>)</h3>
+<p>AT Protocol's content-addressable storage:
+- <strong>MST (Merkle Search Tree)</strong>: Balanced tree structure for deterministic key lookup and root derivation
+- <strong>CAR (Content Addressable Records)</strong>: Binary archive format for data export/import
+- <strong>CBOR</strong>: Concise Binary Object Representation for serialization
+- <strong>Data Model</strong>: Records → Collections → Keys (rkey)</p>
+<p><strong>Operations</strong>:
+- Create repository
+- Get/Put/Delete records
+- Export/Import CAR archives
+- Sync with other PDS instances</p>
+<h3 id="6-firehose-sync-firehose_syncdot">6. Firehose &amp; Sync (<code>firehose_sync.dot</code>)</h3>
+<p>Real-time event streaming system:
+- <strong>Event Types</strong>: Commit, Handle update, Account creation, Tombstone
+- <strong>WebSocket Streaming</strong>: SubscribeRepos endpoint on port 8081
+- <strong>Replication</strong>: PDS-to-PDS federation
+- <strong>Subscribers</strong>: AppView (Bsky), Relay PDS, third-party apps</p>
+<h3 id="7-module-dependencies-module_dependenciesdot">7. Module Dependencies (<code>module_dependencies.dot</code>)</h3>
+<p>Shows inter-module dependencies:
+- <strong>Foundation Layer</strong>: Foundation, Security, Network frameworks
+- <strong>External</strong>: SQLite3, secp256k1
+- <strong>Core Modules</strong>: Identity, Core, Auth, Security, Network, Repository, Blob, Database
+- <strong>Application Modules</strong>: App, AppView, Admin, Sync, Federation, CLI</p>
+<hr />
+<h2 id="key-components">Key Components</h2>
+<h3 id="pdscontroller-atprotopdssourcesapppdscontrollerhm">PDSController (<code>ATProtoPDS/Sources/App/PDSController.h/m</code>)</h3>
+<p>The central "god class" coordinating all operations:
+- Manages all XRPC method handlers
+- Coordinates authentication
+- Routes requests to appropriate services
+- Manages database connections
+- Handles repository operations</p>
+<p><strong>Design Concern</strong>: This class has too many responsibilities and should be refactored into separate facades.</p>
+<h3 id="pdsdatabase-atprotopdssourcesdatabasepdsdatabasehm">PDSDatabase (<code>ATProtoPDS/Sources/Database/PDSDatabase.h/m</code>)</h3>
+<p>Monolithic database controller (~2200 lines):
+- Connection pooling
+- Transaction management
+- Account operations
+- Repository operations
+- Blob operations</p>
+<p><strong>Design Concern</strong>: Should be split into dedicated DAOs per entity.</p>
+<h3 id="actorstore-atprotopdssourcesdatabaseactorstoreactorstorehm">ActorStore (<code>ATProtoPDS/Sources/Database/ActorStore/ActorStore.h/m</code>)</h3>
+<p>Per-user database access:
+- Transaction isolation per user
+- Record CRUD operations
+- Collection management
+- Subscription state</p>
+<h3 id="mst-merkle-search-tree-atprotopdssourcesrepositorymsthm">MST (Merkle Search Tree) (<code>ATProtoPDS/Sources/Repository/MST.h/m</code>)</h3>
+<p>Content-addressable tree structure:
+- Sorted key-value storage
+- Range queries over sorted keys
+- Cryptographic integrity verification
+- Incremental updates</p>
+<h3 id="xrpchandler-atprotopdssourcesnetworkxrpchandlerhm">XrpcHandler (<code>ATProtoPDS/Sources/Network/XrpcHandler.h/m</code>)</h3>
+<p>XRPC protocol dispatcher:
+- NSID-based method routing
+- Input/output validation
+- Lexicon compliance
+- Error handling</p>
+<h3 id="subscribereposhandler-atprotopdssourcessyncsubscribereposhandlerhm">SubscribeReposHandler (<code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.h/m</code>)</h3>
+<p>WebSocket handler for firehose:
+- Connection management
+- Event encoding (CBOR/JSON)
+- Cursor persistence
+- Subscriber management</p>
+<hr />
+<h2 id="design-patterns">Design Patterns</h2>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Usage</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Facade/God Class</strong></td>
+<td>Central coordinator</td>
+<td><code>PDSController</code></td>
+</tr>
+<tr>
+<td><strong>DAO</strong></td>
+<td>Database operations</td>
+<td><code>PDSDatabase+Accounts</code></td>
+</tr>
+<tr>
+<td><strong>Protocol-based Abstraction</strong></td>
+<td>Interface definitions</td>
+<td><code>PDSActorStoreReader</code>, <code>PDSActorStoreTransactable</code></td>
+</tr>
+<tr>
+<td><strong>Singleton</strong></td>
+<td>Shared instances</td>
+<td><code>PDSDispatchers</code>, <code>HealthChecker</code></td>
+</tr>
+<tr>
+<td><strong>Observer</strong></td>
+<td>Event streaming</td>
+<td><code>SubscribeReposHandler</code> → WebSocket</td>
+</tr>
+<tr>
+<td><strong>Repository</strong></td>
+<td>Data access abstraction</td>
+<td><code>Repository</code> class wrapping MST</td>
+</tr>
+<tr>
+<td><strong>Builder</strong></td>
+<td>Complex object construction</td>
+<td><code>CARBuilder</code>, <code>MSTBuilder</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="data-flow-examples">Data Flow Examples</h2>
+<h3 id="example-1-creating-a-record">Example 1: Creating a Record</h3>
+<pre class="codehilite"><code>1. POST /xrpc/com.atproto.repo.createRecord
+   ↓
+2. Authenticate (JWT validation)
+   ↓
+3. PDSController → RecordService
+   ↓
+4. ActorStore.beginTransaction()
+   ↓
+5. MST.getRoot() → Load existing tree
+   ↓
+6. MST.put(key, value) → Update tree
+   ↓
+7. CAR archive generated with new blocks
+   ↓
+8. Database.updateRepoRoot()
+   ↓
+9. Firehose.broadcast(#commit)
+   ↓
+10. Return record URI
+</code></pre>
+
+<h3 id="example-2-reading-a-record">Example 2: Reading a Record</h3>
+<pre class="codehilite"><code>1. GET /xrpc/com.atproto.repo.getRecord?repo=did&amp;collection=app.bsky.feed.post&amp;rkey=123
+   ↓
+2. Authenticate (session check)
+   ↓
+3. PDSController → RecordService
+   ↓
+4. ActorStore.readTransaction()
+   ↓
+5. Database.getRecordUri()
+   ↓
+6. If record has CID:
+   - MST.get(key) → Get CID
+   - CAR.getBlock(cid) → Get CBOR data
+   ↓
+7. Decode CBOR to JSON
+   ↓
+8. Return record
+</code></pre>
+
+<h3 id="example-3-authentication-flow">Example 3: Authentication Flow</h3>
+<pre class="codehilite"><code>1. POST /xrpc/com.atproto.server.createSession
+   ↓
+2. AuthController.validateCredentials()
+   ↓
+3. KeyManager.getPublicKey(did)
+   ↓
+4. If 2FA enabled:
+   - TOTP.verify() OR WebAuthn.assert()
+   ↓
+5. JWT.sign({
+     sub: did,
+     scope: 'access',
+     exp: 15min
+   })
+   ↓
+6. JWT.sign({
+     sub: did,
+     scope: 'refresh',
+     exp: 30days
+   })
+   ↓
+7. Database.updateSession()
+   ↓
+8. Return { accessJwt, refreshJwt, did, handle }
+</code></pre>
+
+<hr />
+<h2 id="security-model">Security Model</h2>
+<h3 id="authentication-layers">Authentication Layers</h3>
+<ol>
+<li><strong>Password</strong>: BCrypt hashing with salt</li>
+<li><strong>JWT</strong>: RS256/ES256 signatures</li>
+<li><strong>Key Management</strong>: Encrypted key storage in database</li>
+<li><strong>TOTP</strong>: Time-based 2FA (RFC 6238)</li>
+<li><strong>WebAuthn</strong>: Passkey-based authentication</li>
+</ol>
+<h3 id="authorization">Authorization</h3>
+<ul>
+<li><strong>Role-based</strong>: Admin vs user permissions</li>
+<li><strong>Resource-based</strong>: Can only access own records</li>
+<li><strong>DID-based</strong>: Identity verification via DID documents</li>
+</ul>
+<h3 id="security-measures">Security Measures</h3>
+<ul>
+<li><strong>SQL Injection Prevention</strong>: Parameterized queries in <code>Security/SQLInjectionPrevention</code></li>
+<li><strong>Input Validation</strong>: XRPC input validation</li>
+<li><strong>Rate Limiting</strong>: Implicit via HTTP server</li>
+<li><strong>Session Management</strong>: Token rotation, expiry</li>
+</ul>
+<hr />
+<h2 id="federation-sync">Federation &amp; Sync</h2>
+<h3 id="pds-to-pds-communication">PDS-to-PDS Communication</h3>
+<ol>
+<li><strong>Outbound Sync</strong>:</li>
+<li>Export repository as CAR archive</li>
+<li>Sign commit with DID key</li>
+<li>
+<p>POST to relay PDS</p>
+</li>
+<li>
+<p><strong>Inbound Sync</strong>:</p>
+</li>
+<li>Validate signed commit</li>
+<li>Import CAR archive</li>
+<li>Update MST</li>
+<li>Broadcast to local subscribers</li>
+</ol>
+<h3 id="conflict-resolution">Conflict Resolution</h3>
+<ul>
+<li><strong>Last-write-wins</strong>: Based on commit timestamp</li>
+<li><strong>Signature verification</strong>: All commits must be signed</li>
+<li><strong>DID key rotation</strong>: Handle key updates</li>
+</ul>
+<hr />
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="current-bottlenecks">Current Bottlenecks</h3>
+<ol>
+<li><strong>Single Database</strong>: No read replicas</li>
+<li><strong>Synchronous I/O</strong>: Blocking operations</li>
+<li><strong>Memory</strong>: Full CAR archives in memory</li>
+<li><strong>MST Operations</strong>: Tree rebalancing can be expensive</li>
+</ol>
+<h3 id="optimization-strategies">Optimization Strategies</h3>
+<ol>
+<li><strong>Connection Pooling</strong>: Already implemented</li>
+<li><strong>Write-Ahead Logging</strong>: SQLite WAL mode</li>
+<li><strong>CAR Streaming</strong>: Incremental CAR generation</li>
+<li><strong>MST Caching</strong>: Recently accessed nodes</li>
+</ol>
+<hr />
+<h2 id="strengths-weaknesses">Strengths &amp; Weaknesses</h2>
+<h3 id="strengths">Strengths</h3>
+<ul>
+<li>✅ <strong>Clear Domain Separation</strong>: Modules have single responsibilities</li>
+<li>✅ <strong>Protocol Compliance</strong>: Complete XRPC implementation</li>
+<li>✅ <strong>Authentication Coverage</strong>: JWT, OAuth2, TOTP, and WebAuthn flows</li>
+<li>✅ <strong>Real-time Sync</strong>: WebSocket firehose implementation</li>
+<li>✅ <strong>Content-Addressable Storage</strong>: MST + CAR for data integrity</li>
+<li>✅ <strong>Test Coverage</strong>: 158 unit tests passing</li>
+</ul>
+<h3 id="weaknesses">Weaknesses</h3>
+<ul>
+<li>❌ <strong>God Classes</strong>: <code>PDSController</code>, <code>PDSDatabase</code> have too many responsibilities</li>
+<li>❌ <strong>Tight Coupling</strong>: Layers depend on concrete implementations</li>
+<li>❌ <strong>Single-Tenant</strong>: One database, limited horizontal scaling</li>
+<li>❌ <strong>Synchronous I/O</strong>: No async/await pattern</li>
+<li>❌ <strong>Memory Usage</strong>: CAR archives can be large</li>
+</ul>
+<hr />
+<h2 id="refactoring-recommendations">Refactoring Recommendations</h2>
+<h3 id="high-priority">High Priority</h3>
+<ol>
+<li><strong>Split PDSController</strong> into dedicated facades:</li>
+<li><code>AuthFacade</code></li>
+<li><code>RepositoryFacade</code></li>
+<li><code>RecordFacade</code></li>
+<li>
+<p><code>AdminFacade</code></p>
+</li>
+<li>
+<p><strong>Split PDSDatabase</strong> into DAOs:</p>
+</li>
+<li><code>AccountDAO</code></li>
+<li><code>RepoDAO</code></li>
+<li><code>RecordDAO</code></li>
+<li><code>BlobDAO</code></li>
+<li><code>SubscriptionDAO</code></li>
+</ol>
+<h3 id="medium-priority">Medium Priority</h3>
+<ol>
+<li><strong>Add Async I/O</strong>: Use Grand Central Dispatch patterns</li>
+<li><strong>Implement Caching</strong>: Redis or in-memory cache</li>
+<li><strong>Add Metrics</strong>: Prometheus/StatsD integration</li>
+<li><strong>Improve Logging</strong>: Structured logging</li>
+</ol>
+<h3 id="low-priority">Low Priority</h3>
+<ol>
+<li><strong>Extract Core Types</strong>: Move CID, DID, TID to standalone framework</li>
+<li><strong>Plugin Architecture</strong>: Allow custom handlers</li>
+<li><strong>Multi-Tenant Support</strong>: Database per user</li>
+</ol>
+<hr />
+<h2 id="build-system">Build System</h2>
+<h3 id="generate-xcode-project">Generate Xcode Project</h3>
+<pre class="codehilite"><code class="language-bash">xcodegen generate
+</code></pre>
+
+<h3 id="build-targets">Build Targets</h3>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Purpose</th>
+<th>Binary Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ATProtoPDS-CLI</td>
+<td>Command-line tool</td>
+<td><code>./build/bin/atprotopds-cli</code></td>
+</tr>
+<tr>
+<td>ATProtoPDS-Server</td>
+<td>HTTP server</td>
+<td>Bundled in app</td>
+</tr>
+<tr>
+<td>AllTests</td>
+<td>Unit tests (158 tests)</td>
+<td><code>./build/tests/AllTests</code></td>
+</tr>
+<tr>
+<td>Fuzzers</td>
+<td>Security testing</td>
+<td><code>./build/fuzzing/</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="dependencies">Dependencies</h3>
+<ul>
+<li><strong>Foundation</strong>: Core iOS/macOS framework</li>
+<li><strong>Security</strong>: Cryptography, keychain</li>
+<li><strong>Network</strong>: HTTP, WebSocket support</li>
+<li><strong>SQLite3</strong>: Embedded database</li>
+<li><strong>secp256k1</strong>: Elliptic curve cryptography (CMake subproject)</li>
+</ul>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
+<p>The ATProto PDS implementation maps cleanly to the AT Protocol specification. The primary structural risk is concentration of responsibilities in <code>PDSController</code> and <code>PDSDatabase</code>.</p>
+<p>The key strengths are:
+- Protocol compliance
+- Authentication coverage across multiple credential flows
+- Content-addressable storage
+- Real-time sync capabilities</p>
+<p>The main areas for improvement are:
+- Reducing coupling through facade pattern
+- Adding async I/O for better concurrency
+- Implementing multi-tenant support
+- Adding monitoring and metrics</p>
+<hr />
+<h2 id="diagram-files">Diagram Files</h2>
+<p>All diagrams are available in Graphviz DOT format:</p>
+<ol>
+<li><code>high_level_architecture.dot</code> - System overview</li>
+<li><code>request_flow.dot</code> - Request processing pipeline</li>
+<li><code>database_schema.dot</code> - SQLite schema</li>
+<li><code>authentication_flow.dot</code> - Auth flow</li>
+<li><code>repository_engine.dot</code> - MST/CAR engine</li>
+<li><code>firehose_sync.dot</code> - Real-time sync</li>
+<li><code>module_dependencies.dot</code> - Dependency graph</li>
+</ol>
+<p>Generate PNGs with:</p>
+<pre class="codehilite"><code class="language-bash">dot -Tpng high_level_architecture.dot &gt; high_level_architecture.png
+</code></pre>
+
+<h2 id="related-documentation">Related Documentation</h2>
+<h3 id="architecture-documents">Architecture Documents</h3>
+<ul>
+<li><a href="README.md">README.md</a> - Architecture documentation index</li>
+<li><a href="atproto_pds_architecture.md">atproto_pds_architecture.md</a> - PDS specifications and OAuth 2.1 profile</li>
+<li><a href="atproto_data_models.md">atproto_data_models.md</a> - DID, MST, and Lexicon schemas</li>
+<li><a href="XRPC_PROTOCOL_REFERENCE.md">XRPC_PROTOCOL_REFERENCE.md</a> - XRPC method quick reference</li>
+</ul>
+<h3 id="diagram-documents">Diagram Documents</h3>
+<ul>
+<li><a href="ARCHITECTURE_DIAGRAMS.md">ARCHITECTURE_DIAGRAMS.md</a> - System overview diagrams</li>
+<li><a href="DIAGRAMS_MERMAID.md">DIAGRAMS_MERMAID.md</a> - Protocol flow diagrams</li>
+<li><a href="DIAGRAM_QUICK_REFERENCE.md">DIAGRAM_QUICK_REFERENCE.md</a> - Diagram selection guide</li>
+</ul>
+<h3 id="related-guides">Related Guides</h3>
+<ul>
+<li><a href="../guides/DEVELOPER_GUIDE.md">../guides/DEVELOPER_GUIDE.md</a> - Developer onboarding guide</li>
+<li><a href="../tests/">../tests/</a> - Test documentation for components referenced above</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1200" viewBox="0 0 1000 1200">
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .service-box { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .db-box { fill: #f0e6ff; stroke: #6600cc; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="500" y="30" text-anchor="middle" class="title" font-size="20">PDS System Architecture</text>
+
+  <!-- HTTP Clients -->
+  <rect x="150" y="60" width="700" height="60" class="box" rx="5"/>
+  <text x="500" y="95" text-anchor="middle" class="text">HTTP Clients (Web, Mobile, Bots)</text>
+
+  <!-- Arrow down -->
+  <path d="M 500 120 L 500 160" class="arrow"/>
+
+  <!-- HTTP Server -->
+  <rect x="200" y="160" width="600" height="80" class="box" rx="5"/>
+  <text x="500" y="185" text-anchor="middle" class="title">HttpServer (Port 2583)</text>
+  <text x="500" y="210" text-anchor="middle" class="label">Route Registration • TLS Termination • WebSocket Upgrade</text>
+
+  <!-- Arrow down -->
+  <path d="M 500 240 L 500 280" class="arrow"/>
+
+  <!-- XRPC Dispatcher -->
+  <rect x="200" y="280" width="600" height="80" class="box" rx="5"/>
+  <text x="500" y="305" text-anchor="middle" class="title">XrpcDispatcher</text>
+  <text x="500" y="330" text-anchor="middle" class="label">Route by NSID • Auth Verification • Rate Limiting</text>
+
+  <!-- Arrow down -->
+  <path d="M 500 360 L 500 400" class="arrow"/>
+
+  <!-- Method Registry -->
+  <rect x="150" y="400" width="700" height="100" class="box" rx="5"/>
+  <text x="500" y="425" text-anchor="middle" class="title">XrpcMethodRegistry</text>
+  <text x="500" y="450" text-anchor="middle" class="label">Domain Method Handlers:</text>
+  <text x="500" y="475" text-anchor="middle" class="label">XrpcServerMethods • XrpcRepoMethods • XrpcSyncMethods</text>
+  <text x="500" y="495" text-anchor="middle" class="label">XrpcIdentityMethods • XrpcAdminMethods • XrpcAppBskyMethods</text>
+
+  <!-- Arrow down -->
+  <path d="M 500 500 L 500 540" class="arrow"/>
+
+  <!-- PDSApplication Facade -->
+  <rect x="150" y="540" width="700" height="100" class="service-box" rx="5"/>
+  <text x="500" y="565" text-anchor="middle" class="title">PDSApplication Facade</text>
+  <text x="500" y="590" text-anchor="middle" class="label">Services:</text>
+  <text x="500" y="610" text-anchor="middle" class="label">Account • Record • Blob • Repository • Admin • Relay</text>
+
+  <!-- Arrow down -->
+  <path d="M 500 640 L 500 680" class="arrow"/>
+
+  <!-- Service Databases -->
+  <rect x="100" y="680" width="350" height="120" class="db-box" rx="5"/>
+  <text x="275" y="705" text-anchor="middle" class="title">PDSServiceDatabases</text>
+  <text x="275" y="730" text-anchor="middle" class="label">(Shared)</text>
+  <text x="275" y="755" text-anchor="middle" class="label">Service DB</text>
+  <text x="275" y="775" text-anchor="middle" class="label">DID Cache</text>
+  <text x="275" y="795" text-anchor="middle" class="label">Sequencer</text>
+
+  <!-- Actor Databases -->
+  <rect x="550" y="680" width="350" height="120" class="db-box" rx="5"/>
+  <text x="725" y="705" text-anchor="middle" class="title">PDSDatabasePool</text>
+  <text x="725" y="730" text-anchor="middle" class="label">(Per-User)</text>
+  <text x="725" y="755" text-anchor="middle" class="label">Actor DB 1</text>
+  <text x="725" y="775" text-anchor="middle" class="label">Actor DB 2</text>
+  <text x="725" y="795" text-anchor="middle" class="label">Actor DB N</text>
+
+  <!-- Arrows to databases -->
+  <path d="M 350 640 L 275 680" class="arrow"/>
+  <path d="M 650 640 L 725 680" class="arrow"/>
+
+  <!-- Legend -->
+  <g transform="translate(50, 850)">
+    <text x="0" y="0" class="title">Legend:</text>
+    
+    <rect x="0" y="20" width="20" height="20" class="box"/>
+    <text x="30" y="35" class="label">Network/Routing Layer</text>
+    
+    <rect x="0" y="50" width="20" height="20" class="service-box"/>
+    <text x="30" y="65" class="label">Service Layer</text>
+    
+    <rect x="0" y="80" width="20" height="20" class="db-box"/>
+    <text x="30" y="95" class="label">Database Layer</text>
+  </g>
+
+  <!-- Data Flow Description -->
+  <g transform="translate(50, 950)">
+    <text x="0" y="0" class="title">Request Flow:</text>
+    <text x="0" y="25" class="label">1. Client sends HTTP request to HttpServer</text>
+    <text x="0" y="45" class="label">2. HttpServer routes to XrpcDispatcher</text>
+    <text x="0" y="65" class="label">3. XrpcDispatcher verifies auth and routes by NSID</text>
+    <text x="0" y="85" class="label">4. XrpcMethodRegistry looks up handler</text>
+    <text x="0" y="105" class="label">5. Domain handler calls PDSApplication service</text>
+    <text x="0" y="125" class="label">6. Service accesses database layer</text>
+    <text x="0" y="145" class="label">7. Response is serialized and returned to client</text>
+  </g>
+</svg>
