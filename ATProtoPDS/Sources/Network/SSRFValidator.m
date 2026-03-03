@@ -1,6 +1,10 @@
 #import "Network/SSRFValidator.h"
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <string.h>
+#import <CoreFoundation/CoreFoundation.h>
+
+NSErrorDomain const SSRFValidatorErrorDomain = @"com.atproto.pds.ssrfvalidator";
 
 @implementation SSRFValidator
 
@@ -33,6 +37,90 @@
         return [self isPrivateIPv4Address:ipv4];
     }
     return NO;
+}
+
++ (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error {
+    if (hostname.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:SSRFValidatorErrorDomain
+                                         code:SSRFValidatorErrorInvalidHost
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty hostname"}];
+        }
+        return NO;
+    }
+
+    CFHostRef hostRef = CFHostCreateWithName(kCFAllocatorDefault, (__bridge CFStringRef)hostname);
+    if (!hostRef) {
+        if (error) {
+            *error = [NSError errorWithDomain:SSRFValidatorErrorDomain
+                                         code:SSRFValidatorErrorResolutionFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to create host resolver"}];
+        }
+        return NO;
+    }
+
+    CFStreamError streamError;
+    if (!CFHostStartInfoResolution(hostRef, kCFHostAddresses, &streamError)) {
+        CFRelease(hostRef);
+        if (error) {
+            *error = [NSError errorWithDomain:SSRFValidatorErrorDomain
+                                         code:SSRFValidatorErrorResolutionFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to resolve hostname"}];
+        }
+        return NO;
+    }
+
+    CFArrayRef addresses = CFHostGetAddressing(hostRef, NULL);
+    if (!addresses || CFArrayGetCount(addresses) == 0) {
+        CFRelease(hostRef);
+        if (error) {
+            *error = [NSError errorWithDomain:SSRFValidatorErrorDomain
+                                         code:SSRFValidatorErrorNoAddresses
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No IP addresses found for hostname"}];
+        }
+        return NO;
+    }
+
+    for (CFIndex i = 0; i < CFArrayGetCount(addresses); i++) {
+        CFDataRef addressData = (CFDataRef)CFArrayGetValueAtIndex(addresses, i);
+        if (!addressData || CFGetTypeID(addressData) != CFDataGetTypeID()) {
+            continue;
+        }
+        const UInt8 *addressBytes = CFDataGetBytePtr(addressData);
+        CFIndex addressLength = CFDataGetLength(addressData);
+        if (!addressBytes || addressLength < (CFIndex)sizeof(struct sockaddr)) {
+            continue;
+        }
+
+        const struct sockaddr *addr = (const struct sockaddr *)addressBytes;
+        if (addr->sa_family == AF_INET && addressLength >= (CFIndex)sizeof(struct sockaddr_in)) {
+            const struct sockaddr_in *addr4 = (const struct sockaddr_in *)addr;
+            uint32_t ip = ntohl(addr4->sin_addr.s_addr);
+            if ([self isPrivateIPv4Address:ip]) {
+                CFRelease(hostRef);
+                if (error) {
+                    *error = [NSError errorWithDomain:SSRFValidatorErrorDomain
+                                                 code:SSRFValidatorErrorPrivateAddress
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Host resolves to private IPv4 address"}];
+                }
+                return NO;
+            }
+        } else if (addr->sa_family == AF_INET6 && addressLength >= (CFIndex)sizeof(struct sockaddr_in6)) {
+            const struct sockaddr_in6 *addr6 = (const struct sockaddr_in6 *)addr;
+            if ([self isPrivateIPv6Address:addr6->sin6_addr]) {
+                CFRelease(hostRef);
+                if (error) {
+                    *error = [NSError errorWithDomain:SSRFValidatorErrorDomain
+                                                 code:SSRFValidatorErrorPrivateAddress
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Host resolves to private IPv6 address"}];
+                }
+                return NO;
+            }
+        }
+    }
+
+    CFRelease(hostRef);
+    return YES;
 }
 
 @end
