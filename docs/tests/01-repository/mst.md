@@ -234,11 +234,11 @@ node_cid = CID(SHA-256(CBOR_encode(node)))
 
 ## Related Documentation
 
-- [Folder README](README.md) - Repository tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [CAR & CBOR Tests](car-cbor.md) - CAR file format tests
-- [Primitives Tests](primitives.md) - Core data type tests
-- [Database Tests](../03-database/actor-store.md) - Actor store persistence
-- [Integration Tests](../06-integration/e2e.md) - Commit chain integrity
-- [Characterization Tests](../08-characterization/characterization.md) - Reference compliance
-- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - Secp256k1 signing
+- [Folder README](README) - Repository tests overview
+- [Test Index](../README) - Main test documentation index
+- [CAR & CBOR Tests](car-cbor) - CAR file format tests
+- [Primitives Tests](primitives) - Core data type tests
+- [Database Tests](../03-database/actor-store) - Actor store persistence
+- [Integration Tests](../06-integration/e2e) - Commit chain integrity
+- [Characterization Tests](../08-characterization/characterization) - Reference compliance
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto) - Secp256k1 signing

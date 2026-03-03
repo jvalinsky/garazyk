@@ -329,7 +329,7 @@ Refresh tokens are long-lived tokens used to obtain new access tokens without re
 
 ## Next Steps
 
-- **[CBOR and CAR](./cbor-and-car.md)** — Data serialization formats
-- **[MST Trees](./mst-trees.md)** — Merkle Search Tree details
-- **[Cryptography](./cryptography.md)** — Cryptographic operations
-- **[Application Layer](../03-application-layer/pds-application.md)** — Service implementation
+- **[CBOR and CAR](./cbor-and-car)** — Data serialization formats
+- **[MST Trees](./mst-trees)** — Merkle Search Tree details
+- **[Cryptography](./cryptography)** — Cryptographic operations
+- **[Application Layer](../03-application-layer/pds-application)** — Service implementation

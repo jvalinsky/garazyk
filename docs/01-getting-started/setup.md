@@ -245,7 +245,7 @@ Create `config.json` in the repository root:
 
 ### Production Mode
 
-For production deployment, see [Production Deployment Guide](../10-tutorials/tutorial-6-deployment.md).
+For production deployment, see [Production Deployment Guide](../10-tutorials/tutorial-6-deployment).
 
 ## Verifying Installation
 
@@ -387,10 +387,10 @@ docker run -it \
 
 ## Next Steps
 
-- **[Architecture Overview](./architecture-overview.md)** — Understand system design
-- **[Core Concepts](../02-core-concepts/atproto-basics.md)** — Learn AT Protocol basics
-- **[Tutorials](../10-tutorials/tutorial-1-hello-pds.md)** — Hands-on learning
-- **[Reference](../11-reference/cli-reference.md)** — CLI command reference
+- **[Architecture Overview](./architecture-overview)** — Understand system design
+- **[Core Concepts](../02-core-concepts/atproto-basics)** — Learn AT Protocol basics
+- **[Tutorials](../10-tutorials/tutorial-1-hello-pds)** — Hands-on learning
+- **[Reference](../11-reference/cli-reference)** — CLI command reference
 
 ## Getting Help
 

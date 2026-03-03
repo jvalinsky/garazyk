@@ -363,6 +363,6 @@ sudo apt-get install clang
 
 ## Next Steps
 
-- **[Compatibility Layer](./compatibility-layer.md)** — Compat shims
-- **[Network Transport](./network-transport.md)** — Network I/O
-- **[ARC Runtime](./arc-runtime.md)** — Memory management
+- **[Compatibility Layer](./compatibility-layer)** — Compat shims
+- **[Network Transport](./network-transport)** — Network I/O
+- **[ARC Runtime](./arc-runtime)** — Memory management

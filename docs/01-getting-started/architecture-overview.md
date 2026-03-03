@@ -330,7 +330,7 @@ Common error codes:
 
 ## Next Steps
 
-- **[Setup Guide](./setup.md)** — Platform-specific setup
-- **[Core Concepts](../02-core-concepts/atproto-basics.md)** — AT Protocol fundamentals
-- **[Application Layer](../03-application-layer/pds-application.md)** — Service architecture
-- **[Network Layer](../04-network-layer/http-server.md)** — HTTP and XRPC details
+- **[Setup Guide](./setup)** — Platform-specific setup
+- **[Core Concepts](../02-core-concepts/atproto-basics)** — AT Protocol fundamentals
+- **[Application Layer](../03-application-layer/pds-application)** — Service architecture
+- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC details

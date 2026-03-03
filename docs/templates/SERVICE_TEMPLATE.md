@@ -255,9 +255,9 @@ if (result) {
 
 ## See Also
 
-- [Related Documentation 1](../path/to/doc1.md)
-- [Related Documentation 2](../path/to/doc2.md)
-- [Related Documentation 3](../path/to/doc3.md)
+- [Related Documentation 1](../path/to/doc1)
+- [Related Documentation 2](../path/to/doc2)
+- [Related Documentation 3](../path/to/doc3)
 
 ---
 

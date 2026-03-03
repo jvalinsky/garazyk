@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compatibility Layer - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Compatibility Layer</h1>
+            </div>
+            <h1 id="compatibility-layer">Compatibility Layer</h1>
+<h2 id="overview">Overview</h2>
+<p>The compatibility layer provides platform-agnostic abstractions for platform-specific functionality. It:
+- Abstracts macOS and Linux/GNUstep differences
+- Provides unified APIs for common operations
+- Handles conditional compilation
+- Manages platform-specific dependencies
+- Enables code reuse across platforms</p>
+<h2 id="architecture">Architecture</h2>
+<h3 id="compatibility-shims">Compatibility Shims</h3>
+<pre class="codehilite"><code>┌─────────────────────────────────────────────────────────┐
+│              Application Code                           │
+│  (Uses unified APIs from compatibility layer)           │
+└────────────────────┬────────────────────────────────────┘
+                     │
+        ┌────────────▼────────────────────────────────────┐
+        │      Compatibility Layer (Compat/)              │
+        │  ┌──────────────────────────────────────────┐  │
+        │  │ Logging (os/log.h shim)                  │  │
+        │  │ Security (Security.framework shim)       │  │
+        │  │ Crypto (CommonCrypto shim)               │  │
+        │  │ Network (NSURLSession shim)              │  │
+        │  └──────────────────────────────────────────┘  │
+        └────────────┬─────────────────────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        │                         │
+   ┌────▼────────┐        ┌──────▼──────┐
+   │   macOS     │        │   Linux/    │
+   │  (Xcode)    │        │  GNUstep    │
+   │             │        │             │
+   │ - os/log.h  │        │ - syslog    │
+   │ - Security  │        │ - OpenSSL   │
+   │ - CommonCrypto       │ - GnuTLS    │
+   │ - NSURLSession       │ - libcurl   │
+   └─────────────┘        └─────────────┘
+</code></pre>
+
+<h2 id="foundation-framework-compatibility">Foundation Framework Compatibility</h2>
+<h3 id="problem-foundation-differences">Problem: Foundation Differences</h3>
+<p>macOS uses Apple's Foundation framework, while Linux/GNUstep uses GNUstep's Foundation implementation. Some APIs differ between platforms.</p>
+<h3 id="solution-foundation-shim">Solution: Foundation Shim</h3>
+<p>The compatibility layer provides a unified Foundation import:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/Foundation/Foundation.h
+#ifndef Foundation_h
+#define Foundation_h
+
+#ifdef __APPLE__
+#import &lt;Foundation/Foundation.h&gt;
+#else
+#import &lt;GNUstepBase/Foundation.h&gt;
+#endif
+
+#endif /* Foundation_h */
+</code></pre>
+
+<h3 id="nserror-compatibility">NSError Compatibility</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/Foundation/NSErrorCompat.h
+#ifdef __APPLE__
+#import &lt;Foundation/Foundation.h&gt;
+#else
+#import &lt;GNUstepBase/NSError+GNUstepBase.h&gt;
+#endif
+</code></pre>
+
+<h3 id="nsdata-compatibility">NSData Compatibility</h3>
+<p>GNUstep's NSData lacks some methods available on macOS:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/Foundation/NSDataCompat.h
+#if !defined(__APPLE__)
+
+typedef NSUInteger NSDataReadingOptions;
+
+@interface NSData (GNUstepCompat)
+
++ (nullable NSData *)dataWithContentsOfFile:(NSString *)path
+                                    options:(NSDataReadingOptions)readOptionsMask
+                                      error:(NSError * _Nullable * _Nullable)errorPtr;
+
+@end
+
+#endif
+</code></pre>
+
+<h3 id="xctest-compatibility">XCTest Compatibility</h3>
+<p>Linux/GNUstep doesn't have native XCTest. The compatibility layer provides XCTest-compatible testing:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/LinuxXCTestCompat.h
+#ifdef __APPLE__
+#import &lt;XCTest/XCTest.h&gt;
+#else
+
+#import &lt;Foundation/Foundation.h&gt;
+
+@interface XCTestCase : NSObject
+- (void)setUp;
+- (void)tearDown;
+@end
+
+@interface XCTestSuite : XCTestCase
++ (id)defaultTestSuite;
+- (void)addTest:(XCTestCase *)test;
+@end
+
+// Assertion macros
+#define XCTAssertTrue(condition) do { if (!(condition)) { NSLog(@&quot;XCTAssertTrue failed: %s&quot;, #condition); abort(); } } while(0)
+#define XCTAssertEqual(a, b) do { if ((a) != (b)) { NSLog(@&quot;XCTAssertEqual failed: %@ != %@&quot;, @(a), @(b)); abort(); } } while(0)
+#define XCTAssertEqualObjects(a, b) do { if (![(a) isEqual:(b)]) { NSLog(@&quot;XCTAssertEqualObjects failed: %@ != %@&quot;, a, b); abort(); } } while(0)
+#define XCTAssertNotNil(obj) do { if ((obj) == nil) { NSLog(@&quot;XCTAssertNotNil failed: %s is nil&quot;, #obj); abort(); } } while(0)
+
+#endif
+</code></pre>
+
+<h3 id="type-compatibility">Type Compatibility</h3>
+<p>The compatibility layer defines platform-specific type macros:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSTypes.h
+#if !defined(__APPLE__)
+#import &quot;Foundation/NSDataCompat.h&quot;
+
+// CF Bridging macros for ARC (GNUstep doesn't define these)
+#ifndef CFBridgingRelease
+#define CFBridgingRelease(x) ((__bridge_transfer id)(x))
+#endif
+#ifndef CFBridgingRetain
+#define CFBridgingRetain(x) ((__bridge_retained CFTypeRef)(x))
+#endif
+#endif
+
+/**
+ * @def PDS_GCD_OBJC_SUPPORT
+ * @brief Whether platform supports GCD Objective-C integration.
+ *
+ * macOS: 1 (GCD with Objective-C object support)
+ * Linux: 0 (libdispatch without full Objective-C integration)
+ */
+#if defined(__APPLE__)
+#define PDS_GCD_OBJC_SUPPORT 1
+#else
+#define PDS_GCD_OBJC_SUPPORT 0
+#endif
+
+/**
+ * @def PDS_DISPATCH_QUEUE_STRONG
+ * @brief Property attribute for dispatch queue storage.
+ *
+ * macOS: strong (dispatch_queue_t supports ARC)
+ * Linux: assign (dispatch_queue_t is not ARC-compatible)
+ */
+#if PDS_GCD_OBJC_SUPPORT
+#define PDS_DISPATCH_QUEUE_STRONG strong
+#else
+#define PDS_DISPATCH_QUEUE_STRONG assign
+#endif
+</code></pre>
+
+<h3 id="usage-pattern">Usage Pattern</h3>
+<pre class="codehilite"><code class="language-objc">// In source files, use the compatibility imports
+#import &quot;Compat/Foundation/Foundation.h&quot;
+#import &quot;Compat/PDSTypes.h&quot;
+
+// Use platform-agnostic APIs
+NSData *data = [NSData dataWithContentsOfFile:path options:0 error:&amp;error];
+
+// Use dispatch queues with correct property attributes
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transportQueue;
+</code></pre>
+
+<h2 id="platform-specific-network-io">Platform-Specific Network I/O</h2>
+<h3 id="problem-network-apis-differ">Problem: Network APIs Differ</h3>
+<p>macOS provides the modern Network framework (NW), while Linux uses BSD sockets. Both need to be abstracted.</p>
+<h3 id="solution-network-transport-abstraction">Solution: Network Transport Abstraction</h3>
+<p>The compatibility layer defines a unified protocol for network operations:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Network/PDSNetworkTransport.h
+@protocol PDSNetworkConnection &lt;PDSNetworkTransport&gt;
+
+/*! Callback invoked when connection state changes. */
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkConnectionState state, NSError * _Nullable error);
+
+/*! The remote peer's IP address (for logging/rate limiting). */
+@property (nonatomic, readonly, nullable) NSString *remoteAddress;
+
+/*!
+ @method sendData:completion:
+ @abstract Sends data over the connection.
+ @param data The bytes to transmit.
+ @param completion Callback with error if transmission failed.
+ */
+- (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion;
+
+/*!
+ @method receiveWithMinimumLength:maximumLength:completion:
+ @abstract Receives data from the connection.
+ @param minLength Minimum bytes to receive before calling completion.
+ @param maxLength Maximum bytes to receive in a single callback.
+ @param completion Callback with received data, completion flag, and error.
+ */
+- (void)receiveWithMinimumLength:(NSUInteger)minLength
+                  maximumLength:(NSUInteger)maxLength
+                     completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion;
+
+@end
+
+@protocol PDSNetworkListener &lt;PDSNetworkTransport&gt;
+
+/*! Callback invoked when listener state changes. */
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkListenerState state, NSError * _Nullable error);
+
+/*! Callback invoked when a new connection is accepted. */
+@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id&lt;PDSNetworkConnection&gt; connection);
+
+/*! The port the listener is bound to (valid after reaching Ready state). */
+@property (nonatomic, readonly) NSUInteger port;
+
+@end
+
+@interface PDSNetworkTransportFactory : NSObject
+
++ (id&lt;PDSNetworkListener&gt;)createListenerWithPort:(NSUInteger)port;
++ (id&lt;PDSNetworkListener&gt;)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port;
++ (id&lt;PDSNetworkConnection&gt;)createConnectionWithHost:(NSString *)host port:(NSUInteger)port;
+
+@end
+</code></pre>
+
+<h3 id="macos-implementation-network-framework">macOS Implementation (Network Framework)</h3>
+<p>The macOS implementation uses the modern Network framework:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m
+@implementation PDSNetworkConnectionMac {
+    nw_connection_t _connection;
+}
+
+- (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port {
+    self = [super init];
+    if (self) {
+        nw_endpoint_t endpoint = nw_endpoint_create_host(host.UTF8String, 
+                                                         [[NSString stringWithFormat:@&quot;%lu&quot;, (unsigned long)port] UTF8String]);
+        nw_parameters_t parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, 
+                                                                     NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        _connection = nw_connection_create(endpoint, parameters);
+        [self setupHandlers];
+    }
+    return self;
+}
+
+- (void)setupHandlers {
+    __weak typeof(self) weakSelf = self;
+    nw_connection_set_state_changed_handler(_connection, ^(nw_connection_state_t state, nw_error_t error) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+
+        void (^handler)(PDSNetworkConnectionState, NSError * _Nullable) = strongSelf.stateChangedHandler;
+        if (handler) {
+            PDSNetworkConnectionState pdsState;
+            switch (state) {
+                case nw_connection_state_waiting: pdsState = PDSNetworkConnectionStateWaiting; break;
+                case nw_connection_state_preparing: pdsState = PDSNetworkConnectionStatePreparing; break;
+                case nw_connection_state_ready: pdsState = PDSNetworkConnectionStateReady; break;
+                case nw_connection_state_failed: pdsState = PDSNetworkConnectionStateFailed; break;
+                case nw_connection_state_cancelled: pdsState = PDSNetworkConnectionStateCancelled; break;
+                default: pdsState = PDSNetworkConnectionStateWaiting; break;
+            }
+            NSError *nsError = nil;
+            if (error) {
+                nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
+            }
+            handler(pdsState, nsError);
+        }
+    });
+}
+
+- (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
+    dispatch_data_t ddata = dispatch_data_create(data.bytes, data.length, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+    nw_connection_send(_connection, ddata, _nw_content_context_default_message, true, ^(nw_error_t sendError) {
+        if (completion) {
+            NSError *nsError = nil;
+            if (sendError) {
+                nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(sendError);
+            }
+            completion(nsError);
+        }
+    });
+}
+
+@end
+
+@implementation PDSNetworkListenerMac {
+    nw_listener_t _listener;
+}
+
+- (instancetype)initWithHost:(NSString * _Nullable)host port:(NSUInteger)port {
+    self = [super init];
+    if (self) {
+        _port = port;
+        nw_parameters_t parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, 
+                                                                     NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        char portStr[16];
+        snprintf(portStr, sizeof(portStr), &quot;%lu&quot;, (unsigned long)port);
+        if (host.length &gt; 0) {
+            nw_endpoint_t localEndpoint = nw_endpoint_create_host(host.UTF8String, portStr);
+            nw_parameters_set_local_endpoint(parameters, localEndpoint);
+            _listener = nw_listener_create(parameters);
+        } else {
+            _listener = nw_listener_create_with_port(portStr, parameters);
+        }
+
+        if (!_listener) {
+            return nil;
+        }
+
+        __weak typeof(self) weakSelf = self;
+        nw_listener_set_state_changed_handler(_listener, ^(nw_listener_state_t state, nw_error_t error) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            void (^handler)(PDSNetworkListenerState, NSError * _Nullable) = strongSelf.stateChangedHandler;
+            if (handler) {
+                PDSNetworkListenerState pdsState;
+                switch (state) {
+                    case nw_listener_state_waiting: pdsState = PDSNetworkListenerStateWaiting; break;
+                    case nw_listener_state_ready: 
+                        pdsState = PDSNetworkListenerStateReady;
+                        strongSelf-&gt;_port = nw_listener_get_port(strongSelf-&gt;_listener);
+                        break;
+                    case nw_listener_state_failed: pdsState = PDSNetworkListenerStateFailed; break;
+                    case nw_listener_state_cancelled: pdsState = PDSNetworkListenerStateCancelled; break;
+                    default: pdsState = PDSNetworkListenerStateWaiting; break;
+                }
+                NSError *nsError = nil;
+                if (error) {
+                    nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
+                }
+                handler(pdsState, nsError);
+            }
+        });
+
+        nw_listener_set_new_connection_handler(_listener, ^(nw_connection_t connection) {
+            if (!connection) return;
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            void (^handler)(id&lt;PDSNetworkConnection&gt;) = strongSelf.newConnectionHandler;
+            if (handler) {
+                PDSNetworkConnectionMac *pdsConn = [[PDSNetworkConnectionMac alloc] initWithConnection:connection];
+                handler(pdsConn);
+            }
+        });
+    }
+    return self;
+}
+
+@end
+</code></pre>
+
+<h3 id="linux-implementation-bsd-sockets">Linux Implementation (BSD Sockets)</h3>
+<p>The Linux implementation uses BSD sockets with dispatch sources for async I/O:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m
+@implementation PDSNetworkConnectionLinux {
+    int _sockfd;
+    dispatch_source_t _connectSource;
+    dispatch_source_t _readSource;
+    dispatch_source_t _writeSource;
+    dispatch_queue_t _queue;
+    NSMutableData *_inputBuffer;
+    NSMutableArray&lt;PDSReadRequest *&gt; *_readRequests;
+    NSMutableData *_writeBuffer;
+    NSUInteger _writeOffset;
+}
+
+- (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port {
+    self = [super init];
+    if (self) {
+        _sockfd = -1;
+        _host = [host copy];
+        _port = port;
+        _remoteAddress = [NSString stringWithFormat:@&quot;%@:%lu&quot;, host, (unsigned long)port];
+        _inputBuffer = [NSMutableData data];
+        _readRequests = [NSMutableArray array];
+        _writeBuffer = [NSMutableData data];
+        _writeOffset = 0;
+    }
+    return self;
+}
+
+- (void)startWithQueue:(dispatch_queue_t)queue {
+    _queue = queue;
+    if (_sockfd == -1) {
+        dispatch_async(queue, ^{
+            [self beginOutboundConnect];
+        });
+        return;
+    }
+    [self setupSources];
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+    }
+}
+
+- (void)beginOutboundConnect {
+    char portString[16];
+    snprintf(portString, sizeof(portString), &quot;%lu&quot;, (unsigned long)_port);
+
+    struct addrinfo hints;
+    memset(&amp;hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_family = AF_UNSPEC;
+
+    struct addrinfo *res = NULL;
+    int gai = getaddrinfo([_host UTF8String], portString, &amp;hints, &amp;res);
+    if (gai != 0 || res == NULL) {
+        if (self.stateChangedHandler) {
+            NSString *message = gai != 0 ? [NSString stringWithUTF8String:gai_strerror(gai)] : @&quot;No address candidates&quot;;
+            self.stateChangedHandler(PDSNetworkConnectionStateFailed,
+                                     [NSError errorWithDomain:@&quot;PDSNetworkTransport&quot;
+                                                         code:-2
+                                                     userInfo:@{NSLocalizedDescriptionKey: message ?: @&quot;Address resolution failed&quot;}]);
+        }
+        return;
+    }
+
+    _connectAddrInfo = res;
+    _connectAddrInfoCurrent = res;
+    [self startConnectToNextCandidate];
+}
+
+- (void)startConnectToNextCandidate {
+    while (_connectAddrInfoCurrent != NULL) {
+        struct addrinfo *ai = _connectAddrInfoCurrent;
+        _connectAddrInfoCurrent = ai-&gt;ai_next;
+
+        int fd = socket(ai-&gt;ai_family, ai-&gt;ai_socktype, ai-&gt;ai_protocol);
+        if (fd == -1) {
+            continue;
+        }
+
+        int flags = fcntl(fd, F_GETFL, 0);
+        if (flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+            close(fd);
+            continue;
+        }
+
+        int result = connect(fd, ai-&gt;ai_addr, (socklen_t)ai-&gt;ai_addrlen);
+        if (result == 0) {
+            _sockfd = fd;
+            [self setupSources];
+            if (self.stateChangedHandler) {
+                self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+            }
+            return;
+        }
+
+        if (errno == EINPROGRESS) {
+            _sockfd = fd;
+            __weak typeof(self) weakSelf = self;
+            _connectSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, _sockfd, 0, _queue);
+            dispatch_source_set_event_handler(_connectSource, ^{
+                [weakSelf handleConnectCompletion];
+            });
+            dispatch_resume(_connectSource);
+            return;
+        }
+
+        close(fd);
+    }
+
+    NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno 
+                                    userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to connect&quot;}];
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkConnectionStateFailed, error);
+    }
+}
+
+- (void)setupSources {
+    __weak typeof(self) weakSelf = self;
+
+    _readSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, _sockfd, 0, _queue);
+    dispatch_source_set_event_handler(_readSource, ^{
+        [weakSelf handleRead];
+    });
+    dispatch_resume(_readSource);
+}
+
+- (void)handleRead {
+    uint8_t buffer[4096];
+    ssize_t received = recv(_sockfd, buffer, sizeof(buffer), 0);
+
+    if (received &gt; 0) {
+        [_inputBuffer appendBytes:buffer length:received];
+        [self processReadRequests:NO error:nil];
+    } else if (received == 0) {
+        [self processReadRequests:YES error:nil];
+        [self cancel];
+    } else {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return;
+        }
+        NSError *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        [self processReadRequests:YES error:error];
+        [self cancel];
+    }
+}
+
+- (void)sendData:(NSData *)data completion:(void (^ _Nullable)(NSError * _Nullable error))completion {
+    if (![self isOnTransportQueue] &amp;&amp; _queue != NULL) {
+        NSData *copiedData = [data copy];
+        void (^copiedCompletion)(NSError * _Nullable) = completion ? [completion copy] : nil;
+        dispatch_async(_queue, ^{
+            [self sendData:copiedData completion:copiedCompletion];
+        });
+        return;
+    }
+
+    if (_sockfd == -1) {
+        if (completion) {
+            completion([NSError errorWithDomain:NSPOSIXErrorDomain
+                                           code:ENOTCONN
+                                       userInfo:@{NSLocalizedDescriptionKey: @&quot;Socket is not connected&quot;}]);
+        }
+        return;
+    }
+
+    ssize_t sent = send(_sockfd, data.bytes, data.length, 0);
+
+    if (sent == -1) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            [_writeBuffer setData:data];
+            _writeOffset = 0;
+            [self ensureWriteSource];
+            return;
+        }
+        NSError *sendError = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        if (completion) completion(sendError);
+        return;
+    } else if ((NSUInteger)sent &lt; data.length) {
+        [_writeBuffer setData:data];
+        _writeOffset = sent;
+        [self ensureWriteSource];
+        return;
+    }
+
+    if (completion) completion(nil);
+}
+
+@end
+
+@implementation PDSNetworkListenerLinux {
+    int _listenfd;
+    dispatch_source_t _source;
+    dispatch_queue_t _queue;
+}
+
+- (void)startWithQueue:(dispatch_queue_t)queue {
+    _queue = queue;
+
+    _listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (_listenfd == -1) {
+        [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+        return;
+    }
+
+    int opt = 1;
+    setsockopt(_listenfd, SOL_SOCKET, SO_REUSEADDR, &amp;opt, sizeof(opt));
+
+    struct sockaddr_in addr;
+    memset(&amp;addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons((uint16_t)_port);
+
+    if (bind(_listenfd, (struct sockaddr *)&amp;addr, sizeof(addr)) == -1) {
+        NSError *bindError = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+        close(_listenfd);
+        _listenfd = -1;
+        [self failWithError:bindError];
+        return;
+    }
+
+    if (listen(_listenfd, 128) == -1) {
+        [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+        return;
+    }
+
+    // Set non-blocking
+    int flags = fcntl(_listenfd, F_GETFL, 0);
+    fcntl(_listenfd, F_SETFL, flags | O_NONBLOCK);
+
+    __weak typeof(self) weakSelf = self;
+    _source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, _listenfd, 0, _queue);
+    dispatch_source_set_event_handler(_source, ^{
+        [weakSelf handleAccept];
+    });
+
+    dispatch_resume(_source);
+
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkListenerStateReady, nil);
+    }
+}
+
+- (void)handleAccept {
+    struct sockaddr_in addr;
+    socklen_t addrlen = sizeof(addr);
+    int clientfd = accept(_listenfd, (struct sockaddr *)&amp;addr, &amp;addrlen);
+    if (clientfd == -1) return;
+
+    if (self.newConnectionHandler) {
+        NSString *address = [NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)];
+        PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:clientfd address:address];
+        self.newConnectionHandler(conn);
+    } else {
+        close(clientfd);
+    }
+}
+
+@end
+</code></pre>
+
+<h3 id="factory-pattern">Factory Pattern</h3>
+<p>Both implementations are created through a factory that selects the appropriate implementation:</p>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Network/PDSNetworkTransport.h
+@interface PDSNetworkTransportFactory : NSObject
+
++ (id&lt;PDSNetworkListener&gt;)createListenerWithPort:(NSUInteger)port;
++ (id&lt;PDSNetworkListener&gt;)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port;
++ (id&lt;PDSNetworkConnection&gt;)createConnectionWithHost:(NSString *)host port:(NSUInteger)port;
+
+@end
+</code></pre>
+
+<p>The factory implementation is platform-specific:</p>
+<pre class="codehilite"><code class="language-objc">// macOS version (in PDSNetworkTransportMac.m)
+@implementation PDSNetworkTransportFactory
+
++ (id&lt;PDSNetworkListener&gt;)createListenerWithPort:(NSUInteger)port {
+    return [[PDSNetworkListenerMac alloc] initWithPort:port];
+}
+
++ (id&lt;PDSNetworkConnection&gt;)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
+    return [[PDSNetworkConnectionMac alloc] initWithHost:host port:port];
+}
+
+@end
+
+// Linux version (in PDSNetworkTransportLinux.m)
+#ifndef __APPLE__
+@implementation PDSNetworkTransportFactory
+
++ (id&lt;PDSNetworkListener&gt;)createListenerWithPort:(NSUInteger)port {
+    return [[PDSNetworkListenerLinux alloc] initWithPort:port];
+}
+
++ (id&lt;PDSNetworkConnection&gt;)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
+    return [[PDSNetworkConnectionLinux alloc] initWithHost:host port:port];
+}
+
+@end
+#endif
+</code></pre>
+
+<h3 id="usage-pattern_1">Usage Pattern</h3>
+<p>Application code uses the factory without knowing the platform:</p>
+<pre class="codehilite"><code class="language-objc">// In application code
+id&lt;PDSNetworkListener&gt; listener = [PDSNetworkTransportFactory createListenerWithPort:2583];
+
+listener.stateChangedHandler = ^(PDSNetworkListenerState state, NSError *error) {
+    if (state == PDSNetworkListenerStateReady) {
+        NSLog(@&quot;Listening on port %lu&quot;, listener.port);
+    }
+};
+
+listener.newConnectionHandler = ^(id&lt;PDSNetworkConnection&gt; connection) {
+    connection.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError *error) {
+        if (state == PDSNetworkConnectionStateReady) {
+            NSLog(@&quot;Connection from %@&quot;, connection.remoteAddress);
+        }
+    };
+
+    [connection receiveWithMinimumLength:1 maximumLength:4096 
+                              completion:^(NSData *data, BOOL isComplete, NSError *error) {
+        if (data) {
+            NSLog(@&quot;Received %lu bytes&quot;, data.length);
+        }
+    }];
+};
+
+[listener startWithQueue:dispatch_get_main_queue()];
+</code></pre>
+
+<h2 id="commoncrypto-compatibility">CommonCrypto Compatibility</h2>
+<h3 id="problem-commoncrypto-on-gnustep">Problem: CommonCrypto on GNUstep</h3>
+<p>macOS provides <code>CommonCrypto</code> for cryptographic operations, but GNUstep uses OpenSSL.</p>
+<h3 id="solution-crypto-shim">Solution: Crypto Shim</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSCrypto.h
+#ifndef PDS_CRYPTO_H
+#define PDS_CRYPTO_H
+
+#import &lt;Foundation/Foundation.h&gt;
+
+@interface PDSCryptoManager : NSObject
+
++ (NSData *)sha256:(NSData *)data;
++ (NSData *)sha1:(NSData *)data;
++ (NSData *)hmacSHA256:(NSData *)data withKey:(NSData *)key;
++ (NSData *)generateECDSAP256KeyPair:(NSData **)publicKey error:(NSError **)error;
++ (NSData *)signData:(NSData *)data withPrivateKey:(NSData *)privateKey error:(NSError **)error;
++ (BOOL)verifySignature:(NSData *)signature 
+               forData:(NSData *)data 
+          withPublicKey:(NSData *)publicKey 
+                 error:(NSError **)error;
+
+@end
+
+#endif
+</code></pre>
+
+<h3 id="implementation">Implementation</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSCrypto.m
+#import &quot;PDSCrypto.h&quot;
+
+#if __APPLE__
+    #import &lt;CommonCrypto/CommonCrypto.h&gt;
+#else
+    #import &lt;openssl/sha.h&gt;
+    #import &lt;openssl/hmac.h&gt;
+    #import &lt;openssl/ec.h&gt;
+    #import &lt;openssl/ecdsa.h&gt;
+#endif
+
+@implementation PDSCryptoManager
+
++ (NSData *)sha256:(NSData *)data {
+#if __APPLE__
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
+    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+#else
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    SHA256_CTX ctx;
+    SHA256_Init(&amp;ctx);
+    SHA256_Update(&amp;ctx, data.bytes, data.length);
+    SHA256_Final(digest, &amp;ctx);
+    return [NSData dataWithBytes:digest length:SHA256_DIGEST_LENGTH];
+#endif
+}
+
++ (NSData *)hmacSHA256:(NSData *)data withKey:(NSData *)key {
+#if __APPLE__
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CCHmac(kCCHmacAlgSHA256, key.bytes, key.length, data.bytes, data.length, digest);
+    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+#else
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    unsigned int digestLength = 0;
+
+    HMAC(EVP_sha256(), key.bytes, (int)key.length, data.bytes, (int)data.length, 
+         digest, &amp;digestLength);
+
+    return [NSData dataWithBytes:digest length:digestLength];
+#endif
+}
+
++ (NSData *)generateECDSAP256KeyPair:(NSData **)publicKey 
+                               error:(NSError **)error {
+#if __APPLE__
+    // Use Security.framework on macOS
+    NSDictionary *attributes = @{
+        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
+        (__bridge id)kSecAttrKeySizeInBits: @256
+    };
+
+    SecKeyRef privateKeyRef = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, 
+                                                    (CFErrorRef *)error);
+    if (!privateKeyRef) {
+        return nil;
+    }
+
+    SecKeyRef publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
+
+    NSData *privateKeyData = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(privateKeyRef, 
+                                                                                          (CFErrorRef *)error);
+    *publicKey = (__bridge_transfer NSData *)SecKeyCopyExternalRepresentation(publicKeyRef, 
+                                                                              (CFErrorRef *)error);
+
+    CFRelease(privateKeyRef);
+    CFRelease(publicKeyRef);
+
+    return privateKeyData;
+#else
+    // Use OpenSSL on GNUstep
+    EC_KEY *ecKey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+    if (!ecKey) {
+        *error = [NSError errorWithDomain:@&quot;PDSCrypto&quot; code:1 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to create EC key&quot;}];
+        return nil;
+    }
+
+    if (!EC_KEY_generate_key(ecKey)) {
+        EC_KEY_free(ecKey);
+        *error = [NSError errorWithDomain:@&quot;PDSCrypto&quot; code:2 
+            userInfo:@{NSLocalizedDescriptionKey: @&quot;Failed to generate key&quot;}];
+        return nil;
+    }
+
+    // Extract private key
+    const BIGNUM *priv = EC_KEY_get0_private_key(ecKey);
+    int privLen = BN_num_bytes(priv);
+    unsigned char *privBytes = malloc(privLen);
+    BN_bn2bin(priv, privBytes);
+    NSData *privateKeyData = [NSData dataWithBytes:privBytes length:privLen];
+    free(privBytes);
+
+    // Extract public key
+    const EC_POINT *pub = EC_KEY_get0_public_key(ecKey);
+    int pubLen = EC_POINT_point2oct(EC_KEY_get0_group(ecKey), pub, 
+                                    POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    unsigned char *pubBytes = malloc(pubLen);
+    EC_POINT_point2oct(EC_KEY_get0_group(ecKey), pub, POINT_CONVERSION_UNCOMPRESSED, 
+                       pubBytes, pubLen, NULL);
+    *publicKey = [NSData dataWithBytes:pubBytes length:pubLen];
+    free(pubBytes);
+
+    EC_KEY_free(ecKey);
+
+    return privateKeyData;
+#endif
+}
+
+@end
+</code></pre>
+
+<h2 id="conditional-compilation">Conditional Compilation</h2>
+<h3 id="platform-detection">Platform Detection</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSPlatform.h
+#ifndef PDS_PLATFORM_H
+#define PDS_PLATFORM_H
+
+#if __APPLE__
+    #define PDS_PLATFORM_MACOS 1
+    #define PDS_PLATFORM_LINUX 0
+#elif TARGET_OS_LINUX
+    #define PDS_PLATFORM_MACOS 0
+    #define PDS_PLATFORM_LINUX 1
+#else
+    #error &quot;Unsupported platform&quot;
+#endif
+
+// Platform-specific macros
+#if PDS_PLATFORM_MACOS
+    #define PDS_AVAILABLE_MACOS(version) __attribute__((availability(macos, introduced=version)))
+    #define PDS_AVAILABLE_LINUX(version)
+#else
+    #define PDS_AVAILABLE_MACOS(version)
+    #define PDS_AVAILABLE_LINUX(version)
+#endif
+
+#endif
+</code></pre>
+
+<h3 id="usage">Usage</h3>
+<pre class="codehilite"><code class="language-objc">// In source files
+#import &quot;PDSPlatform.h&quot;
+
+#if PDS_PLATFORM_MACOS
+    // macOS-specific code
+    [self setupMacOSSpecificFeatures];
+#elif PDS_PLATFORM_LINUX
+    // Linux/GNUstep-specific code
+    [self setupLinuxSpecificFeatures];
+#endif
+</code></pre>
+
+<h2 id="arc-runtime-compatibility">ARC Runtime Compatibility</h2>
+<h3 id="problem-arc-on-gnustep">Problem: ARC on GNUstep</h3>
+<p>Both macOS and GNUstep support ARC, but with different runtime implementations.</p>
+<h3 id="solution-arc-shim">Solution: ARC Shim</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSMemory.h
+#ifndef PDS_MEMORY_H
+#define PDS_MEMORY_H
+
+#import &lt;Foundation/Foundation.h&gt;
+
+@interface PDSMemoryManager : NSObject
+
++ (void)autoreleasePool:(void (^)(void))block;
++ (void)retainObject:(id)object;
++ (void)releaseObject:(id)object;
++ (NSUInteger)retainCount:(id)object;
+
+@end
+
+#endif
+</code></pre>
+
+<h3 id="implementation_1">Implementation</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Sources/Compat/PDSMemory.m
+#import &quot;PDSMemory.h&quot;
+
+@implementation PDSMemoryManager
+
++ (void)autoreleasePool:(void (^)(void))block {
+    @autoreleasepool {
+        block();
+    }
+}
+
++ (void)retainObject:(id)object {
+    // ARC handles this automatically
+    // This is for explicit reference counting if needed
+    #if !__has_feature(objc_arc)
+        [object retain];
+    #endif
+}
+
++ (void)releaseObject:(id)object {
+    // ARC handles this automatically
+    #if !__has_feature(objc_arc)
+        [object release];
+    #endif
+}
+
++ (NSUInteger)retainCount:(id)object {
+    #if !__has_feature(objc_arc)
+        return [object retainCount];
+    #else
+        // ARC: return 1 (simplified)
+        return 1;
+    #endif
+}
+
+@end
+</code></pre>
+
+<h2 id="framework-availability">Framework Availability</h2>
+<h3 id="checking-framework-availability">Checking Framework Availability</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication.m
+- (void)initializeCompatibilityLayer {
+    // Check for macOS-specific frameworks
+    #if __APPLE__
+        if (@available(macOS 10.15, *)) {
+            // Use os/log.h
+            [self setupOSLogging];
+        } else {
+            // Fall back to NSLog
+            [self setupNSLogging];
+        }
+    #else
+        // GNUstep: use syslog
+        [self setupSyslogLogging];
+    #endif
+}
+</code></pre>
+
+<h2 id="testing-compatibility">Testing Compatibility</h2>
+<h3 id="platform-specific-tests">Platform-Specific Tests</h3>
+<pre class="codehilite"><code class="language-objc">// In ATProtoPDS/Tests/CompatibilityTests.m
+@interface CompatibilityTests : XCTestCase
+@end
+
+@implementation CompatibilityTests
+
+- (void)testLoggingShim {
+    // Test logging on both platforms
+    PDSLog(&quot;Test message&quot;);
+    XCTAssertTrue(YES);  // If we get here, logging works
+}
+
+- (void)testCryptoShim {
+    NSData *randomData = [PDSCryptoManager generateRandomBytes:32];
+    XCTAssertEqual(randomData.length, 32);
+}
+
+- (void)testSecurityShim {
+    NSData *encrypted = [PDSSecurityManager encryptData:[@&quot;test&quot; dataUsingEncoding:NSUTF8StringEncoding]
+                                                withKey:[@&quot;key&quot; dataUsingEncoding:NSUTF8StringEncoding]
+                                                  error:nil];
+    XCTAssertNotNil(encrypted);
+}
+
+#if PDS_PLATFORM_MACOS
+- (void)testMacOSSpecificFeatures {
+    // macOS-specific tests
+}
+#endif
+
+#if PDS_PLATFORM_LINUX
+- (void)testLinuxSpecificFeatures {
+    // Linux-specific tests
+}
+#endif
+
+@end
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Use compatibility shims</strong> — Never use platform-specific APIs directly</li>
+<li><strong>Centralize platform detection</strong> — Use PDSPlatform.h for all checks</li>
+<li><strong>Test on both platforms</strong> — Verify code works on macOS and Linux</li>
+<li><strong>Document platform differences</strong> — Clearly mark platform-specific behavior</li>
+<li><strong>Minimize conditional compilation</strong> — Keep #if blocks small and focused</li>
+<li><strong>Provide fallbacks</strong> — Always have a fallback for unsupported features</li>
+<li><strong>Use feature detection</strong> — Check for features, not just platform</li>
+<li><strong>Keep shims simple</strong> — Avoid complex logic in compatibility layer</li>
+</ol>
+<h2 id="common-pitfalls">Common Pitfalls</h2>
+<ol>
+<li><strong>Forgetting GNUstep limitations</strong> — NSURLSession is declarations-only</li>
+<li><strong>Using macOS-only frameworks</strong> — Security.framework, os/log.h</li>
+<li><strong>Assuming CommonCrypto availability</strong> — Use OpenSSL on GNUstep</li>
+<li><strong>Incorrect conditional compilation</strong> — Use TARGET_OS_LINUX, not <strong>linux</strong></li>
+<li><strong>Memory management differences</strong> — ARC works differently on GNUstep</li>
+<li><strong>Missing error handling</strong> — Platform-specific code may fail differently</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./network-transport.md">Network Transport</a></strong> — Platform-specific network I/O</li>
+<li><strong><a href="./arc-runtime.md">ARC Runtime</a></strong> — ARC considerations</li>
+<li><strong><a href="./macos-linux.md">macOS/Linux</a></strong> — Platform overview</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

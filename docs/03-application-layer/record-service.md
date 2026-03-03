@@ -575,6 +575,6 @@ if (!result && error.code == 409) {
 
 ## See Also
 
-- [Repository Service](./repository-service.md)
-- [Services Overview](./services-overview.md)
-- [Repository Basics](../07-repository-protocol/repository-basics.md)
+- [Repository Service](./repository-service)
+- [Services Overview](./services-overview)
+- [Repository Basics](../07-repository-protocol/repository-basics)

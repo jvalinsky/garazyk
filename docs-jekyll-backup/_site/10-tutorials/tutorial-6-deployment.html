@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 6: Production Deployment - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Tutorial 6: Production Deployment</h1>
+            </div>
+            <h1 id="tutorial-6-production-deployment">Tutorial 6: Production Deployment</h1>
+<h2 id="overview">Overview</h2>
+<p>This tutorial guides you through deploying an ATProto PDS to production using Docker, covering configuration, security, monitoring, and maintenance. We'll deploy a production-ready instance with proper security defaults, automated backups, and reverse proxy integration.</p>
+<p><strong>What you'll learn:</strong>
+- Docker-based production deployment
+- Security configuration and hardening
+- Reverse proxy setup (nginx)
+- Automated backup strategies
+- Monitoring and maintenance
+- Troubleshooting production issues</p>
+<p><strong>Prerequisites:</strong>
+- Completed Tutorials 1-5 (understanding of PDS architecture)
+- Linux server with Docker installed
+- Domain name with DNS configured
+- Basic understanding of nginx and TLS certificates</p>
+<p><strong>Time to complete:</strong> 60-90 minutes</p>
+<hr />
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p>Production deployment architecture:</p>
+<pre class="codehilite"><code>Internet
+    │
+    ▼
+[TLS Termination]
+    │ (nginx on port 443)
+    ▼
+[Reverse Proxy]
+    │ (nginx forwards to localhost:2583)
+    ▼
+[Docker Container]
+    │ (PDS running on port 2583)
+    ▼
+[Persistent Volume]
+    │ (SQLite databases, blobs, config)
+</code></pre>
+
+<p><strong>Key components:</strong>
+- <strong>nginx</strong>: TLS termination, rate limiting, proxy headers
+- <strong>Docker</strong>: Containerized PDS with GNUstep runtime
+- <strong>Volume</strong>: Persistent storage for databases and blobs
+- <strong>Config</strong>: Read-only mounted configuration file</p>
+<hr />
+<h2 id="step-1-prepare-the-server">Step 1: Prepare the Server</h2>
+<h3 id="11-system-requirements">1.1 System Requirements</h3>
+<p><strong>Minimum specifications:</strong>
+- 2 CPU cores
+- 4 GB RAM
+- 50 GB SSD storage
+- Ubuntu 22.04 LTS or similar</p>
+<p><strong>Install dependencies:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Update system
+sudo apt-get update &amp;&amp; sudo apt-get upgrade -y
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+
+# Install nginx
+sudo apt-get install -y nginx certbot python3-certbot-nginx
+
+# Install SQLite tools (for backups)
+sudo apt-get install -y sqlite3
+
+# Log out and back in for Docker group to take effect
+</code></pre>
+
+<h3 id="12-create-directory-structure">1.2 Create Directory Structure</h3>
+<pre class="codehilite"><code class="language-bash"># Create deployment directory
+sudo mkdir -p /opt/atprotopds
+cd /opt/atprotopds
+
+# Create subdirectories
+sudo mkdir -p docker/pds
+sudo mkdir -p backups
+sudo mkdir -p logs
+
+# Set ownership
+sudo chown -R $USER:$USER /opt/atprotopds
+</code></pre>
+
+<hr />
+<h2 id="step-2-build-the-docker-image">Step 2: Build the Docker Image</h2>
+<h3 id="21-clone-the-repository">2.1 Clone the Repository</h3>
+<pre class="codehilite"><code class="language-bash">cd /opt/atprotopds
+git clone https://github.com/yourusername/atprotopds.git src
+cd src
+
+# Initialize submodules (required for secp256k1)
+git submodule update --init --recursive
+</code></pre>
+
+<h3 id="22-build-the-image">2.2 Build the Image</h3>
+<p>The multi-stage Dockerfile builds GNUstep runtime and PDS:</p>
+<pre class="codehilite"><code class="language-bash"># Build from the GNUstep Dockerfile
+docker build -f docker/Dockerfile.gnustep -t nspds:local .
+
+# This takes 15-30 minutes on first build
+# Stages:
+#   1. Build GNUstep runtime (libobjc2, gnustep-make, gnustep-base)
+#   2. Build ATProtoPDS with CMake
+#   3. Create minimal runtime image
+</code></pre>
+
+<p><strong>Verify the build:</strong></p>
+<pre class="codehilite"><code class="language-bash">docker run --rm nspds:local --version
+# Expected output: kaszlak version X.Y.Z
+</code></pre>
+
+<hr />
+<h2 id="step-3-configure-the-pds">Step 3: Configure the PDS</h2>
+<h3 id="31-create-production-configuration">3.1 Create Production Configuration</h3>
+<p>Create <code>docker/pds/config.json</code> with secure defaults:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;server&quot;: {
+    &quot;host&quot;: &quot;0.0.0.0&quot;,
+    &quot;port&quot;: 2583,
+    &quot;data_dir&quot;: &quot;/var/lib/atprotopds&quot;,
+    &quot;issuer&quot;: &quot;https://pds.yourdomain.com&quot;,
+    &quot;available_user_domains&quot;: [
+      &quot;yourdomain.com&quot;
+    ]
+  },
+  &quot;appViewURL&quot;: &quot;https://api.bsky.app&quot;,
+  &quot;appViewDID&quot;: &quot;did:web:api.bsky.app&quot;,
+  &quot;localAppViewEnabled&quot;: false,
+  &quot;database&quot;: {
+    &quot;service_pool_max_size&quot;: 20,
+    &quot;user_pool_max_size&quot;: 200
+  },
+  &quot;logging&quot;: {
+    &quot;format&quot;: &quot;text&quot;,
+    &quot;level&quot;: &quot;info&quot;
+  },
+  &quot;session&quot;: {
+    &quot;access_token_ttl_seconds&quot;: 1800,
+    &quot;refresh_token_ttl_seconds&quot;: 2592000,
+    &quot;invite_code_required&quot;: true
+  },
+  &quot;links&quot;: {
+    &quot;privacy_policy&quot;: &quot;https://yourdomain.com/privacy&quot;,
+    &quot;terms_of_service&quot;: &quot;https://yourdomain.com/terms&quot;
+  },
+  &quot;relays&quot;: [
+    &quot;https://bsky.network&quot;
+  ],
+  &quot;plc&quot;: {
+    &quot;url&quot;: &quot;https://plc.directory&quot;,
+    &quot;retry_count&quot;: 5,
+    &quot;retry_delay_ms&quot;: 2000
+  },
+  &quot;cors&quot;: {
+    &quot;allowed_origins&quot;: [
+      &quot;https://bsky.app&quot;,
+      &quot;https://pds.yourdomain.com&quot;
+    ],
+    &quot;allowed_methods&quot;: [
+      &quot;GET&quot;,
+      &quot;POST&quot;,
+      &quot;PUT&quot;,
+      &quot;DELETE&quot;,
+      &quot;OPTIONS&quot;,
+      &quot;HEAD&quot;
+    ],
+    &quot;allowed_headers&quot;: [
+      &quot;DPoP&quot;,
+      &quot;Authorization&quot;,
+      &quot;Content-Type&quot;,
+      &quot;*&quot;
+    ],
+    &quot;max_age&quot;: 86400
+  },
+  &quot;rate_limit&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;requests_per_minute&quot;: 10000,
+    &quot;burst_size&quot;: 1000,
+    &quot;did_limit&quot;: 10000,
+    &quot;did_window&quot;: 60,
+    &quot;ip_limit&quot;: 10000,
+    &quot;ip_window&quot;: 60,
+    &quot;blob_limit&quot;: 1000,
+    &quot;blob_window&quot;: 3600
+  },
+  &quot;debug&quot;: {
+    &quot;skip_plc_operations&quot;: false
+  }
+}
+</code></pre>
+
+<p><strong>CRITICAL SECURITY DEFAULTS:</strong></p>
+<p>⚠️ <strong>Never change these without explicit approval:</strong>
+- <code>session.invite_code_required</code>: <code>true</code> (prevents open registration)
+- <code>plc.url</code>: <code>"https://plc.directory"</code> (never <code>"mock"</code> in production)
+- All <code>debug.*</code> flags: <code>false</code>
+- <code>rate_limit.enabled</code>: <code>true</code>
+- <code>server.issuer</code>: Must match your domain</p>
+<h3 id="32-create-docker-compose-file">3.2 Create Docker Compose File</h3>
+<p>Create <code>docker/pds/docker-compose.yml</code>:</p>
+<pre class="codehilite"><code class="language-yaml">services:
+  pds:
+    image: nspds:local
+    container_name: nspds
+    ports:
+      - &quot;127.0.0.1:2583:2583&quot;  # Bind to localhost only
+    volumes:
+      - pds_data:/var/lib/atprotopds
+      - ./config.json:/var/lib/atprotopds/config.json:ro
+    environment:
+      - TZ=UTC
+      - PDS_PORT=2583
+      - PDS_HOST=0.0.0.0
+      - PDS_ISSUER=https://pds.yourdomain.com
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - HOME=/var/lib/atprotopds
+      - PDS_DATA_DIR=/var/lib/atprotopds
+      - PDS_TRUST_PROXY_HEADERS=1  # Trust X-Forwarded-For from nginx
+    command: [&quot;serve&quot;, &quot;--config&quot;, &quot;/var/lib/atprotopds/config.json&quot;, &quot;--foreground&quot;]
+    restart: unless-stopped
+    logging:
+      driver: &quot;json-file&quot;
+      options:
+        max-size: &quot;10m&quot;
+        max-file: &quot;3&quot;
+
+volumes:
+  pds_data:
+    name: pds_pds_data
+</code></pre>
+
+<p><strong>Key configuration notes:</strong>
+- Port binding to <code>127.0.0.1</code> prevents direct external access
+- <code>PDS_TRUST_PROXY_HEADERS=1</code> enables rate limiting by client IP
+- Read-only config mount prevents accidental modification
+- Log rotation prevents disk space issues</p>
+<hr />
+<h2 id="step-4-set-up-reverse-proxy">Step 4: Set Up Reverse Proxy</h2>
+<h3 id="41-obtain-tls-certificate">4.1 Obtain TLS Certificate</h3>
+<pre class="codehilite"><code class="language-bash"># Request Let's Encrypt certificate
+sudo certbot certonly --nginx -d pds.yourdomain.com
+
+# Certificate will be saved to:
+# /etc/letsencrypt/live/pds.yourdomain.com/fullchain.pem
+# /etc/letsencrypt/live/pds.yourdomain.com/privkey.pem
+</code></pre>
+
+<h3 id="42-configure-nginx">4.2 Configure nginx</h3>
+<p>Create <code>/etc/nginx/sites-available/pds</code>:</p>
+<pre class="codehilite"><code class="language-nginx"># Rate limiting zones
+limit_req_zone $binary_remote_addr zone=pds_general:10m rate=100r/s;
+limit_req_zone $binary_remote_addr zone=pds_auth:10m rate=10r/s;
+
+# Upstream PDS
+upstream pds_backend {
+    server 127.0.0.1:2583 max_fails=3 fail_timeout=30s;
+    keepalive 32;
+}
+
+# HTTP -&gt; HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name pds.yourdomain.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+# HTTPS server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name pds.yourdomain.com;
+
+    # TLS configuration
+    ssl_certificate /etc/letsencrypt/live/pds.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/pds.yourdomain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # Security headers
+    add_header Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot; always;
+    add_header X-Frame-Options &quot;SAMEORIGIN&quot; always;
+    add_header X-Content-Type-Options &quot;nosniff&quot; always;
+    add_header X-XSS-Protection &quot;1; mode=block&quot; always;
+
+    # Logging
+    access_log /var/log/nginx/pds_access.log;
+    error_log /var/log/nginx/pds_error.log;
+
+    # Client limits
+    client_max_body_size 50M;  # For blob uploads
+    client_body_timeout 60s;
+    client_header_timeout 60s;
+
+    # Rate limiting (stricter for auth endpoints)
+    location ~ ^/xrpc/(com\.atproto\.server\.createSession|com\.atproto\.server\.createAccount) {
+        limit_req zone=pds_auth burst=5 nodelay;
+        proxy_pass http://pds_backend;
+        include /etc/nginx/proxy_params_pds;
+    }
+
+    # General endpoints
+    location / {
+        limit_req zone=pds_general burst=50 nodelay;
+        proxy_pass http://pds_backend;
+        include /etc/nginx/proxy_params_pds;
+    }
+
+    # WebSocket upgrade for firehose
+    location /xrpc/com.atproto.sync.subscribeRepos {
+        proxy_pass http://pds_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection &quot;upgrade&quot;;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;  # 1 hour for long-lived connections
+        proxy_send_timeout 3600s;
+    }
+}
+</code></pre>
+
+<p>Create <code>/etc/nginx/proxy_params_pds</code>:</p>
+<pre class="codehilite"><code class="language-nginx">proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Port $server_port;
+
+proxy_http_version 1.1;
+proxy_set_header Connection &quot;&quot;;
+
+proxy_buffering off;
+proxy_request_buffering off;
+
+proxy_connect_timeout 60s;
+proxy_send_timeout 60s;
+proxy_read_timeout 60s;
+</code></pre>
+
+<h3 id="43-enable-and-test-nginx">4.3 Enable and Test nginx</h3>
+<pre class="codehilite"><code class="language-bash"># Enable the site
+sudo ln -s /etc/nginx/sites-available/pds /etc/nginx/sites-enabled/
+
+# Test configuration
+sudo nginx -t
+
+# Reload nginx
+sudo systemctl reload nginx
+
+# Enable nginx on boot
+sudo systemctl enable nginx
+</code></pre>
+
+<hr />
+<h2 id="step-5-start-the-pds">Step 5: Start the PDS</h2>
+<h3 id="51-create-docker-volume">5.1 Create Docker Volume</h3>
+<pre class="codehilite"><code class="language-bash"># Create persistent volume
+docker volume create pds_pds_data
+
+# Verify
+docker volume inspect pds_pds_data
+</code></pre>
+
+<h3 id="52-start-the-container">5.2 Start the Container</h3>
+<pre class="codehilite"><code class="language-bash">cd /opt/atprotopds/src/docker/pds
+
+# Start in foreground (for initial testing)
+docker compose up
+
+# Watch logs for errors
+# Expected output:
+#   [INFO] Starting ATProto PDS on 0.0.0.0:2583
+#   [INFO] Issuer: https://pds.yourdomain.com
+#   [INFO] HTTP server listening on port 2583
+</code></pre>
+
+<p><strong>Verify the server:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Test from localhost
+curl http://localhost:2583/xrpc/com.atproto.server.describeServer
+
+# Test from external
+curl https://pds.yourdomain.com/xrpc/com.atproto.server.describeServer
+
+# Expected response:
+{
+  &quot;did&quot;: &quot;did:web:pds.yourdomain.com&quot;,
+  &quot;availableUserDomains&quot;: [&quot;yourdomain.com&quot;],
+  &quot;inviteCodeRequired&quot;: true
+}
+</code></pre>
+
+<h3 id="53-start-in-background">5.3 Start in Background</h3>
+<pre class="codehilite"><code class="language-bash"># Stop foreground process (Ctrl+C)
+
+# Start detached
+docker compose up -d
+
+# View logs
+docker compose logs -f pds
+
+# Check status
+docker compose ps
+</code></pre>
+
+<hr />
+<h2 id="step-6-create-first-account">Step 6: Create First Account</h2>
+<h3 id="61-generate-invite-code">6.1 Generate Invite Code</h3>
+<pre class="codehilite"><code class="language-bash"># Generate invite code
+docker exec nspds kaszlak invite create
+
+# Output: inv-abc123xyz456
+</code></pre>
+
+<h3 id="62-create-account-via-api">6.2 Create Account via API</h3>
+<pre class="codehilite"><code class="language-bash">curl -X POST https://pds.yourdomain.com/xrpc/com.atproto.server.createAccount \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;email&quot;: &quot;admin@yourdomain.com&quot;,
+    &quot;handle&quot;: &quot;admin.yourdomain.com&quot;,
+    &quot;password&quot;: &quot;secure-password-here&quot;,
+    &quot;inviteCode&quot;: &quot;inv-abc123xyz456&quot;
+  }'
+
+# Response includes DID and access tokens
+</code></pre>
+
+<h3 id="63-verify-account">6.3 Verify Account</h3>
+<pre class="codehilite"><code class="language-bash"># Create session
+curl -X POST https://pds.yourdomain.com/xrpc/com.atproto.server.createSession \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;identifier&quot;: &quot;admin.yourdomain.com&quot;,
+    &quot;password&quot;: &quot;secure-password-here&quot;
+  }'
+
+# Save the accessJwt from response for authenticated requests
+</code></pre>
+
+<hr />
+<h2 id="step-7-set-up-automated-backups">Step 7: Set Up Automated Backups</h2>
+<h3 id="71-install-backup-script">7.1 Install Backup Script</h3>
+<p>The repository includes a production-ready backup script:</p>
+<pre class="codehilite"><code class="language-bash"># Copy backup script
+sudo cp /opt/atprotopds/src/scripts/backup_pds.sh /usr/local/bin/
+sudo chmod +x /usr/local/bin/backup_pds.sh
+
+# Create backup directory
+sudo mkdir -p /var/backups/atprotopds
+sudo chown $USER:$USER /var/backups/atprotopds
+</code></pre>
+
+<h3 id="72-test-manual-backup">7.2 Test Manual Backup</h3>
+<pre class="codehilite"><code class="language-bash"># Run manual backup
+/usr/local/bin/backup_pds.sh \
+  --data-dir /var/lib/docker/volumes/pds_pds_data/_data \
+  --backup-dir /var/backups/atprotopds \
+  --retention 14
+
+# Output:
+#   === ATProto PDS Backup ===
+#   Timestamp:     20260303_120000
+#   Data dir:      /var/lib/docker/volumes/pds_pds_data/_data
+#   Backup dest:   /var/backups/atprotopds/20260303_120000
+#   
+#   Service databases:
+#     Backing up service/service.db... OK (2.3M)
+#   
+#   User databases:
+#     Backing up user/abc123... OK (1.1M)
+#   
+#   Compressing backup... OK (1.8M)
+#   
+#   === Backup Complete ===
+#   Archive: /var/backups/atprotopds/pds-backup-20260303_120000.tar.gz
+#   Status: All databases backed up successfully (2 DBs)
+</code></pre>
+
+<h3 id="73-schedule-automated-backups">7.3 Schedule Automated Backups</h3>
+<pre class="codehilite"><code class="language-bash"># Edit crontab
+crontab -e
+
+# Add daily backup at 3 AM
+0 3 * * * /usr/local/bin/backup_pds.sh \
+  --data-dir /var/lib/docker/volumes/pds_pds_data/_data \
+  --backup-dir /var/backups/atprotopds \
+  --retention 14 \
+  &gt;&gt; /var/log/atprotopds/backup.log 2&gt;&amp;1
+</code></pre>
+
+<h3 id="74-restore-from-backup">7.4 Restore from Backup</h3>
+<pre class="codehilite"><code class="language-bash"># Stop the PDS
+cd /opt/atprotopds/src/docker/pds
+docker compose down
+
+# Extract backup
+cd /var/backups/atprotopds
+tar -xzf pds-backup-20260303_120000.tar.gz
+
+# Restore to volume
+sudo rsync -av 20260303_120000/ /var/lib/docker/volumes/pds_pds_data/_data/
+
+# Restart PDS
+cd /opt/atprotopds/src/docker/pds
+docker compose up -d
+</code></pre>
+
+<hr />
+<h2 id="step-8-monitoring-and-maintenance">Step 8: Monitoring and Maintenance</h2>
+<h3 id="81-view-logs">8.1 View Logs</h3>
+<pre class="codehilite"><code class="language-bash"># Real-time logs
+docker compose logs -f pds
+
+# Last 100 lines
+docker compose logs --tail=100 pds
+
+# nginx logs
+sudo tail -f /var/log/nginx/pds_access.log
+sudo tail -f /var/log/nginx/pds_error.log
+</code></pre>
+
+<h3 id="82-monitor-resource-usage">8.2 Monitor Resource Usage</h3>
+<pre class="codehilite"><code class="language-bash"># Container stats
+docker stats nspds
+
+# Disk usage
+docker system df
+du -sh /var/lib/docker/volumes/pds_pds_data/_data
+
+# Database sizes
+docker exec nspds sh -c 'du -sh /var/lib/atprotopds/data/*'
+</code></pre>
+
+<h3 id="83-health-checks">8.3 Health Checks</h3>
+<p>Create a monitoring script <code>/usr/local/bin/check_pds_health.sh</code>:</p>
+<pre class="codehilite"><code class="language-bash">#!/bin/bash
+set -euo pipefail
+
+ENDPOINT=&quot;https://pds.yourdomain.com/xrpc/com.atproto.server.describeServer&quot;
+TIMEOUT=10
+
+if ! response=$(curl -sf --max-time &quot;$TIMEOUT&quot; &quot;$ENDPOINT&quot;); then
+    echo &quot;ERROR: PDS health check failed&quot;
+    exit 1
+fi
+
+if ! echo &quot;$response&quot; | jq -e '.did' &gt;/dev/null 2&gt;&amp;1; then
+    echo &quot;ERROR: Invalid response from PDS&quot;
+    exit 1
+fi
+
+echo &quot;OK: PDS is healthy&quot;
+exit 0
+</code></pre>
+
+<p>Schedule health checks:</p>
+<pre class="codehilite"><code class="language-bash"># Add to crontab (every 5 minutes)
+*/5 * * * * /usr/local/bin/check_pds_health.sh || \
+  echo &quot;PDS health check failed at $(date)&quot; &gt;&gt; /var/log/atprotopds/health.log
+</code></pre>
+
+<h3 id="84-update-the-pds">8.4 Update the PDS</h3>
+<pre class="codehilite"><code class="language-bash"># Pull latest code
+cd /opt/atprotopds/src
+git pull origin main
+git submodule update --init --recursive
+
+# Rebuild image
+docker build -f docker/Dockerfile.gnustep -t nspds:local .
+
+# Stop current container
+cd docker/pds
+docker compose down
+
+# Start with new image
+docker compose up -d
+
+# Verify
+docker compose logs -f pds
+</code></pre>
+
+<hr />
+<h2 id="step-9-security-hardening">Step 9: Security Hardening</h2>
+<h3 id="91-firewall-configuration">9.1 Firewall Configuration</h3>
+<pre class="codehilite"><code class="language-bash"># Install ufw
+sudo apt-get install -y ufw
+
+# Allow SSH
+sudo ufw allow 22/tcp
+
+# Allow HTTP/HTTPS
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+
+# Enable firewall
+sudo ufw enable
+
+# Verify
+sudo ufw status
+</code></pre>
+
+<h3 id="92-fail2ban-for-rate-limiting">9.2 Fail2ban for Rate Limiting</h3>
+<pre class="codehilite"><code class="language-bash"># Install fail2ban
+sudo apt-get install -y fail2ban
+
+# Create PDS filter
+sudo tee /etc/fail2ban/filter.d/pds.conf &lt;&lt;EOF
+[Definition]
+failregex = ^.*&quot;remote_addr&quot;:&quot;&lt;HOST&gt;&quot;.*&quot;status&quot;:429.*$
+ignoreregex =
+EOF
+
+# Create jail
+sudo tee /etc/fail2ban/jail.d/pds.conf &lt;&lt;EOF
+[pds]
+enabled = true
+port = http,https
+filter = pds
+logpath = /var/log/nginx/pds_access.log
+maxretry = 10
+findtime = 60
+bantime = 3600
+EOF
+
+# Restart fail2ban
+sudo systemctl restart fail2ban
+</code></pre>
+
+<h3 id="93-automatic-security-updates">9.3 Automatic Security Updates</h3>
+<pre class="codehilite"><code class="language-bash"># Install unattended-upgrades
+sudo apt-get install -y unattended-upgrades
+
+# Enable automatic updates
+sudo dpkg-reconfigure -plow unattended-upgrades
+</code></pre>
+
+<hr />
+<h2 id="step-10-troubleshooting">Step 10: Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="issue-container-wont-start">Issue: Container won't start</h4>
+<pre class="codehilite"><code class="language-bash"># Check logs
+docker compose logs pds
+
+# Common causes:
+# 1. Port 2583 already in use
+sudo lsof -i :2583
+
+# 2. Config file syntax error
+docker run --rm -v $(pwd)/config.json:/config.json nspds:local \
+  sh -c 'cat /config.json | jq .'
+
+# 3. Volume permissions
+docker exec nspds ls -la /var/lib/atprotopds
+</code></pre>
+
+<h4 id="issue-502-bad-gateway-from-nginx">Issue: 502 Bad Gateway from nginx</h4>
+<pre class="codehilite"><code class="language-bash"># Verify PDS is running
+docker compose ps
+
+# Test direct connection
+curl http://localhost:2583/xrpc/com.atproto.server.describeServer
+
+# Check nginx error log
+sudo tail -f /var/log/nginx/pds_error.log
+
+# Verify proxy headers
+docker compose logs pds | grep &quot;X-Forwarded-For&quot;
+</code></pre>
+
+<h4 id="issue-rate-limiting-not-working">Issue: Rate limiting not working</h4>
+<pre class="codehilite"><code class="language-bash"># Verify PDS_TRUST_PROXY_HEADERS is set
+docker exec nspds env | grep TRUST_PROXY
+
+# Check nginx is sending headers
+curl -H &quot;X-Forwarded-For: 1.2.3.4&quot; http://localhost:2583/xrpc/com.atproto.server.describeServer
+
+# Verify rate limit config
+docker exec nspds cat /var/lib/atprotopds/config.json | jq '.rate_limit'
+</code></pre>
+
+<h4 id="issue-database-corruption">Issue: Database corruption</h4>
+<pre class="codehilite"><code class="language-bash"># Check database integrity
+docker exec nspds sqlite3 /var/lib/atprotopds/data/service/service.db &quot;PRAGMA integrity_check;&quot;
+
+# If corrupted, restore from backup
+cd /opt/atprotopds/src/docker/pds
+docker compose down
+# ... restore from backup (see Step 7.4)
+docker compose up -d
+</code></pre>
+
+<hr />
+<h2 id="production-checklist">Production Checklist</h2>
+<p>Before going live, verify:</p>
+<ul>
+<li>[ ] TLS certificate is valid and auto-renewing</li>
+<li>[ ] <code>invite_code_required</code> is <code>true</code></li>
+<li>[ ] <code>plc.url</code> is <code>"https://plc.directory"</code> (not <code>"mock"</code>)</li>
+<li>[ ] All <code>debug.*</code> flags are <code>false</code></li>
+<li>[ ] Rate limiting is enabled and tested</li>
+<li>[ ] Firewall rules are configured</li>
+<li>[ ] Automated backups are scheduled and tested</li>
+<li>[ ] Health checks are running</li>
+<li>[ ] Monitoring is in place</li>
+<li>[ ] Privacy policy and ToS links are valid</li>
+<li>[ ] nginx security headers are present</li>
+<li>[ ] Log rotation is configured</li>
+<li>[ ] Disk space monitoring is set up</li>
+</ul>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<p><strong>Congratulations!</strong> You've deployed a production ATProto PDS.</p>
+<p><strong>Further reading:</strong>
+- <a href="../11-reference/config-reference.md">Configuration Reference</a> — All config options
+- <a href="../11-reference/troubleshooting.md">Troubleshooting Guide</a> — Common issues
+- <a href="../11-reference/api-reference.md">API Reference</a> — XRPC endpoints</p>
+<p><strong>Production considerations:</strong>
+- Set up external monitoring (UptimeRobot, Pingdom)
+- Configure log aggregation (ELK, Loki)
+- Implement metrics collection (Prometheus)
+- Plan for horizontal scaling (multiple PDS instances)
+- Document incident response procedures</p>
+<p><strong>Community:</strong>
+- Join the ATProto Discord
+- Report issues on GitHub
+- Contribute improvements back to the project</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Service - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Admin Service</h1>
+            </div>
+            <h1 id="admin-service">Admin Service</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>PDSAdminService</code> provides administrative operations for PDS management including account moderation, takedowns, labeling, and system administration. It handles privileged operations that require admin authentication.</p>
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Account suspension and deletion</li>
+<li>Record takedowns</li>
+<li>Label management</li>
+<li>Moderation actions</li>
+<li>Admin audit logging</li>
+<li>System configuration</li>
+<li>User management</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<pre class="codehilite"><code>┌──────────────────────────────────────────┐
+│   XRPC Admin Endpoints                   │
+│  (com.atproto.admin.*)                   │
+└────────────────┬─────────────────────────┘
+                 │
+┌────────────────▼─────────────────────────┐
+│   PDSAdminService                        │
+│  - suspendAccount()                      │
+│  - deleteAccount()                       │
+│  - takedownRecord()                      │
+│  - addLabel()                            │
+│  - removeLabel()                         │
+│  - getModeration()                       │
+└────────────────┬─────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+┌───────▼──────────┐  ┌──▼──────────────┐
+│ Audit Logging    │  │ Moderation DB   │
+│ (Admin Actions)  │  │ (Labels/Status) │
+└──────────────────┘  └──────────────────┘
+        │
+        └────────┬────────┘
+                 │
+        ┌────────▼────────────┐
+        │ PDSServiceDatabases │
+        │ (Admin Data)        │
+        └─────────────────────┘
+</code></pre>
+
+<h2 id="key-operations">Key Operations</h2>
+<h3 id="account-suspension">Account Suspension</h3>
+<p>Temporarily disables an account while preserving data:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)suspendAccount:(NSString *)did 
+              reason:(NSString *)reason 
+             error:(NSError **)error;
+</code></pre>
+
+<p><strong>Effects:</strong>
+- Account cannot login
+- Records are hidden from search
+- Blobs are inaccessible
+- Data is preserved for restoration</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+BOOL success = [adminService suspendAccount:@&quot;did:plc:user123&quot;
+                                     reason:@&quot;Violation of terms of service&quot;
+                                      error:&amp;error];
+</code></pre>
+
+<h3 id="account-deletion">Account Deletion</h3>
+<p>Permanently removes an account and all associated data:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)deleteAccount:(NSString *)did 
+             reason:(NSString *)reason 
+            error:(NSError **)error;
+</code></pre>
+
+<p><strong>Effects:</strong>
+- Account is permanently deleted
+- All records are removed
+- All blobs are deleted
+- Data cannot be recovered</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+BOOL success = [adminService deleteAccount:@&quot;did:plc:user123&quot;
+                                    reason:@&quot;User requested deletion&quot;
+                                     error:&amp;error];
+</code></pre>
+
+<h3 id="record-takedown">Record Takedown</h3>
+<p>Removes a specific record from the repository:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)takedownRecord:(NSString *)uri 
+              reason:(NSString *)reason 
+             error:(NSError **)error;
+</code></pre>
+
+<p><strong>Parameters:</strong>
+- <code>uri</code>: AT URI of record to remove
+- <code>reason</code>: Takedown reason
+- <code>error</code>: Error pointer</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+BOOL success = [adminService takedownRecord:@&quot;at://did:plc:user123/app.bsky.feed.post/abc123&quot;
+                                     reason:@&quot;Illegal content&quot;
+                                      error:&amp;error];
+</code></pre>
+
+<h3 id="label-management">Label Management</h3>
+<p>Adds labels to accounts or records for moderation:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)addLabel:(NSString *)label 
+        toTarget:(NSString *)target 
+         reason:(NSString *)reason 
+        error:(NSError **)error;
+
+- (BOOL)removeLabel:(NSString *)label 
+          fromTarget:(NSString *)target 
+             error:(NSError **)error;
+</code></pre>
+
+<p><strong>Common Labels:</strong>
+- <code>!no-unauthenticated</code>: Hide from unauthenticated users
+- <code>!no-unknown</code>: Hide from unknown users
+- <code>!warn</code>: Show warning before viewing
+- <code>!impersonation</code>: Impersonation warning
+- <code>!spam</code>: Spam label</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+
+// Add warning label
+BOOL success = [adminService addLabel:@&quot;!warn&quot;
+                             toTarget:@&quot;did:plc:user123&quot;
+                               reason:@&quot;Potentially sensitive content&quot;
+                                error:&amp;error];
+
+// Remove label
+success = [adminService removeLabel:@&quot;!warn&quot;
+                         fromTarget:@&quot;did:plc:user123&quot;
+                              error:&amp;error];
+</code></pre>
+
+<h3 id="get-moderation-status">Get Moderation Status</h3>
+<p>Retrieves moderation information for an account or record:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getModerationForTarget:(NSString *)target 
+                                            error:(NSError **)error;
+</code></pre>
+
+<p><strong>Returns:</strong> Dictionary with:
+- <code>labels</code>: Array of applied labels
+- <code>suspended</code>: Boolean suspension status
+- <code>reason</code>: Moderation reason
+- <code>actionedAt</code>: Timestamp of last action</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSDictionary *moderation = [adminService getModerationForTarget:@&quot;did:plc:user123&quot;
+                                                          error:&amp;error];
+
+if (moderation) {
+    NSArray *labels = moderation[@&quot;labels&quot;];
+    BOOL suspended = [moderation[@&quot;suspended&quot;] boolValue];
+}
+</code></pre>
+
+<h2 id="audit-logging">Audit Logging</h2>
+<p>All admin actions are logged with:</p>
+<ul>
+<li>Admin DID who performed action</li>
+<li>Action type (suspend, delete, label, etc.)</li>
+<li>Target (account or record)</li>
+<li>Reason provided</li>
+<li>Timestamp</li>
+<li>Result (success/failure)</li>
+</ul>
+<p><strong>Example log entry:</strong></p>
+<pre class="codehilite"><code>{
+  &quot;admin&quot;: &quot;did:plc:admin123&quot;,
+  &quot;action&quot;: &quot;suspend&quot;,
+  &quot;target&quot;: &quot;did:plc:user123&quot;,
+  &quot;reason&quot;: &quot;Violation of terms of service&quot;,
+  &quot;timestamp&quot;: &quot;2025-01-15T10:30:00Z&quot;,
+  &quot;result&quot;: &quot;success&quot;
+}
+</code></pre>
+
+<h2 id="moderation-workflow">Moderation Workflow</h2>
+<h3 id="typical-moderation-process">Typical Moderation Process</h3>
+<pre class="codehilite"><code>1. Report received
+   ↓
+2. Admin reviews content
+   ↓
+3. Admin applies label (if warning needed)
+   ↓
+4. If severe: takedown record or suspend account
+   ↓
+5. Log action in audit trail
+   ↓
+6. Notify user (if applicable)
+   ↓
+7. Monitor for appeals
+</code></pre>
+
+<h2 id="error-handling">Error Handling</h2>
+<p>Common error scenarios:</p>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Not found</td>
+<td>Target doesn't exist</td>
+<td>Return 404</td>
+</tr>
+<tr>
+<td>Unauthorized</td>
+<td>Not admin</td>
+<td>Return 403</td>
+</tr>
+<tr>
+<td>Invalid label</td>
+<td>Unknown label</td>
+<td>Return 400</td>
+</tr>
+<tr>
+<td>Already suspended</td>
+<td>Account already suspended</td>
+<td>Return 409</td>
+</tr>
+<tr>
+<td>Invalid reason</td>
+<td>Reason too short/long</td>
+<td>Return 400</td>
+</tr>
+</tbody>
+</table>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Moderation Actions</strong></li>
+<li>Always provide clear reason</li>
+<li>Use appropriate labels before takedown</li>
+<li>Document all actions</li>
+<li>
+<p>Follow due process</p>
+</li>
+<li>
+<p><strong>Account Suspension</strong></p>
+</li>
+<li>Suspend before delete to allow appeals</li>
+<li>Preserve data for investigation</li>
+<li>Notify user of suspension</li>
+<li>
+<p>Set appeal deadline</p>
+</li>
+<li>
+<p><strong>Audit Trail</strong></p>
+</li>
+<li>Log all admin actions</li>
+<li>Include admin identity</li>
+<li>Timestamp all actions</li>
+<li>
+<p>Retain logs for compliance</p>
+</li>
+<li>
+<p><strong>Escalation</strong></p>
+</li>
+<li>Have clear escalation procedures</li>
+<li>Multiple admins for serious actions</li>
+<li>Review high-impact decisions</li>
+<li>Document reasoning</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="handling-a-reported-post">Handling a Reported Post</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Get moderation status
+NSError *error = nil;
+NSDictionary *moderation = [adminService getModerationForTarget:reportedUri
+                                                          error:&amp;error];
+
+// 2. Review content (admin UI)
+// ...
+
+// 3. Apply label if warning needed
+[adminService addLabel:@&quot;!warn&quot;
+             toTarget:reportedUri
+               reason:@&quot;Potentially sensitive content&quot;
+                error:&amp;error];
+
+// 4. If severe, takedown
+[adminService takedownRecord:reportedUri
+                      reason:@&quot;Illegal content&quot;
+                       error:&amp;error];
+</code></pre>
+
+<h3 id="suspending-a-problematic-account">Suspending a Problematic Account</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Get account moderation status
+NSError *error = nil;
+NSDictionary *moderation = [adminService getModerationForTarget:userDid
+                                                          error:&amp;error];
+
+// 2. Review account history
+// ...
+
+// 3. Suspend account
+BOOL success = [adminService suspendAccount:userDid
+                                     reason:@&quot;Multiple violations of terms&quot;
+                                      error:&amp;error];
+
+// 4. Notify user
+[self notifyUserOfSuspension:userDid reason:@&quot;Multiple violations&quot;];
+
+// 5. Set appeal deadline
+[self setAppealDeadline:userDid days:30];
+</code></pre>
+
+<h3 id="bulk-moderation-action">Bulk Moderation Action</h3>
+<pre class="codehilite"><code class="language-objc">// Apply label to multiple accounts
+NSArray *violatingAccounts = @[
+    @&quot;did:plc:user1&quot;,
+    @&quot;did:plc:user2&quot;,
+    @&quot;did:plc:user3&quot;
+];
+
+for (NSString *did in violatingAccounts) {
+    NSError *error = nil;
+    [adminService addLabel:@&quot;!spam&quot;
+                 toTarget:did
+                   reason:@&quot;Spam network detected&quot;
+                    error:&amp;error];
+}
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./services-overview.md">Services Overview</a></li>
+<li><a href="./pds-application.md">PDSApplication</a></li>
+<li><a href="../06-authentication/jwt-tokens.md">Authentication</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:13</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

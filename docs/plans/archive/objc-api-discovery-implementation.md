@@ -311,6 +311,6 @@ free(methods);
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans</content>
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans</content>
 <parameter name="filePath">/Users/jack/.config/opencode/superpowers/skills/objc-api-discovery.md

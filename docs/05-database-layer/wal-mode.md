@@ -413,7 +413,7 @@ dispatch_resume(timer);
 
 ## See Also
 
-- [Service Databases](./service-databases.md)
-- [Actor Databases](./actor-databases.md)
-- [Migrations](./migrations.md)
-- [SQLite Architecture](./sqlite-architecture.md)
+- [Service Databases](./service-databases)
+- [Actor Databases](./actor-databases)
+- [Migrations](./migrations)
+- [SQLite Architecture](./sqlite-architecture)

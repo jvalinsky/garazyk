@@ -645,9 +645,9 @@ typedef struct {
 
 ## See Also
 
-- [Migration Rollback](./migration-rollback.md) — Rollback procedures and safety checks
-- [Data Integrity](./data-integrity.md) — Verification and consistency checks
-- [Zero-Downtime Migrations](./zero-downtime-migrations.md) — Online migration strategies
-- [Migrations](./migrations.md) — Basic migration concepts and examples
-- [SQLite Architecture](./sqlite-architecture.md) — Database design patterns
+- [Migration Rollback](./migration-rollback) — Rollback procedures and safety checks
+- [Data Integrity](./data-integrity) — Verification and consistency checks
+- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migration strategies
+- [Migrations](./migrations) — Basic migration concepts and examples
+- [SQLite Architecture](./sqlite-architecture) — Database design patterns
 

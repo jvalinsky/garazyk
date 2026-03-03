@@ -346,6 +346,6 @@ When records are modified, a new commit is created:
 
 ## Next Steps
 
-- **[Cryptography](./cryptography.md)** — Cryptographic operations
-- **[Repository Protocol](../07-repository-protocol/repository-basics.md)** — Repository operations
-- **[Sync & Firehose](../08-sync-firehose/firehose-overview.md)** — Real-time synchronization
+- **[Cryptography](./cryptography)** — Cryptographic operations
+- **[Repository Protocol](../07-repository-protocol/repository-basics)** — Repository operations
+- **[Sync & Firehose](../08-sync-firehose/firehose-overview)** — Real-time synchronization

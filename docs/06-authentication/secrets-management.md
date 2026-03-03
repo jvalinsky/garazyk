@@ -580,11 +580,11 @@ echo "test" | kaszlak key sign --did did:plc:abc123
 
 ## Related Documentation
 
-- [JWT Tokens](jwt-tokens.md) - Token generation and verification
-- [OAuth 2.0 with DPoP](oauth2-dpop.md) - Authentication flows
-- [Key Rotation](key-rotation.md) - Detailed rotation procedures
-- [Security Best Practices](security-best-practices.md) - Overall security guidance
-- [Security Audit Guide](../11-reference/security-audit-guide.md) - Using audit skills
+- [JWT Tokens](jwt-tokens) - Token generation and verification
+- [OAuth 2.0 with DPoP](oauth2-dpop) - Authentication flows
+- [Key Rotation](key-rotation) - Detailed rotation procedures
+- [Security Best Practices](security-best-practices) - Overall security guidance
+- [Security Audit Guide](../11-reference/security-audit-guide) - Using audit skills
 
 ## See Also
 

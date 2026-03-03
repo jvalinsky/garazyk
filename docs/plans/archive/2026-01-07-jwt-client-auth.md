@@ -169,7 +169,7 @@ Document new OAuth2 client authentication endpoints and parameters.
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details
-- [Security Docs](../../security/README.md) - Security-related documentation
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details
+- [Security Docs](../../security/README) - Security-related documentation

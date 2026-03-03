@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Helpers - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Authentication Helpers</h1>
+            </div>
+            <h1 id="authentication-helpers">Authentication Helpers</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>XrpcAuthHelper</code> provides centralized authentication logic for XRPC endpoints. It handles JWT token verification, DPoP proof validation, and DID extraction from Authorization headers.</p>
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Extract and validate DIDs from Authorization headers</li>
+<li>Support Bearer tokens (JWT) and DPoP tokens</li>
+<li>Verify JWT signatures with algorithm selection</li>
+<li>Validate DPoP proofs and thumbprint binding</li>
+<li>Handle DPoP nonce challenges</li>
+<li>Reject takedown accounts</li>
+<li>Enforce admin authorization</li>
+</ul>
+<h2 id="authentication-flow">Authentication Flow</h2>
+<pre class="codehilite"><code>Authorization Header
+    │
+    ├─ Bearer &lt;JWT&gt;
+    │   ├─ Parse JWT
+    │   ├─ Verify signature
+    │   ├─ Check expiration
+    │   └─ Extract DID
+    │
+    └─ DPoP &lt;JWT&gt;
+        ├─ Parse DPoP proof
+        ├─ Verify DPoP signature
+        ├─ Check nonce
+        ├─ Parse access token
+        ├─ Verify access token signature
+        ├─ Verify thumbprint binding
+        └─ Extract DID
+</code></pre>
+
+<h2 id="key-methods">Key Methods</h2>
+<h3 id="extract-did-from-authorization-header">Extract DID from Authorization Header</h3>
+<pre class="codehilite"><code class="language-objc">+ (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                                      jwtMinter:(JWTMinter *)jwtMinter
+                                adminController:(id&lt;PDSAdminController&gt;)adminController
+                                        request:(HttpRequest *)request;
+</code></pre>
+
+<p>Extracts and validates DID from Authorization header.</p>
+<p><strong>Parameters:</strong>
+- <code>authHeader</code>: Authorization header value (e.g., "Bearer <token>" or "DPoP <token>")
+- <code>jwtMinter</code>: JWT minter for signature verification
+- <code>adminController</code>: Admin controller for takedown checks
+- <code>request</code>: HTTP request for DPoP URL construction</p>
+<p><strong>Returns:</strong> Authenticated DID or nil on failure</p>
+<p><strong>Implementation Details (from XrpcAuthHelper.m):</strong></p>
+<p>The helper supports both Bearer tokens and DPoP tokens:</p>
+<pre class="codehilite"><code class="language-objc">// Parse Bearer or DPoP token
+NSString *token = nil;
+BOOL isDPoP = NO;
+if ([authHeader hasPrefix:@&quot;Bearer &quot;]) {
+    token = [authHeader substringFromIndex:7];
+    if ([request headerForKey:@&quot;DPoP&quot;].length &gt; 0) {
+        isDPoP = YES; // Some clients send Bearer but attach a DPoP header
+    }
+} else if ([authHeader hasPrefix:@&quot;DPoP &quot;]) {
+    token = [authHeader substringFromIndex:5];
+    isDPoP = YES;
+} else {
+    return nil;
+}
+</code></pre>
+
+<p>For DPoP verification, it validates the proof and extracts the thumbprint:</p>
+<pre class="codehilite"><code class="language-objc">// DPoP verification
+NSString *dpopThumbprint = nil;
+if (isDPoP) {
+    NSString *dpopProof = [request headerForKey:@&quot;DPoP&quot;];
+    if (dpopProof.length == 0) {
+        PDS_LOG_AUTH_WARN(@&quot;Missing DPoP header for DPoP authorization&quot;);
+        return nil;
+    }
+
+    NSURL *dpopURL = XrpcAuthExpectedDPoPURL(request, jwtMinter);
+    if (!dpopURL) {
+        PDS_LOG_AUTH_WARN(@&quot;Unable to construct DPoP URL for request&quot;);
+        return nil;
+    }
+
+    // Verify DPoP proof
+    NSError *dpopError = nil;
+    if (![OAuth2DPoPProof verifyProof:dpopProof
+                               method:request.methodString
+                                  url:dpopURL
+                                nonce:nil
+                         requireNonce:[PDSConfiguration sharedConfiguration].requireDPoPNonce
+                        outThumbprint:&amp;dpopThumbprint
+                                error:&amp;dpopError]) {
+        // Handle DPoP nonce challenge
+        if ([dpopError.userInfo[@&quot;use_dpop_nonce&quot;] boolValue]) {
+            if (response) {
+                response.statusCode = HttpStatusUnauthorized;
+                NSString *nonce = [[PDSNonceManager sharedManager] generateNonce];
+                if (nonce.length &gt; 0) {
+                    [response setHeader:nonce forKey:@&quot;DPoP-Nonce&quot;];
+                }
+                [response setHeader:@&quot;DPoP error=\&quot;use_dpop_nonce\&quot;&quot; forKey:@&quot;WWW-Authenticate&quot;];
+                [response setJsonBody:@{
+                    @&quot;error&quot;: @&quot;use_dpop_nonce&quot;,
+                    @&quot;message&quot;: @&quot;DPoP nonce required&quot;
+                }];
+            }
+            return nil;
+        }
+        return nil;
+    }
+}
+</code></pre>
+
+<p>JWT verification with custom audience handling:</p>
+<pre class="codehilite"><code class="language-objc">// Parse the JWT token
+NSError *parseError = nil;
+JWT *jwt = [JWT jwtWithToken:token error:&amp;parseError];
+if (!jwt || parseError) {
+    return nil;
+}
+
+// Create verifier and set expected issuer
+JWTVerifier *verifier = [[JWTVerifier alloc] init];
+if (jwtMinter) {
+    verifier.keyManager = jwtMinter.keyManager;
+    verifier.publicKey = jwtMinter.publicKey;
+}
+
+PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+NSString *expectedIssuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
+verifier.expectedIssuer = expectedIssuer;
+verifier.allowedAlgorithms = [self allowedAlgorithmsForMinter:jwtMinter];
+
+// Verify the JWT
+NSError *verifyError = nil;
+BOOL isValid = [verifier verifyJWT:jwt error:&amp;verifyError];
+if (!isValid || verifyError) {
+    return nil;
+}
+
+// Custom Audience Verification (supports did:web variants)
+NSString *tokenAud = jwt.payload.aud;
+if (tokenAud) {
+    BOOL validAud = [tokenAud isEqualToString:expectedIssuer];
+    if (!validAud) {
+        NSURL *issuerURL = [NSURL URLWithString:expectedIssuer];
+        if (issuerURL.host) {
+            NSString *didWebHost = [NSString stringWithFormat:@&quot;did:web:%@&quot;, issuerURL.host];
+            NSString *didWebHostPort = nil;
+            if (issuerURL.port) {
+                didWebHostPort = [NSString stringWithFormat:@&quot;did:web:%@%%3A%@&quot;, issuerURL.host, issuerURL.port];
+            }
+            if ([tokenAud isEqualToString:didWebHost] || (didWebHostPort &amp;&amp; [tokenAud isEqualToString:didWebHostPort])) {
+                validAud = YES;
+            }
+        }
+    }
+    if (!validAud) {
+        return nil;
+    }
+}
+</code></pre>
+
+<p>DPoP binding verification:</p>
+<pre class="codehilite"><code class="language-objc">// Enforce DPoP binding
+NSString *tokenJkt = jwt.payload.cnf[@&quot;jkt&quot;];
+if (isDPoP) {
+    if (!tokenJkt) {
+        PDS_LOG_AUTH_WARN(@&quot;DPoP authorization used with non-DPoP-bound token&quot;);
+        return nil;
+    }
+    if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
+        PDS_LOG_AUTH_WARN(@&quot;DPoP thumbprint mismatch&quot;);
+        return nil;
+    }
+} else if (tokenJkt) {
+    PDS_LOG_AUTH_WARN(@&quot;DPoP-bound token sent as Bearer token&quot;);
+    return nil;
+}
+</code></pre>
+
+<p>Takedown account rejection:</p>
+<pre class="codehilite"><code class="language-objc">// Extract DID from subject claim
+NSString *did = jwt.payload.sub;
+if (!did || ![did hasPrefix:@&quot;did:&quot;]) {
+    return nil;
+}
+
+// Check takedown status
+NSError *takedownError = nil;
+BOOL isTakedown = [adminController isAccountTakedownActive:did error:&amp;takedownError];
+if (takedownError) {
+    return nil;
+}
+if (isTakedown) {
+    PDS_LOG_AUTH_WARN(@&quot;Rejected request for suspended account %@&quot;, did);
+    return nil;
+}
+
+return did;
+</code></pre>
+
+<p><strong>Example Usage:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
+NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                              jwtMinter:jwtMinter
+                                        adminController:adminController
+                                                request:request];
+
+if (!did) {
+    [XrpcErrorHelper setAuthenticationError:response];
+    return;
+}
+</code></pre>
+
+<h3 id="extract-did-with-response">Extract DID with Response</h3>
+<pre class="codehilite"><code class="language-objc">+ (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                                      jwtMinter:(JWTMinter *)jwtMinter
+                                adminController:(id&lt;PDSAdminController&gt;)adminController
+                                        request:(HttpRequest *)request
+                                       response:(nullable HttpResponse *)response;
+</code></pre>
+
+<p>Extracts DID and can set error responses (e.g., DPoP nonce challenge).</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                              jwtMinter:jwtMinter
+                                        adminController:adminController
+                                                request:request
+                                               response:response];
+
+if (!did) {
+    // Response already set with error details
+    return;
+}
+</code></pre>
+
+<h3 id="extract-did-from-pdscontroller">Extract DID from PDSController</h3>
+<pre class="codehilite"><code class="language-objc">+ (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                                     controller:(PDSController *)controller
+                                        request:(HttpRequest *)request
+                                       response:(nullable HttpResponse *)response;
+</code></pre>
+
+<p>Convenience method that extracts jwtMinter and adminController from controller.</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                             controller:controller
+                                                request:request
+                                               response:response];
+</code></pre>
+
+<h3 id="authorize-admin-request">Authorize Admin Request</h3>
+<pre class="codehilite"><code class="language-objc">+ (BOOL)authorizeAdminRequest:(HttpRequest *)request
+                      response:(HttpResponse *)response
+              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                     jwtMinter:(JWTMinter *)jwtMinter
+               adminController:(id&lt;PDSAdminController&gt;)adminController;
+</code></pre>
+
+<p>Authorizes admin request by validating authentication and admin privileges.</p>
+<p><strong>Parameters:</strong>
+- <code>request</code>: HTTP request containing Authorization header
+- <code>response</code>: HTTP response for setting error details
+- <code>serviceDatabases</code>: Service databases for account lookups
+- <code>jwtMinter</code>: JWT minter for signature verification
+- <code>adminController</code>: Admin controller for takedown checks</p>
+<p><strong>Returns:</strong> YES if authorized, NO if authentication or authorization failed</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">BOOL authorized = [XrpcAuthHelper authorizeAdminRequest:request
+                                                response:response
+                                        serviceDatabases:serviceDatabases
+                                               jwtMinter:jwtMinter
+                                         adminController:adminController];
+
+if (!authorized) {
+    // Response already set with error
+    return;
+}
+
+// Proceed with admin operation
+</code></pre>
+
+<h2 id="bearer-token-authentication">Bearer Token Authentication</h2>
+<h3 id="jwt-format">JWT Format</h3>
+<p>Bearer tokens are JWT (JSON Web Tokens) with three parts:</p>
+<pre class="codehilite"><code>Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6cGxjOnVzZXIxMjMiLCJleHAiOjE2MzE1NTUyMDB9.signature
+       └─ Header ─────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                 └─ Payload ──────────────────────────────────────────────────────────────────────────────────────────┘
+                                                                                                                      └─ Signature ┘
+</code></pre>
+
+<h3 id="jwt-claims">JWT Claims</h3>
+<p>Standard JWT claims:</p>
+<table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sub</code></td>
+<td>Subject (user's DID)</td>
+</tr>
+<tr>
+<td><code>aud</code></td>
+<td>Audience (PDS identifier)</td>
+</tr>
+<tr>
+<td><code>exp</code></td>
+<td>Expiration time (Unix timestamp)</td>
+</tr>
+<tr>
+<td><code>iat</code></td>
+<td>Issued at (Unix timestamp)</td>
+</tr>
+<tr>
+<td><code>alg</code></td>
+<td>Algorithm (ES256, RS256, etc.)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example JWT payload:</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;sub&quot;: &quot;did:plc:user123&quot;,
+  &quot;aud&quot;: &quot;did:web:pds.example.com&quot;,
+  &quot;exp&quot;: 1631555200,
+  &quot;iat&quot;: 1631551600
+}
+</code></pre>
+
+<h3 id="verification-process">Verification Process</h3>
+<ol>
+<li>Parse JWT header to get algorithm</li>
+<li>Extract public key for algorithm</li>
+<li>Verify signature using public key</li>
+<li>Check expiration time</li>
+<li>Validate audience claim</li>
+<li>Extract and return DID from subject claim</li>
+</ol>
+<h2 id="dpop-authentication">DPoP Authentication</h2>
+<h3 id="dpop-format">DPoP Format</h3>
+<p>DPoP (Demonstration of Proof-of-Possession) uses two tokens:</p>
+<pre class="codehilite"><code>Authorization: DPoP &lt;access_token&gt;
+DPoP: &lt;dpop_proof&gt;
+</code></pre>
+
+<h3 id="dpop-proof-structure">DPoP Proof Structure</h3>
+<p>DPoP proof is a JWT with:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;typ&quot;: &quot;dpop+jwt&quot;,
+  &quot;alg&quot;: &quot;ES256&quot;,
+  &quot;jwk&quot;: {
+    &quot;kty&quot;: &quot;EC&quot;,
+    &quot;crv&quot;: &quot;P-256&quot;,
+    &quot;x&quot;: &quot;...&quot;,
+    &quot;y&quot;: &quot;...&quot;
+  }
+}
+</code></pre>
+
+<p>Payload:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;jti&quot;: &quot;unique-id&quot;,
+  &quot;htm&quot;: &quot;POST&quot;,
+  &quot;htu&quot;: &quot;https://pds.example.com/xrpc/com.atproto.repo.createRecord&quot;,
+  &quot;iat&quot;: 1631551600,
+  &quot;exp&quot;: 1631551660,
+  &quot;nonce&quot;: &quot;server-provided-nonce&quot;
+}
+</code></pre>
+
+<h3 id="dpop-verification">DPoP Verification</h3>
+<ol>
+<li>Parse DPoP proof JWT</li>
+<li>Verify DPoP signature using embedded public key</li>
+<li>Check DPoP timestamp (within 60 seconds)</li>
+<li>Verify HTTP method matches <code>htm</code> claim</li>
+<li>Verify URL matches <code>htu</code> claim</li>
+<li>Check nonce if provided</li>
+<li>Extract public key thumbprint</li>
+<li>Parse access token</li>
+<li>Verify access token signature</li>
+<li>Verify thumbprint binding in access token</li>
+<li>Extract and return DID</li>
+</ol>
+<h3 id="dpop-nonce-challenge">DPoP Nonce Challenge</h3>
+<p>If DPoP verification fails due to missing nonce:</p>
+<pre class="codehilite"><code>HTTP/1.1 401 Unauthorized
+WWW-Authenticate: DPoP error=&quot;use_dpop_nonce&quot;
+DPoP-Nonce: server-generated-nonce
+Content-Type: application/json
+
+{
+  &quot;error&quot;: &quot;AuthRequired&quot;,
+  &quot;message&quot;: &quot;DPoP nonce required&quot;
+}
+</code></pre>
+
+<p>Client must retry with nonce in DPoP proof.</p>
+<h2 id="takedown-account-rejection">Takedown Account Rejection</h2>
+<p>The helper checks if an account is under takedown:</p>
+<pre class="codehilite"><code class="language-objc">// In extractDIDFromAuthHeader:
+if ([adminController isAccountTakenDown:did]) {
+    // Reject authentication
+    return nil;
+}
+</code></pre>
+
+<p>Takedown accounts cannot authenticate even with valid tokens.</p>
+<h2 id="admin-authorization">Admin Authorization</h2>
+<p>The helper can verify admin privileges:</p>
+<pre class="codehilite"><code class="language-objc">BOOL authorized = [XrpcAuthHelper authorizeAdminRequest:request
+                                                response:response
+                                        serviceDatabases:serviceDatabases
+                                               jwtMinter:jwtMinter
+                                         adminController:adminController];
+</code></pre>
+
+<p>This checks:
+1. Valid authentication
+2. Admin account status
+3. Admin permissions</p>
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="authentication-failures">Authentication Failures</h3>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Missing header</td>
+<td>No Authorization header</td>
+<td>401 Unauthorized</td>
+</tr>
+<tr>
+<td>Invalid format</td>
+<td>Malformed header</td>
+<td>401 Unauthorized</td>
+</tr>
+<tr>
+<td>Invalid token</td>
+<td>Malformed JWT</td>
+<td>401 Unauthorized</td>
+</tr>
+<tr>
+<td>Expired token</td>
+<td>Token past expiration</td>
+<td>401 Unauthorized</td>
+</tr>
+<tr>
+<td>Invalid signature</td>
+<td>Signature verification failed</td>
+<td>401 Unauthorized</td>
+</tr>
+<tr>
+<td>Invalid nonce</td>
+<td>DPoP nonce mismatch</td>
+<td>401 with DPoP-Nonce header</td>
+</tr>
+<tr>
+<td>Takedown account</td>
+<td>Account under takedown</td>
+<td>401 Unauthorized</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dpop-nonce-challenge_1">DPoP Nonce Challenge</h3>
+<p>When DPoP nonce is missing or invalid:</p>
+<pre class="codehilite"><code class="language-objc">response.statusCode = 401;
+[response setHeaderValue:@&quot;DPoP error=\&quot;use_dpop_nonce\&quot;&quot; 
+               forName:@&quot;WWW-Authenticate&quot;];
+[response setHeaderValue:generatedNonce forName:@&quot;DPoP-Nonce&quot;];
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Token Validation</strong></li>
+<li>Always verify signatures</li>
+<li>Check expiration times</li>
+<li>Validate audience claims</li>
+<li>
+<p>Reject takedown accounts</p>
+</li>
+<li>
+<p><strong>DPoP Handling</strong></p>
+</li>
+<li>Implement nonce challenge</li>
+<li>Verify method and URL</li>
+<li>Check timestamp freshness</li>
+<li>
+<p>Validate thumbprint binding</p>
+</li>
+<li>
+<p><strong>Error Responses</strong></p>
+</li>
+<li>Use appropriate HTTP status codes</li>
+<li>Include error details in response</li>
+<li>Set DPoP-Nonce header when needed</li>
+<li>
+<p>Log authentication failures</p>
+</li>
+<li>
+<p><strong>Performance</strong></p>
+</li>
+<li>Cache public keys</li>
+<li>Reuse JWT verification</li>
+<li>Minimize cryptographic operations</li>
+<li>Use connection pooling</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="simple-bearer-token-authentication">Simple Bearer Token Authentication</h3>
+<pre class="codehilite"><code class="language-objc">NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
+NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                              jwtMinter:jwtMinter
+                                        adminController:adminController
+                                                request:request];
+
+if (!did) {
+    [XrpcErrorHelper setAuthenticationError:response];
+    return;
+}
+
+// Proceed with authenticated request
+</code></pre>
+
+<h3 id="dpop-authentication-with-nonce-challenge">DPoP Authentication with Nonce Challenge</h3>
+<pre class="codehilite"><code class="language-objc">NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
+NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                              jwtMinter:jwtMinter
+                                        adminController:adminController
+                                                request:request
+                                               response:response];
+
+if (!did) {
+    // Response already set with error or nonce challenge
+    return;
+}
+
+// Proceed with authenticated request
+</code></pre>
+
+<h3 id="admin-authorization_1">Admin Authorization</h3>
+<pre class="codehilite"><code class="language-objc">BOOL authorized = [XrpcAuthHelper authorizeAdminRequest:request
+                                                response:response
+                                        serviceDatabases:serviceDatabases
+                                               jwtMinter:jwtMinter
+                                         adminController:adminController];
+
+if (!authorized) {
+    // Response already set with error
+    return;
+}
+
+// Proceed with admin operation
+</code></pre>
+
+<h3 id="optional-authentication">Optional Authentication</h3>
+<pre class="codehilite"><code class="language-objc">NSString *authHeader = [request headerForName:@&quot;Authorization&quot;];
+NSString *did = nil;
+
+if (authHeader) {
+    did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                        jwtMinter:jwtMinter
+                                  adminController:adminController
+                                          request:request];
+}
+
+// Proceed with or without authentication
+// (some endpoints allow both)
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./xrpc-dispatch.md">XRPC Dispatch</a></li>
+<li><a href="./domain-methods.md">Domain Methods</a></li>
+<li><a href="./error-handling.md">Error Handling</a></li>
+<li><a href="../06-authentication/jwt-tokens.md">JWT Tokens</a></li>
+<li><a href="../06-authentication/oauth2-dpop.md">OAuth 2.0 with DPoP</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:13</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

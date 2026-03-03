@@ -6,9 +6,9 @@ Tests for Merkle Search Tree operations, CAR file format, DAG-CBOR encoding, and
 
 | File | Description |
 |------|-------------|
-| [mst.md](mst.md) | MST interop with reference implementations, persistence, repository commits, secp256k1 signing |
-| [car-cbor.md](car-cbor.md) | CAR v1 format reading/writing, DAG-CBOR canonical encoding, CID links |
-| [primitives.md](primitives.md) | CID creation, TID generation, Base58 encoding, DID validation, record path validation |
+| [mst.md](mst) | MST interop with reference implementations, persistence, repository commits, secp256k1 signing |
+| [car-cbor.md](car-cbor) | CAR v1 format reading/writing, DAG-CBOR canonical encoding, CID links |
+| [primitives.md](primitives) | CID creation, TID generation, Base58 encoding, DID validation, record path validation |
 
 ## Test Classes
 
@@ -34,9 +34,9 @@ Tests for Merkle Search Tree operations, CAR file format, DAG-CBOR encoding, and
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
-- [ATProto Data Models](../../architecture/atproto_data_models.md) - Data structure specifications
-- [Database Tests](../03-database/README.md) - Actor store persistence
-- [Integration Tests](../06-integration/README.md) - E2E repository operations
-- [Characterization Tests](../08-characterization/README.md) - Reference implementation compliance
+- [Test Index](../README) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture) - System architecture
+- [ATProto Data Models](../../architecture/atproto_data_models) - Data structure specifications
+- [Database Tests](../03-database/README) - Actor store persistence
+- [Integration Tests](../06-integration/README) - E2E repository operations
+- [Characterization Tests](../08-characterization/README) - Reference implementation compliance

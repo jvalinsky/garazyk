@@ -494,6 +494,6 @@ When `login_hint` is provided:
 
 ## Related Documentation
 
-- [Authorization Flow](./authorization-flow.md) - Full authorization code flow
-- [Security](./security.md) - Security considerations for the consent flow
-- [Overview](./README.md) - OAuth2 implementation overview
+- [Authorization Flow](./authorization-flow) - Full authorization code flow
+- [Security](./security) - Security considerations for the consent flow
+- [Overview](./README) - OAuth2 implementation overview

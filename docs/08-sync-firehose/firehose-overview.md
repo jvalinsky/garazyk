@@ -323,6 +323,6 @@ Each commit has a sequence number for tracking position:
 
 ## Next Steps
 
-- **[WebSocket Server](./websocket-server.md)** — WebSocket implementation
-- **[Commit Broadcasting](./commit-broadcasting.md)** — Broadcasting details
-- **[Backpressure](./backpressure.md)** — Flow control
+- **[WebSocket Server](./websocket-server)** — WebSocket implementation
+- **[Commit Broadcasting](./commit-broadcasting)** — Broadcasting details
+- **[Backpressure](./backpressure)** — Flow control

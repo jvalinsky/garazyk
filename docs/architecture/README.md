@@ -8,15 +8,15 @@ Comprehensive architecture documentation for the ATProto PDS implementation, inc
 
 | File | Title | Topic |
 |------|-------|-------|
-| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) | ATProto PDS Deep Code Analysis | System overview, component analysis, design patterns, data flows, security model, performance considerations, and refactoring recommendations |
-| [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) | ATProto PDS Architecture Diagrams | Mermaid diagrams for system overview, OpenAPI generation, API endpoints, data flows, and component dependencies |
-| [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) | ATProto PDS Mermaid Diagrams | XRPC request flow, record creation protocol, data models, OAuth2 token flow, session management, WebSocket firehose, and blob storage |
-| [atproto_data_models.md](atproto_data_models.md) | atproto Data Models Research | DID implementation, repository structure (MST), Lexicon schemas, record types, commit/signature verification, AT URI resolution, collections, and sync protocols |
-| [atproto_pds_architecture.md](atproto_pds_architecture.md) | AT Protocol PDS Architecture and Specifications | PDS role in ecosystem, XRPC API endpoints, OAuth 2.1 authentication, data storage requirements, repository structure, event stream/firehose, and existing implementations |
-| [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) | Development Workflow Diagrams | Build/run process, test pyramid, code organization, debugging flowcharts, OAuth2 flow, database transactions, and quick reference commands |
-| [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) | Diagram Quick Reference | Condensed guide to all diagrams with use-case mapping, color legend, and common Mermaid patterns |
-| [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) | ATProto XRPC Protocol Reference | NSID naming, method patterns, Lexicon NSIDs, data types, error codes, and curl command examples |
-| [2026-01-10-integration-test-findings.md](2026-01-10-integration-test-findings.md) | PDS Integration Test Results | Integration test findings, token format analysis, getRecord issues, CID format compliance, and resolved issues |
+| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) | ATProto PDS Deep Code Analysis | System overview, component analysis, design patterns, data flows, security model, performance considerations, and refactoring recommendations |
+| [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS) | ATProto PDS Architecture Diagrams | Mermaid diagrams for system overview, OpenAPI generation, API endpoints, data flows, and component dependencies |
+| [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) | ATProto PDS Mermaid Diagrams | XRPC request flow, record creation protocol, data models, OAuth2 token flow, session management, WebSocket firehose, and blob storage |
+| [atproto_data_models.md](atproto_data_models) | atproto Data Models Research | DID implementation, repository structure (MST), Lexicon schemas, record types, commit/signature verification, AT URI resolution, collections, and sync protocols |
+| [atproto_pds_architecture.md](atproto_pds_architecture) | AT Protocol PDS Architecture and Specifications | PDS role in ecosystem, XRPC API endpoints, OAuth 2.1 authentication, data storage requirements, repository structure, event stream/firehose, and existing implementations |
+| [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) | Development Workflow Diagrams | Build/run process, test pyramid, code organization, debugging flowcharts, OAuth2 flow, database transactions, and quick reference commands |
+| [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) | Diagram Quick Reference | Condensed guide to all diagrams with use-case mapping, color legend, and common Mermaid patterns |
+| [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) | ATProto XRPC Protocol Reference | NSID naming, method patterns, Lexicon NSIDs, data types, error codes, and curl command examples |
+| [2026-01-10-integration-test-findings.md](2026-01-10-integration-test-findings) | PDS Integration Test Results | Integration test findings, token format analysis, getRecord issues, CID format compliance, and resolved issues |
 
 ### Graphviz Diagrams (.dot files)
 
@@ -35,22 +35,22 @@ Generate PNGs with: `dot -Tpng <file>.dot -o <file>.png`
 ## Quick Navigation by Task
 
 ### Understanding the System
-1. [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Start here for comprehensive overview
+1. [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Start here for comprehensive overview
 2. [high_level_architecture.dot](high_level_architecture.dot) - Visual system structure
 3. [module_dependencies.dot](module_dependencies.dot) - Module relationships
 
 ### ATProto Protocol Development
-1. [atproto_pds_architecture.md](atproto_pds_architecture.md) - PDS specifications
-2. [atproto_data_models.md](atproto_data_models.md) - Data structures and models
-3. [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) - Quick protocol reference
+1. [atproto_pds_architecture.md](atproto_pds_architecture) - PDS specifications
+2. [atproto_data_models.md](atproto_data_models) - Data structures and models
+3. [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) - Quick protocol reference
 
 ### Development Workflows
-1. [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) - Build, test, debug processes
-2. [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) - Diagram selection guide
+1. [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) - Build, test, debug processes
+2. [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) - Diagram selection guide
 
 ### Authentication & Security
 1. [authentication_flow.dot](authentication_flow.dot) - Auth flow diagram
-2. [atproto_pds_architecture.md](atproto_pds_architecture.md#3-authentication-and-authorization-mechanisms) - OAuth 2.1 profile
+2. [atproto_pds_architecture.md](atproto_pds_architecture#3-authentication-and-authorization-mechanisms) - OAuth 2.1 profile
 
 ### Database & Storage
 1. [database_schema.dot](database_schema.dot) - Schema relationships
@@ -61,18 +61,18 @@ Generate PNGs with: `dot -Tpng <file>.dot -o <file>.png`
 ### Architecture Documents
 | File | Description |
 |------|-------------|
-| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) | Deep code analysis, component details, and design patterns |
-| [atproto_pds_architecture.md](atproto_pds_architecture.md) | PDS specifications, XRPC endpoints, and OAuth 2.1 profile |
-| [atproto_data_models.md](atproto_data_models.md) | DID implementation, MST, Lexicon schemas, and CBOR encoding |
-| [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) | Quick reference for XRPC methods and error codes |
-| [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) | Build/test/debug workflow diagrams |
+| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) | Deep code analysis, component details, and design patterns |
+| [atproto_pds_architecture.md](atproto_pds_architecture) | PDS specifications, XRPC endpoints, and OAuth 2.1 profile |
+| [atproto_data_models.md](atproto_data_models) | DID implementation, MST, Lexicon schemas, and CBOR encoding |
+| [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) | Quick reference for XRPC methods and error codes |
+| [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) | Build/test/debug workflow diagrams |
 
 ### Diagram Documents
 | File | Description |
 |------|-------------|
-| [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) | System overview and component diagrams |
-| [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) | Protocol flows and data model diagrams |
-| [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) | Guide to selecting the right diagram |
+| [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS) | System overview and component diagrams |
+| [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) | Protocol flows and data model diagrams |
+| [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) | Guide to selecting the right diagram |
 
 ### Other Directories
 | Directory | Description |

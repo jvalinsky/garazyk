@@ -392,9 +392,9 @@ The `pendingConsents` dictionary uses `@synchronized` for thread safety:
 
 ## Related Documentation
 
-- [Token Management](./token-management.md) - JWT tokens, sessions, and token lifecycle
-- [DPoP](./dpop.md) - DPoP proof verification and JWK thumbprints
-- [PKCE](./pkce.md) - PKCE code challenge/verifier implementation
-- [Authorization Flow](./authorization-flow.md) - Sign-in and consent flow details
-- [Security](./security.md) - Security considerations and threat model
-- [Overview](./README.md) - OAuth2 implementation overview
+- [Token Management](./token-management) - JWT tokens, sessions, and token lifecycle
+- [DPoP](./dpop) - DPoP proof verification and JWK thumbprints
+- [PKCE](./pkce) - PKCE code challenge/verifier implementation
+- [Authorization Flow](./authorization-flow) - Sign-in and consent flow details
+- [Security](./security) - Security considerations and threat model
+- [Overview](./README) - OAuth2 implementation overview

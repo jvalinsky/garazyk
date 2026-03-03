@@ -151,14 +151,14 @@ Resolved items:
 ## Related Documentation
 
 ### Architecture Documents
-- [README.md](README.md) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Component analysis and data flows
-- [atproto_pds_architecture.md](atproto_pds_architecture.md) - Expected token format and CID specs
-- [atproto_data_models.md](atproto_data_models.md) - Record and CID structure
+- [README.md](README) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis and data flows
+- [atproto_pds_architecture.md](atproto_pds_architecture) - Expected token format and CID specs
+- [atproto_data_models.md](atproto_data_models) - Record and CID structure
 
 ### Related Tests
-- [../tests/00-identity-auth/oauth.md](../tests/00-identity-auth/oauth.md) - OAuth and JWT token tests
-- [../tests/02-network/xrpc.md](../tests/02-network/xrpc.md) - XRPC endpoint tests
+- [../tests/00-identity-auth/oauth.md](../tests/00-identity-auth/oauth) - OAuth and JWT token tests
+- [../tests/02-network/xrpc.md](../tests/02-network/xrpc) - XRPC endpoint tests
 
 ### Security Documentation
 - [../security/](../security/) - Security audit and hardening guides

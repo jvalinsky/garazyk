@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="1400" viewBox="0 0 1200 1400">
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .metrics-box { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .source-box { fill: #e6f3ff; stroke: #0066cc; stroke-width: 2; }
+      .export-box { fill: #f0e6ff; stroke: #6600cc; stroke-width: 2; }
+      .monitor-box { fill: #e6f7e6; stroke: #00aa00; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" class="title" font-size="20">Metrics Collection Architecture</text>
+
+  <!-- ===== METRICS SOURCES SECTION ===== -->
+  <text x="50" y="70" class="title" font-size="14">Metrics Sources</text>
+
+  <!-- HTTP Server -->
+  <rect x="50" y="90" width="250" height="100" class="source-box" rx="5"/>
+  <text x="175" y="115" text-anchor="middle" class="title">HttpServer</text>
+  <text x="175" y="140" text-anchor="middle" class="label">Records per request:</text>
+  <text x="175" y="160" text-anchor="middle" class="label">• HTTP method</text>
+  <text x="175" y="175" text-anchor="middle" class="label">• XRPC endpoint</text>
+
+  <!-- Database Pools -->
+  <rect x="350" y="90" width="250" height="100" class="source-box" rx="5"/>
+  <text x="475" y="115" text-anchor="middle" class="title">DatabasePool</text>
+  <text x="475" y="140" text-anchor="middle" class="label">Tracks:</text>
+  <text x="475" y="160" text-anchor="middle" class="label">• Pool size & capacity</text>
+  <text x="475" y="175" text-anchor="middle" class="label">• Open file handles</text>
+
+  <!-- Services -->
+  <rect x="650" y="90" width="250" height="100" class="source-box" rx="5"/>
+  <text x="775" y="115" text-anchor="middle" class="title">Services Layer</text>
+  <text x="775" y="140" text-anchor="middle" class="label">Tracks:</text>
+  <text x="775" y="160" text-anchor="middle" class="label">• Repository count</text>
+  <text x="775" y="175" text-anchor="middle" class="label">• Blob count & storage</text>
+
+  <!-- PDSController -->
+  <rect x="950" y="90" width="200" height="100" class="source-box" rx="5"/>
+  <text x="1050" y="115" text-anchor="middle" class="title">PDSController</text>
+  <text x="1050" y="140" text-anchor="middle" class="label">Aggregates:</text>
+  <text x="1050" y="160" text-anchor="middle" class="label">• Database metrics</text>
+  <text x="1050" y="175" text-anchor="middle" class="label">• System health</text>
+
+  <!-- Arrows down to PDSMetrics -->
+  <path d="M 175 190 L 175 280 L 300 280" class="arrow"/>
+  <path d="M 475 190 L 475 280 L 300 280" class="arrow"/>
+  <path d="M 775 190 L 775 280 L 600 280" class="arrow"/>
+  <path d="M 1050 190 L 1050 280 L 600 280" class="arrow"/>
+
+  <!-- ===== CENTRAL METRICS SINGLETON ===== -->
+  <text x="50" y="250" class="title" font-size="14">Central Metrics Collection</text>
+
+  <!-- PDSMetrics Singleton -->
+  <rect x="300" y="280" width="300" height="180" class="metrics-box" rx="5"/>
+  <text x="450" y="310" text-anchor="middle" class="title" font-size="18">PDSMetrics</text>
+  <text x="450" y="335" text-anchor="middle" class="label">(Singleton Pattern)</text>
+  
+  <text x="450" y="365" text-anchor="middle" class="label">Thread-safe storage using os_unfair_lock:</text>
+  <text x="450" y="385" text-anchor="middle" class="label">• httpRequestsTotal (counter)</text>
+  <text x="450" y="400" text-anchor="middle" class="label">• httpRequestsByMethod (labeled counter)</text>
+  <text x="450" y="415" text-anchor="middle" class="label">• httpRequestsByEndpoint (labeled counter)</text>
+  <text x="450" y="430" text-anchor="middle" class="label">• repositoryCount, blobCount (gauges)</text>
+  <text x="450" y="445" text-anchor="middle" class="label">• databaseSizeBytes, activeConnections</text>
+
+  <!-- Access Pattern -->
+  <rect x="650" y="280" width="250" height="80" class="box" rx="5"/>
+  <text x="775" y="305" text-anchor="middle" class="title">Access Pattern</text>
+  <text x="775" y="330" text-anchor="middle" class="label">[PDSMetrics sharedMetrics]</text>
+  <text x="775" y="350" text-anchor="middle" class="label">Returns singleton instance</text>
+
+  <!-- Thread Safety -->
+  <rect x="650" y="380" width="250" height="80" class="box" rx="5"/>
+  <text x="775" y="405" text-anchor="middle" class="title">Thread Safety</text>
+  <text x="775" y="430" text-anchor="middle" class="label">os_unfair_lock protects:</text>
+  <text x="775" y="450" text-anchor="middle" class="label">All increment/set operations</text>
+
+  <!-- ===== METRICS RECORDING SECTION ===== -->
+  <text x="50" y="510" class="title" font-size="14">Metrics Recording Methods</text>
+
+  <!-- HTTP Metrics -->
+  <rect x="50" y="530" width="280" height="100" class="box" rx="5"/>
+  <text x="190" y="555" text-anchor="middle" class="title">HTTP Request Recording</text>
+  <text x="190" y="580" text-anchor="middle" class="label">incrementHttpRequestsForMethod:</text>
+  <text x="190" y="595" text-anchor="middle" class="label">endpoint:status:</text>
+  <text x="190" y="615" text-anchor="middle" class="label">Records method, endpoint, status code</text>
+
+  <!-- Repository Metrics -->
+  <rect x="360" y="530" width="280" height="100" class="box" rx="5"/>
+  <text x="500" y="555" text-anchor="middle" class="title">Repository Metrics</text>
+  <text x="500" y="580" text-anchor="middle" class="label">incrementRepositoryCount</text>
+  <text x="500" y="595" text-anchor="middle" class="label">incrementBlobCount</text>
+  <text x="500" y="615" text-anchor="middle" class="label">addBlobBytes:</text>
+
+  <!-- System Metrics -->
+  <rect x="670" y="530" width="280" height="100" class="box" rx="5"/>
+  <text x="810" y="555" text-anchor="middle" class="title">System Metrics</text>
+  <text x="810" y="580" text-anchor="middle" class="label">setDatabaseSize:</text>
+  <text x="810" y="595" text-anchor="middle" class="label">setActiveConnections:</text>
+  <text x="810" y="615" text-anchor="middle" class="label">Updates gauge values</text>
+
+  <!-- Arrows from PDSMetrics to recording methods -->
+  <path d="M 350 460 L 190 530" class="dashed arrow"/>
+  <path d="M 450 460 L 500 530" class="dashed arrow"/>
+  <path d="M 550 460 L 810 530" class="dashed arrow"/>
+
+  <!-- ===== EXPORT SECTION ===== -->
+  <text x="50" y="680" class="title" font-size="14">Metrics Export</text>
+
+  <!-- Export Prometheus -->
+  <rect x="200" y="700" width="300" height="120" class="export-box" rx="5"/>
+  <text x="350" y="725" text-anchor="middle" class="title">exportPrometheus</text>
+  <text x="350" y="750" text-anchor="middle" class="label">Generates Prometheus text format:</text>
+  <text x="350" y="770" text-anchor="middle" class="label"># HELP pds_http_requests_total</text>
+  <text x="350" y="785" text-anchor="middle" class="label"># TYPE pds_http_requests_total counter</text>
+  <text x="350" y="800" text-anchor="middle" class="label">pds_http_requests_total{method="get"} 1234</text>
+
+  <!-- Arrow from PDSMetrics to export -->
+  <path d="M 450 460 L 450 650 L 350 650 L 350 700" class="arrow"/>
+
+  <!-- Admin API Endpoint -->
+  <rect x="550" y="700" width="300" height="120" class="export-box" rx="5"/>
+  <text x="700" y="725" text-anchor="middle" class="title">Admin API Endpoint</text>
+  <text x="700" y="750" text-anchor="middle" class="label">/_pds/admin/metrics</text>
+  <text x="700" y="775" text-anchor="middle" class="label">Content negotiation:</text>
+  <text x="700" y="790" text-anchor="middle" class="label">• text/plain → Prometheus format</text>
+  <text x="700" y="805" text-anchor="middle" class="label">• application/json → JSON format</text>
+
+  <!-- Arrow from export to admin endpoint -->
+  <path d="M 500 760 L 550 760" class="arrow"/>
+
+  <!-- ===== MONITORING SYSTEMS SECTION ===== -->
+  <text x="50" y="870" class="title" font-size="14">Monitoring Systems</text>
+
+  <!-- Prometheus -->
+  <rect x="100" y="890" width="250" height="120" class="monitor-box" rx="5"/>
+  <text x="225" y="915" text-anchor="middle" class="title">Prometheus</text>
+  <text x="225" y="940" text-anchor="middle" class="label">Scrapes metrics endpoint</text>
+  <text x="225" y="960" text-anchor="middle" class="label">Interval: 15s (configurable)</text>
+  <text x="225" y="980" text-anchor="middle" class="label">Stores time-series data</text>
+  <text x="225" y="995" text-anchor="middle" class="label">Evaluates alert rules</text>
+
+  <!-- Grafana -->
+  <rect x="400" y="890" width="250" height="120" class="monitor-box" rx="5"/>
+  <text x="525" y="915" text-anchor="middle" class="title">Grafana</text>
+  <text x="525" y="940" text-anchor="middle" class="label">Queries Prometheus</text>
+  <text x="525" y="960" text-anchor="middle" class="label">Visualizes metrics</text>
+  <text x="525" y="980" text-anchor="middle" class="label">Creates dashboards</text>
+  <text x="525" y="995" text-anchor="middle" class="label">Sends notifications</text>
+
+  <!-- Custom Monitoring -->
+  <rect x="700" y="890" width="250" height="120" class="monitor-box" rx="5"/>
+  <text x="825" y="915" text-anchor="middle" class="title">Custom Monitoring</text>
+  <text x="825" y="940" text-anchor="middle" class="label">Direct API access</text>
+  <text x="825" y="960" text-anchor="middle" class="label">JSON format</text>
+  <text x="825" y="980" text-anchor="middle" class="label">Programmatic integration</text>
+  <text x="825" y="995" text-anchor="middle" class="label">Custom alerting logic</text>
+
+  <!-- Arrows from admin endpoint to monitoring systems -->
+  <path d="M 700 820 L 700 850 L 225 850 L 225 890" class="arrow"/>
+  <path d="M 700 820 L 700 850 L 525 850 L 525 890" class="arrow"/>
+  <path d="M 700 820 L 700 850 L 825 850 L 825 890" class="arrow"/>
+
+  <!-- ===== DATA FLOW DESCRIPTION ===== -->
+  <g transform="translate(50, 1050)">
+    <text x="0" y="0" class="title">Metrics Collection Flow:</text>
+    <text x="0" y="25" class="label">1. Application components record metrics via PDSMetrics singleton</text>
+    <text x="0" y="45" class="label">2. PDSMetrics stores metrics in thread-safe data structures (os_unfair_lock)</text>
+    <text x="0" y="65" class="label">3. Admin API endpoint exposes metrics at /_pds/admin/metrics</text>
+    <text x="0" y="85" class="label">4. Prometheus scrapes endpoint periodically (default: 15s interval)</text>
+    <text x="0" y="105" class="label">5. Grafana queries Prometheus for visualization and alerting</text>
+    <text x="0" y="125" class="label">6. Custom monitoring tools can access JSON format directly</text>
+  </g>
+
+  <!-- ===== EXAMPLE METRICS ===== -->
+  <g transform="translate(50, 1200)">
+    <rect x="0" y="0" width="1100" height="150" class="box" rx="5"/>
+    <text x="550" y="25" text-anchor="middle" class="title">Example Metrics Output</text>
+    
+    <text x="20" y="50" class="label" font-family="monospace" font-size="11">pds_http_requests_total{method="get"} 1234</text>
+    <text x="20" y="65" class="label" font-family="monospace" font-size="11">pds_http_requests_total{method="post"} 567</text>
+    <text x="20" y="80" class="label" font-family="monospace" font-size="11">pds_http_requests_by_endpoint{endpoint="com.atproto.repo.getRecord"} 890</text>
+    <text x="20" y="95" class="label" font-family="monospace" font-size="11">pds_http_responses_total{status="200"} 1100</text>
+    <text x="20" y="110" class="label" font-family="monospace" font-size="11">pds_repository_count 42</text>
+    <text x="20" y="125" class="label" font-family="monospace" font-size="11">pds_blob_storage_bytes 10485760</text>
+    <text x="20" y="140" class="label" font-family="monospace" font-size="11">pds_active_connections 8</text>
+  </g>
+
+  <!-- ===== LEGEND ===== -->
+  <g transform="translate(700, 1200)">
+    <text x="0" y="0" class="title">Legend:</text>
+    
+    <rect x="0" y="20" width="20" height="20" class="source-box"/>
+    <text x="30" y="35" class="label">Metrics Source</text>
+    
+    <rect x="0" y="50" width="20" height="20" class="metrics-box"/>
+    <text x="30" y="65" class="label">Central Collection</text>
+    
+    <rect x="0" y="80" width="20" height="20" class="export-box"/>
+    <text x="30" y="95" class="label">Export Layer</text>
+    
+    <rect x="0" y="110" width="20" height="20" class="monitor-box"/>
+    <text x="30" y="125" class="label">Monitoring System</text>
+  </g>
+</svg>

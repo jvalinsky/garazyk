@@ -6,7 +6,7 @@ Tests for email providers, HTTP clients, and secrets management.
 
 | File | Description |
 |------|-------------|
-| [email.md](email.md) | Resend email provider, HTTP client, keychain/environment secrets providers |
+| [email.md](email) | Resend email provider, HTTP client, keychain/environment secrets providers |
 
 ## Test Classes
 
@@ -27,7 +27,7 @@ Tests for email providers, HTTP clients, and secrets management.
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [Email Provider Tests](email.md) - Email provider details
-- [Application Tests](../04-application/README.md) - Application services
-- [Security Tests](../05-security/README.md) - Secrets management
+- [Test Index](../README) - Main test documentation index
+- [Email Provider Tests](email) - Email provider details
+- [Application Tests](../04-application/README) - Application services
+- [Security Tests](../05-security/README) - Secrets management

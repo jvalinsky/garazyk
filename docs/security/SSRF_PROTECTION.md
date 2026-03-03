@@ -127,8 +127,8 @@ Tests are located in `ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m` with 
 
 ## Related Documentation
 
-- [Security Documentation Index](README.md) - Overview of all security docs
-- [Security Testing Plan](SECURITY_TESTING_PLAN.md) - Attack vectors and test cases
-- [Security Plan](SECURITY_PLAN.md) - Comprehensive security strategy
-- [Identity Resolution Tests](../tests/00-identity-auth/identity-resolution.md) - Handle/DID tests
-- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation
+- [Security Documentation Index](README) - Overview of all security docs
+- [Security Testing Plan](SECURITY_TESTING_PLAN) - Attack vectors and test cases
+- [Security Plan](SECURITY_PLAN) - Comprehensive security strategy
+- [Identity Resolution Tests](../tests/00-identity-auth/identity-resolution) - Handle/DID tests
+- [OAuth2 Security](../oauth2/security) - OAuth2 security implementation

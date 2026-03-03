@@ -1049,10 +1049,10 @@ jq 'select(.correlation_id == "req-abc-123")' server.log
 
 ## Related Documentation
 
-- [Metrics Collection](metrics-collection.md) - Quantitative monitoring
-- [Performance Monitoring](performance-monitoring.md) - Profiling and optimization
-- [Security Audit Guide](security-audit-guide.md) - Using the log redaction audit skill
-- [Secrets Management](../06-authentication/secrets-management.md) - Handling sensitive data
+- [Metrics Collection](metrics-collection) - Quantitative monitoring
+- [Performance Monitoring](performance-monitoring) - Profiling and optimization
+- [Security Audit Guide](security-audit-guide) - Using the log redaction audit skill
+- [Secrets Management](../06-authentication/secrets-management) - Handling sensitive data
 
 ## Auditing Log Redaction
 

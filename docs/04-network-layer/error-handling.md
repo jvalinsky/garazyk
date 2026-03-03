@@ -614,6 +614,6 @@ response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:n
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch.md)
-- [Domain Methods](./domain-methods.md)
-- [Auth Helpers](./auth-helpers.md)
+- [XRPC Dispatch](./xrpc-dispatch)
+- [Domain Methods](./domain-methods)
+- [Auth Helpers](./auth-helpers)

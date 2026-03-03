@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliability Guarantees and Delivery Semantics - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Reliability Guarantees and Delivery Semantics</h1>
+            </div>
+            <h1 id="reliability-guarantees-and-delivery-semantics">Reliability Guarantees and Delivery Semantics</h1>
+<h2 id="overview">Overview</h2>
+<p>The firehose provides specific reliability guarantees for event delivery. Understanding these guarantees is critical for building correct applications on top of the firehose.</p>
+<h2 id="delivery-semantics">Delivery Semantics</h2>
+<h3 id="at-least-once-delivery">At-Least-Once Delivery</h3>
+<p>The firehose guarantees <strong>at-least-once delivery</strong> for all events:
+- Every event will be delivered to connected subscribers
+- Events may be delivered more than once in failure scenarios
+- Subscribers must handle duplicate events idempotently</p>
+<h3 id="why-not-exactly-once">Why Not Exactly-Once?</h3>
+<p>Exactly-once delivery is impossible to guarantee in distributed systems due to:
+- Network partitions
+- Client crashes
+- Server restarts
+- Ambiguous acknowledgments</p>
+<p>The firehose chooses at-least-once semantics because:
+1. It's achievable with reasonable complexity
+2. Clients can implement idempotency
+3. It's better than at-most-once (potential data loss)</p>
+<h2 id="event-persistence">Event Persistence</h2>
+<h3 id="database-storage">Database Storage</h3>
+<p>All events are persisted to the database before broadcasting:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Event persistence
+NSError *persistError = nil;
+if (![self.serviceDatabases persistEvent:self.sequenceNumber
+                                    type:eventType
+                                    data:eventData
+                                   error:&amp;persistError]) {
+  PDS_LOG_SYNC_ERROR(@&quot;Failed to persist %@ event: %@&quot;, eventType,
+                     persistError);
+}
+
+[self broadcastEventData:eventData];
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 460-470)</p>
+<p>This ensures:
+- Events survive server crashes
+- Events can be replayed after disconnections
+- No events are lost due to server failures</p>
+<h3 id="durability-guarantees">Durability Guarantees</h3>
+<p>Events are stored in SQLite with WAL mode:
+- Write-Ahead Logging ensures durability
+- Transactions are atomic
+- Database survives crashes</p>
+<h2 id="ordering-guarantees">Ordering Guarantees</h2>
+<h3 id="total-order">Total Order</h3>
+<p>The firehose guarantees total ordering of events:
+- Events are assigned monotonically increasing sequence numbers
+- Events are delivered in sequence number order
+- All subscribers see the same order</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Monotonic sequence assignment
+dispatch_async(self.eventQueue, ^{
+  [self ensureSequenceInitialized];
+  self.sequenceNumber++;  // Atomic increment
+
+  FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+  event.seq = self.sequenceNumber;
+  // ...
+});
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 400-410)</p>
+<h3 id="serial-event-queue">Serial Event Queue</h3>
+<p>All event broadcasting happens on a serial queue:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Serial queue initialization
+_eventQueue = dispatch_queue_create(&quot;com.atproto.pds.subscribeRepos.events&quot;,
+                                    DISPATCH_QUEUE_SERIAL);
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (line 95)</p>
+<p>This ensures:
+- Events are processed one at a time
+- Sequence numbers are assigned in order
+- No race conditions in event broadcasting</p>
+<h2 id="duplicate-detection">Duplicate Detection</h2>
+<h3 id="why-duplicates-occur">Why Duplicates Occur</h3>
+<p>Duplicates can occur in several scenarios:</p>
+<ol>
+<li><strong>Network Retransmission</strong>:</li>
+<li>Client receives event but ACK is lost</li>
+<li>Server retransmits the event</li>
+<li>
+<p>Client receives it twice</p>
+</li>
+<li>
+<p><strong>Reconnection Overlap</strong>:</p>
+</li>
+<li>Client disconnects after receiving event N</li>
+<li>Client reconnects with cursor N-1</li>
+<li>
+<p>Event N is replayed</p>
+</li>
+<li>
+<p><strong>Server Restart</strong>:</p>
+</li>
+<li>Server crashes after broadcasting but before client ACK</li>
+<li>Server restarts and replays from last persisted state</li>
+<li>Events may be rebroadcast</li>
+</ol>
+<h3 id="idempotency-keys">Idempotency Keys</h3>
+<p>Each event has a unique identifier (sequence number):</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;seq&quot;: 12345,
+  &quot;repo&quot;: &quot;did:plc:user123&quot;,
+  &quot;commit&quot;: &quot;bafyreiabc123...&quot;,
+  &quot;rev&quot;: &quot;3jqfk...&quot;,
+  // ...
+}
+</code></pre>
+
+<p>Clients should use the sequence number for deduplication:</p>
+<pre class="codehilite"><code class="language-objc">// Client-side example (conceptual)
+@interface FirehoseClient : NSObject
+@property (nonatomic, strong) NSMutableSet&lt;NSNumber *&gt; *processedSeqs;
+@end
+
+@implementation FirehoseClient
+
+- (void)handleEvent:(NSDictionary *)event {
+    NSNumber *seq = event[@&quot;seq&quot;];
+
+    // Check if already processed
+    if ([self.processedSeqs containsObject:seq]) {
+        NSLog(@&quot;Duplicate event detected: seq=%@&quot;, seq);
+        return;
+    }
+
+    // Process event
+    [self processEvent:event];
+
+    // Mark as processed
+    [self.processedSeqs addObject:seq];
+
+    // Prune old sequence numbers (keep last 10000)
+    if (self.processedSeqs.count &gt; 10000) {
+        [self pruneOldSequenceNumbers];
+    }
+}
+
+@end
+</code></pre>
+
+<h3 id="repository-revision-tracking">Repository Revision Tracking</h3>
+<p>For commit events, the <code>rev</code> field provides additional deduplication:</p>
+<pre class="codehilite"><code class="language-objc">// Client-side example (conceptual)
+@interface RepositoryTracker : NSObject
+@property (nonatomic, strong) NSMutableDictionary&lt;NSString *, NSString *&gt; *lastRevByDID;
+@end
+
+@implementation RepositoryTracker
+
+- (BOOL)isNewCommit:(NSDictionary *)event {
+    NSString *repo = event[@&quot;repo&quot;];
+    NSString *rev = event[@&quot;rev&quot;];
+    NSString *lastRev = self.lastRevByDID[repo];
+
+    if ([rev isEqualToString:lastRev]) {
+        // Duplicate commit
+        return NO;
+    }
+
+    // New commit
+    self.lastRevByDID[repo] = rev;
+    return YES;
+}
+
+@end
+</code></pre>
+
+<h2 id="gap-detection">Gap Detection</h2>
+<h3 id="detecting-missing-events">Detecting Missing Events</h3>
+<p>Clients can detect gaps by checking sequence numbers:</p>
+<pre class="codehilite"><code class="language-objc">// Client-side example (conceptual)
+- (void)handleEvent:(NSDictionary *)event {
+    NSInteger seq = [event[@&quot;seq&quot;] integerValue];
+
+    if (self.lastSeq &gt; 0 &amp;&amp; seq != self.lastSeq + 1) {
+        // Gap detected!
+        NSInteger gap = seq - self.lastSeq - 1;
+        NSLog(@&quot;Missing %ld events (last: %ld, current: %ld)&quot;, 
+              (long)gap, (long)self.lastSeq, (long)seq);
+
+        // Reconnect to fill gap
+        [self reconnectWithCursor:@(self.lastSeq).stringValue];
+        return;
+    }
+
+    self.lastSeq = seq;
+    [self processEvent:event];
+}
+</code></pre>
+
+<h3 id="handling-gaps">Handling Gaps</h3>
+<p>When a gap is detected:
+1. Close the current connection
+2. Reconnect with cursor pointing to last received sequence
+3. Replay missing events
+4. Resume normal operation</p>
+<h2 id="crash-recovery">Crash Recovery</h2>
+<h3 id="server-crash">Server Crash</h3>
+<p>If the server crashes:
+1. Events are persisted in the database
+2. On restart, sequence number is recovered from database
+3. Clients reconnect with their last cursor
+4. Missing events are replayed</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Sequence recovery
+- (void)ensureSequenceInitialized {
+  @synchronized(self) {
+    if (self.sequenceInitialized) {
+      return;
+    }
+
+    NSError *dbError = nil;
+    int64_t maxSequence = [self.serviceDatabases getMaxEventSequence:&amp;dbError];
+    if (dbError) {
+      PDS_LOG_SYNC_ERROR(@&quot;Failed to get max event sequence: %@&quot;, dbError);
+      return;
+    }
+
+    self.sequenceNumber = (NSUInteger)MAX((int64_t)0, maxSequence);
+    self.sequenceInitialized = YES;
+    PDS_LOG_SYNC_INFO(@&quot;Initialized sequence number to %lu&quot;,
+                      (unsigned long)self.sequenceNumber);
+  }
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 1000-1020)</p>
+<h3 id="client-crash">Client Crash</h3>
+<p>If the client crashes:
+1. Client should persist last received sequence number
+2. On restart, load persisted cursor
+3. Reconnect with cursor
+4. Replay missed events</p>
+<pre class="codehilite"><code class="language-objc">// Client-side example (conceptual)
+- (void)persistCursor:(NSInteger)seq {
+    // Persist to disk
+    [[NSUserDefaults standardUserDefaults] setInteger:seq forKey:@&quot;lastFirehoseSeq&quot;];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+- (NSInteger)loadCursor {
+    return [[NSUserDefaults standardUserDefaults] integerForKey:@&quot;lastFirehoseSeq&quot;];
+}
+
+- (void)reconnectAfterCrash {
+    NSInteger cursor = [self loadCursor];
+    if (cursor &gt; 0) {
+        [self connectWithCursor:@(cursor).stringValue];
+    } else {
+        [self connectWithoutCursor];
+    }
+}
+</code></pre>
+
+<h2 id="backpressure-and-reliability">Backpressure and Reliability</h2>
+<h3 id="slow-consumer-protection">Slow Consumer Protection</h3>
+<p>The server protects itself from slow consumers:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Backpressure check
+- (BOOL)sendEventData:(NSData *)eventData
+    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection {
+  if (!eventData || !connection) {
+    return NO;
+  }
+
+  if (connection.pendingSendCount &gt;= self.maxPendingSendsPerConnection ||
+      connection.pendingSendBytes &gt;= self.maxPendingBytesPerConnection) {
+    [self
+        sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
+                       message:@&quot;connection output queue exceeded server limit&quot;
+                  toConnection:connection];
+    [self detachConnection:connection];
+    [connection closeWithCode:1008 reason:kSubscribeReposErrorConsumerTooSlow];
+    return NO;
+  }
+
+  [connection sendMessage:eventData];
+  return YES;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 970-990)</p>
+<p>If a client is too slow:
+- Server closes the connection
+- Client must reconnect with cursor
+- Events are replayed from cursor</p>
+<p>This ensures:
+- Server doesn't run out of memory
+- Fast clients aren't blocked by slow clients
+- Slow clients can catch up via replay</p>
+<h2 id="replay-window-limits">Replay Window Limits</h2>
+<h3 id="maximum-replay-events">Maximum Replay Events</h3>
+<p>The server limits replay to prevent resource exhaustion:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
+static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (line 29)</p>
+<p>If a client's cursor is too old:
+- Server adjusts cursor to oldest available
+- Server sends info event about adjustment
+- Client may miss events beyond the window</p>
+<h3 id="event-pruning">Event Pruning</h3>
+<p>Old events should be pruned to limit database growth:</p>
+<pre class="codehilite"><code class="language-sql">-- Prune events older than 7 days
+DELETE FROM sequencer 
+WHERE created_at &lt; datetime('now', '-7 days');
+</code></pre>
+
+<p>This means:
+- Events older than the retention period are lost
+- Clients must connect within the retention window
+- Long-disconnected clients may miss events</p>
+<h2 id="consistency-guarantees">Consistency Guarantees</h2>
+<h3 id="per-repository-consistency">Per-Repository Consistency</h3>
+<p>For a single repository, the firehose guarantees:
+- Commits are delivered in order
+- The <code>since</code> field links to the previous commit
+- The <code>rev</code> field is monotonically increasing</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Per-DID tracking
+event.since = self.lastCommitRevByDID[repoDid];
+
+// Update the per-DID tracking for next event's since field
+if (commit.rev) {
+  self.lastCommitRevByDID[repoDid] = commit.rev;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 420-425)</p>
+<h3 id="cross-repository-ordering">Cross-Repository Ordering</h3>
+<p>Across repositories, the firehose guarantees:
+- Total ordering by sequence number
+- Causality is preserved (if A happens before B, seq(A) &lt; seq(B))</p>
+<h2 id="network-partition-handling">Network Partition Handling</h2>
+<h3 id="during-partition">During Partition</h3>
+<p>If a network partition occurs:
+- Client loses connection
+- Server continues broadcasting to other clients
+- Events are persisted in database</p>
+<h3 id="after-partition">After Partition</h3>
+<p>When the partition heals:
+- Client reconnects with cursor
+- Server replays missed events
+- Client catches up to current state</p>
+<h2 id="best-practices-for-reliability">Best Practices for Reliability</h2>
+<h3 id="client-side">Client-Side</h3>
+<ol>
+<li><strong>Persist cursors</strong> — Save last received sequence number to disk</li>
+<li><strong>Implement idempotency</strong> — Handle duplicate events gracefully</li>
+<li><strong>Detect gaps</strong> — Check for missing sequence numbers</li>
+<li><strong>Reconnect on failure</strong> — Use exponential backoff</li>
+<li><strong>Monitor lag</strong> — Track how far behind the client is</li>
+<li><strong>Handle backpressure</strong> — Process events quickly or buffer appropriately</li>
+</ol>
+<h3 id="server-side">Server-Side</h3>
+<ol>
+<li><strong>Persist events</strong> — Store all events in database</li>
+<li><strong>Use WAL mode</strong> — Ensure durability</li>
+<li><strong>Monitor replay window</strong> — Alert when window is too small</li>
+<li><strong>Prune old events</strong> — Limit database growth</li>
+<li><strong>Track slow clients</strong> — Identify and handle slow consumers</li>
+<li><strong>Log failures</strong> — Aid debugging</li>
+</ol>
+<h2 id="failure-scenarios">Failure Scenarios</h2>
+<h3 id="scenario-1-client-disconnect-during-replay">Scenario 1: Client Disconnect During Replay</h3>
+<pre class="codehilite"><code>1. Client connects with cursor=1000
+2. Server starts replaying events 1001-1100
+3. Client receives events 1001-1050
+4. Network fails
+5. Client reconnects with cursor=1050
+6. Server replays events 1051-1100 (no duplicates)
+7. Client catches up
+</code></pre>
+
+<h3 id="scenario-2-server-crash-during-broadcast">Scenario 2: Server Crash During Broadcast</h3>
+<pre class="codehilite"><code>1. Server broadcasts event seq=2000
+2. Some clients receive it, others don't
+3. Server crashes before all clients receive it
+4. Server restarts, recovers seq=2000 from database
+5. Clients that received it: detect duplicate, ignore
+6. Clients that didn't: receive it normally
+</code></pre>
+
+<h3 id="scenario-3-slow-client">Scenario 3: Slow Client</h3>
+<pre class="codehilite"><code>1. Client falls behind due to slow processing
+2. Server's send buffer fills up
+3. Server sends error frame and closes connection
+4. Client reconnects with cursor
+5. Server replays missed events
+6. Client catches up (if within replay window)
+</code></pre>
+
+<h2 id="monitoring-and-alerting">Monitoring and Alerting</h2>
+<h3 id="key-metrics">Key Metrics</h3>
+<p>Track these metrics for reliability:</p>
+<pre class="codehilite"><code class="language-objc">// Conceptual metrics
+- (void)recordReliabilityMetrics {
+    // Server-side
+    NSUInteger activeConnections = self.attachedConnections.count;
+    NSUInteger currentSeq = self.sequenceNumber;
+    NSUInteger oldestSeq = [self oldestPersistedSequenceNumber].unsignedIntegerValue;
+    NSUInteger replayWindow = currentSeq - oldestSeq;
+
+    // Client-side
+    NSInteger lag = self.serverSeq - self.lastSeq;
+    NSUInteger duplicates = self.duplicateCount;
+    NSUInteger gaps = self.gapCount;
+}
+</code></pre>
+
+<h3 id="alerts">Alerts</h3>
+<p>Set up alerts for:
+- Replay window too small (&lt; 1000 events)
+- High duplicate rate (&gt; 1%)
+- Frequent gaps detected
+- High client lag (&gt; 1000 events)
+- Frequent slow consumer disconnections</p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./event-ordering.md">Event Ordering</a> — Sequence number guarantees</li>
+<li><a href="./reconnection-strategy.md">Reconnection Strategy</a> — Handling disconnections</li>
+<li><a href="./event-replay.md">Event Replay</a> — Cursor-based catch-up</li>
+<li><a href="./backpressure.md">Backpressure</a> — Flow control</li>
+<li><a href="./firehose-overview.md">Firehose Overview</a> — Architecture overview</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

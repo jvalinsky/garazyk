@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATProto PDS Architecture Diagrams - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>ATProto PDS Architecture Diagrams</h1>
+            </div>
+            <h1 id="atproto-pds-architecture-diagrams">ATProto PDS Architecture Diagrams</h1>
+<h2 id="system-overview">System Overview</h2>
+<pre class="codehilite"><code class="language-mermaid">graph TB
+    subgraph &quot;User Layer&quot;
+        Browser[Web Browser]
+        CLI[Command Line Interface]
+    end
+
+    subgraph &quot;Web Server Layer&quot;
+        HTTP[HTTP Server&lt;br/&gt;Port 2583]
+        Explore[Explore Handler]
+        API[API Endpoints&lt;br/&gt;16 total]
+    end
+
+    subgraph &quot;Application Layer&quot;
+        PDS[PDS Controller]
+        DB[(SQLite Database&lt;br/&gt;Accounts/Records/Blocks)]
+        Cache[Explore Cache&lt;br/&gt;DID/PLC/Account TTL]
+    end
+
+    subgraph &quot;External Services&quot;
+        PLC[PLC Directory&lt;br/&gt;Identity Resolution]
+        DID[DID Resolvers]
+    end
+
+    Browser --&gt; HTTP
+    CLI --&gt; HTTP
+    HTTP --&gt; Explore
+    HTTP --&gt; API
+    Explore --&gt; PDS
+    API --&gt; PDS
+    PDS --&gt; DB
+    PDS --&gt; Cache
+    PDS --&gt; PLC
+    PDS --&gt; DID
+
+    style Browser fill:#e1f5fe
+    style CLI fill:#e1f5fe
+    style HTTP fill:#fff3e0
+    style Explore fill:#fff3e0
+    style API fill:#fff3e0
+    style PDS fill:#e8f5e8
+    style DB fill:#e8f5e8
+    style Cache fill:#e8f5e8
+    style PLC fill:#ffebee
+    style DID fill:#ffebee
+</code></pre>
+
+<h2 id="openapi-auto-generation-flow">OpenAPI Auto-Generation Flow</h2>
+<pre class="codehilite"><code class="language-mermaid">graph TD
+    subgraph &quot;Code Metadata&quot;
+        EndpointDesc[APIEndpointDescriptor&lt;br/&gt;path, method, summary]
+        ParamDesc[APIParameterDescriptor&lt;br/&gt;name, type, required]
+        ResponseDesc[APIResponseDescriptor&lt;br/&gt;statusCode, schemaRef]
+    end
+
+    subgraph &quot;Generation Process&quot;
+        Generator[generateOpenAPISpec&lt;br/&gt;Objective-C Method]
+        JSONSpec[JSON OpenAPI Spec&lt;br/&gt;NSDictionary]
+        YAMLSerializer[jsonToYAML&lt;br/&gt;Custom Serializer]
+    end
+
+    subgraph &quot;Output&quot;
+        YAMLFile[openapi.yaml&lt;br/&gt;Downloadable Spec]
+        JSONFile[openapi.json&lt;br/&gt;Swagger UI Input]
+        SwaggerUI[Interactive Docs&lt;br/&gt;/explore/api/docs]
+    end
+
+    EndpointDesc --&gt; Generator
+    ParamDesc --&gt; Generator
+    ResponseDesc --&gt; Generator
+    Generator --&gt; JSONSpec
+    JSONSpec --&gt; YAMLSerializer
+    YAMLSerializer --&gt; YAMLFile
+    JSONSpec --&gt; JSONFile
+    JSONFile --&gt; SwaggerUI
+
+    style EndpointDesc fill:#e3f2fd
+    style ParamDesc fill:#e3f2fd
+    style ResponseDesc fill:#e3f2fd
+    style Generator fill:#fff3e0
+    style JSONSpec fill:#fff3e0
+    style YAMLSerializer fill:#fff3e0
+    style YAMLFile fill:#e8f5e8
+    style JSONFile fill:#e8f5e8
+    style SwaggerUI fill:#e8f5e8
+</code></pre>
+
+<h2 id="frontend-performance-architecture">Frontend Performance Architecture</h2>
+<pre class="codehilite"><code class="language-mermaid">graph TD
+    subgraph &quot;Browser Cache Layer&quot;
+        CacheMap[Map Cache&lt;br/&gt;TTL-based storage]
+        CacheTTL[CACHE_TTL&lt;br/&gt;did:5min, plc:10min&lt;br/&gt;describe:2min, etc.]
+    end
+
+    subgraph &quot;API Client Layer&quot;
+        API[API Object&lt;br/&gt;16 methods]
+        CacheUtil[getCachedOrFetch&lt;br/&gt;Cache wrapper]
+    end
+
+    subgraph &quot;UI Layer&quot;
+        UI[ui.js&lt;br/&gt;Event handlers]
+        Parallel[Promise.all&lt;br/&gt;Parallel API calls]
+    end
+
+    subgraph &quot;Performance Optimizations&quot;
+        Instant[Instant repeat clicks&lt;br/&gt;via cache hits]
+        ParallelLoad[2.4x faster loading&lt;br/&gt;via Promise.all]
+        RateLimit[Rate limit protection&lt;br/&gt;via TTL cache]
+    end
+
+    CacheMap --&gt; CacheUtil
+    CacheTTL --&gt; CacheUtil
+    CacheUtil --&gt; API
+    API --&gt; UI
+    UI --&gt; Parallel
+    Parallel --&gt; Instant
+    Parallel --&gt; ParallelLoad
+    CacheUtil --&gt; RateLimit
+
+    style CacheMap fill:#e8f5e8
+    style CacheTTL fill:#e8f5e8
+    style API fill:#fff3e0
+    style CacheUtil fill:#fff3e0
+    style UI fill:#e3f2fd
+    style Parallel fill:#e3f2fd
+    style Instant fill:#c8e6c9
+    style ParallelLoad fill:#c8e6c9
+    style RateLimit fill:#c8e6c9
+</code></pre>
+
+<h2 id="api-endpoint-organization">API Endpoint Organization</h2>
+<pre class="codehilite"><code class="language-mermaid">graph TD
+    subgraph &quot;Account Management&quot;
+        Accounts[GET /accounts&lt;br/&gt;operationId: listAccounts]
+        AccountDetails[GET /account-details&lt;br/&gt;operationId: getAccountDetails]
+    end
+
+    subgraph &quot;Repository Operations&quot;
+        Repositories[GET /repositories&lt;br/&gt;operationId: listRepositories]
+        Describe[GET /describe&lt;br/&gt;operationId: describeRepository]
+    end
+
+    subgraph &quot;Record Management&quot;
+        AccountRecords[GET /account-records&lt;br/&gt;operationId: listAccountRecords]
+        Record[GET /record&lt;br/&gt;operationId: getRecord]
+        RecordDetails[GET /record-details&lt;br/&gt;operationId: getRecordDetails]
+        CreateRecord[POST /create-record&lt;br/&gt;operationId: createRecord]
+    end
+
+    subgraph &quot;Identity Services&quot;
+        Lookup[GET /lookup&lt;br/&gt;operationId: resolveIdentity]
+        DID[GET /did&lt;br/&gt;operationId: getDidDocument]
+        PlcLog[GET /plc-log&lt;br/&gt;operationId: getPlcLog]
+    end
+
+    subgraph &quot;Content Services&quot;
+        CidDecode[GET /cid-decode&lt;br/&gt;operationId: decodeCid]
+        CidInfo[GET /cid-info&lt;br/&gt;operationId: getCidInfo]
+        Blob[GET /blob&lt;br/&gt;operationId: getBlob]
+    end
+
+    subgraph &quot;Collection Management&quot;
+        Collections[GET /collections&lt;br/&gt;operationId: listCollections]
+    end
+
+    Accounts --&gt; A[Tags: Accounts]
+    AccountDetails --&gt; A
+    Repositories --&gt; B[Tags: Repositories]
+    Describe --&gt; B
+    AccountRecords --&gt; C[Tags: Records]
+    Record --&gt; C
+    RecordDetails --&gt; C
+    CreateRecord --&gt; C
+    Lookup --&gt; D[Tags: Identity]
+    DID --&gt; D
+    PlcLog --&gt; D
+    CidDecode --&gt; E[Tags: Content]
+    CidInfo --&gt; E
+    Blob --&gt; E
+    Collections --&gt; F[Tags: Collections]
+
+    style A fill:#e3f2fd
+    style B fill:#e3f2fd
+    style C fill:#e3f2fd
+    style D fill:#e3f2fd
+    style E fill:#e3f2fd
+    style F fill:#e3f2fd
+</code></pre>
+
+<h2 id="data-flow-account-loading">Data Flow: Account Loading</h2>
+<pre class="codehilite"><code class="language-mermaid">sequenceDiagram
+    participant User
+    participant Browser
+    participant Cache
+    participant Server
+    participant DB
+
+    User-&gt;&gt;Browser: Click account
+    Browser-&gt;&gt;Browser: Show loading state
+    Browser-&gt;&gt;Cache: Check did:${did}
+    alt Cache hit
+        Cache--&gt;&gt;Browser: Return cached DID doc
+        Browser-&gt;&gt;Browser: Update UI instantly
+    else Cache miss
+        Browser-&gt;&gt;Server: GET /api/did?did=${did}
+        Server-&gt;&gt;DB: Query DID document
+        DB--&gt;&gt;Server: Return document
+        Server--&gt;&gt;Browser: JSON response
+        Browser-&gt;&gt;Cache: Store with 5min TTL
+    end
+
+    Browser-&gt;&gt;Browser: Start parallel calls
+
+    par Parallel API calls
+        Browser-&gt;&gt;Server: GET /api/getPlcLog
+        Server-&gt;&gt;DB: Query PLC operations
+        DB--&gt;&gt;Server: Return operations
+        Server--&gt;&gt;Browser: PLC log data
+
+        Browser-&gt;&gt;Server: GET /api/describe
+        Server-&gt;&gt;DB: Query repository info
+        DB--&gt;&gt;Server: Collections &amp; counts
+        Server--&gt;&gt;Browser: Repository data
+    end
+
+    Browser-&gt;&gt;Browser: Render all sections
+    Browser-&gt;&gt;User: Display complete account view
+</code></pre>
+
+<h2 id="component-dependencies">Component Dependencies</h2>
+<pre class="codehilite"><code class="language-mermaid">graph TD
+    subgraph &quot;Core Server&quot;
+        Main[main.m&lt;br/&gt;Entry point]
+        PDS[PDSController&lt;br/&gt;Business logic]
+        DB[PDSDatabase&lt;br/&gt;Data persistence]
+    end
+
+    subgraph &quot;Web Interface&quot;
+        HTTP[HttpServer&lt;br/&gt;HTTP handling]
+        Explore[ExploreHandler&lt;br/&gt;Web UI routes]
+        Cache[ExploreCache&lt;br/&gt;TTL caching]
+    end
+
+    subgraph &quot;API Generation&quot;
+        Descriptor[APIDescriptor classes&lt;br/&gt;Metadata models]
+        Generator[OpenAPI generator&lt;br/&gt;Spec creation]
+        Serializer[YAML serializer&lt;br/&gt;Format conversion]
+    end
+
+    subgraph &quot;Frontend Assets&quot;
+        HTML[index.html&lt;br/&gt;UI structure]
+        CSS[style.css&lt;br/&gt;Styling]
+        JS[JavaScript modules&lt;br/&gt;api.js, ui.js, etc.]
+    end
+
+    Main --&gt; HTTP
+    HTTP --&gt; Explore
+    Explore --&gt; PDS
+    Explore --&gt; Cache
+    PDS --&gt; DB
+
+    Explore --&gt; Descriptor
+    Descriptor --&gt; Generator
+    Generator --&gt; Serializer
+
+    Explore --&gt; HTML
+    Explore --&gt; CSS
+    Explore --&gt; JS
+
+    style Main fill:#e8f5e8
+    style PDS fill:#e8f5e8
+    style DB fill:#e8f5e8
+    style HTTP fill:#fff3e0
+    style Explore fill:#fff3e0
+    style Cache fill:#fff3e0
+    style Descriptor fill:#e3f2fd
+    style Generator fill:#e3f2fd
+    style Serializer fill:#e3f2fd
+    style HTML fill:#fce4ec
+    style CSS fill:#fce4ec
+    style JS fill:#fce4ec
+</code></pre>
+
+<h2 id="performance-timeline">Performance Timeline</h2>
+<pre class="codehilite"><code class="language-mermaid">gantt
+    title UI Loading Performance Timeline
+    dateFormat  HH:mm:ss
+    axisFormat %M:%S
+
+    section Before (Sequential)
+    DID Document Load    :done, 0, 200ms
+    PLC Operations Load  :done, 200ms, 200ms
+    Repository Describe   :done, 400ms, 200ms
+    Total Load Time       :done, 0, 600ms
+
+    section After (Parallel + Cache)
+    Cache Check (Instant) :done, 0, 10ms
+    Parallel API Calls    :done, 10ms, 240ms
+    Total Load Time       :done, 0, 250ms
+    Performance Gain      :done, 0, 350ms
+</code></pre>
+
+<h2 id="cache-strategy-overview">Cache Strategy Overview</h2>
+<pre class="codehilite"><code class="language-mermaid">stateDiagram-v2
+    [*] --&gt; API_Call_Requested
+    API_Call_Requested --&gt; Cache_Check: Check cache key
+
+    Cache_Check --&gt; Cache_Hit: Data exists &amp; fresh
+    Cache_Check --&gt; Cache_Miss: Data missing or stale
+
+    Cache_Hit --&gt; Return_Cached_Data
+    Return_Cached_Data --&gt; [*]
+
+    Cache_Miss --&gt; Network_Request: Make API call
+    Network_Request --&gt; Store_In_Cache: On success
+    Network_Request --&gt; Return_Error: On failure
+
+    Store_In_Cache --&gt; Return_Fresh_Data
+    Return_Error --&gt; [*]
+    Return_Fresh_Data --&gt; [*]
+
+    note right of Cache_Check : TTL varies by endpoint:\n• DID docs: 5min\n• PLC logs: 10min\n• Records: 2-5min
+    note right of Network_Request : Protects against\nplc.directory rate limits
+
+## Related Documentation
+
+### Architecture Documents
+- [README.md](README.md) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Component analysis for diagrams above
+
+### Diagram Documents
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - Protocol flow diagrams
+- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) - Diagram selection guide
+- [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS.md) - Development process diagrams
+
+### Related Guides
+- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE.md) - Developer onboarding guide
+</code></pre>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -296,7 +296,7 @@ a platform-level security feature, not a PDS or nginx issue.
 ## Pre-existing Test Failures (Not Related)
 
 > [!NOTE]
-> **Update 2026-03-01 (Stabilization):** All failures listed below, along with over 1200 other transient/pre-existing issues, have been resolved. See the [Test Suite Stabilization Report](test-suite-stabilization-report-2026-03-01.md) for details.
+> **Update 2026-03-01 (Stabilization):** All failures listed below, along with over 1200 other transient/pre-existing issues, have been resolved. See the [Test Suite Stabilization Report](test-suite-stabilization-report-2026-03-01) for details.
 
 | Test | Failure | Notes |
 |------|---------|-------|

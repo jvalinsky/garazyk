@@ -453,6 +453,6 @@ Unlike user OAuth, admin tokens are not DPoP-bound. This means:
 
 ## Related Documentation
 
-- [Token Management](./token-management.md) - User token lifecycle (compare with admin tokens)
-- [Security](./security.md) - Security considerations
-- [Overview](./README.md) - User OAuth2 authentication flows
+- [Token Management](./token-management) - User token lifecycle (compare with admin tokens)
+- [Security](./security) - Security considerations
+- [Overview](./README) - User OAuth2 authentication flows

@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLC Server Operations - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>PLC Server Operations</h1>
+            </div>
+            <h1 id="plc-server-operations">PLC Server Operations</h1>
+<h2 id="overview">Overview</h2>
+<p><code>campagnola</code> is September's standalone PLC (Public Ledger of Credentials) directory server. It provides a self-hosted alternative to the public <code>plc.directory</code> service, enabling you to run your own DID registry for development, testing, or private AT Protocol networks.</p>
+<p><strong>When to run your own PLC server:</strong>
+- <strong>Development &amp; Testing</strong> — Local DID operations without external dependencies
+- <strong>Private Networks</strong> — Isolated AT Protocol deployments
+- <strong>High Availability</strong> — Redundant PLC infrastructure for production
+- <strong>Compliance</strong> — Data sovereignty requirements
+- <strong>Research</strong> — Experimentation with DID operations</p>
+<p><strong>When to use plc.directory:</strong>
+- <strong>Production PDS</strong> — Public AT Protocol network participation
+- <strong>Simplicity</strong> — No infrastructure management required
+- <strong>Interoperability</strong> — Seamless integration with existing network</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="development-in-memory">Development (In-Memory)</h3>
+<p>For local development and testing, use the in-memory mock store:</p>
+<pre class="codehilite"><code class="language-bash"># Build campagnola
+xcodegen generate
+xcodebuild -scheme ATProtoPDS-CLI build
+
+# Start server with mock store
+./build/bin/campagnola --port 2582
+</code></pre>
+
+<p><strong>Output:</strong></p>
+<pre class="codehilite"><code>Using in-memory mock store
+PLC server listening on port 2582
+</code></pre>
+
+<p>The mock store keeps all data in memory and is lost when the server stops.</p>
+<h3 id="production-persistent-database">Production (Persistent Database)</h3>
+<p>For production deployments, use SQLite persistent storage:</p>
+<pre class="codehilite"><code class="language-bash"># Create data directory
+mkdir -p /var/lib/plc
+
+# Start server with persistent database
+./build/bin/campagnola --port 2582 --database /var/lib/plc/plc.db
+</code></pre>
+
+<p><strong>Output:</strong></p>
+<pre class="codehilite"><code>Using persistent store at /var/lib/plc/plc.db
+PLC server listening on port 2582
+</code></pre>
+
+<h2 id="building-campagnola">Building Campagnola</h2>
+<h3 id="macos">macOS</h3>
+<pre class="codehilite"><code class="language-bash"># Generate Xcode project
+xcodegen generate
+
+# Build campagnola
+xcodebuild -scheme ATProtoPDS-CLI build
+
+# Binary location
+./build/bin/campagnola
+</code></pre>
+
+<h3 id="linux-gnustep">Linux (GNUstep)</h3>
+<pre class="codehilite"><code class="language-bash"># Out-of-source build
+mkdir -p build-linux &amp;&amp; cd build-linux
+
+# Configure with CMake
+cmake .. -DCMAKE_BUILD_TYPE=Release
+
+# Build
+make -j$(nproc)
+
+# Binary location
+./build-linux/bin/campagnola
+</code></pre>
+
+<h3 id="verify-build">Verify Build</h3>
+<pre class="codehilite"><code class="language-bash"># Check binary exists
+ls -lh ./build/bin/campagnola
+
+# Test help output
+./build/bin/campagnola --help
+</code></pre>
+
+<h2 id="command-line-options">Command-Line Options</h2>
+<h3 id="-port">--port</h3>
+<p>Specify the TCP port to listen on.</p>
+<pre class="codehilite"><code class="language-bash">./build/bin/campagnola --port 2582
+</code></pre>
+
+<p><strong>Default:</strong> 2582</p>
+<p><strong>Range:</strong> 1024-65535 (use unprivileged ports)</p>
+<h3 id="-database">--database</h3>
+<p>Path to SQLite database file for persistent storage.</p>
+<pre class="codehilite"><code class="language-bash">./build/bin/campagnola --database /var/lib/plc/plc.db
+</code></pre>
+
+<p><strong>Default:</strong> None (uses in-memory mock store)</p>
+<p><strong>Notes:</strong>
+- Database file is created automatically if it doesn't exist
+- Parent directory must exist and be writable
+- Database uses WAL mode for concurrent access</p>
+<h3 id="-help-h">--help, -h</h3>
+<p>Display help information and exit.</p>
+<pre class="codehilite"><code class="language-bash">./build/bin/campagnola --help
+</code></pre>
+
+<h2 id="configuration">Configuration</h2>
+<h3 id="storage-backend">Storage Backend</h3>
+<p>Campagnola supports two storage backends:</p>
+<h4 id="mock-store-in-memory">Mock Store (In-Memory)</h4>
+<p><strong>Use for:</strong>
+- Local development
+- Integration tests
+- Temporary testing</p>
+<p><strong>Characteristics:</strong>
+- No disk I/O
+- Fast operations
+- Data lost on restart
+- No persistence</p>
+<p><strong>Start command:</strong></p>
+<pre class="codehilite"><code class="language-bash">./build/bin/campagnola --port 2582
+</code></pre>
+
+<h4 id="persistent-store-sqlite">Persistent Store (SQLite)</h4>
+<p><strong>Use for:</strong>
+- Production deployments
+- Long-running development
+- Data preservation</p>
+<p><strong>Characteristics:</strong>
+- Persistent storage
+- WAL mode enabled
+- Concurrent read access
+- ACID transactions</p>
+<p><strong>Start command:</strong></p>
+<pre class="codehilite"><code class="language-bash">./build/bin/campagnola --port 2582 --database /var/lib/plc/plc.db
+</code></pre>
+
+<h3 id="database-schema">Database Schema</h3>
+<p>The persistent store uses a simple schema optimized for DID operations:</p>
+<pre class="codehilite"><code class="language-sql">CREATE TABLE operations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    did TEXT NOT NULL,
+    cid TEXT NOT NULL,
+    operation TEXT NOT NULL,  -- JSON-encoded operation
+    nullified INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_operations_did ON operations(did);
+CREATE INDEX idx_operations_cid ON operations(cid);
+CREATE INDEX idx_operations_created_at ON operations(created_at);
+CREATE INDEX idx_operations_nullified ON operations(nullified);
+</code></pre>
+
+<p><strong>Key features:</strong>
+- <code>did</code> — DID identifier for quick lookups
+- <code>cid</code> — Content identifier for operation chaining
+- <code>operation</code> — Full operation data as JSON
+- <code>nullified</code> — Flag for invalidated operations
+- <code>created_at</code> — Timestamp for export/audit</p>
+<h2 id="api-endpoints">API Endpoints</h2>
+<p>Campagnola implements the standard PLC directory API:</p>
+<h3 id="get-did">GET /:did</h3>
+<p>Resolve a DID to its current document.</p>
+<pre class="codehilite"><code class="language-bash">curl http://localhost:2582/did:plc:z72i7hdynmk6r22z27h6tvur
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://www.w3.org/ns/did/v1&quot;,
+    &quot;https://w3id.org/security/multikey/v1&quot;
+  ],
+  &quot;id&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+  &quot;alsoKnownAs&quot;: [&quot;at://alice.bsky.social&quot;],
+  &quot;verificationMethod&quot;: [
+    {
+      &quot;id&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur#atproto&quot;,
+      &quot;type&quot;: &quot;Multikey&quot;,
+      &quot;controller&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+      &quot;publicKeyMultibase&quot;: &quot;zQ3sh...&quot;
+    }
+  ],
+  &quot;service&quot;: [
+    {
+      &quot;id&quot;: &quot;#atproto_pds&quot;,
+      &quot;type&quot;: &quot;AtprotoPersonalDataServer&quot;,
+      &quot;serviceEndpoint&quot;: &quot;https://pds.example.com&quot;
+    }
+  ]
+}
+</code></pre>
+
+<p><strong>Response (404 Not Found):</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;error&quot;: &quot;DID not found&quot;
+}
+</code></pre>
+
+<p><strong>Response (410 Gone):</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;message&quot;: &quot;DID not available: did:plc:...&quot;
+}
+</code></pre>
+
+<p>Returned when DID has been tombstoned.</p>
+<h3 id="get-didlog">GET /:did/log</h3>
+<p>Retrieve the complete audit log for a DID.</p>
+<pre class="codehilite"><code class="language-bash">curl http://localhost:2582/did:plc:z72i7hdynmk6r22z27h6tvur/log
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code class="language-json">[
+  {
+    &quot;type&quot;: &quot;plc_operation&quot;,
+    &quot;rotationKeys&quot;: [&quot;did:key:zQ3sh...&quot;],
+    &quot;verificationMethods&quot;: {
+      &quot;atproto&quot;: &quot;did:key:zQ3sh...&quot;
+    },
+    &quot;alsoKnownAs&quot;: [&quot;at://alice.bsky.social&quot;],
+    &quot;services&quot;: {
+      &quot;atproto_pds&quot;: {
+        &quot;type&quot;: &quot;AtprotoPersonalDataServer&quot;,
+        &quot;endpoint&quot;: &quot;https://pds.example.com&quot;
+      }
+    },
+    &quot;prev&quot;: null,
+    &quot;sig&quot;: &quot;...&quot;
+  }
+]
+</code></pre>
+
+<h3 id="get-didlogaudit">GET /:did/log/audit</h3>
+<p>Retrieve the audit log with metadata (includes nullified operations).</p>
+<pre class="codehilite"><code class="language-bash">curl http://localhost:2582/did:plc:z72i7hdynmk6r22z27h6tvur/log/audit
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code class="language-json">[
+  {
+    &quot;did&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+    &quot;cid&quot;: &quot;bafyreiabc...&quot;,
+    &quot;operation&quot;: {
+      &quot;type&quot;: &quot;plc_operation&quot;,
+      &quot;rotationKeys&quot;: [&quot;did:key:zQ3sh...&quot;],
+      &quot;prev&quot;: null,
+      &quot;sig&quot;: &quot;...&quot;
+    },
+    &quot;nullified&quot;: false,
+    &quot;createdAt&quot;: &quot;2024-01-15T10:30:00Z&quot;
+  }
+]
+</code></pre>
+
+<h3 id="get-didloglast">GET /:did/log/last</h3>
+<p>Get the most recent operation for a DID.</p>
+<pre class="codehilite"><code class="language-bash">curl http://localhost:2582/did:plc:z72i7hdynmk6r22z27h6tvur/log/last
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;type&quot;: &quot;plc_operation&quot;,
+  &quot;rotationKeys&quot;: [&quot;did:key:zQ3sh...&quot;],
+  &quot;prev&quot;: &quot;bafyreiabc...&quot;,
+  &quot;sig&quot;: &quot;...&quot;
+}
+</code></pre>
+
+<h3 id="post-did">POST /:did</h3>
+<p>Submit a new operation for a DID.</p>
+<pre class="codehilite"><code class="language-bash">curl -X POST http://localhost:2582/did:plc:z72i7hdynmk6r22z27h6tvur \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;type&quot;: &quot;plc_operation&quot;,
+    &quot;rotationKeys&quot;: [&quot;did:key:zQ3sh...&quot;],
+    &quot;verificationMethods&quot;: {
+      &quot;atproto&quot;: &quot;did:key:zQ3sh...&quot;
+    },
+    &quot;alsoKnownAs&quot;: [&quot;at://alice.bsky.social&quot;],
+    &quot;services&quot;: {
+      &quot;atproto_pds&quot;: {
+        &quot;type&quot;: &quot;AtprotoPersonalDataServer&quot;,
+        &quot;endpoint&quot;: &quot;https://pds.example.com&quot;
+      }
+    },
+    &quot;prev&quot;: null,
+    &quot;sig&quot;: &quot;...&quot;
+  }'
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;
+}
+</code></pre>
+
+<p><strong>Response (400 Bad Request):</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;error&quot;: &quot;Invalid operation format: ...&quot;
+}
+</code></pre>
+
+<h3 id="get-export">GET /export</h3>
+<p>Export operations for replication or backup.</p>
+<pre class="codehilite"><code class="language-bash"># Export first 100 operations
+curl http://localhost:2582/export?count=100
+
+# Export operations after timestamp
+curl http://localhost:2582/export?after=2024-01-15T10:30:00.000Z&amp;count=100
+</code></pre>
+
+<p><strong>Query Parameters:</strong>
+- <code>count</code> — Number of operations to return (default: 10, max: 1000)
+- <code>after</code> — ISO 8601 timestamp (exclusive lower bound)</p>
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code>{&quot;did&quot;:&quot;did:plc:abc...&quot;,&quot;operation&quot;:{...},&quot;cid&quot;:&quot;bafyrei...&quot;,&quot;nullified&quot;:false,&quot;createdAt&quot;:&quot;2024-01-15T10:30:00.000Z&quot;}
+{&quot;did&quot;:&quot;did:plc:def...&quot;,&quot;operation&quot;:{...},&quot;cid&quot;:&quot;bafyrei...&quot;,&quot;nullified&quot;:false,&quot;createdAt&quot;:&quot;2024-01-15T10:31:00.000Z&quot;}
+</code></pre>
+
+<p><strong>Format:</strong> JSON Lines (one JSON object per line)</p>
+<h3 id="get-_health">GET /_health</h3>
+<p>Health check endpoint.</p>
+<pre class="codehilite"><code class="language-bash">curl http://localhost:2582/_health
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;
+}
+</code></pre>
+
+<h3 id="get-_list">GET /_list</h3>
+<p>List all DIDs in the directory.</p>
+<pre class="codehilite"><code class="language-bash">curl http://localhost:2582/_list
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code class="language-json">[
+  &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+  &quot;did:plc:ewvi7nxzyoun6zhxrhs64oiz&quot;
+]
+</code></pre>
+
+<h3 id="get-_metrics">GET /_metrics</h3>
+<p>Prometheus-compatible metrics endpoint.</p>
+<pre class="codehilite"><code class="language-bash">curl http://localhost:2582/_metrics
+</code></pre>
+
+<p><strong>Response (200 OK):</strong></p>
+<pre class="codehilite"><code># HELP plc_requests_total Total number of requests
+# TYPE plc_requests_total counter
+plc_requests_total 1234
+
+# HELP plc_errors_total Total number of errors
+# TYPE plc_errors_total counter
+plc_errors_total 5
+</code></pre>
+
+<h2 id="production-deployment">Production Deployment</h2>
+<h3 id="systemd-service">Systemd Service</h3>
+<p>Create a systemd service for automatic startup and management:</p>
+<pre class="codehilite"><code class="language-ini"># /etc/systemd/system/campagnola.service
+[Unit]
+Description=Campagnola PLC Directory Server
+After=network.target
+
+[Service]
+Type=simple
+User=plc
+Group=plc
+WorkingDirectory=/opt/campagnola
+ExecStart=/opt/campagnola/bin/campagnola --port 2582 --database /var/lib/plc/plc.db
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/plc
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+
+<p><strong>Enable and start:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Create user and directories
+sudo useradd -r -s /bin/false plc
+sudo mkdir -p /var/lib/plc /opt/campagnola/bin
+sudo chown plc:plc /var/lib/plc
+
+# Copy binary
+sudo cp ./build/bin/campagnola /opt/campagnola/bin/
+
+# Enable service
+sudo systemctl daemon-reload
+sudo systemctl enable campagnola
+sudo systemctl start campagnola
+
+# Check status
+sudo systemctl status campagnola
+</code></pre>
+
+<h3 id="docker-deployment">Docker Deployment</h3>
+<p>Create a Dockerfile for containerized deployment:</p>
+<pre class="codehilite"><code class="language-dockerfile"># Dockerfile
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update &amp;&amp; apt-get install -y \
+    gnustep-base-runtime \
+    libsqlite3-0 \
+    libssl3 \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Create user
+RUN useradd -r -s /bin/false plc
+
+# Copy binary
+COPY build/bin/campagnola /usr/local/bin/campagnola
+RUN chmod +x /usr/local/bin/campagnola
+
+# Create data directory
+RUN mkdir -p /var/lib/plc &amp;&amp; chown plc:plc /var/lib/plc
+
+USER plc
+WORKDIR /var/lib/plc
+
+EXPOSE 2582
+
+CMD [&quot;/usr/local/bin/campagnola&quot;, &quot;--port&quot;, &quot;2582&quot;, &quot;--database&quot;, &quot;/var/lib/plc/plc.db&quot;]
+</code></pre>
+
+<p><strong>Build and run:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Build image
+docker build -t campagnola:latest .
+
+# Run container
+docker run -d \
+  --name campagnola \
+  -p 2582:2582 \
+  -v plc_data:/var/lib/plc \
+  --restart unless-stopped \
+  campagnola:latest
+
+# Check logs
+docker logs -f campagnola
+</code></pre>
+
+<h3 id="reverse-proxy-nginx">Reverse Proxy (Nginx)</h3>
+<p>Configure Nginx as a reverse proxy with TLS:</p>
+<pre class="codehilite"><code class="language-nginx"># /etc/nginx/sites-available/plc.example.com
+server {
+    listen 443 ssl http2;
+    server_name plc.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/plc.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/plc.example.com/privkey.pem;
+
+    # Security headers
+    add_header Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot; always;
+    add_header X-Content-Type-Options &quot;nosniff&quot; always;
+    add_header X-Frame-Options &quot;DENY&quot; always;
+
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=plc_limit:10m rate=10r/s;
+    limit_req zone=plc_limit burst=20 nodelay;
+
+    location / {
+        proxy_pass http://127.0.0.1:2582;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeouts
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+    }
+
+    # Health check endpoint (no rate limit)
+    location /_health {
+        proxy_pass http://127.0.0.1:2582;
+        access_log off;
+    }
+}
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name plc.example.com;
+    return 301 https://$server_name$request_uri;
+}
+</code></pre>
+
+<p><strong>Enable configuration:</strong></p>
+<pre class="codehilite"><code class="language-bash">sudo ln -s /etc/nginx/sites-available/plc.example.com /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+</code></pre>
+
+<h2 id="database-maintenance">Database Maintenance</h2>
+<h3 id="backup">Backup</h3>
+<p>Regular backups are essential for production deployments.</p>
+<h4 id="sqlite-backup-online">SQLite Backup (Online)</h4>
+<p>Use SQLite's online backup API for safe backups while the server is running:</p>
+<pre class="codehilite"><code class="language-bash"># Backup script
+#!/bin/bash
+BACKUP_DIR=&quot;/var/backups/plc&quot;
+DB_PATH=&quot;/var/lib/plc/plc.db&quot;
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+mkdir -p &quot;$BACKUP_DIR&quot;
+
+# SQLite online backup
+sqlite3 &quot;$DB_PATH&quot; &quot;.backup '$BACKUP_DIR/plc-$TIMESTAMP.db'&quot;
+
+# Compress backup
+gzip &quot;$BACKUP_DIR/plc-$TIMESTAMP.db&quot;
+
+# Keep last 30 days
+find &quot;$BACKUP_DIR&quot; -name &quot;plc-*.db.gz&quot; -mtime +30 -delete
+
+echo &quot;Backup completed: plc-$TIMESTAMP.db.gz&quot;
+</code></pre>
+
+<h4 id="file-copy-offline">File Copy (Offline)</h4>
+<p>For offline backups, stop the server first:</p>
+<pre class="codehilite"><code class="language-bash"># Stop server
+sudo systemctl stop campagnola
+
+# Copy database
+cp /var/lib/plc/plc.db /var/backups/plc/plc-$(date +%Y%m%d).db
+
+# Copy WAL files if they exist
+cp /var/lib/plc/plc.db-wal /var/backups/plc/ 2&gt;/dev/null || true
+cp /var/lib/plc/plc.db-shm /var/backups/plc/ 2&gt;/dev/null || true
+
+# Start server
+sudo systemctl start campagnola
+</code></pre>
+
+<h3 id="restore">Restore</h3>
+<p>To restore from backup:</p>
+<pre class="codehilite"><code class="language-bash"># Stop server
+sudo systemctl stop campagnola
+
+# Restore database
+gunzip -c /var/backups/plc/plc-20240115-120000.db.gz &gt; /var/lib/plc/plc.db
+
+# Fix permissions
+sudo chown plc:plc /var/lib/plc/plc.db
+
+# Start server
+sudo systemctl start campagnola
+</code></pre>
+
+<h3 id="database-optimization">Database Optimization</h3>
+<p>Periodically optimize the database for performance:</p>
+<pre class="codehilite"><code class="language-bash"># Vacuum database (reclaim space)
+sqlite3 /var/lib/plc/plc.db &quot;VACUUM;&quot;
+
+# Analyze database (update statistics)
+sqlite3 /var/lib/plc/plc.db &quot;ANALYZE;&quot;
+
+# Check integrity
+sqlite3 /var/lib/plc/plc.db &quot;PRAGMA integrity_check;&quot;
+</code></pre>
+
+<p><strong>Schedule optimization:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Add to crontab
+0 3 * * 0 sqlite3 /var/lib/plc/plc.db &quot;VACUUM; ANALYZE;&quot;
+</code></pre>
+
+<h3 id="database-growth">Database Growth</h3>
+<p>Monitor database size and plan for growth:</p>
+<pre class="codehilite"><code class="language-bash"># Check database size
+du -h /var/lib/plc/plc.db
+
+# Check operation count
+sqlite3 /var/lib/plc/plc.db &quot;SELECT COUNT(*) FROM operations;&quot;
+
+# Check per-DID statistics
+sqlite3 /var/lib/plc/plc.db &quot;
+SELECT did, COUNT(*) as op_count 
+FROM operations 
+GROUP BY did 
+ORDER BY op_count DESC 
+LIMIT 10;
+&quot;
+</code></pre>
+
+<p><strong>Growth estimates:</strong>
+- Average operation size: ~500 bytes
+- 1000 DIDs × 10 operations each = ~5 MB
+- 10,000 DIDs × 10 operations each = ~50 MB
+- 100,000 DIDs × 10 operations each = ~500 MB</p>
+<h3 id="migration">Migration</h3>
+<p>When upgrading campagnola versions, check for schema migrations:</p>
+<pre class="codehilite"><code class="language-bash"># Check current schema version
+sqlite3 /var/lib/plc/plc.db &quot;PRAGMA user_version;&quot;
+
+# Backup before migration
+sqlite3 /var/lib/plc/plc.db &quot;.backup '/var/backups/plc/pre-migration.db'&quot;
+
+# Restart server (migrations run automatically)
+sudo systemctl restart campagnola
+
+# Verify migration
+sudo journalctl -u campagnola -n 50
+</code></pre>
+
+<h2 id="monitoring">Monitoring</h2>
+<h3 id="health-checks">Health Checks</h3>
+<p>Configure health check monitoring:</p>
+<pre class="codehilite"><code class="language-bash"># Simple health check script
+#!/bin/bash
+RESPONSE=$(curl -s -o /dev/null -w &quot;%{http_code}&quot; http://localhost:2582/_health)
+
+if [ &quot;$RESPONSE&quot; = &quot;200&quot; ]; then
+    echo &quot;OK: PLC server is healthy&quot;
+    exit 0
+else
+    echo &quot;CRITICAL: PLC server returned $RESPONSE&quot;
+    exit 2
+fi
+</code></pre>
+
+<p><strong>Nagios/Icinga configuration:</strong></p>
+<pre class="codehilite"><code class="language-ini">define service {
+    service_description     PLC Health Check
+    host_name               plc.example.com
+    check_command           check_http!-p 2582 -u /_health
+    check_interval          1
+    retry_interval          1
+    max_check_attempts      3
+}
+</code></pre>
+
+<h3 id="metrics-collection">Metrics Collection</h3>
+<p>Scrape Prometheus metrics:</p>
+<pre class="codehilite"><code class="language-yaml"># prometheus.yml
+scrape_configs:
+  - job_name: 'campagnola'
+    static_configs:
+      - targets: ['localhost:2582']
+    metrics_path: '/_metrics'
+    scrape_interval: 15s
+</code></pre>
+
+<p><strong>Key metrics:</strong>
+- <code>plc_requests_total</code> — Total request count
+- <code>plc_errors_total</code> — Total error count</p>
+<h3 id="log-monitoring">Log Monitoring</h3>
+<p>Monitor server logs for issues:</p>
+<pre class="codehilite"><code class="language-bash"># Follow logs (systemd)
+sudo journalctl -u campagnola -f
+
+# Search for errors
+sudo journalctl -u campagnola | grep ERROR
+
+# Show logs from last hour
+sudo journalctl -u campagnola --since &quot;1 hour ago&quot;
+</code></pre>
+
+<p><strong>Log patterns to monitor:</strong>
+- <code>Failed to open persistent store</code> — Database access issues
+- <code>Failed to start PLC server</code> — Startup failures
+- <code>Audit failed</code> — Invalid operation submissions
+- <code>Failed to append</code> — Database write failures</p>
+<h3 id="performance-monitoring">Performance Monitoring</h3>
+<p>Track key performance indicators:</p>
+<pre class="codehilite"><code class="language-bash"># Request rate
+curl -s http://localhost:2582/_metrics | grep plc_requests_total
+
+# Error rate
+curl -s http://localhost:2582/_metrics | grep plc_errors_total
+
+# Database size
+du -h /var/lib/plc/plc.db
+
+# Process memory usage
+ps aux | grep campagnola | awk '{print $6/1024 &quot; MB&quot;}'
+</code></pre>
+
+<h2 id="integration-with-pds">Integration with PDS</h2>
+<h3 id="configure-pds-to-use-custom-plc">Configure PDS to Use Custom PLC</h3>
+<p>Update your PDS <code>config.json</code> to point to your campagnola instance:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;plc&quot;: {
+    &quot;url&quot;: &quot;https://plc.example.com&quot;,
+    &quot;retry_count&quot;: 5,
+    &quot;retry_delay_ms&quot;: 2000
+  }
+}
+</code></pre>
+
+<p><strong>Important:</strong> Never use <code>"mock"</code> in production. Always use a real PLC URL.</p>
+<h3 id="test-integration">Test Integration</h3>
+<p>Verify PDS can resolve DIDs from your PLC server:</p>
+<pre class="codehilite"><code class="language-bash"># Create a test DID on your PLC
+curl -X POST http://localhost:2582/did:plc:test123 \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;type&quot;: &quot;plc_operation&quot;,
+    &quot;rotationKeys&quot;: [&quot;did:key:zQ3sh...&quot;],
+    &quot;verificationMethods&quot;: {&quot;atproto&quot;: &quot;did:key:zQ3sh...&quot;},
+    &quot;alsoKnownAs&quot;: [&quot;at://test.example.com&quot;],
+    &quot;services&quot;: {
+      &quot;atproto_pds&quot;: {
+        &quot;type&quot;: &quot;AtprotoPersonalDataServer&quot;,
+        &quot;endpoint&quot;: &quot;https://pds.example.com&quot;
+      }
+    },
+    &quot;prev&quot;: null,
+    &quot;sig&quot;: &quot;...&quot;
+  }'
+
+# Verify PDS can resolve it
+curl https://pds.example.com/xrpc/com.atproto.identity.resolveHandle?handle=test.example.com
+</code></pre>
+
+<h3 id="high-availability-setup">High Availability Setup</h3>
+<p>For production deployments, run multiple PLC servers:</p>
+<pre class="codehilite"><code>┌─────────────┐
+│ Load Balancer│
+│  (HAProxy)   │
+└──────┬───────┘
+       │
+   ┌───┴────┬────────┬────────┐
+   │        │        │        │
+┌──▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐
+│PLC 1│  │PLC 2│  │PLC 3│  │PLC 4│
+└──┬──┘  └──┬──┘  └──┬──┘  └──┬──┘
+   │        │        │        │
+   └────────┴────────┴────────┘
+              │
+      ┌───────▼────────┐
+      │ Shared Database│
+      │  (PostgreSQL)  │
+      └────────────────┘
+</code></pre>
+
+<p><strong>Note:</strong> Current implementation uses SQLite. For true HA, consider:
+- Read replicas with SQLite replication
+- Shared network filesystem (NFS, GlusterFS)
+- Migration to PostgreSQL backend (requires code changes)</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="server-wont-start">Server Won't Start</h3>
+<p><strong>Symptom:</strong> Server exits immediately after starting.</p>
+<p><strong>Diagnosis:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check logs
+sudo journalctl -u campagnola -n 50
+
+# Run manually to see errors
+./build/bin/campagnola --port 2582 --database /var/lib/plc/plc.db
+</code></pre>
+
+<p><strong>Common causes:</strong>
+1. <strong>Port already in use</strong>
+   ```bash
+   # Check what's using the port
+   sudo lsof -i :2582</p>
+<p># Kill the process or use a different port
+   ./build/bin/campagnola --port 2583
+   ```</p>
+<ol>
+<li>
+<p><strong>Database permission denied</strong>
+   <code>bash
+   # Fix permissions
+   sudo chown plc:plc /var/lib/plc/plc.db
+   sudo chmod 644 /var/lib/plc/plc.db</code></p>
+</li>
+<li>
+<p><strong>Database corruption</strong>
+   ```bash
+   # Check integrity
+   sqlite3 /var/lib/plc/plc.db "PRAGMA integrity_check;"</p>
+</li>
+</ol>
+<p># Restore from backup if corrupted
+   cp /var/backups/plc/plc-latest.db /var/lib/plc/plc.db
+   ```</p>
+<h3 id="operation-submission-fails">Operation Submission Fails</h3>
+<p><strong>Symptom:</strong> POST requests return 400 Bad Request.</p>
+<p><strong>Diagnosis:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check error message
+curl -X POST http://localhost:2582/did:plc:test \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;type&quot;:&quot;plc_operation&quot;,...}' \
+  -v
+</code></pre>
+
+<p><strong>Common causes:</strong>
+1. <strong>Invalid operation format</strong>
+   - Check all required fields are present
+   - Verify signature is base64url (no padding)
+   - Ensure <code>prev</code> matches previous operation CID</p>
+<ol>
+<li><strong>Operation too large</strong></li>
+<li>Maximum size: 4000 bytes (CBOR-encoded)</li>
+<li>
+<p>Reduce field sizes or split operations</p>
+</li>
+<li>
+<p><strong>Invalid signature</strong></p>
+</li>
+<li>Verify signature is computed correctly</li>
+<li>Check rotation key is authorized</li>
+<li>Ensure <code>prev</code> link is correct</li>
+</ol>
+<h3 id="did-resolution-returns-404">DID Resolution Returns 404</h3>
+<p><strong>Symptom:</strong> GET requests for DIDs return 404 Not Found.</p>
+<p><strong>Diagnosis:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check if DID exists
+curl http://localhost:2582/_list | grep &quot;did:plc:test&quot;
+
+# Check operation history
+sqlite3 /var/lib/plc/plc.db &quot;SELECT * FROM operations WHERE did='did:plc:test';&quot;
+</code></pre>
+
+<p><strong>Common causes:</strong>
+1. <strong>DID not created yet</strong>
+   - Submit genesis operation first
+   - Verify operation was accepted (200 OK)</p>
+<ol>
+<li><strong>Database not persisted</strong></li>
+<li>Check if using mock store (data lost on restart)</li>
+<li>
+<p>Use <code>--database</code> flag for persistence</p>
+</li>
+<li>
+<p><strong>Wrong PLC server</strong></p>
+</li>
+<li>Verify you're querying the correct server</li>
+<li>Check PDS configuration points to right PLC URL</li>
+</ol>
+<h3 id="high-memory-usage">High Memory Usage</h3>
+<p><strong>Symptom:</strong> Server consumes excessive memory.</p>
+<p><strong>Diagnosis:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check memory usage
+ps aux | grep campagnola
+
+# Check database size
+du -h /var/lib/plc/plc.db
+
+# Check operation count
+sqlite3 /var/lib/plc/plc.db &quot;SELECT COUNT(*) FROM operations;&quot;
+</code></pre>
+
+<p><strong>Solutions:</strong>
+1. <strong>Vacuum database</strong>
+   <code>bash
+   sqlite3 /var/lib/plc/plc.db "VACUUM;"</code></p>
+<ol>
+<li>
+<p><strong>Set memory limits</strong>
+   <code>ini
+   # In systemd service
+   MemoryMax=512M
+   MemoryHigh=384M</code></p>
+</li>
+<li>
+<p><strong>Archive old operations</strong>
+   ```bash
+   # Export operations
+   curl "http://localhost:2582/export?count=1000" &gt; operations.jsonl</p>
+</li>
+</ol>
+<p># Consider implementing operation pruning
+   # (requires code changes)
+   ```</p>
+<h3 id="slow-response-times">Slow Response Times</h3>
+<p><strong>Symptom:</strong> API requests take longer than expected.</p>
+<p><strong>Diagnosis:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Measure response time
+time curl http://localhost:2582/did:plc:test
+
+# Check database performance
+sqlite3 /var/lib/plc/plc.db &quot;EXPLAIN QUERY PLAN SELECT * FROM operations WHERE did='did:plc:test';&quot;
+</code></pre>
+
+<p><strong>Solutions:</strong>
+1. <strong>Optimize database</strong>
+   <code>bash
+   sqlite3 /var/lib/plc/plc.db "ANALYZE;"</code></p>
+<ol>
+<li>
+<p><strong>Check indexes</strong>
+   <code>bash
+   sqlite3 /var/lib/plc/plc.db ".indexes operations"</code></p>
+</li>
+<li>
+<p><strong>Enable WAL mode</strong> (should be automatic)
+   <code>bash
+   sqlite3 /var/lib/plc/plc.db "PRAGMA journal_mode=WAL;"</code></p>
+</li>
+<li>
+<p><strong>Add caching layer</strong> (nginx, Varnish)</p>
+</li>
+</ol>
+<h2 id="security-considerations">Security Considerations</h2>
+<h3 id="network-security">Network Security</h3>
+<ol>
+<li><strong>Always use HTTPS in production</strong></li>
+<li>Never expose campagnola directly to the internet</li>
+<li>Use reverse proxy (Nginx, Caddy) with TLS</li>
+<li>
+<p>Obtain certificates from Let's Encrypt</p>
+</li>
+<li>
+<p><strong>Firewall configuration</strong>
+   <code>bash
+   # Allow only from reverse proxy
+   sudo ufw allow from 127.0.0.1 to any port 2582
+   sudo ufw deny 2582</code></p>
+</li>
+<li>
+<p><strong>Rate limiting</strong></p>
+</li>
+<li>Implement at reverse proxy level</li>
+<li>Protect against DoS attacks</li>
+<li>Limit POST requests more strictly than GET</li>
+</ol>
+<h3 id="access-control">Access Control</h3>
+<ol>
+<li><strong>Read-only public access</strong></li>
+<li>GET endpoints should be public</li>
+<li>POST endpoints may need authentication</li>
+<li>
+<p>Consider API keys for write operations</p>
+</li>
+<li>
+<p><strong>Admin endpoints</strong></p>
+</li>
+<li>Restrict <code>/_list</code> and <code>/_metrics</code> to internal networks</li>
+<li>Use firewall rules or reverse proxy ACLs</li>
+</ol>
+<h3 id="data-integrity">Data Integrity</h3>
+<ol>
+<li><strong>Operation validation</strong></li>
+<li>Campagnola validates all operations before accepting</li>
+<li>Signature verification ensures authenticity</li>
+<li>
+<p>Chain validation prevents tampering</p>
+</li>
+<li>
+<p><strong>Backup verification</strong>
+   ```bash
+   # Verify backup integrity
+   sqlite3 /var/backups/plc/plc-backup.db "PRAGMA integrity_check;"</p>
+</li>
+</ol>
+<p># Compare operation counts
+   sqlite3 /var/lib/plc/plc.db "SELECT COUNT(<em>) FROM operations;"
+   sqlite3 /var/backups/plc/plc-backup.db "SELECT COUNT(</em>) FROM operations;"
+   ```</p>
+<ol>
+<li><strong>Audit logging</strong></li>
+<li>Enable detailed logging for security events</li>
+<li>Monitor for suspicious operation patterns</li>
+<li>Track failed authentication attempts</li>
+</ol>
+<h3 id="updates">Updates</h3>
+<p>Keep campagnola up to date:</p>
+<pre class="codehilite"><code class="language-bash"># Check current version
+./build/bin/campagnola --help | head -1
+
+# Pull latest code
+git pull origin main
+
+# Rebuild
+xcodegen generate
+xcodebuild -scheme ATProtoPDS-CLI build
+
+# Backup database before upgrading
+sqlite3 /var/lib/plc/plc.db &quot;.backup '/var/backups/plc/pre-upgrade.db'&quot;
+
+# Restart with new binary
+sudo systemctl restart campagnola
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="development">Development</h3>
+<ol>
+<li>
+<p><strong>Use mock store for testing</strong>
+   <code>bash
+   ./build/bin/campagnola --port 2582</code></p>
+</li>
+<li>
+<p><strong>Separate test and production databases</strong>
+   ```bash
+   # Test
+   ./build/bin/campagnola --port 2582 --database ./test-plc.db</p>
+</li>
+</ol>
+<p># Production
+   ./build/bin/campagnola --port 2582 --database /var/lib/plc/plc.db
+   ```</p>
+<ol>
+<li><strong>Version control configuration</strong></li>
+<li>Keep deployment scripts in version control</li>
+<li>Document configuration changes</li>
+<li>Use infrastructure as code (Terraform, Ansible)</li>
+</ol>
+<h3 id="production">Production</h3>
+<ol>
+<li><strong>Always use persistent storage</strong></li>
+<li>Never use mock store in production</li>
+<li>Use <code>--database</code> flag with absolute path</li>
+<li>
+<p>Ensure database directory has adequate space</p>
+</li>
+<li>
+<p><strong>Implement monitoring</strong></p>
+</li>
+<li>Health checks every 60 seconds</li>
+<li>Alert on consecutive failures</li>
+<li>Monitor disk space and memory usage</li>
+<li>
+<p>Track request/error rates</p>
+</li>
+<li>
+<p><strong>Regular backups</strong></p>
+</li>
+<li>Automated daily backups</li>
+<li>Test restore procedures</li>
+<li>Keep backups for 30+ days</li>
+<li>
+<p>Store backups off-site</p>
+</li>
+<li>
+<p><strong>Capacity planning</strong></p>
+</li>
+<li>Monitor database growth rate</li>
+<li>Plan for 3-6 months of growth</li>
+<li>Set up alerts for disk space</li>
+<li>
+<p>Consider archival strategies</p>
+</li>
+<li>
+<p><strong>Documentation</strong></p>
+</li>
+<li>Document deployment procedures</li>
+<li>Maintain runbooks for common issues</li>
+<li>Keep contact information current</li>
+<li>Document custom configurations</li>
+</ol>
+<h3 id="operations">Operations</h3>
+<ol>
+<li><strong>Change management</strong></li>
+<li>Test changes in staging first</li>
+<li>Schedule maintenance windows</li>
+<li>Communicate downtime in advance</li>
+<li>
+<p>Have rollback plan ready</p>
+</li>
+<li>
+<p><strong>Incident response</strong></p>
+</li>
+<li>Define severity levels</li>
+<li>Establish escalation procedures</li>
+<li>Document incident resolution</li>
+<li>
+<p>Conduct post-mortems</p>
+</li>
+<li>
+<p><strong>Performance optimization</strong></p>
+</li>
+<li>Regular database maintenance</li>
+<li>Monitor query performance</li>
+<li>Optimize slow queries</li>
+<li>Consider caching strategies</li>
+</ol>
+<h2 id="advanced-topics">Advanced Topics</h2>
+<h3 id="replication">Replication</h3>
+<p>Export and import operations for replication:</p>
+<pre class="codehilite"><code class="language-bash"># Export from source server
+curl &quot;http://source-plc:2582/export?count=1000&quot; &gt; operations.jsonl
+
+# Import to destination server (requires custom script)
+while IFS= read -r line; do
+    did=$(echo &quot;$line&quot; | jq -r '.did')
+    operation=$(echo &quot;$line&quot; | jq -c '.operation')
+
+    curl -X POST &quot;http://dest-plc:2582/$did&quot; \
+      -H &quot;Content-Type: application/json&quot; \
+      -d &quot;$operation&quot;
+done &lt; operations.jsonl
+</code></pre>
+
+<h3 id="custom-validation">Custom Validation</h3>
+<p>Extend operation validation by modifying <code>PLCAuditor</code>:</p>
+<pre class="codehilite"><code class="language-objc">// In PLCAuditor.m
+- (BOOL)verifyOperation:(PLCOperation *)op
+          proposedDate:(NSDate *)date
+          nullifiedCIDs:(NSArray&lt;NSString *&gt; **)nullified
+                 error:(NSError **)error {
+    // Add custom validation logic
+    if ([self shouldRejectOperation:op]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;CustomValidation&quot;
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Custom validation failed&quot;}];
+        }
+        return NO;
+    }
+
+    // Continue with standard validation
+    return [super verifyOperation:op proposedDate:date nullifiedCIDs:nullified error:error];
+}
+</code></pre>
+
+<h3 id="metrics-extension">Metrics Extension</h3>
+<p>Add custom metrics to <code>PLCMetrics</code>:</p>
+<pre class="codehilite"><code class="language-objc">// In PLCMetrics.h
+@property (atomic, assign) NSUInteger customMetric;
+
+// In PLCMetrics.m
+- (NSString *)renderMetrics {
+    NSMutableString *metrics = [NSMutableString string];
+
+    // Standard metrics
+    [metrics appendFormat:@&quot;plc_requests_total %lu\n&quot;, (unsigned long)self.requestCount];
+    [metrics appendFormat:@&quot;plc_errors_total %lu\n&quot;, (unsigned long)self.errorCount];
+
+    // Custom metrics
+    [metrics appendFormat:@&quot;plc_custom_metric %lu\n&quot;, (unsigned long)self.customMetric];
+
+    return metrics;
+}
+</code></pre>
+
+<h3 id="web-ui-customization">Web UI Customization</h3>
+<p>Campagnola includes a web UI in <code>ATProtoPDS/Sources/PLC/Assets/</code>. Customize it:</p>
+<pre class="codehilite"><code class="language-bash"># Edit HTML
+vim ATProtoPDS/Sources/PLC/Assets/index.html
+
+# Edit CSS
+vim ATProtoPDS/Sources/PLC/Assets/css/style.css
+
+# Edit JavaScript
+vim ATProtoPDS/Sources/PLC/Assets/js/app.js
+
+# Rebuild
+xcodebuild -scheme ATProtoPDS-CLI build
+</code></pre>
+
+<h2 id="quick-reference">Quick Reference</h2>
+<h3 id="common-commands">Common Commands</h3>
+<pre class="codehilite"><code class="language-bash"># Start with mock store
+./build/bin/campagnola --port 2582
+
+# Start with persistent database
+./build/bin/campagnola --port 2582 --database /var/lib/plc/plc.db
+
+# Check health
+curl http://localhost:2582/_health
+
+# List all DIDs
+curl http://localhost:2582/_list
+
+# Resolve DID
+curl http://localhost:2582/did:plc:abc123
+
+# Get audit log
+curl http://localhost:2582/did:plc:abc123/log/audit
+
+# Export operations
+curl &quot;http://localhost:2582/export?count=100&quot;
+
+# Check metrics
+curl http://localhost:2582/_metrics
+</code></pre>
+
+<h3 id="file-locations">File Locations</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Binary</td>
+<td><code>./build/bin/campagnola</code></td>
+</tr>
+<tr>
+<td>Database</td>
+<td><code>/var/lib/plc/plc.db</code></td>
+</tr>
+<tr>
+<td>Backups</td>
+<td><code>/var/backups/plc/</code></td>
+</tr>
+<tr>
+<td>Systemd service</td>
+<td><code>/etc/systemd/system/campagnola.service</code></td>
+</tr>
+<tr>
+<td>Nginx config</td>
+<td><code>/etc/nginx/sites-available/plc.example.com</code></td>
+</tr>
+<tr>
+<td>Logs</td>
+<td><code>journalctl -u campagnola</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="default-values">Default Values</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Port</td>
+<td>2582</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>Mock (in-memory)</td>
+</tr>
+<tr>
+<td>Max operation size</td>
+<td>4000 bytes</td>
+</tr>
+<tr>
+<td>Max rotation keys</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Max verification methods</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Max services</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Max alsoKnownAs</td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<h3 id="exit-codes">Exit Codes</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Success</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Failed to open database or start server</td>
+</tr>
+</tbody>
+</table>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><strong><a href="../02-core-concepts/plc-directory.md">PLC Directory Concepts</a></strong> — PLC protocol and DID operations</li>
+<li><strong><a href="./cli-reference.md">CLI Reference</a></strong> — kaszlak CLI commands</li>
+<li><strong><a href="./config-reference.md">Config Reference</a></strong> — PDS configuration options</li>
+<li><strong><a href="./troubleshooting.md">Troubleshooting</a></strong> — Common issues and solutions</li>
+</ul>
+<h2 id="external-resources">External Resources</h2>
+<ul>
+<li><strong>AT Protocol DID Specification:</strong> https://atproto.com/specs/did</li>
+<li><strong>PLC Directory:</strong> https://plc.directory</li>
+<li><strong>W3C DID Core:</strong> https://www.w3.org/TR/did-core/</li>
+<li><strong>SQLite Documentation:</strong> https://www.sqlite.org/docs.html</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

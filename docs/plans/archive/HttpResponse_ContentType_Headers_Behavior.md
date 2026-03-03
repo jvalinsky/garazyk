@@ -135,5 +135,5 @@ A new test file was added at `ATProtoPDS/Tests/Network/HttpResponseTests.m` with
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans

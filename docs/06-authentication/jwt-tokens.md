@@ -427,10 +427,10 @@ Claims validation ensures the token is still valid and meets requirements:
 ## See Also
 
 **Basic Topics:**
-- [OAuth 2.0 with DPoP](./oauth2-dpop.md) — OAuth implementation
-- [Key Rotation](./key-rotation.md) — Key management
-- [Authentication Helpers](../04-network-layer/auth-helpers.md) — Auth verification
+- [OAuth 2.0 with DPoP](./oauth2-dpop) — OAuth implementation
+- [Key Rotation](./key-rotation) — Key management
+- [Authentication Helpers](../04-network-layer/auth-helpers) — Auth verification
 
 **Advanced Topics:**
-- [Secrets Management](./secrets-management.md) — Key storage and rotation
-- [Security Best Practices](./security-best-practices.md) — Defense in depth
+- [Secrets Management](./secrets-management) — Key storage and rotation
+- [Security Best Practices](./security-best-practices) — Defense in depth

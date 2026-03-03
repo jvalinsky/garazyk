@@ -135,12 +135,12 @@ Until these are complete: **No-Go**.
 
 ## Related Documentation
 
-- [Detailed Next Steps Plan](detailed_next_steps_plan.md) - Priority execution plan to clear blockers
-- [Roadmap](ROADMAP.md) - Project milestones and completed phases
-- [Security Documentation](../security/README.md) - Security analysis and hardening guides
-- [OAuth2 Documentation](../oauth2/README.md) - Authentication and token management
-- [P0 Security Hardening Plan](2026-02-18-p0-security-hardening.md) - Refresh token and DPoP implementation
-- [Admin Auth Configuration](../security/ADMIN_AUTH_CONFIGURATION.md) - Admin authentication setup
-- [DPoP Implementation](../oauth2/dpop.md) - DPoP proof verification details
-- [Token Management](../oauth2/token-management.md) - JWT and refresh token lifecycle
-- [Architecture Overview](../architecture/README.md) - System design patterns
+- [Detailed Next Steps Plan](detailed_next_steps_plan) - Priority execution plan to clear blockers
+- [Roadmap](ROADMAP) - Project milestones and completed phases
+- [Security Documentation](../security/README) - Security analysis and hardening guides
+- [OAuth2 Documentation](../oauth2/README) - Authentication and token management
+- [P0 Security Hardening Plan](2026-02-18-p0-security-hardening) - Refresh token and DPoP implementation
+- [Admin Auth Configuration](../security/ADMIN_AUTH_CONFIGURATION) - Admin authentication setup
+- [DPoP Implementation](../oauth2/dpop) - DPoP proof verification details
+- [Token Management](../oauth2/token-management) - JWT and refresh token lifecycle
+- [Architecture Overview](../architecture/README) - System design patterns

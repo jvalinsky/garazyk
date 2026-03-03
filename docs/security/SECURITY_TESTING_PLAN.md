@@ -839,11 +839,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
 ## Related Documentation
 
-- [Security Documentation Index](README.md) - Overview of all security docs
-- [Security Plan](SECURITY_PLAN.md) - Comprehensive security strategy
-- [Security Analysis Report](SECURITY_ANALYSIS_REPORT.md) - Current findings
-- [Security Test Results](security_test_results.md) - Test execution results
-- [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT.md) - SQL vulnerabilities
-- [SSRF Protection](SSRF_PROTECTION.md) - SSRF mitigation strategies
-- [OAuth2 Security](../oauth2/security.md) - OAuth2 security implementation
-- [Security Tests](../tests/05-security/README.md) - Security test documentation
+- [Security Documentation Index](README) - Overview of all security docs
+- [Security Plan](SECURITY_PLAN) - Comprehensive security strategy
+- [Security Analysis Report](SECURITY_ANALYSIS_REPORT) - Current findings
+- [Security Test Results](security_test_results) - Test execution results
+- [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT) - SQL vulnerabilities
+- [SSRF Protection](SSRF_PROTECTION) - SSRF mitigation strategies
+- [OAuth2 Security](../oauth2/security) - OAuth2 security implementation
+- [Security Tests](../tests/05-security/README) - Security test documentation

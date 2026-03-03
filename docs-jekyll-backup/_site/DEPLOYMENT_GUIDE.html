@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Deployment Guide - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Documentation Deployment Guide</h1>
+            </div>
+            <h1 id="documentation-deployment-guide">Documentation Deployment Guide</h1>
+<p>This guide explains how to deploy and maintain the PDS Objective-C Implementation Guide documentation.</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="automatic-deployment-recommended">Automatic Deployment (Recommended)</h3>
+<p>The documentation is automatically deployed when you push to the <code>main</code> branch:</p>
+<pre class="codehilite"><code class="language-bash"># Make changes to documentation
+vim docs/01-getting-started/overview.md
+
+# Commit and push
+git add docs/
+git commit -m &quot;Update documentation&quot;
+git push origin main
+
+# GitHub Actions automatically builds and deploys
+# Site updates within 1-2 minutes
+</code></pre>
+
+<h3 id="manual-local-build">Manual Local Build</h3>
+<p>To build and test locally:</p>
+<pre class="codehilite"><code class="language-bash"># Build the site
+./scripts/build-docs.sh
+
+# Serve locally
+cd docs
+jekyll serve
+
+# Open http://localhost:4000 in browser
+</code></pre>
+
+<h2 id="deployment-architecture">Deployment Architecture</h2>
+<h3 id="github-pages-setup">GitHub Pages Setup</h3>
+<p>The documentation uses GitHub Pages with the following configuration:</p>
+<ol>
+<li><strong>Source Branch:</strong> <code>gh-pages</code></li>
+<li><strong>Build Tool:</strong> Jekyll</li>
+<li><strong>Trigger:</strong> Push to <code>main</code> branch</li>
+<li><strong>Workflow:</strong> <code>.github/workflows/build-docs.yml</code></li>
+</ol>
+<h3 id="build-process">Build Process</h3>
+<pre class="codehilite"><code>Source Files (docs/*.md)
+    ↓
+GitHub Actions Workflow
+    ↓
+Jekyll Build (docs/_site/)
+    ↓
+Deploy to gh-pages Branch
+    ↓
+GitHub Pages Serves Site
+</code></pre>
+
+<h2 id="deployment-verification">Deployment Verification</h2>
+<h3 id="check-build-status">Check Build Status</h3>
+<pre class="codehilite"><code class="language-bash"># View GitHub Actions workflow
+# Go to: https://github.com/&lt;owner&gt;/&lt;repo&gt;/actions
+
+# Or check via CLI
+gh run list --workflow=build-docs.yml
+</code></pre>
+
+<h3 id="test-site-accessibility">Test Site Accessibility</h3>
+<pre class="codehilite"><code class="language-bash"># Test main page
+curl -I https://&lt;owner&gt;.github.io/&lt;repo&gt;/
+
+# Test specific page
+curl https://&lt;owner&gt;.github.io/&lt;repo&gt;/01-getting-started/overview.html | head -20
+</code></pre>
+
+<h3 id="verify-content">Verify Content</h3>
+<ol>
+<li>Navigate to the site URL</li>
+<li>Check main index page loads</li>
+<li>Test navigation links</li>
+<li>Verify diagrams display</li>
+<li>Check code examples render correctly</li>
+</ol>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="build-fails-in-github-actions">Build Fails in GitHub Actions</h3>
+<p><strong>Check logs:</strong>
+1. Go to Actions tab in repository
+2. Click on failed workflow run
+3. Expand "Build Documentation" step
+4. Review error messages</p>
+<p><strong>Common issues:</strong>
+- Missing Ruby dependencies: Check <code>docs/Gemfile</code>
+- Markdown syntax errors: Validate markdown files
+- Missing images: Verify image paths are correct</p>
+<h3 id="site-not-updating">Site Not Updating</h3>
+<p><strong>Possible causes:</strong>
+1. Changes not pushed to <code>main</code> branch
+2. Workflow not triggered (check branch protection rules)
+3. Build failed (check Actions tab)
+4. GitHub Pages not configured (check Settings → Pages)</p>
+<p><strong>Resolution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Force rebuild
+git commit --allow-empty -m &quot;Trigger documentation rebuild&quot;
+git push origin main
+</code></pre>
+
+<h3 id="local-build-issues">Local Build Issues</h3>
+<p><strong>Jekyll not installed:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Install Ruby and Jekyll
+brew install ruby
+gem install jekyll bundler
+
+# Or use Python fallback
+python3 scripts/build-docs-python.py
+</code></pre>
+
+<p><strong>Dependencies missing:</strong></p>
+<pre class="codehilite"><code class="language-bash">cd docs
+bundle install
+jekyll build
+</code></pre>
+
+<h2 id="maintenance-tasks">Maintenance Tasks</h2>
+<h3 id="regular-updates">Regular Updates</h3>
+<p>Keep documentation synchronized with code:</p>
+<ol>
+<li><strong>After code changes:</strong> Update relevant documentation</li>
+<li><strong>After releases:</strong> Update version numbers and examples</li>
+<li><strong>Quarterly review:</strong> Check for outdated information</li>
+</ol>
+<h3 id="adding-new-pages">Adding New Pages</h3>
+<p>To add a new documentation page:</p>
+<ol>
+<li>Create markdown file in appropriate directory</li>
+<li>Add entry to <code>docs/SUMMARY.md</code></li>
+<li>Update navigation if needed</li>
+<li>Commit and push to <code>main</code></li>
+</ol>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash"># Create new page
+cat &gt; docs/03-application-layer/new-service.md &lt;&lt; 'EOF'
+# New Service Documentation
+
+Content here...
+EOF
+
+# Update table of contents
+vim docs/SUMMARY.md
+
+# Commit and push
+git add docs/
+git commit -m &quot;Add new service documentation&quot;
+git push origin main
+</code></pre>
+
+<h3 id="updating-diagrams">Updating Diagrams</h3>
+<p>To update diagrams:</p>
+<ol>
+<li>Edit SVG files in <code>docs/12-diagrams/</code></li>
+<li>Or regenerate from source</li>
+<li>Commit and push</li>
+<li>Site updates automatically</li>
+</ol>
+<h3 id="monitoring-performance">Monitoring Performance</h3>
+<p>Check site performance:</p>
+<pre class="codehilite"><code class="language-bash"># Check build time
+# View in GitHub Actions workflow logs
+
+# Monitor site size
+du -sh docs/_site/
+
+# Check page load times
+# Use browser developer tools or tools like WebPageTest
+</code></pre>
+
+<h2 id="advanced-configuration">Advanced Configuration</h2>
+<h3 id="custom-domain">Custom Domain</h3>
+<p>To use a custom domain:</p>
+<ol>
+<li>Go to repository Settings → Pages</li>
+<li>Under "Custom domain", enter your domain</li>
+<li>Add DNS records as instructed</li>
+<li>GitHub Pages will handle SSL certificate</li>
+</ol>
+<h3 id="custom-theme">Custom Theme</h3>
+<p>To customize the site appearance:</p>
+<ol>
+<li>Edit <code>docs/_config.yml</code></li>
+<li>Modify Jekyll theme settings</li>
+<li>Add custom CSS in <code>docs/assets/</code></li>
+<li>Commit and push</li>
+</ol>
+<h3 id="search-functionality">Search Functionality</h3>
+<p>To add search:</p>
+<ol>
+<li>Install Jekyll search plugin</li>
+<li>Configure in <code>_config.yml</code></li>
+<li>Add search UI to layout</li>
+<li>Rebuild and deploy</li>
+</ol>
+<h2 id="deployment-checklist">Deployment Checklist</h2>
+<p>Before deploying documentation updates:</p>
+<ul>
+<li>[ ] Content is accurate and complete</li>
+<li>[ ] Links are working (internal and external)</li>
+<li>[ ] Code examples are tested</li>
+<li>[ ] Diagrams are clear and accurate</li>
+<li>[ ] Markdown syntax is valid</li>
+<li>[ ] No broken image references</li>
+<li>[ ] Changes committed with clear message</li>
+<li>[ ] Pushed to <code>main</code> branch</li>
+<li>[ ] GitHub Actions workflow completed successfully</li>
+<li>[ ] Site is accessible and updated</li>
+</ul>
+<h2 id="rollback-procedure">Rollback Procedure</h2>
+<p>If you need to revert documentation:</p>
+<pre class="codehilite"><code class="language-bash"># Find the commit to revert to
+git log --oneline docs/
+
+# Revert specific commit
+git revert &lt;commit-hash&gt;
+git push origin main
+
+# Or reset to previous state
+git reset --hard &lt;commit-hash&gt;
+git push origin main --force
+</code></pre>
+
+<h2 id="performance-optimization">Performance Optimization</h2>
+<h3 id="reduce-build-time">Reduce Build Time</h3>
+<ol>
+<li>Minimize image sizes</li>
+<li>Optimize SVG diagrams</li>
+<li>Use efficient markdown</li>
+<li>Avoid large code blocks</li>
+</ol>
+<h3 id="reduce-site-size">Reduce Site Size</h3>
+<ol>
+<li>Compress images</li>
+<li>Minify CSS/JavaScript</li>
+<li>Remove unused assets</li>
+<li>Archive old content</li>
+</ol>
+<h2 id="security-considerations">Security Considerations</h2>
+<h3 id="sensitive-information">Sensitive Information</h3>
+<p>Never commit:
+- API keys or secrets
+- Private URLs or IPs
+- Personal information
+- Internal configuration</p>
+<h3 id="access-control">Access Control</h3>
+<ol>
+<li>Restrict who can push to <code>main</code></li>
+<li>Require pull request reviews</li>
+<li>Use branch protection rules</li>
+<li>Enable status checks</li>
+</ol>
+<h2 id="support-and-resources">Support and Resources</h2>
+<h3 id="documentation-tools">Documentation Tools</h3>
+<ul>
+<li><a href="https://jekyllrb.com/docs/">Jekyll Documentation</a></li>
+<li><a href="https://docs.github.com/en/pages">GitHub Pages Guide</a></li>
+<li><a href="https://www.markdownguide.org/">Markdown Guide</a></li>
+</ul>
+<h3 id="troubleshooting-resources">Troubleshooting Resources</h3>
+<ul>
+<li><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/troubleshooting-common-issues-with-github-pages">GitHub Pages Troubleshooting</a></li>
+<li><a href="https://jekyllrb.com/docs/troubleshooting/">Jekyll Troubleshooting</a></li>
+</ul>
+<h3 id="getting-help">Getting Help</h3>
+<ol>
+<li>Check GitHub Actions logs for build errors</li>
+<li>Review Jekyll documentation</li>
+<li>Check GitHub Pages status page</li>
+<li>Open an issue in the repository</li>
+</ol>
+<hr />
+<p><strong>Last Updated:</strong> 2026-03-02<br />
+<strong>Maintained By:</strong> Development Team</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

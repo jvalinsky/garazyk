@@ -80,7 +80,7 @@ The PDSController has grown into a monolithic class handling 8+ different respon
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Architecture Docs](../../architecture/README.md) - System architecture documentation</content>
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Architecture Docs](../../architecture/README) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2026-01-09-pdscontroller-refactor.md

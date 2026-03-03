@@ -378,10 +378,10 @@ curl -X [POST/GET/DELETE] \
 
 ## See Also
 
-- [Domain Methods](../04-network-layer/domain-methods.md)
-- [XRPC Dispatch](../04-network-layer/xrpc-dispatch.md)
-- [Auth Helpers](../04-network-layer/auth-helpers.md)
-- [Error Handling](../04-network-layer/error-handling.md)
+- [Domain Methods](../04-network-layer/domain-methods)
+- [XRPC Dispatch](../04-network-layer/xrpc-dispatch)
+- [Auth Helpers](../04-network-layer/auth-helpers)
+- [Error Handling](../04-network-layer/error-handling)
 - [[Related Service]](../03-application-layer/[service].md)
 
 ---

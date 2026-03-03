@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merkle Search Trees (MST) - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Merkle Search Trees (MST)</h1>
+            </div>
+            <h1 id="merkle-search-trees-mst">Merkle Search Trees (MST)</h1>
+<h2 id="overview">Overview</h2>
+<p>A Merkle Search Tree (MST) is a data structure that stores all records in a repository. It provides:
+- <strong>Efficient lookups</strong> — O(log n) time complexity
+- <strong>Deterministic hashing</strong> — Same records always produce same root CID
+- <strong>Efficient synchronization</strong> — Differences can be computed without comparing all records
+- <strong>Verifiable state</strong> — Root CID proves repository state</p>
+<h2 id="mst-structure">MST Structure</h2>
+<h3 id="tree-organization">Tree Organization</h3>
+<p>An MST is organized as a binary tree where:
+- <strong>Leaf nodes</strong> — Contain actual records
+- <strong>Internal nodes</strong> — Contain hashes of child nodes
+- <strong>Root node</strong> — Hash of entire tree</p>
+<p><img alt="MST Tree Structure" src="../12-diagrams/mst-tree-structure.svg" /></p>
+<pre class="codehilite"><code>                    Root CID
+                   /        \
+              Node A          Node B
+             /      \        /      \
+          Leaf1   Leaf2   Leaf3   Leaf4
+         (rec1)  (rec2)  (rec3)  (rec4)
+</code></pre>
+
+<h3 id="node-structure">Node Structure</h3>
+<p>Each node contains:
+- <strong>Key</strong> — Lexicographic key for the record
+- <strong>Value</strong> — CID of the record (for leaf nodes) or hash (for internal nodes)
+- <strong>Left child</strong> — Pointer to left subtree
+- <strong>Right child</strong> — Pointer to right subtree</p>
+<h3 id="key-ordering">Key Ordering</h3>
+<p>Records are ordered lexicographically by key:</p>
+<pre class="codehilite"><code>app.bsky.feed.like/abc123
+app.bsky.feed.like/def456
+app.bsky.feed.post/ghi789
+app.bsky.feed.post/jkl012
+</code></pre>
+
+<h2 id="mst-operations">MST Operations</h2>
+<h3 id="insertion">Insertion</h3>
+<p>To insert a record:</p>
+<pre class="codehilite"><code class="language-objc">// In MST.m
+- (void)insertRecord:(NSDictionary *)record 
+              forKey:(NSString *)key {
+    // 1. Calculate CID of record
+    NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:nil];
+    NSString *recordCID = [CID calculateCIDForData:cbor];
+
+    // 2. Insert into tree
+    self.root = [self insertNode:self.root 
+                         forKey:key 
+                        withCID:recordCID];
+
+    // 3. Recalculate root CID
+    self.rootCID = [self calculateNodeCID:self.root];
+}
+
+- (MSTNode *)insertNode:(MSTNode *)node 
+                forKey:(NSString *)key 
+               withCID:(NSString *)cid {
+    if (node == nil) {
+        // Create new leaf node
+        return [[MSTNode alloc] initWithKey:key value:cid];
+    }
+
+    NSComparisonResult cmp = [key compare:node.key];
+
+    if (cmp &lt; 0) {
+        // Insert in left subtree
+        node.left = [self insertNode:node.left forKey:key withCID:cid];
+    } else if (cmp &gt; 0) {
+        // Insert in right subtree
+        node.right = [self insertNode:node.right forKey:key withCID:cid];
+    } else {
+        // Update existing node
+        node.value = cid;
+    }
+
+    return node;
+}
+</code></pre>
+
+<h3 id="lookup">Lookup</h3>
+<p>To find a record:</p>
+<pre class="codehilite"><code class="language-objc">// In MST.m
+- (NSString *)lookupCIDForKey:(NSString *)key {
+    return [self lookupInNode:self.root forKey:key];
+}
+
+- (NSString *)lookupInNode:(MSTNode *)node forKey:(NSString *)key {
+    if (node == nil) {
+        return nil;
+    }
+
+    NSComparisonResult cmp = [key compare:node.key];
+
+    if (cmp &lt; 0) {
+        return [self lookupInNode:node.left forKey:key];
+    } else if (cmp &gt; 0) {
+        return [self lookupInNode:node.right forKey:key];
+    } else {
+        return node.value;  // Found
+    }
+}
+</code></pre>
+
+<h3 id="range-query">Range Query</h3>
+<p>To find all records in a key range:</p>
+<pre class="codehilite"><code class="language-objc">// In MST.m
+- (NSArray *)recordsInRange:(NSString *)startKey 
+                    endKey:(NSString *)endKey {
+    NSMutableArray *results = [NSMutableArray array];
+    [self collectInRange:self.root 
+              startKey:startKey 
+                endKey:endKey 
+               results:results];
+    return results;
+}
+
+- (void)collectInRange:(MSTNode *)node 
+             startKey:(NSString *)startKey 
+               endKey:(NSString *)endKey 
+              results:(NSMutableArray *)results {
+    if (node == nil) return;
+
+    // Check if node key is in range
+    if ([node.key compare:startKey] &gt;= 0 &amp;&amp; 
+        [node.key compare:endKey] &lt;= 0) {
+        [results addObject:@{@&quot;key&quot;: node.key, @&quot;cid&quot;: node.value}];
+    }
+
+    // Recurse into left subtree if needed
+    if ([node.key compare:startKey] &gt; 0) {
+        [self collectInRange:node.left 
+                  startKey:startKey 
+                    endKey:endKey 
+                   results:results];
+    }
+
+    // Recurse into right subtree if needed
+    if ([node.key compare:endKey] &lt; 0) {
+        [self collectInRange:node.right 
+                  startKey:startKey 
+                    endKey:endKey 
+                   results:results];
+    }
+}
+</code></pre>
+
+<h2 id="cid-calculation">CID Calculation</h2>
+<h3 id="deterministic-hashing">Deterministic Hashing</h3>
+<p>The root CID is calculated deterministically:</p>
+<pre class="codehilite"><code class="language-objc">// In MST.m
+- (NSString *)calculateNodeCID:(MSTNode *)node {
+    if (node == nil) {
+        return nil;
+    }
+
+    // 1. Encode node as CBOR
+    NSDictionary *nodeData = @{
+        @&quot;key&quot;: node.key,
+        @&quot;value&quot;: node.value,
+        @&quot;left&quot;: [self calculateNodeCID:node.left] ?: [NSNull null],
+        @&quot;right&quot;: [self calculateNodeCID:node.right] ?: [NSNull null]
+    };
+
+    NSData *cbor = [ATProtoCBORSerialization encodeObject:nodeData error:nil];
+
+    // 2. Calculate CID (hash of CBOR)
+    NSString *cid = [CID calculateCIDForData:cbor];
+
+    return cid;
+}
+</code></pre>
+
+<h3 id="root-cid">Root CID</h3>
+<p>The root CID is the hash of the entire tree:</p>
+<pre class="codehilite"><code class="language-objc">// In MST.m
+- (NSString *)rootCID {
+    return [self calculateNodeCID:self.root];
+}
+</code></pre>
+
+<h2 id="synchronization">Synchronization</h2>
+<h3 id="diff-calculation">Diff Calculation</h3>
+<p>To sync two repositories, calculate the difference:</p>
+<pre class="codehilite"><code class="language-objc">// In PDSRepositoryService.m
+- (NSArray *)diffMST:(MST *)localMST 
+           remoteMST:(MST *)remoteMST {
+    NSMutableArray *diffs = [NSMutableArray array];
+
+    // 1. Compare root CIDs
+    if ([localMST.rootCID isEqualToString:remoteMST.rootCID]) {
+        return @[];  // No differences
+    }
+
+    // 2. Recursively find differences
+    [self diffNodes:localMST.root 
+        remoteNode:remoteMST.root 
+             diffs:diffs];
+
+    return diffs;
+}
+
+- (void)diffNodes:(MSTNode *)localNode 
+       remoteNode:(MSTNode *)remoteNode 
+            diffs:(NSMutableArray *)diffs {
+    if (localNode == nil &amp;&amp; remoteNode == nil) {
+        return;
+    }
+
+    if (localNode == nil) {
+        // Remote has record that local doesn't
+        [diffs addObject:@{@&quot;type&quot;: @&quot;add&quot;, @&quot;key&quot;: remoteNode.key, @&quot;cid&quot;: remoteNode.value}];
+        return;
+    }
+
+    if (remoteNode == nil) {
+        // Local has record that remote doesn't
+        [diffs addObject:@{@&quot;type&quot;: @&quot;remove&quot;, @&quot;key&quot;: localNode.key}];
+        return;
+    }
+
+    NSComparisonResult cmp = [localNode.key compare:remoteNode.key];
+
+    if (cmp &lt; 0) {
+        // Local has record that remote doesn't
+        [diffs addObject:@{@&quot;type&quot;: @&quot;remove&quot;, @&quot;key&quot;: localNode.key}];
+        [self diffNodes:localNode.right remoteNode:remoteNode diffs:diffs];
+    } else if (cmp &gt; 0) {
+        // Remote has record that local doesn't
+        [diffs addObject:@{@&quot;type&quot;: @&quot;add&quot;, @&quot;key&quot;: remoteNode.key, @&quot;cid&quot;: remoteNode.value}];
+        [self diffNodes:localNode remoteNode:remoteNode.right diffs:diffs];
+    } else {
+        // Same key, check if values differ
+        if (![localNode.value isEqualToString:remoteNode.value]) {
+            [diffs addObject:@{@&quot;type&quot;: @&quot;update&quot;, @&quot;key&quot;: localNode.key, @&quot;cid&quot;: remoteNode.value}];
+        }
+        [self diffNodes:localNode.left remoteNode:remoteNode.left diffs:diffs];
+        [self diffNodes:localNode.right remoteNode:remoteNode.right diffs:diffs];
+    }
+}
+</code></pre>
+
+<h2 id="commit-processing">Commit Processing</h2>
+<h3 id="creating-a-commit">Creating a Commit</h3>
+<p>When records are modified, a new commit is created:</p>
+<pre class="codehilite"><code class="language-objc">// In PDSRepositoryService.m
+- (void)createCommitWithChanges:(NSArray *)changes 
+                      completion:(void (^)(NSString *commitCID, NSError *error))completion {
+    // 1. Apply changes to MST
+    for (NSDictionary *change in changes) {
+        NSString *key = change[@&quot;key&quot;];
+        NSString *cid = change[@&quot;cid&quot;];
+        [self.mst insertRecord:@{} forKey:key];  // Simplified
+    }
+
+    // 2. Calculate new root CID
+    NSString *rootCID = self.mst.rootCID;
+
+    // 3. Create commit object
+    NSDictionary *commit = @{
+        @&quot;root&quot;: rootCID,
+        @&quot;prev&quot;: self.lastCommitCID ?: [NSNull null],
+        @&quot;timestamp&quot;: [NSDate date],
+        @&quot;did&quot;: self.did
+    };
+
+    // 4. Sign commit
+    NSData *commitData = [ATProtoCBORSerialization encodeObject:commit error:nil];
+    NSString *signature = [self signData:commitData];
+
+    // 5. Create commit CID
+    NSDictionary *signedCommit = @{
+        @&quot;commit&quot;: commit,
+        @&quot;signature&quot;: signature
+    };
+    NSData *signedData = [ATProtoCBORSerialization encodeObject:signedCommit error:nil];
+    NSString *commitCID = [CID calculateCIDForData:signedData];
+
+    // 6. Store commit
+    [self storeCommit:signedCommit withCID:commitCID];
+
+    completion(commitCID, nil);
+}
+</code></pre>
+
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<h3 id="time-complexity">Time Complexity</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Complexity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Insert</td>
+<td>O(log n)</td>
+<td>Balanced tree</td>
+</tr>
+<tr>
+<td>Lookup</td>
+<td>O(log n)</td>
+<td>Binary search</td>
+</tr>
+<tr>
+<td>Range query</td>
+<td>O(log n + k)</td>
+<td>k = results</td>
+</tr>
+<tr>
+<td>Diff</td>
+<td>O(log n)</td>
+<td>Only different branches</td>
+</tr>
+</tbody>
+</table>
+<h3 id="space-complexity">Space Complexity</h3>
+<ul>
+<li><strong>O(n)</strong> — n = number of records</li>
+<li><strong>Efficient storage</strong> — Only store changed nodes</li>
+</ul>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Keep MST balanced</strong> — Prevents O(n) operations</li>
+<li><strong>Cache root CID</strong> — Avoid recalculating</li>
+<li><strong>Batch operations</strong> — Group inserts/updates</li>
+<li><strong>Verify signatures</strong> — Always verify commit signatures</li>
+<li><strong>Monitor tree depth</strong> — Alert if tree becomes unbalanced</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./cryptography.md">Cryptography</a></strong> — Cryptographic operations</li>
+<li><strong><a href="../07-repository-protocol/repository-basics.md">Repository Protocol</a></strong> — Repository operations</li>
+<li><strong><a href="../08-sync-firehose/firehose-overview.md">Sync &amp; Firehose</a></strong> — Real-time synchronization</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:13</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

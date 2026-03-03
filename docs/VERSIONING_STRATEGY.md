@@ -281,7 +281,7 @@ When a version reaches end of life:
 
 - [Semantic Versioning](https://semver.org/)
 - [Keep a Changelog](https://keepachangelog.com/)
-- [Documentation Update Checklist](DOCUMENTATION_UPDATE_CHECKLIST.md)
+- [Documentation Update Checklist](DOCUMENTATION_UPDATE_CHECKLIST)
 
 ## Revision History
 

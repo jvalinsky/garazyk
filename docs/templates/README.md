@@ -210,13 +210,13 @@ When documenting deprecated features:
 If you need help with documentation:
 
 1. Review existing documentation for examples
-2. Check the [Documentation Update Checklist](../DOCUMENTATION_UPDATE_CHECKLIST.md)
-3. Review the [Versioning Strategy](../VERSIONING_STRATEGY.md)
+2. Check the [Documentation Update Checklist](../DOCUMENTATION_UPDATE_CHECKLIST)
+3. Review the [Versioning Strategy](../VERSIONING_STRATEGY)
 4. Ask in pull request reviews
 
 ## See Also
 
-- [Documentation Update Checklist](../DOCUMENTATION_UPDATE_CHECKLIST.md)
-- [Versioning Strategy](../VERSIONING_STRATEGY.md)
-- [SUMMARY.md](../SUMMARY.md) — Table of contents
-- [GLOSSARY.md](../GLOSSARY.md) — Terminology reference
+- [Documentation Update Checklist](../DOCUMENTATION_UPDATE_CHECKLIST)
+- [Versioning Strategy](../VERSIONING_STRATEGY)
+- [SUMMARY.md](../SUMMARY) — Table of contents
+- [GLOSSARY.md](../GLOSSARY) — Terminology reference

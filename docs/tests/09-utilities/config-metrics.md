@@ -8,7 +8,7 @@ Tests for PDS configuration, metrics, and node info.
 **File:** `Tests/App/PDSConfigurationTests.m`
 **Purpose:** Configuration loading and environment overrides.
 
-See [Controller Tests](../04-application/controller.md#pdsconfigurationtests) for full details.
+See [Controller Tests](../04-application/controller#pdsconfigurationtests) for full details.
 
 ---
 
@@ -55,8 +55,8 @@ Default Values (lowest priority)
 
 ## Related Documentation
 
-- [Folder README](README.md) - Utilities tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Debug Tests](debug.md) - Debug and exploration tools
-- [Controller Tests](../04-application/controller.md) - Configuration loading
-- [Application Tests](../04-application/README.md) - Application lifecycle
+- [Folder README](README) - Utilities tests overview
+- [Test Index](../README) - Main test documentation index
+- [Debug Tests](debug) - Debug and exploration tools
+- [Controller Tests](../04-application/controller) - Configuration loading
+- [Application Tests](../04-application/README) - Application lifecycle

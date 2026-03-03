@@ -525,7 +525,7 @@ store.minter = jwtMinter;
 
 ## Related Documentation
 
-- [DPoP](./dpop.md) - DPoP proof verification and token binding
-- [Authorization Flow](./authorization-flow.md) - Code generation and exchange
-- [Security](./security.md) - Security considerations for token handling
-- [Overview](./README.md) - OAuth2 implementation overview
+- [DPoP](./dpop) - DPoP proof verification and token binding
+- [Authorization Flow](./authorization-flow) - Code generation and exchange
+- [Security](./security) - Security considerations for token handling
+- [Overview](./README) - OAuth2 implementation overview

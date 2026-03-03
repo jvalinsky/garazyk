@@ -584,7 +584,7 @@ NSData *data = [NSURLConnection sendSynchronousRequest:request
 
 ## See Also
 
-- [JWT Tokens](./jwt-tokens.md)
-- [Key Rotation](./key-rotation.md)
-- [TOTP and WebAuthn](./totp-webauthn.md)
-- [Auth Helpers](../04-network-layer/auth-helpers.md)
+- [JWT Tokens](./jwt-tokens)
+- [Key Rotation](./key-rotation)
+- [TOTP and WebAuthn](./totp-webauthn)
+- [Auth Helpers](../04-network-layer/auth-helpers)

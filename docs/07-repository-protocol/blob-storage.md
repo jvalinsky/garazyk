@@ -383,12 +383,12 @@ NSLog(@"Post created with image: %@", postCid.stringValue);
 ## See Also
 
 **Basic Topics:**
-- [Blob Service](../03-application-layer/blob-service.md) — Blob service layer
-- [CID and Hashing](./cid-and-hashing.md) — Content addressing
-- [Repository Basics](./repository-basics.md) — Repository structure
+- [Blob Service](../03-application-layer/blob-service) — Blob service layer
+- [CID and Hashing](./cid-and-hashing) — Content addressing
+- [Repository Basics](./repository-basics) — Repository structure
 
 **Advanced Topics:**
-- [Blob Lifecycle](./blob-lifecycle.md) — Upload/download/deletion
-- [Blob Optimization](./blob-optimization.md) — Chunking and caching
-- [Blob Garbage Collection](./blob-garbage-collection.md) — Cleanup strategies
-- [Blob Quotas](./blob-quotas.md) — Size limits and enforcement
+- [Blob Lifecycle](./blob-lifecycle) — Upload/download/deletion
+- [Blob Optimization](./blob-optimization) — Chunking and caching
+- [Blob Garbage Collection](./blob-garbage-collection) — Cleanup strategies
+- [Blob Quotas](./blob-quotas) — Size limits and enforcement

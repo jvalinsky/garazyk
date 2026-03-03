@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBOR and CAR Formats - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>CBOR and CAR Formats</h1>
+            </div>
+            <h1 id="cbor-and-car-formats">CBOR and CAR Formats</h1>
+<h2 id="cbor-concise-binary-object-representation">CBOR (Concise Binary Object Representation)</h2>
+<h3 id="what-is-cbor">What is CBOR?</h3>
+<p>CBOR is a binary data format that:
+- Is more compact than JSON
+- Preserves data types (integers, floats, strings, arrays, maps)
+- Is deterministic (same data always encodes the same way)
+- Is language-independent</p>
+<h3 id="why-cbor">Why CBOR?</h3>
+<p>The AT Protocol uses CBOR because:
+- <strong>Compact</strong> — Smaller than JSON, important for bandwidth
+- <strong>Deterministic</strong> — Essential for cryptographic hashing
+- <strong>Type-safe</strong> — Preserves data types during serialization
+- <strong>Efficient</strong> — Fast to encode and decode</p>
+<p><img alt="CBOR Encoding Process" src="../12-diagrams/cbor-encoding-example.svg" /></p>
+<h3 id="cbor-data-types">CBOR Data Types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Example</th>
+<th>CBOR Encoding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Integer</td>
+<td><code>42</code></td>
+<td><code>0x18 0x2a</code></td>
+</tr>
+<tr>
+<td>String</td>
+<td><code>"hello"</code></td>
+<td><code>0x65 hello</code></td>
+</tr>
+<tr>
+<td>Array</td>
+<td><code>[1, 2, 3]</code></td>
+<td><code>0x83 0x01 0x02 0x03</code></td>
+</tr>
+<tr>
+<td>Map</td>
+<td><code>{"a": 1}</code></td>
+<td><code>0xa1 0x61 0x61 0x01</code></td>
+</tr>
+<tr>
+<td>Null</td>
+<td><code>null</code></td>
+<td><code>0xf6</code></td>
+</tr>
+<tr>
+<td>Boolean</td>
+<td><code>true</code></td>
+<td><code>0xf5</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="cbor-in-code">CBOR in Code</h3>
+<p>The <code>ATProtoCBORSerialization</code> class provides the main interface for encoding and decoding CBOR data:</p>
+<h4 id="basic-encoding-and-decoding">Basic Encoding and Decoding</h4>
+<pre class="codehilite"><code class="language-objc">// Encode a JSON object to CBOR
+NSDictionary *record = @{
+    @&quot;text&quot;: @&quot;Hello, world!&quot;,
+    @&quot;createdAt&quot;: @&quot;2024-01-01T00:00:00Z&quot;
+};
+
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record 
+                                                                error:&amp;error];
+if (!cborData) {
+    NSLog(@&quot;Encoding failed: %@&quot;, error);
+    return;
+}
+
+// Decode CBOR back to JSON
+NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData 
+                                                                error:&amp;error];
+if (!decoded) {
+    NSLog(@&quot;Decoding failed: %@&quot;, error);
+    return;
+}
+
+// Verify round-trip
+if ([decoded isEqualToDictionary:record]) {
+    NSLog(@&quot;Round-trip successful!&quot;);
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 8-20)</p>
+<h3 id="dag-cbor-directed-acyclic-graph-cbor">DAG-CBOR (Directed Acyclic Graph CBOR)</h3>
+<p>DAG-CBOR is a restricted subset of CBOR used in AT Protocol:
+- <strong>Deterministic encoding</strong> — Canonical form for hashing
+- <strong>No floating-point</strong> — Only integers
+- <strong>Sorted keys</strong> — Maps have keys in sorted order
+- <strong>No duplicate keys</strong> — Each key appears once</p>
+<h3 id="dag-cbor-encoding-rules">DAG-CBOR Encoding Rules</h3>
+<ol>
+<li><strong>Integers</strong> — Use smallest representation</li>
+<li><strong>Strings</strong> — UTF-8 encoded</li>
+<li><strong>Arrays</strong> — Elements in order</li>
+<li><strong>Maps</strong> — Keys sorted lexicographically</li>
+<li><strong>No undefined values</strong> — Use null instead</li>
+</ol>
+<h3 id="handling-special-types">Handling Special Types</h3>
+<p>The CBOR serializer handles AT Protocol's special types:</p>
+<h4 id="cid-links-cbor-tag-42">CID Links (CBOR Tag 42)</h4>
+<pre class="codehilite"><code class="language-objc">// CID links are encoded as CBOR Tag 42
+// Input: {&quot;$link&quot;: &quot;bafy2bzaced...&quot;}
+// Output: CBOR Tag 42 with CID bytes
+
+NSDictionary *recordWithLink = @{
+    @&quot;text&quot;: @&quot;Hello!&quot;,
+    @&quot;parent&quot;: @{@&quot;$link&quot;: @&quot;bafy2bzaced4ueelaegfs5fq4a3fvh2ijmmq7xjlmakivezbsxyhynaiksqq&quot;}
+};
+
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:recordWithLink 
+                                                                error:&amp;error];
+
+// When decoded, the CBOR Tag 42 is converted back to {&quot;$link&quot;: &quot;bafy...&quot;}
+NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData 
+                                                                error:&amp;error];
+// decoded[@&quot;parent&quot;] == @{@&quot;$link&quot;: @&quot;bafy2bzaced...&quot;}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 47-60)</p>
+<h4 id="byte-strings-base64-encoding">Byte Strings (Base64 Encoding)</h4>
+<pre class="codehilite"><code class="language-objc">// Byte strings are encoded with base64
+// Input: {&quot;$bytes&quot;: &quot;aGVsbG8=&quot;}
+// Output: CBOR byte string
+
+NSDictionary *recordWithBytes = @{
+    @&quot;text&quot;: @&quot;Hello!&quot;,
+    @&quot;signature&quot;: @{@&quot;$bytes&quot;: @&quot;aGVsbG8gd29ybGQ=&quot;}  // &quot;hello world&quot; in base64
+};
+
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:recordWithBytes 
+                                                                error:&amp;error];
+
+// When decoded, byte strings are converted back to {&quot;$bytes&quot;: &quot;base64...&quot;}
+NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:cborData 
+                                                                error:&amp;error];
+// decoded[@&quot;signature&quot;] == @{@&quot;$bytes&quot;: @&quot;aGVsbG8gd29ybGQ=&quot;}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 61-70)</p>
+<h4 id="map-key-sorting-lexicographic-order">Map Key Sorting (Lexicographic Order)</h4>
+<pre class="codehilite"><code class="language-objc">// Maps are sorted by key (lexicographic order) for deterministic encoding
+NSDictionary *record = @{
+    @&quot;z&quot;: @&quot;last&quot;,
+    @&quot;a&quot;: @&quot;first&quot;,
+    @&quot;m&quot;: @&quot;middle&quot;
+};
+
+NSError *error = nil;
+NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record 
+                                                                error:&amp;error];
+
+// The CBOR encoding will have keys in order: a, m, z
+// This ensures deterministic hashing for CID generation
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 71-85)</p>
+<h3 id="example-encoding-a-record">Example: Encoding a Record</h3>
+<pre class="codehilite"><code class="language-objc">// Original record
+NSDictionary *record = @{
+    @&quot;text&quot;: @&quot;Hello, world!&quot;,
+    @&quot;createdAt&quot;: @&quot;2024-01-01T00:00:00Z&quot;,
+    @&quot;facets&quot;: @[]
+};
+
+// Encode to DAG-CBOR
+NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:nil];
+
+// Calculate CID (hash of CBOR data)
+NSString *cid = [CID calculateCIDForData:cbor];
+</code></pre>
+
+<h2 id="car-content-addressable-archive">CAR (Content Addressable aRchive)</h2>
+<h3 id="what-is-car">What is CAR?</h3>
+<p>CAR is a file format for storing content-addressed data. It's used to:
+- Package records and blobs together
+- Enable efficient repository synchronization
+- Store snapshots of repository state</p>
+<h3 id="car-structure">CAR Structure</h3>
+<pre class="codehilite"><code>CAR Header
+├── Version (1 byte)
+├── Roots (array of CIDs)
+└── Blocks
+    ├── Block 1 (CID + data)
+    ├── Block 2 (CID + data)
+    └── Block N (CID + data)
+</code></pre>
+
+<h3 id="car-format-details">CAR Format Details</h3>
+<p><strong>Header:</strong></p>
+<pre class="codehilite"><code>Version: 1 (1 byte)
+Roots: [root_cid_1, root_cid_2, ...] (CBOR encoded array)
+</code></pre>
+
+<p><strong>Each Block:</strong></p>
+<pre class="codehilite"><code>Length: &lt;block length&gt; (CBOR encoded varint)
+CID: &lt;content identifier&gt; (CBOR encoded)
+Data: &lt;block data&gt; (raw bytes, length - CID_length)
+</code></pre>
+
+<p>The length field encodes the total size of the CID and data combined.</p>
+<h3 id="car-in-code">CAR in Code</h3>
+<h4 id="reading-a-car-file">Reading a CAR File</h4>
+<pre class="codehilite"><code class="language-objc">// Read CAR from file
+NSError *error = nil;
+CARReader *reader = [CARReader readFromPath:@&quot;/path/to/archive.car&quot; error:&amp;error];
+if (!reader) {
+    NSLog(@&quot;Failed to read CAR: %@&quot;, error);
+    return;
+}
+
+// Access root CID and blocks
+CID *rootCID = reader.rootCID;
+NSArray&lt;CARBlock *&gt; *blocks = reader.blocks;
+
+// Iterate through blocks
+for (CARBlock *block in blocks) {
+    CID *blockCID = block.cid;
+    NSData *blockData = block.data;
+
+    // Process block data
+    NSDictionary *decoded = [ATProtoCBORSerialization JSONObjectWithData:blockData 
+                                                                    error:&amp;error];
+    if (decoded) {
+        NSLog(@&quot;Block CID: %@&quot;, blockCID.stringValue);
+    }
+}
+
+// Find a specific block by CID
+CARBlock *block = [reader blockWithCID:someCID];
+if (block) {
+    NSData *blockData = block.data;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 180-220)</p>
+<h4 id="writing-a-car-file">Writing a CAR File</h4>
+<pre class="codehilite"><code class="language-objc">// Create a CAR writer with root CID
+CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+
+// Add blocks
+for (NSData *blockData in blockDataArray) {
+    // Calculate CID for the block
+    NSData *hash = [CID sha256Digest:blockData];
+    CID *blockCID = [CID cidWithDigest:hash codec:0x71];  // 0x71 = dag-cbor
+
+    // Create and add block
+    CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
+    [writer addBlock:block];
+}
+
+// Serialize to file
+NSError *error = nil;
+if (![writer writeToPath:@&quot;/path/to/output.car&quot; error:&amp;error]) {
+    NSLog(@&quot;Failed to write CAR: %@&quot;, error);
+    return;
+}
+
+// Or get as NSData
+NSData *carData = [writer encodeWithError:&amp;error];
+if (!carData) {
+    NSLog(@&quot;Failed to encode CAR: %@&quot;, error);
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 300-350)</p>
+<h3 id="car-use-cases">CAR Use Cases</h3>
+<p><strong>1. Repository Export</strong></p>
+<pre class="codehilite"><code>Export user's entire repository as CAR file
+├── Root: MST root CID
+└── Blocks: All records and blobs
+</code></pre>
+
+<p><strong>2. Repository Sync</strong></p>
+<pre class="codehilite"><code>Sync changes between two PDS instances
+├── Root: New repository state
+└── Blocks: Only changed records
+</code></pre>
+
+<p><strong>3. Backup</strong></p>
+<pre class="codehilite"><code>Backup user's repository
+├── Root: Repository state at backup time
+└── Blocks: All records and blobs
+</code></pre>
+
+<h2 id="serialization-patterns">Serialization Patterns</h2>
+<h3 id="encoding-a-record">Encoding a Record</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (NSData *)encodeRecord:(NSDictionary *)record error:(NSError **)error {
+    // 1. Validate record against lexicon
+    if (![self validateRecord:record againstLexicon:@&quot;app.bsky.feed.post&quot; error:error]) {
+        return nil;
+    }
+
+    // 2. Encode to DAG-CBOR
+    NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:error];
+    if (!cbor) return nil;
+
+    // 3. Calculate CID
+    NSString *cid = [CID calculateCIDForData:cbor];
+
+    // 4. Store in database
+    [self storeRecord:record withCID:cid];
+
+    return cbor;
+}
+</code></pre>
+
+<h3 id="decoding-a-record">Decoding a Record</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRecordService.m
+- (NSDictionary *)decodeRecord:(NSData *)cbor 
+                      collection:(NSString *)collection
+                           error:(NSError **)error {
+    // 1. Decode from DAG-CBOR
+    NSDictionary *record = [ATProtoCBORSerialization decodeData:cbor error:error];
+    if (!record) return nil;
+
+    // 2. Validate against lexicon
+    if (![self validateRecord:record againstLexicon:collection error:error]) {
+        return nil;
+    }
+
+    return record;
+}
+</code></pre>
+
+<h3 id="exporting-repository-as-car">Exporting Repository as CAR</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSRepositoryService.m
+- (NSData *)exportRepositoryAsCAR:(NSString *)did error:(NSError **)error {
+    // 1. Get repository root CID
+    NSString *rootCID = [self getRootCIDForDID:did];
+
+    // 2. Collect all blocks (records and blobs)
+    NSMutableArray *blocks = [NSMutableArray array];
+
+    // Get MST blocks
+    NSArray *mstBlocks = [self getMSTBlocksForDID:did];
+    [blocks addObjectsFromArray:mstBlocks];
+
+    // Get record blocks
+    NSArray *recordBlocks = [self getRecordBlocksForDID:did];
+    [blocks addObjectsFromArray:recordBlocks];
+
+    // Get blob blocks
+    NSArray *blobBlocks = [self getBlobBlocksForDID:did];
+    [blocks addObjectsFromArray:blobBlocks];
+
+    // 3. Create CAR
+    CAR *car = [[CAR alloc] init];
+    NSData *carData = [car encodeWithRoots:@[rootCID] blocks:blocks];
+
+    return carData;
+}
+</code></pre>
+
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="cbor-encoding-performance">CBOR Encoding Performance</h3>
+<ul>
+<li><strong>Deterministic encoding</strong> — Ensures consistent hashing</li>
+<li><strong>Streaming</strong> — Can encode/decode large objects</li>
+<li><strong>Caching</strong> — Cache encoded forms to avoid re-encoding</li>
+</ul>
+<h3 id="car-file-size">CAR File Size</h3>
+<ul>
+<li><strong>Compression</strong> — CAR files can be gzipped for storage</li>
+<li><strong>Incremental sync</strong> — Only sync changed blocks</li>
+<li><strong>Deduplication</strong> — Shared blocks appear once</li>
+</ul>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./mst-trees.md">MST Trees</a></strong> — Merkle Search Tree structure</li>
+<li><strong><a href="./cryptography.md">Cryptography</a></strong> — Cryptographic operations</li>
+<li><strong><a href="../07-repository-protocol/repository-basics.md">Repository Protocol</a></strong> — Repository operations</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:13</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

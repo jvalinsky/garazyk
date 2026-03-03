@@ -6,7 +6,7 @@ Tests verifying compliance with reference implementations (Go, TypeScript).
 
 | File | Description |
 |------|-------------|
-| [characterization.md](characterization.md) | Reference implementation compliance for actor store, key manager, MST, XRPC |
+| [characterization.md](characterization) | Reference implementation compliance for actor store, key manager, MST, XRPC |
 
 ## Test Classes
 
@@ -27,9 +27,9 @@ Tests verifying compliance with reference implementations (Go, TypeScript).
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [Characterization Tests](characterization.md) - Reference compliance details
-- [Repository Tests](../01-repository/README.md) - MST and CAR tests
-- [Database Tests](../03-database/README.md) - Actor store tests
-- [Network Tests](../02-network/README.md) - XRPC tests
-- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - Key manager tests
+- [Test Index](../README) - Main test documentation index
+- [Characterization Tests](characterization) - Reference compliance details
+- [Repository Tests](../01-repository/README) - MST and CAR tests
+- [Database Tests](../03-database/README) - Actor store tests
+- [Network Tests](../02-network/README) - XRPC tests
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto) - Key manager tests

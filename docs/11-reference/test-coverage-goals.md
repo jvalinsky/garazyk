@@ -471,7 +471,7 @@ xcodebuild -scheme AllTests \
 
 ## See Also
 
-- [Test Organization](test-organization.md) - Test structure and discovery
-- [Property-Based Testing](property-based-testing.md) - PBT framework
-- [E2E Testing](e2e-testing.md) - End-to-end test scenarios
-- [Security Audit Guide](security-audit-guide.md) - Security testing
+- [Test Organization](test-organization) - Test structure and discovery
+- [Property-Based Testing](property-based-testing) - PBT framework
+- [E2E Testing](e2e-testing) - End-to-end test scenarios
+- [Security Audit Guide](security-audit-guide) - Security testing

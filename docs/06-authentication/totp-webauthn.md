@@ -376,6 +376,6 @@ return YES;
 
 ## See Also
 
-- [JWT Tokens](./jwt-tokens.md)
-- [OAuth 2.0 with DPoP](./oauth2-dpop.md)
-- [Key Rotation](./key-rotation.md)
+- [JWT Tokens](./jwt-tokens)
+- [OAuth 2.0 with DPoP](./oauth2-dpop)
+- [Key Rotation](./key-rotation)

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Templates - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Documentation Templates</h1>
+            </div>
+            <h1 id="documentation-templates">Documentation Templates</h1>
+<p>This directory contains templates for creating new documentation following the PDS Objective-C Implementation Guide standards.</p>
+<h2 id="available-templates">Available Templates</h2>
+<h3 id="1-service-documentation-template">1. Service Documentation Template</h3>
+<p><strong>File:</strong> <code>SERVICE_TEMPLATE.md</code></p>
+<p><strong>Use for:</strong> Documenting new services in the application layer (e.g., PDSAccountService, PDSRecordService)</p>
+<p><strong>How to use:</strong>
+1. Copy <code>SERVICE_TEMPLATE.md</code> to <code>docs/03-application-layer/[service-name].md</code>
+2. Replace all <code>[placeholders]</code> with actual content
+3. Remove the comment block at the top
+4. Fill in all sections with service-specific information
+5. Extract code examples from actual source files
+6. Update cross-references to related documentation</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-bash">cp docs/templates/SERVICE_TEMPLATE.md docs/03-application-layer/notification-service.md
+# Edit the file and replace placeholders
+</code></pre>
+
+<h3 id="2-xrpc-endpoint-documentation-template">2. XRPC Endpoint Documentation Template</h3>
+<p><strong>File:</strong> <code>XRPC_ENDPOINT_TEMPLATE.md</code></p>
+<p><strong>Use for:</strong> Documenting individual XRPC endpoints (e.g., com.atproto.repo.createRecord)</p>
+<p><strong>How to use:</strong>
+1. Copy <code>XRPC_ENDPOINT_TEMPLATE.md</code> to <code>docs/11-reference/endpoints/[nsid].md</code>
+2. Replace all <code>[placeholders]</code> with actual endpoint details
+3. Remove the comment block at the top
+4. Document request/response schemas from lexicon definitions
+5. Include implementation details from domain method handlers
+6. Add practical usage examples</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-bash">mkdir -p docs/11-reference/endpoints
+cp docs/templates/XRPC_ENDPOINT_TEMPLATE.md docs/11-reference/endpoints/com.atproto.repo.createRecord.md
+# Edit the file and replace placeholders
+</code></pre>
+
+<h3 id="3-tutorial-template">3. Tutorial Template</h3>
+<p><strong>File:</strong> <code>TUTORIAL_TEMPLATE.md</code></p>
+<p><strong>Use for:</strong> Creating new step-by-step tutorials</p>
+<p><strong>How to use:</strong>
+1. Copy <code>TUTORIAL_TEMPLATE.md</code> to <code>docs/10-tutorials/tutorial-[N]-[name].md</code>
+2. Replace all <code>[placeholders]</code> with tutorial content
+3. Remove the comment block at the top
+4. Create working example code in <code>examples/tutorial-[N]-[name]/</code>
+5. Test all code examples to ensure they work
+6. Include troubleshooting for common issues</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-bash">cp docs/templates/TUTORIAL_TEMPLATE.md docs/10-tutorials/tutorial-7-moderation.md
+mkdir -p examples/tutorial-7-moderation/src
+# Create tutorial content and working examples
+</code></pre>
+
+<h2 id="template-guidelines">Template Guidelines</h2>
+<h3 id="general-principles">General Principles</h3>
+<ol>
+<li><strong>Consistency:</strong> Follow the structure and style of existing documentation</li>
+<li><strong>Completeness:</strong> Fill in all sections; remove sections only if truly not applicable</li>
+<li><strong>Accuracy:</strong> Extract code examples from actual source files, not invented examples</li>
+<li><strong>Testing:</strong> Verify all code examples compile and run before committing</li>
+<li><strong>Cross-references:</strong> Link to related documentation using relative paths</li>
+</ol>
+<h3 id="code-examples">Code Examples</h3>
+<ul>
+<li>Extract from actual source files with line references</li>
+<li>Include error handling in examples</li>
+<li>Show both success and failure cases</li>
+<li>Keep examples focused and minimal</li>
+<li>Add comments explaining key concepts</li>
+</ul>
+<h3 id="writing-style">Writing Style</h3>
+<ul>
+<li>Use clear, concise language</li>
+<li>Explain "why" not just "what"</li>
+<li>Include practical usage examples</li>
+<li>Document common pitfalls</li>
+<li>Provide troubleshooting guidance</li>
+</ul>
+<h3 id="version-information">Version Information</h3>
+<p>Always include at the bottom of each document:
+- Version number when added/updated
+- Last updated date
+- Source file references
+- Related documentation links</p>
+<h2 id="validation">Validation</h2>
+<p>Before committing new documentation:</p>
+<ol>
+<li>
+<p><strong>Build check:</strong> Ensure documentation builds without errors
+   <code>bash
+   cd docs &amp;&amp; bundle exec jekyll build</code></p>
+</li>
+<li>
+<p><strong>Code validation:</strong> Run code example validation
+   <code>bash
+   ./scripts/validate-doc-code-examples.sh</code></p>
+</li>
+<li>
+<p><strong>Link validation:</strong> Check all internal links
+   <code>bash
+   ./scripts/validate-doc-links.sh</code></p>
+</li>
+<li>
+<p><strong>Diagram validation:</strong> Validate SVG diagrams (if applicable)
+   <code>bash
+   ./scripts/validate-doc-diagrams.sh</code></p>
+</li>
+</ol>
+<h2 id="documentation-standards">Documentation Standards</h2>
+<h3 id="file-naming">File Naming</h3>
+<ul>
+<li>Use lowercase with hyphens: <code>service-name.md</code></li>
+<li>Match source file names where applicable</li>
+<li>Use descriptive names: <code>oauth2-dpop.md</code> not <code>auth2.md</code></li>
+</ul>
+<h3 id="section-ordering">Section Ordering</h3>
+<p>Follow the template section order:
+1. Overview
+2. Architecture/Structure
+3. Key Methods/Endpoints
+4. Integration Points
+5. Error Handling
+6. Best Practices
+7. Common Patterns
+8. Examples
+9. See Also</p>
+<h3 id="code-formatting">Code Formatting</h3>
+<ul>
+<li>Use triple backticks with language identifier: ```objc</li>
+<li>Include file paths in comments: <code>// From PDSService.m lines 50-100</code></li>
+<li>Format consistently with clang-format style</li>
+<li>Keep line length reasonable (&lt; 100 chars)</li>
+</ul>
+<h3 id="diagrams">Diagrams</h3>
+<ul>
+<li>Use ASCII art for simple diagrams</li>
+<li>Use SVG for complex diagrams</li>
+<li>Store SVGs in <code>docs/12-diagrams/</code></li>
+<li>Include alt text for accessibility</li>
+<li>Reference diagrams with relative paths</li>
+</ul>
+<h2 id="maintenance">Maintenance</h2>
+<h3 id="updating-documentation">Updating Documentation</h3>
+<p>When code changes affect documentation:</p>
+<ol>
+<li>Update the affected documentation files</li>
+<li>Update version and last-updated date</li>
+<li>Verify code examples still work</li>
+<li>Check cross-references are still valid</li>
+<li>Run validation scripts</li>
+<li>Update CHANGELOG if significant changes</li>
+</ol>
+<h3 id="deprecation">Deprecation</h3>
+<p>When documenting deprecated features:</p>
+<ol>
+<li>Add deprecation notice at the top</li>
+<li>Explain what replaces it</li>
+<li>Provide migration guide</li>
+<li>Keep documentation for 2 major versions</li>
+<li>Move to archive after 3 major versions</li>
+</ol>
+<h2 id="examples">Examples</h2>
+<h3 id="good-documentation">Good Documentation</h3>
+<p>✅ Clear, concise overview<br />
+✅ Working code examples from source<br />
+✅ Practical usage patterns<br />
+✅ Error handling shown<br />
+✅ Cross-references to related docs<br />
+✅ Troubleshooting section<br />
+✅ Version information included  </p>
+<h3 id="poor-documentation">Poor Documentation</h3>
+<p>❌ Vague or missing overview<br />
+❌ Invented code examples<br />
+❌ No practical examples<br />
+❌ Missing error handling<br />
+❌ No links to related docs<br />
+❌ No troubleshooting help<br />
+❌ No version information  </p>
+<h2 id="getting-help">Getting Help</h2>
+<p>If you need help with documentation:</p>
+<ol>
+<li>Review existing documentation for examples</li>
+<li>Check the <a href="../DOCUMENTATION_UPDATE_CHECKLIST.md">Documentation Update Checklist</a></li>
+<li>Review the <a href="../VERSIONING_STRATEGY.md">Versioning Strategy</a></li>
+<li>Ask in pull request reviews</li>
+</ol>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../DOCUMENTATION_UPDATE_CHECKLIST.md">Documentation Update Checklist</a></li>
+<li><a href="../VERSIONING_STRATEGY.md">Versioning Strategy</a></li>
+<li><a href="../SUMMARY.md">SUMMARY.md</a> — Table of contents</li>
+<li><a href="../GLOSSARY.md">GLOSSARY.md</a> — Terminology reference</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

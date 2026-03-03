@@ -6,9 +6,9 @@ End-to-end tests for complete system flows, PLC directory, and federation.
 
 | File | Description |
 |------|-------------|
-| [e2e.md](e2e.md) | Full lifecycle: account creation, sessions, records, blobs, commit chains, firehose |
-| [plc.md](plc.md) | PLC server, operation storage, DID key parsing, local development PLC |
-| [federation.md](federation.md) | Cross-PDS communication, DID-based routing, relay synchronization |
+| [e2e.md](e2e) | Full lifecycle: account creation, sessions, records, blobs, commit chains, firehose |
+| [plc.md](plc) | PLC server, operation storage, DID key parsing, local development PLC |
+| [federation.md](federation) | Cross-PDS communication, DID-based routing, relay synchronization |
 
 ## Test Classes
 
@@ -34,10 +34,10 @@ End-to-end tests for complete system flows, PLC directory, and federation.
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
-- [Repository Tests](../01-repository/README.md) - MST and CAR
-- [Database Tests](../03-database/README.md) - Actor stores
-- [Application Tests](../04-application/README.md) - Services
-- [Network Tests](../02-network/README.md) - WebSocket/firehose
-- [Characterization Tests](../08-characterization/README.md) - Reference compliance
+- [Test Index](../README) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture) - System architecture
+- [Repository Tests](../01-repository/README) - MST and CAR
+- [Database Tests](../03-database/README) - Actor stores
+- [Application Tests](../04-application/README) - Services
+- [Network Tests](../02-network/README) - WebSocket/firehose
+- [Characterization Tests](../08-characterization/README) - Reference compliance

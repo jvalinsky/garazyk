@@ -316,10 +316,10 @@ The PDS is configured via `config.json`:
 
 ## Next Steps
 
-- **[Architecture Overview](./architecture-overview.md)** — Detailed system architecture
-- **[Setup Guide](./setup.md)** — Platform-specific setup instructions
-- **[Core Concepts](../02-core-concepts/atproto-basics.md)** — AT Protocol fundamentals
-- **[Tutorials](../10-tutorials/tutorial-1-hello-pds.md)** — Hands-on learning
+- **[Architecture Overview](./architecture-overview)** — Detailed system architecture
+- **[Setup Guide](./setup)** — Platform-specific setup instructions
+- **[Core Concepts](../02-core-concepts/atproto-basics)** — AT Protocol fundamentals
+- **[Tutorials](../10-tutorials/tutorial-1-hello-pds)** — Hands-on learning
 
 ## Documentation Structure
 

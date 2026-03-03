@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Service - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Record Service</h1>
+            </div>
+            <h1 id="record-service">Record Service</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>PDSRecordService</code> provides CRUD (Create, Read, Update, Delete) operations for ATProto records within repositories. It handles record validation, MST updates, transaction management, and batch operations.</p>
+<h2 id="responsibilities">Responsibilities</h2>
+<ul>
+<li>Record creation and updates (put operations)</li>
+<li>Record deletion</li>
+<li>Record retrieval by AT URI</li>
+<li>Record listing with pagination</li>
+<li>Batch write operations with atomic transactions</li>
+<li>Lexicon validation (optional)</li>
+<li>Repository statistics</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<pre class="codehilite"><code>┌──────────────────────────────────────────┐
+│   XRPC Record Endpoints                  │
+│  (com.atproto.repo.*)                    │
+└────────────────┬─────────────────────────┘
+                 │
+┌────────────────▼─────────────────────────┐
+│   PDSRecordService                       │
+│  - putRecord()                           │
+│  - deleteRecord()                        │
+│  - getRecord()                           │
+│  - listRecords()                         │
+│  - applyWrites()                         │
+│  - getRepoStats()                        │
+└────────────────┬─────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+┌───────▼──────────┐  ┌──▼──────────────┐
+│ Lexicon         │  │ MST Updates      │
+│ Validator       │  │ (via Repository) │
+└──────────────────┘  └──────────────────┘
+        │                 │
+        └────────┬────────┘
+                 │
+        ┌────────▼────────────┐
+        │ PDSDatabasePool     │
+        │ (Record Storage)    │
+        └─────────────────────┘
+</code></pre>
+
+<h2 id="key-methods">Key Methods</h2>
+<h3 id="put-record-createupdate">Put Record (Create/Update)</h3>
+<pre class="codehilite"><code class="language-objc">- (BOOL)putRecord:(NSString *)collection
+              rkey:(NSString *)rkey
+             value:(NSDictionary *)value
+            forDid:(NSString *)did
+          actorDid:(NSString *)actorDid
+    validationMode:(PDSValidationMode)mode
+             error:(NSError **)error;
+</code></pre>
+
+<p>Creates or updates a record in a collection. Validates the record against lexicon if enabled.</p>
+<p><strong>Parameters:</strong>
+- <code>collection</code>: Collection NSID (e.g., "app.bsky.feed.post")
+- <code>rkey</code>: Record key within the collection
+- <code>value</code>: Record value as a dictionary
+- <code>did</code>: Repository owner DID
+- <code>actorDid</code>: Authenticated actor's DID (must equal did for self-modification)
+- <code>mode</code>: Validation mode (Required, Optimistic, or Off)
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> YES on success, NO on failure</p>
+<p><strong>Implementation pattern (from PDSRecordService.m lines 150-250):</strong></p>
+<p>The service validates authorization, performs lexicon validation, generates a CID, and stores the record:</p>
+<pre class="codehilite"><code class="language-objc">- (BOOL)putRecord:(NSString *)collection
+              rkey:(NSString *)rkey
+             value:(NSDictionary *)value
+            forDid:(NSString *)did
+          actorDid:(NSString *)actorDid
+    validationMode:(PDSValidationMode)mode
+             error:(NSError **)error {
+
+    // Check authorization
+    if (![self checkAuthorizationForDid:did actorDid:actorDid error:error]) {
+        return NO;
+    }
+
+    // Validate collection NSID format
+    NSError *nsidError = nil;
+    if (![ATProtoValidator validateNSID:collection error:&amp;nsidError]) {
+        PDS_LOG_ERROR(@&quot;[PDSRecordService] Invalid collection NSID: %@&quot;, collection);
+        if (error) *error = nsidError;
+        return NO;
+    }
+
+    // Lexicon validation
+    if (mode != PDSValidationModeOff) {
+        ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
+            initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+
+        NSError *validationError = nil;
+        if (![validator validateRecord:value
+                            collection:collection
+                                  mode:(ATProtoValidationMode)mode
+                                 error:&amp;validationError]) {
+            PDS_LOG_ERROR(@&quot;[PDSRecordService] Lexicon validation failed for %@: %@&quot;,
+                          collection, validationError.localizedDescription);
+            if (error) *error = validationError;
+            return NO;
+        }
+    }
+
+    // Validate createdAt timestamp coherence
+    if (!validateCreatedAtCoherence(collection, rkey, value, mode, error)) {
+        return NO;
+    }
+
+    // Generate CID using DAG-CBOR encoding
+    NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+    NSError *cidError;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:&amp;cidError];
+    if (!cborData) {
+        if (error) *error = cidError;
+        return NO;
+    }
+
+    NSString *cidString = [self generateCIDForData:cborData error:&amp;cidError];
+    if (!cidString) {
+        if (error) *error = cidError;
+        return NO;
+    }
+
+    // Store record in database
+    PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+    record.uri = uri;
+    record.did = did;
+    record.collection = collection;
+    record.rkey = rkey;
+    record.cid = cidString;
+    record.createdAt = [NSDate date];
+    record.rev = [TID tid].stringValue;
+
+    // Save to database
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return NO;
+
+    __block BOOL success = NO;
+    [store transactWithBlock:^(id&lt;PDSActorStoreTransactor&gt; transactor, NSError **blockError) {
+        success = [transactor putRecord:record error:blockError];
+    } error:error];
+
+    if (success) {
+        // Post notification
+        [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
+                                                            object:self
+                                                          userInfo:@{
+                                                              @&quot;did&quot;: did,
+                                                              @&quot;collection&quot;: collection,
+                                                              @&quot;rkey&quot;: rkey,
+                                                              @&quot;action&quot;: @&quot;create&quot;
+                                                          }];
+    }
+
+    return success;
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSDictionary *post = @{
+    @&quot;text&quot;: @&quot;Hello, ATProto!&quot;,
+    @&quot;createdAt&quot;: @&quot;2025-01-15T10:30:00Z&quot;,
+    @&quot;facets&quot;: @[]
+};
+
+NSError *error = nil;
+BOOL success = [recordService putRecord:@&quot;app.bsky.feed.post&quot;
+                                  rkey:@&quot;abc123&quot;
+                                 value:post
+                                forDid:@&quot;did:plc:user123&quot;
+                              actorDid:@&quot;did:plc:user123&quot;
+                        validationMode:PDSValidationModeOptimistic
+                                 error:&amp;error];
+</code></pre>
+
+<h3 id="delete-record">Delete Record</h3>
+<pre class="codehilite"><code class="language-objc">- (BOOL)deleteRecord:(NSString *)collection
+                 rkey:(NSString *)rkey
+               forDid:(NSString *)did
+             actorDid:(NSString *)actorDid
+                error:(NSError **)error;
+</code></pre>
+
+<p>Deletes a record from a collection.</p>
+<p><strong>Parameters:</strong>
+- <code>collection</code>: Collection NSID
+- <code>rkey</code>: Record key to delete
+- <code>did</code>: Repository owner DID
+- <code>actorDid</code>: Authenticated actor's DID
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> YES on success, NO on failure</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+BOOL deleted = [recordService deleteRecord:@&quot;app.bsky.feed.post&quot;
+                                      rkey:@&quot;abc123&quot;
+                                    forDid:@&quot;did:plc:user123&quot;
+                                  actorDid:@&quot;did:plc:user123&quot;
+                                     error:&amp;error];
+</code></pre>
+
+<h3 id="get-record">Get Record</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getRecord:(NSString *)uri
+                              forDid:(NSString *)did
+                               error:(NSError **)error;
+</code></pre>
+
+<p>Retrieves a record by AT URI.</p>
+<p><strong>Parameters:</strong>
+- <code>uri</code>: AT URI (e.g., "at://did:plc:user123/app.bsky.feed.post/abc123")
+- <code>did</code>: Repository owner DID
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Record dictionary or nil if not found</p>
+<p><strong>Implementation pattern (from PDSRecordService.m lines 100-150):</strong></p>
+<p>The service retrieves the record from the database and parses the value:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
+    PDSDatabaseRecord *record = [_databasePool getRecord:uri forDid:did error:error];
+
+    if (!record) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;PDSController&quot; code:1004
+                                     userInfo:@{NSLocalizedDescriptionKey: @&quot;Record not found&quot;}];
+        }
+        return nil;
+    }
+
+    NSDictionary *parsedValue = @{};
+    if (record.value) {
+        if ([record.value respondsToSelector:@selector(dataUsingEncoding:)]) {
+            NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+            if (data) {
+                parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+            }
+        } else if ([record.value isKindOfClass:[NSDictionary class]]) {
+            parsedValue = (NSDictionary *)record.value;
+        }
+    }
+
+    return @{
+        @&quot;uri&quot;: record.uri,
+        @&quot;cid&quot;: record.cid,
+        @&quot;collection&quot;: record.collection,
+        @&quot;rkey&quot;: record.rkey,
+        @&quot;value&quot;: parsedValue
+    };
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSDictionary *record = [recordService getRecord:@&quot;at://did:plc:user123/app.bsky.feed.post/abc123&quot;
+                                        forDid:@&quot;did:plc:user123&quot;
+                                         error:&amp;error];
+if (record) {
+    NSString *text = record[@&quot;value&quot;][@&quot;text&quot;];
+    NSString *cid = record[@&quot;cid&quot;];
+}
+</code></pre>
+
+<h3 id="list-records">List Records</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSArray *)listRecords:(NSString *)collection
+                          forDid:(NSString *)did
+                           limit:(NSUInteger)limit
+                          cursor:(nullable NSString *)cursor
+                          error:(NSError **)error;
+</code></pre>
+
+<p>Lists records in a collection with pagination.</p>
+<p><strong>Parameters:</strong>
+- <code>collection</code>: Collection NSID
+- <code>did</code>: Repository owner DID
+- <code>limit</code>: Maximum records to return
+- <code>cursor</code>: Pagination cursor from previous response
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Array of records or nil on failure</p>
+<p><strong>Implementation pattern (from PDSRecordService.m lines 150-200):</strong></p>
+<p>The service retrieves records from the database and formats them for the response:</p>
+<pre class="codehilite"><code class="language-objc">- (nullable NSArray *)listRecords:(NSString *)collection
+                          forDid:(NSString *)did
+                           limit:(NSUInteger)limit
+                          cursor:(nullable NSString *)cursor
+                          error:(NSError **)error {
+
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return nil;
+
+    NSArray&lt;PDSDatabaseRecord *&gt; *records = [store listRecordsForDid:did
+                                                          collection:collection
+                                                               limit:limit
+                                                              offset:0
+                                                               error:error];
+
+    NSMutableArray *result = [NSMutableArray array];
+    for (PDSDatabaseRecord *record in records) {
+        NSDictionary *parsedValue = @{};
+        if (record.value) {
+            if ([record.value respondsToSelector:@selector(dataUsingEncoding:)]) {
+                NSData *data = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+                if (data) {
+                    parsedValue = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+                }
+            } else if ([record.value isKindOfClass:[NSDictionary class]]) {
+                parsedValue = (NSDictionary *)record.value;
+            }
+        }
+
+        [result addObject:@{
+            @&quot;uri&quot;: record.uri,
+            @&quot;cid&quot;: record.cid,
+            @&quot;collection&quot;: record.collection,
+            @&quot;rkey&quot;: record.rkey,
+            @&quot;value&quot;: parsedValue
+        }];
+    }
+
+    return result;
+}
+</code></pre>
+
+<p><strong>Example usage:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSError *error = nil;
+NSArray *records = [recordService listRecords:@&quot;app.bsky.feed.post&quot;
+                                      forDid:@&quot;did:plc:user123&quot;
+                                       limit:50
+                                      cursor:nil
+                                       error:&amp;error];
+
+// For next page
+if (records.count &gt; 0) {
+    NSString *nextCursor = records.lastObject[@&quot;cursor&quot;];
+    NSArray *nextPage = [recordService listRecords:@&quot;app.bsky.feed.post&quot;
+                                           forDid:@&quot;did:plc:user123&quot;
+                                            limit:50
+                                           cursor:nextCursor
+                                            error:&amp;error];
+}
+</code></pre>
+
+<h3 id="batch-writes">Batch Writes</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)applyWrites:(NSArray&lt;NSDictionary *&gt; *)writes
+                                 forDid:(NSString *)did
+                               actorDid:(NSString *)actorDid
+                         validationMode:(PDSValidationMode)mode
+                             swapCommit:(nullable NSString *)swapCommit
+                                  error:(NSError **)error;
+</code></pre>
+
+<p>Atomically applies multiple write operations in a single transaction.</p>
+<p><strong>Parameters:</strong>
+- <code>writes</code>: Array of write operations (each with action, collection, rkey, value)
+- <code>did</code>: Repository owner DID
+- <code>actorDid</code>: Authenticated actor's DID
+- <code>mode</code>: Validation mode
+- <code>swapCommit</code>: Expected current repo root CID (fails if doesn't match)
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Result dictionary with commit info or nil on failure</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code class="language-objc">NSArray *writes = @[
+    @{
+        @&quot;action&quot;: @&quot;create&quot;,
+        @&quot;collection&quot;: @&quot;app.bsky.feed.post&quot;,
+        @&quot;rkey&quot;: @&quot;post1&quot;,
+        @&quot;value&quot;: @{@&quot;text&quot;: @&quot;First post&quot;}
+    },
+    @{
+        @&quot;action&quot;: @&quot;create&quot;,
+        @&quot;collection&quot;: @&quot;app.bsky.feed.post&quot;,
+        @&quot;rkey&quot;: @&quot;post2&quot;,
+        @&quot;value&quot;: @{@&quot;text&quot;: @&quot;Second post&quot;}
+    }
+];
+
+NSError *error = nil;
+NSDictionary *result = [recordService applyWrites:writes
+                                            forDid:@&quot;did:plc:user123&quot;
+                                          actorDid:@&quot;did:plc:user123&quot;
+                                    validationMode:PDSValidationModeOptimistic
+                                        swapCommit:nil
+                                             error:&amp;error];
+</code></pre>
+
+<h3 id="repository-statistics">Repository Statistics</h3>
+<pre class="codehilite"><code class="language-objc">- (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error;
+</code></pre>
+
+<p>Gets repository statistics including record and blob counts.</p>
+<p><strong>Parameters:</strong>
+- <code>did</code>: Repository owner DID
+- <code>error</code>: Error pointer for failure details</p>
+<p><strong>Returns:</strong> Dictionary with stats or nil on failure</p>
+<h2 id="validation-modes">Validation Modes</h2>
+<p>The service supports three validation modes:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behavior</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PDSValidationModeRequired</code></td>
+<td>Fail if lexicon unknown or validation fails</td>
+<td>Strict validation</td>
+</tr>
+<tr>
+<td><code>PDSValidationModeOptimistic</code></td>
+<td>Validate if known, allow if unknown</td>
+<td>Default mode</td>
+</tr>
+<tr>
+<td><code>PDSValidationModeOff</code></td>
+<td>Skip validation entirely</td>
+<td>Performance-critical</td>
+</tr>
+</tbody>
+</table>
+<h2 id="transaction-semantics">Transaction Semantics</h2>
+<p>Batch writes are atomic:
+- All writes succeed or all fail
+- If any write fails, preceding writes are rolled back
+- Database transaction ensures consistency
+- Commit CID is updated only on complete success</p>
+<h2 id="notifications">Notifications</h2>
+<p>The service posts notifications when records change:</p>
+<pre class="codehilite"><code class="language-objc">extern NSNotificationName const PDSRecordDidChangeNotification;
+</code></pre>
+
+<p>Notification userInfo contains:
+- <code>did</code>: Repository DID
+- <code>collection</code>: Collection NSID
+- <code>rkey</code>: Record key
+- <code>action</code>: "create" or "delete"</p>
+<h2 id="error-handling">Error Handling</h2>
+<p>Common error scenarios:</p>
+<table>
+<thead>
+<tr>
+<th>Error</th>
+<th>Cause</th>
+<th>Handling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unauthorized</td>
+<td>actorDid != did</td>
+<td>Reject with 403</td>
+</tr>
+<tr>
+<td>Not found</td>
+<td>Record doesn't exist</td>
+<td>Return 404</td>
+</tr>
+<tr>
+<td>Validation failed</td>
+<td>Record doesn't match lexicon</td>
+<td>Return 400 with details</td>
+</tr>
+<tr>
+<td>Conflict</td>
+<td>swapCommit doesn't match</td>
+<td>Return 409</td>
+</tr>
+<tr>
+<td>Invalid collection</td>
+<td>Collection NSID unknown</td>
+<td>Return 400</td>
+</tr>
+</tbody>
+</table>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Validation</strong></li>
+<li>Use <code>PDSValidationModeOptimistic</code> by default</li>
+<li>Use <code>PDSValidationModeRequired</code> for critical collections</li>
+<li>
+<p>Use <code>PDSValidationModeOff</code> only for performance-critical paths</p>
+</li>
+<li>
+<p><strong>Batch Operations</strong></p>
+</li>
+<li>Group related writes together</li>
+<li>Use swapCommit for optimistic concurrency control</li>
+<li>
+<p>Keep batch sizes reasonable (&lt; 1000 writes)</p>
+</li>
+<li>
+<p><strong>Pagination</strong></p>
+</li>
+<li>Always provide a limit</li>
+<li>Store cursor for next page</li>
+<li>
+<p>Handle cursor expiration gracefully</p>
+</li>
+<li>
+<p><strong>Authorization</strong></p>
+</li>
+<li>Always verify actorDid matches did for self-modification</li>
+<li>Check permissions for delegated operations</li>
+<li>Log authorization failures</li>
+</ol>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="creating-a-post">Creating a Post</h3>
+<pre class="codehilite"><code class="language-objc">NSDictionary *post = @{
+    @&quot;text&quot;: @&quot;Hello world!&quot;,
+    @&quot;createdAt&quot;: @&quot;2025-01-15T10:30:00Z&quot;,
+    @&quot;facets&quot;: @[]
+};
+
+NSError *error = nil;
+BOOL success = [recordService putRecord:@&quot;app.bsky.feed.post&quot;
+                                  rkey:@&quot;abc123&quot;
+                                 value:post
+                                forDid:userDid
+                              actorDid:userDid
+                        validationMode:PDSValidationModeOptimistic
+                                 error:&amp;error];
+</code></pre>
+
+<h3 id="listing-posts-with-pagination">Listing Posts with Pagination</h3>
+<pre class="codehilite"><code class="language-objc">NSMutableArray *allPosts = [NSMutableArray array];
+NSString *cursor = nil;
+
+while (YES) {
+    NSError *error = nil;
+    NSArray *posts = [recordService listRecords:@&quot;app.bsky.feed.post&quot;
+                                        forDid:userDid
+                                         limit:50
+                                        cursor:cursor
+                                         error:&amp;error];
+
+    if (!posts) break;
+
+    [allPosts addObjectsFromArray:posts];
+
+    if (posts.count &lt; 50) break; // Last page
+    cursor = posts.lastObject[@&quot;cursor&quot;];
+}
+</code></pre>
+
+<h3 id="batch-update-with-swap-commit">Batch Update with Swap Commit</h3>
+<pre class="codehilite"><code class="language-objc">// Get current commit
+NSDictionary *commitInfo = [repositoryService getLatestCommitForDid:userDid
+                                                               error:&amp;error];
+NSString *currentCid = commitInfo[@&quot;cid&quot;];
+
+// Prepare writes
+NSArray *writes = @[/* ... */];
+
+// Apply with optimistic concurrency control
+NSDictionary *result = [recordService applyWrites:writes
+                                            forDid:userDid
+                                          actorDid:userDid
+                                    validationMode:PDSValidationModeOptimistic
+                                        swapCommit:currentCid
+                                             error:&amp;error];
+
+if (!result &amp;&amp; error.code == 409) {
+    // Conflict: repo was modified, retry
+}
+</code></pre>
+
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./repository-service.md">Repository Service</a></li>
+<li><a href="./services-overview.md">Services Overview</a></li>
+<li><a href="../07-repository-protocol/repository-basics.md">Repository Basics</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:13</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

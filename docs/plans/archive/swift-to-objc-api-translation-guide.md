@@ -271,6 +271,6 @@ Swift APIs are designed for fluency and clarity at the call site, while Objectiv
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans</content>
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans</content>
 <parameter name="filePath">/Users/jack/Software/objpds/docs/research/swift-api-naming-translation.md

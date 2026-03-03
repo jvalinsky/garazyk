@@ -346,8 +346,8 @@ Responses are buffered before transmission to allow setting headers:
 
 ## See Also
 
-- [Method Registry](./method-registry.md)
-- [Domain Methods](./domain-methods.md)
-- [Auth Helpers](./auth-helpers.md)
-- [Error Handling](./error-handling.md)
-- [HTTP Server](./http-server.md)
+- [Method Registry](./method-registry)
+- [Domain Methods](./domain-methods)
+- [Auth Helpers](./auth-helpers)
+- [Error Handling](./error-handling)
+- [HTTP Server](./http-server)

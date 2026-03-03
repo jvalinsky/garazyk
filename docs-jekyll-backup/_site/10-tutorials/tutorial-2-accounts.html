@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial 2: Account Management - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Tutorial 2: Account Management</h1>
+            </div>
+            <h1 id="tutorial-2-account-management">Tutorial 2: Account Management</h1>
+<h2 id="overview">Overview</h2>
+<p>In this tutorial, you'll extend the PDS from Tutorial 1 to support account creation and management with JWT token generation.</p>
+<p><strong>Learning Objectives:</strong>
+- Implement account creation endpoint
+- Generate JWT access and refresh tokens
+- Persist account data to database
+- Implement login endpoint
+- Handle authentication errors</p>
+<p><strong>Time:</strong> 45 minutes</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Completed <a href="./tutorial-1-hello-pds.md">Tutorial 1: Hello PDS</a></li>
+<li>Understanding of JWT tokens (see <a href="../06-authentication/jwt-tokens.md">JWT Tokens</a>)</li>
+<li>Understanding of account service (see <a href="../03-application-layer/account-service.md">Account Service</a>)</li>
+</ul>
+<h2 id="step-1-create-account-data-model">Step 1: Create Account Data Model</h2>
+<p>Create <code>src/Account.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+
+@interface Account : NSObject
+
+@property (nonatomic, copy) NSString *did;
+@property (nonatomic, copy) NSString *handle;
+@property (nonatomic, copy) NSString *email;
+@property (nonatomic, copy) NSData *passwordHash;
+@property (nonatomic, copy) NSData *passwordSalt;
+@property (nonatomic, copy) NSString *accessJwt;
+@property (nonatomic, copy) NSString *refreshJwt;
+@property (nonatomic, assign) NSTimeInterval createdAt;
+
+@end
+</code></pre>
+
+<h2 id="step-2-create-account-repository">Step 2: Create Account Repository</h2>
+<p>Create <code>src/AccountRepository.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;Account.h&quot;
+
+@interface AccountRepository : NSObject
+
+- (instancetype)initWithDatabasePath:(NSString *)path;
+- (BOOL)saveAccount:(Account *)account error:(NSError **)error;
+- (nullable Account *)accountForHandle:(NSString *)handle error:(NSError **)error;
+- (nullable Account *)accountForEmail:(NSString *)email error:(NSError **)error;
+- (nullable Account *)accountForDid:(NSString *)did error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h2 id="step-3-implement-account-repository">Step 3: Implement Account Repository</h2>
+<p>Create <code>src/AccountRepository.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;AccountRepository.h&quot;
+#import &lt;sqlite3.h&gt;
+
+@interface AccountRepository ()
+@property (nonatomic, assign) sqlite3 *database;
+@end
+
+@implementation AccountRepository
+
+- (instancetype)initWithDatabasePath:(NSString *)path {
+    self = [super init];
+    if (!self) return nil;
+
+    NSString *dbPath = [path stringByAppendingPathComponent:@&quot;accounts.db&quot;];
+    int rc = sqlite3_open([dbPath UTF8String], &amp;_database);
+
+    if (rc != SQLITE_OK) {
+        NSLog(@&quot;Failed to open database: %s&quot;, sqlite3_errmsg(_database));
+        return nil;
+    }
+
+    [self createTablesIfNeeded];
+
+    return self;
+}
+
+- (void)createTablesIfNeeded {
+    const char *sql = &quot;CREATE TABLE IF NOT EXISTS accounts (&quot;
+        &quot;did TEXT PRIMARY KEY,&quot;
+        &quot;handle TEXT UNIQUE NOT NULL,&quot;
+        &quot;email TEXT UNIQUE NOT NULL,&quot;
+        &quot;password_hash BLOB NOT NULL,&quot;
+        &quot;password_salt BLOB NOT NULL,&quot;
+        &quot;access_jwt TEXT,&quot;
+        &quot;refresh_jwt TEXT,&quot;
+        &quot;created_at REAL NOT NULL&quot;
+        &quot;);&quot;;
+
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(_database, sql, NULL, NULL, &amp;errMsg);
+
+    if (rc != SQLITE_OK) {
+        NSLog(@&quot;Failed to create table: %s&quot;, errMsg);
+        sqlite3_free(errMsg);
+    }
+}
+
+- (BOOL)saveAccount:(Account *)account error:(NSError **)error {
+    const char *sql = &quot;INSERT OR REPLACE INTO accounts &quot;
+        &quot;(did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at) &quot;
+        &quot;VALUES (?, ?, ?, ?, ?, ?, ?, ?)&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, [account.did UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, [account.handle UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, [account.email UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 4, account.passwordHash.bytes, (int)account.passwordHash.length, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 5, account.passwordSalt.bytes, (int)account.passwordSalt.length, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 6, [account.accessJwt UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 7, [account.refreshJwt UTF8String], -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 8, account.createdAt);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+
+- (nullable Account *)accountForHandle:(NSString *)handle error:(NSError **)error {
+    const char *sql = &quot;SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at &quot;
+        &quot;FROM accounts WHERE handle = ?&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, [handle UTF8String], -1, SQLITE_TRANSIENT);
+
+    Account *account = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [[Account alloc] init];
+        account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+        account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
+        account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
+        account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(stmt, 3) length:sqlite3_column_bytes(stmt, 3)];
+        account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 4) length:sqlite3_column_bytes(stmt, 4)];
+        account.accessJwt = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 5)];
+        account.refreshJwt = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 6)];
+        account.createdAt = sqlite3_column_double(stmt, 7);
+    }
+
+    sqlite3_finalize(stmt);
+    return account;
+}
+
+- (nullable Account *)accountForEmail:(NSString *)email error:(NSError **)error {
+    const char *sql = &quot;SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at &quot;
+        &quot;FROM accounts WHERE email = ?&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, [email UTF8String], -1, SQLITE_TRANSIENT);
+
+    Account *account = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [[Account alloc] init];
+        account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+        account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
+        account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
+        account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(stmt, 3) length:sqlite3_column_bytes(stmt, 3)];
+        account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 4) length:sqlite3_column_bytes(stmt, 4)];
+        account.accessJwt = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 5)];
+        account.refreshJwt = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 6)];
+        account.createdAt = sqlite3_column_double(stmt, 7);
+    }
+
+    sqlite3_finalize(stmt);
+    return account;
+}
+
+- (nullable Account *)accountForDid:(NSString *)did error:(NSError **)error {
+    const char *sql = &quot;SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at &quot;
+        &quot;FROM accounts WHERE did = ?&quot;;
+
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(_database, sql, -1, &amp;stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Database&quot; code:rc userInfo:nil];
+        }
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+    Account *account = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        account = [[Account alloc] init];
+        account.did = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
+        account.handle = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
+        account.email = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
+        account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(stmt, 3) length:sqlite3_column_bytes(stmt, 3)];
+        account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 4) length:sqlite3_column_bytes(stmt, 4)];
+        account.accessJwt = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 5)];
+        account.refreshJwt = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 6)];
+        account.createdAt = sqlite3_column_double(stmt, 7);
+    }
+
+    sqlite3_finalize(stmt);
+    return account;
+}
+
+- (void)dealloc {
+    if (_database) {
+        sqlite3_close(_database);
+    }
+}
+
+@end
+</code></pre>
+
+<h2 id="step-4-create-jwt-token-generator">Step 4: Create JWT Token Generator</h2>
+<p>Create <code>src/SimpleJWTMinter.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+
+@interface SimpleJWTMinter : NSObject
+
+- (instancetype)initWithIssuer:(NSString *)issuer;
+- (NSString *)mintAccessTokenForDID:(NSString *)did handle:(NSString *)handle;
+- (NSString *)mintRefreshTokenForDID:(NSString *)did handle:(NSString *)handle;
+
+@end
+</code></pre>
+
+<h2 id="step-5-implement-jwt-token-generator">Step 5: Implement JWT Token Generator</h2>
+<p>Create <code>src/SimpleJWTMinter.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;SimpleJWTMinter.h&quot;
+#import &lt;CommonCrypto/CommonDigest.h&gt;
+
+@interface SimpleJWTMinter ()
+@property (nonatomic, copy) NSString *issuer;
+@property (nonatomic, copy) NSString *secret;
+@end
+
+@implementation SimpleJWTMinter
+
+- (instancetype)initWithIssuer:(NSString *)issuer {
+    self = [super init];
+    if (!self) return nil;
+
+    self.issuer = issuer;
+    self.secret = @&quot;tutorial-secret-key-do-not-use-in-production&quot;;
+
+    return self;
+}
+
+- (NSString *)mintAccessTokenForDID:(NSString *)did handle:(NSString *)handle {
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSTimeInterval exp = now + 3600;  // 1 hour
+
+    NSDictionary *payload = @{
+        @&quot;iss&quot;: self.issuer,
+        @&quot;sub&quot;: did,
+        @&quot;aud&quot;: self.issuer,
+        @&quot;iat&quot;: @(now),
+        @&quot;exp&quot;: @(exp),
+        @&quot;scope&quot;: @&quot;atproto_repo&quot;,
+        @&quot;handle&quot;: handle
+    };
+
+    return [self encodeJWT:payload];
+}
+
+- (NSString *)mintRefreshTokenForDID:(NSString *)did handle:(NSString *)handle {
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSTimeInterval exp = now + (86400 * 30);  // 30 days
+
+    NSDictionary *payload = @{
+        @&quot;iss&quot;: self.issuer,
+        @&quot;sub&quot;: did,
+        @&quot;aud&quot;: self.issuer,
+        @&quot;iat&quot;: @(now),
+        @&quot;exp&quot;: @(exp),
+        @&quot;scope&quot;: @&quot;atproto_refresh&quot;,
+        @&quot;handle&quot;: handle
+    };
+
+    return [self encodeJWT:payload];
+}
+
+- (NSString *)encodeJWT:(NSDictionary *)payload {
+    // Header
+    NSDictionary *header = @{@&quot;alg&quot;: @&quot;HS256&quot;, @&quot;typ&quot;: @&quot;JWT&quot;};
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:nil];
+    NSString *headerB64 = [self base64URLEncode:headerData];
+
+    // Payload
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    NSString *payloadB64 = [self base64URLEncode:payloadData];
+
+    // Signature
+    NSString *signingInput = [NSString stringWithFormat:@&quot;%@.%@&quot;, headerB64, payloadB64];
+    NSData *signingData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *secretData = [self.secret dataUsingEncoding:NSUTF8StringEncoding];
+
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CCHmac(kCCHmacAlgSHA256, secretData.bytes, secretData.length, signingData.bytes, signingData.length, digest);
+    NSData *signatureData = [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+    NSString *signatureB64 = [self base64URLEncode:signatureData];
+
+    return [NSString stringWithFormat:@&quot;%@.%@.%@&quot;, headerB64, payloadB64, signatureB64];
+}
+
+- (NSString *)base64URLEncode:(NSData *)data {
+    NSString *base64 = [data base64EncodedStringWithOptions:0];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@&quot;+&quot; withString:@&quot;-&quot;];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@&quot;/&quot; withString:@&quot;_&quot;];
+    base64 = [base64 stringByReplacingOccurrencesOfString:@&quot;=&quot; withString:@&quot;&quot;];
+    return base64;
+}
+
+@end
+</code></pre>
+
+<h2 id="step-6-create-account-service">Step 6: Create Account Service</h2>
+<p>Create <code>src/AccountService.h</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;Account.h&quot;
+#import &quot;AccountRepository.h&quot;
+#import &quot;SimpleJWTMinter.h&quot;
+
+@interface AccountService : NSObject
+
+- (instancetype)initWithRepository:(AccountRepository *)repository
+                            minter:(SimpleJWTMinter *)minter;
+
+- (nullable NSDictionary *)createAccountForEmail:(NSString *)email
+                                        password:(NSString *)password
+                                         handle:(NSString *)handle
+                                          error:(NSError **)error;
+
+- (nullable NSDictionary *)loginWithHandle:(NSString *)handle
+                                  password:(NSString *)password
+                                     error:(NSError **)error;
+
+@end
+</code></pre>
+
+<h2 id="step-7-implement-account-service">Step 7: Implement Account Service</h2>
+<p>Create <code>src/AccountService.m</code>:</p>
+<pre class="codehilite"><code class="language-objc">#import &quot;AccountService.h&quot;
+#import &lt;CommonCrypto/CommonCrypto.h&gt;
+
+@interface AccountService ()
+@property (nonatomic, strong) AccountRepository *repository;
+@property (nonatomic, strong) SimpleJWTMinter *minter;
+@end
+
+@implementation AccountService
+
+- (instancetype)initWithRepository:(AccountRepository *)repository
+                            minter:(SimpleJWTMinter *)minter {
+    self = [super init];
+    if (!self) return nil;
+
+    self.repository = repository;
+    self.minter = minter;
+
+    return self;
+}
+
+- (nullable NSDictionary *)createAccountForEmail:(NSString *)email
+                                        password:(NSString *)password
+                                         handle:(NSString *)handle
+                                          error:(NSError **)error {
+    // Validate inputs
+    if (!email || !password || !handle) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Account&quot; code:1 
+                userInfo:@{NSLocalizedDescriptionKey: @&quot;Missing required fields&quot;}];
+        }
+        return nil;
+    }
+
+    // Check if handle already exists
+    NSError *dbError = nil;
+    Account *existing = [self.repository accountForHandle:handle error:&amp;dbError];
+    if (existing) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Account&quot; code:2 
+                userInfo:@{NSLocalizedDescriptionKey: @&quot;Handle already taken&quot;}];
+        }
+        return nil;
+    }
+
+    // Generate DID
+    NSString *did = [NSString stringWithFormat:@&quot;did:plc:%@&quot;, [[NSUUID UUID] UUIDString]];
+
+    // Hash password
+    NSData *salt = [self generateSalt];
+    NSData *passwordHash = [self hashPassword:password salt:salt];
+
+    // Create account
+    Account *account = [[Account alloc] init];
+    account.did = did;
+    account.handle = handle;
+    account.email = email;
+    account.passwordHash = passwordHash;
+    account.passwordSalt = salt;
+    account.createdAt = [[NSDate date] timeIntervalSince1970];
+
+    // Generate tokens
+    account.accessJwt = [self.minter mintAccessTokenForDID:did handle:handle];
+    account.refreshJwt = [self.minter mintRefreshTokenForDID:did handle:handle];
+
+    // Save account
+    if (![self.repository saveAccount:account error:&amp;dbError]) {
+        if (error) *error = dbError;
+        return nil;
+    }
+
+    return @{
+        @&quot;did&quot;: did,
+        @&quot;handle&quot;: handle,
+        @&quot;email&quot;: email,
+        @&quot;accessJwt&quot;: account.accessJwt,
+        @&quot;refreshJwt&quot;: account.refreshJwt
+    };
+}
+
+- (nullable NSDictionary *)loginWithHandle:(NSString *)handle
+                                  password:(NSString *)password
+                                     error:(NSError **)error {
+    // Look up account
+    NSError *dbError = nil;
+    Account *account = [self.repository accountForHandle:handle error:&amp;dbError];
+
+    if (!account) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Account&quot; code:3 
+                userInfo:@{NSLocalizedDescriptionKey: @&quot;Account not found&quot;}];
+        }
+        return nil;
+    }
+
+    // Verify password
+    NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
+    if (![passwordHash isEqualToData:account.passwordHash]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@&quot;Account&quot; code:4 
+                userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid password&quot;}];
+        }
+        return nil;
+    }
+
+    // Generate new tokens
+    NSString *accessJwt = [self.minter mintAccessTokenForDID:account.did handle:account.handle];
+    NSString *refreshJwt = [self.minter mintRefreshTokenForDID:account.did handle:account.handle];
+
+    // Update account with new tokens
+    account.accessJwt = accessJwt;
+    account.refreshJwt = refreshJwt;
+    [self.repository saveAccount:account error:nil];
+
+    return @{
+        @&quot;did&quot;: account.did,
+        @&quot;handle&quot;: account.handle,
+        @&quot;email&quot;: account.email,
+        @&quot;accessJwt&quot;: accessJwt,
+        @&quot;refreshJwt&quot;: refreshJwt
+    };
+}
+
+- (NSData *)generateSalt {
+    unsigned char salt[16];
+    arc4random_buf(salt, sizeof(salt));
+    return [NSData dataWithBytes:salt length:sizeof(salt)];
+}
+
+- (NSData *)hashPassword:(NSString *)password salt:(NSData *)salt {
+    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+
+    CCHmac(kCCHmacAlgSHA256, salt.bytes, salt.length, passwordData.bytes, passwordData.length, digest);
+
+    return [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
+}
+
+@end
+</code></pre>
+
+<h2 id="step-8-add-account-endpoints-to-xrpc-dispatcher">Step 8: Add Account Endpoints to XRPC Dispatcher</h2>
+<p>Update <code>src/XrpcDispatcher.m</code> to add account endpoints:</p>
+<pre class="codehilite"><code class="language-objc">- (void)dispatchRequest:(HttpRequest *)request 
+               response:(HttpResponse *)response {
+
+    NSString *path = request.path;
+    NSString *nsid = [path stringByReplacingOccurrencesOfString:@&quot;/xrpc/&quot; withString:@&quot;&quot;];
+
+    if ([nsid isEqualToString:@&quot;com.atproto.server.describeServer&quot;]) {
+        [self handleDescribeServer:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.server.createAccount&quot;]) {
+        [self handleCreateAccount:request response:response];
+    } else if ([nsid isEqualToString:@&quot;com.atproto.server.createSession&quot;]) {
+        [self handleCreateSession:request response:response];
+    } else {
+        response.statusCode = 404;
+        response.body = [@{@&quot;error&quot;: @&quot;MethodNotFound&quot;} JSONData];
+    }
+}
+
+- (void)handleCreateAccount:(HttpRequest *)request 
+                   response:(HttpResponse *)response {
+
+    NSError *parseError = nil;
+    NSDictionary *params = [NSJSONSerialization JSONObjectWithData:request.body 
+                                                            options:0 
+                                                              error:&amp;parseError];
+
+    if (!params) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: @&quot;InvalidRequest&quot;} JSONData];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *result = [self.accountService createAccountForEmail:params[@&quot;email&quot;]
+                                                              password:params[@&quot;password&quot;]
+                                                               handle:params[@&quot;handle&quot;]
+                                                                error:&amp;error];
+
+    if (!result) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: error.localizedDescription} JSONData];
+        return;
+    }
+
+    response.statusCode = 200;
+    response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
+}
+
+- (void)handleCreateSession:(HttpRequest *)request 
+                   response:(HttpResponse *)response {
+
+    NSError *parseError = nil;
+    NSDictionary *params = [NSJSONSerialization JSONObjectWithData:request.body 
+                                                            options:0 
+                                                              error:&amp;parseError];
+
+    if (!params) {
+        response.statusCode = 400;
+        response.body = [@{@&quot;error&quot;: @&quot;InvalidRequest&quot;} JSONData];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *result = [self.accountService loginWithHandle:params[@&quot;identifier&quot;]
+                                                       password:params[@&quot;password&quot;]
+                                                          error:&amp;error];
+
+    if (!result) {
+        response.statusCode = 401;
+        response.body = [@{@&quot;error&quot;: error.localizedDescription} JSONData];
+        return;
+    }
+
+    response.statusCode = 200;
+    response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
+}
+</code></pre>
+
+<h2 id="step-9-update-main-entry-point">Step 9: Update Main Entry Point</h2>
+<p>Update <code>src/main.m</code> to initialize account service:</p>
+<pre class="codehilite"><code class="language-objc">#import &lt;Foundation/Foundation.h&gt;
+#import &quot;PDSApplication.h&quot;
+#import &quot;AccountService.h&quot;
+#import &quot;AccountRepository.h&quot;
+#import &quot;SimpleJWTMinter.h&quot;
+#import &quot;XrpcDispatcher.h&quot;
+
+int main(int argc, char *argv[]) {
+    @autoreleasepool {
+        // 1. Create configuration
+        PDSConfiguration *config = [[PDSConfiguration alloc] init];
+        config.serverPort = 2583;
+        config.issuer = @&quot;did:web:localhost:2583&quot;;
+        config.databasePath = @&quot;./pds-data/db&quot;;
+
+        // 2. Create account service
+        AccountRepository *accountRepo = [[AccountRepository alloc] 
+            initWithDatabasePath:config.databasePath];
+        SimpleJWTMinter *minter = [[SimpleJWTMinter alloc] 
+            initWithIssuer:config.issuer];
+        AccountService *accountService = [[AccountService alloc] 
+            initWithRepository:accountRepo minter:minter];
+
+        // 3. Initialize PDS
+        NSError *error = nil;
+        PDSApplication *app = [[PDSApplication alloc] 
+            initWithConfiguration:config error:&amp;error];
+
+        if (!app) {
+            NSLog(@&quot;Failed to initialize PDS: %@&quot;, error);
+            return 1;
+        }
+
+        // 4. Setup XRPC dispatcher with account service
+        XrpcDispatcher *dispatcher = [[XrpcDispatcher alloc] init];
+        dispatcher.accountService = accountService;
+        [app.httpServer registerRoute:@&quot;/xrpc/*&quot; handler:^(HttpRequest *req, HttpResponse *res) {
+            [dispatcher dispatchRequest:req response:res];
+        }];
+
+        // 5. Start server
+        [app.httpServer startWithCompletion:^(NSError *error) {
+            if (error) {
+                NSLog(@&quot;Failed to start server: %@&quot;, error);
+                exit(1);
+            }
+
+            NSLog(@&quot;PDS started on port %ld&quot;, (long)config.serverPort);
+            NSLog(@&quot;Account service ready&quot;);
+        }];
+
+        // 6. Keep running
+        [[NSRunLoop mainRunLoop] run];
+    }
+
+    return 0;
+}
+</code></pre>
+
+<h2 id="step-10-build-and-run">Step 10: Build and Run</h2>
+<pre class="codehilite"><code class="language-bash">cd examples/tutorial-2-accounts
+mkdir -p build &amp;&amp; cd build
+cmake ..
+make
+./tutorial-2-accounts
+</code></pre>
+
+<h2 id="step-11-test-account-creation">Step 11: Test Account Creation</h2>
+<p>In another terminal:</p>
+<pre class="codehilite"><code class="language-bash"># Create an account
+curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;email&quot;: &quot;alice@example.com&quot;,
+    &quot;password&quot;: &quot;secure_password&quot;,
+    &quot;handle&quot;: &quot;alice&quot;
+  }' | jq .
+
+# Expected output:
+# {
+#   &quot;did&quot;: &quot;did:plc:...&quot;,
+#   &quot;handle&quot;: &quot;alice&quot;,
+#   &quot;email&quot;: &quot;alice@example.com&quot;,
+#   &quot;accessJwt&quot;: &quot;eyJ...&quot;,
+#   &quot;refreshJwt&quot;: &quot;eyJ...&quot;
+# }
+</code></pre>
+
+<h2 id="step-12-test-login">Step 12: Test Login</h2>
+<pre class="codehilite"><code class="language-bash"># Login with account
+curl -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;identifier&quot;: &quot;alice&quot;,
+    &quot;password&quot;: &quot;secure_password&quot;
+  }' | jq .
+
+# Expected output:
+# {
+#   &quot;did&quot;: &quot;did:plc:...&quot;,
+#   &quot;handle&quot;: &quot;alice&quot;,
+#   &quot;email&quot;: &quot;alice@example.com&quot;,
+#   &quot;accessJwt&quot;: &quot;eyJ...&quot;,
+#   &quot;refreshJwt&quot;: &quot;eyJ...&quot;
+# }
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./tutorial-3-records.md">Tutorial 3: Record Operations</a></strong> — Add record CRUD</li>
+<li><strong><a href="./tutorial-4-auth.md">Tutorial 4: Authentication</a></strong> — Add JWT verification</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>Handle already taken:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Use a different handle
+curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;email&quot;: &quot;bob@example.com&quot;,
+    &quot;password&quot;: &quot;secure_password&quot;,
+    &quot;handle&quot;: &quot;bob&quot;
+  }' | jq .
+</code></pre>
+
+<p><strong>Invalid password on login:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Verify you're using the correct password
+# Check the error message for details
+</code></pre>
+
+<p><strong>Database errors:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Clear database and restart
+rm -rf pds-data/
+./tutorial-2-accounts
+</code></pre>
+
+<h2 id="summary">Summary</h2>
+<p>You've successfully extended the PDS to support:
+- Account creation with email and password
+- JWT token generation (access and refresh)
+- Account persistence to SQLite database
+- Login with handle and password
+- Token-based authentication</p>
+<p>This foundation enables building more complex features like record operations and firehose subscriptions.</p>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

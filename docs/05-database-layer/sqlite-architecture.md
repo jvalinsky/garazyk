@@ -533,6 +533,6 @@ sqlite3_bind_int(stmt, 2, (int)limit);
 
 ## Next Steps
 
-- **[Service Databases](./service-databases.md)** — Shared database details
-- **[Actor Databases](./actor-databases.md)** — Per-user database details
-- **[Migrations](./migrations.md)** — Schema versioning
+- **[Service Databases](./service-databases)** — Shared database details
+- **[Actor Databases](./actor-databases)** — Per-user database details
+- **[Migrations](./migrations)** — Schema versioning

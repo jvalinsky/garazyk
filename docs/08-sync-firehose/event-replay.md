@@ -560,9 +560,9 @@ If replay exceeds the maximum:
 
 ## See Also
 
-- [Event Ordering](./event-ordering.md) — Sequence number guarantees
-- [Reconnection Strategy](./reconnection-strategy.md) — Handling disconnections
-- [Reliability Guarantees](./reliability-guarantees.md) — Delivery semantics
-- [Backpressure](./backpressure.md) — Flow control
-- [Firehose Overview](./firehose-overview.md) — Architecture overview
+- [Event Ordering](./event-ordering) — Sequence number guarantees
+- [Reconnection Strategy](./reconnection-strategy) — Handling disconnections
+- [Reliability Guarantees](./reliability-guarantees) — Delivery semantics
+- [Backpressure](./backpressure) — Flow control
+- [Firehose Overview](./firehose-overview) — Architecture overview
 

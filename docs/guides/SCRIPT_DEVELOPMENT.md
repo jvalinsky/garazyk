@@ -292,9 +292,9 @@ fi
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE.md)** - Build system and project structure
-- **[Setup Guide](SETUP_GUIDE.md)** - Server startup and verification scripts
-- **[Testing Guide](../TESTING.md)** - Test suite execution
-- **[Deployment Guide](DEPLOYMENT.md)** - Production script integration
-- **[Development Workflows](DEVELOPMENT_WORKFLOWS.md)** - Build and test process diagrams
+- **[Developer Guide](DEVELOPER_GUIDE)** - Build system and project structure
+- **[Setup Guide](SETUP_GUIDE)** - Server startup and verification scripts
+- **[Testing Guide](../TESTING)** - Test suite execution
+- **[Deployment Guide](DEPLOYMENT)** - Production script integration
+- **[Development Workflows](DEVELOPMENT_WORKFLOWS)** - Build and test process diagrams
 - **[CI/CD Pipeline](../../.github/workflows/ci.yml)** - Automated workflow configuration

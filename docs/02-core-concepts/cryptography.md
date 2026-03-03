@@ -429,6 +429,6 @@ Key rotation is important for:
 
 ## Next Steps
 
-- **[Application Layer](../03-application-layer/pds-application.md)** — Service implementation
-- **[Authentication](../06-authentication/jwt-tokens.md)** — Authentication details
-- **[Repository Protocol](../07-repository-protocol/repository-basics.md)** — Repository operations
+- **[Application Layer](../03-application-layer/pds-application)** — Service implementation
+- **[Authentication](../06-authentication/jwt-tokens)** — Authentication details
+- **[Repository Protocol](../07-repository-protocol/repository-basics)** — Repository operations

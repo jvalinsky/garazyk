@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Development Workflow Diagrams - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Development Workflow Diagrams</h1>
+            </div>
+            <h1 id="development-workflow-diagrams">Development Workflow Diagrams</h1>
+<p>Visual guides for common development tasks in this project.</p>
+<h2 id="build-and-run-process">Build and Run Process</h2>
+<pre class="codehilite"><code class="language-mermaid">flowchart TD
+    A([Start Dev]) --&gt; B[Generate Xcode project]
+    B --&gt; C[Build CLI tool]
+    C --&gt; D{Build success?}
+    D --&gt;|No| E[Fix compilation errors]
+    E --&gt; C
+    D --&gt;|Yes| F[Run tests]
+    F --&gt; G{Tests pass?}
+    G --&gt;|No| H[Fix failing tests]
+    H --&gt; F
+    G --&gt;|Yes| I[Start PDS server]
+    I --&gt; J[Server running on port 2583]
+    J --&gt; K([Ready for development])
+
+    style A fill:#c8e6c9
+    style K fill:#c8e6c9
+    style D fill:#ffe0b2
+    style G fill:#ffe0b2
+    style E fill:#ffcdd2
+    style H fill:#ffcdd2
+</code></pre>
+
+<h2 id="test-pyramid">Test Pyramid</h2>
+<pre class="codehilite"><code class="language-mermaid">flowchart TD
+    subgraph &quot;Unit Tests [107 tests]&quot;
+        U1[Repository Tests]
+        U2[Auth Tests]
+        U3[Core Tests]
+        U4[Database Tests]
+    end
+
+    subgraph &quot;Integration Tests&quot;
+        I1[API Endpoint Tests]
+        I2[OAuth2 Flow Tests]
+    end
+
+    subgraph &quot;Fuzzing Tests&quot;
+        F1[XRPC Fuzzer]
+        F2[CBOR Fuzzer]
+        F3[HTTP Fuzzer]
+    end
+
+    U1 --&gt; I1
+    U2 --&gt; I2
+    U3 --&gt; I1
+    U4 --&gt; I1
+    I1 --&gt; F1
+    I2 --&gt; F3
+
+    style U1 fill:#bbdefb
+    style U2 fill:#bbdefb
+    style U3 fill:#bbdefb
+    style U4 fill:#bbdefb
+    style I1 fill:#ffe0b2
+    style I2 fill:#ffe0b2
+    style F1 fill:#ffcdd2
+    style F2 fill:#ffcdd2
+    style F3 fill:#ffcdd2
+</code></pre>
+
+<h2 id="code-organization">Code Organization</h2>
+<pre class="codehilite"><code class="language-mermaid">graph TD
+    subgraph &quot;ATProtoPDS/Sources&quot;
+        subgraph &quot;App&quot;
+            PDS[PDSController]
+        end
+
+        subgraph &quot;Admin&quot;
+            Admin[Admin APIs]
+        end
+
+        subgraph &quot;Auth&quot;
+            JWT[JWT Signing]
+            OAuth[OAuth2 Provider]
+            Sessions[Session Mgmt]
+        end
+
+        subgraph &quot;Repository&quot;
+            MST[Merkle Search Tree]
+            CAR[CAR Encoding]
+            Records[Record Ops]
+        end
+
+        subgraph &quot;Network&quot;
+            HTTP[HTTP Server]
+            XRPC[XRPC Handler]
+            WebSocket[WS Handler]
+        end
+
+        subgraph &quot;Database&quot;
+            SQLite[SQLite Wrapper]
+            Migrations[Schema Migrations]
+        end
+
+        subgraph &quot;Sync&quot;
+            Firehose[SubscribeRepos]
+            Cursors[Cursor Manager]
+        end
+
+        subgraph &quot;Blob&quot;
+            Storage[Blob Storage]
+            Validation[MIME Validation]
+        end
+
+        subgraph &quot;Identity&quot;
+            DID[DID Resolution]
+            PLC[PLC Directory]
+        end
+
+        PDS --&gt; Auth
+        PDS --&gt; Repository
+        PDS --&gt; Admin
+        PDS --&gt; Sync
+
+        HTTP --&gt; XRPC
+        XRPC --&gt; PDS
+
+        Repository --&gt; MST
+        Repository --&gt; CAR
+        Repository --&gt; Blob
+        Repository --&gt; Database
+
+        Auth --&gt; JWT
+        Auth --&gt; OAuth
+        Auth --&gt; Sessions
+
+        Sync --&gt; Firehose
+        Sync --&gt; Cursors
+
+        Identity --&gt; DID
+        Identity --&gt; PLC
+    end
+
+    style PDS fill:#c8e6c9
+</code></pre>
+
+<h2 id="debugging-flowchart">Debugging Flowchart</h2>
+<pre class="codehilite"><code class="language-mermaid">flowchart TD
+    A([Issue Detected]) --&gt; B[Reproduce locally]
+    B --&gt; C{Can reproduce?}
+    C --&gt;|No| D[Check environment differences]
+    C --&gt;|Yes| E[Read error message]
+    E --&gt; F{Error type?}
+    F --&gt;|Crash| G[Gather crash logs]
+    F --&gt;|Test failure| H[Run failing test with output]
+    F --&gt;|Runtime bug| I[Add debug logging]
+
+    G --&gt; J[Analyze stack trace]
+    H --&gt; K[Check test expectations]
+    I --&gt; L[Trace execution path]
+
+    J --&gt; M{Found root cause?}
+    K --&gt; M
+    L --&gt; M
+
+    M --&gt;|Yes| N[Implement fix]
+    M --&gt;|No| O[Use debugger/step through]
+    O --&gt; L
+
+    N --&gt; P[Add/update test]
+    P --&gt; Q[Run full test suite]
+    Q --&gt; R([Done])
+
+    style A fill:#c8e6c9
+    style R fill:#c8e6c9
+    style C fill:#ffe0b2
+    style F fill:#ffe0b2
+    style M fill:#ffe0b2
+    style N fill:#c8e6c9
+</code></pre>
+
+<h2 id="oauth2-authorization-flow">OAuth2 Authorization Flow</h2>
+<pre class="codehilite"><code class="language-mermaid">sequenceDiagram
+    participant U as User
+    participant C as Client App
+    participant A as PDS Auth
+    participant R as Resource Server
+
+    C-&gt;&gt;A: Authorization Request&lt;br/&gt;(client_id, scope, state)
+    A--&gt;&gt;U: Login &amp; Consent Screen
+    U-&gt;&gt;A: Approve access
+    A--&gt;&gt;C: Authorization Code (redirect)
+
+    Note over C,A: Client exchanges code for tokens
+
+    C-&gt;&gt;A: Token Request&lt;br/&gt;(grant_type=authorization_code)
+    A--&gt;&gt;C: {access_token, refresh_token, scope}
+
+    Note over C,R: Client protected resource
+
+    C-&gt;&gt;R accesses: API Request&lt;br/&gt;(Authorization: Bearer token)
+    R--&gt;&gt;C: Resource Data
+
+    Note over C,R: Access token expires
+
+    C-&gt;&gt;A: Refresh Token Request&lt;br/&gt;(grant_type=refresh_token)
+    A--&gt;&gt;C: {new_access_token}
+</code></pre>
+
+<h2 id="database-transaction-flow">Database Transaction Flow</h2>
+<pre class="codehilite"><code class="language-mermaid">flowchart TD
+    A[API Request] --&gt; B[Begin Transaction]
+    B --&gt; C[Acquire lock on ActorStore]
+    C --&gt; D[Perform operations]
+    D --&gt; E{All succeed?}
+    E --&gt;|No| F[Rollback transaction]
+    F --&gt; G[Release lock]
+    G --&gt; H[Return error]
+    E --&gt;|Yes| I[Commit transaction]
+    I --&gt; J[Release lock]
+    J --&gt; K[Return success]
+
+    style A fill:#bbdefb
+    style B fill:#ffe0b2
+    style C fill:#ffe0b2
+    style D fill:#bbdefb
+    style E fill:#ffe0b2
+    style F fill:#ffcdd2
+    style I fill:#c8e6c9
+    style K fill:#c8e6c9
+</code></pre>
+
+<h2 id="quick-reference-commands">Quick Reference Commands</h2>
+<pre class="codehilite"><code class="language-mermaid">flowchart LR
+    subgraph &quot;Commands&quot;
+        G[xcodegen generate] --&gt; B[xcodebuild build]
+        B --&gt; T[./build/tests/AllTests]
+        G --&gt; F[xcodebuild -scheme Fuzzers build]
+    end
+
+    subgraph &quot;Quick Tests&quot;
+        T1[Unit tests]
+        T2[API tests]
+        T3[Fuzzers]
+    end
+
+    B --&gt; T1
+    B --&gt; T2
+    F --&gt; T3
+
+    style G fill:#c8e6c9
+    style T fill:#c8e6c9
+    style F fill:#c8e6c9
+</code></pre>
+
+<h2 id="file-structure-overview">File Structure Overview</h2>
+<pre class="codehilite"><code class="language-mermaid">graph TD
+    root[objpds/]
+
+    root --&gt; src[ATProtoPDS/]
+    root --&gt; docs[docs/]
+    root --&gt; scripts[scripts/]
+    root --&gt; config[config files]
+
+    src --&gt; app[App/]
+    src --&gt; admin[Admin/]
+    src --&gt; auth[Auth/]
+    src --&gt; repo[Repository/]
+    src --&gt; net[Network/]
+    src --&gt; db[Database/]
+    src --&gt; sync[Sync/]
+    src --&gt; blob[Blob/]
+    src --&gt; identity[Identity/]
+
+    docs --&gt; arch[architecture/]
+    docs --&gt; guides[guides/]
+    docs --&gt; analysis[analysis/]
+
+    scripts --&gt; test[test_*.sh]
+    scripts --&gt; build[build_*.sh]
+    scripts --&gt; seed[seed_*.py]
+
+    style root fill:#c8e6c9
+    style src fill:#bbdefb
+    style docs fill:#ffe0b2
+</code></pre>
+
+<h2 id="related-documentation">Related Documentation</h2>
+<h3 id="architecture-documents">Architecture Documents</h3>
+<ul>
+<li><a href="README.md">README.md</a> - Architecture documentation index</li>
+<li><a href="ARCHITECTURE_ANALYSIS.md">ARCHITECTURE_ANALYSIS.md</a> - Component analysis and build system details</li>
+</ul>
+<h3 id="diagram-documents">Diagram Documents</h3>
+<ul>
+<li><a href="ARCHITECTURE_DIAGRAMS.md">ARCHITECTURE_DIAGRAMS.md</a> - System overview diagrams</li>
+<li><a href="DIAGRAMS_MERMAID.md">DIAGRAMS_MERMAID.md</a> - Protocol flow diagrams</li>
+<li><a href="DIAGRAM_QUICK_REFERENCE.md">DIAGRAM_QUICK_REFERENCE.md</a> - Diagram selection guide</li>
+</ul>
+<h3 id="related-guides">Related Guides</h3>
+<ul>
+<li><a href="../guides/DEVELOPER_GUIDE.md">../guides/DEVELOPER_GUIDE.md</a> - Developer onboarding guide</li>
+<li><a href="../guides/DEVELOPMENT_WORKFLOWS.md">../guides/DEVELOPMENT_WORKFLOWS.md</a> - Duplicate guide version</li>
+<li><a href="../guides/SETUP_GUIDE.md">../guides/SETUP_GUIDE.md</a> - Environment setup guide</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

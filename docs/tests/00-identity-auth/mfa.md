@@ -185,8 +185,8 @@ Hardware security keys provide superior protection, but software fallback ensure
 
 ## Related Documentation
 
-- [Folder README](README.md) - Identity & authentication tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 flows
-- [Security Hardening](../05-security/hardening.md) - Production security
-- [Security Tests](../05-security/README.md) - Security test documentation
+- [Folder README](README) - Identity & authentication tests overview
+- [Test Index](../README) - Main test documentation index
+- [OAuth2 Documentation](../../oauth2/README) - OAuth2 flows
+- [Security Hardening](../05-security/hardening) - Production security
+- [Security Tests](../05-security/README) - Security test documentation

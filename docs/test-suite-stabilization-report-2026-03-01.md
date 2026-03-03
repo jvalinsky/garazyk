@@ -51,5 +51,5 @@ As of March 1, 2026, the `ATProtoPDS` test suite has reached **100% pass rate** 
 The PDS is now in a "Production Ready" state from a testing perspective. The stabilization of the test suite ensures that future refactors (such as the planned Sans-I/O migration) can proceed with a reliable safety net.
 
 ## Related Documents
-- [TESTING.md](TESTING.md) — Comprehensive testing guide
-- [troubleshooting-identity-cors-2026-03-01.md](troubleshooting-identity-cors-2026-03-01.md) — Context on the session that triggered this stabilization effort
+- [TESTING.md](TESTING) — Comprehensive testing guide
+- [troubleshooting-identity-cors-2026-03-01.md](troubleshooting-identity-cors-2026-03-01) — Context on the session that triggered this stabilization effort

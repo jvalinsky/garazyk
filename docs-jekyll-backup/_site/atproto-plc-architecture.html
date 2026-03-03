@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATProto PLC Architecture - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>ATProto PLC Architecture</h1>
+            </div>
+            <h1 id="atproto-plc-architecture">ATProto PLC Architecture</h1>
+<p>This document describes the architecture and data flows for the PLC DID operations in the objpds PDS implementation.</p>
+<h2 id="0-server-level-rotation-key">0. Server-Level Rotation Key</h2>
+<p>The PDS maintains a dedicated <strong>PLCRotationKeyManager</strong> for signing PLC operations. This is distinct from per-account signing keys:</p>
+<pre class="codehilite"><code class="language-text">  +-----------------------+
+  |  PLCRotationKeyManager|
+  |                       |
+  |  [ Server Key ]       |  &lt;-- Generated once, persisted to disk
+  |  did:key:zQ3sh...     |
+  +-----------------------+
+            |
+            | Signs ALL PLC operations for this PDS
+            v
+  +-----------------------+
+  |  Genesis / Update Ops |
+  +-----------------------+
+</code></pre>
+
+<p><strong>Key Points:</strong>
+- One server rotation key per PDS instance
+- Stored in <code>data/plc_rotation_key.bin</code>
+- Used to sign both genesis and update operations
+- Must be included in <code>rotationKeys</code> array for all operations</p>
+<h2 id="1-the-operation-chain-the-ledger">1. The Operation Chain (The Ledger)</h2>
+<p>The "Log" is a linked list of signed operations. Each operation points to the hash of the previous one, making the history immutable and verifiable.</p>
+<pre class="codehilite"><code class="language-text">  OPERATION 0 (Genesis)      OPERATION 1 (Update)       OPERATION 2 (Rotation)
+ +----------------------+   +----------------------+   +----------------------+
+ | type: plc_operation  |   | type: plc_operation  |   | type: plc_operation  |
+ | prev: null           |   | prev: Hash(Op 0) &lt;-------| prev: Hash(Op 1) &lt;---|-- (Next)
+ | handle: alice.com    |   | handle: bob.com      |   | service: https://pds |
+ | signingKey: K1       |   |                      |   | rotationKeys: [R2]   |
+ | rotationKeys: [R1]   |   |                      |   |                      |
+ +----------------------+   +----------------------+   +----------------------+
+ | SIG: (By R1)         |   | SIG: (By R1)         |   | SIG: (By R1)         |
+ +----------------------+   +----------------------+   +----------------------+
+            |                          |                          |
+            `--------------------------`--------------------------`---&gt; [ AUDIT LOG ]
+</code></pre>
+
+<h2 id="2-submission-flow-the-write-path">2. Submission Flow (The Write Path)</h2>
+<p>How a PDS (or User) updates their identity.</p>
+<pre class="codehilite"><code class="language-text">      [ PDS / USER ]                    [ objpds ]
+            |                                  |
+    1. Create Op JSON                          |
+    2. Sign with R-Key                         |
+    3. POST /xrpc/com.atproto.identity.submitPlcOperation
+            |                                  | 4. VALIDATE:
+            |                                  |    - Server rotation key in rotationKeys?
+            |                                  |    - services.atproto_pds.type correct?
+            |                                  |    - services.atproto_pds.endpoint matches?
+            |                                  |    - alsoKnownAs contains handle?
+            |                                  |    - prev matches last op CID?
+            |                                  |    - Signature valid?
+            |                                  |          |
+            |          202 ACCEPTED            | &lt;--- [ YES ]
+            |&lt;---------------------------------|          |
+            |                                  | 5. FORWARD to PLC Directory
+</code></pre>
+
+<h2 id="3-resolution-flow-the-read-path">3. Resolution Flow (The Read Path)</h2>
+<p>How any server on the internet determines your current PDS address or handle.</p>
+<pre class="codehilite"><code class="language-text">      [ RESOLVER ]                      [ objpds ]
+            |                                  |
+    1. GET /did:plc:123  ---------------------&gt;|
+            |                                  | 2. Fetch full history from DB
+            |                                  | 3. [ Op0, Op1, Op2 ]
+            |       JSON Operation Log         |
+            |&lt;---------------------------------|
+            |
+    4. REPLAY LOG:
+       - Start with Empty Doc
+       - Apply Op0 -&gt; Doc { handle: alice.com, ... }
+       - Apply Op1 -&gt; Doc { handle: bob.com, ... }
+       - Apply Op2 -&gt; Doc { pds: https://pds, ... }
+            |
+    5. FINAL DID DOCUMENT:
+       {
+         &quot;id&quot;: &quot;did:plc:123&quot;,
+         &quot;alsoKnownAs&quot;: [&quot;at://bob.com&quot;],
+         &quot;service&quot;: [{ &quot;id&quot;: &quot;#atproto_pds&quot;, &quot;type&quot;: &quot;...&quot;, &quot;endpoint&quot;: &quot;...&quot; }]
+       }
+</code></pre>
+
+<h2 id="4-signing-flow-signplcoperation">4. Signing Flow (signPlcOperation)</h2>
+<p>How the PDS prepares a signed PLC operation for submission.</p>
+<pre class="codehilite"><code class="language-text">      [ AUTHENTICATED USER ]            [ objpds ]
+            |                                  |
+    1. POST /xrpc/com.atproto.identity.signPlcOperation
+            |     { token: &quot;ABC123&quot; }          |
+            |                                  | 2. VALIDATE:
+            |                                  |    - Token valid for DID?
+            |                                  |          |
+            |                                  | 3. FETCH AUDIT LOG:
+            |                                  |    - Get all operations for DID
+            |                                  |    - Detect tombstone -&gt; REJECT
+            |                                  |          |
+            |                                  | 4. CALCULATE PREV:
+            |                                  |    - Get last operation
+            |                                  |    - Calculate CID( lastOp )
+            |                                  |          |
+            |                                  | 5. BUILD OPERATION:
+            |                                  |    - rotationKeys: [ serverKey, ... ]
+            |                                  |    - verificationMethods: { atproto: actorKey }
+            |                                  |    - alsoKnownAs: [ at://handle ]
+            |                                  |    - services: { atproto_pds: {...} }
+            |                                  |    - prev: CID( lastOp )
+            |                                  |          |
+            |                                  | 6. SIGN:
+            |                                  |    - CBOR encode operation
+            |                                  |    - SHA-256 hash
+            |                                  |    - Sign with server rotation key
+            |                                  |          |
+            |       { operation: {..., sig} }  |
+            |&lt;---------------------------------|
+</code></pre>
+
+<h2 id="5-integration-with-pds">5. Integration with PDS</h2>
+<p>How the PDS uses PLC operations.</p>
+<pre class="codehilite"><code class="language-text">    +-----------------------+           +-----------------------+
+    |  SEPTEMBER (PDS)      |           |  PLC DIRECTORY        |
+    |                       |           |                       |
+    |  [ Account Service ]--|---HTTP---&gt;|  [ Remote Server ]    |
+    |  [ Repo Service    ]  | (Update)  |                       |
+    |  [ PLCRotationKey  ]  |           |                       |
+    +-----------------------+           +-----------------------+
+                ^                                   |
+                |                                   |
+                `------------- HTTP ----------------'
+                           (Resolution)
+</code></pre>
+
+<h2 id="6-security-considerations">6. Security Considerations</h2>
+<h3 id="rotation-key-management">Rotation Key Management</h3>
+<ul>
+<li>Server rotation key is stored on disk at <code>data/plc_rotation_key.bin</code></li>
+<li>Key is generated on first use if not present</li>
+<li>Loss of this key prevents future PLC operations for all accounts</li>
+</ul>
+<h3 id="validation-gates">Validation Gates</h3>
+<p>The PDS enforces these validations before forwarding operations:
+1. <strong>Rotation Keys</strong>: Server key must be present
+2. <strong>Service Type</strong>: Must be <code>AtprotoPersonalDataServer</code>
+3. <strong>Service Endpoint</strong>: Must match configured server URL
+4. <strong>Handle</strong>: Must match account's current handle
+5. <strong>Prev CID</strong>: Must match last operation (prevents replay)
+6. <strong>Tombstone</strong>: Rejects operations on deactivated accounts</p>
+<h3 id="did-resolution-security">DID Resolution Security</h3>
+<ul>
+<li><code>Accept</code> header includes <code>application/did+ld+json,application/json</code></li>
+<li>Redirect following is disabled to prevent SSRF via malicious PLC servers</li>
+</ul>
+<h2 id="related-documentation">Related Documentation</h2>
+<h3 id="architecture">Architecture</h3>
+<ul>
+<li><a href="architecture/atproto_pds_architecture.md">PDS Architecture</a> - Overall PDS system design</li>
+<li><a href="architecture/ARCHITECTURE_ANALYSIS.md">Architecture Analysis</a> - Detailed architecture review</li>
+<li><a href="architecture/atproto_data_models.md">Data Models</a> - ATProto data structures</li>
+<li><a href="architecture/DIAGRAMS_MERMAID.md">Architecture Diagrams</a> - Visual architecture diagrams</li>
+</ul>
+<h3 id="testing">Testing</h3>
+<ul>
+<li><a href="tests/00-identity-auth/README.md">Identity &amp; Auth Tests</a> - DID resolution, JWT tests</li>
+<li><a href="tests/06-integration/plc.md">Integration Tests</a> - PLC integration testing</li>
+</ul>
+<h3 id="oauth-security">OAuth &amp; Security</h3>
+<ul>
+<li><a href="oauth2/README.md">OAuth 2.0 Overview</a> - OAuth implementation details</li>
+<li><a href="security/SECURITY_ANALYSIS_REPORT.md">Security Analysis</a> - Security posture review</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 16:25:14</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

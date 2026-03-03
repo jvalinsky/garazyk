@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 1000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define styles -->
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .process { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .decision { fill: #f0e6ff; stroke: #6600cc; stroke-width: 2; }
+      .success { fill: #e6ffe6; stroke: #00cc00; stroke-width: 2; }
+      .error { fill: #ffe6e6; stroke: #cc0000; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 13px; text-anchor: middle; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; }
+      .label { font-family: Arial, sans-serif; font-size: 11px; text-anchor: middle; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .broadcast-arrow { stroke: #0066cc; stroke-width: 2; fill: none; marker-end: url(#arrowhead); stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="450" y="30" class="title">Commit Broadcasting Flow</text>
+
+  <!-- Record operation -->
+  <rect x="300" y="60" width="300" height="60" class="box" rx="5"/>
+  <text x="450" y="85" class="text">Record Operation</text>
+  <text x="450" y="105" class="label">create/update/delete via XRPC</text>
+
+  <!-- Arrow -->
+  <path d="M 450 120 L 450 150" class="arrow"/>
+
+  <!-- PDSRecordService -->
+  <rect x="300" y="150" width="300" height="60" class="process" rx="5"/>
+  <text x="450" y="175" class="text">PDSRecordService</text>
+  <text x="450" y="195" class="label">Validate and process record</text>
+
+  <!-- Arrow -->
+  <path d="M 450 210 L 450 240" class="arrow"/>
+
+  <!-- PDSRepositoryService -->
+  <rect x="300" y="240" width="300" height="60" class="process" rx="5"/>
+  <text x="450" y="265" class="text">PDSRepositoryService</text>
+  <text x="450" y="285" class="label">Update MST and create commit</text>
+
+  <!-- Arrow -->
+  <path d="M 450 300 L 450 330" class="arrow"/>
+
+  <!-- Get sequence number -->
+  <rect x="300" y="330" width="300" height="60" class="process" rx="5"/>
+  <text x="450" y="355" class="text">Get next sequence number</text>
+  <text x="450" y="375" class="label">From PDSServiceDatabases</text>
+
+  <!-- Arrow -->
+  <path d="M 450 390 L 450 420" class="arrow"/>
+
+  <!-- Store in sequencer -->
+  <rect x="300" y="420" width="300" height="60" class="process" rx="5"/>
+  <text x="450" y="445" class="text">Store commit in sequencer</text>
+  <text x="450" y="465" class="label">seq, did, commit, rebase, tooBig</text>
+
+  <!-- Arrow -->
+  <path d="M 450 480 L 450 510" class="arrow"/>
+
+  <!-- Format event -->
+  <rect x="300" y="510" width="300" height="80" class="process" rx="5"/>
+  <text x="450" y="535" class="text">Format firehose event</text>
+  <text x="450" y="555" class="label">{t: "#commit", commit, seq, time,</text>
+  <text x="450" y="570" class="label">rebase, tooBig}</text>
+
+  <!-- Arrow -->
+  <path d="M 450 590 L 450 620" class="arrow"/>
+
+  <!-- Encode JSON -->
+  <rect x="300" y="620" width="300" height="60" class="process" rx="5"/>
+  <text x="450" y="645" class="text">Encode as JSON</text>
+  <text x="450" y="665" class="label">NSJSONSerialization</text>
+
+  <!-- Arrow -->
+  <path d="M 450 680 L 450 710" class="arrow"/>
+
+  <!-- Get subscriptions -->
+  <rect x="300" y="710" width="300" height="60" class="process" rx="5"/>
+  <text x="450" y="735" class="text">Get all subscriptions</text>
+  <text x="450" y="755" class="label">From CommitBroadcaster</text>
+
+  <!-- Arrow -->
+  <path d="M 450 770 L 450 800" class="arrow"/>
+
+  <!-- For each subscription -->
+  <polygon points="450,800 550,850 450,900 350,850" class="decision"/>
+  <text x="450" y="850" class="text">For each</text>
+  <text x="450" y="865" class="label">subscription</text>
+
+  <!-- Filter check -->
+  <path d="M 550 850 L 700 850" class="broadcast-arrow"/>
+  <polygon points="700,850 750,875 700,900 650,875" class="decision"/>
+  <text x="700" y="875" class="label">Matches</text>
+  <text x="700" y="890" class="label">filter?</text>
+
+  <!-- No filter match -->
+  <path d="M 700 900 L 700 930" class="arrow"/>
+  <text x="720" y="920" class="label">No</text>
+  <rect x="650" y="930" width="100" height="40" class="box" rx="5"/>
+  <text x="700" y="955" class="label">Skip</text>
+
+  <!-- Yes filter match -->
+  <path d="M 750 875 L 800 875" class="broadcast-arrow"/>
+  <text x="770" y="870" class="label">Yes</text>
+  <rect x="800" y="850" width="80" height="50" class="success" rx="5"/>
+  <text x="840" y="875" class="label">Send to</text>
+  <text x="840" y="890" class="label">client</text>
+
+  <!-- Loop back -->
+  <path d="M 350 850 L 200 850 L 200 750 L 300 750" class="broadcast-arrow"/>
+  <text x="220" y="800" class="label">Next</text>
+
+  <!-- End -->
+  <path d="M 450 900 L 450 950" class="arrow"/>
+  <text x="470" y="930" class="label">Done</text>
+  <rect x="350" y="950" width="200" height="40" class="success" rx="5"/>
+  <text x="450" y="975" class="text">Event broadcast complete</text>
+</svg>

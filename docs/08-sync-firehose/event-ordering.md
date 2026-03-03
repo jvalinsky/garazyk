@@ -449,9 +449,9 @@ Every event is persisted to the database:
 
 ## See Also
 
-- [Reconnection Strategy](./reconnection-strategy.md) — Handling disconnections
-- [Event Replay](./event-replay.md) — Cursor-based catch-up
-- [Reliability Guarantees](./reliability-guarantees.md) — Delivery semantics
-- [Commit Broadcasting](./commit-broadcasting.md) — Event distribution
-- [Firehose Overview](./firehose-overview.md) — Architecture overview
+- [Reconnection Strategy](./reconnection-strategy) — Handling disconnections
+- [Event Replay](./event-replay) — Cursor-based catch-up
+- [Reliability Guarantees](./reliability-guarantees) — Delivery semantics
+- [Commit Broadcasting](./commit-broadcasting) — Event distribution
+- [Firehose Overview](./firehose-overview) — Architecture overview
 
