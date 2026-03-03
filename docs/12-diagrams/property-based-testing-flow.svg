@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700">
+  <defs>
+    <style>
+      .title { font: bold 18px sans-serif; fill: #2c3e50; }
+      .subtitle { font: 14px sans-serif; fill: #34495e; }
+      .label { font: 12px sans-serif; fill: #2c3e50; }
+      .small { font: 10px sans-serif; fill: #7f8c8d; }
+      .code { font: 11px monospace; fill: #2c3e50; }
+      .box { fill: #ecf0f1; stroke: #34495e; stroke-width: 2; }
+      .process-box { fill: #3498db; stroke: #2980b9; stroke-width: 2; }
+      .generator-box { fill: #9b59b6; stroke: #8e44ad; stroke-width: 2; }
+      .property-box { fill: #e74c3c; stroke: #c0392b; stroke-width: 2; }
+      .fuzzer-box { fill: #f39c12; stroke: #d68910; stroke-width: 2; }
+      .result-box { fill: #27ae60; stroke: #229954; stroke-width: 2; }
+      .arrow { stroke: #7f8c8d; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#7f8c8d" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" class="title">Property-Based Testing Flow</text>
+  <text x="450" y="50" text-anchor="middle" class="subtitle">September PDS Testing Approach</text>
+
+  <!-- Column 1: Random Generation -->
+  <g>
+    <text x="150" y="90" text-anchor="middle" class="label" font-weight="bold">1. Random Generation</text>
+    
+    <rect x="50" y="110" width="200" height="80" class="generator-box" rx="5"/>
+    <text x="150" y="135" text-anchor="middle" class="label" fill="white">Data Generators</text>
+    <text x="150" y="155" text-anchor="middle" class="small" fill="white">arc4random_uniform()</text>
+    <text x="150" y="170" text-anchor="middle" class="small" fill="white">[CryptoUtils randomBytes:]</text>
+    <text x="150" y="185" text-anchor="middle" class="small" fill="white">SecRandomCopyBytes()</text>
+
+    <rect x="50" y="210" width="200" height="70" class="box" rx="3"/>
+    <text x="150" y="230" text-anchor="middle" class="small">Examples:</text>
+    <text x="150" y="248" text-anchor="middle" class="code">generateRandomHandle()</text>
+    <text x="150" y="263" text-anchor="middle" class="code">generateRandomDID()</text>
+    <text x="150" y="278" text-anchor="middle" class="code">generateRandomPost()</text>
+  </g>
+
+  <!-- Arrow to Properties -->
+  <path d="M 250 150 L 300 150" class="arrow"/>
+
+  <!-- Column 2: Properties -->
+  <g>
+    <text x="450" y="90" text-anchor="middle" class="label" font-weight="bold">2. Property Specification</text>
+    
+    <rect x="310" y="110" width="280" height="170" class="property-box" rx="5"/>
+    <text x="450" y="135" text-anchor="middle" class="label" fill="white">Correctness Properties</text>
+    
+    <rect x="320" y="150" width="260" height="120" class="box" rx="3"/>
+    <text x="450" y="170" text-anchor="middle" class="small" font-weight="bold">Round-Trip:</text>
+    <text x="450" y="185" text-anchor="middle" class="code">decode(encode(x)) == x</text>
+    
+    <text x="450" y="205" text-anchor="middle" class="small" font-weight="bold">Canonical Encoding:</text>
+    <text x="450" y="220" text-anchor="middle" class="code">encode(x) always same</text>
+    
+    <text x="450" y="240" text-anchor="middle" class="small" font-weight="bold">MST Invariants:</text>
+    <text x="450" y="255" text-anchor="middle" class="code">keys sorted, balanced</text>
+  </g>
+
+  <!-- Arrow to Testing -->
+  <path d="M 450 280 L 450 320" class="arrow"/>
+
+  <!-- Testing Methods -->
+  <g>
+    <text x="450" y="345" text-anchor="middle" class="label" font-weight="bold">3. Testing Methods</text>
+    
+    <!-- Randomized Testing -->
+    <rect x="50" y="360" width="250" height="120" class="process-box" rx="5"/>
+    <text x="175" y="385" text-anchor="middle" class="label" fill="white">Randomized Testing</text>
+    <rect x="60" y="400" width="230" height="70" class="box" rx="3"/>
+    <text x="175" y="420" text-anchor="middle" class="code">for (int i=0; i&lt;100; i++) {</text>
+    <text x="175" y="435" text-anchor="middle" class="code">  data = generateRandom();</text>
+    <text x="175" y="450" text-anchor="middle" class="code">  XCTAssert(property(data));</text>
+    <text x="175" y="465" text-anchor="middle" class="code">}</text>
+
+    <!-- Fuzzing -->
+    <rect x="320" y="360" width="250" height="120" class="fuzzer-box" rx="5"/>
+    <text x="445" y="385" text-anchor="middle" class="label" fill="white">Fuzz Testing</text>
+    <rect x="330" y="400" width="230" height="70" class="box" rx="3"/>
+    <text x="445" y="420" text-anchor="middle" class="code">LLVMFuzzerTestOneInput(</text>
+    <text x="445" y="435" text-anchor="middle" class="code">  const uint8_t *data,</text>
+    <text x="445" y="450" text-anchor="middle" class="code">  size_t size)</text>
+    <text x="445" y="465" text-anchor="middle" class="code">// Should not crash</text>
+
+    <!-- Interop Testing -->
+    <rect x="590" y="360" width="250" height="120" class="process-box" rx="5"/>
+    <text x="715" y="385" text-anchor="middle" class="label" fill="white">Interop Testing</text>
+    <rect x="600" y="400" width="230" height="70" class="box" rx="3"/>
+    <text x="715" y="420" text-anchor="middle" class="code">for (vector in testVectors) {</text>
+    <text x="715" y="435" text-anchor="middle" class="code">  result = impl(vector);</text>
+    <text x="715" y="450" text-anchor="middle" class="code">  XCTAssertEqual(result,</text>
+    <text x="715" y="465" text-anchor="middle" class="code">    vector.expected);</text>
+  </g>
+
+  <!-- Arrows to Results -->
+  <path d="M 175 480 L 175 520" class="arrow"/>
+  <path d="M 445 480 L 445 520" class="arrow"/>
+  <path d="M 715 480 L 715 520" class="arrow"/>
+
+  <!-- Results -->
+  <g>
+    <text x="450" y="545" text-anchor="middle" class="label" font-weight="bold">4. Verification Results</text>
+    
+    <rect x="150" y="560" width="600" height="80" class="result-box" rx="5"/>
+    <text x="450" y="585" text-anchor="middle" class="label" fill="white">Property Holds ✓</text>
+    <text x="450" y="605" text-anchor="middle" class="small" fill="white">All tests pass: 1,017 / 1,017</text>
+    <text x="450" y="625" text-anchor="middle" class="small" fill="white">No crashes, no assertion failures, invariants maintained</text>
+  </g>
+
+  <!-- Example Box -->
+  <g>
+    <rect x="50" y="520" width="250" height="110" class="box" rx="3"/>
+    <text x="175" y="540" text-anchor="middle" class="small" font-weight="bold">Example: CBOR Round-Trip</text>
+    <text x="175" y="560" text-anchor="middle" class="code">original = @{@"key": @"value"};</text>
+    <text x="175" y="575" text-anchor="middle" class="code">encoded = encode(original);</text>
+    <text x="175" y="590" text-anchor="middle" class="code">decoded = decode(encoded);</text>
+    <text x="175" y="605" text-anchor="middle" class="code">assert(decoded == original);</text>
+    <text x="175" y="620" text-anchor="middle" class="small" fill="#27ae60">✓ Property verified</text>
+  </g>
+
+  <!-- Fuzzer Example -->
+  <g>
+    <rect x="590" y="520" width="250" height="110" class="box" rx="3"/>
+    <text x="715" y="540" text-anchor="middle" class="small" font-weight="bold">Fuzzer Targets</text>
+    <text x="715" y="560" text-anchor="middle" class="code">fuzz_cbor</text>
+    <text x="715" y="575" text-anchor="middle" class="code">fuzz_car</text>
+    <text x="715" y="590" text-anchor="middle" class="code">fuzz_mst</text>
+    <text x="715" y="605" text-anchor="middle" class="code">fuzz_xrpc</text>
+    <text x="715" y="620" text-anchor="middle" class="small" fill="#27ae60">✓ No crashes found</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(50, 650)">
+    <text x="0" y="0" class="label" font-weight="bold">Key Principles:</text>
+    <rect x="0" y="5" width="15" height="15" class="generator-box"/>
+    <text x="20" y="17" class="small">Random data generation</text>
+    
+    <rect x="200" y="5" width="15" height="15" class="property-box"/>
+    <text x="220" y="17" class="small">Property specification</text>
+    
+    <rect x="400" y="5" width="15" height="15" class="fuzzer-box"/>
+    <text x="420" y="17" class="small">Fuzz testing</text>
+    
+    <rect x="600" y="5" width="15" height="15" class="result-box"/>
+    <text x="620" y="17" class="small">Verification success</text>
+  </g>
+</svg>
