@@ -6,10 +6,10 @@ Tests for HTTP server, XRPC protocol, WebSocket/firehose, and network transport 
 
 | File | Description |
 |------|-------------|
-| [http-stack.md](http-stack.md) | HTTP server lifecycle, routing, chunked streaming, rate limiting |
-| [xrpc.md](xrpc.md) | XRPC method handling, input validation, error responses, lexicon validation |
-| [websocket.md](websocket.md) | WebSocket server, firehose event streaming, subscribeRepos handler |
-| [transport.md](transport.md) | Network transport, SSL pinning, Linux socket operations |
+| [http-stack.md](http-stack) | HTTP server lifecycle, routing, chunked streaming, rate limiting |
+| [xrpc.md](xrpc) | XRPC method handling, input validation, error responses, lexicon validation |
+| [websocket.md](websocket) | WebSocket server, firehose event streaming, subscribeRepos handler |
+| [transport.md](transport) | Network transport, SSL pinning, Linux socket operations |
 
 ## Test Classes
 
@@ -59,9 +59,9 @@ Tests for HTTP server, XRPC protocol, WebSocket/firehose, and network transport 
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [XRPC Protocol Reference](../../architecture/XRPC_PROTOCOL_REFERENCE.md) - XRPC specification
-- [Architecture Diagrams](../../architecture/ARCHITECTURE_DIAGRAMS.md) - System diagrams
-- [Security Tests](../05-security/README.md) - Authorization and validation
-- [Integration Tests](../06-integration/README.md) - E2E network flows
-- [SSRF Protection](../../security/SSRF_PROTECTION.md) - Network security
+- [Test Index](../README) - Main test documentation index
+- [XRPC Protocol Reference](../../architecture/XRPC_PROTOCOL_REFERENCE) - XRPC specification
+- [Architecture Diagrams](../../architecture/ARCHITECTURE_DIAGRAMS) - System diagrams
+- [Security Tests](../05-security/README) - Authorization and validation
+- [Integration Tests](../06-integration/README) - E2E network flows
+- [SSRF Protection](../../security/SSRF_PROTECTION) - Network security

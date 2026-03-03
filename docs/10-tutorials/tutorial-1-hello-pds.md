@@ -288,9 +288,9 @@ curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer | jq .
 
 ## Next Steps
 
-- **[Tutorial 2: Account Management](./tutorial-2-accounts.md)** — Add account creation
-- **[Tutorial 3: Record Operations](./tutorial-3-records.md)** — Add record CRUD
-- **[Tutorial 4: Authentication](./tutorial-4-auth.md)** — Add JWT tokens
+- **[Tutorial 2: Account Management](./tutorial-2-accounts)** — Add account creation
+- **[Tutorial 3: Record Operations](./tutorial-3-records)** — Add record CRUD
+- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add JWT tokens
 
 ## Troubleshooting
 

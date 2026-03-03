@@ -15,10 +15,10 @@ In this tutorial, you'll implement the Firehose (subscribeRepos) endpoint to str
 
 ## Prerequisites
 
-- Completed [Tutorial 4: Authentication](./tutorial-4-auth.md)
+- Completed [Tutorial 4: Authentication](./tutorial-4-auth)
 - Understanding of WebSocket protocol
-- Understanding of firehose concepts (see [Firehose Overview](../08-sync-firehose/firehose-overview.md))
-- Understanding of commit broadcasting (see [Commit Broadcasting](../08-sync-firehose/commit-broadcasting.md))
+- Understanding of firehose concepts (see [Firehose Overview](../08-sync-firehose/firehose-overview))
+- Understanding of commit broadcasting (see [Commit Broadcasting](../08-sync-firehose/commit-broadcasting))
 
 ## Architecture Overview
 
@@ -945,9 +945,9 @@ Track firehose metrics:
 
 ## Next Steps
 
-- **[Tutorial 6: Production Deployment](./tutorial-6-deployment.md)** — Deploy to production
-- **[Firehose Overview](../08-sync-firehose/firehose-overview.md)** — Deep dive into firehose
-- **[Backpressure](../08-sync-firehose/backpressure.md)** — Advanced backpressure handling
+- **[Tutorial 6: Production Deployment](./tutorial-6-deployment)** — Deploy to production
+- **[Firehose Overview](../08-sync-firehose/firehose-overview)** — Deep dive into firehose
+- **[Backpressure](../08-sync-firehose/backpressure)** — Advanced backpressure handling
 
 ## Troubleshooting
 

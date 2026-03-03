@@ -742,7 +742,7 @@ return @{
 
 ## See Also
 
-- [Actor Databases](./actor-databases.md)
-- [Migrations](./migrations.md)
-- [WAL Mode](./wal-mode.md)
-- [SQLite Architecture](./sqlite-architecture.md)
+- [Actor Databases](./actor-databases)
+- [Migrations](./migrations)
+- [WAL Mode](./wal-mode)
+- [SQLite Architecture](./sqlite-architecture)

@@ -326,7 +326,7 @@ Tests can be skipped conditionally:
 
 ## See Also
 
-- [Property-Based Testing](property-based-testing.md) - PBT framework and generators
-- [E2E Testing](e2e-testing.md) - End-to-end test scenarios
-- [Test Coverage Goals](test-coverage-goals.md) - Coverage targets and gaps
-- [Troubleshooting](troubleshooting.md) - Common test failures and solutions
+- [Property-Based Testing](property-based-testing) - PBT framework and generators
+- [E2E Testing](e2e-testing) - End-to-end test scenarios
+- [Test Coverage Goals](test-coverage-goals) - Coverage targets and gaps
+- [Troubleshooting](troubleshooting) - Common test failures and solutions

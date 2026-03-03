@@ -19,7 +19,7 @@ Additional examples will be added for:
 
 | Document | Description |
 |----------|-------------|
-| [Deployment Guide](../guides/DEPLOYMENT.md) | Production deployment with reverse proxy, TLS, and environment configuration |
-| [Architecture Overview](../architecture/README.md) | System design, component diagrams, and data models |
-| [Developer Guides](../guides/README.md) | Setup, development workflows, and platform-specific guides |
-| [Documentation Index](../README.md) | Main documentation index |
+| [Deployment Guide](../guides/DEPLOYMENT) | Production deployment with reverse proxy, TLS, and environment configuration |
+| [Architecture Overview](../architecture/README) | System design, component diagrams, and data models |
+| [Developer Guides](../guides/README) | Setup, development workflows, and platform-specific guides |
+| [Documentation Index](../README) | Main documentation index |

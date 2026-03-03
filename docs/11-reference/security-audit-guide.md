@@ -590,10 +590,10 @@ jobs:
 
 ## Related Documentation
 
-- [Input Validation](../04-network-layer/input-validation.md) — Validation strategies and patterns
-- [Security Best Practices](../06-authentication/security-best-practices.md) — Defense in depth
-- [Secrets Management](../06-authentication/secrets-management.md) — Key storage and rotation
-- [Rate Limiting](../04-network-layer/rate-limiting.md) — DoS protection
+- [Input Validation](../04-network-layer/input-validation) — Validation strategies and patterns
+- [Security Best Practices](../06-authentication/security-best-practices) — Defense in depth
+- [Secrets Management](../06-authentication/secrets-management) — Key storage and rotation
+- [Rate Limiting](../04-network-layer/rate-limiting) — DoS protection
 
 ## External Resources
 

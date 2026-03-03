@@ -518,14 +518,14 @@ The client must retry with the provided nonce in the DPoP proof payload.
 
 This security document references concepts from all OAuth2 documentation:
 
-- [Overview](./README.md) - OAuth2 implementation overview
-- [Architecture](./architecture.md) - System architecture and components
-- [Authorization Flow](./authorization-flow.md) - Auth code flow security
-- [Token Management](./token-management.md) - Token security and rotation
-- [DPoP](./dpop.md) - DPoP proof security and replay protection
-- [PKCE](./pkce.md) - PKCE and code interception protection
-- [Web UI](./web-ui.md) - CSRF and session token security
-- [Admin Auth](./admin-auth.md) - Admin authentication security
+- [Overview](./README) - OAuth2 implementation overview
+- [Architecture](./architecture) - System architecture and components
+- [Authorization Flow](./authorization-flow) - Auth code flow security
+- [Token Management](./token-management) - Token security and rotation
+- [DPoP](./dpop) - DPoP proof security and replay protection
+- [PKCE](./pkce) - PKCE and code interception protection
+- [Web UI](./web-ui) - CSRF and session token security
+- [Admin Auth](./admin-auth) - Admin authentication security
 
 ---
 

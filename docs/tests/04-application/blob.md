@@ -68,9 +68,9 @@ Tests for blob upload, MIME type validation, and XRPC blob endpoints.
 
 ## Related Documentation
 
-- [Folder README](README.md) - Application tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Services Tests](services.md) - PDSBlobService tests
-- [Database Tests](../03-database/actor-store.md) - Blob storage in actor store
-- [XRPC Tests](../02-network/xrpc.md) - XRPC blob endpoints
-- [Validation Tests](../05-security/validation.md) - MIME type validation
+- [Folder README](README) - Application tests overview
+- [Test Index](../README) - Main test documentation index
+- [Services Tests](services) - PDSBlobService tests
+- [Database Tests](../03-database/actor-store) - Blob storage in actor store
+- [XRPC Tests](../02-network/xrpc) - XRPC blob endpoints
+- [Validation Tests](../05-security/validation) - MIME type validation

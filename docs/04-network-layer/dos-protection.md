@@ -760,6 +760,6 @@ self.maxWebSocketConnectionsPerIP = 5;
 
 ## Next Steps
 
-- **[Rate Limiting](./rate-limiting.md)** — Rate limiting strategies
-- **[Request Throttling](./request-throttling.md)** — Per-endpoint throttling
-- **[Input Validation](./input-validation.md)** — Input validation strategies
+- **[Rate Limiting](./rate-limiting)** — Rate limiting strategies
+- **[Request Throttling](./request-throttling)** — Per-endpoint throttling
+- **[Input Validation](./input-validation)** — Input validation strategies

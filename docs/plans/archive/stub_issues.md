@@ -23,5 +23,5 @@ Please file follow-up work items if you want these tracked in an issue tracker, 
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans

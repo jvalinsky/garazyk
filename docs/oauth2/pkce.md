@@ -347,7 +347,7 @@ if (codeAge > 600) {
 
 ## Related Documentation
 
-- [OAuth 2.0 Overview](./README.md)
-- [Authorization Flow](./authorization-flow.md)
-- [Token Management](./token-management.md)
-- [Security Considerations](./security.md)
+- [OAuth 2.0 Overview](./README)
+- [Authorization Flow](./authorization-flow)
+- [Token Management](./token-management)
+- [Security Considerations](./security)

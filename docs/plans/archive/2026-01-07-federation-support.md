@@ -451,7 +451,7 @@ git commit -m "docs: add federation documentation and integration tests"
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Architecture Docs](../../architecture/README.md) - System architecture documentation</content>
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Architecture Docs](../../architecture/README) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2026-01-07-federation-support.md

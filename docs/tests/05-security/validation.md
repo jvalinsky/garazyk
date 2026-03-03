@@ -125,11 +125,11 @@ Removed: <script>, javascript:, on*=
 
 ## Related Documentation
 
-- [Folder README](README.md) - Security tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Hardening Tests](hardening.md) - Production security hardening
-- [Auth Security Tests](auth-security.md) - Authorization tests
-- [Primitives Tests](../01-repository/primitives.md) - Core validation
-- [Identity Resolution Tests](../00-identity-auth/identity-resolution.md) - Handle/DID validation
-- [XRPC Tests](../02-network/xrpc.md) - XRPC input validation
-- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT.md) - Detailed review
+- [Folder README](README) - Security tests overview
+- [Test Index](../README) - Main test documentation index
+- [Hardening Tests](hardening) - Production security hardening
+- [Auth Security Tests](auth-security) - Authorization tests
+- [Primitives Tests](../01-repository/primitives) - Core validation
+- [Identity Resolution Tests](../00-identity-auth/identity-resolution) - Handle/DID validation
+- [XRPC Tests](../02-network/xrpc) - XRPC input validation
+- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT) - Detailed review

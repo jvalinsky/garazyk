@@ -15,10 +15,10 @@ In this tutorial, you'll extend the PDS from Tutorial 3 to implement proper JWT 
 
 ## Prerequisites
 
-- Completed [Tutorial 3: Record Operations](./tutorial-3-records.md)
-- Understanding of JWT tokens (see [JWT Tokens](../06-authentication/jwt-tokens.md))
-- Understanding of OAuth 2.0 (see [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop.md))
-- Understanding of authentication helpers (see [Auth Helpers](../04-network-layer/auth-helpers.md))
+- Completed [Tutorial 3: Record Operations](./tutorial-3-records)
+- Understanding of JWT tokens (see [JWT Tokens](../06-authentication/jwt-tokens))
+- Understanding of OAuth 2.0 (see [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop))
+- Understanding of authentication helpers (see [Auth Helpers](../04-network-layer/auth-helpers))
 
 ## Architecture Overview
 
@@ -1283,8 +1283,8 @@ Protect OAuth endpoints from abuse:
 
 ## Next Steps
 
-- **[Tutorial 5: Firehose](./tutorial-5-firehose.md)** — Add WebSocket subscriptions
-- **[Tutorial 6: Production Deployment](./tutorial-6-deployment.md)** — Deploy to production
+- **[Tutorial 5: Firehose](./tutorial-5-firehose)** — Add WebSocket subscriptions
+- **[Tutorial 6: Production Deployment](./tutorial-6-deployment)** — Deploy to production
 
 ## Troubleshooting
 
@@ -1343,8 +1343,8 @@ For the complete production implementation, see:
 
 ## Further Reading
 
-- [JWT Tokens](../06-authentication/jwt-tokens.md) — Detailed JWT documentation
-- [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop.md) — OAuth implementation details
-- [Key Rotation](../06-authentication/key-rotation.md) — Key management strategies
-- [Auth Helpers](../04-network-layer/auth-helpers.md) — Authentication utilities
+- [JWT Tokens](../06-authentication/jwt-tokens) — Detailed JWT documentation
+- [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop) — OAuth implementation details
+- [Key Rotation](../06-authentication/key-rotation) — Key management strategies
+- [Auth Helpers](../04-network-layer/auth-helpers) — Authentication utilities
 

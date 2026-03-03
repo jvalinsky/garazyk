@@ -159,8 +159,8 @@ xcodebuild test -scheme AllTests -configuration Debug GCC_GENERATE_TEST_COVERAGE
 
 ## Getting Help
 
-- Check [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- Review [DEVELOPER_GUIDE.md](docs/guides/DEVELOPER_GUIDE.md)
+- Check [TROUBLESHOOTING.md](docs/TROUBLESHOOTING)
+- Review [DEVELOPER_GUIDE.md](docs/guides/DEVELOPER_GUIDE)
 - Open an issue for questions
 ```
 
@@ -263,22 +263,22 @@ CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 # ATProtoPDS Documentation Index
 
 ## Getting Started
-- [README.md](../README.md) - Project overview
-- [QUICKSTART.md](guides/QUICKSTART.md) - 5-minute setup guide
-- [CONTRIBUTING.md](../CONTRIBUTING.md) - How to contribute
+- [README.md](../README) - Project overview
+- [QUICKSTART.md](guides/QUICKSTART) - 5-minute setup guide
+- [CONTRIBUTING.md](../CONTRIBUTING) - How to contribute
 
 ## Development
-- [DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE.md) - Adding endpoints, code patterns
-- [ARCHITECTURE.md](architecture/OVERVIEW.md) - System design overview
+- [DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE) - Adding endpoints, code patterns
+- [ARCHITECTURE.md](architecture/OVERVIEW) - System design overview
 - [API Reference](http://localhost:2583/explore/api/docs) - Interactive API docs
 
 ## Testing
-- [TEST_IMPLEMENTATION_PLAN.md](TEST_IMPLEMENTATION_PLAN.md) - Testing strategy
-- [Security Testing](security/SECURITY_TESTING_IMPROVEMENT_PLAN.md) - Security test guidelines
+- [TEST_IMPLEMENTATION_PLAN.md](TEST_IMPLEMENTATION_PLAN) - Testing strategy
+- [Security Testing](security/SECURITY_TESTING_IMPROVEMENT_PLAN) - Security test guidelines
 
 ## Troubleshooting
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues and solutions
-- [Debug Session](debug_session_2026-01-08.md) - Recent debugging notes
+- [TROUBLESHOOTING.md](TROUBLESHOOTING) - Common issues and solutions
+- [Debug Session](debug_session_2026-01-08) - Recent debugging notes
 
 ## Reference
 - [Implementation Plans](plans/) - Historical implementation decisions
@@ -286,8 +286,8 @@ CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 - [Security Reports](security/) - Security analysis and audits
 
 ## Architecture Diagrams
-- [AT Protocol Models](architecture/atproto_data_models.md)
-- [System Architecture](architecture/ARCHITECTURE_DIAGRAMS.md)
+- [AT Protocol Models](architecture/atproto_data_models)
+- [System Architecture](architecture/ARCHITECTURE_DIAGRAMS)
 ```
 
 ## P2 Tasks
@@ -336,14 +336,14 @@ After implementing changes, verify:
 ## References
 
 - Original code review: 2026-01-08
-- Project README: [README.md](../README.md)
-- Developer Guide: [DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE.md)
-- Troubleshooting: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- Project README: [README.md](../README)
+- Developer Guide: [DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE)
+- Troubleshooting: [TROUBLESHOOTING.md](TROUBLESHOOTING)
 
 ---
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Tests Docs](../../tests/README.md) - Testing documentation
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Tests Docs](../../tests/README) - Testing documentation

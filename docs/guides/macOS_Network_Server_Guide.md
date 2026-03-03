@@ -2827,9 +2827,9 @@ This  guide covers the major APIs and frameworks available for building network 
 
 ## Related Documentation
 
-- **[Objective-C Tips](objective_c_tips.md)** - Memory management and GCD patterns
-- **[Developer Guide](DEVELOPER_GUIDE.md)** - Project structure and build system
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment with launchd
-- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS.md)** - System components
-- **[Security Plan](../security/SECURITY_PLAN.md)** - Security hardening
-- **[OAuth 2.0 Implementation](../oauth2/README.md)** - TLS and authentication
+- **[Objective-C Tips](objective_c_tips)** - Memory management and GCD patterns
+- **[Developer Guide](DEVELOPER_GUIDE)** - Project structure and build system
+- **[Deployment Guide](DEPLOYMENT)** - Production deployment with launchd
+- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS)** - System components
+- **[Security Plan](../security/SECURITY_PLAN)** - Security hardening
+- **[OAuth 2.0 Implementation](../oauth2/README)** - TLS and authentication

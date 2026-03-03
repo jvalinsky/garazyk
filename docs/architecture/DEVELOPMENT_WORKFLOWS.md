@@ -299,15 +299,15 @@ graph TD
 ## Related Documentation
 
 ### Architecture Documents
-- [README.md](README.md) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Component analysis and build system details
+- [README.md](README) - Architecture documentation index
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis and build system details
 
 ### Diagram Documents
-- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) - System overview diagrams
-- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - Protocol flow diagrams
-- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE.md) - Diagram selection guide
+- [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS) - System overview diagrams
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - Protocol flow diagrams
+- [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) - Diagram selection guide
 
 ### Related Guides
-- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE.md) - Developer onboarding guide
-- [../guides/DEVELOPMENT_WORKFLOWS.md](../guides/DEVELOPMENT_WORKFLOWS.md) - Duplicate guide version
-- [../guides/SETUP_GUIDE.md](../guides/SETUP_GUIDE.md) - Environment setup guide
+- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE) - Developer onboarding guide
+- [../guides/DEVELOPMENT_WORKFLOWS.md](../guides/DEVELOPMENT_WORKFLOWS) - Duplicate guide version
+- [../guides/SETUP_GUIDE.md](../guides/SETUP_GUIDE) - Environment setup guide

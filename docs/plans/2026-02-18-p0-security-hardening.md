@@ -468,11 +468,11 @@ Expected: Backup completes without errors, archive created
 
 ## Related Documentation
 
-- [Plans Index](README.md) - All project plans
-- [Production Readiness](production-readiness.md) - Full audit with blocking issues
-- [Detailed Next Steps](detailed_next_steps_plan.md) - Priority execution plan
-- [Security Documentation](../security/README.md) - Security analysis and guides
-- [OAuth2 Documentation](../oauth2/README.md) - Authentication implementation
-- [DPoP Implementation](../oauth2/dpop.md) - DPoP proof verification details
-- [Token Management](../oauth2/token-management.md) - JWT and refresh token lifecycle
-- [Admin Auth Configuration](../security/ADMIN_AUTH_CONFIGURATION.md) - Admin authentication setup
+- [Plans Index](README) - All project plans
+- [Production Readiness](production-readiness) - Full audit with blocking issues
+- [Detailed Next Steps](detailed_next_steps_plan) - Priority execution plan
+- [Security Documentation](../security/README) - Security analysis and guides
+- [OAuth2 Documentation](../oauth2/README) - Authentication implementation
+- [DPoP Implementation](../oauth2/dpop) - DPoP proof verification details
+- [Token Management](../oauth2/token-management) - JWT and refresh token lifecycle
+- [Admin Auth Configuration](../security/ADMIN_AUTH_CONFIGURATION) - Admin authentication setup

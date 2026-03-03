@@ -88,7 +88,7 @@ Tests for email providers, HTTP clients, and secrets management.
 
 ## Related Documentation
 
-- [Folder README](README.md) - Email tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Security Tests](../05-security/README.md) - Secrets management
-- [Application Tests](../04-application/README.md) - Application services
+- [Folder README](README) - Email tests overview
+- [Test Index](../README) - Main test documentation index
+- [Security Tests](../05-security/README) - Secrets management
+- [Application Tests](../04-application/README) - Application services

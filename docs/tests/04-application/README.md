@@ -6,11 +6,11 @@ Tests for business logic, controllers, CLI, admin operations, and blob storage.
 
 | File | Description |
 |------|-------------|
-| [services.md](services.md) | Account service, record service, repository service, blob service |
-| [controller.md](controller.md) | Application lifecycle, configuration, service container, account manager |
-| [admin.md](admin.md) | Admin controller, admin service, admin authentication, middleware |
-| [cli.md](cli.md) | CLI dispatcher, account commands, invite commands, service stub |
-| [blob.md](blob.md) | Blob storage, MIME type validation, XRPC blob endpoints |
+| [services.md](services) | Account service, record service, repository service, blob service |
+| [controller.md](controller) | Application lifecycle, configuration, service container, account manager |
+| [admin.md](admin) | Admin controller, admin service, admin authentication, middleware |
+| [cli.md](cli) | CLI dispatcher, account commands, invite commands, service stub |
+| [blob.md](blob) | Blob storage, MIME type validation, XRPC blob endpoints |
 
 ## Test Classes
 
@@ -39,9 +39,9 @@ Tests for business logic, controllers, CLI, admin operations, and blob storage.
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - System architecture
-- [Database Tests](../03-database/README.md) - Actor stores and pools
-- [Security Tests](../05-security/README.md) - Authorization and validation
-- [Integration Tests](../06-integration/README.md) - E2E application flows
-- [Utilities Tests](../09-utilities/README.md) - Configuration and metrics
+- [Test Index](../README) - Main test documentation index
+- [ATProto Architecture](../../architecture/atproto_pds_architecture) - System architecture
+- [Database Tests](../03-database/README) - Actor stores and pools
+- [Security Tests](../05-security/README) - Authorization and validation
+- [Integration Tests](../06-integration/README) - E2E application flows
+- [Utilities Tests](../09-utilities/README) - Configuration and metrics

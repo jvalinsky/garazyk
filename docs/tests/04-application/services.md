@@ -197,11 +197,11 @@ XCTAssertNotNil(error);  // Access denied
 
 ## Related Documentation
 
-- [Folder README](README.md) - Application tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Controller Tests](controller.md) - Application lifecycle
-- [Admin Tests](admin.md) - Admin operations
-- [Database Tests](../03-database/README.md) - Actor stores and pools
-- [Repository Tests](../01-repository/README.md) - MST and CAR
-- [OAuth Tests](../00-identity-auth/oauth.md) - Session management
-- [Integration Tests](../06-integration/e2e.md) - E2E service flows
+- [Folder README](README) - Application tests overview
+- [Test Index](../README) - Main test documentation index
+- [Controller Tests](controller) - Application lifecycle
+- [Admin Tests](admin) - Admin operations
+- [Database Tests](../03-database/README) - Actor stores and pools
+- [Repository Tests](../01-repository/README) - MST and CAR
+- [OAuth Tests](../00-identity-auth/oauth) - Session management
+- [Integration Tests](../06-integration/e2e) - E2E service flows

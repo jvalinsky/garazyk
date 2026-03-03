@@ -263,17 +263,47 @@ async function main() {
   
   let result: ValidationResult
   
-  if (args.includes('--links')) {
+  if (args.includes('--check-links')) {
+    console.log('🔍 Running link validation only...\n')
     await validator.validateLinks()
-    result = { passed: true, errors: [], warnings: [] }
-  } else if (args.includes('--diagrams')) {
+    result = { 
+      passed: validator['errors'].length === 0, 
+      errors: validator['errors'], 
+      warnings: validator['warnings'] 
+    }
+  } else if (args.includes('--check-diagrams')) {
+    console.log('🔍 Running diagram validation only...\n')
     await validator.validateDiagrams()
-    result = { passed: true, errors: [], warnings: [] }
-  } else if (args.includes('--code-blocks')) {
+    result = { 
+      passed: validator['errors'].length === 0, 
+      errors: validator['errors'], 
+      warnings: validator['warnings'] 
+    }
+  } else if (args.includes('--check-code-blocks')) {
+    console.log('🔍 Running code block validation only...\n')
     await validator.validateCodeBlocks()
-    result = { passed: true, errors: [], warnings: [] }
+    result = { 
+      passed: validator['errors'].length === 0, 
+      errors: validator['errors'], 
+      warnings: validator['warnings'] 
+    }
   } else {
     result = await validator.validateAll()
+  }
+  
+  // Print errors and warnings
+  if (result.errors.length > 0) {
+    console.log('\n❌ Errors:')
+    result.errors.forEach(err => {
+      console.log(`  ${err.file}:${err.line || '?'} - ${err.message}`)
+    })
+  }
+  
+  if (result.warnings.length > 0) {
+    console.log('\n⚠️  Warnings:')
+    result.warnings.forEach(warn => {
+      console.log(`  ${warn}`)
+    })
   }
   
   // Exit with error code if validation failed

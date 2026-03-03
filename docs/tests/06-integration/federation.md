@@ -103,10 +103,10 @@ Client → Local PDS → Resolve DID → Remote PDS → Response
 
 ## Related Documentation
 
-- [Folder README](README.md) - Integration tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [E2E Tests](e2e.md) - End-to-end flows
-- [PLC Tests](plc.md) - DID resolution
-- [Identity Resolution Tests](../00-identity-auth/identity-resolution.md) - DID resolution
-- [WebSocket Tests](../02-network/websocket.md) - Relay synchronization
-- [ATProto Architecture](../../architecture/atproto_pds_architecture.md) - Federation architecture
+- [Folder README](README) - Integration tests overview
+- [Test Index](../README) - Main test documentation index
+- [E2E Tests](e2e) - End-to-end flows
+- [PLC Tests](plc) - DID resolution
+- [Identity Resolution Tests](../00-identity-auth/identity-resolution) - DID resolution
+- [WebSocket Tests](../02-network/websocket) - Relay synchronization
+- [ATProto Architecture](../../architecture/atproto_pds_architecture) - Federation architecture

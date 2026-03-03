@@ -621,7 +621,7 @@ NSArray *records = [databasePool executeForDid:userDid
 
 ## See Also
 
-- [Service Databases](./service-databases.md)
-- [Migrations](./migrations.md)
-- [WAL Mode](./wal-mode.md)
-- [SQLite Architecture](./sqlite-architecture.md)
+- [Service Databases](./service-databases)
+- [Migrations](./migrations)
+- [WAL Mode](./wal-mode)
+- [SQLite Architecture](./sqlite-architecture)
