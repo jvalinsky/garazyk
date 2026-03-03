@@ -20,6 +20,13 @@
 
 NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
+static NSString *PDSBase64URLStringFromData(NSData *data) {
+    NSString *base64 = [data base64EncodedStringWithOptions:0];
+    NSString *base64url = [[base64 stringByReplacingOccurrencesOfString:@"+" withString:@"-"]
+        stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    return [base64url stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
+}
+
 @implementation PDSAppleKeyPair
 
 + (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
@@ -57,8 +64,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     jwk[@"alg"] = self.algorithm;
     jwk[@"use"] = @"sig";
 
-    NSString *base64Key = [publicKeyData base64EncodedStringWithOptions:0];
-    jwk[@"n"] = [base64Key stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+    jwk[@"n"] = PDSBase64URLStringFromData(publicKeyData);
     jwk[@"e"] = @"AQAB";
 
     return jwk;
@@ -76,8 +82,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     CC_SHA256(thumbprintData.bytes, (CC_LONG)thumbprintData.length, hash);
     hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
 
-    NSString *base64 = [hashData base64EncodedStringWithOptions:0];
-    return [base64 stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+    return PDSBase64URLStringFromData(hashData);
 }
 
 - (nullable NSData *)exportPublicKeyData:(SecKeyRef)key {
@@ -101,6 +106,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 @interface PDSAppleKeyManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, PDSAppleKeyPair *> *keyPairs;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t accessQueue;
+@property (nonatomic, assign) BOOL useKeychain;
 @end
 
 @implementation PDSAppleKeyManager
@@ -116,6 +122,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
+#if defined(GNUSTEP)
+        _useKeychain = NO;
+#else
+        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+#endif
         [self loadKeysFromDatabase];
     }
     return self;
@@ -128,6 +139,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
+#if defined(GNUSTEP)
+        _useKeychain = NO;
+#else
+        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+#endif
         [self loadKeysFromDatabase];
     }
     return self;
@@ -141,6 +157,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
+#if defined(GNUSTEP)
+        _useKeychain = NO;
+#else
+        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+#endif
         [self loadKeysFromDatabase];
     }
     return self;
@@ -154,6 +175,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
         _currentKeyID = [coder decodeObjectOfClass:[NSString class] forKey:@"currentKeyID"];
+#if defined(GNUSTEP)
+        _useKeychain = NO;
+#else
+        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+#endif
     }
     return self;
 }
@@ -174,15 +200,21 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     }
 
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    BOOL useSE = config.useSecureEnclave;
+    BOOL useSE = (self.useKeychain && config.useSecureEnclave);
+    NSString *keychainTag = [self keychainTagForKeyID:keyID];
 
     NSMutableDictionary *parameters = [NSMutableDictionary dictionaryWithDictionary:@{
         (__bridge id)kSecAttrKeyType: (__bridge id)keyType,
-        (__bridge id)kSecAttrKeySizeInBits: @(keySize),
-        (__bridge id)kSecAttrIsPermanent: @YES,
-        (__bridge id)kSecAttrLabel: keyID,
-        (__bridge id)kSecAttrApplicationTag: [keyID dataUsingEncoding:NSUTF8StringEncoding]
+        (__bridge id)kSecAttrKeySizeInBits: @(keySize)
     }];
+
+    if (self.useKeychain) {
+        parameters[(__bridge id)kSecAttrIsPermanent] = @YES;
+        parameters[(__bridge id)kSecAttrLabel] = keychainTag;
+        parameters[(__bridge id)kSecAttrApplicationTag] = [keychainTag dataUsingEncoding:NSUTF8StringEncoding];
+    } else {
+        parameters[(__bridge id)kSecAttrIsPermanent] = @NO;
+    }
 
     if (useSE) {
         parameters[(__bridge id)kSecAttrTokenID] = (__bridge id)kSecAttrTokenIDSecureEnclave;
@@ -494,7 +526,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
             SecKeyRef publicKey = NULL;
             CFErrorRef importError = NULL;
 
-            if (keychainTag) {
+            if (keychainTag && self.useKeychain) {
                 // Load key from Keychain
                 NSDictionary *query = @{
                     (__bridge id)kSecClass: (__bridge id)kSecClassKey,
@@ -543,7 +575,7 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
                                                         algorithm:algorithm];
                 if (keyPair) {
                     keyPair.isActive = [isActive boolValue];
-                    keyPair.isSecureEnclaveKey = (keychainTag != nil);
+                    keyPair.isSecureEnclaveKey = (privateKeyData == nil && keychainTag != nil);
                     self.keyPairs[keyID] = keyPair;
 
                     // Set current key ID if this is active
@@ -562,39 +594,40 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 - (BOOL)saveKeyPairToDatabase:(PDSAppleKeyPair *)keyPair error:(NSError **)error {
     if (!self.database) return YES; // Not an error if no database
 
-    // Export key data
-    NSDictionary *privateKeyAttrs = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate
-    };
-
-    NSDictionary *publicKeyAttrs = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic
-    };
-
     CFErrorRef exportError = NULL;
     NSData *privateKeyData = nil;
     NSString *keychainTag = nil;
 
-    // All newly generated keys are stored in the Keychain.
-    // keychainTag is the keyID, used for both SE and Non-SE keys to point to the Keychain item.
-    keychainTag = keyPair.keyID;
-    PDS_LOG_AUTH_INFO(@"Referencing private key in Keychain via tag: %@", keychainTag);
-    
-    // We stop exporting the private key data to prevent it from being stored in the database.
-    privateKeyData = nil;
+    if (self.useKeychain) {
+        keychainTag = [self keychainTagForKeyID:keyPair.keyID];
+        privateKeyData = nil;
+    } else {
+        privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
+        if (exportError) {
+            if (error) {
+                *error = CFBridgingRelease(exportError);
+            } else {
+                CFRelease(exportError);
+            }
+            return NO;
+        }
+    }
 
     NSData *publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError));
     if (exportError) {
-        CFRelease(exportError);
+        if (error) {
+            *error = CFBridgingRelease(exportError);
+        } else {
+            CFRelease(exportError);
+        }
+        return NO;
     }
 
-    if (!publicKeyData || !keychainTag) {
+    if (!publicKeyData || (self.useKeychain && !keychainTag) || (!self.useKeychain && !privateKeyData)) {
         if (error) {
             *error = [NSError errorWithDomain:KeyManagerErrorDomain
                                          code:KeyManagerErrorExportFailed
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to export public key data or keychain tag"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to export key material for persistence"}];
         }
         return NO;
     }
@@ -612,6 +645,11 @@ NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
     ];
 
     return [self.database executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (NSString *)keychainTagForKeyID:(NSString *)keyID {
+    NSString *service = self.serviceIdentifier.length > 0 ? self.serviceIdentifier : @"com.atproto.pds.keys";
+    return [NSString stringWithFormat:@"%@.%@", service, keyID];
 }
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
