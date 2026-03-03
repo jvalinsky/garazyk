@@ -31,20 +31,23 @@ project(HelloPDS
   LANGUAGES OBJC
 )
 
-# Enable ARC for Objective-C on macOS
+# Enable ARC and modules for Objective-C on macOS
 if(APPLE)
-    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc")
+    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -fmodules -include ${CMAKE_CURRENT_SOURCE_DIR}/src/prefix.pch")
 endif()
 
 # Find required frameworks
 if(APPLE)
-    find_library(FOUNDATION_FRAMEWORK Foundation)
-    set(FRAMEWORKS ${FOUNDATION_FRAMEWORK})
+    find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+    find_library(SECURITY_FRAMEWORK Security REQUIRED)
+    find_library(SQLITE3_LIBRARY sqlite3 REQUIRED)
+    set(FRAMEWORKS ${FOUNDATION_FRAMEWORK} ${SECURITY_FRAMEWORK} ${SQLITE3_LIBRARY})
 else()
     # GNUstep
     find_package(GNUstep REQUIRED)
     include(GNUstepCommon)
-    set(FRAMEWORKS gnustep-base)
+    find_library(SQLITE3_LIBRARY sqlite3 REQUIRED)
+    set(FRAMEWORKS gnustep-base ${SQLITE3_LIBRARY})
 endif()
 
 # Get the absolute path to the main PDS source directory
@@ -118,9 +121,10 @@ target_link_libraries(hello-pds ${FRAMEWORKS})
 
 # Platform-specific settings
 if(APPLE)
-    target_compile_options(hello-pds PRIVATE -fmodules)
-    # Add framework search paths
-    target_compile_options(hello-pds PRIVATE -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks)
+    target_compile_options(hello-pds PRIVATE 
+        -fmodules
+        -iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
+    )
 else()
     # GNUstep settings
     target_compile_options(hello-pds PRIVATE -fPIC)

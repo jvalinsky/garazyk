@@ -32,6 +32,9 @@
 - [Domain Methods](04-network-layer/domain-methods.md)
 - [Auth Helpers](04-network-layer/auth-helpers.md)
 - [Error Handling](04-network-layer/error-handling.md)
+- [Rate Limiting](04-network-layer/rate-limiting.md)
+- [DoS Protection](04-network-layer/dos-protection.md)
+- [Request Throttling](04-network-layer/request-throttling.md)
 
 ### 05 Database Layer
 - [SQLite Architecture](05-database-layer/sqlite-architecture.md)
@@ -58,6 +61,7 @@
 - [WebSocket Server](08-sync-firehose/websocket-server.md)
 - [Commit Broadcasting](08-sync-firehose/commit-broadcasting.md)
 - [Backpressure](08-sync-firehose/backpressure.md)
+- [Firehose Rate Limiting](08-sync-firehose/firehose-rate-limiting.md)
 
 ### 09 Platform Compatibility
 - [macOS vs Linux](09-platform-compatibility/macos-linux.md)
@@ -78,8 +82,13 @@
 - [System Architecture](12-diagrams/system-architecture.svg)
 - [Request Flow](12-diagrams/request-flow.svg)
 - [Database Schema](12-diagrams/database-schema.svg)
-- [Auth Flow](12-diagrams/auth-flow.svg)
-- [Firehose Flow](12-diagrams/firehose-flow.svg)
+- [JWT Token Flow](12-diagrams/jwt-token-flow.svg)
+- [OAuth 2.0 with DPoP Flow](12-diagrams/oauth2-dpop-flow.svg)
+- [Commit Broadcasting Flow](12-diagrams/commit-broadcasting-flow.svg)
+- [WebSocket Upgrade Flow](12-diagrams/websocket-upgrade-flow.svg)
+- [Rate Limiting Algorithm](12-diagrams/rate-limiting-algorithm.svg)
+- [Request Throttling Flow](12-diagrams/request-throttling-flow.svg)
+- [DoS Mitigation Architecture](12-diagrams/dos-mitigation-architecture.svg)
 
 ---
 
