@@ -464,9 +464,9 @@ Test metrics collection in unit tests:
 
 ## Related Documentation
 
-- [Logging Strategy](logging-strategy.md) - Structured logging and log levels
-- [Performance Monitoring](performance-monitoring.md) - Profiling and optimization
-- [Alerting](alerting.md) - Setting up alerts based on metrics
+- [Logging Strategy](logging-strategy) - Structured logging and log levels
+- [Performance Monitoring](performance-monitoring) - Profiling and optimization
+- [Alerting](alerting) - Setting up alerts based on metrics
 
 ## See Also
 

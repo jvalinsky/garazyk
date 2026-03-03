@@ -819,9 +819,9 @@ Keep multiple backup generations:
 
 ## See Also
 
-- [Migration Strategy](./migration-strategy.md) — Versioning and compatibility
-- [Data Integrity](./data-integrity.md) — Verification and consistency checks
-- [Zero-Downtime Migrations](./zero-downtime-migrations.md) — Online migration strategies
-- [WAL Mode](./wal-mode.md) — Write-Ahead Logging benefits
-- [SQLite Architecture](./sqlite-architecture.md) — Database design patterns
+- [Migration Strategy](./migration-strategy) — Versioning and compatibility
+- [Data Integrity](./data-integrity) — Verification and consistency checks
+- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migration strategies
+- [WAL Mode](./wal-mode) — Write-Ahead Logging benefits
+- [SQLite Architecture](./sqlite-architecture) — Database design patterns
 

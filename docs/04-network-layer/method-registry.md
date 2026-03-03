@@ -340,7 +340,7 @@ If a method is registered twice:
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch.md)
-- [Domain Methods](./domain-methods.md)
-- [Auth Helpers](./auth-helpers.md)
-- [Error Handling](./error-handling.md)
+- [XRPC Dispatch](./xrpc-dispatch)
+- [Domain Methods](./domain-methods)
+- [Auth Helpers](./auth-helpers)
+- [Error Handling](./error-handling)

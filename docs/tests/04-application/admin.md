@@ -147,11 +147,11 @@ XCTAssertEqual(response.statusCode, 403);
 
 ## Related Documentation
 
-- [Folder README](README.md) - Application tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Services Tests](services.md) - Business services
-- [Controller Tests](controller.md) - Application lifecycle
-- [Auth Security Tests](../05-security/auth-security.md) - Admin authorization
-- [Security Hardening Tests](../05-security/hardening.md) - Production security
-- [Admin Auth Configuration](../../security/ADMIN_AUTH_CONFIGURATION.md) - Admin auth setup
-- [Database Tests](../03-database/service-databases.md) - Invite code storage
+- [Folder README](README) - Application tests overview
+- [Test Index](../README) - Main test documentation index
+- [Services Tests](services) - Business services
+- [Controller Tests](controller) - Application lifecycle
+- [Auth Security Tests](../05-security/auth-security) - Admin authorization
+- [Security Hardening Tests](../05-security/hardening) - Production security
+- [Admin Auth Configuration](../../security/ADMIN_AUTH_CONFIGURATION) - Admin auth setup
+- [Database Tests](../03-database/service-databases) - Invite code storage

@@ -401,6 +401,6 @@ Response includes `cursor` for next page:
 
 ## Next Steps
 
-- **[Configuration Reference](./config-reference.md)** — Configuration options
-- **[CLI Reference](./cli-reference.md)** — Command-line interface
-- **[Troubleshooting](./troubleshooting.md)** — Common issues
+- **[Configuration Reference](./config-reference)** — Configuration options
+- **[CLI Reference](./cli-reference)** — Command-line interface
+- **[Troubleshooting](./troubleshooting)** — Common issues

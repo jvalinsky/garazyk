@@ -6,9 +6,9 @@ Tests for authorization, security hardening, and input validation.
 
 | File | Description |
 |------|-------------|
-| [hardening.md](hardening.md) | Production security, CBOR parser hardening, token rotation, DPoP nonces |
-| [validation.md](validation.md) | SQL injection prevention, path traversal blocking, XSS prevention, null-byte detection |
-| [auth-security.md](auth-security.md) | XRPC endpoint authorization, admin access control, cross-repo write protection |
+| [hardening.md](hardening) | Production security, CBOR parser hardening, token rotation, DPoP nonces |
+| [validation.md](validation) | SQL injection prevention, path traversal blocking, XSS prevention, null-byte detection |
+| [auth-security.md](auth-security) | XRPC endpoint authorization, admin access control, cross-repo write protection |
 
 ## Test Classes
 
@@ -33,10 +33,10 @@ Tests for authorization, security hardening, and input validation.
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [Security Documentation](../../security/README.md) - Security analysis
-- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT.md) - Detailed security review
-- [OAuth2 Security](../../oauth2/security.md) - OAuth2 security model
-- [Admin Auth Configuration](../../security/ADMIN_AUTH_CONFIGURATION.md) - Admin auth setup
-- [Identity Tests](../00-identity-auth/README.md) - Authentication tests
-- [Network Tests](../02-network/README.md) - Network security
+- [Test Index](../README) - Main test documentation index
+- [Security Documentation](../../security/README) - Security analysis
+- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT) - Detailed security review
+- [OAuth2 Security](../../oauth2/security) - OAuth2 security model
+- [Admin Auth Configuration](../../security/ADMIN_AUTH_CONFIGURATION) - Admin auth setup
+- [Identity Tests](../00-identity-auth/README) - Authentication tests
+- [Network Tests](../02-network/README) - Network security

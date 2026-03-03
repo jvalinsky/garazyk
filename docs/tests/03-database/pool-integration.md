@@ -113,9 +113,9 @@ XCTAssertTrue(valid);
 
 ## Related Documentation
 
-- [Folder README](README.md) - Database tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Actor Store Tests](actor-store.md) - Per-user storage
-- [Service Databases Tests](service-databases.md) - Global service databases
-- [Application Tests](../04-application/README.md) - Application using pools
-- [Concurrency Audit](../../skills/objc-concurrency-bug-audit/SKILL.md) - Thread safety
+- [Folder README](README) - Database tests overview
+- [Test Index](../README) - Main test documentation index
+- [Actor Store Tests](actor-store) - Per-user storage
+- [Service Databases Tests](service-databases) - Global service databases
+- [Application Tests](../04-application/README) - Application using pools
+- [Concurrency Audit](../../skills/objc-concurrency-bug-audit/SKILL) - Thread safety

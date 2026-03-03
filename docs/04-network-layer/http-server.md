@@ -401,12 +401,12 @@ response.headers[@"ETag"] = [self calculateETag:response.body];
 ## See Also
 
 **Basic Topics:**
-- [XRPC Dispatch](./xrpc-dispatch.md) — XRPC routing
-- [Method Registry](./method-registry.md) — Method registration
-- [Authentication](../06-authentication/jwt-tokens.md) — Authentication details
+- [XRPC Dispatch](./xrpc-dispatch) — XRPC routing
+- [Method Registry](./method-registry) — Method registration
+- [Authentication](../06-authentication/jwt-tokens) — Authentication details
 
 **Advanced Topics:**
-- [Rate Limiting](./rate-limiting.md) — Request rate control
-- [DoS Protection](./dos-protection.md) — Attack mitigation
-- [Request Throttling](./request-throttling.md) — Traffic management
-- [Input Validation](./input-validation.md) — Request validation
+- [Rate Limiting](./rate-limiting) — Request rate control
+- [DoS Protection](./dos-protection) — Attack mitigation
+- [Request Throttling](./request-throttling) — Traffic management
+- [Input Validation](./input-validation) — Request validation

@@ -168,15 +168,15 @@ The PDS enforces these validations before forwarding operations:
 ## Related Documentation
 
 ### Architecture
-- [PDS Architecture](architecture/atproto_pds_architecture.md) - Overall PDS system design
-- [Architecture Analysis](architecture/ARCHITECTURE_ANALYSIS.md) - Detailed architecture review
-- [Data Models](architecture/atproto_data_models.md) - ATProto data structures
-- [Architecture Diagrams](architecture/DIAGRAMS_MERMAID.md) - Visual architecture diagrams
+- [PDS Architecture](architecture/atproto_pds_architecture) - Overall PDS system design
+- [Architecture Analysis](architecture/ARCHITECTURE_ANALYSIS) - Detailed architecture review
+- [Data Models](architecture/atproto_data_models) - ATProto data structures
+- [Architecture Diagrams](architecture/DIAGRAMS_MERMAID) - Visual architecture diagrams
 
 ### Testing
-- [Identity & Auth Tests](tests/00-identity-auth/README.md) - DID resolution, JWT tests
-- [Integration Tests](tests/06-integration/plc.md) - PLC integration testing
+- [Identity & Auth Tests](tests/00-identity-auth/README) - DID resolution, JWT tests
+- [Integration Tests](tests/06-integration/plc) - PLC integration testing
 
 ### OAuth & Security
-- [OAuth 2.0 Overview](oauth2/README.md) - OAuth implementation details
-- [Security Analysis](security/SECURITY_ANALYSIS_REPORT.md) - Security posture review
+- [OAuth 2.0 Overview](oauth2/README) - OAuth implementation details
+- [Security Analysis](security/SECURITY_ANALYSIS_REPORT) - Security posture review

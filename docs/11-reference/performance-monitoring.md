@@ -950,10 +950,10 @@ diff perf-baseline.txt perf-$(date +%Y%m%d).txt
 
 ## Related Documentation
 
-- [Metrics Collection](metrics-collection.md) - Quantitative monitoring
-- [Logging Strategy](logging-strategy.md) - Diagnostic logging
-- [Database Layer](../05-database-layer/sqlite-architecture.md) - Database optimization
-- [Rate Limiting](../04-network-layer/rate-limiting.md) - Protecting performance
+- [Metrics Collection](metrics-collection) - Quantitative monitoring
+- [Logging Strategy](logging-strategy) - Diagnostic logging
+- [Database Layer](../05-database-layer/sqlite-architecture) - Database optimization
+- [Rate Limiting](../04-network-layer/rate-limiting) - Protecting performance
 
 ## See Also
 

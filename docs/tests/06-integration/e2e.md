@@ -129,11 +129,11 @@ XCTAssertEqualObjects(event[@"$type"], @"com.atproto.sync.subscribeRepos#commit"
 
 ## Related Documentation
 
-- [Folder README](README.md) - Integration tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Federation Tests](federation.md) - Cross-PDS communication
-- [PLC Tests](plc.md) - PLC directory operations
-- [Services Tests](../04-application/services.md) - Business services
-- [Repository Tests](../01-repository/mst.md) - Commit chains
-- [WebSocket Tests](../02-network/websocket.md) - Firehose events
-- [OAuth Tests](../00-identity-auth/oauth.md) - Session management
+- [Folder README](README) - Integration tests overview
+- [Test Index](../README) - Main test documentation index
+- [Federation Tests](federation) - Cross-PDS communication
+- [PLC Tests](plc) - PLC directory operations
+- [Services Tests](../04-application/services) - Business services
+- [Repository Tests](../01-repository/mst) - Commit chains
+- [WebSocket Tests](../02-network/websocket) - Firehose events
+- [OAuth Tests](../00-identity-auth/oauth) - Session management

@@ -622,12 +622,12 @@ if ([operation[@"type"] isEqualToString:@"plc_tombstone"]) {
 
 ## Related Documentation
 
-- [DID and NSID](atproto-basics.md) — AT Protocol identifiers
-- [DID Document Updates](did-document-updates.md) — DID update workflow
-- [Key Rotation](../06-authentication/key-rotation.md) — Key management strategies
-- [Secrets Management](../06-authentication/secrets-management.md) — Secure key storage
-- [PLC Server Operations](../11-reference/plc-server-operations.md) — Running campagnola
-- [PLC Failover](../11-reference/plc-failover.md) — Redundancy strategies
+- [DID and NSID](atproto-basics) — AT Protocol identifiers
+- [DID Document Updates](did-document-updates) — DID update workflow
+- [Key Rotation](../06-authentication/key-rotation) — Key management strategies
+- [Secrets Management](../06-authentication/secrets-management) — Secure key storage
+- [PLC Server Operations](../11-reference/plc-server-operations) — Running campagnola
+- [PLC Failover](../11-reference/plc-failover) — Redundancy strategies
 
 ## External Resources
 

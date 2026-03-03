@@ -393,5 +393,5 @@ export PATH=$PATH:./build/bin
 
 ## Next Steps
 
-- **[API Reference](./api-reference.md)** — API endpoints
-- **[Troubleshooting](./troubleshooting.md)** — Common issues
+- **[API Reference](./api-reference)** — API endpoints
+- **[Troubleshooting](./troubleshooting)** — Common issues

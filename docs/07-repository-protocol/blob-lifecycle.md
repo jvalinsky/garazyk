@@ -808,7 +808,7 @@ return data;
 
 ## See Also
 
-- [Blob Storage](./blob-storage.md) — Storage architecture and providers
-- [Blob Service](../03-application-layer/blob-service.md) — Service layer API
-- [CID and Hashing](./cid-and-hashing.md) — Content addressing
-- [Repository Basics](./repository-basics.md) — Repository structure
+- [Blob Storage](./blob-storage) — Storage architecture and providers
+- [Blob Service](../03-application-layer/blob-service) — Service layer API
+- [CID and Hashing](./cid-and-hashing) — Content addressing
+- [Repository Basics](./repository-basics) — Repository structure

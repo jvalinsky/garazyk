@@ -892,7 +892,7 @@ Write-Ahead Logging (WAL) provides:
 3. **Atomic Commits**: All-or-nothing transactions
 4. **Crash Recovery**: Automatic recovery from crashes
 
-See [WAL Mode](../05-database-layer/wal-mode.md) for details.
+See [WAL Mode](../05-database-layer/wal-mode) for details.
 
 ### Prepared Statement Caching
 
@@ -1260,10 +1260,10 @@ These optimizations work together to provide:
 
 ## See Also
 
-- [Blob Lifecycle](./blob-lifecycle.md) — Upload, download, and deletion workflows
-- [Blob Storage](./blob-storage.md) — Storage architecture and providers
-- [Blob Service](../03-application-layer/blob-service.md) — Service layer API
-- [SQLite Architecture](../05-database-layer/sqlite-architecture.md) — Database design patterns
-- [WAL Mode](../05-database-layer/wal-mode.md) — Write-Ahead Logging benefits
-- [HTTP Server](../04-network-layer/http-server.md) — HTTP server implementation
+- [Blob Lifecycle](./blob-lifecycle) — Upload, download, and deletion workflows
+- [Blob Storage](./blob-storage) — Storage architecture and providers
+- [Blob Service](../03-application-layer/blob-service) — Service layer API
+- [SQLite Architecture](../05-database-layer/sqlite-architecture) — Database design patterns
+- [WAL Mode](../05-database-layer/wal-mode) — Write-Ahead Logging benefits
+- [HTTP Server](../04-network-layer/http-server) — HTTP server implementation
 

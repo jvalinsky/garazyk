@@ -468,14 +468,14 @@ const authParams = {
 ## Related Documentation
 
 ### Architecture Documents
-- [README.md](README.md) - Architecture documentation index
-- [atproto_pds_architecture.md](atproto_pds_architecture.md) - PDS role in ecosystem and API endpoints
-- [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE.md) - NSID syntax and method patterns
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - Repository engine component analysis
+- [README.md](README) - Architecture documentation index
+- [atproto_pds_architecture.md](atproto_pds_architecture) - PDS role in ecosystem and API endpoints
+- [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) - NSID syntax and method patterns
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Repository engine component analysis
 
 ### Diagram Documents
-- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID.md) - Data model class diagrams
+- [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - Data model class diagrams
 
 ### Related Tests
-- [../tests/01-repository/mst.md](../tests/01-repository/mst.md) - MST interoperability tests
-- [../tests/01-repository/car-cbor.md](../tests/01-repository/car-cbor.md) - CAR and CBOR tests
+- [../tests/01-repository/mst.md](../tests/01-repository/mst) - MST interoperability tests
+- [../tests/01-repository/car-cbor.md](../tests/01-repository/car-cbor) - CAR and CBOR tests

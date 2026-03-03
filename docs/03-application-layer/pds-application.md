@@ -361,7 +361,7 @@ if (!app) {
 
 ## Next Steps
 
-- **[Services Overview](./services-overview.md)** — Service architecture
-- **[Account Service](./account-service.md)** — Account management
-- **[Record Service](./record-service.md)** — Record operations
-- **[Network Layer](../04-network-layer/http-server.md)** — HTTP and XRPC
+- **[Services Overview](./services-overview)** — Service architecture
+- **[Account Service](./account-service)** — Account management
+- **[Record Service](./record-service)** — Record operations
+- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC

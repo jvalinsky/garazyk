@@ -533,8 +533,8 @@ The `prev` field prevents replay attacks:
 
 ## Related Documentation
 
-- [PLC Directory Concepts](plc-directory.md)
-- [PLC Server Operations](../11-reference/plc-server-operations.md)
-- [PLC Failover Strategies](../11-reference/plc-failover.md)
-- [Cryptography Overview](cryptography.md)
-- [CBOR Serialization](cbor-and-car.md)
+- [PLC Directory Concepts](plc-directory)
+- [PLC Server Operations](../11-reference/plc-server-operations)
+- [PLC Failover Strategies](../11-reference/plc-failover)
+- [Cryptography Overview](cryptography)
+- [CBOR Serialization](cbor-and-car)

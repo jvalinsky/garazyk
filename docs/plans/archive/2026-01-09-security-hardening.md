@@ -342,7 +342,7 @@ git commit -m "feat(config): make JWT issuer configurable"
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Security Docs](../../security/README.md) - Security-related documentation
-- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 implementation details
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Security Docs](../../security/README) - Security-related documentation
+- [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

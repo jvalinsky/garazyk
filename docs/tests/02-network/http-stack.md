@@ -227,10 +227,10 @@ NSDictionary *headers = [limiter headersForDID:@"did:plc:abc" type:RateLimitType
 
 ## Related Documentation
 
-- [Folder README](README.md) - Network tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [XRPC Tests](xrpc.md) - XRPC protocol tests
-- [Transport Tests](transport.md) - Network transport tests
-- [WebSocket Tests](websocket.md) - WebSocket/firehose tests
-- [Security Tests](../05-security/README.md) - Rate limiting security
-- [Application Tests](../04-application/controller.md) - Application lifecycle
+- [Folder README](README) - Network tests overview
+- [Test Index](../README) - Main test documentation index
+- [XRPC Tests](xrpc) - XRPC protocol tests
+- [Transport Tests](transport) - Network transport tests
+- [WebSocket Tests](websocket) - WebSocket/firehose tests
+- [Security Tests](../05-security/README) - Rate limiting security
+- [Application Tests](../04-application/controller) - Application lifecycle
