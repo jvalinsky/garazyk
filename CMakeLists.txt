@@ -148,6 +148,13 @@ if(APPLE)
     # Find SQLite3
     find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
 
+    # Optional OpenSSL (enables non-keychain session key manager on macOS)
+    set(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE OFF)
+    find_package(OpenSSL QUIET)
+    if(OpenSSL_FOUND)
+        set(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE ON)
+    endif()
+
     set(PLATFORM_LIBRARIES 
         ${FOUNDATION} 
         ${NETWORK} 
@@ -160,6 +167,12 @@ if(APPLE)
         ${SQLite3_LIBRARY}
         resolv
     )
+    if(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+        list(APPEND PLATFORM_LIBRARIES OpenSSL::Crypto)
+        message(STATUS "macOS OpenSSL support enabled for non-keychain key manager")
+    else()
+        message(STATUS "macOS OpenSSL support not found; using Apple key manager only")
+    endif()
 else()
     # Linux Dependencies
     find_package(OpenSSL REQUIRED)
@@ -193,6 +206,10 @@ else()
         xslt
         z
     )
+endif()
+
+if(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+    add_compile_definitions(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE=1)
 endif()
 
 if(SQLite3_INCLUDE_DIRS)
@@ -234,8 +251,10 @@ list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Li
 list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m")
 if(APPLE)
     list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m")
-    # Exclude OpenSSL implementation on macOS (uses Apple Security.framework instead)
-    list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
+    if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+        # OpenSSL-based manager is unavailable on this macOS host.
+        list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
+    endif()
 endif()
 
 # Exclude files using macOS-only APIs on Linux builds
