@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Auth/DPoPUtil.h"
 #import "AuthCrypto/AuthCryptoDPoP.h"
+#import "Auth/TestKeyFixtures.h"
 
 
 @interface OAuthDPoPTests : XCTestCase {
@@ -13,15 +14,10 @@
 
 - (void)setUp {
     [super setUp];
-    NSDictionary* attributes = @{
-        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
-        (id)kSecAttrKeySizeInBits: @256
-    };
-    CFErrorRef error = NULL;
-    _privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &error);
+    NSError *error = nil;
+    _privateKey = PDSTestCreateFixedP256PrivateKey(&error);
     if (_privateKey == NULL) {
-        NSError *nsError = CFBridgingRelease(error);
-        XCTSkip(@"Skipping DPoP tests: Security key generation unavailable (%@)", nsError);
+        XCTSkip(@"Skipping DPoP tests: fixed key import unavailable (%@)", error);
     }
     _publicKey = SecKeyCopyPublicKey(_privateKey);
 }
