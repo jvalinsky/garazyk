@@ -1,0 +1,15 @@
+{
+  "preferences": [
+    {
+      "$type": "app.bsky.actor.defs#savedFeedsPrefV2",
+      "items": [
+        {
+          "id": "3mftx5rmac22u",
+          "type": "timeline",
+          "value": "following",
+          "pinned": true
+        }
+      ]
+    }
+  ]
+}
