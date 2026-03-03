@@ -2,702 +2,657 @@
 
 ## Overview
 
-Request throttling controls the rate at which requests are processed to prevent resource exhaustion and ensure fair access. The PDS implements throttling at multiple levels:
-
-- **Global throttling** — Server-wide concurrency limits
-- **Per-endpoint throttling** — Limits specific to endpoint types
-- **Per-user throttling** — Rate limits per DID
-- **Per-IP throttling** — Limits for unauthenticated requests
+Request throttling controls the rate at which specific operations can be performed, providing fine-grained control beyond basic rate limiting. While rate limiting applies broad limits (e.g., 5000 requests/hour), throttling applies targeted limits to specific endpoints, operations, or resource types.
 
 ## Throttling vs Rate Limiting
 
-**Rate Limiting:**
-- Tracks request counts over time windows
-- Enforces maximum requests per time period
-- Returns 429 when limit exceeded
+### Rate Limiting
 
-**Throttling:**
-- Controls concurrent request processing
-- Limits active requests at any moment
-- Applies backpressure when overloaded
+- **Scope:** Broad (all API requests)
+- **Granularity:** Coarse (per-user, per-IP)
+- **Purpose:** Prevent abuse and resource exhaustion
+- **Example:** 5000 requests/hour per DID
 
-Both mechanisms work together to protect the server.
+### Request Throttling
 
-## Global Throttling
+- **Scope:** Narrow (specific endpoints/operations)
+- **Granularity:** Fine (per-endpoint, per-operation-type)
+- **Purpose:** Protect expensive operations
+- **Example:** 10 blob uploads/minute per DID
 
-### Concurrency Semaphore
+## Throttling Strategies
 
-**Implementation (from HttpServer.m):**
+### 1. Per-Endpoint Throttling
+
+Different endpoints have different resource costs. Expensive endpoints need stricter limits:
 
 ```objc
-static const NSUInteger kMaxConcurrentRequests = 64; // Limit concurrent threads
-
-@interface HttpServer ()
-@property(nonatomic, assign) dispatch_semaphore_t concurrencySemaphore;
+// In XrpcMethodRegistry.m - Endpoint-specific limits
+@interface XrpcMethodRegistry ()
+@property (nonatomic, strong) NSDictionary *endpointLimits;
 @end
 
-- (instancetype)initWithHost:(NSString *_Nullable)host port:(NSUInteger)port {
+- (void)configureEndpointLimits {
+    self.endpointLimits = @{
+        // Expensive operations
+        @"com.atproto.repo.uploadBlob": @{
+            @"limit": @10,
+            @"window": @60  // 10 uploads per minute
+        },
+        @"com.atproto.repo.createRecord": @{
+            @"limit": @100,
+            @"window": @60  // 100 creates per minute
+        },
+        @"com.atproto.sync.getRepo": @{
+            @"limit": @5,
+            @"window": @60  // 5 repo exports per minute
+        },
+        
+        // Moderate operations
+        @"com.atproto.repo.getRecord": @{
+            @"limit": @500,
+            @"window": @60  // 500 reads per minute
+        },
+        @"com.atproto.repo.listRecords": @{
+            @"limit": @100,
+            @"window": @60  // 100 lists per minute
+        },
+        
+        // Lightweight operations
+        @"com.atproto.server.getSession": @{
+            @"limit": @1000,
+            @"window": @60  // 1000 session checks per minute
+        }
+    };
+}
+```
+
+### 2. Per-User Throttling
+
+Different users may have different limits based on trust level or subscription tier:
+
+```objc
+// In UserThrottleManager.m - User-specific limits
+@interface UserThrottleManager : NSObject
+@property (nonatomic, strong) NSMutableDictionary *userTiers;
+@end
+
+- (NSDictionary *)getLimitsForDID:(NSString *)did {
+    NSString *tier = [self getTierForDID:did];
+    
+    if ([tier isEqualToString:@"premium"]) {
+        return @{
+            @"blob_uploads": @{@"limit": @50, @"window": @60},
+            @"record_creates": @{@"limit": @500, @"window": @60},
+            @"api_requests": @{@"limit": @10000, @"window": @3600}
+        };
+    } else if ([tier isEqualToString:@"trusted"]) {
+        return @{
+            @"blob_uploads": @{@"limit": @20, @"window": @60},
+            @"record_creates": @{@"limit": @200, @"window": @60},
+            @"api_requests": @{@"limit": @7500, @"window": @3600}
+        };
+    } else {
+        // Default tier
+        return @{
+            @"blob_uploads": @{@"limit": @10, @"window": @60},
+            @"record_creates": @{@"limit": @100, @"window": @60},
+            @"api_requests": @{@"limit": @5000, @"window": @3600}
+        };
+    }
+}
+
+- (NSString *)getTierForDID:(NSString *)did {
+    // Check user tier from database
+    NSString *tier = self.userTiers[did];
+    return tier ?: @"default";
+}
+```
+
+### 3. Global Throttling
+
+System-wide limits to protect overall server capacity:
+
+```objc
+// In GlobalThrottleManager.m - System-wide limits
+@interface GlobalThrottleManager : NSObject
+@property (nonatomic, assign) NSUInteger maxConcurrentBlobUploads;
+@property (nonatomic, assign) NSUInteger maxConcurrentRepoExports;
+@property (nonatomic, assign) NSUInteger maxConcurrentDatabaseWrites;
+@property (nonatomic, strong) dispatch_semaphore_t blobUploadSemaphore;
+@property (nonatomic, strong) dispatch_semaphore_t repoExportSemaphore;
+@property (nonatomic, strong) dispatch_semaphore_t databaseWriteSemaphore;
+@end
+
+- (instancetype)init {
     self = [super init];
     if (self) {
-        _concurrencySemaphore = dispatch_semaphore_create(kMaxConcurrentRequests);
-        // ...
+        _maxConcurrentBlobUploads = 50;
+        _maxConcurrentRepoExports = 10;
+        _maxConcurrentDatabaseWrites = 100;
+        
+        _blobUploadSemaphore = dispatch_semaphore_create(_maxConcurrentBlobUploads);
+        _repoExportSemaphore = dispatch_semaphore_create(_maxConcurrentRepoExports);
+        _databaseWriteSemaphore = dispatch_semaphore_create(_maxConcurrentDatabaseWrites);
     }
     return self;
 }
+
+- (void)performBlobUpload:(void (^)(void))uploadBlock {
+    // Wait for available slot
+    dispatch_semaphore_wait(self.blobUploadSemaphore, DISPATCH_TIME_FOREVER);
+    
+    // Perform upload
+    uploadBlock();
+    
+    // Release slot
+    dispatch_semaphore_signal(self.blobUploadSemaphore);
+}
 ```
 
-**Request Processing:**
+## Implementation Patterns
+
+### Pattern 1: Custom Rate Limiter
+
+Use the RateLimiter's custom limit feature for endpoint-specific throttling:
 
 ```objc
-// Wait for available slot
-dispatch_semaphore_wait(self.concurrencySemaphore, DISPATCH_TIME_FOREVER);
-
-// Process request
-dispatch_group_async(self.taskGroup, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    @autoreleasepool {
-        [self handleRequest:request response:response];
-        
-        // Release slot
-        dispatch_semaphore_signal(self.concurrencySemaphore);
-    }
-});
-```
-
-**Purpose:**
-- Prevents thread exhaustion
-- Limits memory usage per request
-- Ensures predictable resource usage
-
-**Configuration:**
-- Default: 64 concurrent requests
-- Compile-time constant
-- Enforced via GCD semaphore
-
-### Architecture
-
-```
-┌──────────────────────────────────────────┐
-│   Incoming Requests                      │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   Concurrency Semaphore (64 slots)      │
-│  - Wait for available slot               │
-│  - Process request                       │
-│  - Release slot                          │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-   Available         Queue Waits
-   Process Now       for Slot
-```
-
-## Per-Endpoint Throttling
-
-### Query Result Limits
-
-Different endpoints enforce different result size limits to prevent large responses:
-
-**Repository Listing:**
-
-```objc
-// com.atproto.repo.listRecords
-NSInteger limit = 500;
-NSString *limitParam = [request queryParamForKey:@"limit"];
-if (limitParam.length > 0) {
-    if (!parseStrictIntegerString(limitParam, &limit) || 
-        limit < 1 || limit > 1000) {
-        response.statusCode = HttpStatusBadRequest;
-        [response setJsonBody:@{
-            @"error": @"InvalidRequest", 
-            @"message": @"limit must be an integer between 1 and 1000"
-        }];
+// In XrpcRepoMethods.m - Blob upload throttling
+- (void)handleUploadBlob:(HttpRequest *)request response:(HttpResponse *)response {
+    // 1. Extract DID
+    NSString *did = [self extractDIDFromRequest:request];
+    if (!did) {
+        response.statusCode = 401;
         return;
     }
-}
-```
-
-**Feed Queries:**
-
-```objc
-// app.bsky.feed.getTimeline
-NSInteger limit = 50;
-if (![self parseLimit:request.queryParams[@"limit"] 
-             outValue:&limit 
-                  min:1 
-                  max:100 
-             response:response]) {
-    return;
-}
-```
-
-**Admin Queries:**
-
-```objc
-// com.atproto.admin.searchRepos
-NSInteger limit = 50;
-NSString *limitParam = [request queryParamForKey:@"limit"];
-if (limitParam.length > 0 && 
-    (!parseStrictIntegerString(limitParam, &limit) || 
-     limit < 1 || limit > 100)) {
-    response.statusCode = HttpStatusBadRequest;
-    [response setJsonBody:@{
-        @"error": @"InvalidRequest", 
-        @"message": @"limit must be an integer between 1 and 100"
-    }];
-    return;
-}
-```
-
-### Endpoint Limit Summary
-
-| Endpoint Type | Default Limit | Max Limit | Purpose |
-|--------------|---------------|-----------|---------|
-| Repository lists | 500 | 1000 | Large repo queries |
-| Feed queries | 50 | 100 | Timeline/feed pagination |
-| Admin queries | 50 | 100 | Moderation operations |
-| Label queries | 50 | 250 | Label lookups |
-| Sync operations | 500 | 500 | Repository sync |
-
-### Pagination Enforcement
-
-All list endpoints require pagination:
-
-```objc
-// Enforce pagination with cursor
-NSString *cursor = [request queryParamForKey:@"cursor"];
-NSInteger limit = 50;
-
-// Query with limit + 1 to detect more results
-NSArray *results = [service queryRecords:collection 
-                                   limit:limit + 1 
-                                  cursor:cursor];
-
-// Check if more results exist
-BOOL hasMore = results.count > limit;
-if (hasMore) {
-    results = [results subarrayWithRange:NSMakeRange(0, limit)];
-}
-
-// Return cursor for next page
-NSString *nextCursor = hasMore ? [self cursorFromLastResult:results.lastObject] : nil;
-
-[response setJsonBody:@{
-    @"records": results,
-    @"cursor": nextCursor ?: [NSNull null]
-}];
-```
-
-**Purpose:**
-- Prevents large result sets
-- Enables incremental loading
-- Reduces memory usage
-- Improves response times
-
-## Per-User Throttling
-
-### DID-Based Rate Limits
-
-See [Rate Limiting](./rate-limiting.md) for detailed documentation.
-
-**Summary:**
-- 5000 requests per hour per DID
-- Tracked in SQLite database
-- Persistent across restarts
-
-**Implementation:**
-
-```objc
-RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
-if (!result.allowed) {
-    response.statusCode = 429;
-    [response setJsonBody:@{
-        @"error": @"RateLimitExceeded",
-        @"message": @"Too many requests"
-    }];
-    [response setHeader:[NSString stringWithFormat:@"%.0f", result.retryAfter] 
-                 forKey:@"Retry-After"];
-    return;
-}
-```
-
-### Blob Upload Throttling
-
-Separate limits for blob operations:
-
-```objc
-// Check blob upload rate limit
-RateLimitResult *blobResult = [[RateLimiter sharedLimiter] 
-    checkBlobUploadRateLimitForDid:did];
-
-if (!blobResult.allowed) {
-    response.statusCode = 429;
-    [response setJsonBody:@{
-        @"error": @"BlobUploadLimitExceeded",
-        @"message": [NSString stringWithFormat:
-            @"Blob upload limit exceeded. Try again in %.0f seconds", 
-            blobResult.retryAfter]
-    }];
-    [response setHeader:[NSString stringWithFormat:@"%.0f", blobResult.retryAfter] 
-                 forKey:@"Retry-After"];
-    return;
-}
-```
-
-**Configuration:**
-- Default: 50 uploads per hour
-- Separate from API request limits
-- Prevents storage abuse
-
-## Per-IP Throttling
-
-### Unauthenticated Request Limits
-
-**Implementation:**
-
-```objc
-// Extract client IP
-NSString *clientIP = [self extractClientIP:request];
-
-// Check IP rate limit
-RateLimitResult *ipResult = [[RateLimiter sharedLimiter] checkRateLimitForIP:clientIP];
-if (!ipResult.allowed) {
-    response.statusCode = 429;
-    [response setJsonBody:@{
-        @"error": @"RateLimitExceeded",
-        @"message": @"Too many requests from this IP"
-    }];
-    [response setHeader:[NSString stringWithFormat:@"%.0f", ipResult.retryAfter] 
-                 forKey:@"Retry-After"];
-    return;
-}
-```
-
-**Use Cases:**
-- OAuth authorization endpoints
-- Public API endpoints
-- Unauthenticated queries
-- Protection against IP-based attacks
-
-**Configuration:**
-- Default: 100 requests per minute
-- Applied before authentication
-- Extracted from X-Forwarded-For when behind proxy
-
-### OAuth Endpoint Throttling
-
-**Implementation (from HttpServer.m):**
-
-```objc
-if ([request.path hasPrefix:@"/oauth/"] && 
-    !RateLimiterIsDisabledGlobally() &&
-    [RateLimiter sharedLimiter].isEnabled) {
     
-    NSString *clientIP = [self extractClientIP:request];
-    RateLimitResult *result = [[RateLimiter sharedLimiter] 
-        checkRateLimitForIP:clientIP];
+    // 2. Check endpoint-specific throttle
+    NSString *throttleKey = [NSString stringWithFormat:@"blob_upload:%@", did];
+    RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForKey:throttleKey
+                                                                          limit:10
+                                                                  windowSeconds:60];
     
     if (!result.allowed) {
         response.statusCode = 429;
-        [response setJsonBody:@{
-            @"error": @"rate_limit_exceeded",
-            @"message": @"Too many requests"
-        }];
         [response setHeader:[NSString stringWithFormat:@"%.0f", result.retryAfter] 
                      forKey:@"Retry-After"];
+        [response setJsonBody:@{
+            @"error": @"RateLimitExceeded",
+            @"message": @"Blob upload limit exceeded (10 per minute)"
+        }];
         return;
     }
+    
+    // 3. Process upload
+    [self processBlobUpload:request response:response];
 }
 ```
 
-**Purpose:**
-- Prevents credential stuffing
-- Limits OAuth flow abuse
-- Protects authentication endpoints
+### Pattern 2: Semaphore-Based Concurrency Control
 
-## Backpressure Mechanisms
-
-### Output Queue Throttling
-
-**Implementation (from HttpServer.m):**
+Limit concurrent execution of expensive operations:
 
 ```objc
-static const NSUInteger kHttpOutputQueueHighWaterMark = 10 * 1024 * 1024; // 10MB
-
-@interface HttpConnectionState : NSObject
-@property(nonatomic, assign) NSUInteger outputQueueSize;
-@property(nonatomic, assign) BOOL readingPaused;
+// In PDSRepositoryService.m - Concurrent export limit
+@interface PDSRepositoryService ()
+@property (nonatomic, strong) dispatch_semaphore_t exportSemaphore;
 @end
 
-// Check queue size before adding response
-if (state.outputQueueSize > kHttpOutputQueueHighWaterMark) {
-    // Pause reading to apply backpressure
-    state.readingPaused = YES;
-    
-    PDS_LOG_HTTP_WARN(@"Output queue high water mark reached, pausing reads");
-    return;
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _exportSemaphore = dispatch_semaphore_create(10);  // Max 10 concurrent exports
+    }
+    return self;
 }
 
-// Add response to queue
-[state.outputQueue addObject:queuedResponse];
-state.outputQueueSize += queuedResponse.queueByteSize;
-```
-
-**Purpose:**
-- Prevents memory exhaustion from slow clients
-- Applies backpressure to fast producers
-- Ensures bounded memory usage
-
-**Flow Control:**
-
-```
-Fast Producer → Output Queue → Slow Consumer
-                     │
-                     ▼
-              Queue Full?
-                     │
-                     ▼
-              Pause Reading
-              (Backpressure)
-```
-
-### Chunk-Based Streaming
-
-**Implementation (from HttpServer.m):**
-
-```objc
-static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
-static const NSUInteger kHttpGeneratedChunkSendSize = 64 * 1024;
-
-// Send file in chunks
-while (offset < fileSize) {
-    NSUInteger chunkSize = MIN(kHttpFileSendChunkSize, fileSize - offset);
-    NSData *chunk = [self readFileChunk:filePath offset:offset length:chunkSize];
+- (void)exportRepository:(NSString *)did
+              completion:(void (^)(NSData *carData, NSError *error))completion {
     
-    // Check if output queue has space
-    if (state.outputQueueSize > kHttpOutputQueueHighWaterMark) {
-        // Pause and wait for queue to drain
-        break;
+    // 1. Wait for available slot (with timeout)
+    dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC);
+    long result = dispatch_semaphore_wait(self.exportSemaphore, timeout);
+    
+    if (result != 0) {
+        // Timeout - too many concurrent exports
+        NSError *error = [NSError errorWithDomain:@"RepositoryError"
+                                             code:503
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Server busy, please retry"}];
+        completion(nil, error);
+        return;
     }
     
-    [self sendData:chunk toConnection:connection];
-    offset += chunkSize;
-}
-```
-
-**Purpose:**
-- Prevents large memory allocations
-- Enables streaming responses
-- Reduces memory pressure
-
-**Configuration:**
-- File chunks: 64 KB
-- Generated chunks: 64 KB
-- Queue budget: 64 KB
-
-## Custom Throttling
-
-### Endpoint-Specific Limits
-
-For specialized throttling needs:
-
-```objc
-// Custom rate limit for password reset
-RateLimitResult *result = [[RateLimiter sharedLimiter] 
-    checkRateLimitForKey:[NSString stringWithFormat:@"password_reset:%@", email]
-                   limit:5
-            windowSeconds:3600];
-
-if (!result.allowed) {
-    response.statusCode = 429;
-    [response setJsonBody:@{
-        @"error": @"TooManyPasswordResets",
-        @"message": @"Too many password reset attempts"
+    // 2. Perform export
+    [self performRepositoryExport:did completion:^(NSData *carData, NSError *error) {
+        // 3. Release slot
+        dispatch_semaphore_signal(self.exportSemaphore);
+        
+        // 4. Call completion
+        completion(carData, error);
     }];
-    return;
 }
 ```
 
-### Operation-Specific Limits
+### Pattern 3: Token Bucket
+
+Allow bursts while maintaining average rate:
 
 ```objc
-// Limit account creation per IP
-RateLimitResult *result = [[RateLimiter sharedLimiter] 
-    checkRateLimitForKey:[NSString stringWithFormat:@"account_create:%@", clientIP]
-                   limit:3
-            windowSeconds:86400]; // 24 hours
+// In TokenBucket.m - Token bucket throttling
+@interface TokenBucket : NSObject
+@property (nonatomic, assign) NSUInteger capacity;
+@property (nonatomic, assign) NSUInteger tokens;
+@property (nonatomic, assign) NSTimeInterval refillRate;
+@property (nonatomic, strong) NSDate *lastRefill;
+@property (nonatomic, strong) NSLock *lock;
+@end
 
-if (!result.allowed) {
-    response.statusCode = 429;
-    [response setJsonBody:@{
-        @"error": @"AccountCreationLimitExceeded",
-        @"message": @"Too many account creation attempts"
-    }];
-    return;
+- (instancetype)initWithCapacity:(NSUInteger)capacity refillRate:(NSTimeInterval)refillRate {
+    self = [super init];
+    if (self) {
+        _capacity = capacity;
+        _tokens = capacity;
+        _refillRate = refillRate;
+        _lastRefill = [NSDate date];
+        _lock = [[NSLock alloc] init];
+    }
+    return self;
+}
+
+- (BOOL)consumeTokens:(NSUInteger)count {
+    [self.lock lock];
+    
+    // 1. Refill tokens based on elapsed time
+    NSTimeInterval elapsed = [[NSDate date] timeIntervalSinceDate:self.lastRefill];
+    NSUInteger tokensToAdd = (NSUInteger)(elapsed / self.refillRate);
+    
+    if (tokensToAdd > 0) {
+        self.tokens = MIN(self.capacity, self.tokens + tokensToAdd);
+        self.lastRefill = [NSDate date];
+    }
+    
+    // 2. Check if enough tokens available
+    if (self.tokens >= count) {
+        self.tokens -= count;
+        [self.lock unlock];
+        return YES;
+    }
+    
+    [self.lock unlock];
+    return NO;
+}
+
+- (NSTimeInterval)timeUntilAvailable:(NSUInteger)count {
+    [self.lock lock];
+    
+    if (self.tokens >= count) {
+        [self.lock unlock];
+        return 0;
+    }
+    
+    NSUInteger tokensNeeded = count - self.tokens;
+    NSTimeInterval timeNeeded = tokensNeeded * self.refillRate;
+    
+    [self.lock unlock];
+    return timeNeeded;
 }
 ```
 
-## Monitoring and Metrics
-
-### Log Throttling Events
+**Usage:**
 
 ```objc
-if (!result.allowed) {
-    PDS_LOG_HTTP_WARN(@"Request throttled for %@: %ld/%ld requests in %.0fs window", 
-                      identifier, 
-                      (long)result.limit, 
-                      (long)result.limit,
-                      result.resetSeconds);
+// In XrpcRepoMethods.m - Token bucket for record creation
+@interface XrpcRepoMethods ()
+@property (nonatomic, strong) NSMutableDictionary *userBuckets;
+@end
+
+- (void)handleCreateRecord:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *did = [self extractDIDFromRequest:request];
+    
+    // 1. Get or create token bucket for user
+    TokenBucket *bucket = self.userBuckets[did];
+    if (!bucket) {
+        bucket = [[TokenBucket alloc] initWithCapacity:100 refillRate:0.6];  // 100 tokens, refill 1 per 0.6s
+        self.userBuckets[did] = bucket;
+    }
+    
+    // 2. Try to consume token
+    if (![bucket consumeTokens:1]) {
+        NSTimeInterval retryAfter = [bucket timeUntilAvailable:1];
+        response.statusCode = 429;
+        [response setHeader:[NSString stringWithFormat:@"%.0f", retryAfter] 
+                     forKey:@"Retry-After"];
+        [response setJsonBody:@{
+            @"error": @"RateLimitExceeded",
+            @"message": @"Record creation rate limit exceeded"
+        }];
+        return;
+    }
+    
+    // 3. Process request
+    [self processCreateRecord:request response:response];
 }
 ```
 
-### Track Queue Metrics
+## Endpoint-Specific Limits
+
+### Blob Operations
 
 ```objc
-if (state.outputQueueSize > kHttpOutputQueueHighWaterMark / 2) {
-    PDS_LOG_HTTP_DEBUG(@"Output queue at 50%% capacity: %lu bytes", 
-                       (unsigned long)state.outputQueueSize);
+// Blob upload throttling
+@"com.atproto.repo.uploadBlob": @{
+    @"limit": @10,           // 10 uploads
+    @"window": @60,          // per minute
+    @"cost": @"high",        // Resource cost
+    @"global_limit": @50     // Max 50 concurrent uploads system-wide
+}
+
+// Blob download throttling
+@"com.atproto.sync.getBlob": @{
+    @"limit": @100,          // 100 downloads
+    @"window": @60,          // per minute
+    @"cost": @"medium",
+    @"global_limit": @200
 }
 ```
 
-### Monitor Concurrency
+### Record Operations
 
 ```objc
-PDS_LOG_HTTP_DEBUG(@"Active requests: %lu/%lu", 
-                   (unsigned long)activeRequests,
-                   (unsigned long)kMaxConcurrentRequests);
+// Record creation throttling
+@"com.atproto.repo.createRecord": @{
+    @"limit": @100,          // 100 creates
+    @"window": @60,          // per minute
+    @"cost": @"medium",
+    @"burst_allowed": @YES   // Allow bursts
+}
+
+// Record deletion throttling
+@"com.atproto.repo.deleteRecord": @{
+    @"limit": @50,           // 50 deletes
+    @"window": @60,          // per minute
+    @"cost": @"medium"
+}
+
+// Batch operations throttling
+@"com.atproto.repo.applyWrites": @{
+    @"limit": @20,           // 20 batch operations
+    @"window": @60,          // per minute
+    @"cost": @"high",
+    @"max_batch_size": @100  // Max 100 writes per batch
+}
 ```
 
-## Response Headers
+### Repository Operations
 
-### Rate Limit Headers
+```objc
+// Repository export throttling
+@"com.atproto.sync.getRepo": @{
+    @"limit": @5,            // 5 exports
+    @"window": @60,          // per minute
+    @"cost": @"very_high",
+    @"global_limit": @10,    // Max 10 concurrent exports
+    @"timeout": @300         // 5 minute timeout
+}
 
+// Repository checkout throttling
+@"com.atproto.sync.getCheckout": @{
+    @"limit": @10,
+    @"window": @60,
+    @"cost": @"high"
+}
 ```
-HTTP/1.1 200 OK
-X-RateLimit-Limit: 5000
-X-RateLimit-Remaining: 4999
-X-RateLimit-Reset: 3600
+
+### Authentication Operations
+
+```objc
+// Session creation throttling
+@"com.atproto.server.createSession": @{
+    @"limit": @10,           // 10 logins
+    @"window": @300,         // per 5 minutes
+    @"cost": @"high",        // Expensive (crypto)
+    @"lockout_threshold": @5 // Lock after 5 failures
+}
+
+// Token refresh throttling
+@"com.atproto.server.refreshSession": @{
+    @"limit": @100,
+    @"window": @3600,        // per hour
+    @"cost": @"medium"
+}
 ```
 
-### Throttled Response
+### Search and List Operations
 
+```objc
+// Record listing throttling
+@"com.atproto.repo.listRecords": @{
+    @"limit": @100,
+    @"window": @60,
+    @"cost": @"medium",
+    @"max_page_size": @100   // Max 100 records per page
+}
+
+// Feed generation throttling
+@"app.bsky.feed.getFeedSkeleton": @{
+    @"limit": @50,
+    @"window": @60,
+    @"cost": @"high",
+    @"max_page_size": @50
+}
 ```
-HTTP/1.1 429 Too Many Requests
-Retry-After: 60
-X-RateLimit-Limit: 5000
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 3600
 
-{
-  "error": "RateLimitExceeded",
-  "message": "Too many requests. Try again in 60 seconds"
+## Adaptive Throttling
+
+Adjust limits based on server load:
+
+```objc
+// In AdaptiveThrottleManager.m - Load-based throttling
+@interface AdaptiveThrottleManager : NSObject
+@property (nonatomic, assign) double cpuThreshold;
+@property (nonatomic, assign) double memoryThreshold;
+@property (nonatomic, assign) double baseMultiplier;
+@end
+
+- (double)getCurrentMultiplier {
+    // 1. Get current resource usage
+    double cpuUsage = [self getCurrentCPUUsage];
+    double memoryUsage = [self getCurrentMemoryUsage];
+    
+    // 2. Calculate multiplier based on load
+    double multiplier = self.baseMultiplier;
+    
+    if (cpuUsage > self.cpuThreshold) {
+        multiplier *= (1.0 - (cpuUsage - self.cpuThreshold));
+    }
+    
+    if (memoryUsage > self.memoryThreshold) {
+        multiplier *= (1.0 - (memoryUsage - self.memoryThreshold));
+    }
+    
+    // 3. Ensure minimum multiplier
+    return MAX(0.1, multiplier);  // Never go below 10% of base rate
+}
+
+- (NSInteger)getAdjustedLimit:(NSInteger)baseLimit {
+    double multiplier = [self getCurrentMultiplier];
+    return (NSInteger)(baseLimit * multiplier);
+}
+```
+
+**Usage:**
+
+```objc
+// In XrpcMethodRegistry.m - Apply adaptive throttling
+- (BOOL)checkThrottle:(NSString *)endpoint forDID:(NSString *)did {
+    NSDictionary *limits = self.endpointLimits[endpoint];
+    NSInteger baseLimit = [limits[@"limit"] integerValue];
+    NSTimeInterval window = [limits[@"window"] doubleValue];
+    
+    // 1. Get adjusted limit based on server load
+    NSInteger adjustedLimit = [self.adaptiveThrottleManager getAdjustedLimit:baseLimit];
+    
+    // 2. Check throttle with adjusted limit
+    NSString *throttleKey = [NSString stringWithFormat:@"%@:%@", endpoint, did];
+    RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForKey:throttleKey
+                                                                          limit:adjustedLimit
+                                                                  windowSeconds:window];
+    
+    return result.allowed;
+}
+```
+
+## Burst Handling
+
+Allow short bursts while maintaining average rate:
+
+```objc
+// In BurstThrottleManager.m - Burst-aware throttling
+@interface BurstThrottleManager : NSObject
+@property (nonatomic, assign) NSInteger sustainedRate;
+@property (nonatomic, assign) NSInteger burstRate;
+@property (nonatomic, assign) NSTimeInterval burstWindow;
+@end
+
+- (BOOL)checkThrottle:(NSString *)key {
+    // 1. Check burst limit (short window)
+    RateLimitResult *burstResult = [[RateLimiter sharedLimiter] 
+        checkRateLimitForKey:[NSString stringWithFormat:@"burst:%@", key]
+                       limit:self.burstRate
+               windowSeconds:self.burstWindow];
+    
+    if (!burstResult.allowed) {
+        return NO;
+    }
+    
+    // 2. Check sustained limit (long window)
+    RateLimitResult *sustainedResult = [[RateLimiter sharedLimiter]
+        checkRateLimitForKey:[NSString stringWithFormat:@"sustained:%@", key]
+                       limit:self.sustainedRate
+               windowSeconds:60];
+    
+    return sustainedResult.allowed;
+}
+```
+
+**Example:**
+
+```objc
+// Allow bursts of 20 requests in 5 seconds, but only 100 per minute sustained
+BurstThrottleManager *throttle = [[BurstThrottleManager alloc] init];
+throttle.burstRate = 20;
+throttle.burstWindow = 5;
+throttle.sustainedRate = 100;
+```
+
+## Monitoring
+
+### Throttle Metrics
+
+```objc
+// In ThrottleMetrics.m - Track throttling effectiveness
+@interface ThrottleMetrics : NSObject
+@property (nonatomic, strong) NSMutableDictionary *endpointMetrics;
+@end
+
+- (void)recordThrottle:(NSString *)endpoint allowed:(BOOL)allowed {
+    NSMutableDictionary *metrics = self.endpointMetrics[endpoint];
+    if (!metrics) {
+        metrics = [@{
+            @"total": @0,
+            @"allowed": @0,
+            @"throttled": @0
+        } mutableCopy];
+        self.endpointMetrics[endpoint] = metrics;
+    }
+    
+    metrics[@"total"] = @([metrics[@"total"] integerValue] + 1);
+    
+    if (allowed) {
+        metrics[@"allowed"] = @([metrics[@"allowed"] integerValue] + 1);
+    } else {
+        metrics[@"throttled"] = @([metrics[@"throttled"] integerValue] + 1);
+    }
+}
+
+- (NSDictionary *)getMetricsForEndpoint:(NSString *)endpoint {
+    NSDictionary *metrics = self.endpointMetrics[endpoint];
+    if (!metrics) {
+        return @{};
+    }
+    
+    NSInteger total = [metrics[@"total"] integerValue];
+    NSInteger throttled = [metrics[@"throttled"] integerValue];
+    
+    return @{
+        @"total": metrics[@"total"],
+        @"allowed": metrics[@"allowed"],
+        @"throttled": metrics[@"throttled"],
+        @"throttle_rate": @((double)throttled / total)
+    };
 }
 ```
 
 ## Configuration
 
-### Rate Limit Configuration
+### Throttle Configuration File
 
 ```json
 {
-  "rate_limit": {
+  "throttling": {
     "enabled": true,
-    "did_limit": 5000,
-    "did_window": 3600,
-    "ip_limit": 100,
-    "ip_window": 60,
-    "blob_limit": 50,
-    "blob_window": 3600
+    "adaptive": true,
+    "endpoints": {
+      "com.atproto.repo.uploadBlob": {
+        "limit": 10,
+        "window": 60,
+        "burst_limit": 20,
+        "burst_window": 5,
+        "global_limit": 50
+      },
+      "com.atproto.repo.createRecord": {
+        "limit": 100,
+        "window": 60,
+        "burst_limit": 150,
+        "burst_window": 10
+      },
+      "com.atproto.sync.getRepo": {
+        "limit": 5,
+        "window": 60,
+        "global_limit": 10,
+        "timeout": 300
+      }
+    },
+    "user_tiers": {
+      "default": {
+        "multiplier": 1.0
+      },
+      "trusted": {
+        "multiplier": 1.5
+      },
+      "premium": {
+        "multiplier": 2.0
+      }
+    }
   }
 }
 ```
 
-### Environment Variables
-
-```bash
-export PDS_RATELIMIT_ENABLED=true
-export PDS_RATELIMIT_DID_LIMIT=10000
-export PDS_RATELIMIT_IP_LIMIT=200
-```
-
-### Compile-Time Constants
-
-```objc
-// HttpServer.m
-static const NSUInteger kMaxConcurrentRequests = 64;
-static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024;
-static const NSUInteger kHttpMaxBodyBytes = 50 * 1024 * 1024;
-static const NSUInteger kHttpOutputQueueHighWaterMark = 10 * 1024 * 1024;
-static const NSTimeInterval kHttpHeaderTimeout = 5.0;
-```
-
 ## Best Practices
 
-### 1. Layer Throttling Mechanisms
+1. **Set appropriate limits** — Balance protection and usability
+2. **Allow bursts** — Don't penalize legitimate spikes
+3. **Monitor throttle rates** — Track how often limits are hit
+4. **Adjust based on load** — Reduce limits when server is stressed
+5. **Provide clear feedback** — Tell users why they're throttled
+6. **Log throttle events** — Track patterns and adjust limits
+7. **Test under load** — Verify throttling works as expected
+8. **Document limits** — Make limits visible to developers
+9. **Implement gracefully** — Degrade service, don't fail completely
+10. **Review regularly** — Adjust limits based on usage patterns
 
-Implement multiple layers:
-- Global concurrency limits
-- Per-endpoint result limits
-- Per-user rate limits
-- Per-IP rate limits
+## Next Steps
 
-### 2. Provide Clear Feedback
-
-Include helpful information in throttled responses:
-- Retry-After header
-- Clear error message
-- Remaining quota
-- Reset time
-
-### 3. Monitor Throttling Patterns
-
-Track metrics:
-- Throttle hit rates
-- Queue sizes
-- Concurrency levels
-- Response times
-
-### 4. Tune Limits Based on Usage
-
-Adjust limits based on:
-- Legitimate traffic patterns
-- Resource capacity
-- Attack patterns
-- User feedback
-
-### 5. Graceful Degradation
-
-Handle overload gracefully:
-- Return 429 instead of 503
-- Provide retry guidance
-- Log throttling events
-- Alert on sustained throttling
-
-## Common Patterns
-
-### Combining Multiple Limits
-
-```objc
-// Check global concurrency
-dispatch_semaphore_wait(self.concurrencySemaphore, DISPATCH_TIME_FOREVER);
-
-// Check DID rate limit
-RateLimitResult *didResult = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
-if (!didResult.allowed) {
-    dispatch_semaphore_signal(self.concurrencySemaphore);
-    [self sendRateLimitError:response result:didResult];
-    return;
-}
-
-// Check endpoint-specific limit
-if (limit > maxAllowedLimit) {
-    dispatch_semaphore_signal(self.concurrencySemaphore);
-    [self sendValidationError:response];
-    return;
-}
-
-// Process request
-[self processRequest:request response:response];
-
-// Release concurrency slot
-dispatch_semaphore_signal(self.concurrencySemaphore);
-```
-
-### Adaptive Throttling
-
-```objc
-// Adjust limits based on server load
-NSUInteger currentLoad = [self calculateServerLoad];
-NSInteger adjustedLimit = baseLimit;
-
-if (currentLoad > 0.8) {
-    // Reduce limits under high load
-    adjustedLimit = baseLimit / 2;
-} else if (currentLoad < 0.3) {
-    // Increase limits under low load
-    adjustedLimit = baseLimit * 1.5;
-}
-
-RateLimitResult *result = [[RateLimiter sharedLimiter] 
-    checkRateLimitForKey:key
-                   limit:adjustedLimit
-            windowSeconds:windowSeconds];
-```
-
-### Burst Allowance
-
-```objc
-// Allow short bursts above sustained rate
-NSInteger burstLimit = sustainedLimit * 2;
-NSInteger burstWindow = 10; // seconds
-
-// Check burst limit first
-RateLimitResult *burstResult = [[RateLimiter sharedLimiter] 
-    checkRateLimitForKey:[NSString stringWithFormat:@"burst:%@", key]
-                   limit:burstLimit
-            windowSeconds:burstWindow];
-
-if (!burstResult.allowed) {
-    // Burst limit exceeded
-    return NO;
-}
-
-// Check sustained limit
-RateLimitResult *sustainedResult = [[RateLimiter sharedLimiter] 
-    checkRateLimitForKey:key
-                   limit:sustainedLimit
-            windowSeconds:sustainedWindow];
-
-return sustainedResult.allowed;
-```
-
-## Testing
-
-### Test Throttling Behavior
-
-```objc
-- (void)testConcurrencyLimit {
-    // Send more requests than concurrency limit
-    NSMutableArray *responses = [NSMutableArray array];
-    
-    for (NSInteger i = 0; i < kMaxConcurrentRequests + 10; i++) {
-        [self sendAsyncRequest:^(HttpResponse *response) {
-            [responses addObject:response];
-        }];
-    }
-    
-    // Wait for all responses
-    [self waitForResponses:responses];
-    
-    // Verify no more than kMaxConcurrentRequests processed simultaneously
-    XCTAssertLessThanOrEqual(self.maxConcurrentObserved, kMaxConcurrentRequests);
-}
-```
-
-### Test Rate Limiting
-
-```objc
-- (void)testRateLimitEnforcement {
-    NSString *did = @"did:test:user";
-    
-    // Send requests up to limit
-    for (NSInteger i = 0; i < limiter.didLimit; i++) {
-        RateLimitResult *result = [limiter checkRateLimitForDid:did];
-        XCTAssertTrue(result.allowed);
-    }
-    
-    // Next request should be throttled
-    RateLimitResult *result = [limiter checkRateLimitForDid:did];
-    XCTAssertFalse(result.allowed);
-    XCTAssertGreaterThan(result.retryAfter, 0);
-}
-```
-
-## See Also
-
-- [Rate Limiting](./rate-limiting.md) — Rate limiting algorithms
-- [DoS Protection](./dos-protection.md) — Attack mitigation
-- [HTTP Server](./http-server.md) — Server implementation
-- [Error Handling](./error-handling.md) — Error responses
-- [Firehose Rate Limiting](../08-sync-firehose/firehose-rate-limiting.md) — Subscriber throttling
+- **[Rate Limiting](./rate-limiting.md)** — Rate limiting strategies
+- **[DoS Protection](./dos-protection.md)** — Attack mitigation
+- **[Firehose Rate Limiting](../08-sync-firehose/firehose-rate-limiting.md)** — WebSocket throttling
