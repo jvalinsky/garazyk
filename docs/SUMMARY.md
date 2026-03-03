@@ -75,6 +75,10 @@
 - [Commit Broadcasting](08-sync-firehose/commit-broadcasting.md)
 - [Backpressure](08-sync-firehose/backpressure.md)
 - [Firehose Rate Limiting](08-sync-firehose/firehose-rate-limiting.md)
+- [Event Ordering](08-sync-firehose/event-ordering.md)
+- [Reconnection Strategy](08-sync-firehose/reconnection-strategy.md)
+- [Event Replay](08-sync-firehose/event-replay.md)
+- [Reliability Guarantees](08-sync-firehose/reliability-guarantees.md)
 
 ### 09 Platform Compatibility
 - [macOS vs Linux](09-platform-compatibility/macos-linux.md)
@@ -118,6 +122,9 @@
 - [PLC Directory Architecture](12-diagrams/plc-directory-architecture.svg)
 - [DID Resolution Flow](12-diagrams/did-resolution-flow.svg)
 - [PLC Failover Mechanism](12-diagrams/plc-failover-mechanism.svg)
+- [Event Ordering Guarantee](12-diagrams/event-ordering-guarantee.svg)
+- [Reconnection Flow](12-diagrams/reconnection-flow.svg)
+- [Event Replay Mechanism](12-diagrams/event-replay-mechanism.svg)
 
 ---
 
