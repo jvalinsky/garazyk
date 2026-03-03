@@ -783,11 +783,11 @@ secrets/
 
 ## Related Documentation
 
-- [Input Validation](../04-network-layer/input-validation.md) — Validation strategies
-- [Security Audit Guide](../11-reference/security-audit-guide.md) — Using audit skills
-- [Secrets Management](secrets-management.md) — Key storage and rotation
-- [OAuth 2.0 with DPoP](oauth2-dpop.md) — Authentication implementation
-- [Rate Limiting](../04-network-layer/rate-limiting.md) — DoS protection
+- [Input Validation](../04-network-layer/input-validation) — Validation strategies
+- [Security Audit Guide](../11-reference/security-audit-guide) — Using audit skills
+- [Secrets Management](secrets-management) — Key storage and rotation
+- [OAuth 2.0 with DPoP](oauth2-dpop) — Authentication implementation
+- [Rate Limiting](../04-network-layer/rate-limiting) — DoS protection
 
 ## External Resources
 

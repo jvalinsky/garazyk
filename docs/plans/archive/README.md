@@ -61,9 +61,9 @@ This directory contains completed, superseded, or historical planning documents.
 
 | Document | Description |
 |----------|-------------|
-| [Current Plans](../README.md) | Active planning documents |
-| [Architecture](../../architecture/README.md) | System architecture documentation |
-| [OAuth2](../../oauth2/README.md) | OAuth2 implementation docs |
-| [Security](../../security/README.md) | Security documentation |
-| [Tests](../../tests/README.md) | Test documentation |
-| [Main Docs](../../README.md) | Documentation index
+| [Current Plans](../README) | Active planning documents |
+| [Architecture](../../architecture/README) | System architecture documentation |
+| [OAuth2](../../oauth2/README) | OAuth2 implementation docs |
+| [Security](../../security/README) | Security documentation |
+| [Tests](../../tests/README) | Test documentation |
+| [Main Docs](../../README) | Documentation index

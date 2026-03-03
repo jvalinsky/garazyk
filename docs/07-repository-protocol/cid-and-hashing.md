@@ -407,6 +407,6 @@ return YES;
 
 ## See Also
 
-- [CBOR Serialization](./cbor-serialization.md)
-- [CAR Format](./car-format.md)
-- [Blob Storage](./blob-storage.md)
+- [CBOR Serialization](./cbor-serialization)
+- [CAR Format](./car-format)
+- [Blob Storage](./blob-storage)

@@ -6,10 +6,10 @@ Tests for identity resolution, OAuth flows, JWT handling, cryptography, and mult
 
 | File | Description |
 |------|-------------|
-| [identity-resolution.md](identity-resolution.md) | Handle resolution via HTTPS/DNS, DID resolution with caching, SSRF protection, handle validation rules |
-| [jwt-crypto.md](jwt-crypto.md) | JWT parsing/signing/verification, ES256K cryptography, key management, replay cache |
-| [mfa.md](mfa.md) | TOTP generation/verification, WebAuthn/Passkey registration, YubiKey OATH |
-| [oauth.md](oauth.md) | OAuth 2.0 flows, PKCE, DPoP proofs, token rotation, session management |
+| [identity-resolution.md](identity-resolution) | Handle resolution via HTTPS/DNS, DID resolution with caching, SSRF protection, handle validation rules |
+| [jwt-crypto.md](jwt-crypto) | JWT parsing/signing/verification, ES256K cryptography, key management, replay cache |
+| [mfa.md](mfa) | TOTP generation/verification, WebAuthn/Passkey registration, YubiKey OATH |
+| [oauth.md](oauth) | OAuth 2.0 flows, PKCE, DPoP proofs, token rotation, session management |
 
 ## Test Classes
 
@@ -45,9 +45,9 @@ Tests for identity resolution, OAuth flows, JWT handling, cryptography, and mult
 
 ## Related Documentation
 
-- [Test Index](../README.md) - Main test documentation index
-- [OAuth2 Documentation](../../oauth2/README.md) - OAuth2 architecture and flows
-- [Security Documentation](../../security/README.md) - Security hardening and validation
-- [Authorization Flow](../../oauth2/authorization-flow.md) - OAuth2 authorization process
-- [Token Management](../../oauth2/token-management.md) - JWT token handling
-- [SSRF Protection](../../security/SSRF_PROTECTION.md) - Handle resolver SSRF protection
+- [Test Index](../README) - Main test documentation index
+- [OAuth2 Documentation](../../oauth2/README) - OAuth2 architecture and flows
+- [Security Documentation](../../security/README) - Security hardening and validation
+- [Authorization Flow](../../oauth2/authorization-flow) - OAuth2 authorization process
+- [Token Management](../../oauth2/token-management) - JWT token handling
+- [SSRF Protection](../../security/SSRF_PROTECTION) - Handle resolver SSRF protection

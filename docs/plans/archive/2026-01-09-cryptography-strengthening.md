@@ -220,7 +220,7 @@ Include configuration option to disable pinning in development.
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Security Docs](../../security/README.md) - Security-related documentation</content>
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Security Docs](../../security/README) - Security-related documentation</content>
 <parameter name="filePath">docs/plans/2026-01-09-cryptography-strengthening.md

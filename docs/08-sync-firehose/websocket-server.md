@@ -903,7 +903,7 @@ The WebSocketConnection handles the full lifecycle of a WebSocket connection:
 
 ## Next Steps
 
-- **[Commit Broadcasting](./commit-broadcasting.md)** — Broadcasting events
-- **[Backpressure](./backpressure.md)** — Flow control
-- **[Firehose Overview](./firehose-overview.md)** — Architecture overview
+- **[Commit Broadcasting](./commit-broadcasting)** — Broadcasting events
+- **[Backpressure](./backpressure)** — Flow control
+- **[Firehose Overview](./firehose-overview)** — Architecture overview
 

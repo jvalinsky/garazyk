@@ -132,13 +132,13 @@ XCTAssertEqual(response.statusCode, 401);
 
 ## Related Documentation
 
-- [Folder README](README.md) - Security tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Hardening Tests](hardening.md) - Production security hardening
-- [Validation Tests](validation.md) - Input validation
-- [OAuth Tests](../00-identity-auth/oauth.md) - OAuth2 flows
-- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - JWT verification
-- [XRPC Tests](../02-network/xrpc.md) - XRPC protocol
-- [Admin Tests](../04-application/admin.md) - Admin operations
-- [OAuth2 Security](../../oauth2/security.md) - OAuth2 security model
-- [Admin Auth Configuration](../../security/ADMIN_AUTH_CONFIGURATION.md) - Admin auth setup
+- [Folder README](README) - Security tests overview
+- [Test Index](../README) - Main test documentation index
+- [Hardening Tests](hardening) - Production security hardening
+- [Validation Tests](validation) - Input validation
+- [OAuth Tests](../00-identity-auth/oauth) - OAuth2 flows
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto) - JWT verification
+- [XRPC Tests](../02-network/xrpc) - XRPC protocol
+- [Admin Tests](../04-application/admin) - Admin operations
+- [OAuth2 Security](../../oauth2/security) - OAuth2 security model
+- [Admin Auth Configuration](../../security/ADMIN_AUTH_CONFIGURATION) - Admin auth setup

@@ -177,10 +177,10 @@ CREATE TABLE reserved_handles (
 
 ## Related Documentation
 
-- [Folder README](README.md) - Database tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Actor Store Tests](actor-store.md) - Per-user storage
-- [Pool Integration Tests](pool-integration.md) - Connection pooling
-- [Identity Resolution Tests](../00-identity-auth/identity-resolution.md) - DID caching
-- [Admin Tests](../04-application/admin.md) - Admin invite code management
-- [Security Tests](../05-security/README.md) - TOCTOU prevention
+- [Folder README](README) - Database tests overview
+- [Test Index](../README) - Main test documentation index
+- [Actor Store Tests](actor-store) - Per-user storage
+- [Pool Integration Tests](pool-integration) - Connection pooling
+- [Identity Resolution Tests](../00-identity-auth/identity-resolution) - DID caching
+- [Admin Tests](../04-application/admin) - Admin invite code management
+- [Security Tests](../05-security/README) - TOCTOU prevention

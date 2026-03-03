@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="900" viewBox="0 0 1000 900">
+  <defs>
+    <style>
+      .box { fill: #e8f4f8; stroke: #0066cc; stroke-width: 2; }
+      .decision-box { fill: #fff4e6; stroke: #ff9900; stroke-width: 2; }
+      .limit-box { fill: #ffe6e6; stroke: #cc0000; stroke-width: 2; }
+      .success-box { fill: #e6ffe6; stroke: #00cc00; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-error { stroke: #cc0000; stroke-width: 2; fill: none; marker-end: url(#arrowhead-error); }
+      .arrow-success { stroke: #00cc00; stroke-width: 2; fill: none; marker-end: url(#arrowhead-success); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+    <marker id="arrowhead-error" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#cc0000" />
+    </marker>
+    <marker id="arrowhead-success" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#00cc00" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="500" y="30" text-anchor="middle" class="title" font-size="20">Request Throttling Flow</text>
+
+  <!-- Incoming Request -->
+  <rect x="350" y="60" width="300" height="60" class="box" rx="5"/>
+  <text x="500" y="85" text-anchor="middle" class="title">Incoming Request</text>
+  <text x="500" y="105" text-anchor="middle" class="label">HTTP/XRPC Request</text>
+
+  <!-- Arrow down -->
+  <path d="M 500 120 L 500 160" class="arrow"/>
+
+  <!-- Layer 1: Global Concurrency -->
+  <rect x="50" y="160" width="900" height="120" class="box" rx="5" fill="#f5f5f5"/>
+  <text x="500" y="185" text-anchor="middle" class="title">Layer 1: Global Concurrency Limit</text>
+  
+  <polygon points="500,200 620,240 500,280 380,240" class="decision-box"/>
+  <text x="500" y="235" text-anchor="middle" class="title">Slots Available?</text>
+  <text x="500" y="255" text-anchor="middle" class="label">(64 concurrent)</text>
+
+  <!-- Arrow left (Queue) -->
+  <path d="M 380 240 L 200 240" class="arrow-error"/>
+  <text x="280" y="235" text-anchor="middle" class="label" fill="#cc0000">NO</text>
+  
+  <rect x="100" y="210" width="100" height="60" class="limit-box" rx="5"/>
+  <text x="150" y="235" text-anchor="middle" class="label">Queue</text>
+  <text x="150" y="255" text-anchor="middle" class="label">Wait</text>
+
+  <!-- Arrow right (Continue) -->
+  <path d="M 620 240 L 700 240 L 700 300" class="arrow-success"/>
+  <text x="660" y="235" text-anchor="middle" class="label" fill="#00cc00">YES</text>
+
+  <!-- Layer 2: Rate Limiting -->
+  <rect x="50" y="300" width="900" height="140" class="box" rx="5" fill="#f5f5f5"/>
+  <text x="500" y="325" text-anchor="middle" class="title">Layer 2: Rate Limiting</text>
+
+  <!-- IP Rate Limit -->
+  <polygon points="300,350 400,385 300,420 200,385" class="decision-box"/>
+  <text x="300" y="380" text-anchor="middle" class="label">IP Limit?</text>
+  <text x="300" y="400" text-anchor="middle" class="label">(100/min)</text>
+
+  <!-- DID Rate Limit -->
+  <polygon points="700,350 800,385 700,420 600,385" class="decision-box"/>
+  <text x="700" y="380" text-anchor="middle" class="label">DID Limit?</text>
+  <text x="700" y="400" text-anchor="middle" class="label">(5000/hour)</text>
+
+  <!-- Arrow from IP check -->
+  <path d="M 200 385 L 150 385 L 150 500" class="arrow-error"/>
+  <text x="170" y="380" text-anchor="middle" class="label" fill="#cc0000">EXCEEDED</text>
+
+  <!-- Arrow from DID check -->
+  <path d="M 800 385 L 850 385 L 850 500" class="arrow-error"/>
+  <text x="830" y="380" text-anchor="middle" class="label" fill="#cc0000">EXCEEDED</text>
+
+  <!-- Arrow down (Both OK) -->
+  <path d="M 500 420 L 500 460" class="arrow-success"/>
+  <text x="520" y="445" text-anchor="middle" class="label" fill="#00cc00">OK</text>
+
+  <!-- Layer 3: Endpoint Limits -->
+  <rect x="50" y="460" width="900" height="120" class="box" rx="5" fill="#f5f5f5"/>
+  <text x="500" y="485" text-anchor="middle" class="title">Layer 3: Endpoint-Specific Limits</text>
+
+  <polygon points="500,505 620,545 500,585 380,545" class="decision-box"/>
+  <text x="500" y="540" text-anchor="middle" class="label">Query Limit?</text>
+  <text x="500" y="560" text-anchor="middle" class="label">(e.g., max 100 results)</text>
+
+  <!-- Arrow left (Invalid) -->
+  <path d="M 380 545 L 300 545 L 300 620" class="arrow-error"/>
+  <text x="330" y="540" text-anchor="middle" class="label" fill="#cc0000">INVALID</text>
+
+  <!-- Arrow right (Valid) -->
+  <path d="M 620 545 L 700 545 L 700 620" class="arrow-success"/>
+  <text x="660" y="540" text-anchor="middle" class="label" fill="#00cc00">VALID</text>
+
+  <!-- Error Response -->
+  <rect x="50" y="500" width="200" height="100" class="limit-box" rx="5"/>
+  <text x="150" y="525" text-anchor="middle" class="title">429 Too Many Requests</text>
+  <text x="150" y="545" text-anchor="middle" class="label">Retry-After: 60</text>
+  <text x="150" y="565" text-anchor="middle" class="label">X-RateLimit-Reset</text>
+  <text x="150" y="585" text-anchor="middle" class="label">Release concurrency slot</text>
+
+  <!-- Validation Error -->
+  <rect x="200" y="620" width="200" height="80" class="limit-box" rx="5"/>
+  <text x="300" y="645" text-anchor="middle" class="title">400 Bad Request</text>
+  <text x="300" y="665" text-anchor="middle" class="label">Invalid limit parameter</text>
+  <text x="300" y="685" text-anchor="middle" class="label">Release concurrency slot</text>
+
+  <!-- Process Request -->
+  <rect x="600" y="620" width="200" height="80" class="success-box" rx="5"/>
+  <text x="700" y="645" text-anchor="middle" class="title">Process Request</text>
+  <text x="700" y="665" text-anchor="middle" class="label">Execute handler</text>
+  <text x="700" y="685" text-anchor="middle" class="label">Return response</text>
+
+  <!-- Arrow down from process -->
+  <path d="M 700 700 L 700 740" class="arrow"/>
+
+  <!-- Release Slot -->
+  <rect x="600" y="740" width="200" height="60" class="box" rx="5"/>
+  <text x="700" y="765" text-anchor="middle" class="title">Release Concurrency Slot</text>
+  <text x="700" y="785" text-anchor="middle" class="label">Signal semaphore</text>
+
+  <!-- Legend -->
+  <text x="50" y="830" text-anchor="start" class="title" font-size="14">Throttling Layers:</text>
+  <text x="50" y="850" text-anchor="start" class="label">1. Global: 64 concurrent requests (semaphore)</text>
+  <text x="50" y="870" text-anchor="start" class="label">2. Rate Limits: Per-IP (100/min), Per-DID (5000/hour)</text>
+  <text x="50" y="890" text-anchor="start" class="label">3. Endpoint: Query result limits (varies by endpoint)</text>
+
+  <text x="550" y="850" text-anchor="start" class="label" font-style="italic">Implementation: HttpServer.m, RateLimiter.m</text>
+  <text x="550" y="870" text-anchor="start" class="label" font-style="italic">All layers must pass for request to proceed</text>
+
+</svg>

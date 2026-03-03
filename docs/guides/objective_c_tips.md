@@ -504,10 +504,10 @@ ctest --test-dir build --output-on-failure
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE.md)** - API extension procedures and project structure
-- **[Security Best Practices](../security/SECURITY_PLAN.md)** - Security validation strategy
-- **[Security Analysis Report](../security/SECURITY_ANALYSIS_REPORT.md)** - Static analysis findings
-- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS.md)** - System design patterns
-- **[OAuth 2.0 Implementation](../oauth2/README.md)** - Authentication and session management
-- **[macOS Network Guide](macOS_Network_Server_Guide.md)** - Platform-specific APIs and frameworks
-- **[Testing Guide](../TESTING.md)** - Unit and integration test patterns
+- **[Developer Guide](DEVELOPER_GUIDE)** - API extension procedures and project structure
+- **[Security Best Practices](../security/SECURITY_PLAN)** - Security validation strategy
+- **[Security Analysis Report](../security/SECURITY_ANALYSIS_REPORT)** - Static analysis findings
+- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS)** - System design patterns
+- **[OAuth 2.0 Implementation](../oauth2/README)** - Authentication and session management
+- **[macOS Network Guide](macOS_Network_Server_Guide)** - Platform-specific APIs and frameworks
+- **[Testing Guide](../TESTING)** - Unit and integration test patterns

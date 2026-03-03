@@ -260,6 +260,6 @@ NSLog(@"Record text: %@", text);
 
 ## See Also
 
-- [CAR Format](./car-format.md)
-- [CID and Hashing](./cid-and-hashing.md)
-- [Repository Basics](./repository-basics.md)
+- [CAR Format](./car-format)
+- [CID and Hashing](./cid-and-hashing)
+- [Repository Basics](./repository-basics)

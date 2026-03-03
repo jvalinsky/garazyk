@@ -526,7 +526,7 @@ On Linux/GNUstep, use libcurl for HTTP/HTTPS:
 
 ## Next Steps
 
-- **[ARC Runtime](./arc-runtime.md)** — ARC considerations
-- **[Compatibility Layer](./compatibility-layer.md)** — Compatibility shims
-- **[macOS/Linux](./macos-linux.md)** — Platform overview
+- **[ARC Runtime](./arc-runtime)** — ARC considerations
+- **[Compatibility Layer](./compatibility-layer)** — Compatibility shims
+- **[macOS/Linux](./macos-linux)** — Platform overview
 

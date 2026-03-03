@@ -194,12 +194,12 @@ NSString *originalRefreshToken = session.refreshToken;
 
 ## Related Documentation
 
-- [Folder README](README.md) - Security tests overview
-- [Test Index](../README.md) - Main test documentation index
-- [Auth Security Tests](auth-security.md) - Authorization tests
-- [Validation Tests](validation.md) - Input validation
-- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto.md) - JWT security
-- [OAuth Tests](../00-identity-auth/oauth.md) - Token rotation
-- [CAR & CBOR Tests](../01-repository/car-cbor.md) - CBOR parsing
-- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT.md) - Detailed review
-- [OAuth2 Security](../../oauth2/security.md) - OAuth2 security model
+- [Folder README](README) - Security tests overview
+- [Test Index](../README) - Main test documentation index
+- [Auth Security Tests](auth-security) - Authorization tests
+- [Validation Tests](validation) - Input validation
+- [JWT & Crypto Tests](../00-identity-auth/jwt-crypto) - JWT security
+- [OAuth Tests](../00-identity-auth/oauth) - Token rotation
+- [CAR & CBOR Tests](../01-repository/car-cbor) - CBOR parsing
+- [Security Analysis Report](../../security/SECURITY_ANALYSIS_REPORT) - Detailed review
+- [OAuth2 Security](../../oauth2/security) - OAuth2 security model

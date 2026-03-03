@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 900" width="700" height="900">
+  <defs>
+    <style>
+      .box { fill: #f0f0f0; stroke: #333; stroke-width: 2; }
+      .decision { fill: #fff9c4; }
+      .process { fill: #e3f2fd; }
+      .cache { fill: #c8e6c9; }
+      .error { fill: #ffcdd2; }
+      .text { font-family: Arial, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .title { font-size: 16px; font-weight: bold; }
+      .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .label { font-size: 11px; fill: #666; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="350" y="30" class="text title">DID Resolution Flow with Retry Logic</text>
+
+  <!-- Start -->
+  <circle cx="350" cy="60" r="20" fill="#4caf50" stroke="#333" stroke-width="2"/>
+  <text x="350" y="65" class="text" fill="white" font-weight="bold">START</text>
+
+  <!-- Step 1: Validate DID -->
+  <rect x="250" y="100" width="200" height="50" class="box process" rx="5"/>
+  <text x="350" y="120" class="text">Validate DID Format</text>
+  <text x="350" y="135" class="label">PLCOperation.isValidDidPlc()</text>
+  <path d="M 350 80 L 350 100" class="arrow"/>
+
+  <!-- Decision: Valid? -->
+  <path d="M 350 180 L 400 230 L 350 280 L 300 230 Z" class="box decision"/>
+  <text x="350" y="235" class="text">Valid?</text>
+  <path d="M 350 150 L 350 180" class="arrow"/>
+
+  <!-- Invalid path -->
+  <rect x="450" y="205" width="180" height="50" class="box error" rx="5"/>
+  <text x="540" y="225" class="text">Return Error</text>
+  <text x="540" y="240" class="label">InvalidDID</text>
+  <path d="M 400 230 L 450 230" class="arrow"/>
+  <text x="425" y="225" class="label">No</text>
+
+  <!-- Step 2: Check Cache -->
+  <rect x="250" y="310" width="200" height="50" class="box cache" rx="5"/>
+  <text x="350" y="330" class="text">Check Cache</text>
+  <text x="350" y="345" class="label">NSCache lookup</text>
+  <path d="M 350 280 L 350 310" class="arrow"/>
+  <text x="365" y="295" class="label">Yes</text>
+
+  <!-- Decision: Cache Hit? -->
+  <path d="M 350 390 L 400 440 L 350 490 L 300 440 Z" class="box decision"/>
+  <text x="350" y="445" class="text">Cache Hit?</text>
+  <path d="M 350 360 L 350 390" class="arrow"/>
+
+  <!-- Cache hit path -->
+  <rect x="450" y="415" width="180" height="50" class="box cache" rx="5"/>
+  <text x="540" y="435" class="text">Return Cached Doc</text>
+  <text x="540" y="450" class="label">No network request</text>
+  <path d="M 400 440 L 450 440" class="arrow"/>
+  <text x="425" y="435" class="label">Yes</text>
+
+  <!-- Step 3: Build Request -->
+  <rect x="250" y="520" width="200" height="50" class="box process" rx="5"/>
+  <text x="350" y="540" class="text">Build HTTP Request</text>
+  <text x="350" y="555" class="label">GET {plcUrl}/{did}</text>
+  <path d="M 350 490 L 350 520" class="arrow"/>
+  <text x="365" y="505" class="label">No</text>
+
+  <!-- Step 4: Execute Request (Attempt N) -->
+  <rect x="250" y="600" width="200" height="60" class="box process" rx="5"/>
+  <text x="350" y="620" class="text">Execute Request</text>
+  <text x="350" y="635" class="label">Attempt N</text>
+  <text x="350" y="650" class="label">Timeout: 5s</text>
+  <path d="M 350 570 L 350 600" class="arrow"/>
+
+  <!-- Decision: Success? -->
+  <path d="M 350 690 L 400 740 L 350 790 L 300 740 Z" class="box decision"/>
+  <text x="350" y="735" class="text">Status 200</text>
+  <text x="350" y="750" class="text">OK?</text>
+  <path d="M 350 660 L 350 690" class="arrow"/>
+
+  <!-- Success path -->
+  <rect x="450" y="715" width="180" height="50" class="box cache" rx="5"/>
+  <text x="540" y="735" class="text">Parse & Cache</text>
+  <text x="540" y="750" class="label">Return DID document</text>
+  <path d="M 400 740 L 450 740" class="arrow"/>
+  <text x="425" y="735" class="label">Yes</text>
+
+  <!-- Step 5: Evaluate Retry -->
+  <rect x="50" y="710" width="180" height="60" class="box process" rx="5"/>
+  <text x="140" y="730" class="text">Evaluate Retry Policy</text>
+  <text x="140" y="745" class="label">HttpRetryPolicy</text>
+  <text x="140" y="760" class="label">Max: 3 attempts</text>
+  <path d="M 300 740 L 230 740" class="arrow"/>
+  <text x="265" y="735" class="label">No</text>
+
+  <!-- Decision: Retry? -->
+  <path d="M 140 800 L 190 850 L 140 900 L 90 850 Z" class="box decision"/>
+  <text x="140" y="845" class="text">Transient</text>
+  <text x="140" y="860" class="text">& N < 3?</text>
+  <path d="M 140 770 L 140 800" class="arrow"/>
+
+  <!-- Retry path (back to execute) -->
+  <path d="M 90 850 L 50 850 L 50 630 L 250 630" class="arrow"/>
+  <text x="60" y="845" class="label">Yes</text>
+  <text x="100" y="625" class="label">Delay: 0.5s * 2^N</text>
+
+  <!-- Fail path -->
+  <rect x="50" y="920" width="180" height="50" class="box error" rx="5"/>
+  <text x="140" y="940" class="text">Return Error</text>
+  <text x="140" y="955" class="label">NetworkError / NotFound</text>
+  <path d="M 140 900 L 140 920" class="arrow"/>
+  <text x="155" y="910" class="label">No</text>
+
+  <!-- Legend -->
+  <rect x="500" y="50" width="180" height="140" fill="none" stroke="#999" stroke-width="1" rx="3"/>
+  <text x="590" y="70" class="text" font-weight="bold">Legend</text>
+  
+  <rect x="510" y="80" width="60" height="20" class="box process" rx="3"/>
+  <text x="575" y="93" class="label">Process</text>
+  
+  <rect x="510" y="105" width="60" height="20" class="box decision" rx="3"/>
+  <text x="575" y="118" class="label">Decision</text>
+  
+  <rect x="510" y="130" width="60" height="20" class="box cache" rx="3"/>
+  <text x="575" y="143" class="label">Cache/Success</text>
+  
+  <rect x="510" y="155" width="60" height="20" class="box error" rx="3"/>
+  <text x="575" y="168" class="label">Error</text>
+
+  <!-- Notes -->
+  <text x="350" y="880" class="label" font-style="italic">Transient failures: 5xx status or network errors</text>
+</svg>

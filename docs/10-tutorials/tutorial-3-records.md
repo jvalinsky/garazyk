@@ -16,10 +16,10 @@ In this tutorial, you'll extend the PDS from Tutorial 2 to support record CRUD o
 
 ## Prerequisites
 
-- Completed [Tutorial 2: Account Management](./tutorial-2-accounts.md)
-- Understanding of MST trees (see [MST Trees](../02-core-concepts/mst-trees.md))
-- Understanding of CBOR serialization (see [CBOR and CAR](../02-core-concepts/cbor-and-car.md))
-- Understanding of record service (see [Record Service](../03-application-layer/record-service.md))
+- Completed [Tutorial 2: Account Management](./tutorial-2-accounts)
+- Understanding of MST trees (see [MST Trees](../02-core-concepts/mst-trees))
+- Understanding of CBOR serialization (see [CBOR and CAR](../02-core-concepts/cbor-and-car))
+- Understanding of record service (see [Record Service](../03-application-layer/record-service))
 
 ## Step 1: Create Record Data Model
 
@@ -876,8 +876,8 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
 
 ## Next Steps
 
-- **[Tutorial 4: Authentication](./tutorial-4-auth.md)** — Add OAuth/JWT verification
-- **[Tutorial 5: Firehose](./tutorial-5-firehose.md)** — Add WebSocket subscriptions
+- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add OAuth/JWT verification
+- **[Tutorial 5: Firehose](./tutorial-5-firehose)** — Add WebSocket subscriptions
 
 ## Troubleshooting
 

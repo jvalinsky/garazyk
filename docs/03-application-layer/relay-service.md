@@ -337,7 +337,7 @@ Log all relay operations:
 
 ## See Also
 
-- [Services Overview](./services-overview.md)
-- [PDSApplication](./pds-application.md)
-- [Record Service](./record-service.md)
-- [Firehose Overview](../08-sync-firehose/firehose-overview.md)
+- [Services Overview](./services-overview)
+- [PDSApplication](./pds-application)
+- [Record Service](./record-service)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)

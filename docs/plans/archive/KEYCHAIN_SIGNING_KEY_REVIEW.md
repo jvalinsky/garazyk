@@ -173,6 +173,6 @@ if (self.signingKey) {
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
-- [Security Docs](../../security/README.md) - Security-related documentation
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans
+- [Security Docs](../../security/README) - Security-related documentation

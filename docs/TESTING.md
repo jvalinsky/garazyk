@@ -3,7 +3,7 @@
 This document describes the `ATProtoPDS` testing strategy. The test suites are organized by protocol and subsystem so failures map to concrete implementation areas.
 
 > [!IMPORTANT]
-> **Current Status (2026-03-01):** The test suite is fully stabilized with a **100% pass rate** (1267 passing tests). For details on the stabilization effort, see the [Test Suite Stabilization Report](test-suite-stabilization-report-2026-03-01.md).
+> **Current Status (2026-03-01):** The test suite is fully stabilized with a **100% pass rate** (1267 passing tests). For details on the stabilization effort, see the [Test Suite Stabilization Report](test-suite-stabilization-report-2026-03-01).
 
 ## Running Tests
 
@@ -349,22 +349,22 @@ These services reside above the database layer and implement the business logic 
 ## Related Documentation
 
 ### Test Documentation
-- [Test Documentation Index](tests/README.md) - Complete index of all test classes
-- [Identity & Auth Tests](tests/00-identity-auth/README.md) - JWT, crypto, OAuth, MFA tests
-- [Repository Tests](tests/01-repository/README.md) - MST, CAR, CBOR tests
-- [Network Tests](tests/02-network/README.md) - HTTP, XRPC, WebSocket tests
-- [Database Tests](tests/03-database/README.md) - ActorStore, pool, service tests
-- [Application Tests](tests/04-application/README.md) - Services, controller, CLI tests
-- [Security Tests](tests/05-security/README.md) - Hardening, validation, auth security
-- [Integration Tests](tests/06-integration/README.md) - E2E, federation, PLC tests
+- [Test Documentation Index](tests/README) - Complete index of all test classes
+- [Identity & Auth Tests](tests/00-identity-auth/README) - JWT, crypto, OAuth, MFA tests
+- [Repository Tests](tests/01-repository/README) - MST, CAR, CBOR tests
+- [Network Tests](tests/02-network/README) - HTTP, XRPC, WebSocket tests
+- [Database Tests](tests/03-database/README) - ActorStore, pool, service tests
+- [Application Tests](tests/04-application/README) - Services, controller, CLI tests
+- [Security Tests](tests/05-security/README) - Hardening, validation, auth security
+- [Integration Tests](tests/06-integration/README) - E2E, federation, PLC tests
 
 ### Guides
-- [Developer Guide](guides/DEVELOPER_GUIDE.md) - Development setup and workflows
-- [Setup Guide](guides/SETUP_GUIDE.md) - Initial project setup
+- [Developer Guide](guides/DEVELOPER_GUIDE) - Development setup and workflows
+- [Setup Guide](guides/SETUP_GUIDE) - Initial project setup
 
 ### Security
-- [Security Testing Plan](security/SECURITY_TESTING_PLAN.md) - Security test methodology
-- [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT.md) - Security audit results
+- [Security Testing Plan](security/SECURITY_TESTING_PLAN) - Security test methodology
+- [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT) - Security audit results
 
 ## Sources & References
 

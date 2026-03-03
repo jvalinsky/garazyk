@@ -6,7 +6,7 @@ This directory contains strategic planning documents for the objpds AT Protocol 
 
 | File | Title | Status |
 |------|-------|--------|
-| [roadmap.md](roadmap.md) | Development Roadmap: Next Steps for objpds | Active - Tracks remaining work for production readiness |
+| [roadmap.md](roadmap) | Development Roadmap: Next Steps for objpds | Active - Tracks remaining work for production readiness |
 
 ## Document Summaries
 
@@ -22,7 +22,7 @@ Development roadmap outlining remaining work to reach production readiness. Cove
 
 ## Related Documentation
 
-- [Detailed Roadmap](../plans/ROADMAP.md) — Comprehensive phase-by-phase milestone tracking
-- [Production Readiness](../plans/production-readiness.md) — Go/no-go analysis and blocking issues
-- [Architecture Overview](../architecture/README.md) — System architecture and design documents
-- [Documentation Index](../README.md) — Main documentation hub
+- [Detailed Roadmap](../plans/ROADMAP) — Comprehensive phase-by-phase milestone tracking
+- [Production Readiness](../plans/production-readiness) — Go/no-go analysis and blocking issues
+- [Architecture Overview](../architecture/README) — System architecture and design documents
+- [Documentation Index](../README) — Main documentation hub

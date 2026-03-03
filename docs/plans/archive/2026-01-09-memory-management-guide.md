@@ -99,5 +99,5 @@ git commit -m "docs: add memory management guide"
 
 ## Related Documentation
 
-- [Archive Index](./README.md) - Index of all archived plans
-- [Current Plans](../README.md) - Active implementation plans
+- [Archive Index](./README) - Index of all archived plans
+- [Current Plans](../README) - Active implementation plans

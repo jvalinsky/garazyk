@@ -354,9 +354,9 @@ Authorization codes can store DPoP JWK:
 
 ## Related Documentation
 
-- [Token Management](./token-management.md) - Token exchange, refresh, and JWT structure
-- [Web UI](./web-ui.md) - Consent screen and sign-in page implementation
-- [Security](./security.md) - Security considerations for authorization flows
-- [PKCE](./pkce.md) - PKCE code challenge/verifier implementation
-- [DPoP](./dpop.md) - DPoP proof validation for token binding
-- [Overview](./README.md) - OAuth2 implementation overview
+- [Token Management](./token-management) - Token exchange, refresh, and JWT structure
+- [Web UI](./web-ui) - Consent screen and sign-in page implementation
+- [Security](./security) - Security considerations for authorization flows
+- [PKCE](./pkce) - PKCE code challenge/verifier implementation
+- [DPoP](./dpop) - DPoP proof validation for token binding
+- [Overview](./README) - OAuth2 implementation overview

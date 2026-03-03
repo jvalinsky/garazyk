@@ -335,6 +335,6 @@ for (NSString *did in violatingAccounts) {
 
 ## See Also
 
-- [Services Overview](./services-overview.md)
-- [PDSApplication](./pds-application.md)
-- [Authentication](../06-authentication/jwt-tokens.md)
+- [Services Overview](./services-overview)
+- [PDSApplication](./pds-application)
+- [Authentication](../06-authentication/jwt-tokens)

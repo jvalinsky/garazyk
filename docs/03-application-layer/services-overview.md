@@ -512,6 +512,6 @@ Database connections are pooled:
 
 ## Next Steps
 
-- **[Account Service](./account-service.md)** — Account management details
-- **[Record Service](./record-service.md)** — Record operations details
-- **[Network Layer](../04-network-layer/http-server.md)** — HTTP and XRPC
+- **[Account Service](./account-service)** — Account management details
+- **[Record Service](./record-service)** — Record operations details
+- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC
