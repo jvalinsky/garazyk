@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Replay and Catch-Up Mechanisms - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Event Replay and Catch-Up Mechanisms</h1>
+            </div>
+            <h1 id="event-replay-and-catch-up-mechanisms">Event Replay and Catch-Up Mechanisms</h1>
+<h2 id="overview">Overview</h2>
+<p>Event replay allows subscribers to catch up on missed events after disconnections or when starting from a specific point in history. The firehose implements efficient batch replay with:
+- Cursor-based positioning
+- Batch fetching for performance
+- Backpressure-aware delivery
+- Replay window limits</p>
+<h2 id="replay-architecture">Replay Architecture</h2>
+<h3 id="replay-flow">Replay Flow</h3>
+<pre class="codehilite"><code>Client reconnects with cursor=1000
+    ↓
+Server validates cursor
+    ↓
+Server fetches events 1001-1100 (batch 1)
+    ↓
+Server sends batch to client
+    ↓
+Server fetches events 1101-1200 (batch 2)
+    ↓
+Server sends batch to client
+    ↓
+... continue until caught up ...
+    ↓
+Switch to live event mode
+</code></pre>
+
+<h2 id="batch-replay-implementation">Batch Replay Implementation</h2>
+<h3 id="replay-entry-point">Replay Entry Point</h3>
+<p>The replay process starts after cursor validation:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Starting replay
+if (hasCursor) {
+  BOOL outdated = NO;
+  NSUInteger replayCursor =
+      [self effectiveReplayCursorForRequestedCursor:parsedCursor
+                                           outdated:&amp;outdated];
+  if (outdated) {
+    PDS_LOG_SYNC_WARN(@&quot;Outdated cursor %lu adjusted to %lu for connection %@&quot;,
+                      (unsigned long)parsedCursor,
+                      (unsigned long)replayCursor, connection);
+    [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+                message:@&quot;Requested cursor exceeded limit. Possibly missing events&quot;
+           toConnection:connection];
+  }
+
+  if (replayCursor &gt;= self.sequenceNumber) {
+    PDS_LOG_SYNC_INFO(@&quot;Cursor %lu is up to date at server sequence %lu.&quot;,
+                      (unsigned long)replayCursor,
+                      (unsigned long)self.sequenceNumber);
+  } else {
+    NSUInteger backlog = self.sequenceNumber - replayCursor;
+    PDS_LOG_SYNC_INFO(@&quot;Starting replay of %lu events for connection %@&quot;,
+                      (unsigned long)backlog, connection);
+    [self replayEventsAfterCursor:replayCursor toConnection:connection];
+  }
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 760-790)</p>
+<h3 id="batch-fetching">Batch Fetching</h3>
+<p>Events are fetched in batches for efficiency:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Batch replay implementation
+- (void)replayEventsAfterCursor:(NSUInteger)cursor
+                   toConnection:(WebSocketConnection *)connection {
+  PDS_LOG_SYNC_INFO(@&quot;Replaying events after cursor %lu&quot;,
+                    (unsigned long)cursor);
+  [self ensureSequenceInitialized];
+
+  NSUInteger fetchCursor = cursor;
+  NSUInteger replayedCount = 0;
+  BOOL hasMore = YES;
+
+  while (hasMore) {
+    NSError *error = nil;
+    NSArray *events =
+        [self.serviceDatabases getEventsSince:fetchCursor
+                                        limit:kSubscribeReposReplayBatchSize
+                                        error:&amp;error];
+    if (error || !events) {
+      PDS_LOG_SYNC_ERROR(@&quot;Failed to fetch events for replay: %@&quot;, error);
+      break;
+    }
+
+    if (events.count == 0) {
+      hasMore = NO;
+      PDS_LOG_SYNC_INFO(@&quot;No more events to replay for connection %@&quot;, connection);
+      break;
+    }
+
+    PDS_LOG_SYNC_INFO(@&quot;Fetched batch of %lu events for replay (current seq: %lu)&quot;,
+                      (unsigned long)events.count, (unsigned long)fetchCursor);
+
+    for (NSDictionary *event in events) {
+      NSNumber *seq = event[@&quot;seq&quot;];
+      NSData *data = event[@&quot;data&quot;];
+
+      replayedCount++;
+      if (replayedCount &gt; self.maxReplayEventsPerConnection) {
+        PDS_LOG_SYNC_WARN(@&quot;Replay limit exceeded (%lu) during backfill for connection %@&quot;,
+                         (unsigned long)replayedCount, connection);
+        [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+                    message:@&quot;Replay window exceeded while backfilling&quot;
+               toConnection:connection];
+        return;
+      }
+
+      if (![self sendEventData:data
+              toConnectionWithBackpressureCheck:connection]) {
+        PDS_LOG_SYNC_WARN(@&quot;Failed to send event %lu during replay (backpressure or closed)&quot;,
+                         (unsigned long)[seq unsignedIntegerValue]);
+        return;
+      }
+      fetchCursor = [seq unsignedIntegerValue];
+    }
+    PDS_LOG_SYNC_INFO(@&quot;Completed replay batch, next cursor: %lu&quot;, (unsigned long)fetchCursor);
+
+    if (events.count &lt; kSubscribeReposReplayBatchSize) {
+      hasMore = NO;
+    }
+
+    if (fetchCursor &gt;= self.sequenceNumber) {
+      hasMore = NO;
+    }
+  }
+
+  PDS_LOG_SYNC_INFO(@&quot;Replay completed. Last cursor: %lu&quot;,
+                    (unsigned long)fetchCursor);
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 790-860)</p>
+<h2 id="batch-size-configuration">Batch Size Configuration</h2>
+<h3 id="default-batch-size">Default Batch Size</h3>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
+static const NSUInteger kSubscribeReposReplayBatchSize = 100;
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (line 28)</p>
+<p>This means:
+- Events are fetched 100 at a time from the database
+- Reduces database query overhead
+- Balances memory usage and performance</p>
+<h2 id="replay-limits">Replay Limits</h2>
+<h3 id="maximum-replay-events">Maximum Replay Events</h3>
+<p>The server limits total replay to prevent resource exhaustion:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
+static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
+
+// In initialization
+_maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 29, 110)</p>
+<h3 id="exceeding-replay-limit">Exceeding Replay Limit</h3>
+<p>If replay exceeds the limit, the server sends an info event and stops:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
+replayedCount++;
+if (replayedCount &gt; self.maxReplayEventsPerConnection) {
+  PDS_LOG_SYNC_WARN(@&quot;Replay limit exceeded (%lu) during backfill for connection %@&quot;,
+                   (unsigned long)replayedCount, connection);
+  [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+              message:@&quot;Replay window exceeded while backfilling&quot;
+         toConnection:connection];
+  return;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 820-830)</p>
+<h2 id="cursor-management">Cursor Management</h2>
+<h3 id="cursor-format">Cursor Format</h3>
+<p>Cursors are string representations of sequence numbers:</p>
+<pre class="codehilite"><code>cursor=0       → Start from beginning
+cursor=12345   → Resume from sequence 12345
+cursor=999999  → Resume from sequence 999999
+</code></pre>
+
+<h3 id="cursor-validation">Cursor Validation</h3>
+<p>The server validates cursor format:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Cursor parsing
+- (BOOL)parseCursorString:(nullable NSString *)cursor
+                 outValue:(NSUInteger *)outValue {
+  if (cursor.length == 0) {
+    if (outValue)
+      *outValue = 0;
+    return YES;
+  }
+
+  NSCharacterSet *nonDigits =
+      [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+  if ([cursor rangeOfCharacterFromSet:nonDigits].location != NSNotFound) {
+    return NO;
+  }
+
+  NSScanner *scanner = [NSScanner scannerWithString:cursor];
+  long long parsed = 0;
+  if (![scanner scanLongLong:&amp;parsed] || ![scanner isAtEnd]) {
+    return NO;
+  }
+  if (parsed &lt; 0 ||
+      (unsigned long long)parsed &gt; (unsigned long long)NSUIntegerMax) {
+    return NO;
+  }
+
+  if (outValue)
+    *outValue = (NSUInteger)parsed;
+  return YES;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 850-880)</p>
+<h3 id="effective-replay-cursor">Effective Replay Cursor</h3>
+<p>The server may adjust cursors that are too old:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Effective replay cursor calculation
+- (NSUInteger)effectiveReplayCursorForRequestedCursor:(NSUInteger)requestedCursor
+                                              outdated:(BOOL *)outdated {
+  NSUInteger minimumCursor = 0;
+
+  NSNumber *oldestSeqValue = [self oldestPersistedSequenceNumber];
+  if (oldestSeqValue != nil) {
+    NSUInteger oldestSeq = oldestSeqValue.unsignedIntegerValue;
+    if (oldestSeq &gt; 0) {
+      NSUInteger oldestCursor = oldestSeq - 1;
+      if (oldestCursor &gt; minimumCursor) {
+        minimumCursor = oldestCursor;
+      }
+    }
+  }
+
+  if (self.sequenceNumber &gt; self.maxReplayEventsPerConnection) {
+    NSUInteger replayWindowCursor =
+        self.sequenceNumber - self.maxReplayEventsPerConnection;
+    if (replayWindowCursor &gt; minimumCursor) {
+      minimumCursor = replayWindowCursor;
+    }
+  }
+
+  BOOL cursorOutdated = requestedCursor &lt; minimumCursor;
+  if (outdated) {
+    *outdated = cursorOutdated;
+  }
+  return cursorOutdated ? minimumCursor : requestedCursor;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 900-930)</p>
+<h2 id="database-event-storage">Database Event Storage</h2>
+<h3 id="event-persistence">Event Persistence</h3>
+<p>Events are stored in the sequencer table:</p>
+<pre class="codehilite"><code class="language-sql">CREATE TABLE sequencer (
+    seq INTEGER PRIMARY KEY,
+    type TEXT NOT NULL,
+    data BLOB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_sequencer_seq ON sequencer(seq);
+</code></pre>
+
+<h3 id="fetching-events">Fetching Events</h3>
+<p>Events are fetched with a cursor and limit:</p>
+<pre class="codehilite"><code class="language-objc">// In PDSServiceDatabases.m (conceptual)
+- (NSArray *)getEventsSince:(NSUInteger)cursor
+                      limit:(NSUInteger)limit
+                      error:(NSError **)error {
+
+    NSString *query = @&quot;SELECT seq, type, data, created_at &quot;
+                      @&quot;FROM sequencer &quot;
+                      @&quot;WHERE seq &gt; ? &quot;
+                      @&quot;ORDER BY seq ASC &quot;
+                      @&quot;LIMIT ?&quot;;
+
+    NSArray *params = @[@(cursor), @(limit)];
+
+    return [self.serviceDB executeQuery:query 
+                             withParams:params 
+                                  error:error];
+}
+</code></pre>
+
+<h2 id="backpressure-during-replay">Backpressure During Replay</h2>
+<h3 id="backpressure-check">Backpressure Check</h3>
+<p>Each event is sent with a backpressure check:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Sending with backpressure check
+- (BOOL)sendEventData:(NSData *)eventData
+    toConnectionWithBackpressureCheck:(WebSocketConnection *)connection {
+  if (!eventData || !connection) {
+    return NO;
+  }
+
+  if (connection.pendingSendCount &gt;= self.maxPendingSendsPerConnection ||
+      connection.pendingSendBytes &gt;= self.maxPendingBytesPerConnection) {
+    [self
+        sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
+                       message:@&quot;connection output queue exceeded server limit&quot;
+                  toConnection:connection];
+    [self detachConnection:connection];
+    [connection closeWithCode:1008 reason:kSubscribeReposErrorConsumerTooSlow];
+    return NO;
+  }
+
+  [connection sendMessage:eventData];
+  return YES;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 970-990)</p>
+<h3 id="backpressure-limits">Backpressure Limits</h3>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
+static const NSUInteger kSubscribeReposMaxPendingSendsDefault = 512;
+static const NSUInteger kSubscribeReposMaxPendingBytesDefault = 16 * 1024 * 1024; // 16MB
+
+// In initialization
+_maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
+_maxPendingBytesPerConnection = kSubscribeReposMaxPendingBytesDefault;
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 30-32, 111-112)</p>
+<h2 id="transition-to-live-mode">Transition to Live Mode</h2>
+<h3 id="detecting-catch-up-completion">Detecting Catch-Up Completion</h3>
+<p>Replay completes when:
+1. All batches have been sent
+2. The fetch cursor reaches the current sequence number
+3. No more events are available</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
+if (events.count &lt; kSubscribeReposReplayBatchSize) {
+  hasMore = NO;
+}
+
+if (fetchCursor &gt;= self.sequenceNumber) {
+  hasMore = NO;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 850-860)</p>
+<h3 id="live-event-delivery">Live Event Delivery</h3>
+<p>After replay completes, the connection automatically receives live events:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m - Broadcasting to all connections
+- (void)broadcastEventData:(NSData *)eventData {
+  [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
+  NSSet&lt;WebSocketConnection *&gt; *attachedSnapshot = nil;
+  @synchronized(self.attachedConnections) {
+    attachedSnapshot = [self.attachedConnections copy];
+  }
+  for (WebSocketConnection *connection in attachedSnapshot) {
+    [self sendEventData:eventData toConnectionWithBackpressureCheck:connection];
+  }
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Sync/SubscribeReposHandler.m</code> (lines 630-645)</p>
+<h2 id="client-side-cursor-management">Client-Side Cursor Management</h2>
+<h3 id="persisting-cursors">Persisting Cursors</h3>
+<p>Clients should persist the last received sequence number:</p>
+<pre class="codehilite"><code class="language-objc">// Client-side example (conceptual)
+- (void)handleEvent:(NSDictionary *)event {
+    NSInteger seq = [event[@&quot;seq&quot;] integerValue];
+
+    // Process event...
+
+    // Persist cursor
+    [[NSUserDefaults standardUserDefaults] setInteger:seq forKey:@&quot;lastFirehoseSeq&quot;];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
+    self.lastSeq = seq;
+}
+
+- (NSString *)loadCursor {
+    NSInteger seq = [[NSUserDefaults standardUserDefaults] integerForKey:@&quot;lastFirehoseSeq&quot;];
+    return seq &gt; 0 ? @(seq).stringValue : nil;
+}
+</code></pre>
+
+<h3 id="reconnecting-with-cursor">Reconnecting with Cursor</h3>
+<p>On reconnection, provide the saved cursor:</p>
+<pre class="codehilite"><code class="language-objc">// Client-side example (conceptual)
+- (void)connect {
+    NSString *cursor = [self loadCursor];
+    NSString *urlString = @&quot;ws://pds.example.com/xrpc/com.atproto.sync.subscribeRepos&quot;;
+
+    if (cursor) {
+        urlString = [urlString stringByAppendingFormat:@&quot;?cursor=%@&quot;, cursor];
+    }
+
+    NSURL *url = [NSURL URLWithString:urlString];
+    NSURLRequest *request = [NSURLRequest requestWithURL:url];
+
+    // Connect to WebSocket...
+}
+</code></pre>
+
+<h2 id="performance-optimization">Performance Optimization</h2>
+<h3 id="batch-size-tuning">Batch Size Tuning</h3>
+<p>The batch size affects:
+- <strong>Smaller batches</strong> (e.g., 50):
+  - More database queries
+  - Lower memory usage
+  - More responsive to backpressure
+- <strong>Larger batches</strong> (e.g., 500):
+  - Fewer database queries
+  - Higher memory usage
+  - Faster replay for fast clients</p>
+<h3 id="database-indexing">Database Indexing</h3>
+<p>Ensure the sequencer table has proper indexes:</p>
+<pre class="codehilite"><code class="language-sql">CREATE INDEX idx_sequencer_seq ON sequencer(seq);
+CREATE INDEX idx_sequencer_created_at ON sequencer(created_at);
+</code></pre>
+
+<h3 id="event-pruning">Event Pruning</h3>
+<p>Old events should be pruned to limit database growth:</p>
+<pre class="codehilite"><code class="language-sql">-- Delete events older than 7 days
+DELETE FROM sequencer 
+WHERE created_at &lt; datetime('now', '-7 days');
+</code></pre>
+
+<h2 id="monitoring">Monitoring</h2>
+<h3 id="replay-metrics">Replay Metrics</h3>
+<p>Track replay performance:</p>
+<pre class="codehilite"><code class="language-objc">// Conceptual metrics
+- (void)recordReplayMetrics:(NSUInteger)eventCount 
+                   duration:(NSTimeInterval)duration {
+
+    double eventsPerSecond = eventCount / duration;
+
+    NSLog(@&quot;Replay metrics:&quot;);
+    NSLog(@&quot;  Events replayed: %lu&quot;, (unsigned long)eventCount);
+    NSLog(@&quot;  Duration: %.2f seconds&quot;, duration);
+    NSLog(@&quot;  Throughput: %.0f events/sec&quot;, eventsPerSecond);
+}
+</code></pre>
+
+<h3 id="replay-failures">Replay Failures</h3>
+<p>Log and monitor replay failures:</p>
+<pre class="codehilite"><code class="language-objc">// In SubscribeReposHandler.m
+if (error || !events) {
+  PDS_LOG_SYNC_ERROR(@&quot;Failed to fetch events for replay: %@&quot;, error);
+  break;
+}
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Persist cursors</strong> — Save the last received sequence number</li>
+<li><strong>Use appropriate batch sizes</strong> — Balance performance and memory</li>
+<li><strong>Monitor replay progress</strong> — Track events replayed</li>
+<li><strong>Handle backpressure</strong> — Respect server limits</li>
+<li><strong>Prune old events</strong> — Limit database growth</li>
+<li><strong>Index properly</strong> — Ensure fast cursor-based queries</li>
+<li><strong>Test replay scenarios</strong> — Verify catch-up works correctly</li>
+<li><strong>Log replay metrics</strong> — Aid performance tuning</li>
+</ol>
+<h2 id="error-scenarios">Error Scenarios</h2>
+<h3 id="database-query-failure">Database Query Failure</h3>
+<p>If event fetching fails:
+- Log the error
+- Stop replay
+- Connection remains open for live events</p>
+<h3 id="backpressure-during-replay_1">Backpressure During Replay</h3>
+<p>If the client is too slow:
+- Server sends error frame
+- Connection is closed
+- Client should reconnect with exponential backoff</p>
+<h3 id="replay-limit-exceeded">Replay Limit Exceeded</h3>
+<p>If replay exceeds the maximum:
+- Server sends info event
+- Replay stops at the limit
+- Client may have missed events</p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./event-ordering.md">Event Ordering</a> — Sequence number guarantees</li>
+<li><a href="./reconnection-strategy.md">Reconnection Strategy</a> — Handling disconnections</li>
+<li><a href="./reliability-guarantees.md">Reliability Guarantees</a> — Delivery semantics</li>
+<li><a href="./backpressure.md">Backpressure</a> — Flow control</li>
+<li><a href="./firehose-overview.md">Firehose Overview</a> — Architecture overview</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:53:04</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
