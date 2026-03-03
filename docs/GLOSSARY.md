@@ -18,6 +18,10 @@
 
 **Backpressure** — Flow control mechanism to prevent overwhelming consumers with data.
 
+**Blob Garbage Collection** — Process of identifying and removing unreferenced blobs to free storage space.
+
+**Blob Quota** — Storage limit enforced per user or per PDS instance.
+
 ## C
 
 **CAR** — Content Addressable aRchive. Format for storing and transmitting DAG-CBOR data.
@@ -38,7 +42,13 @@
 
 **Database Pool** — Collection of database connections managed for reuse.
 
+**Data Integrity** — Ensuring consistency and correctness of data through validation and verification.
+
+**Defense in Depth** — Security strategy using multiple layers of protection.
+
 **DID** — Decentralized Identifier. Unique identifier for an actor in the AT Protocol.
+
+**DoS** — Denial of Service. Attack that attempts to make a service unavailable.
 
 **DPoP** — Demonstration of Proof-of-Possession. OAuth 2.0 extension for binding tokens to keys.
 
@@ -64,6 +74,8 @@
 
 **Handle** — Human-readable username for an actor (e.g., alice.bsky.social).
 
+**Hardware Security Module (HSM)** — Physical device for secure key storage and cryptographic operations.
+
 **HTTP** — HyperText Transfer Protocol. Protocol for client-server communication.
 
 **HttpServer** — Custom HTTP server implementation in the PDS.
@@ -73,6 +85,8 @@
 **Identity** — Information about an actor including DID, handle, and public keys.
 
 **IdentityService** — Service responsible for DID and handle resolution.
+
+**Input Validation** — Process of verifying and sanitizing user input to prevent attacks.
 
 ## J
 
@@ -98,11 +112,15 @@
 
 **Merkle Search Tree (MST)** — Efficient data structure for storing and verifying repository contents.
 
+**Metrics** — Quantitative measurements of system behavior and performance.
+
 **Method** — XRPC endpoint handler that processes requests.
 
 **MethodRegistry** — Component that registers and routes XRPC methods.
 
 **Migration** — Database schema change applied in sequence.
+
+**Migration Rollback** — Process of reverting a database migration to a previous state.
 
 ## N
 
@@ -116,6 +134,10 @@
 
 **OAuthProvider** — Component implementing OAuth 2.0 server.
 
+**Observability** — Ability to understand system state through metrics, logs, and traces.
+
+**Orphan Blob** — Blob that is no longer referenced by any record.
+
 ## P
 
 **PDS** — Personal Data Server. Server that stores and manages user data in AT Protocol.
@@ -126,9 +148,15 @@
 
 **PDSController** — Legacy facade (use PDSApplication instead).
 
+**PLC** — Public Ledger of Credentials. Directory service for DID documents.
+
+**PLC Directory** — Centralized directory for DID document storage and resolution.
+
 **Prepared Statement** — Pre-compiled SQL query for efficient execution.
 
 ## R
+
+**Rate Limiting** — Technique to control the rate of requests to prevent abuse.
 
 **Record** — Data object stored in a repository (e.g., a post, profile).
 
@@ -142,7 +170,13 @@
 
 **RelayService** — Service for notifying external relays.
 
+**Retry Policy** — Strategy for retrying failed operations with backoff.
+
 ## S
+
+**Secrets Management** — Secure storage and handling of cryptographic keys and sensitive data.
+
+**Security Audit** — Systematic review of code for security vulnerabilities.
 
 **Service** — Component providing specific functionality (Account, Record, Blob, etc.).
 
@@ -152,9 +186,13 @@
 
 **SQLite** — Embedded SQL database engine used for persistence.
 
+**Structured Logging** — Logging format with consistent fields for parsing and analysis.
+
 **SubscribeRepos** — XRPC method providing real-time repository updates via WebSocket.
 
 ## T
+
+**Throttling** — Limiting the rate of operations to prevent resource exhaustion.
 
 **TOTP** — Time-based One-Time Password. Multi-factor authentication method.
 
@@ -198,6 +236,8 @@
 
 **Zero-Copy** — Optimization technique avoiding unnecessary data copying.
 
+**Zero-Downtime Migration** — Database migration performed without service interruption.
+
 ---
 
 ## Acronyms
@@ -211,15 +251,18 @@
 | CID | Content Identifier |
 | DAG | Directed Acyclic Graph |
 | DID | Decentralized Identifier |
+| DoS | Denial of Service |
 | DPoP | Demonstration of Proof-of-Possession |
 | ECDSA | Elliptic Curve Digital Signature Algorithm |
 | GNUstep | GNU Objective-C Runtime Environment |
+| HSM | Hardware Security Module |
 | HTTP | HyperText Transfer Protocol |
 | JWT | JSON Web Token |
 | MST | Merkle Search Tree |
 | NSID | Namespace Identifier |
 | OAuth | Open Authorization |
 | PDS | Personal Data Server |
+| PLC | Public Ledger of Credentials |
 | SQL | Structured Query Language |
 | TLS | Transport Layer Security |
 | TOTP | Time-based One-Time Password |

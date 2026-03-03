@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLC Directory - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>PLC Directory</h1>
+            </div>
+            <h1 id="plc-directory">PLC Directory</h1>
+<p>The PLC (Public Ledger of Credentials) directory is a critical component of the AT Protocol that provides decentralized identity management through DID (Decentralized Identifier) resolution. September PDS includes both a PLC client for resolving DIDs and a standalone PLC server (<code>campagnola</code>) for running your own directory.</p>
+<h2 id="overview">Overview</h2>
+<p>The PLC directory serves as a distributed registry for <code>did:plc</code> identifiers, maintaining an immutable audit log of DID operations. Each DID has a hash-linked chain of operations that define its state over time, including:</p>
+<ul>
+<li><strong>Rotation Keys</strong> — Keys authorized to update the DID</li>
+<li><strong>Verification Methods</strong> — Public keys for authentication</li>
+<li><strong>Also Known As</strong> — Alternative identifiers (handles)</li>
+<li><strong>Services</strong> — Service endpoints (PDS URL, etc.)</li>
+</ul>
+<h2 id="plc-protocol">PLC Protocol</h2>
+<h3 id="did-format">DID Format</h3>
+<p>PLC DIDs follow the format: <code>did:plc:&lt;base32-identifier&gt;</code></p>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/PLC/PLCOperation.h
+
++ (BOOL)isValidDidPlc:(NSString *)did {
+    // Format: did:plc:[a-z2-7]{24}
+    if (![did hasPrefix:@&quot;did:plc:&quot;]) {
+        return NO;
+    }
+
+    NSString *identifier = [did substringFromIndex:8];
+    if (identifier.length != 24) {
+        return NO;
+    }
+
+    // Validate base32 lowercase characters
+    NSCharacterSet *base32 = [NSCharacterSet characterSetWithCharactersInString:@&quot;abcdefghijklmnopqrstuvwxyz234567&quot;];
+    NSCharacterSet *identifierChars = [NSCharacterSet characterSetWithCharactersInString:identifier];
+
+    return [base32 isSupersetOfSet:identifierChars];
+}
+</code></pre>
+
+<p><strong>Valid DIDs:</strong>
+- <code>did:plc:z72i7hdynmk6r22z27h6tvur</code>
+- <code>did:plc:ewvi7nxzyoun6zhxrhs64oiz</code></p>
+<p><strong>Invalid DIDs:</strong>
+- <code>did:plc:UPPERCASE</code> (must be lowercase)
+- <code>did:plc:tooshort</code> (must be exactly 24 characters)
+- <code>did:plc:invalid!chars</code> (only base32 characters)</p>
+<h3 id="operation-types">Operation Types</h3>
+<h4 id="1-plc-operation-plc_operation">1. PLC Operation (plc_operation)</h4>
+<p>Standard operation for updating DID state:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;type&quot;: &quot;plc_operation&quot;,
+  &quot;rotationKeys&quot;: [
+    &quot;did:key:zQ3shXjHeiBuRCKmM36cuYnm7YEMzhGnCmCyW92sRJ9pribSF&quot;
+  ],
+  &quot;verificationMethods&quot;: {
+    &quot;atproto&quot;: &quot;did:key:zQ3shXjHeiBuRCKmM36cuYnm7YEMzhGnCmCyW92sRJ9pribSF&quot;
+  },
+  &quot;alsoKnownAs&quot;: [
+    &quot;at://alice.bsky.social&quot;
+  ],
+  &quot;services&quot;: {
+    &quot;atproto_pds&quot;: {
+      &quot;type&quot;: &quot;AtprotoPersonalDataServer&quot;,
+      &quot;endpoint&quot;: &quot;https://pds.garazyk.xyz&quot;
+    }
+  },
+  &quot;prev&quot;: &quot;bafyreib2rxk3rh...&quot;,
+  &quot;sig&quot;: &quot;base64-signature&quot;
+}
+</code></pre>
+
+<p><strong>Fields:</strong>
+- <code>rotationKeys</code> — Array of <code>did:key</code> identifiers authorized to sign updates (max 10)
+- <code>verificationMethods</code> — Map of key IDs to <code>did:key</code> identifiers (max 10)
+- <code>alsoKnownAs</code> — Array of alternative identifiers (max 10, max 258 chars each)
+- <code>services</code> — Map of service definitions (max 10)
+- <code>prev</code> — CID of previous operation (null for genesis)
+- <code>sig</code> — Base64-encoded signature of operation hash</p>
+<h4 id="2-plc-tombstone-plc_tombstone">2. PLC Tombstone (plc_tombstone)</h4>
+<p>Permanently deactivates a DID:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;type&quot;: &quot;plc_tombstone&quot;,
+  &quot;prev&quot;: &quot;bafyreib2rxk3rh...&quot;,
+  &quot;sig&quot;: &quot;base64-signature&quot;
+}
+</code></pre>
+
+<p><strong>Important:</strong> Tombstoning is irreversible. The DID cannot be reactivated.</p>
+<h3 id="operation-chain">Operation Chain</h3>
+<p>Operations form a hash-linked chain where each operation references the previous one:</p>
+<pre class="codehilite"><code>Genesis Operation (prev: null)
+    ↓ (CID: bafyreiabc...)
+Update Operation 1 (prev: bafyreiabc...)
+    ↓ (CID: bafyreidef...)
+Update Operation 2 (prev: bafyreidef...)
+    ↓ (CID: bafyreighi...)
+Current State
+</code></pre>
+
+<p>The DID's current state is computed by replaying all operations in order.</p>
+<h2 id="did-resolution">DID Resolution</h2>
+<h3 id="using-didplcresolver">Using DIDPLCResolver</h3>
+<p>The <code>DIDPLCResolver</code> class provides both synchronous and asynchronous DID resolution:</p>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/PLC/DIDPLCResolver.h
+
+// Initialize resolver
+DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:@&quot;https://plc.directory&quot;];
+resolver.timeout = 5.0;  // 5 second timeout
+
+// Synchronous resolution
+NSError *error = nil;
+NSDictionary *document = [resolver resolveDID:@&quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot; error:&amp;error];
+if (document) {
+    NSString *pdsEndpoint = document[@&quot;service&quot;][0][@&quot;serviceEndpoint&quot;];
+    NSLog(@&quot;PDS endpoint: %@&quot;, pdsEndpoint);
+}
+
+// Asynchronous resolution
+[resolver resolveDID:@&quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot; 
+          completion:^(NSDictionary *document, NSError *error) {
+    if (document) {
+        // Process DID document
+    } else {
+        NSLog(@&quot;Resolution failed: %@&quot;, error.localizedDescription);
+    }
+}];
+</code></pre>
+
+<h3 id="did-document-structure">DID Document Structure</h3>
+<p>A resolved DID document follows the W3C DID Core specification:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://www.w3.org/ns/did/v1&quot;,
+    &quot;https://w3id.org/security/multikey/v1&quot;,
+    &quot;https://w3id.org/security/suites/secp256k1-2019/v1&quot;
+  ],
+  &quot;id&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+  &quot;alsoKnownAs&quot;: [
+    &quot;at://alice.bsky.social&quot;
+  ],
+  &quot;verificationMethod&quot;: [
+    {
+      &quot;id&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur#atproto&quot;,
+      &quot;type&quot;: &quot;Multikey&quot;,
+      &quot;controller&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+      &quot;publicKeyMultibase&quot;: &quot;zQ3shXjHeiBuRCKmM36cuYnm7YEMzhGnCmCyW92sRJ9pribSF&quot;
+    }
+  ],
+  &quot;service&quot;: [
+    {
+      &quot;id&quot;: &quot;#atproto_pds&quot;,
+      &quot;type&quot;: &quot;AtprotoPersonalDataServer&quot;,
+      &quot;serviceEndpoint&quot;: &quot;https://pds.garazyk.xyz&quot;
+    }
+  ]
+}
+</code></pre>
+
+<h3 id="audit-log-resolution">Audit Log Resolution</h3>
+<p>Retrieve the complete operation history for a DID:</p>
+<pre class="codehilite"><code class="language-objc">// Synchronous audit log retrieval
+NSError *error = nil;
+NSArray *auditLog = [resolver resolveAuditLogForDID:@&quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot; error:&amp;error];
+
+for (NSDictionary *operation in auditLog) {
+    NSString *cid = operation[@&quot;cid&quot;];
+    NSString *type = operation[@&quot;type&quot;];
+    NSDate *createdAt = operation[@&quot;createdAt&quot;];
+
+    NSLog(@&quot;Operation %@ (%@) at %@&quot;, cid, type, createdAt);
+}
+
+// Asynchronous audit log retrieval
+[resolver resolveAuditLogForDID:@&quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;
+                     completion:^(NSArray *log, NSError *error) {
+    if (log) {
+        NSLog(@&quot;Retrieved %lu operations&quot;, (unsigned long)log.count);
+    }
+}];
+</code></pre>
+
+<h2 id="state-replay">State Replay</h2>
+<p>The <code>PLCStateReplayer</code> class computes the current DID state from operation history:</p>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/PLC/PLCOperation.h
+
+// Replay operation history
+NSArray&lt;PLCOperation *&gt; *history = /* ... fetch from PLC ... */;
+
+NSError *error = nil;
+PLCDIDState *state = [PLCStateReplayer replayHistory:history error:&amp;error];
+
+if (state) {
+    NSLog(@&quot;DID: %@&quot;, state.did);
+    NSLog(@&quot;Rotation Keys: %@&quot;, state.rotationKeys);
+    NSLog(@&quot;Verification Methods: %@&quot;, state.verificationMethods);
+    NSLog(@&quot;Also Known As: %@&quot;, state.alsoKnownAs);
+    NSLog(@&quot;Services: %@&quot;, state.services);
+    NSLog(@&quot;Tombstoned: %@&quot;, state.tombstoned ? @&quot;YES&quot; : @&quot;NO&quot;);
+
+    // Convert to DID document
+    NSDictionary *document = [state toDIDDocument];
+}
+</code></pre>
+
+<p><strong>Replay Process:</strong></p>
+<ol>
+<li>Start with empty state</li>
+<li>For each operation in chronological order:</li>
+<li>Verify signature with rotation keys</li>
+<li>Verify <code>prev</code> links to previous operation CID</li>
+<li>Apply operation to state</li>
+<li>Return final computed state</li>
+</ol>
+<h2 id="running-campagnola-plc-server">Running Campagnola (PLC Server)</h2>
+<p>September PDS includes <code>campagnola</code>, a standalone PLC directory server.</p>
+<h3 id="starting-the-server">Starting the Server</h3>
+<pre class="codehilite"><code class="language-bash"># Using in-memory mock store (development)
+campagnola --port 2582
+
+# Using persistent SQLite database (production)
+campagnola --port 2582 --database /path/to/plc.db
+</code></pre>
+
+<p><strong>Command-line options:</strong>
+- <code>--port &lt;number&gt;</code> — Port to listen on (default: 2582)
+- <code>--database &lt;path&gt;</code> — Path to SQLite database (optional, uses mock store if omitted)
+- <code>--help, -h</code> — Show help information</p>
+<h3 id="server-implementation">Server Implementation</h3>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/PLC/main.m
+
+int main(int argc, const char * argv[]) {
+    @autoreleasepool {
+        NSUInteger port = 2582;
+        NSString *dbPath = nil;
+
+        // Parse command-line arguments
+        // ...
+
+        // Initialize store
+        id&lt;PLCStore&gt; store = nil;
+        if (dbPath) {
+            NSError *storeError = nil;
+            store = [PLCPersistentStore storeWithPath:dbPath error:&amp;storeError];
+            if (!store) {
+                PDS_LOG_CORE_ERROR(@&quot;Failed to open persistent store: %@&quot;, storeError);
+                return 1;
+            }
+        } else {
+            store = [[PLCMockStore alloc] init];
+        }
+
+        // Initialize auditor and server
+        PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:store];
+        PLCServer *server = [[PLCServer alloc] initWithStore:store 
+                                                     auditor:auditor 
+                                                        port:port];
+
+        // Start server
+        NSError *error = nil;
+        if (![server startWithError:&amp;error]) {
+            PDS_LOG_CORE_ERROR(@&quot;Failed to start PLC server: %@&quot;, error);
+            return 1;
+        }
+
+        printf(&quot;PLC server listening on port %lu\n&quot;, (unsigned long)port);
+
+        [[NSRunLoop currentRunLoop] run];
+    }
+    return 0;
+}
+</code></pre>
+
+<h3 id="api-endpoints">API Endpoints</h3>
+<p>The PLC server implements the following HTTP endpoints:</p>
+<h4 id="get-did">GET /:did</h4>
+<p>Resolve a DID to its current document:</p>
+<pre class="codehilite"><code class="language-bash">curl https://plc.directory/did:plc:z72i7hdynmk6r22z27h6tvur
+</code></pre>
+
+<p><strong>Response:</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;@context&quot;: [&quot;https://www.w3.org/ns/did/v1&quot;],
+  &quot;id&quot;: &quot;did:plc:z72i7hdynmk6r22z27h6tvur&quot;,
+  &quot;alsoKnownAs&quot;: [&quot;at://alice.bsky.social&quot;],
+  &quot;verificationMethod&quot;: [...],
+  &quot;service&quot;: [...]
+}
+</code></pre>
+
+<h4 id="get-didlog">GET /:did/log</h4>
+<p>Retrieve the complete audit log for a DID:</p>
+<pre class="codehilite"><code class="language-bash">curl https://plc.directory/did:plc:z72i7hdynmk6r22z27h6tvur/log
+</code></pre>
+
+<p><strong>Response:</strong></p>
+<pre class="codehilite"><code class="language-json">[
+  {
+    &quot;cid&quot;: &quot;bafyreiabc...&quot;,
+    &quot;type&quot;: &quot;plc_operation&quot;,
+    &quot;createdAt&quot;: &quot;2024-01-15T10:30:00Z&quot;,
+    &quot;operation&quot;: {
+      &quot;type&quot;: &quot;plc_operation&quot;,
+      &quot;rotationKeys&quot;: [...],
+      &quot;prev&quot;: null,
+      &quot;sig&quot;: &quot;...&quot;
+    }
+  },
+  {
+    &quot;cid&quot;: &quot;bafyreidef...&quot;,
+    &quot;type&quot;: &quot;plc_operation&quot;,
+    &quot;createdAt&quot;: &quot;2024-02-20T14:45:00Z&quot;,
+    &quot;operation&quot;: {
+      &quot;type&quot;: &quot;plc_operation&quot;,
+      &quot;rotationKeys&quot;: [...],
+      &quot;prev&quot;: &quot;bafyreiabc...&quot;,
+      &quot;sig&quot;: &quot;...&quot;
+    }
+  }
+]
+</code></pre>
+
+<h4 id="post-did">POST /:did</h4>
+<p>Submit a new operation for a DID:</p>
+<pre class="codehilite"><code class="language-bash">curl -X POST https://plc.directory/did:plc:z72i7hdynmk6r22z27h6tvur \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;type&quot;: &quot;plc_operation&quot;,
+    &quot;rotationKeys&quot;: [&quot;did:key:...&quot;],
+    &quot;verificationMethods&quot;: {...},
+    &quot;alsoKnownAs&quot;: [...],
+    &quot;services&quot;: {...},
+    &quot;prev&quot;: &quot;bafyreib2rxk3rh...&quot;,
+    &quot;sig&quot;: &quot;base64-signature&quot;
+  }'
+</code></pre>
+
+<p><strong>Response:</strong> HTTP 200 with operation CID on success, 400/403 on validation failure.</p>
+<h3 id="operation-validation">Operation Validation</h3>
+<p>The <code>PLCAuditor</code> validates operations before accepting them:</p>
+<pre class="codehilite"><code class="language-objc">// From ATProtoPDS/Sources/PLC/PLCServer.m
+
+static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
+    // 1. Check CBOR size limit (4000 bytes)
+    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:op error:error];
+    if (cbor.length &gt; kPLCMaxOperationBytes) {
+        // Reject: operation too large
+        return NO;
+    }
+
+    // 2. Validate operation type
+    NSString *type = op[@&quot;type&quot;];
+    if (![type isEqualToString:@&quot;plc_operation&quot;] &amp;&amp; 
+        ![type isEqualToString:@&quot;plc_tombstone&quot;]) {
+        // Reject: unsupported type
+        return NO;
+    }
+
+    // 3. Validate signature format
+    NSString *sig = op[@&quot;sig&quot;];
+    if ([sig hasSuffix:@&quot;=&quot;]) {
+        // Reject: signature must be base64url (no padding)
+        return NO;
+    }
+
+    // 4. Validate field limits
+    NSArray *rotationKeys = op[@&quot;rotationKeys&quot;];
+    if (rotationKeys.count &gt; kPLCMaxRotationKeyEntries) {
+        // Reject: too many rotation keys
+        return NO;
+    }
+
+    // 5. Validate did:key format
+    for (NSString *key in rotationKeys) {
+        if (!PLCValidateDidKey(key, error)) {
+            return NO;
+        }
+    }
+
+    // 6. Check for duplicate alsoKnownAs entries
+    NSArray *alsoKnownAs = op[@&quot;alsoKnownAs&quot;];
+    NSSet *uniqueAKA = [NSSet setWithArray:alsoKnownAs];
+    if (uniqueAKA.count != alsoKnownAs.count) {
+        // Reject: duplicate entries
+        return NO;
+    }
+
+    return YES;
+}
+</code></pre>
+
+<p><strong>Validation Rules:</strong>
+- Maximum operation size: 4000 bytes (CBOR-encoded)
+- Maximum rotation keys: 10
+- Maximum verification methods: 10
+- Maximum alsoKnownAs entries: 10 (max 258 chars each)
+- Maximum services: 10
+- Signature must be base64url (no padding)
+- All <code>did:key</code> identifiers must be valid</p>
+<h2 id="submitting-operations">Submitting Operations</h2>
+<h3 id="from-cli">From CLI</h3>
+<p>Use the <code>kaszlak</code> CLI to update PLC operations:</p>
+<pre class="codehilite"><code class="language-bash"># Update PDS endpoint
+kaszlak account update-plc-endpoint did:plc:abc123 https://new-pds.example.com
+
+# Update handle
+kaszlak account update-handle did:plc:abc123 newhandle.bsky.social
+</code></pre>
+
+<h3 id="programmatically">Programmatically</h3>
+<pre class="codehilite"><code class="language-objc">// Create operation
+NSDictionary *operation = @{
+    @&quot;type&quot;: @&quot;plc_operation&quot;,
+    @&quot;rotationKeys&quot;: @[@&quot;did:key:zQ3sh...&quot;],
+    @&quot;verificationMethods&quot;: @{
+        @&quot;atproto&quot;: @&quot;did:key:zQ3sh...&quot;
+    },
+    @&quot;alsoKnownAs&quot;: @[@&quot;at://alice.bsky.social&quot;],
+    @&quot;services&quot;: @{
+        @&quot;atproto_pds&quot;: @{
+            @&quot;type&quot;: @&quot;AtprotoPersonalDataServer&quot;,
+            @&quot;endpoint&quot;: @&quot;https://pds.garazyk.xyz&quot;
+        }
+    },
+    @&quot;prev&quot;: previousCID,
+    @&quot;sig&quot;: signature
+};
+
+// Submit to PLC directory
+DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:@&quot;https://plc.directory&quot;];
+
+NSInteger statusCode = 0;
+NSError *error = nil;
+NSData *response = [resolver submitOperation:operation 
+                                         did:@&quot;did:plc:abc123&quot; 
+                                  statusCode:&amp;statusCode 
+                                       error:&amp;error];
+
+if (statusCode == 200) {
+    NSLog(@&quot;Operation submitted successfully&quot;);
+} else {
+    NSLog(@&quot;Submission failed: %ld&quot;, (long)statusCode);
+}
+</code></pre>
+
+<h2 id="configuration">Configuration</h2>
+<h3 id="pds-configuration">PDS Configuration</h3>
+<p>Configure PLC URL in <code>config.json</code>:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;plc&quot;: {
+    &quot;url&quot;: &quot;https://plc.directory&quot;,
+    &quot;retry_count&quot;: 5,
+    &quot;retry_delay_ms&quot;: 2000
+  }
+}
+</code></pre>
+
+<p><strong>Options:</strong>
+- <code>url</code> — PLC directory URL (use <code>"mock"</code> for testing, never in production)
+- <code>retry_count</code> — Number of retry attempts for failed requests
+- <code>retry_delay_ms</code> — Delay between retries in milliseconds</p>
+<h3 id="cli-initialization">CLI Initialization</h3>
+<p>The <code>kaszlak init</code> command prompts for PLC configuration:</p>
+<pre class="codehilite"><code class="language-bash">$ kaszlak init
+
+PLC Directory Service:
+  1. Production (plc.directory)
+  2. Mock
+  3. Custom URL
+
+Select option [1]: 1
+</code></pre>
+
+<p><strong>Production:</strong> Always use <code>https://plc.directory</code> for production deployments.</p>
+<p><strong>Mock:</strong> Use mock PLC for local development and testing only.</p>
+<p><strong>Custom:</strong> Use a custom PLC server (e.g., your own <code>campagnola</code> instance).</p>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-key-management">1. Key Management</h3>
+<ul>
+<li><strong>Rotate keys regularly</strong> — Update rotation keys periodically</li>
+<li><strong>Secure key storage</strong> — Store private keys in Keychain/secure storage</li>
+<li><strong>Backup rotation keys</strong> — Keep secure backups of rotation keys</li>
+<li><strong>Separate keys</strong> — Use different keys for rotation vs. verification</li>
+</ul>
+<h3 id="2-operation-submission">2. Operation Submission</h3>
+<ul>
+<li><strong>Verify prev links</strong> — Ensure <code>prev</code> references the current operation CID</li>
+<li><strong>Sign correctly</strong> — Use the rotation key to sign operation hash</li>
+<li><strong>Validate before submit</strong> — Check operation format before submission</li>
+<li><strong>Handle failures</strong> — Implement retry logic with exponential backoff</li>
+</ul>
+<h3 id="3-resolution">3. Resolution</h3>
+<ul>
+<li><strong>Cache DID documents</strong> — Cache resolved documents with TTL</li>
+<li><strong>Handle timeouts</strong> — Set appropriate timeout values (5-10 seconds)</li>
+<li><strong>Fallback strategy</strong> — Have fallback PLC servers configured</li>
+<li><strong>Monitor resolution</strong> — Track resolution failures and latency</li>
+</ul>
+<h3 id="4-running-a-plc-server">4. Running a PLC Server</h3>
+<ul>
+<li><strong>Use persistent storage</strong> — Always use SQLite database in production</li>
+<li><strong>Regular backups</strong> — Backup the PLC database regularly</li>
+<li><strong>Monitor disk space</strong> — Audit logs grow over time</li>
+<li><strong>Rate limiting</strong> — Implement rate limiting on submission endpoint</li>
+<li><strong>HTTPS only</strong> — Always use TLS for production PLC servers</li>
+</ul>
+<h2 id="security-considerations">Security Considerations</h2>
+<h3 id="operation-signing">Operation Signing</h3>
+<p>Operations must be signed with a rotation key:</p>
+<pre class="codehilite"><code class="language-objc">// 1. Compute operation hash (CID)
+NSString *cid = [PLCOperation calculateCIDForOperation:operation error:&amp;error];
+
+// 2. Sign the CID with rotation key
+NSData *signature = [self signData:[cid dataUsingEncoding:NSUTF8StringEncoding] 
+                           withKey:rotationKey];
+
+// 3. Add base64url-encoded signature to operation
+operation[@&quot;sig&quot;] = [signature base64EncodedStringWithOptions:0];
+</code></pre>
+
+<h3 id="signature-verification">Signature Verification</h3>
+<p>The PLC server verifies signatures before accepting operations:</p>
+<ol>
+<li>Extract rotation keys from previous operation</li>
+<li>Compute CID of new operation (excluding signature)</li>
+<li>Verify signature matches one of the rotation keys</li>
+<li>Verify <code>prev</code> links to previous operation CID</li>
+</ol>
+<h3 id="tombstone-protection">Tombstone Protection</h3>
+<p>Tombstoning is irreversible. Verify before submitting:</p>
+<pre class="codehilite"><code class="language-objc">// Warn before tombstoning
+if ([operation[@&quot;type&quot;] isEqualToString:@&quot;plc_tombstone&quot;]) {
+    NSLog(@&quot;WARNING: Tombstoning is irreversible!&quot;);
+    NSLog(@&quot;DID will be permanently deactivated.&quot;);
+
+    // Require explicit confirmation
+    if (![self confirmTombstone]) {
+        return NO;
+    }
+}
+</code></pre>
+
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a href="atproto-basics.md">DID and NSID</a> — AT Protocol identifiers</li>
+<li><a href="did-document-updates.md">DID Document Updates</a> — DID update workflow</li>
+<li><a href="../06-authentication/key-rotation.md">Key Rotation</a> — Key management strategies</li>
+<li><a href="../06-authentication/secrets-management.md">Secrets Management</a> — Secure key storage</li>
+<li><a href="../11-reference/plc-server-operations.md">PLC Server Operations</a> — Running campagnola</li>
+<li><a href="../11-reference/plc-failover.md">PLC Failover</a> — Redundancy strategies</li>
+</ul>
+<h2 id="external-resources">External Resources</h2>
+<ul>
+<li>AT Protocol DID Specification: https://atproto.com/specs/did</li>
+<li>PLC Directory: https://plc.directory</li>
+<li>W3C DID Core: https://www.w3.org/TR/did-core/</li>
+<li>DID Method Registry: https://w3c.github.io/did-spec-registries/</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

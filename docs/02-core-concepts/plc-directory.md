@@ -623,9 +623,11 @@ if ([operation[@"type"] isEqualToString:@"plc_tombstone"]) {
 ## Related Documentation
 
 - [DID and NSID](atproto-basics.md) — AT Protocol identifiers
-- [Identity Resolution](../05-identity/did-resolution.md) — DID resolution patterns
+- [DID Document Updates](did-document-updates.md) — DID update workflow
 - [Key Rotation](../06-authentication/key-rotation.md) — Key management strategies
 - [Secrets Management](../06-authentication/secrets-management.md) — Secure key storage
+- [PLC Server Operations](../11-reference/plc-server-operations.md) — Running campagnola
+- [PLC Failover](../11-reference/plc-failover.md) — Redundancy strategies
 
 ## External Resources
 

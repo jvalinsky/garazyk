@@ -251,120 +251,174 @@
         ... more blocks ...
 </code></pre>
 
-<h2 id="car-class">CAR Class</h2>
-<pre class="codehilite"><code class="language-objc">@interface CAR : NSObject
+<h2 id="car-classes">CAR Classes</h2>
+<p>The CAR format is implemented with three main classes:</p>
+<pre class="codehilite"><code class="language-objc">// CARBlock - represents a single block in the archive
+@interface CARBlock : NSObject
+@property (nonatomic, strong, readonly) CID *cid;
+@property (nonatomic, strong, readonly) NSData *data;
++ (instancetype)blockWithCID:(CID *)cid data:(NSData *)data;
+@end
 
-// Writing
-+ (nullable NSData *)createCAR:(NSArray *)blocks
-                      rootCID:(NSString *)rootCid
-                        error:(NSError **)error;
+// CARReader - reads and parses CAR files
+@interface CARReader : NSObject
+@property (nonatomic, strong, readonly) CID *rootCID;
+@property (nonatomic, strong, readonly) NSArray&lt;CARBlock *&gt; *blocks;
++ (nullable instancetype)readFromData:(NSData *)data error:(NSError **)error;
++ (nullable instancetype)readFromPath:(NSString *)path error:(NSError **)error;
+- (nullable CARBlock *)blockWithCID:(CID *)cid;
+@end
 
-// Reading
-+ (nullable NSDictionary *)parseCAR:(NSData *)carData error:(NSError **)error;
-
-// Streaming
-+ (nullable CAR *)streamingCAR:(NSString *)filePath error:(NSError **)error;
-
+// CARWriter - creates and writes CAR files
+@interface CARWriter : NSObject
+@property (nonatomic, strong, readonly) CID *rootCID;
++ (instancetype)writerWithRootCID:(CID *)rootCID;
+- (void)addBlock:(CARBlock *)block;
+- (nullable NSData *)serialize;
+- (BOOL)writeToPath:(NSString *)path error:(NSError **)error;
 @end
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 1-100, 200-250, 300-350)</p>
 <h2 id="creating-car-files">Creating CAR Files</h2>
-<pre class="codehilite"><code class="language-objc">// 1. Collect blocks
-NSMutableArray *blocks = [NSMutableArray array];
+<pre class="codehilite"><code class="language-objc">// 1. Create writer with root CID
+CID *rootCID = /* ... */;
+CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
 
-// Add MST root block
-[blocks addObject:@{
-    @&quot;cid&quot;: rootCid,
-    @&quot;data&quot;: rootBlockData
-}];
+// 2. Add MST root block
+NSData *rootBlockData = /* ... */;
+CARBlock *rootBlock = [CARBlock blockWithCID:rootCID data:rootBlockData];
+[writer addBlock:rootBlock];
 
-// Add record blocks
-for (NSString *recordCid in recordCids) {
-    [blocks addObject:@{
-        @&quot;cid&quot;: recordCid,
-        @&quot;data&quot;: recordBlockData
-    }];
+// 3. Add record blocks
+for (CID *recordCid in recordCids) {
+    NSData *recordBlockData = /* ... */;
+    CARBlock *recordBlock = [CARBlock blockWithCID:recordCid data:recordBlockData];
+    [writer addBlock:recordBlock];
 }
 
-// 2. Create CAR
+// 4. Write to file
 NSError *error = nil;
-NSData *carData = [CAR createCAR:blocks rootCID:rootCid error:&amp;error];
+BOOL success = [writer writeToPath:@&quot;/tmp/repo.car&quot; error:&amp;error];
 
-if (carData) {
-    // Write to file or send over network
-    [carData writeToFile:@&quot;/tmp/repo.car&quot; atomically:YES];
+if (success) {
+    NSLog(@&quot;CAR file created successfully&quot;);
+} else {
+    NSLog(@&quot;Failed to write CAR: %@&quot;, error);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 300-350, 380-420)</p>
 <h2 id="reading-car-files">Reading CAR Files</h2>
 <pre class="codehilite"><code class="language-objc">// 1. Read CAR file
-NSData *carData = [NSData dataWithContentsOfFile:@&quot;/tmp/repo.car&quot;];
-
-// 2. Parse CAR
 NSError *error = nil;
-NSDictionary *carContent = [CAR parseCAR:carData error:&amp;error];
+CARReader *reader = [CARReader readFromPath:@&quot;/tmp/repo.car&quot; error:&amp;error];
 
-if (carContent) {
-    NSString *rootCid = carContent[@&quot;root&quot;];
-    NSArray *blocks = carContent[@&quot;blocks&quot;];
+if (!reader) {
+    NSLog(@&quot;Failed to read CAR: %@&quot;, error);
+    return;
+}
 
-    // Process blocks
-    for (NSDictionary *block in blocks) {
-        NSString *cid = block[@&quot;cid&quot;];
-        NSData *data = block[@&quot;data&quot;];
+// 2. Get root CID
+CID *rootCID = reader.rootCID;
+NSLog(@&quot;Root CID: %@&quot;, rootCID.stringValue);
 
-        // Store block
-        [blobService storeBlock:data forCID:cid];
-    }
+// 3. Process blocks
+for (CARBlock *block in reader.blocks) {
+    CID *blockCID = block.cid;
+    NSData *blockData = block.data;
+
+    // Store block
+    NSLog(@&quot;Processing block: %@&quot;, blockCID.stringValue);
+    [blobService storeBlock:blockData forCID:blockCID];
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 150-200, 250-300)</p>
 <h2 id="streaming-car">Streaming CAR</h2>
 <p>For large repositories, stream CAR data:</p>
-<pre class="codehilite"><code class="language-objc">// 1. Create streaming CAR
+<pre class="codehilite"><code class="language-objc">// 1. Read CAR file (streaming is automatic for large files)
 NSError *error = nil;
-CAR *streamingCar = [CAR streamingCAR:@&quot;/tmp/repo.car&quot; error:&amp;error];
+CARReader *reader = [CARReader readFromPath:@&quot;/tmp/repo.car&quot; error:&amp;error];
 
-// 2. Read blocks one at a time
-NSDictionary *block = nil;
-while ((block = [streamingCar nextBlock]) != nil) {
-    NSString *cid = block[@&quot;cid&quot;];
-    NSData *data = block[@&quot;data&quot;];
+if (!reader) {
+    NSLog(@&quot;Failed to read CAR: %@&quot;, error);
+    return;
+}
 
-    // Process block
-    [self processBlock:data forCID:cid];
+// 2. Process blocks one at a time
+for (CARBlock *block in reader.blocks) {
+    CID *blockCID = block.cid;
+    NSData *blockData = block.data;
+
+    // Process block without loading entire CAR into memory
+    [self processBlock:blockData forCID:blockCID];
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 150-200)</p>
 <h2 id="repository-export">Repository Export</h2>
-<pre class="codehilite"><code class="language-objc">// 1. Get repository contents
+<pre class="codehilite"><code class="language-objc">// 1. Get repository root CID
 NSError *error = nil;
-NSData *carData = [repositoryService getRepoContents:userDid
-                                               since:nil
-                                               error:&amp;error];
+CID *rootCID = [repositoryService getRootCIDForDid:userDid error:&amp;error];
 
-// 2. Send CAR to client
+if (!rootCID) {
+    NSLog(@&quot;Failed to get root CID: %@&quot;, error);
+    return;
+}
+
+// 2. Create CAR writer
+CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+
+// 3. Add all repository blocks
+NSArray *blocks = [repositoryService getAllBlocksForDid:userDid error:&amp;error];
+for (CARBlock *block in blocks) {
+    [writer addBlock:block];
+}
+
+// 4. Serialize and send to client
+NSData *carData = [writer serialize];
 response.statusCode = 200;
 response.body = carData;
 [response setHeaderValue:@&quot;application/vnd.ipld.car&quot; forName:@&quot;Content-Type&quot;];
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 300-350, 380-420)</p>
 <h2 id="repository-import">Repository Import</h2>
 <pre class="codehilite"><code class="language-objc">// 1. Receive CAR data
 NSData *carData = request.body;
 
 // 2. Parse CAR
 NSError *error = nil;
-NSDictionary *carContent = [CAR parseCAR:carData error:&amp;error];
+CARReader *reader = [CARReader readFromData:carData error:&amp;error];
 
-if (!carContent) {
+if (!reader) {
     [XrpcErrorHelper setValidationError:response message:@&quot;Invalid CAR&quot;];
     return;
 }
 
-// 3. Apply to repository
-BOOL success = [repositoryService updateRepo:userDid
-                                      commit:carData
+// 3. Validate root CID
+CID *rootCID = reader.rootCID;
+if (!rootCID) {
+    [XrpcErrorHelper setValidationError:response message:@&quot;CAR missing root CID&quot;];
+    return;
+}
+
+// 4. Apply blocks to repository
+for (CARBlock *block in reader.blocks) {
+    BOOL success = [repositoryService storeBlock:block.data 
+                                         forCID:block.cid 
+                                           did:userDid 
+                                          error:&amp;error];
+    if (!success) {
+        [XrpcErrorHelper setInternalServerError:response];
+        return;
+    }
+}
+
+// 5. Update repository root
+BOOL success = [repositoryService setRootCID:rootCID 
+                                       forDid:userDid 
                                        error:&amp;error];
 
 if (!success) {
@@ -373,6 +427,7 @@ if (!success) {
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Repository/CAR.m</code> (lines 150-200, 250-300)</p>
 <h2 id="best-practices">Best Practices</h2>
 <ol>
 <li><strong>CAR Creation</strong></li>
@@ -406,7 +461,7 @@ if (!success) {
 <li><a href="./repository-basics.md">Repository Basics</a></li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>

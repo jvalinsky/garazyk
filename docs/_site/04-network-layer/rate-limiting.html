@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate Limiting - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Rate Limiting</h1>
+            </div>
+            <h1 id="rate-limiting">Rate Limiting</h1>
+<h2 id="overview">Overview</h2>
+<p>Rate limiting prevents abuse by restricting the number of requests a client can make within a time window. The PDS implements sliding window rate limiting with SQLite persistence, supporting multiple limit types:</p>
+<ul>
+<li><strong>DID-based API limits</strong> — Per-user authenticated request limits</li>
+<li><strong>IP-based limits</strong> — Per-IP unauthenticated request limits  </li>
+<li><strong>Blob upload limits</strong> — Per-user blob upload limits</li>
+<li><strong>Custom limits</strong> — Flexible limits for specific operations</li>
+</ul>
+<h2 id="why-rate-limiting">Why Rate Limiting?</h2>
+<p>Rate limiting protects the PDS from:</p>
+<ol>
+<li><strong>Abuse</strong> — Malicious actors overwhelming the server</li>
+<li><strong>Resource exhaustion</strong> — Excessive requests consuming CPU/memory/disk</li>
+<li><strong>Denial of service</strong> — Legitimate users unable to access the service</li>
+<li><strong>Cost overruns</strong> — Excessive bandwidth or compute costs</li>
+<li><strong>Data scraping</strong> — Automated harvesting of user data</li>
+</ol>
+<h2 id="rate-limiting-strategies">Rate Limiting Strategies</h2>
+<h3 id="1-fixed-window">1. Fixed Window</h3>
+<p>Counts requests in fixed time windows (e.g., per minute, per hour).</p>
+<p><strong>Pros:</strong>
+- Simple to implement
+- Low memory overhead
+- Easy to understand</p>
+<p><strong>Cons:</strong>
+- Burst traffic at window boundaries
+- Can allow 2x limit at boundary
+- Not smooth rate enforcement</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code>Window 1: 00:00-01:00 → 100 requests allowed
+Window 2: 01:00-02:00 → 100 requests allowed
+
+Problem: 100 requests at 00:59, 100 at 01:01 = 200 in 2 minutes
+</code></pre>
+
+<h3 id="2-sliding-window-used-by-pds">2. Sliding Window (Used by PDS)</h3>
+<p>Tracks request timestamps and counts requests within a rolling time window.</p>
+<p><strong>Pros:</strong>
+- Smooth rate enforcement
+- No boundary burst issues
+- Accurate limit enforcement</p>
+<p><strong>Cons:</strong>
+- Higher memory overhead
+- More complex implementation
+- Requires timestamp storage</p>
+<p><strong>Example:</strong></p>
+<pre class="codehilite"><code>Current time: 01:30
+Window: Last 60 minutes (00:30-01:30)
+Count: All requests with timestamp &gt; 00:30
+</code></pre>
+
+<h3 id="3-token-bucket">3. Token Bucket</h3>
+<p>Tokens added at fixed rate, consumed per request. Allows bursts up to bucket size.</p>
+<p><strong>Pros:</strong>
+- Allows controlled bursts
+- Smooth long-term rate
+- Flexible configuration</p>
+<p><strong>Cons:</strong>
+- Complex to implement
+- Requires state management
+- Harder to explain to users</p>
+<h3 id="4-leaky-bucket">4. Leaky Bucket</h3>
+<p>Requests queued and processed at fixed rate. Excess requests dropped.</p>
+<p><strong>Pros:</strong>
+- Smooth output rate
+- Predictable behavior
+- Good for rate shaping</p>
+<p><strong>Cons:</strong>
+- Adds latency (queuing)
+- Complex implementation
+- May drop valid requests</p>
+<h2 id="pds-implementation-sliding-window">PDS Implementation: Sliding Window</h2>
+<p>The PDS uses a sliding window algorithm with SQLite persistence:</p>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.h
+@interface RateLimiter : NSObject
+
+/*! Maximum API requests per hour per DID (default: 5000) */
+@property (nonatomic, assign) NSInteger didLimit;
+
+/*! Time window for DID rate limiting in seconds (default: 3600) */
+@property (nonatomic, assign) NSTimeInterval didWindowSeconds;
+
+/*! Maximum API requests per minute per IP address (default: 100) */
+@property (nonatomic, assign) NSInteger ipLimit;
+
+/*! Time window for IP rate limiting in seconds (default: 60) */
+@property (nonatomic, assign) NSTimeInterval ipWindowSeconds;
+
+/*! Maximum blob uploads per hour per DID (default: 50) */
+@property (nonatomic, assign) NSInteger blobLimit;
+
+/*! Time window for blob upload limiting in seconds (default: 3600) */
+@property (nonatomic, assign) NSTimeInterval blobWindowSeconds;
+
+/*! Whether rate limiting is enabled (default: YES) */
+@property (nonatomic, assign, getter=isEnabled) BOOL enabled;
+
+@end
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.h</code> (lines 90-115)</p>
+<h2 id="algorithm-details">Algorithm Details</h2>
+<h3 id="sliding-window-algorithm">Sliding Window Algorithm</h3>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m - Core sliding window check
+- (RateLimitResult *)checkRateLimitInternalForIdentifier:(NSString *)identifier
+                                                     type:(RateLimitType)type
+                                                    limit:(NSInteger)limit
+                                              windowSeconds:(NSTimeInterval)windowSeconds {
+    if (![self ensureDatabaseOpened]) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSTimeInterval windowStart = now - windowSeconds;
+
+    // 1. Query current count within window
+    NSString *selectSQL = @&quot;SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start &gt; ?&quot;;
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
+    int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &amp;stmt, NULL);
+    if (result != SQLITE_OK) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+
+    sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, type);
+    sqlite3_bind_double(stmt, 3, windowStart);
+
+    NSInteger requestCount = 0;
+    NSTimeInterval existingWindowStart = 0;
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        requestCount = sqlite3_column_int(stmt, 0);
+        existingWindowStart = sqlite3_column_double(stmt, 1);
+    }
+
+    // 2. Check if limit exceeded
+    if (requestCount &gt;= limit) {
+        NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+        return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
+    }
+
+    // 3. Increment count (UPSERT)
+    NSString *upsertSQL = @&quot;INSERT INTO rate_limits (identifier, type, request_count, window_start) &quot;
+                          @&quot;VALUES (?, ?, ?, ?) &quot;
+                          @&quot;ON CONFLICT(identifier, type) DO UPDATE SET &quot;
+                          @&quot;request_count = CASE WHEN window_start &gt; ? THEN request_count + 1 ELSE 1 END, &quot;
+                          @&quot;window_start = CASE WHEN window_start &gt; ? THEN window_start ELSE ? END&quot;;
+
+    // ... (execute upsert)
+
+    return [RateLimitResult resultAllowed:YES
+                                    limit:limit
+                                remaining:(limit - requestCount - 1)
+                              resetSeconds:windowSeconds
+                               retryAfter:0];
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 210-270)</p>
+<h3 id="database-schema">Database Schema</h3>
+<pre class="codehilite"><code class="language-sql">-- Rate limits table
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    identifier TEXT NOT NULL,
+    type INTEGER NOT NULL,
+    request_count INTEGER NOT NULL DEFAULT 0,
+    window_start INTEGER NOT NULL,
+    UNIQUE(identifier, type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier);
+
+-- Blob rate limits table
+CREATE TABLE IF NOT EXISTS blob_rate_limits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    did TEXT NOT NULL,
+    upload_count INTEGER NOT NULL DEFAULT 0,
+    window_start INTEGER NOT NULL,
+    UNIQUE(did)
+);
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 118-150)</p>
+<h2 id="rate-limit-types">Rate Limit Types</h2>
+<h3 id="1-did-based-api-limits">1. DID-Based API Limits</h3>
+<p>Applied to authenticated XRPC requests:</p>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+- (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
+    }
+    if (!did || did.length == 0) {
+        return [RateLimitResult resultAllowed:YES limit:self.didLimit remaining:self.didLimit resetSeconds:0 retryAfter:0];
+    }
+
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkRateLimitInternalForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
+    });
+    return result;
+}
+</code></pre>
+
+<p><strong>Default:</strong> 5000 requests/hour per DID</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 154-168)</p>
+<h3 id="2-ip-based-limits">2. IP-Based Limits</h3>
+<p>Applied to unauthenticated requests (e.g., OAuth endpoints):</p>
+<pre class="codehilite"><code class="language-objc">// In HttpServer.m - OAuth endpoint rate limiting
+if ([request.path hasPrefix:@&quot;/oauth/&quot;] &amp;&amp; !RateLimiterIsDisabledGlobally() &amp;&amp;
+    [RateLimiter sharedLimiter].isEnabled) {
+  RateLimitResult *result =
+      [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+
+  if (!result.allowed) {
+    response.statusCode = 429;
+    [response setJsonBody:@{
+      @&quot;error&quot; : @&quot;too_many_requests&quot;,
+      @&quot;message&quot; : @&quot;Rate limit exceeded&quot;
+    }];
+    return response;
+  }
+}
+</code></pre>
+
+<p><strong>Default:</strong> 100 requests/minute per IP</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/HttpServer.m</code> (lines 994-1005)</p>
+<h3 id="3-blob-upload-limits">3. Blob Upload Limits</h3>
+<p>Applied to blob upload operations:</p>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+- (RateLimitResult *)checkBlobUploadRateLimitForDid:(NSString *)did {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
+    }
+    if (!did || did.length == 0) {
+        return [RateLimitResult resultAllowed:YES limit:self.blobLimit remaining:self.blobLimit resetSeconds:0 retryAfter:0];
+    }
+
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkBlobRateLimitInternalForDid:did limit:self.blobLimit windowSeconds:self.blobWindowSeconds];
+    });
+    return result;
+}
+</code></pre>
+
+<p><strong>Default:</strong> 50 uploads/hour per DID</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 190-203)</p>
+<h3 id="4-custom-limits">4. Custom Limits</h3>
+<p>Flexible limits for specific operations:</p>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+- (RateLimitResult *)checkRateLimitForKey:(NSString *)key 
+                                    limit:(NSInteger)limit 
+                            windowSeconds:(NSTimeInterval)windowSeconds {
+    if (!self.isEnabled) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+    if (!key || key.length == 0) {
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkRateLimitInternalForIdentifier:key type:RateLimitTypeCustom limit:limit windowSeconds:windowSeconds];
+    });
+    return result;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 205-220)</p>
+<h2 id="configuration">Configuration</h2>
+<h3 id="initialization">Initialization</h3>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+- (instancetype)initWithDatabasePath:(nullable NSString *)path {
+    self = [super init];
+    if (self) {
+        _didLimit = 5000;
+        _didWindowSeconds = 3600;
+        _ipLimit = 100;
+        _ipWindowSeconds = 60;
+        _blobLimit = 50;
+        _blobWindowSeconds = 3600;
+        _enabled = !_rateLimiterDisabledGlobally;
+
+        _dbQueue = dispatch_queue_create(&quot;com.atproto.ratelimiter.db&quot;, DISPATCH_QUEUE_SERIAL);
+
+        if (path) {
+            _databasePath = [path copy];
+        } else {
+            _databasePath = nil; // Will be determined on-demand
+        }
+    }
+    return self;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 68-90)</p>
+<h3 id="customizing-limits">Customizing Limits</h3>
+<pre class="codehilite"><code class="language-objc">// Example: Increase DID limit for premium users
+RateLimiter *limiter = [[RateLimiter alloc] initWithDatabasePath:@&quot;rate_limits.db&quot;];
+limiter.didLimit = 10000;  // 10k requests/hour
+limiter.didWindowSeconds = 3600;
+
+// Example: Stricter IP limits
+limiter.ipLimit = 50;  // 50 requests/minute
+limiter.ipWindowSeconds = 60;
+
+// Example: More generous blob limits
+limiter.blobLimit = 100;  // 100 uploads/hour
+limiter.blobWindowSeconds = 3600;
+</code></pre>
+
+<h3 id="global-disable-development">Global Disable (Development)</h3>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+#ifdef DEBUG
+static BOOL _rateLimiterDisabledGlobally = YES;
+#else
+static BOOL _rateLimiterDisabledGlobally = NO;
+#endif
+
+void RateLimiterSetDisabledGlobally(BOOL disabled) {
+    _rateLimiterDisabledGlobally = disabled;
+}
+
+BOOL RateLimiterIsDisabledGlobally(void) {
+    return _rateLimiterDisabledGlobally;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 12-25)</p>
+<h2 id="http-headers">HTTP Headers</h2>
+<h3 id="x-ratelimit-headers">X-RateLimit-* Headers</h3>
+<p>The PDS returns standard rate limit headers per RFC 6585:</p>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+- (NSDictionary&lt;NSString *, NSString *&gt; *)headersFromResult:(RateLimitResult *)result {
+    NSMutableDictionary *headers = [NSMutableDictionary dictionary];
+
+    [headers setObject:[NSString stringWithFormat:@&quot;%ld&quot;, (long)result.limit] forKey:@&quot;X-RateLimit-Limit&quot;];
+    [headers setObject:[NSString stringWithFormat:@&quot;%ld&quot;, (long)result.remaining] forKey:@&quot;X-RateLimit-Remaining&quot;];
+    [headers setObject:[NSString stringWithFormat:@&quot;%.0f&quot;, result.resetSeconds] forKey:@&quot;X-RateLimit-Reset&quot;];
+
+    if (!result.allowed) {
+        [headers setObject:[NSString stringWithFormat:@&quot;%.0f&quot;, result.retryAfter] forKey:@&quot;Retry-After&quot;];
+    }
+
+    return [headers copy];
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 450-465)</p>
+<h3 id="header-examples">Header Examples</h3>
+<p><strong>Successful request:</strong></p>
+<pre class="codehilite"><code class="language-http">HTTP/1.1 200 OK
+X-RateLimit-Limit: 5000
+X-RateLimit-Remaining: 4999
+X-RateLimit-Reset: 3600
+</code></pre>
+
+<p><strong>Rate limit exceeded:</strong></p>
+<pre class="codehilite"><code class="language-http">HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 5000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1234
+Retry-After: 1234
+Content-Type: application/json
+
+{
+  &quot;error&quot;: &quot;too_many_requests&quot;,
+  &quot;message&quot;: &quot;Rate limit exceeded&quot;
+}
+</code></pre>
+
+<h2 id="thread-safety">Thread Safety</h2>
+<p>The RateLimiter is thread-safe through SQLite serialization:</p>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+@interface RateLimiter ()
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
+@end
+
+@implementation RateLimiter
+
+- (instancetype)initWithDatabasePath:(nullable NSString *)path {
+    // ...
+    _dbQueue = dispatch_queue_create(&quot;com.atproto.ratelimiter.db&quot;, DISPATCH_QUEUE_SERIAL);
+    // ...
+}
+
+- (RateLimitResult *)checkRateLimitForDid:(NSString *)did {
+    __block RateLimitResult *result;
+    dispatch_sync(self.dbQueue, ^{
+        result = [self checkRateLimitInternalForIdentifier:did type:RateLimitTypeDID limit:self.didLimit windowSeconds:self.didWindowSeconds];
+    });
+    return result;
+}
+</code></pre>
+
+<p>All database operations are serialized through <code>dbQueue</code>, ensuring thread-safe access.</p>
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 45-50, 154-168)</p>
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="database-persistence">Database Persistence</h3>
+<p>Rate limits are persisted to SQLite, surviving server restarts:</p>
+<pre class="codehilite"><code class="language-objc">// In RateLimiter.m
+- (BOOL)ensureDatabaseOpened {
+    if (_db) return YES;
+
+    if (!_databasePath) {
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        NSString *baseDir = config ? config.dataPaths.serviceDirectory
+                                   : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].serviceDirectory;
+        [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
+        _databasePath = [baseDir stringByAppendingPathComponent:@&quot;ratelimits.db&quot;];
+    }
+
+    [self initializeDatabase];
+    return _db != NULL;
+}
+</code></pre>
+
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Network/RateLimiter.m</code> (lines 92-106)</p>
+<h3 id="index-optimization">Index Optimization</h3>
+<pre class="codehilite"><code class="language-sql">CREATE INDEX IF NOT EXISTS idx_rate_limits_identifier ON rate_limits(identifier);
+</code></pre>
+
+<p>The index on <code>identifier</code> ensures fast lookups for rate limit checks.</p>
+<h3 id="memory-overhead">Memory Overhead</h3>
+<ul>
+<li><strong>Per identifier:</strong> ~100 bytes (identifier + metadata)</li>
+<li><strong>1000 active users:</strong> ~100 KB</li>
+<li><strong>10,000 active users:</strong> ~1 MB</li>
+</ul>
+<p>Minimal memory footprint due to SQLite storage.</p>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Set appropriate limits</strong> — Balance protection and usability</li>
+<li><strong>Monitor rate limit hits</strong> — Track 429 responses</li>
+<li><strong>Provide clear error messages</strong> — Include retry-after information</li>
+<li><strong>Use different limits per resource</strong> — API vs blobs vs auth</li>
+<li><strong>Consider user tiers</strong> — Premium users may need higher limits</li>
+<li><strong>Test under load</strong> — Verify limits work as expected</li>
+<li><strong>Log rate limit events</strong> — Track abuse patterns</li>
+<li><strong>Implement gradual backoff</strong> — Increase limits for trusted users</li>
+</ol>
+<h2 id="monitoring">Monitoring</h2>
+<h3 id="metrics-to-track">Metrics to Track</h3>
+<pre class="codehilite"><code class="language-objc">// Example metrics collection
+@interface RateLimiterMetrics : NSObject
+@property (nonatomic, assign) NSUInteger totalRequests;
+@property (nonatomic, assign) NSUInteger rateLimitedRequests;
+@property (nonatomic, assign) NSUInteger uniqueIdentifiers;
+@property (nonatomic, strong) NSMutableDictionary *limitsByType;
+@end
+
+- (void)recordRateLimitCheck:(RateLimitResult *)result type:(RateLimitType)type {
+    self.totalRequests++;
+    if (!result.allowed) {
+        self.rateLimitedRequests++;
+    }
+
+    NSString *typeKey = [self keyForType:type];
+    NSNumber *count = self.limitsByType[typeKey] ?: @0;
+    self.limitsByType[typeKey] = @(count.integerValue + 1);
+}
+</code></pre>
+
+<h3 id="key-metrics">Key Metrics</h3>
+<ul>
+<li><strong>Rate limit hit rate</strong> — Percentage of requests rate limited</li>
+<li><strong>Unique identifiers</strong> — Number of distinct users/IPs</li>
+<li><strong>Limits by type</strong> — DID vs IP vs blob distribution</li>
+<li><strong>Reset time distribution</strong> — When limits reset</li>
+<li><strong>Retry-after compliance</strong> — Do clients respect retry-after?</li>
+</ul>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./dos-protection.md">DoS Protection</a></strong> — Attack mitigation strategies</li>
+<li><strong><a href="./request-throttling.md">Request Throttling</a></strong> — Per-endpoint throttling</li>
+<li><strong><a href="./error-handling.md">Error Handling</a></strong> — Standardized error responses</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

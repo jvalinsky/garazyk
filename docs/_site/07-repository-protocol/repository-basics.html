@@ -268,56 +268,40 @@
           completion:(void (^)(NSString *uri, NSError *error))completion {
 
     // 1. Validate record against lexicon
-    if (![self validateRecord:record againstLexicon:collection error:nil]) {
-        NSError *error = [NSError errorWithDomain:@&quot;Record&quot; code:1 
-            userInfo:@{NSLocalizedDescriptionKey: @&quot;Invalid record&quot;}];
+    NSError *error = nil;
+    if (![self validateRecord:record againstLexicon:collection error:&amp;error]) {
         completion(nil, error);
         return;
     }
 
-    // 2. Generate RKey
+    // 2. Generate RKey (TID for time-ordered, random for unordered)
     NSString *rkey = [self generateRKeyForCollection:collection];
 
     // 3. Encode record to CBOR
-    NSData *cbor = [ATProtoCBORSerialization encodeObject:record error:nil];
-    NSString *cid = [CID calculateCIDForData:cbor];
+    NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&amp;error];
+    if (!cbor) {
+        completion(nil, error);
+        return;
+    }
 
-    // 4. Store in database
-    PDSActorDatabase *db = [self.app.databasePool databaseForDID:did error:nil];
-    [self storeRecord:record collection:collection rkey:rkey cid:cid db:db];
+    // 4. Calculate CID
+    NSData *hash = [CID sha256Digest:cbor];
+    CID *cid = [CID cidWithDigest:hash codec:0x71];
 
-    // 5. Update MST
-    [self.app.repositoryService updateMSTWithRecord:record 
-                                         collection:collection 
-                                              rkey:rkey 
-                                               did:did 
-                                        completion:^(NSString *rootCID, NSError *error) {
-        if (error) {
-            completion(nil, error);
-            return;
-        }
+    // 5. Store in database
+    PDSActorStore *store = [self.app.databasePool storeForDid:did error:&amp;error];
+    if (!store) {
+        completion(nil, error);
+        return;
+    }
 
-        // 6. Create commit
-        [self.app.repositoryService createCommitWithRootCID:rootCID 
-                                                       did:did 
-                                                completion:^(NSString *commitCID, NSError *error) {
-            if (error) {
-                completion(nil, error);
-                return;
-            }
-
-            // 7. Notify relays
-            [self.app.relayService notifyRelaysOfCommit:@{@&quot;root&quot;: rootCID} 
-                                                   did:did 
-                                            completion:^(NSError *error) {
-                NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
-                completion(uri, nil);
-            }];
-        }];
-    }];
+    // 6. Create URI
+    NSString *uri = [NSString stringWithFormat:@&quot;at://%@/%@/%@&quot;, did, collection, rkey];
+    completion(uri, nil);
 }
 </code></pre>
 
+<p><strong>Source:</strong> <code>ATProtoPDS/Sources/Blob/BlobStorage.m</code> (lines 35-85); <code>ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m</code> (lines 8-20); <code>ATProtoPDS/Sources/Core/CID.m</code> (lines 280-295)</p>
 <h2 id="blobs">Blobs</h2>
 <h3 id="blob-storage">Blob Storage</h3>
 <p>Blobs are stored separately from records:
@@ -569,7 +553,7 @@
 <li><strong><a href="./cid-and-hashing.md">CID and Hashing</a></strong> — Content addressing</li>
 </ul>
             <div class="footer">
-                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 15:41:01</p>
             </div>
         </div>
     </div>
