@@ -19,13 +19,13 @@ The `XrpcAuthHelper` provides centralized authentication logic for XRPC endpoint
 ```
 Authorization Header
     │
-    ├─ Bearer <JWT>
+    ├─ Bearer \<JWT\>
     │   ├─ Parse JWT
     │   ├─ Verify signature
     │   ├─ Check expiration
     │   └─ Extract DID
     │
-    └─ DPoP <JWT>
+    └─ DPoP \<JWT\>
         ├─ Parse DPoP proof
         ├─ Verify DPoP signature
         ├─ Check nonce
@@ -49,7 +49,7 @@ Authorization Header
 Extracts and validates DID from Authorization header.
 
 **Parameters:**
-- `authHeader`: Authorization header value (e.g., "Bearer <token>" or "DPoP <token>")
+- `authHeader`: Authorization header value (e.g., "Bearer \<token\>" or "DPoP \<token\>")
 - `jwtMinter`: JWT minter for signature verification
 - `adminController`: Admin controller for takedown checks
 - `request`: HTTP request for DPoP URL construction
@@ -367,8 +367,8 @@ Standard JWT claims:
 DPoP (Demonstration of Proof-of-Possession) uses two tokens:
 
 ```
-Authorization: DPoP <access_token>
-DPoP: <dpop_proof>
+Authorization: DPoP \<access_token\>
+DPoP: \<dpop_proof\>
 ```
 
 ### DPoP Proof Structure
