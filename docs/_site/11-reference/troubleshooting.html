@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshooting Guide - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Troubleshooting Guide</h1>
+            </div>
+            <h1 id="troubleshooting-guide">Troubleshooting Guide</h1>
+<h2 id="common-issues-and-solutions">Common Issues and Solutions</h2>
+<h3 id="build-issues">Build Issues</h3>
+<h4 id="cmake-configuration-fails">CMake Configuration Fails</h4>
+<p><strong>Problem:</strong> <code>cmake ..</code> fails with configuration errors</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Clean build directory
+rm -rf build
+mkdir build &amp;&amp; cd build
+
+# 2. Verify dependencies
+brew list | grep -E &quot;cmake|openssl|sqlite&quot;
+
+# 3. Specify paths if needed
+cmake .. -DOPENSSL_DIR=/usr/local/opt/openssl -DSQLITE3_DIR=/usr/local/opt/sqlite
+
+# 4. Check CMakeLists.txt for required versions
+cat ../CMakeLists.txt | grep -E &quot;cmake_minimum_required|find_package&quot;
+</code></pre>
+
+<h4 id="xcode-build-fails">Xcode Build Fails</h4>
+<p><strong>Problem:</strong> <code>xcodebuild</code> fails with compilation errors</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Regenerate Xcode project
+xcodegen generate
+
+# 2. Clean build
+xcodebuild clean -scheme ATProtoPDS-CLI
+
+# 3. Build with verbose output
+xcodebuild -scheme ATProtoPDS-CLI build -verbose
+
+# 4. Check for missing dependencies
+xcodebuild -scheme ATProtoPDS-CLI build -showBuildSettings | grep -E &quot;HEADER_SEARCH_PATHS|LIBRARY_SEARCH_PATHS&quot;
+</code></pre>
+
+<h4 id="gnustep-build-fails">GNUstep Build Fails</h4>
+<p><strong>Problem:</strong> Linux/GNUstep build fails</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Install GNUstep development files
+sudo apt-get install gnustep-devel
+
+# 2. Source GNUstep environment
+source /usr/share/GNUstep/Makefiles/GNUstep.sh
+
+# 3. Clean and rebuild
+rm -rf build-linux
+mkdir build-linux &amp;&amp; cd build-linux
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+make -j$(nproc)
+
+# 4. Check for missing libraries
+ldd ./bin/kaszlak | grep &quot;not found&quot;
+</code></pre>
+
+<h3 id="runtime-issues">Runtime Issues</h3>
+<h4 id="server-wont-start">Server Won't Start</h4>
+<p><strong>Problem:</strong> <code>kaszlak</code> starts but immediately exits</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Check configuration file
+cat config.json | jq .
+
+# 2. Verify port is available
+lsof -i :2583
+
+# 3. Run with verbose logging
+./build/bin/kaszlak --verbose --config config.json
+
+# 4. Check data directory permissions
+ls -la data/
+
+# 5. Verify database integrity
+sqlite3 data/service.db &quot;PRAGMA integrity_check;&quot;
+</code></pre>
+
+<h4 id="port-already-in-use">Port Already in Use</h4>
+<p><strong>Problem:</strong> "Address already in use" error</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Find process using port
+lsof -i :2583
+
+# 2. Kill existing process
+kill -9 &lt;PID&gt;
+
+# 3. Or use different port
+./build/bin/kaszlak --config config.json --port 2584
+
+# 4. Check for zombie processes
+ps aux | grep kaszlak
+</code></pre>
+
+<h4 id="database-locked">Database Locked</h4>
+<p><strong>Problem:</strong> "Database is locked" error</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Check for open connections
+sqlite3 data/service.db &quot;PRAGMA database_list;&quot;
+
+# 2. Verify WAL mode is enabled
+sqlite3 data/service.db &quot;PRAGMA journal_mode;&quot;
+
+# 3. Remove WAL files if corrupted
+rm -f data/service.db-wal data/service.db-shm
+
+# 4. Rebuild database
+sqlite3 data/service.db &quot;.dump&quot; &gt; backup.sql
+rm data/service.db
+sqlite3 data/service.db &lt; backup.sql
+</code></pre>
+
+<h3 id="network-issues">Network Issues</h3>
+<h4 id="connection-refused">Connection Refused</h4>
+<p><strong>Problem:</strong> Client can't connect to PDS</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Verify server is running
+ps aux | grep kaszlak
+
+# 2. Check if port is listening
+netstat -tlnp | grep 2583
+
+# 3. Test local connection
+curl -v http://localhost:2583/xrpc/com.atproto.server.describeServer
+
+# 4. Check firewall rules
+sudo iptables -L -n | grep 2583
+
+# 5. Verify configuration
+cat config.json | jq .server
+</code></pre>
+
+<h4 id="tls-certificate-errors">TLS Certificate Errors</h4>
+<p><strong>Problem:</strong> "Certificate verification failed" error</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Check certificate validity
+openssl x509 -in cert.pem -text -noout
+
+# 2. Verify certificate chain
+openssl verify -CAfile ca.pem cert.pem
+
+# 3. Check certificate dates
+openssl x509 -in cert.pem -noout -dates
+
+# 4. Regenerate self-signed certificate
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+
+# 5. Update configuration
+cat config.json | jq '.server.tls = {cert: &quot;cert.pem&quot;, key: &quot;key.pem&quot;}'
+</code></pre>
+
+<h4 id="websocket-connection-fails">WebSocket Connection Fails</h4>
+<p><strong>Problem:</strong> WebSocket upgrade fails</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Check WebSocket endpoint
+curl -i -N -H &quot;Connection: Upgrade&quot; -H &quot;Upgrade: websocket&quot; \
+  http://localhost:2583/xrpc/com.atproto.sync.subscribeRepos
+
+# 2. Verify headers
+curl -v http://localhost:2583/xrpc/com.atproto.sync.subscribeRepos 2&gt;&amp;1 | grep -i upgrade
+
+# 3. Check for proxy issues
+# WebSocket may fail behind certain proxies
+# Verify nginx/reverse proxy configuration
+
+# 4. Test with wscat
+npm install -g wscat
+wscat -c ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos
+</code></pre>
+
+<h3 id="authentication-issues">Authentication Issues</h3>
+<h4 id="jwt-token-invalid">JWT Token Invalid</h4>
+<p><strong>Problem:</strong> "Invalid JWT token" error</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Verify token format
+echo $TOKEN | cut -d'.' -f1 | base64 -d | jq .
+
+# 2. Check token expiration
+echo $TOKEN | cut -d'.' -f2 | base64 -d | jq .exp
+
+# 3. Verify signature
+# Use JWT.io or similar tool to verify
+
+# 4. Check clock skew
+date -u
+
+# 5. Regenerate token
+curl -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;identifier&quot;:&quot;user@example.com&quot;,&quot;password&quot;:&quot;password&quot;}'
+</code></pre>
+
+<h4 id="dpop-proof-invalid">DPoP Proof Invalid</h4>
+<p><strong>Problem:</strong> "Invalid DPoP proof" error</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Verify DPoP header format
+curl -v -H &quot;DPoP: &lt;proof&gt;&quot; http://localhost:2583/xrpc/com.atproto.server.getSession
+
+# 2. Check proof timestamp
+# DPoP proof must be recent (within 60 seconds)
+
+# 3. Verify proof signature
+# Proof must be signed with correct key
+
+# 4. Check method/URI match
+# DPoP proof must match HTTP method and URI
+
+# 5. Regenerate proof
+# Create new DPoP proof with current timestamp
+</code></pre>
+
+<h4 id="oauth-flow-fails">OAuth Flow Fails</h4>
+<p><strong>Problem:</strong> OAuth authorization fails</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Verify OAuth configuration
+cat config.json | jq '.oauth'
+
+# 2. Check redirect URI
+# Must match registered URI exactly
+
+# 3. Verify authorization code
+# Code must be used within 10 minutes
+
+# 4. Check client credentials
+# Client ID and secret must be correct
+
+# 5. Test OAuth flow manually
+curl -X POST http://localhost:2583/oauth/token \
+  -H &quot;Content-Type: application/x-www-form-urlencoded&quot; \
+  -d &quot;grant_type=authorization_code&amp;code=&lt;code&gt;&amp;client_id=&lt;id&gt;&amp;client_secret=&lt;secret&gt;&quot;
+</code></pre>
+
+<h3 id="performance-issues">Performance Issues</h3>
+<h4 id="high-memory-usage">High Memory Usage</h4>
+<p><strong>Problem:</strong> PDS process uses excessive memory</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Monitor memory usage
+watch -n 1 'ps aux | grep kaszlak'
+
+# 2. Check for memory leaks
+valgrind --leak-check=full ./build/bin/kaszlak
+
+# 3. Reduce buffer sizes
+cat config.json | jq '.network.maxBufferSize = 5242880'
+
+# 4. Clear caches
+# Restart PDS to clear in-memory caches
+
+# 5. Check database size
+du -sh data/
+
+# 6. Vacuum database
+sqlite3 data/service.db &quot;VACUUM;&quot;
+</code></pre>
+
+<h4 id="slow-response-times">Slow Response Times</h4>
+<p><strong>Problem:</strong> API responses are slow</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Check database performance
+sqlite3 data/service.db &quot;EXPLAIN QUERY PLAN SELECT * FROM records WHERE did = 'did:plc:...';&quot;
+
+# 2. Verify indexes exist
+sqlite3 data/service.db &quot;.indices&quot;
+
+# 3. Check query execution time
+sqlite3 data/service.db &quot;.timer on&quot;
+sqlite3 data/service.db &quot;SELECT COUNT(*) FROM records;&quot;
+
+# 4. Monitor CPU usage
+top -p &lt;PID&gt;
+
+# 5. Check for lock contention
+sqlite3 data/service.db &quot;PRAGMA busy_timeout = 5000;&quot;
+
+# 6. Enable query logging
+cat config.json | jq '.debug.logQueries = true'
+</code></pre>
+
+<h4 id="high-cpu-usage">High CPU Usage</h4>
+<p><strong>Problem:</strong> PDS process uses excessive CPU</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Profile CPU usage
+perf record -p &lt;PID&gt; -g -- sleep 10
+perf report
+
+# 2. Check for busy loops
+# Look for functions with high CPU time
+
+# 3. Reduce polling frequency
+cat config.json | jq '.polling.interval = 5000'
+
+# 4. Check for excessive logging
+cat config.json | jq '.debug.logLevel = &quot;warn&quot;'
+
+# 5. Monitor thread count
+ps -eLf | grep kaszlak | wc -l
+
+# 6. Check for thread contention
+# Use thread profiler to identify bottlenecks
+</code></pre>
+
+<h3 id="data-issues">Data Issues</h3>
+<h4 id="corrupted-database">Corrupted Database</h4>
+<p><strong>Problem:</strong> Database integrity check fails</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Check integrity
+sqlite3 data/service.db &quot;PRAGMA integrity_check;&quot;
+
+# 2. Backup current database
+cp data/service.db data/service.db.backup
+
+# 3. Attempt repair
+sqlite3 data/service.db &quot;PRAGMA integrity_check(1000);&quot;
+
+# 4. Rebuild database
+sqlite3 data/service.db &quot;.dump&quot; &gt; backup.sql
+rm data/service.db
+sqlite3 data/service.db &lt; backup.sql
+
+# 5. Verify repair
+sqlite3 data/service.db &quot;PRAGMA integrity_check;&quot;
+
+# 6. Restart PDS
+./build/bin/kaszlak --config config.json
+</code></pre>
+
+<h4 id="missing-records">Missing Records</h4>
+<p><strong>Problem:</strong> Records are missing from database</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Check record count
+sqlite3 data/service.db &quot;SELECT COUNT(*) FROM records;&quot;
+
+# 2. Verify record exists
+sqlite3 data/service.db &quot;SELECT * FROM records WHERE uri = 'at://...';&quot;
+
+# 3. Check deletion log
+sqlite3 data/service.db &quot;SELECT * FROM deleted_records WHERE uri = 'at://...';&quot;
+
+# 4. Restore from backup
+# If backup available, restore and re-sync
+
+# 5. Re-sync repository
+curl -X POST http://localhost:2583/xrpc/com.atproto.sync.getRepo \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -d '{&quot;did&quot;:&quot;did:plc:...&quot;}'
+</code></pre>
+
+<h4 id="inconsistent-state">Inconsistent State</h4>
+<p><strong>Problem:</strong> Repository state is inconsistent</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Verify MST root
+sqlite3 data/service.db &quot;SELECT root_cid FROM repositories WHERE did = 'did:plc:...';&quot;
+
+# 2. Check commit history
+sqlite3 data/service.db &quot;SELECT * FROM commits WHERE did = 'did:plc:...' ORDER BY seq DESC LIMIT 10;&quot;
+
+# 3. Rebuild MST
+# Requires re-syncing repository
+
+# 4. Verify record signatures
+# Check that all records are properly signed
+
+# 5. Re-sync from PLC
+# Force re-sync with PLC directory
+</code></pre>
+
+<h3 id="testing-issues">Testing Issues</h3>
+<h4 id="tests-fail-to-build">Tests Fail to Build</h4>
+<p><strong>Problem:</strong> Test compilation fails</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Clean test build
+xcodebuild clean -scheme AllTests
+
+# 2. Rebuild tests
+xcodebuild -scheme AllTests build
+
+# 3. Check for missing test files
+find ATProtoPDS/Tests -name &quot;*.m&quot; | wc -l
+
+# 4. Verify test class registration
+grep &quot;testClasses&quot; ATProtoPDS/Tests/test_main.m
+
+# 5. Add missing test class
+# Edit test_main.m and add class to testClasses array
+</code></pre>
+
+<h4 id="tests-fail-to-run">Tests Fail to Run</h4>
+<p><strong>Problem:</strong> Tests compile but fail to execute</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Run tests with verbose output
+./build/tests/AllTests -v
+
+# 2. Run specific test class
+./build/tests/AllTests -XCTest MSTInteropTests
+
+# 3. Check for missing dependencies
+ldd ./build/tests/AllTests | grep &quot;not found&quot;
+
+# 4. Verify test data files
+ls -la ATProtoPDS/Tests/fixtures/
+
+# 5. Check test permissions
+chmod +x ./build/tests/AllTests
+</code></pre>
+
+<h4 id="flaky-tests">Flaky Tests</h4>
+<p><strong>Problem:</strong> Tests pass sometimes, fail other times</p>
+<p><strong>Solution:</strong></p>
+<pre class="codehilite"><code class="language-bash"># 1. Run tests multiple times
+for i in {1..10}; do ./build/tests/AllTests -XCTest TestName || break; done
+
+# 2. Check for timing issues
+# Add delays or use proper synchronization
+
+# 3. Check for shared state
+# Ensure tests don't depend on execution order
+
+# 4. Verify test isolation
+# Each test should be independent
+
+# 5. Check for race conditions
+# Use thread sanitizer
+clang -fsanitize=thread -g ./build/tests/AllTests
+</code></pre>
+
+<h2 id="debugging-techniques">Debugging Techniques</h2>
+<h3 id="enable-debug-logging">Enable Debug Logging</h3>
+<pre class="codehilite"><code class="language-bash"># Set environment variables
+export PDS_DEBUG=1
+export PDS_LOG_LEVEL=debug
+
+# Run with verbose output
+./build/bin/kaszlak --verbose --config config.json
+
+# Check logs
+tail -f logs/pds.log
+</code></pre>
+
+<h3 id="use-debugger">Use Debugger</h3>
+<pre class="codehilite"><code class="language-bash"># macOS: lldb
+lldb ./build/bin/kaszlak
+(lldb) run --config config.json
+(lldb) breakpoint set -n main
+(lldb) continue
+
+# Linux: gdb
+gdb ./build/bin/kaszlak
+(gdb) run --config config.json
+(gdb) break main
+(gdb) continue
+</code></pre>
+
+<h3 id="inspect-database">Inspect Database</h3>
+<pre class="codehilite"><code class="language-bash"># Open database
+sqlite3 data/service.db
+
+# List tables
+.tables
+
+# Inspect schema
+.schema records
+
+# Query data
+SELECT * FROM records LIMIT 10;
+
+# Export data
+.output dump.sql
+.dump
+.output stdout
+</code></pre>
+
+<h2 id="getting-help">Getting Help</h2>
+<h3 id="check-logs">Check Logs</h3>
+<pre class="codehilite"><code class="language-bash"># View recent logs
+tail -100 logs/pds.log
+
+# Search for errors
+grep -i error logs/pds.log
+
+# Check specific time range
+grep &quot;2024-01-01&quot; logs/pds.log
+</code></pre>
+
+<h3 id="collect-diagnostics">Collect Diagnostics</h3>
+<pre class="codehilite"><code class="language-bash"># Create diagnostic bundle
+mkdir diagnostics
+cp config.json diagnostics/
+cp logs/pds.log diagnostics/
+sqlite3 data/service.db &quot;.dump&quot; &gt; diagnostics/database.sql
+ps aux | grep kaszlak &gt; diagnostics/processes.txt
+netstat -tlnp &gt; diagnostics/network.txt
+df -h &gt; diagnostics/disk.txt
+
+# Compress for sharing
+tar -czf diagnostics.tar.gz diagnostics/
+</code></pre>
+
+<h3 id="report-issues">Report Issues</h3>
+<p>When reporting issues, include:
+1. PDS version
+2. Platform (macOS/Linux)
+3. Configuration (sanitized)
+4. Error logs
+5. Steps to reproduce
+6. Expected vs actual behavior</p>
+<h2 id="performance-tuning">Performance Tuning</h2>
+<h3 id="database-optimization">Database Optimization</h3>
+<pre class="codehilite"><code class="language-bash"># Enable query optimization
+sqlite3 data/service.db &quot;PRAGMA optimize;&quot;
+
+# Analyze query plans
+sqlite3 data/service.db &quot;ANALYZE;&quot;
+
+# Rebuild indexes
+sqlite3 data/service.db &quot;REINDEX;&quot;
+
+# Vacuum database
+sqlite3 data/service.db &quot;VACUUM;&quot;
+</code></pre>
+
+<h3 id="network-optimization">Network Optimization</h3>
+<pre class="codehilite"><code class="language-bash"># Increase buffer sizes
+cat config.json | jq '.network.maxBufferSize = 52428800'
+
+# Enable compression
+cat config.json | jq '.network.compression = true'
+
+# Tune TCP settings
+sysctl -w net.core.rmem_max=134217728
+sysctl -w net.core.wmem_max=134217728
+</code></pre>
+
+<h3 id="memory-optimization">Memory Optimization</h3>
+<pre class="codehilite"><code class="language-bash"># Reduce cache size
+cat config.json | jq '.cache.maxSize = 104857600'
+
+# Enable memory pooling
+cat config.json | jq '.memory.pooling = true'
+
+# Monitor memory usage
+watch -n 1 'ps aux | grep kaszlak | grep -v grep'
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./cli-reference.md">CLI Reference</a></strong> — Command-line interface</li>
+<li><strong><a href="./config-reference.md">Config Reference</a></strong> — Configuration options</li>
+<li><strong><a href="./api-reference.md">API Reference</a></strong> — XRPC endpoints</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

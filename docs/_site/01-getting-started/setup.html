@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Guide - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Setup Guide</h1>
+            </div>
+            <h1 id="setup-guide">Setup Guide</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<h3 id="macos">macOS</h3>
+<p><strong>Required:</strong>
+- macOS 14.0 or later
+- Xcode 16.1 or later (includes clang compiler)
+- CMake 3.28 or later
+- Git</p>
+<p><strong>Installation:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Install Xcode Command Line Tools
+xcode-select --install
+
+# Install CMake via Homebrew
+brew install cmake
+
+# Verify installations
+cmake --version
+clang --version
+</code></pre>
+
+<h3 id="linux-gnustep">Linux (GNUstep)</h3>
+<p><strong>Required:</strong>
+- Ubuntu 24.04 LTS or similar
+- GNUstep Make and Base libraries
+- Clang compiler
+- CMake 3.28 or later
+- Git</p>
+<p><strong>Installation:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Update package manager
+sudo apt-get update
+
+# Install build tools
+sudo apt-get install -y \
+  clang \
+  cmake \
+  ninja-build \
+  git
+
+# Install GNUstep
+sudo apt-get install -y \
+  gnustep-make \
+  libgnustep-base-dev \
+  libblocksruntime-dev
+
+# Install dependencies
+sudo apt-get install -y \
+  libssl-dev \
+  libsqlite3-dev \
+  libqrencode-dev
+
+# Verify installations
+cmake --version
+clang --version
+gnustep-config --version
+</code></pre>
+
+<h2 id="building-from-source">Building from Source</h2>
+<h3 id="macos-build">macOS Build</h3>
+<p><strong>Step 1: Clone the repository</strong></p>
+<pre class="codehilite"><code class="language-bash">git clone https://github.com/garazyk/atproto-pds.git
+cd atproto-pds
+</code></pre>
+
+<p><strong>Step 2: Create build directory</strong></p>
+<pre class="codehilite"><code class="language-bash">mkdir -p build
+cd build
+</code></pre>
+
+<p><strong>Step 3: Configure with CMake</strong></p>
+<pre class="codehilite"><code class="language-bash">cmake .. \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_OBJC_COMPILER=clang \
+  -DBUILD_SECP256K1=ON \
+  -DBUILD_TESTS=ON
+</code></pre>
+
+<p><strong>Step 4: Build</strong></p>
+<pre class="codehilite"><code class="language-bash">make -j$(sysctl -n hw.ncpu)
+</code></pre>
+
+<p><strong>Step 5: Run tests</strong></p>
+<pre class="codehilite"><code class="language-bash">./tests/AllTests
+</code></pre>
+
+<p><strong>Step 6: Start the server</strong></p>
+<pre class="codehilite"><code class="language-bash">./bin/kaszlak --data-dir ../pds-data --config ../config.json
+</code></pre>
+
+<h3 id="linux-build">Linux Build</h3>
+<p><strong>Step 1: Clone the repository</strong></p>
+<pre class="codehilite"><code class="language-bash">git clone https://github.com/garazyk/atproto-pds.git
+cd atproto-pds
+</code></pre>
+
+<p><strong>Step 2: Create build directory</strong></p>
+<pre class="codehilite"><code class="language-bash">mkdir -p build-linux
+cd build-linux
+</code></pre>
+
+<p><strong>Step 3: Configure with CMake</strong></p>
+<pre class="codehilite"><code class="language-bash">cmake .. \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_OBJC_COMPILER=clang \
+  -DBUILD_SECP256K1=ON \
+  -DBUILD_TESTS=ON
+</code></pre>
+
+<p><strong>Step 4: Build</strong></p>
+<pre class="codehilite"><code class="language-bash">make -j$(nproc)
+</code></pre>
+
+<p><strong>Step 5: Run tests</strong></p>
+<pre class="codehilite"><code class="language-bash">./tests/AllTests
+</code></pre>
+
+<p><strong>Step 6: Start the server</strong></p>
+<pre class="codehilite"><code class="language-bash">./bin/kaszlak --data-dir ../pds-data --config ../config.json
+</code></pre>
+
+<h2 id="using-xcode-macos">Using Xcode (macOS)</h2>
+<p>For development with Xcode IDE:</p>
+<p><strong>Step 1: Generate Xcode project</strong></p>
+<pre class="codehilite"><code class="language-bash">xcodegen generate
+</code></pre>
+
+<p><strong>Step 2: Open in Xcode</strong></p>
+<pre class="codehilite"><code class="language-bash">open ATProtoPDS.xcodeproj
+</code></pre>
+
+<p><strong>Step 3: Build</strong></p>
+<pre class="codehilite"><code class="language-bash">xcodebuild -scheme ATProtoPDS-CLI build
+</code></pre>
+
+<p><strong>Step 4: Run tests</strong></p>
+<pre class="codehilite"><code class="language-bash">xcodebuild -scheme AllTests build
+./build/tests/AllTests
+</code></pre>
+
+<h2 id="configuration">Configuration</h2>
+<h3 id="creating-a-configuration-file">Creating a Configuration File</h3>
+<p>Create <code>config.json</code> in the repository root:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;server&quot;: {
+    &quot;host&quot;: &quot;0.0.0.0&quot;,
+    &quot;port&quot;: 2583,
+    &quot;issuer&quot;: &quot;https://localhost:2583&quot;
+  },
+  &quot;database&quot;: {
+    &quot;path&quot;: &quot;./pds-data/db&quot;
+  },
+  &quot;plc&quot;: {
+    &quot;url&quot;: &quot;https://plc.directory&quot;
+  },
+  &quot;session&quot;: {
+    &quot;invite_code_required&quot;: false
+  },
+  &quot;debug&quot;: {
+    &quot;verbose&quot;: true,
+    &quot;log_level&quot;: &quot;debug&quot;
+  }
+}
+</code></pre>
+
+<h3 id="configuration-options">Configuration Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>server.host</code></td>
+<td>string</td>
+<td><code>0.0.0.0</code></td>
+<td>Server bind address</td>
+</tr>
+<tr>
+<td><code>server.port</code></td>
+<td>number</td>
+<td><code>2583</code></td>
+<td>Server port</td>
+</tr>
+<tr>
+<td><code>server.issuer</code></td>
+<td>string</td>
+<td>Required</td>
+<td>Server DID or URL</td>
+</tr>
+<tr>
+<td><code>database.path</code></td>
+<td>string</td>
+<td><code>./pds-data/db</code></td>
+<td>Database directory</td>
+</tr>
+<tr>
+<td><code>plc.url</code></td>
+<td>string</td>
+<td><code>https://plc.directory</code></td>
+<td>PLC directory URL</td>
+</tr>
+<tr>
+<td><code>rate_limit.enabled</code></td>
+<td>boolean</td>
+<td><code>true</code></td>
+<td>Enable rate limiting</td>
+</tr>
+<tr>
+<td><code>session.invite_code_required</code></td>
+<td>boolean</td>
+<td><code>true</code></td>
+<td>Require invite codes</td>
+</tr>
+<tr>
+<td><code>debug.verbose</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>Verbose logging</td>
+</tr>
+<tr>
+<td><code>debug.log_level</code></td>
+<td>string</td>
+<td><code>info</code></td>
+<td>Log level (debug, info, warn, error)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="running-the-server">Running the Server</h2>
+<h3 id="development-mode">Development Mode</h3>
+<pre class="codehilite"><code class="language-bash"># macOS
+./build/bin/kaszlak --data-dir ./pds-data --config ./config.json --verbose
+
+# Linux
+./build-linux/bin/september --data-dir ./pds-data --config ./config.json --verbose
+</code></pre>
+
+<h3 id="production-mode">Production Mode</h3>
+<p>For production deployment, see <a href="../10-tutorials/tutorial-6-deployment.md">Production Deployment Guide</a>.</p>
+<h2 id="verifying-installation">Verifying Installation</h2>
+<h3 id="check-server-health">Check Server Health</h3>
+<pre class="codehilite"><code class="language-bash"># In another terminal, after starting the server
+curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer | jq .
+</code></pre>
+
+<p>Expected response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;did&quot;: &quot;did:web:localhost:2583&quot;,
+  &quot;availableUserDomains&quot;: [&quot;localhost&quot;],
+  &quot;inviteCodeRequired&quot;: false,
+  &quot;phoneNumberRequired&quot;: false,
+  &quot;links&quot;: {
+    &quot;privacyPolicy&quot;: &quot;https://localhost:2583/privacy&quot;,
+    &quot;termsOfService&quot;: &quot;https://localhost:2583/terms&quot;
+  }
+}
+</code></pre>
+
+<h3 id="create-a-test-account">Create a Test Account</h3>
+<pre class="codehilite"><code class="language-bash">curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{
+    &quot;email&quot;: &quot;test@example.com&quot;,
+    &quot;handle&quot;: &quot;test.localhost&quot;,
+    &quot;password&quot;: &quot;test-password-123&quot;
+  }' | jq .
+</code></pre>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="build-failures">Build Failures</h3>
+<p><strong>CMake not found:</strong></p>
+<pre class="codehilite"><code class="language-bash"># macOS
+brew install cmake
+
+# Linux
+sudo apt-get install cmake
+</code></pre>
+
+<p><strong>Clang not found:</strong></p>
+<pre class="codehilite"><code class="language-bash"># macOS
+xcode-select --install
+
+# Linux
+sudo apt-get install clang
+</code></pre>
+
+<p><strong>GNUstep not found (Linux):</strong></p>
+<pre class="codehilite"><code class="language-bash">sudo apt-get install gnustep-make libgnustep-base-dev
+</code></pre>
+
+<h3 id="runtime-issues">Runtime Issues</h3>
+<p><strong>Port already in use:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Find process using port 2583
+lsof -i :2583
+
+# Kill the process
+kill -9 &lt;PID&gt;
+
+# Or use a different port in config.json
+</code></pre>
+
+<p><strong>Database locked:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Remove lock file
+rm -f ./pds-data/db/*.lock
+
+# Restart server
+</code></pre>
+
+<p><strong>Permission denied:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Ensure data directory is writable
+chmod -R 755 ./pds-data
+</code></pre>
+
+<h2 id="development-workflow">Development Workflow</h2>
+<h3 id="building-during-development">Building During Development</h3>
+<p>Use the provided build script for a clean rebuild:</p>
+<pre class="codehilite"><code class="language-bash">./scripts/wipe_and_rebuild.sh
+</code></pre>
+
+<h3 id="running-tests">Running Tests</h3>
+<pre class="codehilite"><code class="language-bash"># All tests
+./build/tests/AllTests
+
+# Specific test class
+./build/tests/AllTests -XCTest MSTInteropTests
+
+# Multiple test classes
+./build/tests/AllTests -XCTest MSTInteropTests,CARInteropTests
+</code></pre>
+
+<h3 id="code-quality-checks">Code Quality Checks</h3>
+<pre class="codehilite"><code class="language-bash"># ShellCheck all scripts
+shellcheck scripts/*.sh
+
+# Find TODO/FIXME markers
+./scripts/stub_find.sh .
+</code></pre>
+
+<h2 id="docker-setup-optional">Docker Setup (Optional)</h2>
+<p>For containerized development:</p>
+<pre class="codehilite"><code class="language-bash"># Build Docker image
+docker build -f docker/Dockerfile.gnustep -t atprotopds:dev .
+
+# Run container
+docker run -it \
+  -p 2583:2583 \
+  -v $(pwd)/pds-data:/data \
+  atprotopds:dev
+</code></pre>
+
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><strong><a href="./architecture-overview.md">Architecture Overview</a></strong> — Understand system design</li>
+<li><strong><a href="../02-core-concepts/atproto-basics.md">Core Concepts</a></strong> — Learn AT Protocol basics</li>
+<li><strong><a href="../10-tutorials/tutorial-1-hello-pds.md">Tutorials</a></strong> — Hands-on learning</li>
+<li><strong><a href="../11-reference/cli-reference.md">Reference</a></strong> — CLI command reference</li>
+</ul>
+<h2 id="getting-help">Getting Help</h2>
+<ul>
+<li><strong>GitHub Issues</strong> — Report bugs and request features</li>
+<li><strong>GitHub Discussions</strong> — Ask questions and discuss ideas</li>
+<li><strong>Documentation</strong> — Check the full documentation guide</li>
+<li><strong>Contributing</strong> — See CONTRIBUTING.md for development guidelines</li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
