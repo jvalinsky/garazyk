@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lines of Code by Subsystem Report - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Lines of Code by Subsystem Report</h1>
+            </div>
+            <h1 id="lines-of-code-by-subsystem-report">Lines of Code by Subsystem Report</h1>
+<p><strong>Generated:</strong> 2026-03-02
+<strong>Git Commit:</strong> 45a6d79f7a42da46932a27b21d055f94af21a029</p>
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Lines of Code</th>
+<th>Files</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Network</td>
+<td>21,281</td>
+<td>69</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>11,053</td>
+<td>50</td>
+</tr>
+<tr>
+<td>App</td>
+<td>10,453</td>
+<td>34</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>7,644</td>
+<td>24</td>
+</tr>
+<tr>
+<td>CLI</td>
+<td>3,826</td>
+<td>18</td>
+</tr>
+<tr>
+<td>Core</td>
+<td>3,677</td>
+<td>34</td>
+</tr>
+<tr>
+<td>Sync</td>
+<td>3,431</td>
+<td>16</td>
+</tr>
+<tr>
+<td>PLC</td>
+<td>4,198</td>
+<td>22</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td>3,214</td>
+<td>10</td>
+</tr>
+<tr>
+<td>AppView</td>
+<td>2,029</td>
+<td>12</td>
+</tr>
+<tr>
+<td>Lexicon</td>
+<td>2,024</td>
+<td>12</td>
+</tr>
+<tr>
+<td>Admin</td>
+<td>2,106</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Blob</td>
+<td>1,225</td>
+<td>7</td>
+</tr>
+<tr>
+<td>OAuthProvider</td>
+<td>1,113</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Services</td>
+<td>1,116</td>
+<td>4</td>
+</tr>
+<tr>
+<td>AuthCrypto</td>
+<td>999</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>806</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Identity</td>
+<td>835</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>722</td>
+<td>14</td>
+</tr>
+<tr>
+<td>Debug</td>
+<td>676</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Federation</td>
+<td>398</td>
+<td>2</td>
+</tr>
+<tr>
+<td>PDSAuth</td>
+<td>396</td>
+<td>2</td>
+</tr>
+<tr>
+<td>AuthVerifier</td>
+<td>485</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Compat</td>
+<td>213</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td>217</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total: 105,102 lines across 369 files</strong></p>
+<h2 id="analysis">Analysis</h2>
+<p>The Network subsystem (HTTP server, XRPC dispatcher, routing) is by far the largest at ~20% of the codebase, followed by Auth and App. This is typical for a server application where network handling and authentication are complex.</p>
+<h2 id="methodology">Methodology</h2>
+<ul>
+<li>Counted non-empty, non-comment lines in <code>.m</code>, <code>.h</code>, <code>.mm</code>, <code>.c</code>, <code>.cpp</code> files</li>
+<li>Excludes test files (in <code>ATProtoPDS/Tests/</code>)</li>
+<li>Production code only in <code>ATProtoPDS/Sources/</code></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:08</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

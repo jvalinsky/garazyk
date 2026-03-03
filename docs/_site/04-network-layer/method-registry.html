@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Method Registry - PDS Objective-C Implementation Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar a {
+            color: #0066cc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #222;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .toc ul {
+            margin-left: 15px;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header h1 {
+            border: none;
+            padding: 0;
+            margin: 0;
+            color: white;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="SUMMARY.html">Table of Contents</a></li>
+                <li><a href="GLOSSARY.html">Glossary</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 20px;">Sections</h3>
+            <ul>
+                <li><a href="01-getting-started/overview.html">Getting Started</a></li>
+                <li><a href="02-core-concepts/cbor-and-car.html">Core Concepts</a></li>
+                <li><a href="03-application-layer/pds-application.html">Application Layer</a></li>
+                <li><a href="04-network-layer/http-server.html">Network Layer</a></li>
+                <li><a href="05-database-layer/sqlite-architecture.html">Database Layer</a></li>
+                <li><a href="06-authentication/jwt-tokens.html">Authentication</a></li>
+                <li><a href="07-repository-protocol/repository-basics.html">Repository & Protocol</a></li>
+                <li><a href="08-sync-firehose/firehose-overview.html">Sync & Firehose</a></li>
+                <li><a href="09-platform-compatibility/macos-linux.html">Platform Compatibility</a></li>
+                <li><a href="10-tutorials/tutorial-1-hello-pds.html">Tutorials</a></li>
+                <li><a href="11-reference/api-reference.html">Reference</a></li>
+            </ul>
+        </div>
+        
+        <div class="content">
+            <div class="header">
+                <h1>Method Registry</h1>
+            </div>
+            <h1 id="method-registry">Method Registry</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>XrpcMethodRegistry</code> orchestrates the registration of all ATProto XRPC methods with the dispatcher. It acts as a thin orchestration layer that delegates endpoint registration to domain-specific modules, ensuring all methods are registered in the correct order with proper dependencies.</p>
+<h2 id="architecture">Architecture</h2>
+<pre class="codehilite"><code>┌──────────────────────────────────────────┐
+│   XrpcMethodRegistry                     │
+│  (Orchestration Layer)                   │
+└────────────────┬─────────────────────────┘
+                 │
+        ┌────────┴────────┬────────┬────────┬────────┬────────┬────────┐
+        │                 │        │        │        │        │        │
+┌───────▼──────┐  ┌──────▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐
+│ XrpcServer   │  │ XrpcRepo│  │Sync │  │Ident│  │Admin│  │Label│  │AppBs│
+│ Methods      │  │ Methods │  │Meth.│  │Meth.│  │Meth.│  │Meth.│  │ky   │
+│              │  │         │  │     │  │     │  │     │  │     │  │Meth.│
+│ com.atproto  │  │ com.    │  │com. │  │com. │  │com. │  │com. │  │app. │
+│ .server.*    │  │atproto  │  │atpr │  │atpr │  │atpr │  │atpr │  │bsky │
+│              │  │.repo.*  │  │oto. │  │oto. │  │oto. │  │oto. │  │.*   │
+└──────────────┘  └─────────┘  │sync │  │iden │  │admi │  │labe │  └─────┘
+                                │.*  │  │tity │  │n.*  │  │l.*  │
+                                │    │  │.*   │  │     │  │     │
+                                └────┘  └─────┘  └─────┘  └─────┘
+</code></pre>
+
+<h2 id="responsibilities">Responsibilities</h2>
+<p>The registry:</p>
+<ol>
+<li><strong>Extracts services</strong> from PDSApplication or PDSController</li>
+<li><strong>Delegates registration</strong> to domain-specific modules</li>
+<li><strong>Ensures correct order</strong> of registration</li>
+<li><strong>Manages dependencies</strong> between modules</li>
+<li><strong>Installs interceptors</strong> for request forwarding</li>
+</ol>
+<h2 id="domain-modules">Domain Modules</h2>
+<h3 id="xrpcservermethods">XrpcServerMethods</h3>
+<p>Handles <code>com.atproto.server.*</code> endpoints:</p>
+<ul>
+<li><code>com.atproto.server.createAccount</code> — Create new account</li>
+<li><code>com.atproto.server.createSession</code> — Login</li>
+<li><code>com.atproto.server.refreshSession</code> — Refresh tokens</li>
+<li><code>com.atproto.server.getSession</code> — Get current session</li>
+<li><code>com.atproto.server.deleteSession</code> — Logout</li>
+<li><code>com.atproto.server.describeServer</code> — Server information</li>
+</ul>
+<p><strong>Dependencies:</strong>
+- PDSAccountService
+- JWTMinter
+- PDSConfiguration</p>
+<h3 id="xrpcrepomethods">XrpcRepoMethods</h3>
+<p>Handles <code>com.atproto.repo.*</code> endpoints:</p>
+<ul>
+<li><code>com.atproto.repo.createRecord</code> — Create record</li>
+<li><code>com.atproto.repo.putRecord</code> — Update record</li>
+<li><code>com.atproto.repo.deleteRecord</code> — Delete record</li>
+<li><code>com.atproto.repo.getRecord</code> — Get record</li>
+<li><code>com.atproto.repo.listRecords</code> — List records</li>
+<li><code>com.atproto.repo.uploadBlob</code> — Upload blob</li>
+<li><code>com.atproto.repo.applyWrites</code> — Batch writes</li>
+</ul>
+<p><strong>Dependencies:</strong>
+- PDSRecordService
+- PDSBlobService
+- PDSRepositoryService</p>
+<h3 id="xrpcsyncmethods">XrpcSyncMethods</h3>
+<p>Handles <code>com.atproto.sync.*</code> endpoints:</p>
+<ul>
+<li><code>com.atproto.sync.getLatestCommit</code> — Get repo root</li>
+<li><code>com.atproto.sync.getRepo</code> — Export repository</li>
+<li><code>com.atproto.sync.getBlocks</code> — Get specific blocks</li>
+<li><code>com.atproto.sync.subscribeRepos</code> — WebSocket firehose</li>
+</ul>
+<p><strong>Dependencies:</strong>
+- PDSRepositoryService
+- PDSBlobService
+- SubscribeReposHandler</p>
+<h3 id="xrpcidentitymethods">XrpcIdentityMethods</h3>
+<p>Handles <code>com.atproto.identity.*</code> endpoints:</p>
+<ul>
+<li><code>com.atproto.identity.resolveHandle</code> — Resolve handle to DID</li>
+<li><code>com.atproto.identity.getDidDocument</code> — Get DID document</li>
+</ul>
+<p><strong>Dependencies:</strong>
+- PDSIdentityService
+- PLCClient</p>
+<h3 id="xrpcadminmethods">XrpcAdminMethods</h3>
+<p>Handles <code>com.atproto.admin.*</code> endpoints:</p>
+<ul>
+<li><code>com.atproto.admin.getModeration</code> — Get moderation status</li>
+<li><code>com.atproto.admin.emitModerationEvent</code> — Emit moderation event</li>
+<li><code>com.atproto.admin.takdownRepo</code> — Takedown repository</li>
+<li><code>com.atproto.admin.takdownRecord</code> — Takedown record</li>
+</ul>
+<p><strong>Dependencies:</strong>
+- PDSAdminService
+- PDSAdminController</p>
+<h3 id="xrpclabelmethods">XrpcLabelMethods</h3>
+<p>Handles <code>com.atproto.label.*</code> and <code>com.atproto.temp.*</code> endpoints:</p>
+<ul>
+<li><code>com.atproto.label.queryLabels</code> — Query labels</li>
+<li><code>com.atproto.temp.checkSignupQueue</code> — Check signup queue</li>
+</ul>
+<p><strong>Dependencies:</strong>
+- PDSLabelService</p>
+<h3 id="xrpcappbskymethods">XrpcAppBskyMethods</h3>
+<p>Handles <code>app.bsky.*</code> endpoints:</p>
+<ul>
+<li><code>app.bsky.feed.post</code> — Create post</li>
+<li><code>app.bsky.feed.like</code> — Like post</li>
+<li><code>app.bsky.graph.follow</code> — Follow user</li>
+</ul>
+<p><strong>Dependencies:</strong>
+- PDSRecordService
+- PDSBlobService</p>
+<h2 id="registration-flow">Registration Flow</h2>
+<h3 id="initialization">Initialization</h3>
+<pre class="codehilite"><code class="language-objc">// In PDSApplication or PDSController
+[XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
+                                     application:application];
+</code></pre>
+
+<h3 id="registration-order">Registration Order</h3>
+<p>Methods are registered in dependency order:</p>
+<pre class="codehilite"><code>1. XrpcServerMethods (no dependencies on other XRPC methods)
+2. XrpcIdentityMethods (used by other methods)
+3. XrpcRepoMethods (depends on identity resolution)
+4. XrpcSyncMethods (depends on repo methods)
+5. XrpcAdminMethods (depends on repo methods)
+6. XrpcLabelMethods (independent)
+7. XrpcAppBskyMethods (depends on repo methods)
+</code></pre>
+
+<h3 id="service-extraction">Service Extraction</h3>
+<pre class="codehilite"><code class="language-objc">// Extract services from application
+PDSAccountService *accountService = application.accountService;
+PDSRecordService *recordService = application.recordService;
+PDSBlobService *blobService = application.blobService;
+PDSRepositoryService *repositoryService = application.repositoryService;
+PDSAdminService *adminService = application.adminService;
+PDSRelayService *relayService = application.relayService;
+
+// Pass to domain modules
+XrpcRepoMethods *repoMethods = [[XrpcRepoMethods alloc]
+    initWithRecordService:recordService
+              blobService:blobService
+        repositoryService:repositoryService];
+
+[repoMethods registerMethodsWithRegistry:dispatcher];
+</code></pre>
+
+<h2 id="helper-modules">Helper Modules</h2>
+<h3 id="xrpcauthhelper">XrpcAuthHelper</h3>
+<p>Provides centralized authentication:</p>
+<pre class="codehilite"><code class="language-objc">NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                              jwtMinter:jwtMinter
+                                        adminController:adminController
+                                                request:request];
+</code></pre>
+
+<h3 id="xrpcidentityhelper">XrpcIdentityHelper</h3>
+<p>Provides DID and handle resolution:</p>
+<pre class="codehilite"><code class="language-objc">NSString *did = [XrpcIdentityHelper resolveDIDForHandle:handle
+                                                  error:&amp;error];
+
+NSDictionary *didDocument = [XrpcIdentityHelper getDidDocument:did
+                                                         error:&amp;error];
+</code></pre>
+
+<h3 id="xrpcerrorhelper">XrpcErrorHelper</h3>
+<p>Provides standardized error responses:</p>
+<pre class="codehilite"><code class="language-objc">[XrpcErrorHelper setAuthenticationError:response];
+[XrpcErrorHelper setValidationError:response message:@&quot;Invalid parameter&quot;];
+[XrpcErrorHelper setNotFoundError:response message:@&quot;Record not found&quot;];
+</code></pre>
+
+<h2 id="backward-compatibility">Backward Compatibility</h2>
+<p>The registry supports both old and new initialization patterns:</p>
+<h3 id="old-pattern-pdscontroller">Old Pattern (PDSController)</h3>
+<pre class="codehilite"><code class="language-objc">[XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
+                                      controller:controller];
+</code></pre>
+
+<h3 id="new-pattern-pdsapplication">New Pattern (PDSApplication)</h3>
+<pre class="codehilite"><code class="language-objc">[XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
+                                     application:application];
+</code></pre>
+
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="adding-a-new-domain-module">Adding a New Domain Module</h3>
+<pre class="codehilite"><code class="language-objc">// 1. Create domain module class
+@interface XrpcCustomMethods : NSObject
+- (void)registerMethodsWithRegistry:(XrpcDispatcher *)dispatcher;
+@end
+
+// 2. Implement registration
+- (void)registerMethodsWithRegistry:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+        // Handle request
+    } forNSID:@&quot;com.custom.method&quot;];
+}
+
+// 3. Add to registry
+XrpcCustomMethods *customMethods = [[XrpcCustomMethods alloc] init];
+[customMethods registerMethodsWithRegistry:dispatcher];
+</code></pre>
+
+<h3 id="extracting-services">Extracting Services</h3>
+<pre class="codehilite"><code class="language-objc">// In domain module initialization
+- (instancetype)initWithServices:(PDSApplication *)application {
+    self = [super init];
+    if (self) {
+        self.recordService = application.recordService;
+        self.blobService = application.blobService;
+        self.repositoryService = application.repositoryService;
+    }
+    return self;
+}
+</code></pre>
+
+<h3 id="registering-multiple-related-methods">Registering Multiple Related Methods</h3>
+<pre class="codehilite"><code class="language-objc">- (void)registerMethodsWithRegistry:(XrpcDispatcher *)dispatcher {
+    // Create/Update
+    [dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleCreateRecord:request response:response];
+    } forNSID:@&quot;com.atproto.repo.createRecord&quot;];
+
+    // Get
+    [dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleGetRecord:request response:response];
+    } forNSID:@&quot;com.atproto.repo.getRecord&quot;];
+
+    // Delete
+    [dispatcher registerHandler:^(HttpRequest *request, HttpResponse *response) {
+        [self handleDeleteRecord:request response:response];
+    } forNSID:@&quot;com.atproto.repo.deleteRecord&quot;];
+}
+</code></pre>
+
+<h2 id="error-handling">Error Handling</h2>
+<h3 id="missing-service">Missing Service</h3>
+<p>If a required service is nil:</p>
+<pre class="codehilite"><code class="language-objc">if (!self.recordService) {
+    NSLog(@&quot;ERROR: RecordService not available&quot;);
+    return;
+}
+</code></pre>
+
+<h3 id="duplicate-registration">Duplicate Registration</h3>
+<p>If a method is registered twice:</p>
+<pre class="codehilite"><code class="language-objc">// Second registration overwrites first
+[dispatcher registerHandler:handler1 forNSID:@&quot;com.atproto.repo.createRecord&quot;];
+[dispatcher registerHandler:handler2 forNSID:@&quot;com.atproto.repo.createRecord&quot;];
+// handler2 is now active
+</code></pre>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Service Injection</strong></li>
+<li>Pass services explicitly to domain modules</li>
+<li>Avoid accessing global state</li>
+<li>
+<p>Make dependencies clear</p>
+</li>
+<li>
+<p><strong>Registration Order</strong></p>
+</li>
+<li>Register in dependency order</li>
+<li>Document dependencies</li>
+<li>
+<p>Test registration order</p>
+</li>
+<li>
+<p><strong>Error Handling</strong></p>
+</li>
+<li>Check for nil services</li>
+<li>Log registration errors</li>
+<li>
+<p>Fail fast on missing dependencies</p>
+</li>
+<li>
+<p><strong>Modularity</strong></p>
+</li>
+<li>Keep domain modules focused</li>
+<li>Delegate to service layer</li>
+<li>
+<p>Use helper modules for shared logic</p>
+</li>
+<li>
+<p><strong>Testing</strong></p>
+</li>
+<li>Test each domain module independently</li>
+<li>Mock services for testing</li>
+<li>Verify registration order</li>
+</ol>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="./xrpc-dispatch.md">XRPC Dispatch</a></li>
+<li><a href="./domain-methods.md">Domain Methods</a></li>
+<li><a href="./auth-helpers.md">Auth Helpers</a></li>
+<li><a href="./error-handling.md">Error Handling</a></li>
+</ul>
+            <div class="footer">
+                <p>PDS Objective-C Implementation Guide | Built 2026-03-03 08:30:07</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
