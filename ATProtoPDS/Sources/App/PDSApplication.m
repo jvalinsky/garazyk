@@ -67,6 +67,34 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     exit(1);
 }
 
+static BOOL PDSApplicationShouldUseEphemeralJWTKeyForTests(void) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSString *processName = [[NSProcessInfo processInfo] processName] ?: @"";
+    BOOL runningTests = [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
+                        [processName containsString:@"AllTests"];
+    if (!runningTests) {
+        return NO;
+    }
+
+    NSString *useKeychainEnv = [env[@"PDS_USE_KEYCHAIN"] lowercaseString];
+    if ([useKeychainEnv isEqualToString:@"0"] ||
+        [useKeychainEnv isEqualToString:@"false"] ||
+        [useKeychainEnv isEqualToString:@"no"]) {
+        return YES;
+    }
+
+    return ![PDSConfiguration sharedConfiguration].useKeychain;
+}
+
+static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
+    static BOOL didLog = NO;
+    if (didLog) {
+        return;
+    }
+    didLog = YES;
+    PDS_LOG_AUTH_INFO(@"Using in-memory secp256k1 JWT signing key in test mode (keychain disabled).");
+}
+
 @implementation PDSApplication {
     SubscribeReposHandler *_subscribeReposHandler;
     XrpcDispatcher *_xrpcDispatcher;
@@ -242,21 +270,9 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
     }
     _jwtMinter.issuer = [_configuration canonicalIssuerWithPortHint:_httpPort];
     _jwtMinter.signingAlgorithm = @"ES256K";
-    
-    // Generate server signing key
-    NSError *serverKeyError = nil;
-    // Use factory to get appropriate key manager
-    id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[_serviceDatabases serviceDatabaseWithError:nil]];
-    
-    // Ensure active key exists
-    id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
-    if (serverKeyError) {
-        PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
-    }
 
-    if (activeKey) {
-        _jwtMinter.keyManager = keyManager;
-    } else if (!isProduction) {
+    BOOL hasProvisionedSigningKey = NO;
+    if (PDSApplicationShouldUseEphemeralJWTKeyForTests()) {
         NSError *fallbackError = nil;
         Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
         if (fallbackKeyPair) {
@@ -264,13 +280,40 @@ static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
             _jwtMinter.signingAlgorithm = @"ES256K";
             _jwtMinter.privateKey = fallbackKeyPair.privateKey;
             _jwtMinter.publicKey = fallbackKeyPair.publicKey;
-            PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
+            hasProvisionedSigningKey = YES;
+            PDSApplicationLogEphemeralJWTKeyModeOnce();
+        } else {
+            PDS_LOG_AUTH_WARN(@"Test-mode ephemeral JWT key generation failed; falling back to key manager path: %@",
+                              fallbackError.localizedDescription ?: @"unknown error");
+        }
+    }
+
+    if (!hasProvisionedSigningKey) {
+        NSError *serverKeyError = nil;
+        id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[_serviceDatabases serviceDatabaseWithError:nil]];
+        id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
+        if (serverKeyError) {
+            PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
+        }
+
+        if (activeKey) {
+            _jwtMinter.keyManager = keyManager;
+        } else if (!isProduction) {
+            NSError *fallbackError = nil;
+            Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
+            if (fallbackKeyPair) {
+                _jwtMinter.keyManager = nil;
+                _jwtMinter.signingAlgorithm = @"ES256K";
+                _jwtMinter.privateKey = fallbackKeyPair.privateKey;
+                _jwtMinter.publicKey = fallbackKeyPair.publicKey;
+                PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
+            } else {
+                _jwtMinter.keyManager = keyManager;
+                PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@", fallbackError.localizedDescription ?: @"unknown error");
+            }
         } else {
             _jwtMinter.keyManager = keyManager;
-            PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@", fallbackError.localizedDescription ?: @"unknown error");
         }
-    } else {
-        _jwtMinter.keyManager = keyManager;
     }
     // Private/Public key properties on Minter are now optional if keyManager is set, 
     // but for backwards compatibility or specific internal use we might still need them?
