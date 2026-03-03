@@ -6,6 +6,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
+#import "Auth/TestKeyFixtures.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonDigest.h>
 
@@ -32,13 +33,9 @@
     self.handler = [[OAuth2Handler alloc] initWithDatabase:self.database];
     self.handler.minter = self.minter;
     
-    // Generate P-256 key pair for DPoP
-    NSDictionary* attributes = @{
-        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
-        (id)kSecAttrKeySizeInBits: @256
-    };
-    CFErrorRef error = NULL;
-    self.privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &error);
+    // Import deterministic P-256 key pair for DPoP to avoid keychain dialogs.
+    NSError *error = nil;
+    self.privateKey = PDSTestCreateFixedP256PrivateKey(&error);
     if (self.privateKey) {
         self.publicKey = SecKeyCopyPublicKey(self.privateKey);
     }
@@ -91,7 +88,7 @@
 - (void)testPARResponse {
     // Skip if key generation failed
     if (!self.privateKey) {
-        XCTSkip(@"Skipping PAR test: Security key generation unavailable");
+        XCTSkip(@"Skipping PAR test: fixed DPoP key import unavailable");
         return;
     }
     

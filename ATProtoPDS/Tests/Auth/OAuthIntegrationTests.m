@@ -9,6 +9,7 @@
 #import "Auth/Session.h"
 #import "Auth/JWT.h"
 #import "Network/HttpResponse.h"
+#import "Auth/TestKeyFixtures.h"
 
 @interface OAuthRedirectDelegate : NSObject <NSURLSessionDataDelegate>
 @property (nonatomic, copy) void (^onRedirect)(NSURLRequest *request);
@@ -176,15 +177,9 @@
     XCTAssertNotNil(authCode, @"Should have authorization code");
     
     // Phase 3: Token Exchange with DPoP
-    SecKeyRef privateKey;
-    NSDictionary* attributes = @{
-        (id)kSecAttrKeyType: (id)kSecAttrKeyTypeECSECPrimeRandom,
-        (id)kSecAttrKeySizeInBits: @256,
-        (id)kSecAttrIsPermanent: (__bridge id)kCFBooleanFalse
-    };
-    CFErrorRef keyError = NULL;
-    privateKey = SecKeyCreateRandomKey((__bridge CFDictionaryRef)attributes, &keyError);
-    XCTAssertNotNil((__bridge id)privateKey, @"Failed to generate DPoP key: %@", keyError);
+    NSError *keyError = nil;
+    SecKeyRef privateKey = PDSTestCreateFixedP256PrivateKey(&keyError);
+    XCTAssertNotNil((__bridge id)privateKey, @"Failed to import DPoP key: %@", keyError);
     
     NSString *tokenUri = [NSString stringWithFormat:@"http://127.0.0.1:%lu/oauth/token", (unsigned long)port];
     DPoPToken *dpopToken = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:nil key:privateKey error:nil];
