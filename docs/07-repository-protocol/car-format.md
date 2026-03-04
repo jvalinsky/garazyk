@@ -1,3 +1,7 @@
+---
+title: CAR Format
+---
+
 # CAR Format
 
 ## Overview
@@ -7,6 +11,7 @@ CAR (Content Addressable aRchive) v1 is a format for storing and transmitting IP
 ## CAR Structure
 
 ```
+
 ┌─────────────────────────────────────┐
 │ CAR Header                          │
 │ - Version (1)                       │
@@ -248,6 +253,6 @@ if (!success) {
 
 ## See Also
 
-- [CBOR Serialization](./cbor-serialization)
-- [CID and Hashing](./cid-and-hashing)
-- [Repository Basics](./repository-basics)
+- [CBOR Serialization](cbor-serialization)
+- [CID and Hashing](cid-and-hashing)
+- [Repository Basics](repository-basics)

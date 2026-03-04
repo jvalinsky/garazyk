@@ -1,3 +1,7 @@
+---
+title: Blob Storage Tests
+---
+
 # Blob Storage Tests
 
 Tests for blob upload, MIME type validation, and XRPC blob endpoints.

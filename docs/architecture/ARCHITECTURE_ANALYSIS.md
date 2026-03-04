@@ -1,3 +1,7 @@
+---
+title: ATProto PDS Deep Code Analysis
+---
+
 # ATProto PDS Deep Code Analysis
 
 ## Executive Summary
@@ -45,6 +49,7 @@ Shows the complete system structure including:
 
 Detailed request processing pipeline:
 ```
+
 HTTP Request → Route Matching → XRPC Dispatcher → Auth Middleware → JWT Validation → PDSController → Services → Database → Repository Engine
 ```
 
@@ -187,6 +192,7 @@ WebSocket handler for firehose:
 ### Example 1: Creating a Record
 
 ```
+
 1. POST /xrpc/com.atproto.repo.createRecord
    ↓
 2. Authenticate (JWT validation)
@@ -211,6 +217,7 @@ WebSocket handler for firehose:
 ### Example 2: Reading a Record
 
 ```
+
 1. GET /xrpc/com.atproto.repo.getRecord?repo=did&collection=app.bsky.feed.post&rkey=123
    ↓
 2. Authenticate (session check)
@@ -233,6 +240,7 @@ WebSocket handler for firehose:
 ### Example 3: Authentication Flow
 
 ```
+
 1. POST /xrpc/com.atproto.server.createSession
    ↓
 2. AuthController.validateCredentials()
@@ -455,5 +463,5 @@ dot -Tpng high_level_architecture.dot > high_level_architecture.png
 - [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) - Diagram selection guide
 
 ### Related Guides
-- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE) - Developer onboarding guide
-- [../tests/](../tests/) - Test documentation for components referenced above
+- [../guides/DEVELOPER_GUIDE.md](../guides/development/DEVELOPER_GUIDE) - Developer onboarding guide
+- <!-- Link placeholder: ../tests/ --> - Test documentation for components referenced above

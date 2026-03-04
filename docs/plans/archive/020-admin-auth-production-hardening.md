@@ -1,3 +1,7 @@
+---
+title: "Admin auth: production hardening + clear operator story"
+---
+
 # Admin auth: production hardening + clear operator story
 
 ## Summary

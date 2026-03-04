@@ -1,3 +1,7 @@
+---
+title: Account Service
+---
+
 # Account Service
 
 ## Overview
@@ -27,6 +31,7 @@ The Account Service sits at the intersection of identity, security, and user man
 ## Architecture
 
 ```
+
 ┌─────────────────────────────────────────┐
 │   XRPC Account Endpoints                │
 │  (com.atproto.server.*)                 │
@@ -686,8 +691,8 @@ if (session) {
 ## See Also
 
 - [JWT Tokens](../06-authentication/jwt-tokens) - Understanding token structure and validation
-- [Services Overview](./services-overview) - How Account Service fits into the service layer
-- [PDSApplication](./pds-application) - Application-level integration
+- [Services Overview](services-overview) - How Account Service fits into the service layer
+- [PDSApplication](pds-application) - Application-level integration
 - [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop) - Advanced authentication flows
 - [Security Best Practices](../06-authentication/security-best-practices) - Comprehensive security guidance
 - [PLC Directory](../02-core-concepts/plc-directory) - DID registration and resolution

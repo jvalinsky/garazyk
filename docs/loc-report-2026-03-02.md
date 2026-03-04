@@ -1,3 +1,7 @@
+---
+title: Lines of Code by Subsystem Report
+---
+
 # Lines of Code by Subsystem Report
 
 **Generated:** 2026-03-02

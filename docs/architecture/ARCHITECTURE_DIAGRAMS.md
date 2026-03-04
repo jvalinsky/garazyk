@@ -1,3 +1,7 @@
+---
+title: ATProto PDS Architecture Diagrams
+---
+
 # ATProto PDS Architecture Diagrams
 
 ## System Overview
@@ -344,7 +348,7 @@ stateDiagram-v2
 
 ### Architecture Documents
 - [README.md](README) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis for diagrams above
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Component analysis for diagrams above
 
 ### Diagram Documents
 - [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - Protocol flow diagrams
@@ -352,5 +356,5 @@ stateDiagram-v2
 - [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) - Development process diagrams
 
 ### Related Guides
-- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE) - Developer onboarding guide
+- [../guides/DEVELOPER_GUIDE.md](../guides/development/DEVELOPER_GUIDE) - Developer onboarding guide
 ```

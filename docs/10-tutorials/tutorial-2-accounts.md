@@ -1,3 +1,7 @@
+---
+title: "Tutorial 2: Account Management"
+---
+
 # Tutorial 2: Account Management
 
 ## Overview
@@ -34,7 +38,7 @@ This tutorial introduces real-world concerns: database transactions, cryptograph
 Before starting this tutorial, you should have:
 
 - **Completed:**
-  - [Tutorial 1: Hello PDS](./tutorial-1-hello-pds) — You'll extend that codebase
+  - [Tutorial 1: Hello PDS](tutorial-1-hello-pds) — You'll extend that codebase
   
 - **Understanding of:**
   - JWT tokens and their structure (header, payload, signature)
@@ -67,7 +71,7 @@ Create `src/Account.h`:
 @property (nonatomic, assign) NSTimeInterval createdAt;
 
 @end
-```
+```objc
 
 ### Understanding the Account Model
 
@@ -108,7 +112,7 @@ Create `src/AccountRepository.h`:
 - (nullable Account *)accountForDid:(NSString *)did error:(NSError **)error;
 
 @end
-```
+```objc
 
 ## Step 3: Implement Account Repository
 
@@ -305,7 +309,7 @@ Create `src/AccountRepository.m`:
 }
 
 @end
-```
+```objc
 
 ## Step 4: Create JWT Token Generator
 
@@ -321,7 +325,7 @@ Create `src/SimpleJWTMinter.h`:
 - (NSString *)mintRefreshTokenForDID:(NSString *)did handle:(NSString *)handle;
 
 @end
-```
+```objc
 
 ## Step 5: Implement JWT Token Generator
 
@@ -414,7 +418,7 @@ Create `src/SimpleJWTMinter.m`:
 }
 
 @end
-```
+```objc
 
 ## Step 6: Create Account Service
 
@@ -441,7 +445,7 @@ Create `src/AccountService.h`:
                                      error:(NSError **)error;
 
 @end
-```
+```objc
 
 ## Step 7: Implement Account Service
 
@@ -587,7 +591,7 @@ Create `src/AccountService.m`:
 }
 
 @end
-```
+```objc
 
 ## Step 8: Add Account Endpoints to XRPC Dispatcher
 
@@ -670,7 +674,7 @@ Update `src/XrpcDispatcher.m` to add account endpoints:
     response.statusCode = 200;
     response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
 }
-```
+```objc
 
 ## Step 9: Update Main Entry Point
 
@@ -734,7 +738,7 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
-```
+```objc
 
 ## Step 10: Build and Run
 
@@ -746,7 +750,7 @@ mkdir -p build && cd build
 cmake ..
 make
 ./tutorial-2-accounts
-```
+```objc
 
 ### What Happens During Startup?
 
@@ -781,9 +785,9 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
 #   "accessJwt": "eyJ...",
 #   "refreshJwt": "eyJ..."
 # }
-```
+```objc
 
-### Understanding the Response
+## Understanding the Response
 
 The server returns:
 - **`did`** — A newly generated DID for this user (using UUID for simplicity; production uses PLC directory)
@@ -815,9 +819,9 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
 #   "accessJwt": "eyJ...",  # New token!
 #   "refreshJwt": "eyJ..."  # New token!
 # }
-```
+```objc
 
-### Why New Tokens?
+## Why New Tokens?
 
 Each login generates fresh tokens. This is a security best practice—old tokens should be invalidated when users explicitly log in again. In a production system, you'd track token families and implement token rotation.
 
@@ -851,12 +855,12 @@ Each login generates fresh tokens. This is a security best practice—old tokens
 **Token Storage:** Storing tokens in the database means they survive server restarts, but it also means you need a token revocation strategy. Production systems use Redis or similar for token management.
 
 **SQL Injection:** We're using SQLite's prepared statements (`sqlite3_bind_*`), which protects against SQL injection. Never concatenate user input into SQL strings!
-```
+```objc
 
 ## Next Steps
 
-- **[Tutorial 3: Record Operations](./tutorial-3-records)** — Add record CRUD
-- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add JWT verification
+- **[Tutorial 3: Record Operations](tutorial-3-records)** — Add record CRUD
+- **[Tutorial 4: Authentication](tutorial-4-auth)** — Add JWT verification
 
 ## Troubleshooting
 
@@ -878,25 +882,25 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
 # {
 #   "error": "Handle already taken"
 # }
-```
+```objc
 
 **Solution:** Use a different handle. The database's `UNIQUE` constraint on the `handle` column prevents duplicates.
 
-### Invalid Password on Login
+## Invalid Password on Login
 
 If login fails with "Invalid password":
 
 ```bash
 # Check that you're using the exact password from account creation
 # Passwords are case-sensitive
-```
+```objc
 
 **Common causes:**
 - Typo in password
 - Using email instead of handle for identifier
 - Account doesn't exist (check handle spelling)
 
-### Database Errors
+## Database Errors
 
 If you see SQLite errors like "database is locked" or "unable to open database file":
 
@@ -905,11 +909,11 @@ If you see SQLite errors like "database is locked" or "unable to open database f
 rm -rf pds-data/
 mkdir -p pds-data/db
 ./tutorial-2-accounts
-```
+```objc
 
 **Prevention:** Ensure only one instance of the server is running. SQLite doesn't handle concurrent writes well without WAL mode (which we'll cover in later tutorials).
 
-### JWT Token Parsing Errors
+## JWT Token Parsing Errors
 
 If tokens look malformed or clients can't parse them:
 
@@ -918,14 +922,14 @@ If tokens look malformed or clients can't parse them:
 echo "eyJ..." | cut -d'.' -f1 | base64 -d
 
 # Should show: {"alg":"HS256","typ":"JWT"}
-```
+```objc
 
 **Common issues:**
 - Base64 URL encoding vs standard Base64 (we handle this in `base64URLEncode`)
 - Missing or extra padding characters
 - Signature verification failures (check secret key consistency)
 
-### Memory Leaks
+## Memory Leaks
 
 If you notice memory growing over time:
 
@@ -938,9 +942,9 @@ If you notice memory growing over time:
 ```bash
 # On macOS, use Instruments to profile memory
 instruments -t Leaks ./tutorial-2-accounts
-```
+```objc
 
-### Port Already in Use
+## Port Already in Use
 
 If port 2583 is already bound:
 
@@ -951,7 +955,7 @@ kill -9 <PID>
 
 # Or change the port in main.m
 config.serverPort = 3000;
-```
+```objc
 
 ## Summary
 
@@ -1013,9 +1017,9 @@ This separation of concerns makes code testable, maintainable, and easier to rea
 
 With account management working, you're ready to add data storage and retrieval:
 
-- **[Tutorial 3: Record Operations](./tutorial-3-records)** — Implement record CRUD operations with MST integration
-- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add JWT verification and protected endpoints
-- **[Tutorial 5: Firehose](./tutorial-5-firehose)** — Broadcast changes via WebSocket
+- **[Tutorial 3: Record Operations](tutorial-3-records)** — Implement record CRUD operations with MST integration
+- **[Tutorial 4: Authentication](tutorial-4-auth)** — Add JWT verification and protected endpoints
+- **[Tutorial 5: Firehose](tutorial-5-firehose)** — Broadcast changes via WebSocket
 
 **Further Reading:**
 - [Account Service Architecture](../03-application-layer/account-service) — Production implementation details

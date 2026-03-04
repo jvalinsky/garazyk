@@ -1,3 +1,7 @@
+---
+title: VitePress Documentation Deployment Guide
+---
+
 # VitePress Documentation Deployment Guide
 
 This guide covers deploying the VitePress documentation to staging and production environments.
@@ -37,11 +41,11 @@ Deploy to local Docker container for staging tests:
 
 Visit: http://localhost:8080/docs
 
-### 3. Production (pds.garazyk.xyz)
+## 3. Production (pds.garazyk.xyz)
 
 **CRITICAL**: Production deployment must be done from the production server.
 
-#### On Production Server (DEPLOY_HOST)
+### On Production Server (DEPLOY_HOST)
 
 ```bash
 # SSH to production server
@@ -67,7 +71,7 @@ docker compose up -d --build
 curl -I https://pds.garazyk.xyz/docs/
 ```
 
-#### Verify Production Deployment
+## Verify Production Deployment
 
 ```bash
 # From any machine
@@ -91,7 +95,7 @@ Main deployment script supporting multiple environments:
 ./docs/scripts/deploy-docs.sh production
 ```
 
-### verify-deployment.sh
+## verify-deployment.sh
 
 Comprehensive deployment verification:
 
@@ -114,7 +118,7 @@ Tests:
 - Navigation
 - Performance (page load time)
 
-### test-redirects.sh
+## test-redirects.sh
 
 Test URL redirects and routing:
 
@@ -186,6 +190,7 @@ Jobs:
 ## Production Architecture
 
 ```
+
 Internet
    ↓
 exe.dev HTTPS (port 443)
@@ -248,7 +253,7 @@ npm ci
 npm run docs:build
 ```
 
-### Docker Container Won't Start
+## Docker Container Won't Start
 
 ```bash
 # Check logs
@@ -260,7 +265,7 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-### 404 Errors After Deployment
+## 404 Errors After Deployment
 
 1. Check nginx configuration is correct
 2. Verify base URL in `.vitepress/config.ts` is `/docs`
@@ -279,7 +284,7 @@ curl -I https://pds.garazyk.xyz/docs/
 # Force reload in browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows/Linux)
 ```
 
-### Search Not Working
+## Search Not Working
 
 1. Verify search index built during build
 2. Check browser console for errors
@@ -325,7 +330,7 @@ docker ps  # Check STATUS column for "healthy"
 curl -f http://localhost:8080/docs/ || echo "Health check failed"
 ```
 
-### Logs
+## Logs
 
 ```bash
 # View Docker logs

@@ -1,3 +1,7 @@
+---
+title: JWT Client Authentication Implementation Plan
+---
+
 # JWT Client Authentication Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -169,7 +173,7 @@ Document new OAuth2 client authentication endpoints and parameters.
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details
 - [Security Docs](../../security/README) - Security-related documentation

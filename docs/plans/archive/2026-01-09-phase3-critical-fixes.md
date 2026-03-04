@@ -1,3 +1,7 @@
+---
+title: Phase 3 Critical Issues Implementation Plan
+---
+
 # Phase 3 Critical Issues Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -479,7 +483,7 @@ After completing these tasks, move to Phase 3 advanced testing including securit
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation
 - [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

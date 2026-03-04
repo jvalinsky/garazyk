@@ -1,3 +1,7 @@
+---
+title: Admin Authentication
+---
+
 # Admin Authentication
 
 Admin authentication provides a separate authentication mechanism for PDS administrators, distinct from user OAuth 2.0 flows. This document describes the admin login flow, JWT validation, and endpoint protection.
@@ -16,6 +20,7 @@ Admin authentication uses a simple password-based login that issues JWT tokens, 
 Admin authentication uses an implicit admin DID of `did:web:<host>` (e.g., `did:web:pds.example.com`). This DID is automatically derived from the server's hostname.
 
 ```
+
 ┌─────────┐                    ┌─────────┐                    ┌─────────┐
 │  Admin  │                    │   PDS   │                    │  Data   │
 │  Client │                    │ Server  │                    │  Dir    │
@@ -87,11 +92,13 @@ The file contents are trimmed of whitespace, making this compatible with Docker 
 For production, use PBKDF2-SHA256 hashed passwords:
 
 ```
+
 pbkdf2:<iterations>:<base64-salt>:<base64-hash>
 ```
 
 Example:
 ```
+
 pbkdf2:100000:7kN9xQZ3mP4vR2sT8wY6uI==:aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uV==
 ```
 
@@ -222,12 +229,14 @@ The minimum issued-at mechanism enables logout-all functionality:
 ### File Location
 
 ```
+
 {PDS_DATA_DIRECTORY}/.admin_min_iat
 ```
 
 The file contains a floating-point timestamp:
 
 ```
+
 1700000000.000000
 ```
 
@@ -453,6 +462,6 @@ Unlike user OAuth, admin tokens are not DPoP-bound. This means:
 
 ## Related Documentation
 
-- [Token Management](./token-management) - User token lifecycle (compare with admin tokens)
-- [Security](./security) - Security considerations
-- [Overview](./README) - User OAuth2 authentication flows
+- [Token Management](token-management) - User token lifecycle (compare with admin tokens)
+- [Security](security) - Security considerations
+- [Overview](README) - User OAuth2 authentication flows

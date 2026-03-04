@@ -1,3 +1,7 @@
+---
+title: Script Development and Quality Standards
+---
+
 # Script Development and Quality Standards
 
 This document defines the shell-script standards used in this repository and summarizes the script updates applied to the ATProto PDS project.
@@ -63,7 +67,7 @@ VERBOSE=true ./scripts/simple_test.sh
 PORT=3000 ./scripts/simple_test.sh
 ```
 
-### start_server.sh
+## start_server.sh
 **Purpose**: Server startup with process management and validation
 
 **Improvements**:
@@ -83,7 +87,7 @@ PORT=3000 ./scripts/simple_test.sh
 SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
 ```
 
-### quality_gate.sh
+## quality_gate.sh
 **Purpose**: Code quality and static analysis gate
 
 **Improvements**:
@@ -101,7 +105,7 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
 
  # Verbose output
  VERBOSE=true ./scripts/quality_gate.sh
- ```
+ ```text
 
  ### test_social_features.sh (NEW)
  **Purpose**: E2E testing of social features (feeds, follows, likes, profiles)
@@ -121,7 +125,7 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
 
  # With verbose debugging
  VERBOSE=true ./scripts/test_social_features.sh
- ```
+ ```text
 
  ### test_moderation.sh (NEW)
  **Purpose**: E2E testing of moderation features (reports, labels, account moderation)
@@ -141,9 +145,9 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
 
  # With verbose debugging
  VERBOSE=true ./scripts/test_moderation.sh
- ```
+ ```text
 
-### run-tests.sh
+## run-tests.sh
 **Purpose**: Test suite runner
 
 **Improvements**:
@@ -235,7 +239,7 @@ brew install shellcheck
 shellcheck --version
 ```
 
-### Integration
+## Integration
 - **CI/CD**: Scripts are designed to work in automated environments
 - **Build System**: Integrated with CMake/xcodebuild workflow
 - **Testing**: Compatible with existing test infrastructure
@@ -254,7 +258,7 @@ shellcheck scripts/simple_test.sh
 # To: VAR="$(cmd)"; readonly VAR
 ```
 
-#### Permission Issues
+## Permission Issues
 ```bash
 # Make scripts executable
 chmod +x scripts/*.sh
@@ -263,7 +267,7 @@ chmod +x scripts/*.sh
 ls -la scripts/
 ```
 
-#### Path Issues
+## Path Issues
 ```bash
 # Use absolute paths in scripts
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -292,8 +296,8 @@ fi
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE)** - Build system and project structure
-- **[Setup Guide](SETUP_GUIDE)** - Server startup and verification scripts
+- **[Developer Guide](./development/DEVELOPER_GUIDE)** - Build system and project structure
+- **[Setup Guide](# Setup guide)** - Server startup and verification scripts
 - **[Testing Guide](../TESTING)** - Test suite execution
 - **[Deployment Guide](DEPLOYMENT)** - Production script integration
 - **[Development Workflows](DEVELOPMENT_WORKFLOWS)** - Build and test process diagrams

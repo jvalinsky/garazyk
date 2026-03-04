@@ -1,3 +1,7 @@
+---
+title: "did:web Implementation Analysis"
+---
+
 # did:web Implementation Analysis
 
 **Author:** Antigravity  
@@ -33,19 +37,19 @@ When a `did` parameter is passed to `com.atproto.server.createAccount`, the code
    ```objectivec
    NSString *authHeader = [request headerForKey:@"Authorization"];
    // Parses "Bearer <token>" format
-   ```
+   ```text
 
 2. **Resolves the DID document:**
    ```objectivec
    DIDResolver *resolver = [[DIDResolver alloc] init];
    NSDictionary *atprotoData = [resolver resolveAtprotoDataForDID:did error:&resolveError];
    NSData *signingKeyBytes = atprotoData[@"signingKeyBytes"];
-   ```
+   ```text
 
 3. **Normalizes the public key:**
    ```objectivec
    NSData *publicKey = [[Secp256k1 shared] normalizedPublicKey:signingKeyBytes error:&keyError];
-   ```
+   ```text
 
 4. **Verifies the JWT signature:**
    ```objectivec
@@ -55,7 +59,7 @@ When a `did` parameter is passed to `com.atproto.server.createAccount`, the code
    verifier.expectedIssuer = did;
    verifier.allowMissingSubject = YES;
    BOOL verified = [verifier verifyJWT:jwt error:&verifyError];
-   ```
+   ```text
 
 5. **Validates JWT claims:**
    - `iss` must match the provided `did`
@@ -277,6 +281,7 @@ Keys are stored in the Keychain (macOS) or file-based secure storage (Linux).
 
 ### Worktrees
 ```
+
 /Users/jack/Software/objpds                    main
 /Users/jack/Software/objpds-fix                fix-pds-transport-actor
 /Users/jack/Software/objpds-worktree           codex-test-gap
@@ -299,6 +304,7 @@ Keys are stored in the Keychain (macOS) or file-based secure storage (Linux).
 ```bash
 git cherry-pick 77ea749
 ```
+
 This adds:
 - JWT verification on `createAccount`
 - `getRecommendedDidCredentials` endpoint
@@ -347,6 +353,6 @@ git log --all --oneline --grep="identity"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

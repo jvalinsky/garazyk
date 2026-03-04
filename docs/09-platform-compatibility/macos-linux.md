@@ -1,3 +1,7 @@
+---
+title: macOS and Linux Compatibility
+---
+
 # macOS and Linux Compatibility
 
 ## Overview
@@ -102,6 +106,7 @@ make -j$(nproc)
 ### Compat Directory
 
 ```
+
 ATProtoPDS/Sources/Compat/
 ├── os_log_compat.h      — Logging compatibility
 ├── Security_compat.h    — Security framework shims
@@ -311,7 +316,7 @@ make -j$(sysctl -n hw.ncpu)
 ./bin/kaszlak
 ```
 
-### Linux Deployment
+## Linux Deployment
 
 ```bash
 # Build for Linux
@@ -363,6 +368,6 @@ sudo apt-get install clang
 
 ## Next Steps
 
-- **[Compatibility Layer](./compatibility-layer)** — Compat shims
-- **[Network Transport](./network-transport)** — Network I/O
-- **[ARC Runtime](./arc-runtime)** — Memory management
+- **[Compatibility Layer](compatibility-layer)** — Compat shims
+- **[Network Transport](network-transport)** — Network I/O
+- **[ARC Runtime](arc-runtime)** — Memory management

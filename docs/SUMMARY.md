@@ -1,3 +1,7 @@
+---
+title: Table of Contents
+---
+
 # Table of Contents
 
 ## PDS Objective-C Implementation Guide
@@ -112,26 +116,26 @@
 - [Test Coverage Goals](11-reference/test-coverage-goals)
 
 ### 12 Diagrams
-- [System Architecture](12-diagrams/system-architecture.svg)
-- [Request Flow](12-diagrams/request-flow.svg)
-- [Database Schema](12-diagrams/database-schema.svg)
-- [JWT Token Flow](12-diagrams/jwt-token-flow.svg)
-- [OAuth 2.0 with DPoP Flow](12-diagrams/oauth2-dpop-flow.svg)
-- [Commit Broadcasting Flow](12-diagrams/commit-broadcasting-flow.svg)
-- [WebSocket Upgrade Flow](12-diagrams/websocket-upgrade-flow.svg)
-- [Rate Limiting Algorithm](12-diagrams/rate-limiting-algorithm.svg)
-- [Request Throttling Flow](12-diagrams/request-throttling-flow.svg)
-- [DoS Mitigation Architecture](12-diagrams/dos-mitigation-architecture.svg)
-- [Secrets Management Flow](12-diagrams/secrets-management-flow.svg)
-- [PLC Directory Architecture](12-diagrams/plc-directory-architecture.svg)
-- [DID Resolution Flow](12-diagrams/did-resolution-flow.svg)
-- [PLC Failover Mechanism](12-diagrams/plc-failover-mechanism.svg)
-- [Event Ordering Guarantee](12-diagrams/event-ordering-guarantee.svg)
-- [Reconnection Flow](12-diagrams/reconnection-flow.svg)
-- [Event Replay Mechanism](12-diagrams/event-replay-mechanism.svg)
-- [Test Organization Structure](12-diagrams/test-organization-structure.svg)
-- [Property-Based Testing Flow](12-diagrams/property-based-testing-flow.svg)
-- [E2E Test Architecture](12-diagrams/e2e-test-architecture.svg)
+- <!-- Link placeholder: System Architecture -->
+- <!-- Link placeholder: Request Flow -->
+- <!-- Link placeholder: Database Schema -->
+- <!-- Link placeholder: JWT Token Flow -->
+- <!-- Link placeholder: OAuth 2.0 with DPoP Flow -->
+- <!-- Link placeholder: Commit Broadcasting Flow -->
+- <!-- Link placeholder: WebSocket Upgrade Flow -->
+- <!-- Link placeholder: Rate Limiting Algorithm -->
+- <!-- Link placeholder: Request Throttling Flow -->
+- <!-- Link placeholder: DoS Mitigation Architecture -->
+- <!-- Link placeholder: Secrets Management Flow -->
+- <!-- Link placeholder: PLC Directory Architecture -->
+- <!-- Link placeholder: DID Resolution Flow -->
+- <!-- Link placeholder: PLC Failover Mechanism -->
+- <!-- Link placeholder: Event Ordering Guarantee -->
+- <!-- Link placeholder: Reconnection Flow -->
+- <!-- Link placeholder: Event Replay Mechanism -->
+- <!-- Link placeholder: Test Organization Structure -->
+- <!-- Link placeholder: Property-Based Testing Flow -->
+- <!-- Link placeholder: E2E Test Architecture -->
 
 ---
 

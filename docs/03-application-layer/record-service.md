@@ -1,3 +1,7 @@
+---
+title: Record Service
+---
+
 # Record Service
 
 ## Overview
@@ -28,6 +32,7 @@ Understanding the Record Service is essential for implementing any ATProto appli
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   XRPC Record Endpoints                  │
 │  (com.atproto.repo.*)                    │
@@ -818,8 +823,8 @@ if (!result && error.code == 409) {
 
 ## See Also
 
-- [Repository Service](./repository-service) - MST management and repository operations
-- [Services Overview](./services-overview) - How Record Service fits into the service layer
+- [Repository Service](repository-service) - MST management and repository operations
+- [Services Overview](services-overview) - How Record Service fits into the service layer
 - [Repository Basics](../07-repository-protocol/repository-basics) - Understanding ATProto repositories
 - [Lexicon Validation](../02-core-concepts/atproto-basics) - Record schema validation
 - [CBOR Serialization](../07-repository-protocol/cbor-serialization) - How records are encoded

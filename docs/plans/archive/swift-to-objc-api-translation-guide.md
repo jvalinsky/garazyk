@@ -1,3 +1,7 @@
+---
+title: Swift API Naming Translation to Objective-C
+---
+
 # Swift API Naming Translation to Objective-C
 
 ## Overview
@@ -271,6 +275,6 @@ Swift APIs are designed for fluency and clarity at the call site, while Objectiv
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans</content>
 <parameter name="filePath">/Users/jack/Software/objpds/docs/research/swift-api-naming-translation.md

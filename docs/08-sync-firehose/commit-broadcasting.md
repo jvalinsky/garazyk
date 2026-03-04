@@ -1,8 +1,12 @@
+---
+title: Commit Broadcasting
+---
+
 # Commit Broadcasting
 
 ## Overview
 
-![Commit Broadcasting Flow](../12-diagrams/commit-broadcasting-flow.svg)
+<!-- Image placeholder: Commit Broadcasting Flow -->
 
 *Process for broadcasting repository commits to firehose subscribers in real-time*
 
@@ -18,6 +22,7 @@ Commit broadcasting is the mechanism that sends repository commits to all connec
 ### Broadcasting Pipeline
 
 ```
+
 Record operation (create/update/delete)
     ↓
 PDSRecordService processes operation
@@ -40,6 +45,7 @@ Clients receive commit event
 **ASCII Diagram: Commit Broadcasting Flow**
 
 ```
+
 ┌─────────────────────────────────────────────────────────┐
 │  Record Operation                                       │
 │  (create/update/delete via XRPC endpoint)              │
@@ -94,6 +100,7 @@ Clients receive commit event
 ### Event Flow
 
 ```
+
 ┌─────────────────────────────────────────────────────────┐
 │                  Record Operation                       │
 │  (create/update/delete via XRPC endpoint)              │
@@ -671,7 +678,7 @@ The SubscribeReposHandler broadcasts repository commits to all connected clients
 
 ## Next Steps
 
-- **[Backpressure](./backpressure)** — Flow control
-- **[WebSocket Server](./websocket-server)** — WebSocket implementation
-- **[Firehose Overview](./firehose-overview)** — Architecture overview
+- **[Backpressure](backpressure)** — Flow control
+- **[WebSocket Server](websocket-server)** — WebSocket implementation
+- **[Firehose Overview](firehose-overview)** — Architecture overview
 

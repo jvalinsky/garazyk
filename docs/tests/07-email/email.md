@@ -1,3 +1,7 @@
+---
+title: Email Provider Tests
+---
+
 # Email Provider Tests
 
 Tests for email providers, HTTP clients, and secrets management.

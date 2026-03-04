@@ -1,3 +1,7 @@
+---
+title: "P0 Security Hardening: Refresh Tokens and XRPC DPoP Implementation Plan"
+---
+
 # P0 Security Hardening: Refresh Tokens and XRPC DPoP Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -431,7 +435,7 @@ Expected: Backup completes without errors, archive created
 ./build/tests/AllTests
 ```
 
-### Expected Results
+## Expected Results
 
 - All tests pass with 0 failures
 - ShellCheck passes on backup_pds.sh

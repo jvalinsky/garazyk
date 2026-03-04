@@ -1,3 +1,7 @@
+---
+title: "Tutorial 1: Hello PDS"
+---
+
 # Tutorial 1: Hello PDS
 
 ## Overview
@@ -52,7 +56,7 @@ First, let's set up the basic directory structure for our minimal PDS:
 mkdir hello-pds
 cd hello-pds
 mkdir -p src build
-```
+```objc
 
 ### Why This Structure?
 
@@ -102,7 +106,7 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
-```
+```objc
 
 ### Understanding the Code
 
@@ -144,7 +148,7 @@ Create `src/PDSConfiguration.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding the Configuration
 
@@ -272,7 +276,7 @@ Create `src/HttpServer.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding the HTTP Server
 
@@ -337,7 +341,7 @@ Create `src/XrpcDispatcher.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding XRPC Dispatch
 
@@ -371,9 +375,9 @@ make
 
 # Run
 ./hello-pds
-```
+```objc
 
-### What's Happening During the Build?
+## What's Happening During the Build?
 
 CMake generates platform-specific build files (Makefiles on Linux/macOS, Visual Studio projects on Windows). The `make` command then compiles your Objective-C source files and links them into an executable.
 
@@ -397,9 +401,9 @@ curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer | jq .
 #   "inviteCodeRequired": false,
 #   "phoneNumberRequired": false
 # }
-```
+```objc
 
-### Understanding the Response
+## Understanding the Response
 
 This JSON response tells clients:
 - **`did`** — Your server's decentralized identifier. The `did:web` method uses DNS for identity.
@@ -419,9 +423,9 @@ This JSON response tells clients:
 
 ## Next Steps
 
-- **[Tutorial 2: Account Management](./tutorial-2-accounts)** — Add account creation
-- **[Tutorial 3: Record Operations](./tutorial-3-records)** — Add record CRUD
-- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add JWT tokens
+- **[Tutorial 2: Account Management](tutorial-2-accounts)** — Add account creation
+- **[Tutorial 3: Record Operations](tutorial-3-records)** — Add record CRUD
+- **[Tutorial 4: Authentication](tutorial-4-auth)** — Add JWT tokens
 
 ## Troubleshooting
 
@@ -438,9 +442,9 @@ kill -9 <PID>
 
 # Or use a different port in your config
 config.serverPort = 3000;
-```
+```objc
 
-### Build Errors
+## Build Errors
 
 If compilation fails:
 
@@ -450,14 +454,14 @@ rm -rf build
 mkdir build && cd build
 cmake ..
 make
-```
+```objc
 
 **Common issues:**
 - **Missing headers:** Ensure all `.h` files are in the same directory as `.m` files
 - **Linker errors:** Check that Foundation framework is linked in CMakeLists.txt
 - **ARC errors:** Make sure ARC is enabled (`-fobjc-arc` flag)
 
-### Server Starts But Doesn't Respond
+## Server Starts But Doesn't Respond
 
 Check that:
 1. Server is actually listening: `lsof -i :2583` should show your process
@@ -474,12 +478,12 @@ brew install jq
 
 # Linux
 sudo apt-get install jq
-```
+```objc
 
 Or just use `curl` without `jq`:
 ```bash
 curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer
-```
+```objc
 
 ## Summary
 
@@ -516,9 +520,9 @@ This tutorial simplified many aspects (no authentication, no database, minimal e
 
 Now that you have a basic server running, you're ready to add real functionality:
 
-- **[Tutorial 2: Account Management](./tutorial-2-accounts)** — Add account creation, storage, and JWT token minting
-- **[Tutorial 3: Record Operations](./tutorial-3-records)** — Implement record CRUD operations and MST integration
-- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add OAuth 2.0, DPoP, and JWT verification
+- **[Tutorial 2: Account Management](tutorial-2-accounts)** — Add account creation, storage, and JWT token minting
+- **[Tutorial 3: Record Operations](tutorial-3-records)** — Implement record CRUD operations and MST integration
+- **[Tutorial 4: Authentication](tutorial-4-auth)** — Add OAuth 2.0, DPoP, and JWT verification
 
 **Further Reading:**
 - [AT Protocol Specification](https://atproto.com/specs/atp) — Official protocol documentation

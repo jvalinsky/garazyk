@@ -12,7 +12,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### System Architecture
 
-![System Architecture](./system-architecture.svg)
+![System Architecture](system-architecture.svg)
 
 **Description:** Complete overview of the September PDS system architecture, showing all major components and their interactions.
 
@@ -26,7 +26,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Database Architecture
 
-![Database Pool Architecture](./database-pool-architecture.svg)
+![Database Pool Architecture](database-pool-architecture.svg)
 
 **Description:** Illustrates the SQLite database architecture with separate service databases and per-user actor databases.
 
@@ -40,7 +40,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Request Flow
 
-![Request Flow](./request-flow.svg)
+![Request Flow](request-flow.svg)
 
 **Description:** Shows the complete lifecycle of an HTTP request through the PDS system.
 
@@ -56,7 +56,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### OAuth 2.0 with DPoP Flow
 
-![OAuth 2.0 with DPoP Flow](./oauth2-dpop-flow.svg)
+![OAuth 2.0 with DPoP Flow](oauth2-dpop-flow.svg)
 
 **Description:** Complete OAuth 2.0 authorization flow with DPoP (Demonstrating Proof-of-Possession) token binding.
 
@@ -70,7 +70,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### JWT Token Flow
 
-![JWT Token Flow](./jwt-token-flow.svg)
+![JWT Token Flow](jwt-token-flow.svg)
 
 **Description:** JWT token creation, validation, and refresh flow in the PDS system.
 
@@ -84,7 +84,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Cryptography Flow
 
-![Cryptography Flow](./cryptography-flow.svg)
+![Cryptography Flow](cryptography-flow.svg)
 
 **Description:** Cryptographic operations including key generation, signing, and verification.
 
@@ -98,7 +98,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Key Rotation Flow
 
-![Key Rotation Flow](./key-rotation-flow.svg)
+![Key Rotation Flow](key-rotation-flow.svg)
 
 **Description:** Process for rotating cryptographic keys without service disruption.
 
@@ -112,7 +112,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Secrets Management Flow
 
-![Secrets Management Flow](./secrets-management-flow.svg)
+![Secrets Management Flow](secrets-management-flow.svg)
 
 **Description:** Secure storage and retrieval of sensitive configuration data.
 
@@ -126,7 +126,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Defense in Depth Architecture
 
-![Defense in Depth Architecture](./defense-in-depth-architecture.svg)
+![Defense in Depth Architecture](defense-in-depth-architecture.svg)
 
 **Description:** Multi-layered security architecture with defense at every level.
 
@@ -142,7 +142,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### CBOR Encoding Process
 
-![CBOR Encoding Example](./cbor-encoding-example.svg)
+![CBOR Encoding Example](cbor-encoding-example.svg)
 
 **Description:** Demonstrates how data is encoded using CBOR (Concise Binary Object Representation).
 
@@ -156,7 +156,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### MST Tree Structure
 
-![MST Tree Structure](./mst-tree-structure.svg)
+![MST Tree Structure](mst-tree-structure.svg)
 
 **Description:** Merkle Search Tree structure used for repository data organization.
 
@@ -170,7 +170,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### DID Resolution Flow
 
-![DID Resolution Flow](./did-resolution-flow.svg)
+![DID Resolution Flow](did-resolution-flow.svg)
 
 **Description:** Process for resolving Decentralized Identifiers (DIDs) to DID documents.
 
@@ -186,7 +186,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Method Registration
 
-![Method Registration](./method-registration.svg)
+![Method Registration](method-registration.svg)
 
 **Description:** XRPC method registration and routing architecture.
 
@@ -200,7 +200,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### XRPC Routing
 
-![XRPC Routing](./xrpc-routing.svg)
+![XRPC Routing](xrpc-routing.svg)
 
 **Description:** Request routing through the XRPC dispatcher to appropriate handlers.
 
@@ -214,7 +214,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Rate Limiting Algorithm
 
-![Rate Limiting Algorithm](./rate-limiting-algorithm.svg)
+![Rate Limiting Algorithm](rate-limiting-algorithm.svg)
 
 **Description:** Token bucket algorithm for rate limiting requests.
 
@@ -228,7 +228,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Request Throttling Flow
 
-![Request Throttling Flow](./request-throttling-flow.svg)
+![Request Throttling Flow](request-throttling-flow.svg)
 
 **Description:** Request throttling and queue management for load control.
 
@@ -242,7 +242,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### DoS Mitigation Architecture
 
-![DoS Mitigation Architecture](./dos-mitigation-architecture.svg)
+![DoS Mitigation Architecture](dos-mitigation-architecture.svg)
 
 **Description:** Multi-layered defense against denial-of-service attacks.
 
@@ -256,7 +256,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Input Validation Pipeline
 
-![Input Validation Pipeline](./input-validation-pipeline.svg)
+![Input Validation Pipeline](input-validation-pipeline.svg)
 
 **Description:** Multi-stage input validation and sanitization process.
 
@@ -272,7 +272,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Transaction Flow
 
-![Transaction Flow](./transaction-flow.svg)
+![Transaction Flow](transaction-flow.svg)
 
 **Description:** Database transaction lifecycle with commit and rollback handling.
 
@@ -286,7 +286,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Blob Upload Flow
 
-![Blob Upload Flow](./blob-upload-flow.svg)
+![Blob Upload Flow](blob-upload-flow.svg)
 
 **Description:** Complete process for uploading and storing blob data.
 
@@ -300,7 +300,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Blob Garbage Collection Flow
 
-![Blob Garbage Collection Flow](./blob-garbage-collection-flow.svg)
+![Blob Garbage Collection Flow](blob-garbage-collection-flow.svg)
 
 **Description:** Process for identifying and removing unreferenced blobs.
 
@@ -314,7 +314,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Blob Quota Enforcement
 
-![Blob Quota Enforcement](./blob-quota-enforcement.svg)
+![Blob Quota Enforcement](blob-quota-enforcement.svg)
 
 **Description:** Quota checking and enforcement for blob storage limits.
 
@@ -330,7 +330,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Commit Broadcasting Flow
 
-![Commit Broadcasting Flow](./commit-broadcasting-flow.svg)
+![Commit Broadcasting Flow](commit-broadcasting-flow.svg)
 
 **Description:** Process for broadcasting repository commits to subscribers via firehose.
 
@@ -345,7 +345,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### WebSocket Upgrade Flow
 
-![WebSocket Upgrade Flow](./websocket-upgrade-flow.svg)
+![WebSocket Upgrade Flow](websocket-upgrade-flow.svg)
 
 **Description:** HTTP to WebSocket protocol upgrade for firehose connections.
 
@@ -359,7 +359,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Backpressure Flow
 
-![Backpressure Flow](./backpressure-flow.svg)
+![Backpressure Flow](backpressure-flow.svg)
 
 **Description:** Backpressure handling for slow consumers in the firehose.
 
@@ -373,7 +373,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Event Ordering Guarantee
 
-![Event Ordering Guarantee](./event-ordering-guarantee.svg)
+![Event Ordering Guarantee](event-ordering-guarantee.svg)
 
 **Description:** Mechanisms ensuring correct event ordering in the firehose.
 
@@ -387,7 +387,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Event Replay Mechanism
 
-![Event Replay Mechanism](./event-replay-mechanism.svg)
+![Event Replay Mechanism](event-replay-mechanism.svg)
 
 **Description:** Event replay for recovering from connection failures.
 
@@ -401,7 +401,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Reconnection Flow
 
-![Reconnection Flow](./reconnection-flow.svg)
+![Reconnection Flow](reconnection-flow.svg)
 
 **Description:** Automatic reconnection with exponential backoff for firehose clients.
 
@@ -417,7 +417,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Database Schema
 
-![Database Schema](./database-schema.svg)
+![Database Schema](database-schema.svg)
 
 **Description:** Complete database schema showing all tables and relationships.
 
@@ -431,7 +431,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Migration Workflow
 
-![Migration Workflow](./migration-workflow.svg)
+![Migration Workflow](migration-workflow.svg)
 
 **Description:** Database migration process with version tracking and rollback.
 
@@ -445,7 +445,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Rollback Procedure
 
-![Rollback Procedure](./rollback-procedure.svg)
+![Rollback Procedure](rollback-procedure.svg)
 
 **Description:** Process for rolling back failed database migrations.
 
@@ -459,7 +459,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Data Integrity Verification
 
-![Data Integrity Verification](./data-integrity-verification.svg)
+![Data Integrity Verification](data-integrity-verification.svg)
 
 **Description:** Multi-level data integrity checking and verification.
 
@@ -475,7 +475,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### PLC Directory Architecture
 
-![PLC Directory Architecture](./plc-directory-architecture.svg)
+![PLC Directory Architecture](plc-directory-architecture.svg)
 
 **Description:** Architecture of the PLC (Public Ledger of Credentials) directory service.
 
@@ -489,7 +489,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### PLC Failover Mechanism
 
-![PLC Failover Mechanism](./plc-failover-mechanism.svg)
+![PLC Failover Mechanism](plc-failover-mechanism.svg)
 
 **Description:** Failover and redundancy mechanisms for PLC directory availability.
 
@@ -505,7 +505,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Logging Pipeline
 
-![Logging Pipeline](./logging-pipeline.svg)
+![Logging Pipeline](logging-pipeline.svg)
 
 **Description:** Complete logging pipeline from log statements to aggregation systems.
 
@@ -519,7 +519,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Metrics Collection Architecture
 
-![Metrics Collection Architecture](./metrics-collection-architecture.svg)
+![Metrics Collection Architecture](metrics-collection-architecture.svg)
 
 **Description:** System for collecting, aggregating, and exposing metrics.
 
@@ -533,7 +533,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Performance Monitoring Flow
 
-![Performance Monitoring Flow](./performance-monitoring-flow.svg)
+![Performance Monitoring Flow](performance-monitoring-flow.svg)
 
 **Description:** End-to-end performance monitoring and alerting flow.
 
@@ -549,7 +549,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Test Organization Structure
 
-![Test Organization Structure](./test-organization-structure.svg)
+![Test Organization Structure](test-organization-structure.svg)
 
 **Description:** Organization of test suites and test discovery mechanism.
 
@@ -563,7 +563,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### Property-Based Testing Flow
 
-![Property-Based Testing Flow](./property-based-testing-flow.svg)
+![Property-Based Testing Flow](property-based-testing-flow.svg)
 
 **Description:** Property-based testing workflow with input generation and shrinking.
 
@@ -577,7 +577,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ### E2E Test Architecture
 
-![E2E Test Architecture](./e2e-test-architecture.svg)
+![E2E Test Architecture](e2e-test-architecture.svg)
 
 **Description:** End-to-end test architecture with real server and client interactions.
 
@@ -596,7 +596,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 To embed a diagram in your documentation, use standard Markdown image syntax:
 
 ```markdown
-![Diagram Alt Text](../12-diagrams/diagram-name.svg)
+![Diagram Alt Text](# Diagram not found: diagram-name.svg)
 ```
 
 ### Using the Diagram Plugin

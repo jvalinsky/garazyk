@@ -1,3 +1,7 @@
+---
+title: Metrics Collection
+---
+
 # Metrics Collection
 
 This guide covers the metrics collection system in September PDS, including the `PDSMetrics` class, custom metrics, and Prometheus-compatible export.
@@ -15,7 +19,7 @@ September PDS includes a built-in metrics collection system that tracks server p
 
 ### Architecture Diagram
 
-![Metrics Collection Architecture](../12-diagrams/metrics-collection-architecture.svg)
+<!-- Image placeholder: Metrics Collection Architecture -->
 
 The diagram above illustrates the complete metrics collection flow in September PDS:
 - **Metrics Sources**: HTTP server, database pools, services, and PDSController
@@ -34,7 +38,7 @@ The `PDSMetrics` class provides centralized metrics collection through a singlet
 PDSMetrics *metrics = [PDSMetrics sharedMetrics];
 ```
 
-*Source: [ATProtoPDS/Sources/Metrics/PDSMetrics.h](../../ATProtoPDS/Sources/Metrics/PDSMetrics.h)*
+*Reference: `../../ATProtoPDS/Sources/Metrics/PDSMetrics.h`*
 
 ### Built-in Metrics
 
@@ -54,7 +58,7 @@ September PDS tracks the following metrics out of the box:
                                 status:200];
 ```
 
-*Source: [ATProtoPDS/Sources/Metrics/PDSMetrics.m](../../ATProtoPDS/Sources/Metrics/PDSMetrics.m#L44-L56)*
+*Reference: `../../ATProtoPDS/Sources/Metrics/PDSMetrics.m`*
 
 #### Repository Metrics
 
@@ -71,7 +75,7 @@ September PDS tracks the following metrics out of the box:
 [metrics addBlobBytes:blobSize];
 ```
 
-*Source: [ATProtoPDS/Sources/Metrics/PDSMetrics.m](../../ATProtoPDS/Sources/Metrics/PDSMetrics.m#L58-L72)*
+*Reference: `../../ATProtoPDS/Sources/Metrics/PDSMetrics.m`*
 
 #### System Metrics
 
@@ -84,7 +88,7 @@ September PDS tracks the following metrics out of the box:
 [metrics setActiveConnections:connectionCount];
 ```
 
-*Source: [ATProtoPDS/Sources/Metrics/PDSMetrics.m](../../ATProtoPDS/Sources/Metrics/PDSMetrics.m#L74-L84)*
+*Reference: `../../ATProtoPDS/Sources/Metrics/PDSMetrics.m`*
 
 ## Prometheus Export
 
@@ -99,6 +103,7 @@ NSString *prometheusOutput = [metrics exportPrometheus];
 The output follows the Prometheus exposition format:
 
 ```
+
 # HELP pds_http_requests_total Total HTTP requests
 # TYPE pds_http_requests_total counter
 pds_http_requests_total{method="get"} 1234
@@ -136,9 +141,9 @@ pds_database_size_bytes 52428800
 pds_active_connections 8
 ```
 
-*Source: [ATProtoPDS/Sources/Metrics/PDSMetrics.m](../../ATProtoPDS/Sources/Metrics/PDSMetrics.m#L86-L133)*
+*Reference: `../../ATProtoPDS/Sources/Metrics/PDSMetrics.m`*
 
-### Metrics Endpoint
+## Metrics Endpoint
 
 The metrics are exposed via the admin API endpoint, which supports both Prometheus text format and JSON:
 
@@ -161,7 +166,7 @@ The metrics are exposed via the admin API endpoint, which supports both Promethe
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Admin/PDSAdminHandler.m](../../ATProtoPDS/Sources/Admin/PDSAdminHandler.m#L308-L323)*
+*Source: <!-- `../../ATProtoPDS/Sources/Admin/PDSAdminHandler.m` -->*
 
 This handler:
 - Checks the `Accept` header to determine response format
@@ -177,7 +182,7 @@ curl -H "Authorization: Bearer <admin-token>" \
      https://pds.example.com/_pds/admin/metrics
 ```
 
-*Source: [ATProtoPDS/Sources/Admin/PDSAdminHandler.m](../../ATProtoPDS/Sources/Admin/PDSAdminHandler.m#L308-L323)*
+*Reference: `../../ATProtoPDS/Sources/Admin/PDSAdminHandler.m`*
 
 ## Application-Level Metrics Integration
 
@@ -195,7 +200,7 @@ The `PDSController` class provides a high-level metrics interface that aggregate
 }
 ```
 
-*Source: [ATProtoPDS/Sources/App/PDSController.m](../../ATProtoPDS/Sources/App/PDSController.m#L953-L960)*
+*Reference: `../../ATProtoPDS/Sources/App/PDSController.m`*
 
 This method is called by the admin API to provide operational metrics about the PDS instance.
 
@@ -232,7 +237,7 @@ The `DatabasePool` class tracks connection pool statistics and per-database metr
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Database/Pool/DatabasePool.m](../../ATProtoPDS/Sources/Database/Pool/DatabasePool.m#L321-L346)*
+*Source: <!-- `../../ATProtoPDS/Sources/Database/Pool/DatabasePool.m` -->*
 
 This provides visibility into:
 - **Pool capacity**: Maximum and current pool size
@@ -262,7 +267,7 @@ The `PDSHealthCheck` class aggregates metrics from all database pools:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m](../../ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m#L190-L205)*
+*Reference: `../../ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m`*
 
 This provides a comprehensive view of all database subsystems and their health status.
 
@@ -335,7 +340,7 @@ All metrics operations are protected by `os_unfair_lock`, which provides:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Metrics/PDSMetrics.m](../../ATProtoPDS/Sources/Metrics/PDSMetrics.m#L58-L62)*
+*Reference: `../../ATProtoPDS/Sources/Metrics/PDSMetrics.m`*
 
 **Note**: `os_unfair_lock` is macOS-only. On Linux/GNUstep, the metrics system uses a stub implementation.
 
@@ -416,7 +421,7 @@ To add metrics collection to a new component, follow the `DatabasePool` pattern:
 }
 ```
 
-*Pattern based on: [ATProtoPDS/Sources/Database/Pool/DatabasePool.m](../../ATProtoPDS/Sources/Database/Pool/DatabasePool.m#L321-L346)*
+*Pattern reference: `../../ATProtoPDS/Sources/Database/Pool/DatabasePool.m`*
 
 ### When to Record Metrics
 
@@ -460,7 +465,7 @@ Test metrics collection in unit tests:
 }
 ```
 
-*Source: [ATProtoPDS/Tests/Metrics/PDSMetricsTests.m](../../ATProtoPDS/Tests/Metrics/PDSMetricsTests.m#L12-L28)*
+*Reference: `../../ATProtoPDS/Tests/Metrics/PDSMetricsTests.m`*
 
 ## Related Documentation
 

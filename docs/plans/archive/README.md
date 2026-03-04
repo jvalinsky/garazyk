@@ -1,3 +1,7 @@
+---
+title: Archived Plans
+---
+
 # Archived Plans
 
 This directory contains completed, superseded, or historical planning documents. These are retained for reference and institutional knowledge.

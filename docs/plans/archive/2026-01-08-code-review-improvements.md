@@ -1,3 +1,7 @@
+---
+title: Code Review Improvement Plan
+---
+
 # Code Review Improvement Plan
 
 **Created:** 2026-01-08
@@ -48,7 +52,7 @@ mv tests ATProtoPDS/Tests
 - `Makefile`: Change `TEST_SOURCES = $(wildcard ATProtoPDS/Tests/**/*.m)`
 - `AGENTS.md`: Update test bundle path reference
 
-### 2. Add Test Coverage Reporting
+## 2. Add Test Coverage Reporting
 
 **Issue:** No code coverage metrics configured for CI or local development.
 
@@ -80,7 +84,7 @@ mv tests ATProtoPDS/Tests
       --format=html > coverage.html
 ```
 
-### 3. Create CONTRIBUTING.md
+## 3. Create CONTRIBUTING.md
 
 **Issue:** No standardized contribution guide at project root.
 
@@ -130,6 +134,7 @@ make test-unit
 Use conventional commits:
 
 ```
+
 feat: add new API endpoint for search
 fix: resolve memory leak in CBOR decoder
 docs: update API documentation
@@ -159,8 +164,8 @@ xcodebuild test -scheme AllTests -configuration Debug GCC_GENERATE_TEST_COVERAGE
 
 ## Getting Help
 
-- Check [TROUBLESHOOTING.md](docs/TROUBLESHOOTING)
-- Review [DEVELOPER_GUIDE.md](docs/guides/DEVELOPER_GUIDE)
+- Check <!-- Link placeholder: TROUBLESHOOTING.md -->
+- Review <!-- Link placeholder: DEVELOPER_GUIDE.md -->
 - Open an issue for questions
 ```
 
@@ -264,30 +269,30 @@ CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 
 ## Getting Started
 - [README.md](../README) - Project overview
-- [QUICKSTART.md](guides/QUICKSTART) - 5-minute setup guide
-- [CONTRIBUTING.md](../CONTRIBUTING) - How to contribute
+- <!-- Link placeholder: QUICKSTART.md --> - 5-minute setup guide
+- <!-- Link placeholder: CONTRIBUTING.md --> - How to contribute
 
 ## Development
-- [DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE) - Adding endpoints, code patterns
-- [ARCHITECTURE.md](architecture/OVERVIEW) - System design overview
+- <!-- Link placeholder: DEVELOPER_GUIDE.md --> - Adding endpoints, code patterns
+- <!-- Link placeholder: ARCHITECTURE.md --> - System design overview
 - [API Reference](http://localhost:2583/explore/api/docs) - Interactive API docs
 
 ## Testing
-- [TEST_IMPLEMENTATION_PLAN.md](TEST_IMPLEMENTATION_PLAN) - Testing strategy
-- [Security Testing](security/SECURITY_TESTING_IMPROVEMENT_PLAN) - Security test guidelines
+- [TEST_IMPLEMENTATION_PLAN.md](# Test implementation plan) - Testing strategy
+- <!-- Link placeholder: Security Testing --> - Security test guidelines
 
 ## Troubleshooting
-- [TROUBLESHOOTING.md](TROUBLESHOOTING) - Common issues and solutions
-- [Debug Session](debug_session_2026-01-08) - Recent debugging notes
+- <!-- Link placeholder: TROUBLESHOOTING.md --> - Common issues and solutions
+- [Debug Session](# Debug session) - Recent debugging notes
 
 ## Reference
-- [Implementation Plans](plans/) - Historical implementation decisions
-- [Research](research/) - Technical research and exploration
-- [Security Reports](security/) - Security analysis and audits
+- <!-- Link placeholder: Implementation Plans --> - Historical implementation decisions
+- [Research](# Research directory) - Technical research and exploration
+- <!-- Link placeholder: Security Reports --> - Security analysis and audits
 
 ## Architecture Diagrams
-- [AT Protocol Models](architecture/atproto_data_models)
-- [System Architecture](architecture/ARCHITECTURE_DIAGRAMS)
+- <!-- Link placeholder: AT Protocol Models -->
+- <!-- Link placeholder: System Architecture -->
 ```
 
 ## P2 Tasks
@@ -337,13 +342,13 @@ After implementing changes, verify:
 
 - Original code review: 2026-01-08
 - Project README: [README.md](../README)
-- Developer Guide: [DEVELOPER_GUIDE.md](guides/DEVELOPER_GUIDE)
-- Troubleshooting: [TROUBLESHOOTING.md](TROUBLESHOOTING)
+- Developer Guide: <!-- Link placeholder: DEVELOPER_GUIDE.md -->
+- Troubleshooting: <!-- Link placeholder: TROUBLESHOOTING.md -->
 
 ---
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Tests Docs](../../tests/README) - Testing documentation

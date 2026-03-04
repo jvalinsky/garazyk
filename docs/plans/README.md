@@ -1,3 +1,7 @@
+---
+title: Project Plans
+---
+
 # Project Plans
 
 This directory contains implementation plans, roadmaps, and strategic documents for the ATProto PDS project.
@@ -16,7 +20,7 @@ Active implementation plans and status documents.
 
 ## Archived Plans
 
-Completed or superseded plans are moved to the [`archive/`](archive/) subdirectory.
+Completed or superseded plans are moved to the [`archive/`](# Archive directory) subdirectory.
 
 See [`archive/README.md`](archive/README) for the complete index of archived documents.
 

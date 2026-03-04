@@ -1,3 +1,7 @@
+---
+title: ATProto PLC Architecture
+---
+
 # ATProto PLC Architecture
 
 This document describes the architecture and data flows for the PLC DID operations in the objpds PDS implementation.
@@ -6,7 +10,8 @@ This document describes the architecture and data flows for the PLC DID operatio
 
 The PDS maintains a dedicated **PLCRotationKeyManager** for signing PLC operations. This is distinct from per-account signing keys:
 
-```text
+```
+
   +-----------------------+
   |  PLCRotationKeyManager|
   |                       |
@@ -30,7 +35,8 @@ The PDS maintains a dedicated **PLCRotationKeyManager** for signing PLC operatio
 ## 1. The Operation Chain (The Ledger)
 The "Log" is a linked list of signed operations. Each operation points to the hash of the previous one, making the history immutable and verifiable.
 
-```text
+```
+
   OPERATION 0 (Genesis)      OPERATION 1 (Update)       OPERATION 2 (Rotation)
  +----------------------+   +----------------------+   +----------------------+
  | type: plc_operation  |   | type: plc_operation  |   | type: plc_operation  |
@@ -48,7 +54,8 @@ The "Log" is a linked list of signed operations. Each operation points to the ha
 ## 2. Submission Flow (The Write Path)
 How a PDS (or User) updates their identity.
 
-```text
+```
+
       [ PDS / USER ]                    [ objpds ]
             |                                  |
     1. Create Op JSON                          |
@@ -70,7 +77,8 @@ How a PDS (or User) updates their identity.
 ## 3. Resolution Flow (The Read Path)
 How any server on the internet determines your current PDS address or handle.
 
-```text
+```
+
       [ RESOLVER ]                      [ objpds ]
             |                                  |
     1. GET /did:plc:123  --------------------->|
@@ -96,7 +104,8 @@ How any server on the internet determines your current PDS address or handle.
 ## 4. Signing Flow (signPlcOperation)
 How the PDS prepares a signed PLC operation for submission.
 
-```text
+```
+
       [ AUTHENTICATED USER ]            [ objpds ]
             |                                  |
     1. POST /xrpc/com.atproto.identity.signPlcOperation
@@ -131,7 +140,8 @@ How the PDS prepares a signed PLC operation for submission.
 ## 5. Integration with PDS
 How the PDS uses PLC operations.
 
-```text
+```
+
     +-----------------------+           +-----------------------+
     |  SEPTEMBER (PDS)      |           |  PLC DIRECTORY        |
     |                       |           |                       |

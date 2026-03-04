@@ -1,3 +1,7 @@
+---
+title: XRPC Dispatch
+---
+
 # XRPC Dispatch
 
 ## Overview
@@ -7,6 +11,7 @@ XRPC (ATProto RPC) dispatch is the routing mechanism that directs incoming HTTP 
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   HTTP Request                           │
 │  POST /xrpc/com.atproto.repo.createRecord
@@ -45,6 +50,7 @@ XRPC (ATProto RPC) dispatch is the routing mechanism that directs incoming HTTP 
 NSIDs (Namespace Identifiers) follow a hierarchical format:
 
 ```
+
 com.atproto.repo.createRecord
 │    │      │    │
 │    │      │    └─ Method name
@@ -70,6 +76,7 @@ Common NSID prefixes:
 ### 1. HTTP Request Reception
 
 ```
+
 POST /xrpc/com.atproto.repo.createRecord HTTP/1.1
 Host: pds.example.com
 Authorization: Bearer <token>
@@ -91,6 +98,7 @@ The HTTP server matches the path `/xrpc/*` and routes to the XRPC dispatcher.
 The dispatcher extracts the NSID from the path:
 
 ```
+
 /xrpc/com.atproto.repo.createRecord
       └─ NSID: com.atproto.repo.createRecord
 ```
@@ -151,6 +159,7 @@ Handlers are registered with the dispatcher during initialization:
 If authentication fails:
 
 ```
+
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
 
@@ -165,6 +174,7 @@ Content-Type: application/json
 If the NSID is not registered:
 
 ```
+
 HTTP/1.1 404 Not Found
 Content-Type: application/json
 
@@ -179,6 +189,7 @@ Content-Type: application/json
 If the request is invalid:
 
 ```
+
 HTTP/1.1 400 Bad Request
 Content-Type: application/json
 
@@ -346,8 +357,8 @@ Responses are buffered before transmission to allow setting headers:
 
 ## See Also
 
-- [Method Registry](./method-registry)
-- [Domain Methods](./domain-methods)
-- [Auth Helpers](./auth-helpers)
-- [Error Handling](./error-handling)
-- [HTTP Server](./http-server)
+- [Method Registry](method-registry)
+- [Domain Methods](domain-methods)
+- [Auth Helpers](auth-helpers)
+- [Error Handling](error-handling)
+- [HTTP Server](http-server)

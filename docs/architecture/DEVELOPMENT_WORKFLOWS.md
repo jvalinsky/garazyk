@@ -1,3 +1,7 @@
+---
+title: Development Workflow Diagrams
+---
+
 # Development Workflow Diagrams
 
 Visual guides for common development tasks in this project.
@@ -300,7 +304,7 @@ graph TD
 
 ### Architecture Documents
 - [README.md](README) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis and build system details
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Component analysis and build system details
 
 ### Diagram Documents
 - [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS) - System overview diagrams
@@ -308,6 +312,6 @@ graph TD
 - [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) - Diagram selection guide
 
 ### Related Guides
-- [../guides/DEVELOPER_GUIDE.md](../guides/DEVELOPER_GUIDE) - Developer onboarding guide
+- [../guides/DEVELOPER_GUIDE.md](../guides/development/DEVELOPER_GUIDE) - Developer onboarding guide
 - [../guides/DEVELOPMENT_WORKFLOWS.md](../guides/DEVELOPMENT_WORKFLOWS) - Duplicate guide version
 - [../guides/SETUP_GUIDE.md](../guides/SETUP_GUIDE) - Environment setup guide

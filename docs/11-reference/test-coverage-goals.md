@@ -1,3 +1,7 @@
+---
+title: Test Coverage Goals
+---
+
 # Test Coverage Goals
 
 September PDS maintains comprehensive test coverage with over 1,017 tests across all layers. This document outlines coverage targets, critical paths that must be tested, and known gaps.
@@ -25,6 +29,7 @@ September PDS maintains comprehensive test coverage with over 1,017 tests across
 ### Coverage by Source Directory
 
 ```
+
 ATProtoPDS/Sources/
 ├── Core/           95%+ coverage (CBOR, CAR, CID, MST are critical)
 ├── Auth/           90%+ coverage (OAuth, JWT, DPoP, TOTP, WebAuthn)
@@ -50,6 +55,7 @@ These paths are critical to PDS functionality and must have comprehensive test c
 #### 1. Account Creation & Authentication
 
 ```
+
 Priority: CRITICAL
 Current Coverage: 95%
 Target: 98%
@@ -72,6 +78,7 @@ Critical Flows:
 #### 2. Record CRUD Operations
 
 ```
+
 Priority: CRITICAL
 Current Coverage: 92%
 Target: 95%
@@ -93,6 +100,7 @@ Critical Flows:
 #### 3. MST Tree Operations
 
 ```
+
 Priority: CRITICAL
 Current Coverage: 96%
 Target: 98%
@@ -115,6 +123,7 @@ Critical Flows:
 #### 4. CBOR & CAR Encoding
 
 ```
+
 Priority: CRITICAL
 Current Coverage: 97%
 Target: 99%
@@ -136,6 +145,7 @@ Critical Flows:
 #### 5. Firehose Event Broadcasting
 
 ```
+
 Priority: HIGH
 Current Coverage: 88%
 Target: 92%
@@ -158,6 +168,7 @@ Critical Flows:
 #### 6. OAuth 2.0 with DPoP
 
 ```
+
 Priority: CRITICAL
 Current Coverage: 93%
 Target: 96%
@@ -180,6 +191,7 @@ Critical Flows:
 #### 7. DID & Handle Resolution
 
 ```
+
 Priority: CRITICAL
 Current Coverage: 91%
 Target: 94%
@@ -205,6 +217,7 @@ Critical Flows:
 #### 1. Platform Compatibility Layer
 
 ```
+
 Current Coverage: ~60%
 Target: 75%
 Priority: MEDIUM
@@ -224,6 +237,7 @@ Gaps:
 #### 2. Error Recovery Paths
 
 ```
+
 Current Coverage: ~70%
 Target: 85%
 Priority: HIGH
@@ -244,6 +258,7 @@ Gaps:
 #### 3. Admin & Moderation
 
 ```
+
 Current Coverage: ~80%
 Target: 90%
 Priority: MEDIUM
@@ -263,6 +278,7 @@ Gaps:
 #### 4. CLI Commands
 
 ```
+
 Current Coverage: ~70%
 Target: 85%
 Priority: LOW
@@ -282,6 +298,7 @@ Gaps:
 #### 5. Blob Storage
 
 ```
+
 Current Coverage: ~82%
 Target: 90%
 Priority: MEDIUM
@@ -313,6 +330,7 @@ Good tests should be:
 ### Current Metrics
 
 ```
+
 Total Tests: 1,017
 Average Test Duration: ~0.15s
 Total Suite Duration: ~150s (2.5 minutes)
@@ -431,7 +449,7 @@ xcodebuild -scheme AllTests \
 # Navigate to coverage report
 ```
 
-### Coverage Targets by Priority
+## Coverage Targets by Priority
 
 | Priority | Target Coverage | Rationale |
 |----------|----------------|-----------|

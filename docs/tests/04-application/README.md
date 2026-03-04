@@ -1,3 +1,7 @@
+---
+title: Application Tests
+---
+
 # Application Tests
 
 Tests for business logic, controllers, CLI, admin operations, and blob storage.

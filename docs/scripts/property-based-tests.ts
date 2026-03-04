@@ -250,9 +250,23 @@ function testInternalLinkValidity(): PropertyResult {
           targetPath = path.resolve(fileDir, targetPath);
         }
         
-        // Add .md extension if not present
-        if (!targetPath.endsWith('.md') && !targetPath.endsWith('.html')) {
+        // Add .md extension if not present and not an asset file
+        const assetExtensions = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.pdf', '.json', '.yaml', '.yml'];
+        const hasAssetExtension = assetExtensions.some(ext => targetPath.endsWith(ext));
+        
+        if (!targetPath.endsWith('.md') && !targetPath.endsWith('.html') && !hasAssetExtension) {
           targetPath += '.md';
+        }
+        
+        // For asset files starting with /, check in public directory
+        if (hasAssetExtension && link.href.startsWith('/')) {
+          const publicPath = path.join(DOCS_DIR, 'public', link.href.substring(1));
+          if (!fs.existsSync(publicPath)) {
+            result.passed = false;
+            result.failures.push(`Broken link in ${path.relative(DOCS_DIR, file)}:${link.line} -> ${link.href}`);
+            result.counterexamples.push({ file, line: link.line, href: link.href, target: publicPath });
+          }
+          continue;
         }
         
         // Check if target exists
@@ -565,6 +579,10 @@ async function runPropertyBasedTests() {
 function generateDetailedReport(reportPath: string) {
   const lines: string[] = [];
   
+  lines.push('---');
+  lines.push('title: "Property-Based Test Report"');
+  lines.push('---');
+  lines.push('');
   lines.push('# Property-Based Test Report');
   lines.push('');
   lines.push(`Generated: ${new Date().toISOString()}`);

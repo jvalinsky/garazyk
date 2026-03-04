@@ -1,3 +1,7 @@
+---
+title: Database Pool & Integration Tests
+---
+
 # Database Pool & Integration Tests
 
 Tests for connection pooling and database integration utilities.
@@ -118,4 +122,4 @@ XCTAssertTrue(valid);
 - [Actor Store Tests](actor-store) - Per-user storage
 - [Service Databases Tests](service-databases) - Global service databases
 - [Application Tests](../04-application/README) - Application using pools
-- [Concurrency Audit](../../skills/objc-concurrency-bug-audit/SKILL) - Thread safety
+- <!-- Link placeholder: Concurrency Audit --> - Thread safety
