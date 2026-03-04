@@ -100,15 +100,15 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
 - [x] 3. Checkpoint - Verify migration completeness
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Phase 3: Content Enhancement
-  - [ ] 4.1 Create content expansion framework
+- [x] 4. Phase 3: Content Enhancement
+  - [x] 4.1 Create content expansion framework
     - Implement `scripts/expand-content.ts` with TypeScript
     - Define `ContentExpansionRule`, `FileContext`, and `CodeBlock` interfaces
     - Create expansion templates for explanations, "Why this matters", and troubleshooting sections
     - Implement code analysis functions to extract key points
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.8_
   
-  - [ ] 4.2 Expand Tutorial 1: Hello PDS
+  - [x] 4.2 Expand Tutorial 1: Hello PDS
     - Add prerequisites section listing required knowledge
     - Add learning objectives and "What you'll build" overview
     - Add comprehensive explanations between code blocks
@@ -117,56 +117,56 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Add summary section reviewing key concepts
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.9, 5.10_
   
-  - [ ] 4.3 Expand Tutorial 2: Accounts
+  - [x] 4.3 Expand Tutorial 2: Accounts
     - Add all required tutorial sections (prerequisites, objectives, overview, troubleshooting, next steps, time, summary)
     - Add detailed explanations for account creation and JWT minting code
     - Add real-world usage examples and context
     - Verify code examples compile successfully
     - _Requirements: 5.1-5.10_
   
-  - [ ] 4.4 Expand Tutorial 3: Records
+  - [x] 4.4 Expand Tutorial 3: Records
     - Add all required tutorial sections
     - Add explanations for record CRUD operations and MST integration
     - Add common pitfalls and troubleshooting guidance
     - Verify code examples compile successfully
     - _Requirements: 5.1-5.10_
   
-  - [ ] 4.5 Expand Tutorial 4: Authentication
+  - [x] 4.5 Expand Tutorial 4: Authentication
     - Add all required tutorial sections
     - Add explanations for OAuth 2.0, DPoP, and JWT verification
     - Add security best practices and common mistakes
     - Verify code examples compile successfully
     - _Requirements: 5.1-5.10_
   
-  - [ ] 4.6 Expand Tutorial 5: Firehose
+  - [x] 4.6 Expand Tutorial 5: Firehose
     - Add all required tutorial sections
     - Add explanations for WebSocket connections and event streaming
     - Add troubleshooting for connection issues and backpressure
     - Verify code examples compile successfully
     - _Requirements: 5.1-5.10_
   
-  - [ ] 4.7 Expand Tutorial 6: Deployment
+  - [x] 4.7 Expand Tutorial 6: Deployment
     - Add all required tutorial sections
     - Add explanations for Docker deployment and production configuration
     - Add troubleshooting for deployment issues
     - Verify deployment scripts work correctly
     - _Requirements: 5.1-5.10_
   
-  - [ ] 4.8 Enhance core concept documentation
+  - [x] 4.8 Enhance core concept documentation
     - Add "Why this matters" sections to all core concept pages
     - Add comprehensive explanations for CBOR, CAR, MST, and cryptography
     - Add real-world examples and use cases
     - Add design decision explanations and trade-offs
     - _Requirements: 3.1, 3.2, 3.3, 3.6, 3.7, 3.9_
   
-  - [ ] 4.9 Enhance service layer documentation
+  - [x] 4.9 Enhance service layer documentation
     - Add comprehensive explanations for all service implementations
     - Add "When to use" guidance for different patterns
     - Add common pitfalls and troubleshooting sections
     - Cross-reference related documentation sections
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.8, 3.9_
   
-  - [ ] 4.10 Review content quality and consistency
+  - [x] 4.10 Review content quality and consistency
     - Review all expanded content for consistent voice and style
     - Verify terminology matches GLOSSARY.md
     - Ensure progressive complexity from simple to advanced
@@ -174,41 +174,41 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - **Property 5: Tutorial Structure Completeness**
     - **Validates: Requirements 3.8, 3.9, 5.1-5.10, 12.1-12.10**
 
-- [ ] 5. Phase 4: Code Block Enhancement
-  - [ ] 5.1 Configure syntax highlighting
+- [x] 5. Phase 4: Code Block Enhancement
+  - [x] 5.1 Configure syntax highlighting
     - Configure Shiki in `.vitepress/config.ts` with Objective-C support
     - Set up light theme (github-light) and dark theme (github-dark)
     - Enable line numbers for all code blocks
     - Test syntax highlighting for Objective-C, TypeScript, Bash, JSON
     - _Requirements: 4.1, 4.3, 4.10_
   
-  - [ ] 5.2 Implement code enhancement plugin
+  - [x] 5.2 Implement code enhancement plugin
     - Create `.vitepress/plugins/code-enhancer.ts`
     - Implement line highlighting support with `{2,4-6}` syntax
     - Implement code block titles with `[filename.m]` syntax
     - Add copy-to-clipboard button functionality
     - _Requirements: 4.2, 4.6, 4.8_
   
-  - [ ] 5.3 Implement code group tabs for platform-specific code
+  - [x] 5.3 Implement code group tabs for platform-specific code
     - Extend markdown-it to support `::: code-group` syntax
     - Create Vue component for tabbed code display
     - Add macOS and Linux tabs for platform-specific examples
     - Test tab switching and code display
     - _Requirements: 4.5_
   
-  - [ ] 5.4 Add code annotations support
+  - [x] 5.4 Add code annotations support
     - Implement inline comment highlighting for explanations
     - Support annotation markers in code blocks
     - Style annotations for visibility in both themes
     - _Requirements: 4.4_
   
-  - [ ] 5.5 Implement collapsible code blocks
+  - [x] 5.5 Implement collapsible code blocks
     - Add support for collapsible sections for long examples
     - Implement expand/collapse functionality
     - Preserve collapsed state during navigation
     - _Requirements: 4.9_
   
-  - [ ] 5.6 Validate code block enhancements
+  - [x] 5.6 Validate code block enhancements
     - Test all code block features in light and dark themes
     - Verify copy buttons work correctly
     - Test platform-specific tabs
@@ -216,34 +216,34 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - **Property 9: Syntax Highlighting Application**
     - **Validates: Requirements 4.1-4.10**
 
-- [ ] 6. Phase 5: Diagram Integration
-  - [ ] 6.1 Create diagram loader plugin
+- [x] 6. Phase 5: Diagram Integration
+  - [x] 6.1 Create diagram loader plugin
     - Implement `.vitepress/plugins/diagram-loader.ts`
     - Create `DiagramConfig` interface for diagram metadata
     - Implement `embedDiagram()` function for SVG embedding
     - Support inline diagram references with custom syntax
     - _Requirements: 6.1, 6.2_
   
-  - [ ] 6.2 Add diagram captions and accessibility
+  - [x] 6.2 Add diagram captions and accessibility
     - Implement caption rendering below diagrams
     - Add alt text support for all diagrams
     - Create accessible descriptions for complex diagrams
     - Ensure screen reader compatibility
     - _Requirements: 6.4, 6.7, 15.5_
   
-  - [ ] 6.3 Implement diagram zoom functionality
+  - [x] 6.3 Implement diagram zoom functionality
     - Add click-to-zoom or full-screen view for complex diagrams
     - Implement modal overlay for zoomed diagrams
     - Add keyboard navigation for zoom controls
     - _Requirements: 6.6_
   
-  - [ ] 6.4 Create diagrams reference page
+  - [x] 6.4 Create diagrams reference page
     - Create `docs/12-diagrams/index.md` listing all diagrams
     - Add thumbnails and descriptions for each diagram
     - Link to pages where each diagram is used
     - _Requirements: 6.5_
   
-  - [ ] 6.5 Integrate all diagrams into documentation
+  - [x] 6.5 Integrate all diagrams into documentation
     - Embed system-architecture.svg in architecture overview
     - Embed oauth2-dpop-flow.svg in authentication documentation
     - Embed jwt-token-flow.svg in JWT documentation
@@ -254,7 +254,7 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Embed secrets-management-flow.svg in security documentation
     - _Requirements: 6.1, 6.9_
   
-  - [ ] 6.6 Validate diagram integration
+  - [x] 6.6 Validate diagram integration
     - Verify all diagrams display correctly
     - Test diagram loading performance
     - Verify accessibility with screen readers
@@ -262,52 +262,52 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - **Property 4: Diagram Integration**
     - **Validates: Requirements 6.1-6.10**
 
-- [ ] 7. Checkpoint - Verify enhanced features
+- [x] 7. Checkpoint - Verify enhanced features
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Phase 6: Search and Navigation
-  - [ ] 8.1 Configure search functionality
+- [x] 8. Phase 6: Search and Navigation
+  - [x] 8.1 Configure search functionality
     - Configure MiniSearch in `.vitepress/config.ts`
     - Set search options (fuzzy: 0.2, prefix: true)
     - Configure search boost weights (title: 4, text: 2, headings: 3, code: 1)
     - Enable local search provider
     - _Requirements: 1.3, 7.1, 7.2, 7.4_
   
-  - [ ] 8.2 Implement search index customization
+  - [x] 8.2 Implement search index customization
     - Configure fields to index (title, text, headings, code)
     - Implement code block content indexing
     - Configure search result context display
     - Test search coverage across all documentation
     - _Requirements: 7.1, 7.6, 7.8, 7.9_
   
-  - [ ] 8.3 Implement keyboard navigation for search
+  - [x] 8.3 Implement keyboard navigation for search
     - Configure keyboard shortcuts for search (Cmd/Ctrl+K)
     - Implement arrow key navigation in search results
     - Add Enter key to navigate to selected result
     - Add Escape key to close search modal
     - _Requirements: 7.5_
   
-  - [ ] 8.4 Configure navigation structure
+  - [x] 8.4 Configure navigation structure
     - Implement breadcrumb navigation in theme
     - Add previous/next page navigation links
     - Configure automatic table of contents for each page
     - Enable deep linking to headings with anchor links
     - _Requirements: 8.4, 8.5, 8.6, 8.7_
   
-  - [ ] 8.5 Implement mobile navigation
+  - [x] 8.5 Implement mobile navigation
     - Configure responsive hamburger menu for small screens
     - Test navigation on mobile devices
     - Ensure touch-friendly tap targets
     - Test sidebar collapse/expand on mobile
     - _Requirements: 8.9_
   
-  - [ ] 8.6 Add edit link and last updated
+  - [x] 8.6 Add edit link and last updated
     - Configure GitHub edit link for each page
     - Enable last updated timestamp display
     - Configure git-based last updated tracking
     - _Requirements: 16.6_
   
-  - [ ] 8.7 Validate search and navigation
+  - [x] 8.7 Validate search and navigation
     - Test search functionality with various queries
     - Verify keyboard navigation works
     - Test mobile navigation on multiple devices
@@ -351,7 +351,7 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Set proper priority and change frequency
     - _Requirements: 9.9_
   
-  - [ ] 9.5 Update GitHub Actions workflow
+  - [~] 9.5 Update GitHub Actions workflow
     - Update `.github/workflows/build-docs.yml`
     - Add validation step before build
     - Add VitePress build step
@@ -370,8 +370,8 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - **Property 17: External Link Availability**
     - **Validates: Requirements 9.1-9.10, 11.1-11.10**
 
-- [ ] 10. Phase 8: Deployment Configuration
-  - [ ] 10.1 Create nginx configuration
+- [-] 10. Phase 8: Deployment Configuration
+  - [x] 10.1 Create nginx configuration
     - Create `docker/docs/nginx.conf` for serving documentation
     - Configure location block for `/docs` path
     - Set up try_files for SPA routing
@@ -379,28 +379,28 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Configure no-cache headers for HTML files
     - _Requirements: 10.1, 10.2, 10.4, 10.5_
   
-  - [ ] 10.2 Create custom 404 page
+  - [x] 10.2 Create custom 404 page
     - Create `docs/404.md` with helpful content
     - Add search functionality to 404 page
     - Add navigation links to main sections
     - Suggest similar pages based on URL
     - _Requirements: 10.7_
   
-  - [ ] 10.3 Configure URL redirects
+  - [x] 10.3 Configure URL redirects
     - Identify Jekyll URLs that differ from VitePress URLs
     - Create redirect configuration in nginx or VitePress
     - Generate URL mapping file for reference
     - Test all redirects
     - _Requirements: 10.8, 13.1, 13.4, 13.5_
   
-  - [ ] 10.4 Set up deployment process
+  - [x] 10.4 Set up deployment process
     - Configure deployment to pds.garazyk.xyz/docs
     - Set up HTTPS/TLS configuration
     - Configure deployment preview for pull requests
     - Create deployment verification script
     - _Requirements: 10.1, 10.3, 10.9, 10.10_
   
-  - [ ] 10.5 Deploy to staging
+  - [x] 10.5 Deploy to staging
     - Deploy VitePress site to staging environment
     - Run smoke tests on staging
     - Verify all links work
@@ -408,14 +408,14 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Test mobile responsiveness
     - _Requirements: 10.10_
   
-  - [ ] 10.6 Deploy to production
+  - [~] 10.6 Deploy to production
     - Deploy VitePress site to production (pds.garazyk.xyz/docs)
     - Verify deployment with automated checks
     - Test production site functionality
     - Monitor for errors
     - _Requirements: 10.1, 10.10_
   
-  - [ ] 10.7 Validate deployment
+  - [~] 10.7 Validate deployment
     - Verify site accessible at pds.garazyk.xyz/docs
     - Test HTTPS configuration
     - Verify caching headers
@@ -425,11 +425,11 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - **Property 14: File Naming Consistency**
     - **Validates: Requirements 10.1-10.10, 13.1-13.10**
 
-- [ ] 11. Checkpoint - Verify deployment
+- [~] 11. Checkpoint - Verify deployment
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Phase 9: Validation and Testing
-  - [ ] 12.1 Implement property-based tests
+- [~] 12. Phase 9: Validation and Testing
+  - [~] 12.1 Implement property-based tests
     - Set up fast-check library for TypeScript
     - Implement Property 1: Complete File Migration test
     - Implement Property 2: Code Block Preservation test
@@ -440,14 +440,14 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Configure 100 iterations per property test
     - _Requirements: 20.1, 20.2, 20.3, 20.6_
   
-  - [ ] 12.2 Run comprehensive link validation
+  - [~] 12.2 Run comprehensive link validation
     - Run link validation on all documentation pages
     - Verify zero broken internal links
     - Check external link availability
     - Generate link validation report
     - _Requirements: 11.1, 11.2, 20.2_
   
-  - [ ] 12.3 Run accessibility validation
+  - [~] 12.3 Run accessibility validation
     - Run axe-core accessibility tests on all pages
     - Verify WCAG 2.1 AA compliance
     - Check color contrast in light and dark themes
@@ -456,7 +456,7 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Generate accessibility report
     - _Requirements: 11.8, 15.1-15.10_
   
-  - [ ] 12.4 Run performance validation
+  - [~] 12.4 Run performance validation
     - Run Lighthouse tests on key pages
     - Verify performance score ≥ 90
     - Verify First Contentful Paint < 1.5s
@@ -464,14 +464,14 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Generate performance report
     - _Requirements: 14.1, 14.2, 14.7, 14.10_
   
-  - [ ] 12.5 Validate code examples
+  - [~] 12.5 Validate code examples
     - Verify all tutorial code examples compile
     - Run code style checks on all examples
     - Verify error handling in code examples
     - Check memory management implications noted
     - _Requirements: 19.1, 19.2, 19.3, 19.8_
   
-  - [ ] 12.6 Run migration verification
+  - [~] 12.6 Run migration verification
     - Verify all Jekyll pages have VitePress equivalents
     - Verify all code blocks render correctly
     - Verify all diagrams display correctly
@@ -479,7 +479,7 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Generate comprehensive migration verification report
     - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5, 20.7, 20.8, 20.9, 20.10_
   
-  - [ ] 12.7 Generate final validation report
+  - [~] 12.7 Generate final validation report
     - Compile all validation results
     - Document any remaining issues
     - Create sign-off checklist
@@ -488,8 +488,8 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - **Property 18: Migration Verification Completeness**
     - **Validates: Requirements 11.1-11.10, 14.1-14.10, 15.1-15.10, 19.1-19.10, 20.1-20.10**
 
-- [ ] 13. Phase 10: Documentation and Handoff
-  - [ ] 13.1 Create maintenance documentation
+- [~] 13. Phase 10: Documentation and Handoff
+  - [~] 13.1 Create maintenance documentation
     - Document content update workflow
     - Document how to add new documentation pages
     - Document how to update diagrams
@@ -497,35 +497,35 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Create troubleshooting guide for common issues
     - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.10_
   
-  - [ ] 13.2 Create migration guide for users
+  - [~] 13.2 Create migration guide for users
     - Document URL changes from Jekyll to VitePress
     - Create URL mapping file for external references
     - Document how to update bookmarks
     - Notify users of migration completion
     - _Requirements: 13.4, 13.5, 13.9, 13.10_
   
-  - [ ] 13.3 Create documentation templates
+  - [~] 13.3 Create documentation templates
     - Create template for new documentation pages
     - Create template for tutorials
     - Create template for API reference pages
     - Document style guidelines
     - _Requirements: 16.1, 16.3_
   
-  - [ ] 13.4 Set up documentation monitoring
+  - [~] 13.4 Set up documentation monitoring
     - Configure analytics (if enabled)
     - Set up alerts for build failures
     - Set up alerts for broken links
     - Document monitoring procedures
     - _Requirements: 16.8_
   
-  - [ ] 13.5 Archive Jekyll documentation
+  - [~] 13.5 Archive Jekyll documentation
     - Create backup of Jekyll documentation
     - Archive Jekyll configuration
     - Update README with new documentation URL
     - Remove Jekyll dependencies
     - _Requirements: 13.9_
   
-  - [ ] 13.6 Final review and sign-off
+  - [~] 13.6 Final review and sign-off
     - Review all deliverables against requirements
     - Verify all 20 requirements met
     - Verify all 18 properties validated
@@ -533,7 +533,7 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Obtain stakeholder sign-off
     - _Requirements: All_
 
-- [ ] 14. Final checkpoint - Project completion
+- [~] 14. Final checkpoint - Project completion
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
