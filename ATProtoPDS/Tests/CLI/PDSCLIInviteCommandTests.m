@@ -35,20 +35,53 @@
 
 @end
 
+#import "Database/PDSDatabase.h"
+
 @interface PDSCLIInviteCommandTests : XCTestCase
 @property (nonatomic, strong) PDSCLIDispatcher *dispatcher;
 @property (nonatomic, strong) PDSCLIInviteTestContext *context;
+@property (nonatomic, copy) NSString *tempDir;
 @end
 
 @implementation PDSCLIInviteCommandTests
 
 - (void)setUp {
     [super setUp];
+    
+    NSString *uuid = [[NSUUID UUID] UUIDString];
+    self.tempDir = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"pds-test-%@", uuid]];
+    [[NSFileManager defaultManager] createDirectoryAtPath:[self.tempDir stringByAppendingPathComponent:@"service"]
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:nil];
+
     self.dispatcher = [PDSCLIDispatcher sharedDispatcher];
     self.context = [[PDSCLIInviteTestContext alloc] init];
+    self.context.dataDir = self.tempDir;
+    
+    NSString *dbPath = [[self.tempDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
+    PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
+    [db openWithError:nil];
+    
+    [db executeRawSQL:@"CREATE TABLE invite_codes (id TEXT PRIMARY KEY, code TEXT UNIQUE, account_did TEXT, created_at TEXT, uses INTEGER, max_uses INTEGER, disabled INTEGER)" error:nil];
+    
+    [db executeParameterizedUpdate:@"INSERT INTO invite_codes VALUES (?, ?, ?, ?, ?, ?, ?)"
+                            params:@[@"1", @"ABCD-1234-EFGH-5678", @"admin", @"2026-01-03T00:00:00Z", @0, @1, @0]
+                             error:nil];
+                             
+    [db executeParameterizedUpdate:@"INSERT INTO invite_codes VALUES (?, ?, ?, ?, ?, ?, ?)"
+                            params:@[@"2", @"ABCD-1234", @"admin", @"2026-01-02T00:00:00Z", @0, @1, @0]
+                             error:nil];
+
+    [db executeParameterizedUpdate:@"INSERT INTO invite_codes VALUES (?, ?, ?, ?, ?, ?, ?)"
+                            params:@[@"3", @"USED-1111", @"admin", @"2026-01-01T00:00:00Z", @1, @1, @1]
+                             error:nil];
+                             
+    [db close];
 }
 
 - (void)tearDown {
+    [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     self.dispatcher = nil;
     self.context = nil;
     [super tearDown];

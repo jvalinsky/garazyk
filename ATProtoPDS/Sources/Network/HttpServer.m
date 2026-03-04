@@ -13,6 +13,7 @@
 #import "Network/HttpServer.h"
 #import "Compat/PDSTypes.h"
 #import "Debug/PDSLogger.h"
+#import "Metrics/PDSMetrics.h"
 #import "Network/HttpBufferPool.h"
 #import "Network/HttpParsing.h"
 #import "Network/HttpRequest.h"
@@ -301,6 +302,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 - (void)handleNewConnection:(id<PDSNetworkConnection>)connection {
   dispatch_async(_connectionQueue, ^{
     [self->_activeConnections addObject:connection];
+    [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)self->_activeConnections.count];
   });
 
   HttpConnectionState *connectionState =
@@ -327,6 +329,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           dispatch_async(strongSelf.connectionQueue, ^{
             [strongSelf.activeConnections removeObject:strongConnection];
             [strongSelf.connectionStates removeObjectForKey:strongConnection];
+            [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
           });
           [strongConnection cancel];
           break;
@@ -336,6 +339,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           dispatch_async(strongSelf.connectionQueue, ^{
             [strongSelf.activeConnections removeObject:strongConnection];
             [strongSelf.connectionStates removeObjectForKey:strongConnection];
+            [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
           });
           break;
         }
@@ -618,7 +622,16 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         PDS_LOG_HTTP_INFO(@"Starting dispatch for [%@] %@ %@",
                           requestRef.remoteAddress, requestRef.methodString,
                           logPath);
+        NSTimeInterval requestStart = [NSDate timeIntervalSinceReferenceDate];
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
+        NSTimeInterval latency = [NSDate timeIntervalSinceReferenceDate] - requestStart;
+        [[PDSMetrics sharedMetrics] incrementHttpRequestsForMethod:requestRef.methodString
+                                                          endpoint:requestRef.path
+                                                            status:response.statusCode];
+        [[PDSMetrics sharedMetrics] observeRequestLatency:latency
+                                                   method:requestRef.methodString
+                                                 endpoint:requestRef.path
+                                                   status:response.statusCode];
         PDS_LOG_HTTP_INFO(@"Finished dispatch for [%@] %@ %@, status %ld",
                           requestRef.remoteAddress, requestRef.methodString,
                           logPath, (long)response.statusCode);
