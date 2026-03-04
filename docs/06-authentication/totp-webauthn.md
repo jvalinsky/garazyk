@@ -1,3 +1,7 @@
+---
+title: TOTP and WebAuthn
+---
+
 # TOTP and WebAuthn
 
 ## Overview
@@ -11,6 +15,7 @@ The PDS supports two-factor authentication (2FA) using TOTP (Time-based One-Time
 TOTP generates time-based one-time passwords using a shared secret:
 
 ```
+
 Shared Secret (Base32 encoded)
     ↓
 Time Counter (current time / 30 seconds)
@@ -95,6 +100,7 @@ CREATE TABLE backup_codes (
 WebAuthn enables passwordless authentication using hardware security keys or biometric authentication:
 
 ```
+
 User Device
     ↓
 WebAuthn Authenticator (FIDO2 key, biometric, etc.)
@@ -229,6 +235,7 @@ CREATE TABLE webauthn_challenges (
 ## 2FA Enrollment Flow
 
 ```
+
 1. User enables 2FA
    ↓
 2. Choose method (TOTP or WebAuthn)
@@ -252,6 +259,7 @@ CREATE TABLE webauthn_challenges (
 ## 2FA Login Flow
 
 ```
+
 1. User enters username/password
    ↓
 2. Credentials verified
@@ -376,6 +384,6 @@ return YES;
 
 ## See Also
 
-- [JWT Tokens](./jwt-tokens)
-- [OAuth 2.0 with DPoP](./oauth2-dpop)
-- [Key Rotation](./key-rotation)
+- [JWT Tokens](jwt-tokens)
+- [OAuth 2.0 with DPoP](oauth2-dpop)
+- [Key Rotation](key-rotation)

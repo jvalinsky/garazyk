@@ -1,3 +1,7 @@
+---
+title: Troubleshooting Relay Sync Crash Loop
+---
+
 # Troubleshooting Relay Sync Crash Loop
 **Date**: February 25, 2026
 **Issue**: AT Protocol PDS server continuously crashing roughly 66-seconds after completing `requestCrawl` and `describeServer` via `com.atproto.sync.subscribeRepos` relay sync.

@@ -1,3 +1,7 @@
+---
+title: Blob Service
+---
+
 # Blob Service
 
 ## Overview
@@ -44,6 +48,7 @@ Understanding blob management is essential for implementing media-rich applicati
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   XRPC Blob Endpoints                    │
 │  (com.atproto.repo.uploadBlob)           │
@@ -347,6 +352,7 @@ Backends can implement:
 Blobs are content-addressed using CIDv1 with SHA-256:
 
 ```
+
 CID = CIDv1(sha256(blob_data))
 ```
 
@@ -716,8 +722,8 @@ for (NSDictionary *blob in allBlobs) {
 
 ## See Also
 
-- [Repository Service](./repository-service) - Repository-level operations
-- [Services Overview](./services-overview) - How Blob Service fits into the service layer
+- [Repository Service](repository-service) - Repository-level operations
+- [Services Overview](services-overview) - How Blob Service fits into the service layer
 - [Blob Storage](../07-repository-protocol/blob-storage) - Storage backend implementation
 - [Blob Lifecycle](../07-repository-protocol/blob-lifecycle) - Understanding blob lifecycle management
 - [Blob Quotas](../07-repository-protocol/blob-quotas) - Implementing storage quotas

@@ -1,8 +1,12 @@
+---
+title: Rate Limiting
+---
+
 # Rate Limiting
 
 ## Overview
 
-![Rate Limiting Algorithm](../12-diagrams/rate-limiting-algorithm.svg)
+<!-- Image placeholder: Rate Limiting Algorithm -->
 
 *Sliding window rate limiting with token bucket algorithm for smooth request throttling*
 
@@ -41,6 +45,7 @@ Counts requests in fixed time windows (e.g., per minute, per hour).
 
 **Example:**
 ```
+
 Window 1: 00:00-01:00 → 100 requests allowed
 Window 2: 01:00-02:00 → 100 requests allowed
 
@@ -63,6 +68,7 @@ Tracks request timestamps and counts requests within a rolling time window.
 
 **Example:**
 ```
+
 Current time: 01:30
 Window: Last 60 minutes (00:30-01:30)
 Count: All requests with timestamp > 00:30
@@ -563,6 +569,6 @@ Minimal memory footprint due to SQLite storage.
 
 ## Next Steps
 
-- **[DoS Protection](./dos-protection)** — Attack mitigation strategies
-- **[Request Throttling](./request-throttling)** — Per-endpoint throttling
-- **[Error Handling](./error-handling)** — Standardized error responses
+- **[DoS Protection](dos-protection)** — Attack mitigation strategies
+- **[Request Throttling](request-throttling)** — Per-endpoint throttling
+- **[Error Handling](error-handling)** — Standardized error responses

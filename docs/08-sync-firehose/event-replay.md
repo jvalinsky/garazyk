@@ -1,3 +1,7 @@
+---
+title: Event Replay and Catch-Up Mechanisms
+---
+
 # Event Replay and Catch-Up Mechanisms
 
 ## Overview
@@ -13,6 +17,7 @@ Event replay allows subscribers to catch up on missed events after disconnection
 ### Replay Flow
 
 ```
+
 Client reconnects with cursor=1000
     ↓
 Server validates cursor
@@ -201,6 +206,7 @@ if (replayedCount > self.maxReplayEventsPerConnection) {
 Cursors are string representations of sequence numbers:
 
 ```
+
 cursor=0       → Start from beginning
 cursor=12345   → Resume from sequence 12345
 cursor=999999  → Resume from sequence 999999
@@ -560,9 +566,9 @@ If replay exceeds the maximum:
 
 ## See Also
 
-- [Event Ordering](./event-ordering) — Sequence number guarantees
-- [Reconnection Strategy](./reconnection-strategy) — Handling disconnections
-- [Reliability Guarantees](./reliability-guarantees) — Delivery semantics
-- [Backpressure](./backpressure) — Flow control
-- [Firehose Overview](./firehose-overview) — Architecture overview
+- [Event Ordering](event-ordering) — Sequence number guarantees
+- [Reconnection Strategy](reconnection-strategy) — Handling disconnections
+- [Reliability Guarantees](reliability-guarantees) — Delivery semantics
+- [Backpressure](backpressure) — Flow control
+- [Firehose Overview](firehose-overview) — Architecture overview
 

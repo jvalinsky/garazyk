@@ -1,3 +1,7 @@
+---
+title: OAuth2 Security Considerations
+---
+
 # OAuth2 Security Considerations
 
 This document describes the security architecture, threat model, and mitigation strategies implemented in the ATProto PDS OAuth2 implementation.
@@ -139,7 +143,7 @@ if (!dpopProof || dpopProof.length == 0) {
        ![jwk isKindOfClass:[NSDictionary class]]) {
        // Invalid header
    }
-   ```
+   ```text
 
 2. **HTTP method binding:**
    ```objc
@@ -148,7 +152,7 @@ if (!dpopProof || dpopProof.length == 0) {
    if (![htm isEqualToString:normalizedMethod]) {
        // htm mismatch
    }
-   ```
+   ```text
 
 3. **URL binding:**
    ```objc
@@ -156,7 +160,7 @@ if (!dpopProof || dpopProof.length == 0) {
    if (![htu isEqualToString:expectedHTU]) {
        // htu mismatch
    }
-   ```
+   ```text
 
 4. **Timestamp validation:**
    ```objc
@@ -168,7 +172,7 @@ if (!dpopProof || dpopProof.length == 0) {
    if (now - iat.doubleValue > 300) {
        // iat too old (5 minutes)
    }
-   ```
+   ```text
 
 5. **JTI replay prevention:**
    ```objc
@@ -177,7 +181,7 @@ if (!dpopProof || dpopProof.length == 0) {
    if (![[PDSReplayCache sharedCache] checkAndAddJTI:jti expiration:jtiExpiration]) {
        // jti reuse detected
    }
-   ```
+   ```text
 
 6. **Nonce challenge support:**
    ```objc
@@ -188,7 +192,7 @@ if (!dpopProof || dpopProof.length == 0) {
    if (![[PDSNonceManager sharedManager] validateNonce:proofNonce]) {
        // nonce invalid or expired
    }
-   ```
+   ```text
 
 7. **Token binding via cnf.jkt:**
    ```objc
@@ -196,7 +200,7 @@ if (!dpopProof || dpopProof.length == 0) {
    if (!request.dpopKeyThumbprint || request.dpopKeyThumbprint.length == 0) {
        // Missing DPoP key thumbprint
    }
-   ```
+   ```text
 
 ### 4. Redirect URI Validation
 
@@ -518,14 +522,14 @@ The client must retry with the provided nonce in the DPoP proof payload.
 
 This security document references concepts from all OAuth2 documentation:
 
-- [Overview](./README) - OAuth2 implementation overview
-- [Architecture](./architecture) - System architecture and components
-- [Authorization Flow](./authorization-flow) - Auth code flow security
-- [Token Management](./token-management) - Token security and rotation
-- [DPoP](./dpop) - DPoP proof security and replay protection
-- [PKCE](./pkce) - PKCE and code interception protection
-- [Web UI](./web-ui) - CSRF and session token security
-- [Admin Auth](./admin-auth) - Admin authentication security
+- [Overview](README) - OAuth2 implementation overview
+- [Architecture](architecture) - System architecture and components
+- [Authorization Flow](authorization-flow) - Auth code flow security
+- [Token Management](token-management) - Token security and rotation
+- [DPoP](dpop) - DPoP proof security and replay protection
+- [PKCE](pkce) - PKCE and code interception protection
+- [Web UI](web-ui) - CSRF and session token security
+- [Admin Auth](admin-auth) - Admin authentication security
 
 ---
 

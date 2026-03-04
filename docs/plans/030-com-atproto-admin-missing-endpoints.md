@@ -1,3 +1,7 @@
+---
+title: "Admin API: parity complete; track post-parity hardening"
+---
+
 # Admin API: parity complete; track post-parity hardening
 
 ## Summary

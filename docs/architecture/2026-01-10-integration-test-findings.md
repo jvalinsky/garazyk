@@ -1,3 +1,7 @@
+---
+title: PDS Integration Test Results - Findings Report
+---
+
 # PDS Integration Test Results - Findings Report
 
 > **Status (2026-02-19):** Items 1 (JWT tokens) and 4 (session persistence) are resolved. Access tokens are now signed JWTs. Sessions persist to SQLite. Items 2-3 remain as documented.
@@ -31,6 +35,7 @@ Integration tests verified PDS interaction session behavior. **All 7 tests pass*
 
 **Historical Implementation (pre-Phase 2):**
 ```
+
 Access token: 87CB3C9A-0922-4DA8-A3C2-8E50CD7400B8
 Refresh token: 5A15252D-A080-41F7-89E7-477FB5B5A54B
 ```
@@ -74,6 +79,7 @@ Tokens were opaque UUID strings with no cryptographic verification.
 
 **Actual:**
 ```
+
 bafyreid6ygzb2pn6vypl4phtpn56w6q7lvjukfcsek3kupo3zkks4xgmdy
 ```
 
@@ -152,7 +158,7 @@ Resolved items:
 
 ### Architecture Documents
 - [README.md](README) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis and data flows
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Component analysis and data flows
 - [atproto_pds_architecture.md](atproto_pds_architecture) - Expected token format and CID specs
 - [atproto_data_models.md](atproto_data_models) - Record and CID structure
 
@@ -161,4 +167,4 @@ Resolved items:
 - [../tests/02-network/xrpc.md](../tests/02-network/xrpc) - XRPC endpoint tests
 
 ### Security Documentation
-- [../security/](../security/) - Security audit and hardening guides
+- <!-- Link placeholder: ../security/ --> - Security audit and hardening guides

@@ -1,3 +1,7 @@
+---
+title: Utilities Tests
+---
+
 # Utilities Tests
 
 Tests for configuration, metrics, debugging tools, and exploration endpoints.

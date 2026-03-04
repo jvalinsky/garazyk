@@ -1,3 +1,7 @@
+---
+title: ARC Runtime Considerations
+---
+
 # ARC Runtime Considerations
 
 ## Overview
@@ -85,7 +89,7 @@ instruments -t "Allocations" ./build/bin/kaszlak
 leaks -atExit -- ./build/bin/kaszlak
 ```
 
-### Xcode Memory Graph
+## Xcode Memory Graph
 
 ```objc
 // In Xcode debugger
@@ -440,7 +444,7 @@ valgrind --leak-check=summary ./build/bin/kaszlak
 
 ## Next Steps
 
-- **[Network Transport](./network-transport)** — Platform-specific network I/O
-- **[Compatibility Layer](./compatibility-layer)** — Compatibility shims
-- **[macOS/Linux](./macos-linux)** — Platform overview
+- **[Network Transport](network-transport)** — Platform-specific network I/O
+- **[Compatibility Layer](compatibility-layer)** — Compatibility shims
+- **[macOS/Linux](macos-linux)** — Platform overview
 

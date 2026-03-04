@@ -1,3 +1,7 @@
+---
+title: ATProto PLC Utility Implementation Plan
+---
+
 # ATProto PLC Utility Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -10,7 +14,7 @@
 
 ---
 
-### Task 1: Project Structure & Basic Models
+## Task 1: Project Structure & Basic Models
 
 **Files:**
 - Create: `ATProtoPDS/Sources/PLC/PLCOperation.h`
@@ -50,6 +54,7 @@ Implement a model that can parse and serialize PLC operations from JSON/CBOR.
 - (BOOL)appendOperation:(PLCOperation *)op error:(NSError **)error;
 @end
 ```
+
 **Step 2: Implement PLCMockStore (In-memory)**
 **Step 3: Write tests for store operations**
 **Step 4: Verify tests pass**
@@ -126,6 +131,6 @@ Implement `index.html` and supporting assets for a simple DID explorer.
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

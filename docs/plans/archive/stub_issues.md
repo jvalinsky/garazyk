@@ -1,3 +1,7 @@
+---
+title: Behaviors to Track (Remaining Work)
+---
+
 # Behaviors to Track (Remaining Work)
 
 1. `ATProtoPDS/Sources/Admin/PDSAdminAuth.m:29`
@@ -23,5 +27,5 @@ Please file follow-up work items if you want these tracked in an issue tracker, 
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans

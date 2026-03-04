@@ -1,3 +1,7 @@
+---
+title: Getting Started with PDS
+---
+
 # Getting Started with PDS
 
 ## What is a Personal Data Server (PDS)?
@@ -26,6 +30,7 @@ The PDS is organized into four main layers: Network, Routing, Application, and D
 ### Architecture Diagram
 
 ```
+
 ┌──────────────────────────────────────────────────────────────────┐
 │                      HTTP Clients                                │
 │              (Web, Mobile, Bots, Other Servers)                  │
@@ -265,31 +270,31 @@ A typical request flows through the system as follows:
    ```bash
    git clone https://github.com/garazyk/atproto-pds.git
    cd atproto-pds
-   ```
+   ```text
 
 2. **Build on macOS:**
    ```bash
    mkdir -p build && cd build
    cmake ..
    make -j$(sysctl -n hw.ncpu)
-   ```
+   ```text
 
 3. **Build on Linux:**
    ```bash
    mkdir build-linux && cd build-linux
    cmake .. -DCMAKE_BUILD_TYPE=Debug
    make -j$(nproc)
-   ```
+   ```text
 
 4. **Run tests:**
    ```bash
    ./build/tests/AllTests
-   ```
+   ```text
 
 5. **Start the server:**
    ```bash
    ./build/bin/kaszlak --data-dir ./pds-data --config ./config.json
-   ```
+   ```text
 
 ### Configuration
 
@@ -316,8 +321,8 @@ The PDS is configured via `config.json`:
 
 ## Next Steps
 
-- **[Architecture Overview](./architecture-overview)** — Detailed system architecture
-- **[Setup Guide](./setup)** — Platform-specific setup instructions
+- **[Architecture Overview](architecture-overview)** — Detailed system architecture
+- **[Setup Guide](setup)** — Platform-specific setup instructions
 - **[Core Concepts](../02-core-concepts/atproto-basics)** — AT Protocol fundamentals
 - **[Tutorials](../10-tutorials/tutorial-1-hello-pds)** — Hands-on learning
 

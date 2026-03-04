@@ -1,3 +1,7 @@
+---
+title: Reliability Guarantees and Delivery Semantics
+---
+
 # Reliability Guarantees and Delivery Semantics
 
 ## Overview
@@ -442,6 +446,7 @@ When the partition heals:
 ### Scenario 1: Client Disconnect During Replay
 
 ```
+
 1. Client connects with cursor=1000
 2. Server starts replaying events 1001-1100
 3. Client receives events 1001-1050
@@ -454,6 +459,7 @@ When the partition heals:
 ### Scenario 2: Server Crash During Broadcast
 
 ```
+
 1. Server broadcasts event seq=2000
 2. Some clients receive it, others don't
 3. Server crashes before all clients receive it
@@ -465,6 +471,7 @@ When the partition heals:
 ### Scenario 3: Slow Client
 
 ```
+
 1. Client falls behind due to slow processing
 2. Server's send buffer fills up
 3. Server sends error frame and closes connection
@@ -506,9 +513,9 @@ Set up alerts for:
 
 ## See Also
 
-- [Event Ordering](./event-ordering) — Sequence number guarantees
-- [Reconnection Strategy](./reconnection-strategy) — Handling disconnections
-- [Event Replay](./event-replay) — Cursor-based catch-up
-- [Backpressure](./backpressure) — Flow control
-- [Firehose Overview](./firehose-overview) — Architecture overview
+- [Event Ordering](event-ordering) — Sequence number guarantees
+- [Reconnection Strategy](reconnection-strategy) — Handling disconnections
+- [Event Replay](event-replay) — Cursor-based catch-up
+- [Backpressure](backpressure) — Flow control
+- [Firehose Overview](firehose-overview) — Architecture overview
 

@@ -1,3 +1,7 @@
+---
+title: Test Organization
+---
+
 # Test Organization
 
 September PDS uses a comprehensive test suite with over 1,000 tests organized by functional area. This document describes the test structure, naming conventions, and discovery mechanism.
@@ -7,6 +11,7 @@ September PDS uses a comprehensive test suite with over 1,000 tests organized by
 Tests mirror the source code organization under `ATProtoPDS/Tests/`:
 
 ```
+
 ATProtoPDS/Tests/
 ├── Admin/              # Admin endpoints & moderation tests
 ├── App/                # Application layer tests
@@ -144,6 +149,7 @@ Tests are organized into several categories:
 Test fixtures are stored in `ATProtoPDS/Tests/fixtures/`:
 
 ```
+
 fixtures/
 ├── car/           # CAR file test data
 ├── cbor/          # CBOR encoding test data
@@ -215,6 +221,7 @@ xcodebuild -scheme AllTests build
 The test runner provides detailed output:
 
 ```
+
 === Starting Test Suite: All Tests ===
 Test suites: 150
 
@@ -234,6 +241,7 @@ Failures: 0
 When tests fail, detailed diagnostics are provided:
 
 ```
+
 FAIL: -[HandleResolverTests testSSRFProtection] at HandleResolverTests.m:45: 
 Expected private IP to be rejected
 ```

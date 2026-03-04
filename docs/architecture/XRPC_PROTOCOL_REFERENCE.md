@@ -1,3 +1,7 @@
+---
+title: ATProto XRPC Protocol Reference
+---
+
 # ATProto XRPC Protocol Reference
 
 Quick reference for XRPC protocol concepts, methods, and data structures.
@@ -5,6 +9,7 @@ Quick reference for XRPC protocol concepts, methods, and data structures.
 ## XRPC Method Naming
 
 ```
+
 com.atproto.<nsid>.<methodName>
 
 Examples:
@@ -16,6 +21,7 @@ Examples:
 ## NSID Structure
 
 ```
+
 <desired-name>.<registrant-domain>
 
 Example: server atproto.com → com.atproto.server
@@ -131,7 +137,7 @@ wss://pds.example.com/xrpc/com.atproto.sync.subscribeRepos
 - [README.md](README) - Architecture documentation index
 - [atproto_pds_architecture.md](atproto_pds_architecture) - PDS API endpoints and protocols
 - [atproto_data_models.md](atproto_data_models) - Data types (DID, CID, AT-URI) reference
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - XRPC handler component analysis
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - XRPC handler component analysis
 
 ### Diagram Documents
 - [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - XRPC request flow diagrams

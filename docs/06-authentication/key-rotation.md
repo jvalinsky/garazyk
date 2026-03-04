@@ -1,3 +1,7 @@
+---
+title: Key Rotation
+---
+
 # Key Rotation
 
 ## Overview
@@ -20,6 +24,7 @@ The PDS manages several types of keys:
 ### Account Signing Key Rotation
 
 ```
+
 Current Key (Active)
     ↓
     ├─ Used for new commits
@@ -40,6 +45,7 @@ New Key (Staged)
 ### Rotation Timeline
 
 ```
+
 Day 1: Generate new key
 Day 2: Publish new key in DID document
 Day 3: Activate new key (start using for signing)
@@ -498,6 +504,6 @@ CREATE TABLE key_rotation_audit (
 
 ## See Also
 
-- [JWT Tokens](./jwt-tokens)
-- [OAuth 2.0 with DPoP](./oauth2-dpop)
-- [TOTP and WebAuthn](./totp-webauthn)
+- [JWT Tokens](jwt-tokens)
+- [OAuth 2.0 with DPoP](oauth2-dpop)
+- [TOTP and WebAuthn](totp-webauthn)

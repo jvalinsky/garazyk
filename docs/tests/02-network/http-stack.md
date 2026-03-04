@@ -1,3 +1,7 @@
+---
+title: HTTP Stack Tests
+---
+
 # HTTP Stack Tests
 
 Tests for HTTP server implementation, routing, request/response handling, and streaming.
@@ -117,6 +121,7 @@ __block NSDictionary *capturedParams = nil;
 **ATProto routing patterns:**
 
 ```
+
 /xrpc/com.atproto.sync.getRepo        → GET, repo sync
 /xrpc/com.atproto.repo.uploadBlob     → POST, blob upload
 /xrpc/com.atproto.sync.subscribeRepos → WebSocket upgrade
@@ -141,6 +146,7 @@ __block NSDictionary *capturedParams = nil;
 **Trie structure** enables efficient prefix matching:
 
 ```
+
 Root
 ├── users/
 │   ├── :id (parameter node)

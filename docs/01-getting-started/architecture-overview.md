@@ -1,14 +1,19 @@
+---
+title: Architecture Overview
+---
+
 # Architecture Overview
 
 ## System Architecture
 
-![System Architecture](../12-diagrams/system-architecture.svg)
+<!-- Image placeholder: System Architecture -->
 
 *Complete system architecture showing all major components and their interactions*
 
 The PDS is built as a layered architecture with clear separation of concerns:
 
 ```
+
 ┌─────────────────────────────────────────────────────────────────┐
 │                        HTTP Clients                             │
 │              (Web browsers, mobile apps, bots)                  │
@@ -171,6 +176,7 @@ The database layer uses SQLite with two types of databases:
 Here's how a typical request flows through the system:
 
 ```
+
 1. Client sends HTTP request
    GET /xrpc/com.atproto.repo.getRecord?did=did:plc:xxx&collection=app.bsky.feed.post&rkey=abc123
 
@@ -209,6 +215,7 @@ Here's how a typical request flows through the system:
 ### Record Creation Flow
 
 ```
+
 Client Request (createRecord)
     ↓
 XrpcDispatcher (auth verification)
@@ -229,6 +236,7 @@ Response to client
 ### Firehose Flow
 
 ```
+
 Client WebSocket Connection (subscribeRepos)
     ↓
 XrpcDispatcher (upgrade to WebSocket)
@@ -252,6 +260,7 @@ Client receives commit event
 When the PDS starts:
 
 ```
+
 1. PDSApplication.init
    - Load configuration
    - Initialize service databases
@@ -266,6 +275,7 @@ When the PDS starts:
 For each request:
 
 ```
+
 1. Extract JWT token from Authorization header
 2. Verify JWT signature with public key
 3. Check token expiration
@@ -279,6 +289,7 @@ For each request:
 For each database operation:
 
 ```
+
 1. Get database connection from pool
 2. Begin transaction (if needed)
 3. Execute query with prepared statement
@@ -334,7 +345,7 @@ Common error codes:
 
 ## Next Steps
 
-- **[Setup Guide](./setup)** — Platform-specific setup
+- **[Setup Guide](setup)** — Platform-specific setup
 - **[Core Concepts](../02-core-concepts/atproto-basics)** — AT Protocol fundamentals
 - **[Application Layer](../03-application-layer/pds-application)** — Service architecture
 - **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC details

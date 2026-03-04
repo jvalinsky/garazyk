@@ -1,6 +1,10 @@
+---
+title: Project Tasks (Archived)
+---
+
 # Project Tasks (Archived)
 
-> **Note:** This file is archived. Active project tracking is now in [sans-io-refactor.md](sans-io-refactor).
+> **Note:** This file is archived. Active project tracking is now in <!-- Link placeholder: sans-io-refactor.md -->.
 
 ## Context
 We are currently focused on implementing the core PDS/PLC functionality. These tasks capture the follow-up work needed for stubbed paths that fall outside of the current scope or are necessary for long term parity.
@@ -9,7 +13,7 @@ We are currently focused on implementing the core PDS/PLC functionality. These t
 
 ### Linux Transport (2026-02)
 - Hostname + IPv4/IPv6 resolution via `getaddrinfo()` ✅
-- Implementation tracked in: [010-linux-transport-real-network-validation-and-fallback.md](010-linux-transport-real-network-validation-and-fallback)
+- Implementation tracked in: <!-- Link placeholder: 010-linux-transport-real-network-validation-and-fallback.md -->
 
 ### Admin Auth (2026-02)
 - Admin auth now requires `PDS_ADMIN_PASSWORD` ✅

@@ -1,3 +1,7 @@
+---
+title: Services Overview
+---
+
 # Services Overview
 
 ## Introduction
@@ -21,6 +25,7 @@ Understanding the service architecture is essential for implementing new feature
 The PDS implements a service-oriented architecture where each service handles a specific domain:
 
 ```
+
 PDSApplication
 ├── PDSAccountService      — User accounts, authentication
 ├── PDSRecordService       — Record CRUD operations
@@ -32,7 +37,7 @@ PDSApplication
 
 ### Service Initialization Flow
 
-See [Service Initialization Flow Diagram](./service-initialization-flow.svg) for a detailed visual representation of how PDSApplication initializes all services during startup.
+See [Service Initialization Flow Diagram](service-initialization-flow.svg) for a detailed visual representation of how PDSApplication initializes all services during startup.
 
 **Initialization Sequence:**
 1. Load PDSConfiguration from config.json
@@ -45,7 +50,7 @@ See [Service Initialization Flow Diagram](./service-initialization-flow.svg) for
 
 ### Service Interaction During Requests
 
-See [Service Interaction Flow Diagram](./service-interaction-flow.svg) for a detailed visual representation of how services interact during typical request processing.
+See [Service Interaction Flow Diagram](service-interaction-flow.svg) for a detailed visual representation of how services interact during typical request processing.
 
 **Request Processing Flow:**
 1. HttpServer receives HTTP request
@@ -215,6 +220,7 @@ See [Service Interaction Flow Diagram](./service-interaction-flow.svg) for a det
 ### Record Creation Flow
 
 ```
+
 1. Client calls com.atproto.repo.createRecord
    ↓
 2. XrpcRepoMethods.handleCreateRecord
@@ -239,6 +245,7 @@ See [Service Interaction Flow Diagram](./service-interaction-flow.svg) for a det
 ### Authentication Flow
 
 ```
+
 1. Client calls com.atproto.server.createSession
    ↓
 2. XrpcServerMethods.handleCreateSession
@@ -395,6 +402,7 @@ Database connections are pooled:
 ## ASCII Art: Service Initialization Flow
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │                    START                                    │
 └────────────────────┬────────────────────────────────────────┘
@@ -459,6 +467,7 @@ Database connections are pooled:
 ## ASCII Art: Service Interaction During Request
 
 ```
+
 ┌──────────────────────────────────────────────────────────┐
 │              HTTP Client Request                         │
 └────────────────────┬─────────────────────────────────────┘
@@ -963,12 +972,12 @@ PDS_LOG_SECURITY(@"[AdminService] Account suspended: did=%@, admin=%@, reason=%@
 
 ## Next Steps
 
-- **[PDSApplication](./pds-application)** — Application facade and lifecycle management
-- **[Account Service](./account-service)** — Account management details
-- **[Record Service](./record-service)** — Record operations details
-- **[Blob Service](./blob-service)** — Binary blob storage
-- **[Repository Service](./repository-service)** — MST and repository operations
-- **[Admin Service](./admin-service)** — Moderation and administration
-- **[Relay Service](./relay-service)** — Network participation and federation
+- **[PDSApplication](pds-application)** — Application facade and lifecycle management
+- **[Account Service](account-service)** — Account management details
+- **[Record Service](record-service)** — Record operations details
+- **[Blob Service](blob-service)** — Binary blob storage
+- **[Repository Service](repository-service)** — MST and repository operations
+- **[Admin Service](admin-service)** — Moderation and administration
+- **[Relay Service](relay-service)** — Network participation and federation
 - **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC
 - **[Database Layer](../05-database-layer/sqlite-architecture)** — Data persistence

@@ -1,3 +1,7 @@
+---
+title: OAuth 2.0 System Architecture
+---
+
 # OAuth 2.0 System Architecture
 
 This document describes the OAuth 2.0 authorization server implementation for ATProto PDS, including DPoP (Demonstration of Proof-of-Possession) support.
@@ -392,9 +396,9 @@ The `pendingConsents` dictionary uses `@synchronized` for thread safety:
 
 ## Related Documentation
 
-- [Token Management](./token-management) - JWT tokens, sessions, and token lifecycle
-- [DPoP](./dpop) - DPoP proof verification and JWK thumbprints
-- [PKCE](./pkce) - PKCE code challenge/verifier implementation
-- [Authorization Flow](./authorization-flow) - Sign-in and consent flow details
-- [Security](./security) - Security considerations and threat model
-- [Overview](./README) - OAuth2 implementation overview
+- [Token Management](token-management) - JWT tokens, sessions, and token lifecycle
+- [DPoP](dpop) - DPoP proof verification and JWK thumbprints
+- [PKCE](pkce) - PKCE code challenge/verifier implementation
+- [Authorization Flow](authorization-flow) - Sign-in and consent flow details
+- [Security](security) - Security considerations and threat model
+- [Overview](README) - OAuth2 implementation overview

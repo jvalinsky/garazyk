@@ -1,3 +1,7 @@
+---
+title: "Troubleshooting: Identity Resolution & CORS — 2026-03-01"
+---
+
 # Troubleshooting: Identity Resolution & CORS — 2026-03-01
 
 ## Overview
@@ -192,6 +196,7 @@ Browser console errors when using `witchsky.app` (Bluesky web client) pointed at
 `pds.garazyk.xyz`:
 
 ```
+
 Access to fetch at 'https://pds.garazyk.xyz/xrpc/com.atproto.server.createSession'
 from origin 'https://witchsky.app' has been blocked by CORS policy:
 No 'Access-Control-Allow-Origin' header is present on the requested resource.
@@ -218,6 +223,7 @@ in each handler layer:
 ### CORS Header Behavior
 
 ```
+
 Origin: https://witchsky.app
 → Access-Control-Allow-Origin: https://witchsky.app  (reflected)
 → Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD
@@ -271,7 +277,7 @@ curl -v -X POST https://pds.garazyk.xyz/xrpc/com.atproto.server.createSession \
 # → 403 "cross-origin request denied" (from exe.dev proxy, not PDS)
 ```
 
-### Known Issue: exe.dev TLS Proxy Blocks Cross-Origin POST
+## Known Issue: exe.dev TLS Proxy Blocks Cross-Origin POST
 
 The exe.dev platform's TLS termination proxy (at `s001.exe.xyz`, upstream of the VM)
 actively blocks non-GET/non-OPTIONS requests that include an `Origin` header. This is
@@ -387,7 +393,7 @@ Deploying these fixes to the production VM required several steps and surfaced s
 2. **Docker Rebuild**: Because the fix involved Objective-C source code, a simple container restart was insufficient. A full rebuild was required:
    ```bash
    docker compose up --build -d
-   ```
+   ```text
 3. **Container Conflict Resolution**: Encountered issues where `docker compose` would fail if a container with the same name (`nspds`) already existed but wasn't part of the current compose state. 
    **Fix**: Manually removed the conflicting container: `docker rm -f nspds`.
 4. **Command Transition**: Noted that the server uses modern `docker compose` (V2) rather than the legacy `docker-compose` (Python).

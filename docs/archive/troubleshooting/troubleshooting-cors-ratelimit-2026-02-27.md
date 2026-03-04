@@ -1,3 +1,7 @@
+---
+title: "Troubleshooting: CORS & Rate Limiting — 2026-02-27"
+---
+
 # Troubleshooting: CORS & Rate Limiting — 2026-02-27
 
 ## Symptom
@@ -14,6 +18,7 @@ load any data. Browser console showed a mix of errors:
 ## Architecture
 
 ```
+
 Browser (witchsky.app)
   → HTTPS (TLS terminated at exe.dev LB, 100.20.12.135)
     → nginx (port 80/3000, keepalive 8 to upstream)
@@ -118,6 +123,7 @@ source).
 error log showed:
 
 ```
+
 upstream prematurely closed connection while reading response header from upstream
 ```
 
@@ -232,6 +238,6 @@ blocked = [NSSet setWithArray:@[
   docker exec nspds rm -f /var/lib/atprotopds/service/ratelimits.db
   docker exec nspds rm -f /var/lib/atprotopds/data/service/ratelimits.db
   docker restart nspds
-  ```
+  ```text
 - **Nginx config**: The `non_idempotent` fix is only on the VM, not in the repo's
   `deploy/nginx.conf`. Update the repo config to match if deploying elsewhere.

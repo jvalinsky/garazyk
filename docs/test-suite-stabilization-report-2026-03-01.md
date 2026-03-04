@@ -1,3 +1,7 @@
+---
+title: Test Suite Stabilization Report — 2026-03-01
+---
+
 # Test Suite Stabilization Report — 2026-03-01
 
 ## Overview

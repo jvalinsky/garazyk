@@ -1,3 +1,7 @@
+---
+title: PDSController Refactor Plan
+---
+
 # PDSController Refactor Plan
 
 ## Executive Summary
@@ -26,6 +30,7 @@ The `PDSController` class (~800 lines) has grown into a monolithic "god object" 
 Good news: Service classes already exist but aren't fully utilized:
 
 ```
+
 ATProtoPDS/Sources/App/Services/
 ├── PDSAccountService.h/m      ✅ Well-defined protocol
 ├── PDSBlobService.h/m         ✅ Good abstraction
@@ -47,6 +52,7 @@ ATProtoPDS/Sources/App/Services/
 ## Target Architecture
 
 ```
+
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         PDSApplication                               │
 │  (Lightweight coordinator - replaces PDSController as entry point)  │
@@ -221,7 +227,7 @@ ATProtoPDS/Sources/App/Services/
                                                     did:(NSString *)did
                                                   error:(NSError **)error
        __attribute__((deprecated("Use loginWithIdentifier:password:error: instead")));
-   ```
+   ```text
 
 2. **Update internal callers** - grep for legacy method usage
 3. **Update tests** - migrate to new APIs
@@ -403,6 +409,7 @@ ATProtoPDS/Sources/App/Services/
 ## File Structure After Refactor
 
 ```
+
 ATProtoPDS/Sources/
 ├── App/
 │   ├── PDSApplication.h/m           # NEW: Main entry point
@@ -585,12 +592,12 @@ Each phase is designed to be independently reversible:
  - getHealthCheck
  - getMetrics
  - serviceDatabaseWithError:
- ```
+ ```text
 
 ---
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

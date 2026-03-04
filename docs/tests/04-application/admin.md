@@ -1,3 +1,7 @@
+---
+title: Admin Tests
+---
+
 # Admin Tests
 
 Tests for admin controller, service, authentication, and middleware.

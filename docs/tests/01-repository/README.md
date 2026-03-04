@@ -1,3 +1,7 @@
+---
+title: Repository Tests
+---
+
 # Repository Tests
 
 Tests for Merkle Search Tree operations, CAR file format, DAG-CBOR encoding, and core primitives.
