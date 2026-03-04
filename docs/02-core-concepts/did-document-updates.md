@@ -1,5 +1,55 @@
 # DID Document Updates
 
+## Why This Matters
+
+Your DID document is your digital identity in the AT Protocol network. It answers critical questions:
+- **Who are you?** (your DID and handle)
+- **Where is your data?** (your PDS endpoint)
+- **How can others verify you?** (your public keys)
+- **Who can update your identity?** (your rotation keys)
+
+Understanding how to update DID documents is essential for:
+- **Migrating between servers** — Change your PDS endpoint without losing your identity
+- **Recovering from compromise** — Rotate keys if your device is stolen
+- **Maintaining security** — Regular key rotation as a best practice
+- **Changing handles** — Update your display name while keeping your DID
+
+This guide explains the mechanics of DID updates, but more importantly, it explains *why* the protocol works this way and what guarantees it provides.
+
+## Real-World Use Cases
+
+### Use Case 1: Server Migration
+
+You're moving from a free PDS to a self-hosted one. The update process:
+1. Set up your new PDS and import your repository
+2. Update your DID document's service endpoint to point to the new PDS
+3. Wait for the update to propagate (usually seconds to minutes)
+4. Verify the update by resolving your DID from multiple clients
+5. Decommission the old PDS
+
+**Why this works:** Your DID never changes. Your followers, your posts, your social graph—all remain intact. Only the location of your data changes.
+
+### Use Case 2: Emergency Key Rotation
+
+Your laptop was stolen with your private keys. The recovery process:
+1. Use your backup rotation key (stored securely offline)
+2. Create an operation that rotates all verification keys
+3. Sign the operation with your backup rotation key
+4. Submit to the PLC directory
+5. The stolen keys are now useless—they can't sign new operations
+
+**Why this works:** Rotation keys are separate from verification keys. Even if your daily-use keys are compromised, your rotation keys (which you rarely use) can revoke them.
+
+### Use Case 3: Handle Change
+
+You want to change from `@alice.bsky.social` to `@alice.example.com`. The process:
+1. Configure DNS for `alice.example.com` to point to your DID
+2. Update your DID document's `alsoKnownAs` field
+3. Your new handle is immediately recognized across the network
+4. Optionally keep the old handle for a transition period
+
+**Why this works:** Handles are just pointers to DIDs. Your DID is your true identity; handles are human-readable aliases.
+
 This guide explains how DID documents are updated in the PLC directory, including the operation workflow, verification process, and propagation mechanisms.
 
 ## Overview
@@ -7,6 +57,32 @@ This guide explains how DID documents are updated in the PLC directory, includin
 DID documents in the PLC (Public Ledger of Credentials) directory are updated through a chain of cryptographically signed operations. Each operation references the previous operation, forming an immutable audit log that can be replayed to compute the current DID state.
 
 ## Operation Chain Structure
+
+### Why Hash-Linked Chains?
+
+The operation chain structure might seem complex, but it provides critical guarantees:
+
+**Immutability:** Once an operation is published, it cannot be changed. Any modification would change its CID, breaking the chain and making the tampering obvious.
+
+**Auditability:** Anyone can download the complete operation history and verify every change to your identity. This transparency prevents hidden modifications.
+
+**Conflict detection:** If two operations reference the same `prev` CID, it's immediately clear that concurrent updates occurred. The protocol can detect and handle this.
+
+**Incremental verification:** You don't need to re-verify the entire history every time. Once you've verified operations 1-100, you only need to verify new operations.
+
+### Design Trade-offs
+
+**Why not just store the current state?** Storing only the current DID document would be simpler, but you'd lose:
+- Audit history (who changed what and when)
+- Tamper detection (no way to verify the history wasn't rewritten)
+- Conflict resolution (no way to detect concurrent updates)
+
+**Why not use a blockchain?** Blockchains provide similar guarantees but require:
+- Consensus mechanisms (slow and expensive)
+- Mining or staking (resource intensive)
+- Global coordination (doesn't scale)
+
+The PLC approach provides blockchain-like guarantees (immutability, auditability) without the overhead. Each DID has its own independent chain, enabling massive parallelism.
 
 ### Hash-Linked Chain
 
@@ -452,6 +528,16 @@ if (![PLCOperation isValidDidPlc:did]) {
 - **Key Rotation**: Rotate keys periodically (recommended: annually)
 - **Backup**: Maintain secure backups of rotation keys (loss = permanent DID loss)
 
+### Why Key Backup is Critical
+
+Losing your rotation keys means permanently losing control of your DID. Unlike traditional accounts where you can reset your password, there's no "forgot password" option for DIDs. Your rotation keys are the ultimate proof of ownership.
+
+**Best practices:**
+- Store rotation keys in multiple secure locations (hardware security module, encrypted USB drive, paper wallet in a safe)
+- Never store rotation keys on internet-connected devices
+- Test your backup recovery process periodically
+- Consider using a key splitting scheme (Shamir's Secret Sharing) where you need 3 of 5 key fragments to recover
+
 ### Signature Verification
 
 Always verify signatures when processing operations:
@@ -467,12 +553,28 @@ if (!verified) {
 }
 ```
 
+### Why Signature Verification Matters
+
+In a decentralized network, you can't trust the PLC server to only accept valid operations. A malicious or compromised server might try to inject fake operations. By verifying signatures yourself, you ensure that only operations signed with valid rotation keys are accepted.
+
+This is defense in depth: even if every PLC server in the world is compromised, your client can still verify the authenticity of DID operations.
+
 ### Replay Attacks
 
 The `prev` field prevents replay attacks:
 - Each operation references the previous operation's CID
 - Operations cannot be reordered or replayed
 - Concurrent updates are detected (conflicting `prev` values)
+
+### How Replay Protection Works
+
+Imagine an attacker intercepts a valid operation (e.g., changing your PDS endpoint) and tries to replay it later to revert your DID to an old state. The replay protection prevents this:
+
+1. The operation's `prev` field references a specific previous operation
+2. When the attacker replays it, the current `prev` CID has changed
+3. The operation is rejected because its `prev` doesn't match the current chain head
+
+This ensures that operations can only be applied once, in order, and cannot be replayed out of context.
 
 ## Testing
 

@@ -396,7 +396,7 @@ receivers:
 
 Use historical data to set appropriate thresholds:
 
-```promql
+```yaml
 # Calculate P95 latency over last 30 days
 histogram_quantile(0.95,
   rate(pds_http_request_duration_seconds_bucket[30d])
@@ -427,7 +427,7 @@ avg_over_time(pds_blob_storage_bytes[30d])
 
 Use anomaly detection for dynamic thresholds:
 
-```promql
+```yaml
 # Alert if current value is 3 standard deviations from mean
 abs(
   rate(pds_http_requests_total[5m])

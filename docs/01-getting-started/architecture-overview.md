@@ -2,6 +2,10 @@
 
 ## System Architecture
 
+![System Architecture](../12-diagrams/system-architecture.svg)
+
+*Complete system architecture showing all major components and their interactions*
+
 The PDS is built as a layered architecture with clear separation of concerns:
 
 ```

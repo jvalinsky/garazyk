@@ -6,6 +6,12 @@ The PDS implements OAuth 2.0 with Demonstration of Proof-of-Possession (DPoP) fo
 
 ## OAuth 2.0 Flow
 
+![OAuth 2.0 with DPoP Flow](../12-diagrams/oauth2-dpop-flow.svg)
+
+*Complete OAuth 2.0 authorization flow with DPoP token binding*
+
+The flow consists of several key steps:
+
 ```
 ┌─────────────┐                                    ┌──────────────┐
 │   Client    │                                    │   PDS        │

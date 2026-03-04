@@ -1,321 +1,363 @@
-# Documentation Deployment Guide
+# VitePress Documentation Deployment Guide
 
-This guide explains how to deploy and maintain the PDS Objective-C Implementation Guide documentation.
+This guide covers deploying the VitePress documentation to staging and production environments.
 
-## Quick Start
+## Prerequisites
 
-### Automatic Deployment (Recommended)
+- Node.js 20+ installed
+- Docker and Docker Compose (for containerized deployment)
+- Access to production server (DEPLOY_HOST) for production deployment
+- npm dependencies installed (`cd docs && npm ci`)
 
-The documentation is automatically deployed when you push to the `main` branch:
+## Deployment Environments
 
-```bash
-# Make changes to documentation
-vim docs/01-getting-started/overview.md
+### 1. Local Preview
 
-# Commit and push
-git add docs/
-git commit -m "Update documentation"
-git push origin main
+For local testing before deployment:
 
-# GitHub Actions automatically builds and deploys
-# Site updates within 1-2 minutes
-```
-
-### Manual Local Build
-
-To build and test locally:
-
-```bash
-# Build the site
-./scripts/build-docs.sh
-
-# Serve locally
-cd docs
-jekyll serve
-
-# Open http://localhost:4000 in browser
-```
-
-## Deployment Architecture
-
-### GitHub Pages Setup
-
-The documentation uses GitHub Pages with the following configuration:
-
-1. **Source Branch:** `gh-pages`
-2. **Build Tool:** Jekyll
-3. **Trigger:** Push to `main` branch
-4. **Workflow:** `.github/workflows/build-docs.yml`
-
-### Build Process
-
-```
-Source Files (docs/*.md)
-    ↓
-GitHub Actions Workflow
-    ↓
-Jekyll Build (docs/_site/)
-    ↓
-Deploy to gh-pages Branch
-    ↓
-GitHub Pages Serves Site
-```
-
-## Deployment Verification
-
-### Check Build Status
-
-```bash
-# View GitHub Actions workflow
-# Go to: https://github.com/<owner>/<repo>/actions
-
-# Or check via CLI
-gh run list --workflow=build-docs.yml
-```
-
-### Test Site Accessibility
-
-```bash
-# Test main page
-curl -I https://<owner>.github.io/<repo>/
-
-# Test specific page
-curl https://<owner>.github.io/<repo>/01-getting-started/overview.html | head -20
-```
-
-### Verify Content
-
-1. Navigate to the site URL
-2. Check main index page loads
-3. Test navigation links
-4. Verify diagrams display
-5. Check code examples render correctly
-
-## Troubleshooting
-
-### Build Fails in GitHub Actions
-
-**Check logs:**
-1. Go to Actions tab in repository
-2. Click on failed workflow run
-3. Expand "Build Documentation" step
-4. Review error messages
-
-**Common issues:**
-- Missing Ruby dependencies: Check `docs/Gemfile`
-- Markdown syntax errors: Validate markdown files
-- Missing images: Verify image paths are correct
-
-### Site Not Updating
-
-**Possible causes:**
-1. Changes not pushed to `main` branch
-2. Workflow not triggered (check branch protection rules)
-3. Build failed (check Actions tab)
-4. GitHub Pages not configured (check Settings → Pages)
-
-**Resolution:**
-```bash
-# Force rebuild
-git commit --allow-empty -m "Trigger documentation rebuild"
-git push origin main
-```
-
-### Local Build Issues
-
-**Jekyll not installed:**
-```bash
-# Install Ruby and Jekyll
-brew install ruby
-gem install jekyll bundler
-
-# Or use Python fallback
-python3 scripts/build-docs-python.py
-```
-
-**Dependencies missing:**
 ```bash
 cd docs
-bundle install
-jekyll build
+npm run docs:build
+npm run docs:preview
 ```
 
-## Maintenance Tasks
+Visit: http://localhost:4173/docs
 
-### Regular Updates
+### 2. Staging (Docker)
 
-Keep documentation synchronized with code:
-
-1. **After code changes:** Update relevant documentation
-2. **After releases:** Update version numbers and examples
-3. **Quarterly review:** Check for outdated information
-
-### Adding New Pages
-
-To add a new documentation page:
-
-1. Create markdown file in appropriate directory
-2. Add entry to `docs/SUMMARY.md`
-3. Update navigation if needed
-4. Commit and push to `main`
-
-Example:
-```bash
-# Create new page
-cat > docs/03-application-layer/new-service.md << 'EOF'
-# New Service Documentation
-
-Content here...
-EOF
-
-# Update table of contents
-vim docs/SUMMARY.md
-
-# Commit and push
-git add docs/
-git commit -m "Add new service documentation"
-git push origin main
-```
-
-### Updating Diagrams
-
-To update diagrams:
-
-1. Edit SVG files in `docs/12-diagrams/`
-2. Or regenerate from source
-3. Commit and push
-4. Site updates automatically
-
-### Monitoring Performance
-
-Check site performance:
+Deploy to local Docker container for staging tests:
 
 ```bash
-# Check build time
-# View in GitHub Actions workflow logs
+# Build and deploy
+./docs/scripts/deploy-docs.sh staging
 
-# Monitor site size
-du -sh docs/_site/
-
-# Check page load times
-# Use browser developer tools or tools like WebPageTest
+# Verify deployment
+./docs/scripts/verify-deployment.sh http://localhost:8080
 ```
 
-## Advanced Configuration
+Visit: http://localhost:8080/docs
 
-### Custom Domain
+### 3. Production (pds.garazyk.xyz)
 
-To use a custom domain:
+**CRITICAL**: Production deployment must be done from the production server.
 
-1. Go to repository Settings → Pages
-2. Under "Custom domain", enter your domain
-3. Add DNS records as instructed
-4. GitHub Pages will handle SSL certificate
+#### On Production Server (DEPLOY_HOST)
 
-### Custom Theme
+```bash
+# SSH to production server
+ssh DEPLOY_USER@DEPLOY_HOST
 
-To customize the site appearance:
+# Navigate to repository
+cd DEPLOY_DIR/objpds
 
-1. Edit `docs/_config.yml`
-2. Modify Jekyll theme settings
-3. Add custom CSS in `docs/assets/`
-4. Commit and push
+# Pull latest changes
+git pull origin main
 
-### Search Functionality
+# Build documentation
+cd docs
+npm ci
+npm run docs:build
 
-To add search:
+# Deploy (from docker/docs directory)
+cd ../docker/docs
+docker compose down
+docker compose up -d --build
 
-1. Install Jekyll search plugin
-2. Configure in `_config.yml`
-3. Add search UI to layout
-4. Rebuild and deploy
+# Verify deployment
+curl -I https://pds.garazyk.xyz/docs/
+```
+
+#### Verify Production Deployment
+
+```bash
+# From any machine
+./docs/scripts/verify-deployment.sh https://pds.garazyk.xyz
+```
+
+## Deployment Scripts
+
+### deploy-docs.sh
+
+Main deployment script supporting multiple environments:
+
+```bash
+# Preview (local dev server)
+./docs/scripts/deploy-docs.sh preview
+
+# Staging (Docker container)
+./docs/scripts/deploy-docs.sh staging
+
+# Production (on production server only)
+./docs/scripts/deploy-docs.sh production
+```
+
+### verify-deployment.sh
+
+Comprehensive deployment verification:
+
+```bash
+# Verify staging
+./docs/scripts/verify-deployment.sh http://localhost:8080
+
+# Verify production
+./docs/scripts/verify-deployment.sh https://pds.garazyk.xyz
+```
+
+Tests:
+- Core page accessibility
+- 404 handling
+- Static asset loading
+- HTTPS configuration
+- Caching headers
+- Security headers
+- Search functionality
+- Navigation
+- Performance (page load time)
+
+### test-redirects.sh
+
+Test URL redirects and routing:
+
+```bash
+# Test local preview
+./docs/scripts/test-redirects.sh http://localhost:4173
+
+# Test staging
+./docs/scripts/test-redirects.sh http://localhost:8080
+
+# Test production
+./docs/scripts/test-redirects.sh https://pds.garazyk.xyz
+```
+
+## Docker Configuration
+
+### Dockerfile
+
+Located at `docker/docs/Dockerfile`:
+- Based on nginx:alpine
+- Copies built documentation to `/var/www/docs/`
+- Includes health check
+- Exposes port 80
+
+### docker-compose.yml
+
+Located at `docker/docs/docker-compose.yml`:
+- Service name: `september-docs`
+- Container name: `september-docs`
+- Port mapping: `8080:80`
+- Volume mount: `docs/.vitepress/dist` → `/var/www/docs` (read-only)
+
+### nginx.conf
+
+Located at `docker/docs/nginx.conf`:
+- Serves documentation at `/docs` path
+- SPA routing with try_files fallback
+- Aggressive caching for static assets (1 year)
+- No-cache for HTML files
+- Security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+- HTTPS configuration (for production)
+- Custom 404 page
+
+## GitHub Actions CI/CD
+
+### Workflow: build-docs.yml
+
+Triggers:
+- Push to main/develop (docs/** or source code changes)
+- Pull requests
+- Manual workflow dispatch
+
+Jobs:
+
+1. **build-docs**: Build VitePress documentation
+   - Install Node.js dependencies
+   - Run validation checks
+   - Build VitePress site
+   - Upload artifact
+
+2. **deploy-docs**: Deploy to gh-pages (main branch only)
+   - Download build artifact
+   - Deploy to gh-pages branch
+
+3. **preview-deployment**: Comment on PR with preview instructions
+   - Download build artifact
+   - Post comment with preview instructions
+
+## Production Architecture
+
+```
+Internet
+   ↓
+exe.dev HTTPS (port 443)
+   ↓
+nginx reverse proxy (port 3000)
+   ↓
+Documentation container (port 80)
+   ↓
+/var/www/docs (VitePress static files)
+```
 
 ## Deployment Checklist
 
-Before deploying documentation updates:
+### Pre-Deployment
 
-- [ ] Content is accurate and complete
-- [ ] Links are working (internal and external)
-- [ ] Code examples are tested
-- [ ] Diagrams are clear and accurate
-- [ ] Markdown syntax is valid
-- [ ] No broken image references
-- [ ] Changes committed with clear message
-- [ ] Pushed to `main` branch
-- [ ] GitHub Actions workflow completed successfully
-- [ ] Site is accessible and updated
+- [ ] All validation checks pass (`npm run validate`)
+- [ ] Build succeeds locally (`npm run docs:build`)
+- [ ] Preview looks correct (`npm run docs:preview`)
+- [ ] All tests pass
+- [ ] Changes committed and pushed to main
+
+### Staging Deployment
+
+- [ ] Deploy to staging (`./docs/scripts/deploy-docs.sh staging`)
+- [ ] Verify staging deployment (`./docs/scripts/verify-deployment.sh http://localhost:8080`)
+- [ ] Test all major pages manually
+- [ ] Test search functionality
+- [ ] Test mobile responsiveness
+- [ ] Test redirects (`./docs/scripts/test-redirects.sh http://localhost:8080`)
+
+### Production Deployment
+
+- [ ] SSH to production server
+- [ ] Pull latest changes
+- [ ] Build documentation
+- [ ] Deploy with Docker Compose
+- [ ] Verify production deployment (`./docs/scripts/verify-deployment.sh https://pds.garazyk.xyz`)
+- [ ] Test critical pages manually
+- [ ] Monitor for errors (check Docker logs)
+- [ ] Verify HTTPS certificate
+- [ ] Test from external network
+
+### Post-Deployment
+
+- [ ] Update URL mapping if needed
+- [ ] Notify users of any URL changes
+- [ ] Monitor analytics (if enabled)
+- [ ] Check for 404 errors in logs
+- [ ] Verify search index updated
+
+## Troubleshooting
+
+### Build Fails
+
+```bash
+# Clean and rebuild
+cd docs
+rm -rf node_modules .vitepress/dist .vitepress/cache
+npm ci
+npm run docs:build
+```
+
+### Docker Container Won't Start
+
+```bash
+# Check logs
+docker compose logs september-docs
+
+# Rebuild from scratch
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+### 404 Errors After Deployment
+
+1. Check nginx configuration is correct
+2. Verify base URL in `.vitepress/config.ts` is `/docs`
+3. Check file permissions in container
+4. Verify try_files directive in nginx.conf
+
+### Caching Issues
+
+```bash
+# Clear browser cache
+# Or use incognito/private browsing
+
+# Verify cache headers
+curl -I https://pds.garazyk.xyz/docs/
+
+# Force reload in browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows/Linux)
+```
+
+### Search Not Working
+
+1. Verify search index built during build
+2. Check browser console for errors
+3. Verify MiniSearch configuration in `.vitepress/config.ts`
+4. Rebuild documentation
 
 ## Rollback Procedure
 
-If you need to revert documentation:
+If deployment fails or causes issues:
 
 ```bash
-# Find the commit to revert to
-git log --oneline docs/
+# On production server
+cd DEPLOY_DIR/objpds/docker/docs
 
-# Revert specific commit
-git revert <commit-hash>
-git push origin main
+# Stop current deployment
+docker compose down
 
-# Or reset to previous state
-git reset --hard <commit-hash>
-git push origin main --force
+# Checkout previous version
+cd DEPLOY_DIR/objpds
+git log --oneline  # Find previous commit
+git checkout <previous-commit-hash>
+
+# Rebuild and deploy
+cd docs
+npm ci
+npm run docs:build
+cd ../docker/docs
+docker compose up -d --build
+
+# Verify rollback
+curl -I https://pds.garazyk.xyz/docs/
 ```
 
-## Performance Optimization
+## Monitoring
 
-### Reduce Build Time
+### Health Check
 
-1. Minimize image sizes
-2. Optimize SVG diagrams
-3. Use efficient markdown
-4. Avoid large code blocks
+```bash
+# Docker health check (automatic)
+docker ps  # Check STATUS column for "healthy"
 
-### Reduce Site Size
+# Manual health check
+curl -f http://localhost:8080/docs/ || echo "Health check failed"
+```
 
-1. Compress images
-2. Minify CSS/JavaScript
-3. Remove unused assets
-4. Archive old content
+### Logs
+
+```bash
+# View Docker logs
+docker compose logs -f september-docs
+
+# View nginx access logs
+docker exec september-docs tail -f /var/log/nginx/access.log
+
+# View nginx error logs
+docker exec september-docs tail -f /var/log/nginx/error.log
+```
 
 ## Security Considerations
 
-### Sensitive Information
+1. **HTTPS Only**: Production must use HTTPS (handled by exe.dev reverse proxy)
+2. **Security Headers**: nginx.conf includes security headers
+3. **No Secrets**: Documentation is public, no secrets in content
+4. **Read-Only Mount**: Docker volume mounted read-only
+5. **Minimal Container**: Alpine-based nginx image for small attack surface
 
-Never commit:
-- API keys or secrets
-- Private URLs or IPs
-- Personal information
-- Internal configuration
+## Performance Optimization
 
-### Access Control
+1. **Asset Caching**: Static assets cached for 1 year
+2. **Gzip Compression**: Enabled in nginx.conf
+3. **Code Splitting**: VitePress automatically splits code
+4. **Lazy Loading**: Images and diagrams lazy loaded
+5. **Prefetching**: VitePress prefetches linked pages
 
-1. Restrict who can push to `main`
-2. Require pull request reviews
-3. Use branch protection rules
-4. Enable status checks
+## Support
 
-## Support and Resources
-
-### Documentation Tools
-
-- [Jekyll Documentation](https://jekyllrb.com/docs/)
-- [GitHub Pages Guide](https://docs.github.com/en/pages)
-- [Markdown Guide](https://www.markdownguide.org/)
-
-### Troubleshooting Resources
-
-- [GitHub Pages Troubleshooting](https://docs.github.com/en/pages/getting-started-with-github-pages/troubleshooting-common-issues-with-github-pages)
-- [Jekyll Troubleshooting](https://jekyllrb.com/docs/troubleshooting/)
-
-### Getting Help
-
-1. Check GitHub Actions logs for build errors
-2. Review Jekyll documentation
-3. Check GitHub Pages status page
-4. Open an issue in the repository
-
----
-
-**Last Updated:** 2026-03-02  
-**Maintained By:** Development Team
+For issues or questions:
+- Check troubleshooting section above
+- Review GitHub Actions logs
+- Check Docker logs
+- File issue on GitHub repository

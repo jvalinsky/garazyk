@@ -4,6 +4,17 @@
 
 The `PDSAccountService` manages account lifecycle operations including creation, authentication, token refresh, and deletion. It coordinates between the database layer and JWT token generation to provide a complete account management interface.
 
+### Why This Service Matters
+
+Account management is the foundation of any PDS implementation. Every user interaction begins with authentication, and proper account handling ensures:
+
+- **Security**: Passwords are hashed, tokens are properly scoped, and authentication follows best practices
+- **Identity**: Each account is tied to a DID, enabling decentralized identity across the ATProto network
+- **Compliance**: Account deletion and data management meet regulatory requirements
+- **User Experience**: Fast, reliable authentication with proper error handling
+
+The Account Service sits at the intersection of identity, security, and user management, making it one of the most critical components in the PDS architecture.
+
 ## Responsibilities
 
 - Account creation with email, password, and handle
@@ -383,29 +394,225 @@ Common error scenarios:
 | Account not found | DID doesn't exist | Return 404 error |
 | Account suspended | Account has been disabled | Notify user |
 
+## When to Use This Service
+
+### Use Account Service When:
+
+- **Creating new user accounts**: The service handles the complete account creation flow including DID generation, PLC registration, and initial token issuance
+- **Authenticating users**: Login operations verify credentials and issue fresh tokens
+- **Managing sessions**: Token refresh operations extend user sessions without requiring re-authentication
+- **Implementing account deletion**: The service provides safe account removal with password verification
+
+### Don't Use Account Service For:
+
+- **Authorization checks**: Use `XrpcAuthHelper` for verifying tokens and checking permissions
+- **Profile management**: Use `PDSRecordService` to manage profile records (app.bsky.actor.profile)
+- **Password resets**: Implement separate password reset flow with email verification
+- **OAuth flows**: Use dedicated OAuth handlers for third-party authentication
+
+## Common Pitfalls and Troubleshooting
+
+### Pitfall 1: Race Conditions on Account Creation
+
+**Problem**: Multiple simultaneous account creation requests with the same handle or email can bypass uniqueness checks.
+
+**Why it happens**: Database uniqueness constraints may not be checked atomically with the account creation logic.
+
+**Solution**:
+```objc
+// Wrap account creation in a transaction
+[store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+    // Check uniqueness
+    if ([transactor accountExistsForHandle:handle error:blockError]) {
+        *blockError = [ATProtoError errorWithCode:ATProtoErrorCodeConflict
+                                          message:@"Handle already taken"];
+        return NO;
+    }
+    
+    // Create account
+    return [transactor saveAccount:account error:blockError];
+} error:&error];
+```
+
+### Pitfall 2: Token Expiration Not Handled
+
+**Problem**: Clients receive 401 errors when access tokens expire, disrupting user experience.
+
+**Why it happens**: Access tokens are short-lived (15-60 minutes) by design for security.
+
+**Solution**: Implement automatic token refresh in clients:
+```objc
+- (void)makeAuthenticatedRequest:(NSURLRequest *)request {
+    // Check if token is expired or about to expire
+    if ([self isTokenExpired:self.accessToken]) {
+        // Refresh token first
+        [self refreshTokenWithCompletion:^(NSString *newToken, NSError *error) {
+            if (newToken) {
+                self.accessToken = newToken;
+                [self retryRequest:request];
+            } else {
+                // Refresh failed, require re-login
+                [self promptForLogin];
+            }
+        }];
+    } else {
+        [self executeRequest:request];
+    }
+}
+```
+
+### Pitfall 3: Password Hashing Performance
+
+**Problem**: Account creation and login are slow, especially under load.
+
+**Why it happens**: Strong password hashing (bcrypt with high cost factor) is CPU-intensive by design.
+
+**Solution**: Use appropriate cost factors and consider async processing:
+```objc
+// Use cost factor 12 for good security/performance balance
+NSData *passwordHash = [self hashPassword:password 
+                                     salt:salt 
+                               costFactor:12];
+
+// For high-traffic systems, consider background processing
+dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    NSData *hash = [self hashPassword:password salt:salt costFactor:12];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self completeAccountCreation:account passwordHash:hash];
+    });
+});
+```
+
+### Pitfall 4: DID Generation Failures
+
+**Problem**: Account creation fails intermittently with PLC registration errors.
+
+**Why it happens**: PLC directory may be temporarily unavailable or rate-limiting requests.
+
+**Solution**: Implement retry logic with exponential backoff:
+```objc
+- (NSString *)registerDIDWithRetry:(NSString *)handle
+                        signingKey:(Secp256k1KeyPair *)signingKey
+                       rotationKey:(Secp256k1KeyPair *)rotationKey
+                             error:(NSError **)error {
+    NSInteger maxAttempts = 3;
+    NSTimeInterval delay = 1.0; // Start with 1 second
+    
+    for (NSInteger attempt = 0; attempt < maxAttempts; attempt++) {
+        NSError *plcError = nil;
+        NSString *did = [self _registerDIDWithPLCWithHandle:handle
+                                                 signingKey:signingKey
+                                                rotationKey:rotationKey
+                                                      error:&plcError];
+        
+        if (did) return did;
+        
+        if (attempt < maxAttempts - 1) {
+            [NSThread sleepForTimeInterval:delay];
+            delay *= 2; // Exponential backoff
+        } else {
+            if (error) *error = plcError;
+        }
+    }
+    
+    return nil;
+}
+```
+
+### Troubleshooting Guide
+
+#### Issue: "Invalid credentials" on correct password
+
+**Symptoms**: Login fails even with correct password.
+
+**Possible causes**:
+1. Password salt not retrieved correctly
+2. Hash algorithm mismatch
+3. Character encoding issues
+
+**Diagnosis**:
+```objc
+// Add logging to verify hash computation
+NSData *computedHash = [self hashPassword:password salt:account.passwordSalt];
+PDS_LOG_DEBUG(@"Stored hash: %@", account.passwordHash);
+PDS_LOG_DEBUG(@"Computed hash: %@", computedHash);
+PDS_LOG_DEBUG(@"Hashes match: %d", PDSConstantTimeEqualData(computedHash, account.passwordHash));
+```
+
+#### Issue: "Handle already taken" on unique handle
+
+**Symptoms**: Account creation fails claiming handle is taken when it's not.
+
+**Possible causes**:
+1. Handle normalization inconsistency
+2. Case-sensitivity issues
+3. Stale database state
+
+**Diagnosis**:
+```objc
+// Verify handle normalization
+NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
+PDS_LOG_DEBUG(@"Original handle: %@", handle);
+PDS_LOG_DEBUG(@"Normalized handle: %@", normalizedHandle);
+
+// Check database directly
+PDSDatabaseAccount *existing = [_accountRepository accountForHandle:normalizedHandle error:nil];
+PDS_LOG_DEBUG(@"Existing account: %@", existing);
+```
+
+#### Issue: Tokens not refreshing
+
+**Symptoms**: Refresh token operation fails with "invalid token" error.
+
+**Possible causes**:
+1. Refresh token not stored in session repository
+2. Token expired or revoked
+3. DID mismatch
+
+**Diagnosis**:
+```objc
+// Verify token storage
+BOOL tokenExists = [_sessionRepository refreshTokenExists:refreshToken error:nil];
+PDS_LOG_DEBUG(@"Refresh token exists: %d", tokenExists);
+
+// Check token-DID association
+NSString *associatedDid = [_sessionRepository didForRefreshToken:refreshToken error:nil];
+PDS_LOG_DEBUG(@"Token associated with DID: %@", associatedDid);
+```
+
 ## Best Practices
 
 1. **Password Security**
    - Never store plaintext passwords
-   - Use bcrypt or similar with appropriate cost factor
-   - Implement rate limiting on login attempts
+   - Use bcrypt or similar with appropriate cost factor (12-14)
+   - Implement rate limiting on login attempts (5 attempts per 15 minutes)
+   - Use constant-time comparison for password verification to prevent timing attacks
 
 2. **Token Management**
    - Keep access tokens short-lived (15-60 minutes)
    - Use longer-lived refresh tokens (days/weeks)
-   - Implement token rotation on refresh
-   - Revoke tokens on logout
+   - Implement token rotation on refresh (issue new refresh token each time)
+   - Revoke tokens on logout and store revocation list
+   - Include token scope in JWT claims
 
 3. **Account Creation**
-   - Validate email format
-   - Enforce password complexity requirements
-   - Verify email ownership before activation
-   - Generate unique DIDs
+   - Validate email format before attempting creation
+   - Enforce password complexity requirements (minimum length, character types)
+   - Verify email ownership before activation (send verification code)
+   - Generate unique DIDs using PLC directory
+   - Use database transactions to ensure atomicity
 
 4. **Concurrency**
    - Use database transactions for account creation
-   - Prevent race conditions on handle/email uniqueness
-   - Serialize token generation
+   - Prevent race conditions on handle/email uniqueness with database constraints
+   - Serialize token generation to avoid duplicate tokens
+   - Implement optimistic locking for account updates
+
+5. **Error Handling**
+   - Return specific error codes for different failure modes
+   - Log authentication failures for security monitoring
+   - Implement account lockout after repeated failed attempts
+   - Provide clear error messages without leaking security information
 
 ## Common Patterns
 
@@ -478,6 +685,9 @@ if (session) {
 
 ## See Also
 
-- [JWT Tokens](../06-authentication/jwt-tokens)
-- [Services Overview](./services-overview)
-- [PDSApplication](./pds-application)
+- [JWT Tokens](../06-authentication/jwt-tokens) - Understanding token structure and validation
+- [Services Overview](./services-overview) - How Account Service fits into the service layer
+- [PDSApplication](./pds-application) - Application-level integration
+- [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop) - Advanced authentication flows
+- [Security Best Practices](../06-authentication/security-best-practices) - Comprehensive security guidance
+- [PLC Directory](../02-core-concepts/plc-directory) - DID registration and resolution
