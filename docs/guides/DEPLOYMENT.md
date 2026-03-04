@@ -1,3 +1,7 @@
+---
+title: Deployment Guide
+---
+
 # Deployment Guide
 
 ## HTTPS Requirement
@@ -15,12 +19,13 @@ The recommended port for the PDS process is **2583** (default) or **8080** (as u
 **Minimal config** — create `/etc/caddy/Caddyfile`:
 
 ```
+
 pds.example.com {
     reverse_proxy :2583
 }
 ```
 
-A production-ready config with connection pooling, security headers, and structured logging is in [`deploy/Caddyfile`](../../deploy/Caddyfile). Replace `pds.example.com` and the backend port, then:
+A production-ready config with connection pooling, security headers, and structured logging is in [`deploy/Caddyfile`](# Deploy file: Caddyfile). Replace `pds.example.com` and the backend port, then:
 
 ```sh
 sudo systemctl reload caddy
@@ -30,7 +35,7 @@ sudo systemctl reload caddy
 
 ## Nginx
 
-A full nginx config including WebSocket support for `subscribeRepos` and TLS hardening is in [`deploy/nginx.conf`](../../deploy/nginx.conf).
+A full nginx config including WebSocket support for `subscribeRepos` and TLS hardening is in [`deploy/nginx.conf`](# Deploy file: nginx.conf).
 
 ```sh
 sudo ln -s /etc/nginx/sites-available/atprotopds.conf /etc/nginx/sites-enabled/
@@ -63,7 +68,7 @@ For Resend email:
 
 ## macOS launchd Service
 
-A ready-to-use launchd plist is at [`deploy/com.atproto.pds.plist`](../../deploy/com.atproto.pds.plist). Edit it to set your domain and admin password, then:
+A ready-to-use launchd plist is at [`deploy/com.atproto.pds.plist`](# Deploy file: com.atproto.pds.plist). Edit it to set your domain and admin password, then:
 
 ```sh
 sudo cp deploy/com.atproto.pds.plist /Library/LaunchDaemons/
@@ -79,6 +84,7 @@ The plist pre-sets `PDS_ENV=production` and `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1`
 By default, all data lives under `data/` (or whatever `--data-dir` points to):
 
 ```
+
 data/
   service/          # Accounts, sessions, invite codes (SQLite, WAL mode)
   did_cache/        # DID document cache
@@ -107,7 +113,7 @@ sqlite3 data/service/__service__.db 'PRAGMA journal_mode;'
 
 ## Related Documentation
 
-- **[Setup Guide](SETUP_GUIDE)** - Initial build and configuration
+- **[Setup Guide](# Setup guide)** - Initial build and configuration
 - **[Security Plan](../security/SECURITY_PLAN)** - Security validation strategy
 - **[Admin Auth Configuration](../security/ADMIN_AUTH_CONFIGURATION)** - Admin password setup
 - **[SSRF Protection](../security/SSRF_PROTECTION)** - Network security hardening

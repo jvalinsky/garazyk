@@ -1,3 +1,7 @@
+---
+title: Objective-C Documentation Improvement Plan
+---
+
 # Objective-C Documentation Improvement Plan
 
 **Created**: 2026-02-27
@@ -467,7 +471,7 @@ headerdoc2html -o docs/api ATProtoPDS/Sources
 resolveLinks docs/api
 ```
 
-### Validation Script
+## Validation Script
 ```bash
 # Check for undocumented public methods
 ./scripts/check-documentation.sh

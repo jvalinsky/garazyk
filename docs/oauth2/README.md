@@ -1,3 +1,7 @@
+---
+title: OAuth 2.0 Implementation
+---
+
 # OAuth 2.0 Implementation
 
 ATProtoPDS implements OAuth 2.0 with DPoP (Demonstrating Proof-of-Possession) for ATProto authentication, following the [ATProto OAuth 2.0 profile](https://atproto.com/specs/auth) with PKCE, DPoP binding, and JWT access tokens.
@@ -16,6 +20,7 @@ The PDS acts as an OAuth 2.0 Authorization Server, supporting:
 ## Architecture
 
 ```
+
 +-------------------+     +------------------+     +-------------------+
 |     Client App    |     |   ATProtoPDS     |     |     Database      |
 +-------------------+     +------------------+     +-------------------+
@@ -60,6 +65,7 @@ The PDS acts as an OAuth 2.0 Authorization Server, supporting:
 ## Authorization Flow
 
 ```
+
 ┌─────────┐                    ┌─────────┐                    ┌─────────┐
 │  Client │                    │   PDS   │                    │   User  │
 └────┬────┘                    └────┬────┘                    └────┬────┘
@@ -218,6 +224,7 @@ PKCE utilities:
 All token requests require a DPoP proof header:
 
 ```
+
 DPoP: eyJhbGciOiJFUzI1NiIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4Ijoi...","htm":"POST","htu":"https://pds.example.com/oauth/token","iat":1700000000,"jti":"uuid"}}
 ```
 
@@ -237,6 +244,7 @@ VALUES ('my-app', 'My Application', '["https://app.example.com/callback"]', 'pub
 ### Authorization Request
 
 ```
+
 GET /oauth/authorize?
     client_id=my-app&
     redirect_uri=https://app.example.com/callback&
@@ -276,6 +284,7 @@ curl -X POST https://pds.example.com/oauth/token \
 ### Authorization Server Metadata
 
 ```
+
 GET /.well-known/oauth-authorization-server
 ```
 
@@ -291,6 +300,7 @@ Returns RFC 8414 compliant metadata including:
 ### JWKS
 
 ```
+
 GET /oauth/jwks
 ```
 
@@ -324,17 +334,17 @@ Returns the server's public keys for JWT verification:
 ## Related Documentation
 
 ### OAuth2 Documentation
-- [Architecture](./architecture) - System architecture and component overview
-- [Authorization Flow](./authorization-flow) - Auth code flow with sign-in and consent
-- [Token Management](./token-management) - JWT tokens, sessions, and lifecycle
-- [DPoP](./dpop) - DPoP proof-of-possession implementation
-- [PKCE](./pkce) - PKCE code exchange security
-- [Web UI](./web-ui) - Consent screen and authorization UI
-- [Security](./security) - Security considerations and threat model
-- [Admin Auth](./admin-auth) - Admin authentication (separate from OAuth)
+- [Architecture](architecture) - System architecture and component overview
+- [Authorization Flow](authorization-flow) - Auth code flow with sign-in and consent
+- [Token Management](token-management) - JWT tokens, sessions, and lifecycle
+- [DPoP](dpop) - DPoP proof-of-possession implementation
+- [PKCE](pkce) - PKCE code exchange security
+- [Web UI](web-ui) - Consent screen and authorization UI
+- [Security](security) - Security considerations and threat model
+- [Admin Auth](admin-auth) - Admin authentication (separate from OAuth)
 
 ### Other Documentation
-- [Developer Guide](../guides/DEVELOPER_GUIDE) - General development setup
+- [Developer Guide](../guides/development/DEVELOPER_GUIDE) - General development setup
 - [Architecture](../architecture/ARCHITECTURE_ANALYSIS) - System architecture
 - [Security Plan](../security/SECURITY_PLAN) - Security overview
 

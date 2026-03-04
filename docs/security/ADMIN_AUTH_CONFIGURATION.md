@@ -1,3 +1,7 @@
+---
+title: Admin Auth Configuration & Rotation Guide
+---
+
 # Admin Auth Configuration & Rotation Guide
 
 This guide covers the server-side admin auth settings used by `PDSAdminAuth` and admin route handlers.

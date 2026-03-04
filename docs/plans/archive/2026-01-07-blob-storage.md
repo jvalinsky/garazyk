@@ -1,3 +1,7 @@
+---
+title: Blob Storage System Implementation Plan
+---
+
 # Blob Storage System Implementation Plan
 
 ## Goal
@@ -564,7 +568,7 @@ curl "http://localhost:8080/xrpc/com.atproto.sync.getBlob?cid=bafkreiexamplecid"
 kill $SERVER_PID
 ```
 
-### Step 2: Make script executable and commit
+## Step 2: Make script executable and commit
 
 ```bash
 chmod +x test_blob_endpoints.sh
@@ -644,12 +648,12 @@ List blobs for an account.
 ```bash
     git add docs/blob_storage_api.md
     git commit -m "docs: add API documentation for blob storage system"
-    ```
+    ```text
 
 ---
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

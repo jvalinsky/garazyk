@@ -1,3 +1,7 @@
+---
+title: WAL Mode
+---
+
 # WAL Mode
 
 ## Overview
@@ -7,6 +11,7 @@ Write-Ahead Logging (WAL) is a SQLite journaling mode that improves concurrency 
 ## WAL Architecture
 
 ```
+
 Traditional Mode:
 ┌─────────────────────────────────────┐
 │ Database File (db.sqlite)           │
@@ -65,6 +70,7 @@ PRAGMA cache_size=-64000;  /* 64MB cache */
 ### Write Operation
 
 ```
+
 1. Writer acquires write lock
    ↓
 2. Changes written to WAL file
@@ -81,6 +87,7 @@ PRAGMA cache_size=-64000;  /* 64MB cache */
 ### Read Operation
 
 ```
+
 1. Reader checks WAL file
    ↓
 2. Determines which version to read
@@ -93,6 +100,7 @@ PRAGMA cache_size=-64000;  /* 64MB cache */
 ### Checkpoint Operation
 
 ```
+
 1. Checkpoint process acquires checkpoint lock
    ↓
 2. Waits for all readers to finish
@@ -111,6 +119,7 @@ PRAGMA cache_size=-64000;  /* 64MB cache */
 Multiple readers can access the database while a writer is making changes:
 
 ```
+
 Time →
 Writer:  [Write] [Write] [Write] [Commit]
 Reader1:         [Read]  [Read]  [Read]
@@ -413,7 +422,7 @@ dispatch_resume(timer);
 
 ## See Also
 
-- [Service Databases](./service-databases)
-- [Actor Databases](./actor-databases)
-- [Migrations](./migrations)
-- [SQLite Architecture](./sqlite-architecture)
+- [Service Databases](service-databases)
+- [Actor Databases](actor-databases)
+- [Migrations](migrations)
+- [SQLite Architecture](sqlite-architecture)

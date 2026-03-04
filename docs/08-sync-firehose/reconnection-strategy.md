@@ -1,3 +1,7 @@
+---
+title: Reconnection Strategy and State Recovery
+---
+
 # Reconnection Strategy and State Recovery
 
 ## Overview
@@ -67,6 +71,7 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 Clients reconnect by providing a cursor (sequence number) in the query string:
 
 ```
+
 ws://pds.example.com/xrpc/com.atproto.sync.subscribeRepos?cursor=12345
 ```
 
@@ -585,9 +590,9 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 
 ## See Also
 
-- [Event Ordering](./event-ordering) — Sequence number guarantees
-- [Event Replay](./event-replay) — Cursor-based catch-up mechanism
-- [Reliability Guarantees](./reliability-guarantees) — Delivery semantics
-- [Backpressure](./backpressure) — Flow control
-- [Firehose Overview](./firehose-overview) — Architecture overview
+- [Event Ordering](event-ordering) — Sequence number guarantees
+- [Event Replay](event-replay) — Cursor-based catch-up mechanism
+- [Reliability Guarantees](reliability-guarantees) — Delivery semantics
+- [Backpressure](backpressure) — Flow control
+- [Firehose Overview](firehose-overview) — Architecture overview
 

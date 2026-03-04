@@ -1,3 +1,7 @@
+---
+title: Memory Debugging Guide
+---
+
 # Memory Debugging Guide
 
 This project supports several tools for detecting and debugging memory issues in Objective-C.
@@ -58,5 +62,5 @@ Static analysis can find potential issues before the code even runs.
       __strong typeof(weakSelf) strongSelf = weakSelf;
       [strongSelf doSomething];
   }];
-  ```
+  ```text
 - **CoreFoundation**: Objects starting with `CF` (e.g., `SecKeyRef`) are NOT managed by ARC. You MUST use `CFRetain` and `CFRelease`.

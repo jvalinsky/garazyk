@@ -1,3 +1,7 @@
+---
+title: Test Documentation Index
+---
+
 # Test Documentation Index
 
 Comprehensive documentation for all unit and integration tests in the ATProtoPDS project.
@@ -137,6 +141,7 @@ Configuration, metrics, and debugging tools.
 ## Test File Locations
 
 ```
+
 ATProtoPDS/Tests/
 ├── Admin/           # Admin tests
 ├── App/             # Application tests

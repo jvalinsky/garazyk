@@ -1,3 +1,7 @@
+---
+title: Testing Guide
+---
+
 # Testing Guide
 
 This document describes the `ATProtoPDS` testing strategy. The test suites are organized by protocol and subsystem so failures map to concrete implementation areas.
@@ -24,7 +28,7 @@ xcodebuild -scheme AllTests test -only-testing:AllTests/HandleResolverTests
 2. Select the `AllTests` scheme.
 3. Press `Cmd+U` to run all tests.
 
-### Linux (GNUstep)
+## Linux (GNUstep)
 Linux support is provided via GNUstep. Tests can be built and run using CMake.
 
 ```bash
@@ -233,7 +237,7 @@ make AllTests
 ./tests/AllTests 2>&1 | grep "BlobPerformance]"
 ```
 
-#### Interpreting Results
+## Interpreting Results
 
 The tests use XCTest's `measureBlock:` for consistent benchmarking. Results include:
 - **Average**: Mean execution time across 10 iterations
@@ -359,7 +363,7 @@ These services reside above the database layer and implement the business logic 
 - [Integration Tests](tests/06-integration/README) - E2E, federation, PLC tests
 
 ### Guides
-- [Developer Guide](guides/DEVELOPER_GUIDE) - Development setup and workflows
+- [Developer Guide](./guides/development/DEVELOPER_GUIDE) - Development setup and workflows
 - [Setup Guide](guides/SETUP_GUIDE) - Initial project setup
 
 ### Security

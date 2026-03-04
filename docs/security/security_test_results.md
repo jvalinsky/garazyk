@@ -1,3 +1,7 @@
+---
+title: Security Test Results
+---
+
 # Security Test Results
 
 **Generated:** 2026-01-09 03:45:30 UTC
@@ -107,7 +111,7 @@
 
 - [Security Documentation Index](README) - Overview of all security docs
 - [Security Testing Plan](SECURITY_TESTING_PLAN) - Detailed test plan and vectors
-- [Security Plan](SECURITY_PLAN) - Comprehensive security strategy
+- [Security Plan](# Security plan) - Comprehensive security strategy
 - [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT) - SQL injection findings
 - [Security Reports](reports/README) - Historical analysis reports
 - [OAuth2 Security](../oauth2/security) - OAuth2 security implementation

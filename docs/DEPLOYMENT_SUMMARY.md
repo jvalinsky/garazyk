@@ -1,3 +1,7 @@
+---
+title: PDS Objective-C Implementation Guide — Deployment Summary
+---
+
 # PDS Objective-C Implementation Guide — Deployment Summary
 
 **Date:** 2026-03-02  
@@ -32,16 +36,19 @@ The documentation is deployed using GitHub Pages via the `gh-pages` branch. This
 
 The documentation is accessible at:
 ```
+
 https://<username>.github.io/<repository>/
 ```
 
 For the PDS project, this would be:
 ```
+
 https://garazyk.github.io/atproto-pds/
 ```
 
 Or if using a custom domain configured in the repository settings:
 ```
+
 https://pds.garazyk.xyz/docs/
 ```
 
@@ -50,6 +57,7 @@ https://pds.garazyk.xyz/docs/
 The built site includes the following sections:
 
 ```
+
 docs/_site/
 ├── index.html                          # Main landing page
 ├── SUMMARY.html                        # Table of contents
@@ -161,7 +169,7 @@ git push origin main
 # 5. GitHub Pages serves the updated site
 ```
 
-### Manual Deployment (Local)
+## Manual Deployment (Local)
 
 To build and test the documentation locally:
 
@@ -176,7 +184,7 @@ jekyll serve
 # Access at http://localhost:4000
 ```
 
-### Manual Deployment (GitHub Pages)
+## Manual Deployment (GitHub Pages)
 
 If manual deployment is needed:
 
@@ -209,7 +217,7 @@ curl -I https://<username>.github.io/<repository>/
 curl -I https://<username>.github.io/<repository>/01-getting-started/overview.html
 ```
 
-### Verify Content
+## Verify Content
 
 1. Navigate to the deployment URL in a browser
 2. Check that the main index page loads
@@ -255,7 +263,7 @@ cd docs
 jekyll serve
 ```
 
-### Monitoring Deployment
+## Monitoring Deployment
 
 Check GitHub Actions workflow status:
 1. Go to repository → Actions tab

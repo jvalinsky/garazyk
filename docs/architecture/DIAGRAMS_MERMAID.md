@@ -1,3 +1,7 @@
+---
+title: ATProto PDS - Mermaid Diagrams
+---
+
 # ATProto PDS - Mermaid Diagrams
 
 This file contains supplementary diagrams in Mermaid format for easier rendering in markdown viewers that support Mermaid.
@@ -258,7 +262,7 @@ flowchart TD
 
 ### Architecture Documents
 - [README.md](README) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis referenced in diagrams
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Component analysis referenced in diagrams
 - [atproto_pds_architecture.md](atproto_pds_architecture) - Protocol specifications for flows above
 - [atproto_data_models.md](atproto_data_models) - Data model class diagram details
 

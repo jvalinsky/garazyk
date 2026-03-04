@@ -1,10 +1,14 @@
+---
+title: Secrets Management
+---
+
 # Secrets Management
 
 This guide covers secrets management in September PDS, including key storage, rotation strategies, and platform-specific security features.
 
 ## Overview
 
-![Secrets Management Flow](../12-diagrams/secrets-management-flow.svg)
+<!-- Image placeholder: Secrets Management Flow -->
 
 *Secure storage and retrieval of sensitive configuration data with platform-specific implementations*
 
@@ -48,7 +52,7 @@ On macOS, September PDS uses the system Keychain for secure key storage:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Auth/PDSAppleActorKeyManager.m](../../ATProtoPDS/Sources/Auth/PDSAppleActorKeyManager.m#L67-L87)*
+*Reference: `../../ATProtoPDS/Sources/Auth/PDSAppleActorKeyManager.m`*
 
 **Keychain Benefits**:
 - Hardware-backed encryption on devices with Secure Enclave
@@ -99,7 +103,7 @@ On Linux/GNUstep, keys are stored in encrypted files with strict permissions:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m](../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m#L147-L186)*
+*Reference: `../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m`*
 
 **File-Based Security**:
 - POSIX permissions: 0600 (owner read/write only)
@@ -125,7 +129,7 @@ If persistent storage fails, keys are kept in memory:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m](../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m#L50-L61)*
+*Reference: `../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m`*
 
 **Memory-Only Considerations**:
 - Keys lost on process restart
@@ -185,7 +189,7 @@ September PDS uses secp256k1 keys for AT Protocol signing:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m](../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m#L35-L45)*
+*Reference: `../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m`*
 
 **Key Properties**:
 - Algorithm: secp256k1 (same as Bitcoin)
@@ -252,7 +256,7 @@ shred -vfz -n 10 old-key.pem
 security delete-generic-password -s "com.atproto.pds.signing" -a "signing-key-did:plc:abc123"
 ```
 
-### Zero-Downtime Rotation
+## Zero-Downtime Rotation
 
 For production systems, use overlapping keys:
 
@@ -295,7 +299,7 @@ Use Secure Enclave for hardware-backed key storage:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Security/PDSBiometricKeychain.m](../../ATProtoPDS/Sources/Security/PDSBiometricKeychain.m#L50-L76)*
+*Reference: `../../ATProtoPDS/Sources/Security/PDSBiometricKeychain.m`*
 
 **Biometric Features**:
 - Touch ID / Face ID required for key access
@@ -332,7 +336,7 @@ Use Secure Enclave for hardware-backed key storage:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Security/PDSBiometricKeychain.m](../../ATProtoPDS/Sources/Security/PDSBiometricKeychain.m#L90-L107)*
+*Reference: `../../ATProtoPDS/Sources/Security/PDSBiometricKeychain.m`*
 
 ## HSM Integration
 
@@ -421,7 +425,7 @@ export ADMIN_TOKEN="$(openssl rand -hex 32)"
 export JWT_SECRET="$(openssl rand -hex 32)"
 ```
 
-### Docker Secrets
+## Docker Secrets
 
 Use Docker secrets for containerized deployments:
 
@@ -448,7 +452,7 @@ secrets:
     file: ./secrets/jwt_secret.txt
 ```
 
-### Kubernetes Secrets
+## Kubernetes Secrets
 
 For Kubernetes deployments:
 
@@ -510,7 +514,7 @@ gpg --symmetric --cipher-algo AES256 keys-backup-*.tar.gz
 # Store encrypted backup offsite
 ```
 
-### Recovery Process
+## Recovery Process
 
 1. **Restore from backup**:
 ```bash

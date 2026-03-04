@@ -1,3 +1,7 @@
+---
+title: "Tutorial 4: Authentication"
+---
+
 # Tutorial 4: Authentication
 
 ## Overview
@@ -32,9 +36,9 @@ This tutorial implements the same authentication patterns used in production AT 
 Before starting this tutorial, you should have:
 
 - **Completed Tutorials:**
-  - [Tutorial 1: Hello PDS](./tutorial-1-hello-pds) — Basic server setup
-  - [Tutorial 2: Account Management](./tutorial-2-accounts) — Account creation and simple JWT minting
-  - [Tutorial 3: Record Operations](./tutorial-3-records) — Record CRUD operations
+  - [Tutorial 1: Hello PDS](tutorial-1-hello-pds) — Basic server setup
+  - [Tutorial 2: Account Management](tutorial-2-accounts) — Account creation and simple JWT minting
+  - [Tutorial 3: Record Operations](tutorial-3-records) — Record CRUD operations
   
 - **Knowledge:**
   - Understanding of JWT tokens (see [JWT Tokens](../06-authentication/jwt-tokens))
@@ -75,7 +79,7 @@ This tutorial builds four interconnected components:
 
 ### Authentication Flow Diagram
 
-```
+```objc
 ┌─────────┐                                  ┌─────────┐
 │ Client  │                                  │   PDS   │
 └────┬────┘                                  └────┬────┘
@@ -103,7 +107,7 @@ This tutorial builds four interconnected components:
      │                                            │
      │  7. {uri, cid}                            │
      │<──────────────────────────────────────────┤
-```
+```objc
 
 ### Security Principles
 
@@ -140,7 +144,7 @@ Create `src/JWTVerifier.h`:
 - (nullable NSDictionary *)extractPayload:(NSString *)token error:(NSError **)error;
 
 @end
-```
+```objc
 
 ### Understanding the Interface
 
@@ -289,7 +293,7 @@ Create `src/JWTVerifier.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding the Verification Process
 
@@ -452,7 +456,7 @@ Notice how every failure path sets an error with a descriptive message. This mak
 }
 
 @end
-```
+```objc
 
 
 ## Step 3: Create DPoP Handler
@@ -495,7 +499,7 @@ Create `src/DPoPHandler.h`:
 + (nullable NSString *)extractThumbprint:(NSData *)publicKey error:(NSError **)error;
 
 @end
-```
+```objc
 
 ## Step 4: Implement DPoP Handler
 
@@ -652,7 +656,7 @@ Create `src/DPoPHandler.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding DPoP Proof Generation
 
@@ -834,7 +838,7 @@ DPoP proofs are short-lived because they're request-specific. You generate a new
 }
 
 @end
-```
+```objc
 
 
 ## Step 5: Update JWT Minter with DPoP Support
@@ -867,7 +871,7 @@ Update `src/SimpleJWTMinter.m` to support DPoP binding:
     
     return [self encodeJWT:payload];
 }
-```
+```objc
 
 ### Understanding Token Binding
 
@@ -896,7 +900,7 @@ OAuth 2.0 is the industry standard for authorization. It separates the concerns 
 
 ### OAuth 2.0 Flow Overview
 
-```
+```objc
 1. Client → Authorization Endpoint
    "I want access to user's data"
    
@@ -914,7 +918,7 @@ OAuth 2.0 is the industry standard for authorization. It separates the concerns 
    
 6. Server → Client
    "Here are your access and refresh tokens"
-```
+```objc
 
 The authorization code is single-use and short-lived. The real tokens are only issued after the client proves it's the same client that started the flow (via PKCE).
 
@@ -935,7 +939,7 @@ Create `src/OAuth2Handler.h`:
 - (void)handleRefresh:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end
-```
+```objc
 
 ## Step 7: Implement OAuth 2.0 Handler
 
@@ -1252,7 +1256,7 @@ Create `src/OAuth2Handler.m`:
 }
 
 @end
-```
+```objc
 
 
 ## Step 8: Update XRPC Dispatcher with Authentication
@@ -1455,7 +1459,7 @@ Update `src/XrpcDispatcher.m` to add OAuth endpoints and verify authentication:
     
     return publicKey;
 }
-```
+```objc
 
 ## Step 9: Update Main Entry Point
 
@@ -1546,7 +1550,7 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
-```
+```objc
 
 
 ## Step 10: Build and Run
@@ -1557,7 +1561,7 @@ mkdir -p build && cd build
 cmake ..
 make
 ./tutorial-4-auth
-```
+```objc
 
 ## Step 11: Test OAuth 2.0 Authorization Flow
 
@@ -1591,7 +1595,7 @@ curl -X POST http://localhost:2583/oauth/token \
 #   "expires_in": 3600,
 #   "scope": "atproto_repo"
 # }
-```
+```objc
 
 ## Step 12: Test JWT Verification
 
@@ -1616,7 +1620,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
 #   "uri": "at://did:plc:test123/app.bsky.feed.post/...",
 #   "cid": "bafyrei..."
 # }
-```
+```objc
 
 ## Step 13: Test Token Refresh
 
@@ -1638,7 +1642,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.refreshSession \
 #   "token_type": "Bearer",
 #   "expires_in": 3600
 # }
-```
+```objc
 
 ## Step 14: Test DPoP Flow (Advanced)
 
@@ -1651,13 +1655,13 @@ openssl ec -in dpop-key.pem -pubout -out dpop-pub.pem
 
 # In production, use proper DPoP libraries
 # For tutorial purposes, we'll skip the full DPoP implementation
-```
+```objc
 
 ## Understanding the Implementation
 
 ### JWT Verification Flow
 
-```
+```objc
 1. Client sends request with Authorization header
    ↓
 2. Extract token from "Bearer <token>" or "DPoP <token>"
@@ -1671,11 +1675,11 @@ openssl ec -in dpop-key.pem -pubout -out dpop-pub.pem
 6. Extract DID from token payload
    ↓
 7. Allow request to proceed
-```
+```objc
 
 ### OAuth 2.0 Authorization Code Flow
 
-```
+```objc
 1. Client redirects user to /oauth/authorize
    ↓
 2. User logs in and grants permission
@@ -1689,11 +1693,11 @@ openssl ec -in dpop-key.pem -pubout -out dpop-pub.pem
 6. Server validates code and returns tokens
    ↓
 7. Client uses access token for API requests
-```
+```objc
 
 ### DPoP Binding
 
-```
+```objc
 1. Client generates ECDSA P-256 key pair
    ↓
 2. Client creates DPoP proof JWT with public key
@@ -1708,7 +1712,7 @@ openssl ec -in dpop-key.pem -pubout -out dpop-pub.pem
    - DPoP proof signature
    - DPoP proof method/URI match request
    - DPoP thumbprint matches token binding
-```
+```objc
 
 ## Security Considerations
 
@@ -1730,14 +1734,14 @@ openssl ec -in dpop-key.pem -pubout -out dpop-pub.pem
 
 PKCE prevents authorization code interception:
 
-```
+```objc
 1. Client generates code_verifier (random string)
 2. Client computes code_challenge = SHA256(code_verifier)
 3. Client sends code_challenge in authorize request
 4. Server stores code_challenge with authorization code
 5. Client sends code_verifier in token request
 6. Server verifies SHA256(code_verifier) == code_challenge
-```
+```objc
 
 ## Production Considerations
 
@@ -1756,7 +1760,7 @@ Boolean verified = SecKeyVerifySignature(publicKey,
                                         (__bridge CFDataRef)signingData,
                                         (__bridge CFDataRef)signatureData,
                                         &error);
-```
+```objc
 
 ### Key Management
 
@@ -1779,7 +1783,7 @@ CREATE TABLE revoked_tokens (
 
 CREATE INDEX idx_revoked_tokens_did ON revoked_tokens(did);
 CREATE INDEX idx_revoked_tokens_expires ON revoked_tokens(expires_at);
-```
+```objc
 
 ### Rate Limiting
 
@@ -1797,12 +1801,12 @@ Protect OAuth endpoints from abuse:
                     key:clientId 
                   limit:100 
                  window:3600];  // 100 per hour
-```
+```objc
 
 ## Next Steps
 
-- **[Tutorial 5: Firehose](./tutorial-5-firehose)** — Add WebSocket subscriptions
-- **[Tutorial 6: Production Deployment](./tutorial-6-deployment)** — Deploy to production
+- **[Tutorial 5: Firehose](tutorial-5-firehose)** — Add WebSocket subscriptions
+- **[Tutorial 6: Production Deployment](tutorial-6-deployment)** — Deploy to production
 
 ## Common Mistakes and How to Avoid Them
 
@@ -1813,7 +1817,7 @@ Protect OAuth endpoints from abuse:
 // WRONG: Accepting expired tokens
 NSDictionary *payload = [self extractPayload:token error:error];
 return payload[@"sub"];  // No expiration check!
-```
+```objc
 
 **Solution:**
 ```objc
@@ -1824,7 +1828,7 @@ if (exp < now) {
     // Token expired - reject it
     return nil;
 }
-```
+```objc
 
 **Why It Matters:** Expired tokens should be invalid. Accepting them defeats the purpose of expiration and creates a security vulnerability.
 
@@ -1836,7 +1840,7 @@ if (exp < now) {
 if (computedSignature == providedSignature) {
     return YES;
 }
-```
+```objc
 
 **Solution:**
 ```objc
@@ -1844,7 +1848,7 @@ if (computedSignature == providedSignature) {
 if (![computedB64 isEqualToString:providedB64]) {
     return NO;
 }
-```
+```objc
 
 **Why It Matters:** String comparison in Objective-C is constant-time by default, but be careful with custom comparison logic. Timing attacks can leak information about the signature.
 
@@ -1855,7 +1859,7 @@ if (![computedB64 isEqualToString:providedB64]) {
 // WRONG: Only checking signature
 BOOL valid = [self verifyDPoPSignature:proof];
 return valid;
-```
+```objc
 
 **Solution:**
 ```objc
@@ -1866,7 +1870,7 @@ if (![payload[@"htm"] isEqualToString:request.method]) {
 if (![payload[@"htu"] isEqualToString:request.fullURL]) {
     return NO;
 }
-```
+```objc
 
 **Why It Matters:** Without method/URI verification, an attacker could replay a DPoP proof from one request on a different request.
 
@@ -1877,14 +1881,14 @@ if (![payload[@"htu"] isEqualToString:request.fullURL]) {
 // WRONG: Logging sensitive data
 NSLog(@"Received token: %@", accessToken);
 NSLog(@"User authenticated: %@ with token %@", did, token);
-```
+```objc
 
 **Solution:**
 ```objc
 // RIGHT: Never log tokens
 NSLog(@"User authenticated: %@", did);
 NSLog(@"Token verification successful");
-```
+```objc
 
 **Why It Matters:** Tokens in logs can be extracted by anyone with log access. This is a common source of credential leaks.
 
@@ -1894,14 +1898,14 @@ NSLog(@"Token verification successful");
 ```objc
 // WRONG: Weak secret
 NSString *secret = @"secret123";
-```
+```objc
 
 **Solution:**
 ```objc
 // RIGHT: Strong, randomly generated secret
 // Generate with: openssl rand -base64 32
 NSString *secret = @"8vY2mK9pL3nQ7wR5tX1cZ4bN6hJ8gF2dS9aE7vB3mK5";
-```
+```objc
 
 **Why It Matters:** Weak secrets can be brute-forced. Use at least 256 bits of entropy for production secrets.
 
@@ -1911,7 +1915,7 @@ NSString *secret = @"8vY2mK9pL3nQ7wR5tX1cZ4bN6hJ8gF2dS9aE7vB3mK5";
 ```objc
 // WRONG: No way to invalidate tokens
 // Once issued, tokens are valid until expiration
-```
+```objc
 
 **Solution:**
 ```objc
@@ -1919,7 +1923,7 @@ NSString *secret = @"8vY2mK9pL3nQ7wR5tX1cZ4bN6hJ8gF2dS9aE7vB3mK5";
 if ([self.revokedTokens containsObject:jti]) {
     return NO;  // Token has been revoked
 }
-```
+```objc
 
 **Why It Matters:** Users need a way to log out or revoke compromised tokens. Without revocation, stolen tokens remain valid until expiration.
 
@@ -1933,7 +1937,7 @@ if (![config.issuer hasPrefix:@"https://"]) {
     NSLog(@"ERROR: Issuer must use HTTPS in production");
     return nil;
 }
-```
+```objc
 
 OAuth 2.0 and DPoP assume TLS. Without HTTPS, tokens can be intercepted in transit.
 
@@ -1945,7 +1949,7 @@ OAuth 2.0 and DPoP assume TLS. Without HTTPS, tokens can be intercepted in trans
                     key:clientId 
                   limit:100 
                  window:3600];  // 100 per hour
-```
+```objc
 
 Prevent brute-force attacks on authorization codes and token endpoints.
 
@@ -1957,7 +1961,7 @@ NSTimeInterval exp = now + 3600;
 
 // Refresh tokens: 30 days
 NSTimeInterval refreshExp = now + (86400 * 30);
-```
+```objc
 
 Short-lived access tokens limit the damage from token theft. Refresh tokens allow long-lived sessions without long-lived access tokens.
 
@@ -1973,7 +1977,7 @@ if (![self isValidRedirectURI:redirectUri forClient:clientId]) {
 if (![self isValidScope:scope]) {
     return [self errorResponse:@"invalid_scope"];
 }
-```
+```objc
 
 Never trust client input. Validate everything before processing.
 
@@ -1985,7 +1989,7 @@ NSString *code = [NSString stringWithFormat:@"%ld", (long)[[NSDate date] timeInt
 
 // RIGHT: Cryptographically secure random
 NSString *code = [[NSUUID UUID] UUIDString];
-```
+```objc
 
 Authorization codes must be unpredictable. Use cryptographically secure random number generators.
 
@@ -1997,7 +2001,7 @@ if (![authCode[@"code_challenge"] length]) {
     return [self errorResponse:@"invalid_request" 
                    description:@"PKCE required"];
 }
-```
+```objc
 
 PKCE (RFC 7636) prevents authorization code interception attacks. It should be required for all clients, not just public clients.
 
@@ -2012,7 +2016,7 @@ for (NSData *key in validKeys) {
         return YES;
     }
 }
-```
+```objc
 
 Key rotation allows you to phase out old keys without breaking existing tokens.
 
@@ -2025,7 +2029,7 @@ if (!verified) {
                       user:payload[@"sub"] 
                     reason:error.localizedDescription];
 }
-```
+```objc
 
 Track failed authentication attempts, unusual access patterns, and potential attacks.
 
@@ -2034,9 +2038,9 @@ Track failed authentication attempts, unusual access patterns, and potential att
 ### Problem: "Invalid signature" Error
 
 **Symptoms:**
-```
+```objc
 JWT verification failed: Invalid signature
-```
+```objc
 
 **Possible Causes:**
 1. Secret key mismatch between minter and verifier
@@ -2056,14 +2060,14 @@ echo "$TOKEN" | cut -d'.' -f2 | base64 -d  # Payload
 
 # Verify algorithm in header
 echo "$TOKEN" | cut -d'.' -f1 | base64 -d | jq .alg
-```
+```objc
 
-### Problem: "Token expired" Error
+## Problem: "Token expired" Error
 
 **Symptoms:**
-```
+```objc
 JWT verification failed: Token expired
-```
+```objc
 
 **Possible Causes:**
 1. Token genuinely expired (> 1 hour old)
@@ -2085,7 +2089,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.refreshSession \
     \"grant_type\": \"refresh_token\",
     \"refresh_token\": \"$REFRESH_TOKEN\"
   }"
-```
+```objc
 
 **Prevention:**
 ```objc
@@ -2098,16 +2102,16 @@ if (exp + skew < now) {
     // Token expired even with tolerance
     return nil;
 }
-```
+```objc
 
-### Problem: "DPoP verification failed" Error
+## Problem: "DPoP verification failed" Error
 
 **Symptoms:**
-```
+```objc
 DPoP verification failed: Method mismatch
 DPoP verification failed: URI mismatch
 DPoP verification failed: DPoP proof expired
-```
+```objc
 
 **Possible Causes:**
 1. DPoP proof method doesn't match HTTP method
@@ -2126,7 +2130,7 @@ echo "$DPOP_PROOF" | cut -d'.' -f2 | base64 -d | jq '.htm, .htu'
 # Verify timestamp
 echo "$DPOP_PROOF" | cut -d'.' -f2 | base64 -d | jq '.iat'
 date +%s
-```
+```objc
 
 **Prevention:**
 ```objc
@@ -2137,14 +2141,14 @@ NSString *dpopProof = [DPoPHandler generateDPoPProof:@"POST"
                                           privateKey:privateKey
                                            publicKey:publicKey
                                                error:&error];
-```
+```objc
 
-### Problem: "Authorization code invalid" Error
+## Problem: "Authorization code invalid" Error
 
 **Symptoms:**
-```
+```objc
 Token exchange failed: invalid_grant
-```
+```objc
 
 **Possible Causes:**
 1. Authorization code already used (single-use)
@@ -2160,7 +2164,7 @@ curl -v "http://localhost:2583/oauth/authorize?client_id=https://example.com&red
 
 # Extract new code from Location header
 # Use immediately (don't reuse)
-```
+```objc
 
 **Prevention:**
 ```objc
@@ -2174,14 +2178,14 @@ if (now - createdAt > codeExpiration) {
     return [self errorResponse:@"invalid_grant" 
                    description:@"Authorization code expired"];
 }
-```
+```objc
 
-### Problem: "Missing DPoP proof" Error
+## Problem: "Missing DPoP proof" Error
 
 **Symptoms:**
-```
+```objc
 Authentication failed: Missing DPoP proof
-```
+```objc
 
 **Possible Causes:**
 1. Token is DPoP-bound but no DPoP header sent
@@ -2196,7 +2200,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
   -H "Authorization: DPoP $ACCESS_TOKEN" \
   -H "DPoP: $DPOP_PROOF" \
   -d '{...}'
-```
+```objc
 
 **Prevention:**
 ```objc
@@ -2209,15 +2213,15 @@ if (payload[@"cnf"][@"jkt"]) {
                        description:@"DPoP proof required"];
     }
 }
-```
+```objc
 
-### Problem: Build Errors
+## Problem: Build Errors
 
 **Symptoms:**
-```
+```objc
 Undefined symbols for architecture x86_64:
   "_CCHmac", referenced from...
-```
+```objc
 
 **Solution:**
 ```cmake
@@ -2226,21 +2230,21 @@ target_link_libraries(tutorial-4-auth
     "-framework Foundation"
     "-framework Security"
 )
-```
+```objc
 
-### Problem: Compilation Errors
+## Problem: Compilation Errors
 
 **Symptoms:**
-```
+```objc
 error: use of undeclared identifier 'CC_SHA256_DIGEST_LENGTH'
-```
+```objc
 
 **Solution:**
 ```objc
 // Add missing import
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonHMAC.h>
-```
+```objc
 
 ### Debugging Tips
 
@@ -2254,7 +2258,7 @@ NSLog(@"Payload: %@", payload);
 NSLog(@"Expected issuer: %@", self.issuer);
 NSLog(@"Actual issuer: %@", payload[@"iss"]);
 #endif
-```
+```objc
 
 **2. Test Components Independently:**
 ```objc
@@ -2267,7 +2271,7 @@ NSLog(@"Verification result: %@", payload ?: error);
 // Test DPoP separately
 BOOL valid = [DPoPHandler verifyDPoPProof:proof method:@"POST" uri:uri publicKey:publicKey error:&error];
 NSLog(@"DPoP verification: %@", valid ? @"SUCCESS" : error);
-```
+```objc
 
 **3. Use curl for Testing:**
 ```bash
@@ -2275,7 +2279,7 @@ NSLog(@"DPoP verification: %@", valid ? @"SUCCESS" : error);
 curl -v -X POST http://localhost:2583/oauth/token \
   -H "Content-Type: application/json" \
   -d '{...}' 2>&1 | tee oauth-debug.log
-```
+```objc
 
 **4. Inspect Token Contents:**
 ```bash
@@ -2285,7 +2289,7 @@ decode_jwt() {
 }
 
 decode_jwt "$ACCESS_TOKEN"
-```
+```objc
 
 ## Summary
 

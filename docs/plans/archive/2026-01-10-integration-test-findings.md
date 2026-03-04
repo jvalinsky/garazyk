@@ -1,3 +1,7 @@
+---
+title: PDS Integration Test Results - Findings Report
+---
+
 # PDS Integration Test Results - Findings Report
 
 ## Executive Summary
@@ -27,6 +31,7 @@ Integration tests were written and executed to verify the behavior of a normal P
 
 **Actual Implementation:**
 ```
+
 Access token: 87CB3C9A-0922-4DA8-A3C2-8E50CD7400B8
 Refresh token: 5A15252D-A080-41F7-89E7-477FB5B5A54B
 ```
@@ -76,6 +81,7 @@ Tokens are opaque UUID strings with no cryptographic verification.
 
 **Actual:**
 ```
+
 bafyreid6ygzb2pn6vypl4phtpn56w6q7lvjukfcsek3kupo3zkks4xgmdy
 ```
 
@@ -153,6 +159,6 @@ These findings inform the gap between current implementation and specification c
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Tests Docs](../../tests/README) - Testing documentation

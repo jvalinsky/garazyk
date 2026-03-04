@@ -1,3 +1,7 @@
+---
+title: API Reference
+---
+
 # API Reference
 
 ## Overview
@@ -88,6 +92,7 @@ Refresh an access token.
 
 **Headers:**
 ```
+
 Authorization: Bearer <refresh-token>
 ```
 
@@ -111,6 +116,7 @@ Create a new record in a repository.
 
 **Headers:**
 ```
+
 Authorization: Bearer <access-token>
 ```
 
@@ -142,6 +148,7 @@ Get a record from a repository.
 
 **Parameters:**
 ```
+
 repo=did:plc:user123
 collection=app.bsky.feed.post
 rkey=abc123
@@ -167,6 +174,7 @@ Update an existing record.
 
 **Headers:**
 ```
+
 Authorization: Bearer <access-token>
 ```
 
@@ -199,11 +207,13 @@ Delete a record from a repository.
 
 **Headers:**
 ```
+
 Authorization: Bearer <access-token>
 ```
 
 **Parameters:**
 ```
+
 repo=did:plc:user123
 collection=app.bsky.feed.post
 rkey=abc123
@@ -222,6 +232,7 @@ List records in a collection.
 
 **Parameters:**
 ```
+
 repo=did:plc:user123
 collection=app.bsky.feed.post
 limit=50
@@ -252,6 +263,7 @@ Subscribe to repository updates via WebSocket.
 
 **Parameters:**
 ```
+
 cursor=optional-sequence-number
 ```
 
@@ -280,6 +292,7 @@ Upload a blob (file).
 
 **Headers:**
 ```
+
 Authorization: Bearer <access-token>
 Content-Type: image/jpeg
 ```
@@ -305,6 +318,7 @@ Get a blob by CID.
 
 **Parameters:**
 ```
+
 did=did:plc:user123
 cid=bafyreiabc123...
 ```
@@ -343,6 +357,7 @@ All errors follow this format:
 Include in Authorization header:
 
 ```
+
 Authorization: Bearer <jwt-token>
 ```
 
@@ -351,6 +366,7 @@ Authorization: Bearer <jwt-token>
 Include DPoP proof header:
 
 ```
+
 DPoP: <dpop-jwt>
 ```
 
@@ -359,6 +375,7 @@ DPoP: <dpop-jwt>
 ### Headers
 
 ```
+
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 999
 X-RateLimit-Reset: 1234567890
@@ -377,6 +394,7 @@ X-RateLimit-Reset: 1234567890
 Use `cursor` parameter to get next page:
 
 ```
+
 GET /xrpc/com.atproto.repo.listRecords?cursor=abc123
 ```
 
@@ -401,6 +419,6 @@ Response includes `cursor` for next page:
 
 ## Next Steps
 
-- **[Configuration Reference](./config-reference)** — Configuration options
-- **[CLI Reference](./cli-reference)** — Command-line interface
-- **[Troubleshooting](./troubleshooting)** — Common issues
+- **[Configuration Reference](config-reference)** — Configuration options
+- **[CLI Reference](cli-reference)** — Command-line interface
+- **[Troubleshooting](troubleshooting)** — Common issues

@@ -1,3 +1,7 @@
+---
+title: Skills Documentation
+---
+
 # Skills Documentation
 
 This directory contains documentation for ATProto PDS skills used in code audits, compliance checks, and development workflows.

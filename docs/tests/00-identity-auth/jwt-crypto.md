@@ -1,3 +1,7 @@
+---
+title: JWT & Cryptography Tests
+---
+
 # JWT & Cryptography Tests
 
 Tests for JSON Web Token handling, cryptographic primitives, and key management.

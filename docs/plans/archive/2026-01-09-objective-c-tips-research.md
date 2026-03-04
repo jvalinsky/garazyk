@@ -1,3 +1,7 @@
+---
+title: Objective-C Coding Tips Research Plan
+---
+
 # Objective-C Coding Tips Research Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (via `task` tool) to execute this plan in parallel.
@@ -62,5 +66,5 @@ We will split the research into 4 independent domains to cover the breadth of th
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans

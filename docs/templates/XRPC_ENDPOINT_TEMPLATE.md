@@ -1,3 +1,7 @@
+---
+title: "XRPC Endpoint Template"
+---
+
 # [NSID] Endpoint
 
 <!-- 
@@ -20,6 +24,7 @@ Remove this comment block when creating actual documentation.
 ### HTTP Method
 
 ```
+
 [POST/GET/DELETE] /xrpc/[com.atproto.domain.methodName]
 ```
 

@@ -1,3 +1,7 @@
+---
+title: "Spec alignment: reconcile code-registered methods missing in lexicons"
+---
+
 # Spec alignment: reconcile code-registered methods missing in lexicons
 
 ## Summary

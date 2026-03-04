@@ -1,3 +1,7 @@
+---
+title: Database Migration Strategy
+---
+
 # Database Migration Strategy
 
 ## Overview
@@ -25,6 +29,7 @@ CREATE TABLE schema_version (
 Migrations use sequential integer versioning:
 
 ```
+
 Version 1: Initial schema
 Version 2: Add invite codes table
 Version 3: Add refresh tokens table
@@ -328,6 +333,7 @@ Before deploying a migration:
 ### Migration Execution Flow
 
 ```
+
 1. Check current schema version
    ↓
 2. Determine target schema version
@@ -645,9 +651,9 @@ typedef struct {
 
 ## See Also
 
-- [Migration Rollback](./migration-rollback) — Rollback procedures and safety checks
-- [Data Integrity](./data-integrity) — Verification and consistency checks
-- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migration strategies
-- [Migrations](./migrations) — Basic migration concepts and examples
-- [SQLite Architecture](./sqlite-architecture) — Database design patterns
+- [Migration Rollback](migration-rollback) — Rollback procedures and safety checks
+- [Data Integrity](data-integrity) — Verification and consistency checks
+- [Zero-Downtime Migrations](zero-downtime-migrations) — Online migration strategies
+- [Migrations](migrations) — Basic migration concepts and examples
+- [SQLite Architecture](sqlite-architecture) — Database design patterns
 

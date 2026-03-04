@@ -1,3 +1,7 @@
+---
+title: macOS/XNU Integration Plan
+---
+
 # macOS/XNU Integration Plan
 
 **Date:** 2026-01-16
@@ -81,6 +85,6 @@ macOS integration for the ATProto PDS CLI tool: background service operation, se
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

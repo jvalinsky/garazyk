@@ -1,3 +1,7 @@
+---
+title: CBOR and CAR Formats
+---
+
 # CBOR and CAR Formats
 
 ## Why This Matters
@@ -32,7 +36,7 @@ The AT Protocol uses CBOR because:
 
 Consider a simple post: `{"text": "Hello, world!", "createdAt": "2024-01-01T00:00:00Z"}`. In JSON, this is 62 bytes. In CBOR, it's 48 bytes—a 23% reduction. Multiply this across millions of posts, and the bandwidth savings become substantial. More importantly, CBOR's deterministic encoding means this post will always hash to the same CID, enabling content addressing and deduplication across the network.
 
-![CBOR Encoding Process](../12-diagrams/cbor-encoding-example.svg)
+<!-- Image placeholder: CBOR Encoding Process -->
 
 ### CBOR Data Types
 
@@ -214,6 +218,7 @@ CAR files are also essential for efficient synchronization. Instead of comparing
 ### CAR Structure
 
 ```
+
 CAR Header
 ├── Version (1 byte)
 ├── Roots (array of CIDs)
@@ -227,12 +232,14 @@ CAR Header
 
 **Header:**
 ```
+
 Version: 1 (1 byte)
 Roots: [root_cid_1, root_cid_2, ...] (CBOR encoded array)
 ```
 
 **Each Block:**
 ```
+
 Length: <block length> (CBOR encoded varint)
 CID: <content identifier> (CBOR encoded)
 Data: <block data> (raw bytes, length - CID_length)
@@ -316,6 +323,7 @@ if (!carData) {
 
 **1. Repository Export**
 ```
+
 Export user's entire repository as CAR file
 ├── Root: MST root CID
 └── Blocks: All records and blobs
@@ -323,6 +331,7 @@ Export user's entire repository as CAR file
 
 **2. Repository Sync**
 ```
+
 Sync changes between two PDS instances
 ├── Root: New repository state
 └── Blocks: Only changed records
@@ -330,6 +339,7 @@ Sync changes between two PDS instances
 
 **3. Backup**
 ```
+
 Backup user's repository
 ├── Root: Repository state at backup time
 └── Blocks: All records and blobs
@@ -428,6 +438,6 @@ Backup user's repository
 
 ## Next Steps
 
-- **[MST Trees](./mst-trees)** — Merkle Search Tree structure
-- **[Cryptography](./cryptography)** — Cryptographic operations
+- **[MST Trees](mst-trees)** — Merkle Search Tree structure
+- **[Cryptography](cryptography)** — Cryptographic operations
 - **[Repository Protocol](../07-repository-protocol/repository-basics)** — Repository operations

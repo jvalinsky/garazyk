@@ -1,3 +1,7 @@
+---
+title: Linux Cross-Platform Build Plan
+---
+
 # Linux Cross-Platform Build Plan
 
 ## Overview
@@ -162,6 +166,7 @@ os_log_info(_log, "PDS server stopped");
 // After (secure):
 os_log_info(_log, "PDS server stopped");
 ```
+
 Or use the new logging API.
 
 **Files to check:**
@@ -206,7 +211,7 @@ CMD ["./bin/atprotopds"]
 
 **Estimated effort:** 1-2 hours
 
-### Task 7: Run tests on Linux (objpds-7ec)
+## Task 7: Run tests on Linux (objpds-7ec)
 
 **Steps:**
 1. Run `./build/tests/AllTests` on VM
@@ -238,6 +243,7 @@ make -j$(nproc)
 ## Dependencies Between Tasks
 
 ```
+
 objpds-mdu (os_log)      ──┐
 objpds-stv (NSURLSession)─┼─> objpds-351 (fix imports) ──> objpds-7ec (tests)
 objpds-qpr (CommonCrypto)─┘
@@ -267,6 +273,6 @@ objpds-40l (Docker) <────────────────┘
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

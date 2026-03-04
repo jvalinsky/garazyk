@@ -1,3 +1,7 @@
+---
+title: Migration Rollback Procedures
+---
+
 # Migration Rollback Procedures
 
 ## Overview
@@ -740,7 +744,7 @@ Always test rollback procedures before deploying migrations:
 ./scripts/test-migration.sh --version 10 --test-rollback
 ```
 
-### 3. Document Rollback Steps
+## 3. Document Rollback Steps
 
 Include rollback instructions in migration metadata:
 
@@ -819,9 +823,9 @@ Keep multiple backup generations:
 
 ## See Also
 
-- [Migration Strategy](./migration-strategy) — Versioning and compatibility
-- [Data Integrity](./data-integrity) — Verification and consistency checks
-- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migration strategies
-- [WAL Mode](./wal-mode) — Write-Ahead Logging benefits
-- [SQLite Architecture](./sqlite-architecture) — Database design patterns
+- [Migration Strategy](migration-strategy) — Versioning and compatibility
+- [Data Integrity](data-integrity) — Verification and consistency checks
+- [Zero-Downtime Migrations](zero-downtime-migrations) — Online migration strategies
+- [WAL Mode](wal-mode) — Write-Ahead Logging benefits
+- [SQLite Architecture](sqlite-architecture) — Database design patterns
 

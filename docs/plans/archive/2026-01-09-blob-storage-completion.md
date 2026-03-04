@@ -1,3 +1,7 @@
+---
+title: Blob Storage Completion Plan
+---
+
 # Blob Storage Completion Plan
 
 > **Status:** Ready for implementation
@@ -23,7 +27,7 @@ Blob storage is ~80% implemented. The core infrastructure exists but several gap
 
 ### ❌ Gaps Identified
 
-1. **`listBlobsForDID` returns empty array** ([PDSController.m:795-800](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.m#L795-L800))
+1. **`listBlobsForDID` returns empty array** (<!-- Link placeholder: PDSController.m:795-800 -->)
 2. **`getBlobWithCID` doesn't return actual blob data** - returns metadata only
 3. **Auth extraction missing** - `uploadBlob` uses `did` query param instead of auth header
 4. **No `deleteBlob` XRPC endpoint** registered
@@ -38,7 +42,7 @@ Blob storage is ~80% implemented. The core infrastructure exists but several gap
 
 ### Component 1: Fix Core Blob Operations
 
-#### [MODIFY] [PDSController.m](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.m)
+#### [MODIFY] <!-- Link placeholder: PDSController.m -->
 
 **Fix `listBlobsForDID` to return actual blobs:**
 
@@ -98,7 +102,7 @@ Blob storage is ~80% implemented. The core infrastructure exists but several gap
 
 ### Component 2: Add Missing ActorStore Methods
 
-#### [MODIFY] [ActorStore.h](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.h)
+#### [MODIFY] <!-- Link placeholder: ActorStore.h -->
 
 Add method declarations:
 
@@ -113,7 +117,7 @@ Add method declarations:
 - (BOOL)deleteBlobForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
 ```
 
-#### [MODIFY] [ActorStore.m](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/Database/ActorStore/ActorStore.m)
+#### [MODIFY] <!-- Link placeholder: ActorStore.m -->
 
 Implement the methods by querying the `blobs` table.
 
@@ -121,7 +125,7 @@ Implement the methods by querying the `blobs` table.
 
 ### Component 3: Fix XRPC Endpoint Auth
 
-#### [MODIFY] [XrpcMethodRegistry.m](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m)
+#### [MODIFY] <!-- Link placeholder: XrpcMethodRegistry.m -->
 
 **Extract DID from Authorization header instead of query param:**
 
@@ -160,14 +164,14 @@ Implement the methods by querying the `blobs` table.
 
 ### Component 4: Add deleteBlob Endpoint
 
-#### [MODIFY] [XrpcHandler.h](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.h)
+#### [MODIFY] <!-- Link placeholder: XrpcHandler.h -->
 
 ```objc
 /*! Registers handler for com.atproto.repo.deleteBlob. */
 - (void)registerComAtprotoRepoDeleteBlob:(XrpcHandlerBlock)handler;
 ```
 
-#### [MODIFY] [XrpcHandler.m](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcHandler.m)
+#### [MODIFY] <!-- Link placeholder: XrpcHandler.m -->
 
 ```objc
 - (void)registerComAtprotoRepoDeleteBlob:(XrpcHandlerBlock)handler {
@@ -175,7 +179,7 @@ Implement the methods by querying the `blobs` table.
 }
 ```
 
-#### [MODIFY] [XrpcMethodRegistry.m](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m)
+#### [MODIFY] <!-- Link placeholder: XrpcMethodRegistry.m -->
 
 ```objc
 [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
@@ -209,13 +213,13 @@ Implement the methods by querying the `blobs` table.
 }];
 ```
 
-#### [MODIFY] [PDSController.h](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.h)
+#### [MODIFY] <!-- Link placeholder: PDSController.h -->
 
 ```objc
 - (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error;
 ```
 
-#### [MODIFY] [PDSController.m](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/App/PDSController.m)
+#### [MODIFY] <!-- Link placeholder: PDSController.m -->
 
 ```objc
 - (BOOL)deleteBlobWithCID:(NSString *)cid did:(NSString *)did error:(NSError **)error {
@@ -241,7 +245,7 @@ Implement the methods by querying the `blobs` table.
 
 ### Component 5: Fix getBlob Response Content-Type
 
-#### [MODIFY] [XrpcMethodRegistry.m](file:///Users/jack/Software/objpds/ATProtoPDS/Sources/Network/XrpcMethodRegistry.m#L384-L406)
+#### [MODIFY] <!-- Link placeholder: XrpcMethodRegistry.m -->
 
 ```diff
 [dispatcher registerComAtprotoSyncGetBlob:^(HttpRequest *request, HttpResponse *response) {
@@ -281,7 +285,7 @@ xcodebuild -project ATProtoPDS.xcodeproj -scheme AllTests build
 "/Users/jack/Library/Developer/Xcode/DerivedData/ATProtoPDS-gxvfspcaobaihodzeszdnsruddhc/Build/Products/Debug/AllTests"
 ```
 
-#### New Integration Test
+## New Integration Test
 
 Add to `Tests/Blob/BlobStorageTests.m`:
 
@@ -372,6 +376,6 @@ curl "http://localhost:2583/xrpc/com.atproto.sync.getBlob?did=<your_did>&cid=<bl
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

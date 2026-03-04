@@ -1,3 +1,7 @@
+---
+title: Tutorial Structure Completeness Test Report
+---
+
 # Tutorial Structure Completeness Test Report
 
 **Property 5:** For any tutorial in the 10-tutorials section, the tutorial SHALL contain all required sections.

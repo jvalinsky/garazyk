@@ -1,3 +1,7 @@
+---
+title: Streaming CAR Export + Since Semantics Plan
+---
+
 # Streaming CAR Export + Since Semantics Plan
 
 ## Scope
@@ -164,6 +168,6 @@ Then follow with `since` data model + true incremental delta in a second PR.
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

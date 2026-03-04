@@ -1,3 +1,7 @@
+---
+title: Setup and Installation Guide
+---
+
 # Setup and Installation Guide
 
 This guide covers building, installing, and running the ATProto PDS server.
@@ -38,7 +42,7 @@ xcodebuild -scheme ATProtoPDS-CLI build
 
 Server available at `http://localhost:2583`
 
-### Method 2: Development with Xcode
+## Method 2: Development with Xcode
 
 1. Open `ATProtoPDS.xcodeproj`
 2. Select the `ATProtoPDS-CLI` scheme
@@ -64,9 +68,9 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(sysctl -n hw.ncpu)
 ```
 
-### Build Configuration
+## Build Configuration
 
-#### Debug Build
+### Debug Build
 ```bash
 xcodebuild -scheme ATProtoPDS-CLI -configuration Debug build
 # Features: Logging, assertions, debug symbols
@@ -74,7 +78,7 @@ xcodebuild -scheme ATProtoPDS-CLI -configuration Debug build
 # Performance: Slower with detailed error info
 ```
 
-#### Release Build
+## Release Build
 ```bash
 xcodebuild -scheme ATProtoPDS-CLI -configuration Release build
 # Features: Compiler optimizations enabled, symbols stripped
@@ -143,7 +147,7 @@ export AT_PROTO_LOG_LEVEL="debug"
 export AT_PROTO_PORT="2583"
 ```
 
-### Database Configuration
+## Database Configuration
 
 The server automatically creates and migrates the SQLite database. Reset procedure:
 
@@ -175,7 +179,7 @@ VERBOSE=true ./scripts/start_server.sh
 ./scripts/run-tests.sh && ./scripts/start_server.sh
 ```
 
-### Manual Startup (Development)
+## Manual Startup (Development)
 
 ```bash
 # Manual startup
@@ -185,7 +189,7 @@ VERBOSE=true ./scripts/start_server.sh
 nohup ./scripts/start_server.sh &
 ```
 
-### Command Line Options
+## Command Line Options
 
 ```bash
 ./build/bin/kaszlak serve --help
@@ -253,7 +257,7 @@ Project scripts use consistent error handling, input validation, and structured 
 VERBOSE=true ./scripts/test_social_features.sh
 ```
 
-### Health Checks
+## Health Checks
 
 ```bash
 # Check if server is running
@@ -266,7 +270,7 @@ curl -s "http://localhost:2583/explore/api/debug" | jq .dbExists
 ./scripts/test_endpoints.sh
 ```
 
-### Log Files
+## Log Files
 
 ```bash
 # View server logs
@@ -279,7 +283,7 @@ grep "ERROR\|error" server.log
 tail -f server.log | grep "handleApi"
 ```
 
-### Browser Testing
+## Browser Testing
 
 1. Explorer UI: `http://localhost:2583/explore/`
 2. API Documentation: `http://localhost:2583/explore/api/docs`
@@ -301,7 +305,7 @@ sudo xcode-select -s /Applications/Xcode.app
 rm -rf ~/Library/Developer/Xcode/DerivedData/ATProtoPDS-*
 ```
 
-#### Missing Dependencies
+## Missing Dependencies
 ```bash
 # Update submodules
 git submodule update --init --recursive
@@ -310,7 +314,7 @@ git submodule update --init --recursive
 otool -L build/bin/kaszlak
 ```
 
-#### Compilation Errors
+## Compilation Errors
 ```bash
 # Clean and rebuild
 xcodebuild -scheme ATProtoPDS-CLI clean build
@@ -319,9 +323,9 @@ xcodebuild -scheme ATProtoPDS-CLI clean build
 xcodebuild -scheme ATProtoPDS-CLI build 2>&1 | head -50
 ```
 
-### Runtime Issues
+## Runtime Issues
 
-#### Port Already in Use
+### Port Already in Use
 ```bash
 # Find process using port
 lsof -i :2583
@@ -333,7 +337,7 @@ kill -9 <PID>
 ./kaszlak serve --port 2584
 ```
 
-#### Database Permission Issues
+## Database Permission Issues
 ```bash
 # Fix permissions
 chmod 755 data/
@@ -344,7 +348,7 @@ rm -f data/pds.db
 ./scripts/start_server.sh
 ```
 
-#### Memory Issues
+## Memory Issues
 ```bash
 # Check memory usage
 ps aux | grep atprotopds
@@ -353,9 +357,9 @@ ps aux | grep atprotopds
 # Check for memory leaks or excessive usage
 ```
 
-### Network Issues
+## Network Issues
 
-#### Firewall Blocking
+### Firewall Blocking
 ```bash
 # Check if port is accessible
 telnet localhost 2583
@@ -364,7 +368,7 @@ telnet localhost 2583
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
 ```
 
-#### DNS Resolution
+## DNS Resolution
 ```bash
 # Test external API connectivity
 curl -s https://plc.directory/did:plc:g3x5vnga7kiu3oaookgeozpb | head -5
@@ -385,7 +389,7 @@ nslookup plc.directory
 }
 ```
 
-### Database Optimization
+## Database Optimization
 
 ```bash
 # Enable WAL mode
@@ -395,7 +399,7 @@ sqlite3 data/pds.db "PRAGMA journal_mode=WAL;"
 sqlite3 data/pds.db "VACUUM; ANALYZE;"
 ```
 
-### Network Tuning
+## Network Tuning
 
 ```bash
 # Adjust timeouts (in config.json)
@@ -438,7 +442,7 @@ xcodebuild -scheme AllTests build && ./build/tests/AllTests
 ./scripts/quality_gate.sh
 ```
 
-### Debugging
+## Debugging
 
 ```bash
 # Enable verbose logging
@@ -459,13 +463,13 @@ ls /cores/
 1. Build release version
    ```bash
    xcodebuild -scheme ATProtoPDS-CLI -configuration Release build
-   ```
+   ```text
 
 2. Configure environment
    ```bash
    export AT_PROTO_PORT=80
    export AT_PROTO_DATA_DIR=/var/lib/atproto
-   ```
+   ```text
 
 3. Set up reverse proxy (nginx example)
    ```nginx
@@ -479,12 +483,12 @@ ls /cores/
            proxy_set_header X-Real-IP $remote_addr;
        }
    }
-   ```
+   ```text
 
 4. Enable SSL with Let's Encrypt
    ```bash
    certbot --nginx -d your-domain.com
-   ```
+   ```text
 
 ### Docker Deployment (Future)
 
@@ -519,7 +523,7 @@ CMD ["/app/kaszlak", "serve", "--port", "2583"]
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE)** - API extension and contribution guidelines
+- **[Developer Guide](./development/DEVELOPER_GUIDE)** - API extension and contribution guidelines
 - **[User Guide](USER_GUIDE)** - Web explorer and CLI commands
 - **[Deployment Guide](DEPLOYMENT)** - Production deployment with TLS
 - **[Architecture Overview](../architecture/ARCHITECTURE_ANALYSIS)** - System design and components

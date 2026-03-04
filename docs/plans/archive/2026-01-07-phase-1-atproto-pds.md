@@ -1,3 +1,7 @@
+---
+title: Phase 1 ATProto PDS Implementation Plan
+---
+
 # Phase 1 ATProto PDS Implementation Plan
 
 ## Objective
@@ -255,7 +259,7 @@ Fault injection and recovery testing.
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2026-01-07-phase-1-atproto-pds.md

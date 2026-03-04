@@ -1,3 +1,7 @@
+---
+title: Planning Documents
+---
+
 # Planning Documents
 
 This directory contains strategic planning documents for the objpds AT Protocol PDS implementation.

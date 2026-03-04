@@ -1,3 +1,7 @@
+---
+title: Request Throttling
+---
+
 # Request Throttling
 
 ## Overview
@@ -653,6 +657,6 @@ throttle.sustainedRate = 100;
 
 ## Next Steps
 
-- **[Rate Limiting](./rate-limiting)** — Rate limiting strategies
-- **[DoS Protection](./dos-protection)** — Attack mitigation
+- **[Rate Limiting](rate-limiting)** — Rate limiting strategies
+- **[DoS Protection](dos-protection)** — Attack mitigation
 - **[Firehose Rate Limiting](../08-sync-firehose/firehose-rate-limiting)** — WebSocket throttling

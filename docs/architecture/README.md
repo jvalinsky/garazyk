@@ -1,3 +1,7 @@
+---
+title: Architecture Documentation
+---
+
 # Architecture Documentation
 
 Comprehensive architecture documentation for the ATProto PDS implementation, including system diagrams, data models, protocol references, and development workflows.
@@ -8,7 +12,7 @@ Comprehensive architecture documentation for the ATProto PDS implementation, inc
 
 | File | Title | Topic |
 |------|-------|-------|
-| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) | ATProto PDS Deep Code Analysis | System overview, component analysis, design patterns, data flows, security model, performance considerations, and refactoring recommendations |
+| [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) | ATProto PDS Deep Code Analysis | System overview, component analysis, design patterns, data flows, security model, performance considerations, and refactoring recommendations |
 | [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS) | ATProto PDS Architecture Diagrams | Mermaid diagrams for system overview, OpenAPI generation, API endpoints, data flows, and component dependencies |
 | [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) | ATProto PDS Mermaid Diagrams | XRPC request flow, record creation protocol, data models, OAuth2 token flow, session management, WebSocket firehose, and blob storage |
 | [atproto_data_models.md](atproto_data_models) | atproto Data Models Research | DID implementation, repository structure (MST), Lexicon schemas, record types, commit/signature verification, AT URI resolution, collections, and sync protocols |
@@ -24,20 +28,20 @@ Generate PNGs with: `dot -Tpng <file>.dot -o <file>.png`
 
 | File | Description |
 |------|-------------|
-| [high_level_architecture.dot](high_level_architecture.dot) | Complete system overview with all layers (client, network, application, repository, data) |
-| [request_flow.dot](request_flow.dot) | HTTP request processing pipeline from server to database |
-| [database_schema.dot](database_schema.dot) | SQLite schema with entity relationships |
-| [authentication_flow.dot](authentication_flow.dot) | Multi-factor authentication process (JWT, OAuth2, TOTP, WebAuthn) |
-| [repository_engine.dot](repository_engine.dot) | MST and CAR content-addressable storage engine |
-| [firehose_sync.dot](firehose_sync.dot) | Real-time event streaming and WebSocket subscriptions |
-| [module_dependencies.dot](module_dependencies.dot) | Inter-module dependency graph from Foundation to CLI |
+| [high_level_architecture.dot](# Diagram: high_level_architecture.dot) | Complete system overview with all layers (client, network, application, repository, data) |
+| [request_flow.dot](# Diagram: request_flow.dot) | HTTP request processing pipeline from server to database |
+| [database_schema.dot](# Diagram: database_schema.dot) | SQLite schema with entity relationships |
+| [authentication_flow.dot](# Diagram: authentication_flow.dot) | Multi-factor authentication process (JWT, OAuth2, TOTP, WebAuthn) |
+| [repository_engine.dot](# Diagram: repository_engine.dot) | MST and CAR content-addressable storage engine |
+| [firehose_sync.dot](# Diagram: firehose_sync.dot) | Real-time event streaming and WebSocket subscriptions |
+| [module_dependencies.dot](# Diagram: module_dependencies.dot) | Inter-module dependency graph from Foundation to CLI |
 
 ## Quick Navigation by Task
 
 ### Understanding the System
-1. [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Start here for comprehensive overview
-2. [high_level_architecture.dot](high_level_architecture.dot) - Visual system structure
-3. [module_dependencies.dot](module_dependencies.dot) - Module relationships
+1. [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Start here for comprehensive overview
+2. [high_level_architecture.dot](# Diagram: high_level_architecture.dot) - Visual system structure
+3. [module_dependencies.dot](# Diagram: module_dependencies.dot) - Module relationships
 
 ### ATProto Protocol Development
 1. [atproto_pds_architecture.md](atproto_pds_architecture) - PDS specifications
@@ -49,19 +53,19 @@ Generate PNGs with: `dot -Tpng <file>.dot -o <file>.png`
 2. [DIAGRAM_QUICK_REFERENCE.md](DIAGRAM_QUICK_REFERENCE) - Diagram selection guide
 
 ### Authentication & Security
-1. [authentication_flow.dot](authentication_flow.dot) - Auth flow diagram
+1. [authentication_flow.dot](# Diagram: authentication_flow.dot) - Auth flow diagram
 2. [atproto_pds_architecture.md](atproto_pds_architecture#3-authentication-and-authorization-mechanisms) - OAuth 2.1 profile
 
 ### Database & Storage
-1. [database_schema.dot](database_schema.dot) - Schema relationships
-2. [repository_engine.dot](repository_engine.dot) - MST/CAR storage
+1. [database_schema.dot](# Diagram: database_schema.dot) - Schema relationships
+2. [repository_engine.dot](# Diagram: repository_engine.dot) - MST/CAR storage
 
 ## Related Documentation
 
 ### Architecture Documents
 | File | Description |
 |------|-------------|
-| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) | Deep code analysis, component details, and design patterns |
+| [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) | Deep code analysis, component details, and design patterns |
 | [atproto_pds_architecture.md](atproto_pds_architecture) | PDS specifications, XRPC endpoints, and OAuth 2.1 profile |
 | [atproto_data_models.md](atproto_data_models) | DID implementation, MST, Lexicon schemas, and CBOR encoding |
 | [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) | Quick reference for XRPC methods and error codes |
@@ -77,11 +81,11 @@ Generate PNGs with: `dot -Tpng <file>.dot -o <file>.png`
 ### Other Directories
 | Directory | Description |
 |-----------|-------------|
-| [../guides/](../guides/) | Development guides, Objective-C patterns, and how-to documentation |
-| [../security/](../security/) | Security documentation, audit skills, and hardening guides |
-| [../tests/](../tests/) | Test documentation and coverage reports |
-| [../plans/](../plans/) | Implementation plans and project roadmaps |
-| [../examples/](../examples/) | Example code and usage patterns |
+| <!-- Link placeholder: ../guides/ --> | Development guides, Objective-C patterns, and how-to documentation |
+| <!-- Link placeholder: ../security/ --> | Security documentation, audit skills, and hardening guides |
+| <!-- Link placeholder: ../tests/ --> | Test documentation and coverage reports |
+| <!-- Link placeholder: ../plans/ --> | Implementation plans and project roadmaps |
+| <!-- Link placeholder: ../examples/ --> | Example code and usage patterns |
 
 ## Key Architecture Insights
 

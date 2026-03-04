@@ -1,3 +1,7 @@
+---
+title: ATProtoPDS Documentation
+---
+
 # ATProtoPDS Documentation
 
 This directory contains comprehensive documentation for the ATProtoPDS project, organized by topic and function.
@@ -6,15 +10,15 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 
 | Folder | Description | README |
 |--------|-------------|--------|
-| [architecture/](architecture/) | System architecture diagrams, data models, and XRPC protocol reference | [README](architecture/README) |
-| [examples/](examples/) | Example configuration files (systemd service, etc.) | — |
-| [guides/](guides/) | Developer guides, setup instructions, and workflows | — |
-| [oauth2/](oauth2/) | OAuth 2.0 implementation with DPoP, PKCE, and token management | [README](oauth2/README) |
-| [plan/](plan/) | Project roadmap and planning documents | — |
-| [plans/](plans/) | Detailed implementation plans and production readiness | — |
-| [security/](security/) | Security analysis, testing plans, and vulnerability reports | — |
-| [skills/](skills/) | ATProto compliance review skills and audit tools | [README](skills/README) |
-| [tests/](tests/) | Test documentation index covering 135 test classes | [README](tests/README) |
+| [architecture/](architecture/README) | System architecture diagrams, data models, and XRPC protocol reference | [README](architecture/README) |
+| [examples/](examples/README) | Example configuration files (systemd service, etc.) | — |
+| [guides/](guides/README) | Developer guides, setup instructions, and workflows | — |
+| [oauth2/](oauth2/README) | OAuth 2.0 implementation with DPoP, PKCE, and token management | [README](oauth2/README) |
+| [plan/](plan/README) | Project roadmap and planning documents | — |
+| [plans/](plans/README) | Detailed implementation plans and production readiness | — |
+| [security/](security/README) | Security analysis, testing plans, and vulnerability reports | — |
+| [skills/](skills/README) | ATProto compliance review skills and audit tools | [README](skills/README) |
+| [tests/](tests/README) | Test documentation index covering 135 test classes | [README](tests/README) |
 
 ## Top-Level Documents
 
@@ -22,9 +26,9 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 |------|-------------|
 | [TESTING.md](TESTING) | Comprehensive testing guide and methodology |
 | [atproto-plc-architecture.md](atproto-plc-architecture) | ATProto PLC directory architecture |
-| [troubleshooting-2026-02-25.md](troubleshooting-2026-02-25) | PDS Configuration and Identity restoration logs |
-| [troubleshooting-relay-sync-2026-02-25.md](troubleshooting-relay-sync-2026-02-25) | Relay integration and sync troubleshooting logs |
-| [troubleshooting-bsky-ghost-posts-2026-02-26.md](troubleshooting-bsky-ghost-posts-2026-02-26) | Ghost post visibility + GNUstep `createRecord` crash investigation and fixes |
+| [troubleshooting-2026-02-25.md](# troubleshooting-2026-02-25) | PDS Configuration and Identity restoration logs |
+| [troubleshooting-relay-sync-2026-02-25.md](# troubleshooting-relay-sync-2026-02-25) | Relay integration and sync troubleshooting logs |
+| [troubleshooting-bsky-ghost-posts-2026-02-26.md](# troubleshooting-bsky-ghost-posts-2026-02-26) | Ghost post visibility + GNUstep `createRecord` crash investigation and fixes |
 | [test-suite-stabilization-report-2026-03-01.md](test-suite-stabilization-report-2026-03-01) | **100% Pass Rate** stabilization effort, resolving 1267 test failures |
 | [troubleshooting-identity-cors-2026-03-01.md](troubleshooting-identity-cors-2026-03-01) | Identity resolution, spec compliance, and dynamic CORS fixes |
 | [security-and-architectural-remediation-report-2026-03-02.md](security-and-architectural-remediation-report-2026-03-02) | **100% Pass Rate** remediation report: security hardening, MST rebalancing, and protocol fixes |
@@ -33,7 +37,7 @@ This directory contains comprehensive documentation for the ATProtoPDS project, 
 
 ### Getting Started
 - [Setup Guide](guides/SETUP_GUIDE)
-- [Developer Guide](guides/DEVELOPER_GUIDE)
+- [Developer Guide](./guides/development/DEVELOPER_GUIDE)
 - [User Guide](guides/USER_GUIDE)
 
 ### Architecture & Design
@@ -79,7 +83,7 @@ This section provides quick links to key documentation in each subfolder:
 | Topic | Key Documents |
 |-------|---------------|
 | **Architecture** | [PDS Architecture](architecture/atproto_pds_architecture), [Data Models](architecture/atproto_data_models), [Diagrams](architecture/DIAGRAMS_MERMAID) |
-| **Guides** | [Developer Guide](guides/DEVELOPER_GUIDE), [Setup Guide](guides/SETUP_GUIDE), [Deployment](guides/DEPLOYMENT) |
+| **Guides** | [Developer Guide](./guides/development/DEVELOPER_GUIDE), [Setup Guide](guides/SETUP_GUIDE), [Deployment](guides/DEPLOYMENT) |
 | **OAuth2** | [Overview](oauth2/README), [Authorization Flow](oauth2/authorization-flow), [DPoP](oauth2/dpop) |
 | **Security** | [Testing Plan](security/SECURITY_TESTING_PLAN), [Analysis Report](security/SECURITY_ANALYSIS_REPORT), [Identity Hardening](security/IDENTITY_HARDENING) |
 | **Testing** | [Test Index](tests/README), [Identity/Auth](tests/00-identity-auth/README), [Repository](tests/01-repository/README) |

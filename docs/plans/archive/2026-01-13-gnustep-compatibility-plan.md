@@ -1,3 +1,7 @@
+---
+title: GNUstep Compatibility Deep Dive - Implementation Plan
+---
+
 # GNUstep Compatibility Deep Dive - Implementation Plan
 
 ## Document Overview
@@ -308,6 +312,6 @@ After changes, verify:
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

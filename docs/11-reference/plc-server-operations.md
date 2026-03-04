@@ -1,3 +1,7 @@
+---
+title: PLC Server Operations
+---
+
 # PLC Server Operations
 
 ## Overview
@@ -33,13 +37,14 @@ xcodebuild -scheme ATProtoPDS-CLI build
 
 **Output:**
 ```
+
 Using in-memory mock store
 PLC server listening on port 2582
 ```
 
 The mock store keeps all data in memory and is lost when the server stops.
 
-### Production (Persistent Database)
+## Production (Persistent Database)
 
 For production deployments, use SQLite persistent storage:
 
@@ -53,10 +58,10 @@ mkdir -p /var/lib/plc
 
 **Output:**
 ```
+
 Using persistent store at /var/lib/plc/plc.db
 PLC server listening on port 2582
 ```
-
 
 ## Building Campagnola
 
@@ -73,7 +78,7 @@ xcodebuild -scheme ATProtoPDS-CLI build
 ./build/bin/campagnola
 ```
 
-### Linux (GNUstep)
+## Linux (GNUstep)
 
 ```bash
 # Out-of-source build
@@ -89,7 +94,7 @@ make -j$(nproc)
 ./build-linux/bin/campagnola
 ```
 
-### Verify Build
+## Verify Build
 
 ```bash
 # Check binary exists
@@ -135,7 +140,6 @@ Display help information and exit.
 ```bash
 ./build/bin/campagnola --help
 ```
-
 
 ## Configuration
 
@@ -292,7 +296,6 @@ curl http://localhost:2582/did:plc:z72i7hdynmk6r22z27h6tvur/log
 ]
 ```
 
-
 ### GET /:did/log/audit
 
 Retrieve the audit log with metadata (includes nullified operations).
@@ -376,7 +379,6 @@ curl -X POST http://localhost:2582/did:plc:z72i7hdynmk6r22z27h6tvur \
 }
 ```
 
-
 ### GET /export
 
 Export operations for replication or backup.
@@ -395,13 +397,14 @@ curl http://localhost:2582/export?after=2024-01-15T10:30:00.000Z&count=100
 
 **Response (200 OK):**
 ```
+
 {"did":"did:plc:abc...","operation":{...},"cid":"bafyrei...","nullified":false,"createdAt":"2024-01-15T10:30:00.000Z"}
 {"did":"did:plc:def...","operation":{...},"cid":"bafyrei...","nullified":false,"createdAt":"2024-01-15T10:31:00.000Z"}
 ```
 
 **Format:** JSON Lines (one JSON object per line)
 
-### GET /_health
+## GET /_health
 
 Health check endpoint.
 
@@ -442,6 +445,7 @@ curl http://localhost:2582/_metrics
 
 **Response (200 OK):**
 ```
+
 # HELP plc_requests_total Total number of requests
 # TYPE plc_requests_total counter
 plc_requests_total 1234
@@ -450,7 +454,6 @@ plc_requests_total 1234
 # TYPE plc_errors_total counter
 plc_errors_total 5
 ```
-
 
 ## Production Deployment
 
@@ -507,7 +510,7 @@ sudo systemctl start campagnola
 sudo systemctl status campagnola
 ```
 
-### Docker Deployment
+## Docker Deployment
 
 Create a Dockerfile for containerized deployment:
 
@@ -557,8 +560,7 @@ docker run -d \
 docker logs -f campagnola
 ```
 
-
-### Reverse Proxy (Nginx)
+## Reverse Proxy (Nginx)
 
 Configure Nginx as a reverse proxy with TLS:
 
@@ -616,7 +618,6 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-
 ## Database Maintenance
 
 ### Backup
@@ -648,7 +649,7 @@ find "$BACKUP_DIR" -name "plc-*.db.gz" -mtime +30 -delete
 echo "Backup completed: plc-$TIMESTAMP.db.gz"
 ```
 
-#### File Copy (Offline)
+## File Copy (Offline)
 
 For offline backups, stop the server first:
 
@@ -667,7 +668,7 @@ cp /var/lib/plc/plc.db-shm /var/backups/plc/ 2>/dev/null || true
 sudo systemctl start campagnola
 ```
 
-### Restore
+## Restore
 
 To restore from backup:
 
@@ -685,7 +686,7 @@ sudo chown plc:plc /var/lib/plc/plc.db
 sudo systemctl start campagnola
 ```
 
-### Database Optimization
+## Database Optimization
 
 Periodically optimize the database for performance:
 
@@ -706,8 +707,7 @@ sqlite3 /var/lib/plc/plc.db "PRAGMA integrity_check;"
 0 3 * * 0 sqlite3 /var/lib/plc/plc.db "VACUUM; ANALYZE;"
 ```
 
-
-### Database Growth
+## Database Growth
 
 Monitor database size and plan for growth:
 
@@ -734,7 +734,7 @@ LIMIT 10;
 - 10,000 DIDs × 10 operations each = ~50 MB
 - 100,000 DIDs × 10 operations each = ~500 MB
 
-### Migration
+## Migration
 
 When upgrading campagnola versions, check for schema migrations:
 
@@ -784,7 +784,7 @@ define service {
 }
 ```
 
-### Metrics Collection
+## Metrics Collection
 
 Scrape Prometheus metrics:
 
@@ -803,7 +803,7 @@ scrape_configs:
 - `plc_errors_total` — Total error count
 
 
-### Log Monitoring
+## Log Monitoring
 
 Monitor server logs for issues:
 
@@ -824,7 +824,7 @@ sudo journalctl -u campagnola --since "1 hour ago"
 - `Audit failed` — Invalid operation submissions
 - `Failed to append` — Database write failures
 
-### Performance Monitoring
+## Performance Monitoring
 
 Track key performance indicators:
 
@@ -887,12 +887,12 @@ curl -X POST http://localhost:2582/did:plc:test123 \
 curl https://pds.example.com/xrpc/com.atproto.identity.resolveHandle?handle=test.example.com
 ```
 
-
-### High Availability Setup
+## High Availability Setup
 
 For production deployments, run multiple PLC servers:
 
 ```
+
 ┌─────────────┐
 │ Load Balancer│
 │  (HAProxy)   │
@@ -940,14 +940,14 @@ sudo journalctl -u campagnola -n 50
    
    # Kill the process or use a different port
    ./build/bin/campagnola --port 2583
-   ```
+   ```text
 
 2. **Database permission denied**
    ```bash
    # Fix permissions
    sudo chown plc:plc /var/lib/plc/plc.db
    sudo chmod 644 /var/lib/plc/plc.db
-   ```
+   ```text
 
 3. **Database corruption**
    ```bash
@@ -956,9 +956,9 @@ sudo journalctl -u campagnola -n 50
    
    # Restore from backup if corrupted
    cp /var/backups/plc/plc-latest.db /var/lib/plc/plc.db
-   ```
+   ```text
 
-### Operation Submission Fails
+## Operation Submission Fails
 
 **Symptom:** POST requests return 400 Bad Request.
 
@@ -987,7 +987,7 @@ curl -X POST http://localhost:2582/did:plc:test \
    - Ensure `prev` link is correct
 
 
-### DID Resolution Returns 404
+## DID Resolution Returns 404
 
 **Symptom:** GET requests for DIDs return 404 Not Found.
 
@@ -1013,7 +1013,7 @@ sqlite3 /var/lib/plc/plc.db "SELECT * FROM operations WHERE did='did:plc:test';"
    - Verify you're querying the correct server
    - Check PDS configuration points to right PLC URL
 
-### High Memory Usage
+## High Memory Usage
 
 **Symptom:** Server consumes excessive memory.
 
@@ -1033,14 +1033,14 @@ sqlite3 /var/lib/plc/plc.db "SELECT COUNT(*) FROM operations;"
 1. **Vacuum database**
    ```bash
    sqlite3 /var/lib/plc/plc.db "VACUUM;"
-   ```
+   ```text
 
 2. **Set memory limits**
    ```ini
    # In systemd service
    MemoryMax=512M
    MemoryHigh=384M
-   ```
+   ```text
 
 3. **Archive old operations**
    ```bash
@@ -1049,9 +1049,9 @@ sqlite3 /var/lib/plc/plc.db "SELECT COUNT(*) FROM operations;"
    
    # Consider implementing operation pruning
    # (requires code changes)
-   ```
+   ```text
 
-### Slow Response Times
+## Slow Response Times
 
 **Symptom:** API requests take longer than expected.
 
@@ -1068,17 +1068,17 @@ sqlite3 /var/lib/plc/plc.db "EXPLAIN QUERY PLAN SELECT * FROM operations WHERE d
 1. **Optimize database**
    ```bash
    sqlite3 /var/lib/plc/plc.db "ANALYZE;"
-   ```
+   ```text
 
 2. **Check indexes**
    ```bash
    sqlite3 /var/lib/plc/plc.db ".indexes operations"
-   ```
+   ```text
 
 3. **Enable WAL mode** (should be automatic)
    ```bash
    sqlite3 /var/lib/plc/plc.db "PRAGMA journal_mode=WAL;"
-   ```
+   ```text
 
 4. **Add caching layer** (nginx, Varnish)
 
@@ -1097,7 +1097,7 @@ sqlite3 /var/lib/plc/plc.db "EXPLAIN QUERY PLAN SELECT * FROM operations WHERE d
    # Allow only from reverse proxy
    sudo ufw allow from 127.0.0.1 to any port 2582
    sudo ufw deny 2582
-   ```
+   ```text
 
 3. **Rate limiting**
    - Implement at reverse proxy level
@@ -1130,7 +1130,7 @@ sqlite3 /var/lib/plc/plc.db "EXPLAIN QUERY PLAN SELECT * FROM operations WHERE d
    # Compare operation counts
    sqlite3 /var/lib/plc/plc.db "SELECT COUNT(*) FROM operations;"
    sqlite3 /var/backups/plc/plc-backup.db "SELECT COUNT(*) FROM operations;"
-   ```
+   ```text
 
 3. **Audit logging**
    - Enable detailed logging for security events
@@ -1159,7 +1159,6 @@ sqlite3 /var/lib/plc/plc.db ".backup '/var/backups/plc/pre-upgrade.db'"
 sudo systemctl restart campagnola
 ```
 
-
 ## Best Practices
 
 ### Development
@@ -1167,7 +1166,7 @@ sudo systemctl restart campagnola
 1. **Use mock store for testing**
    ```bash
    ./build/bin/campagnola --port 2582
-   ```
+   ```text
 
 2. **Separate test and production databases**
    ```bash
@@ -1176,7 +1175,7 @@ sudo systemctl restart campagnola
    
    # Production
    ./build/bin/campagnola --port 2582 --database /var/lib/plc/plc.db
-   ```
+   ```text
 
 3. **Version control configuration**
    - Keep deployment scripts in version control
@@ -1256,7 +1255,7 @@ while IFS= read -r line; do
 done < operations.jsonl
 ```
 
-### Custom Validation
+## Custom Validation
 
 Extend operation validation by modifying `PLCAuditor`:
 
@@ -1322,7 +1321,6 @@ vim ATProtoPDS/Sources/PLC/Assets/js/app.js
 xcodebuild -scheme ATProtoPDS-CLI build
 ```
 
-
 ## Quick Reference
 
 ### Common Commands
@@ -1353,7 +1351,7 @@ curl "http://localhost:2582/export?count=100"
 curl http://localhost:2582/_metrics
 ```
 
-### File Locations
+## File Locations
 
 | Item | Location |
 |------|----------|
@@ -1386,9 +1384,9 @@ curl http://localhost:2582/_metrics
 ## Related Documentation
 
 - **[PLC Directory Concepts](../02-core-concepts/plc-directory)** — PLC protocol and DID operations
-- **[CLI Reference](./cli-reference)** — kaszlak CLI commands
-- **[Config Reference](./config-reference)** — PDS configuration options
-- **[Troubleshooting](./troubleshooting)** — Common issues and solutions
+- **[CLI Reference](cli-reference)** — kaszlak CLI commands
+- **[Config Reference](config-reference)** — PDS configuration options
+- **[Troubleshooting](troubleshooting)** — Common issues and solutions
 
 ## External Resources
 

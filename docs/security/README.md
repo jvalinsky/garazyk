@@ -1,3 +1,7 @@
+---
+title: Security Documentation
+---
+
 # Security Documentation
 
 This directory contains security documentation for the ATProto PDS Objective-C implementation, including vulnerability reports, testing plans, and security configurations.
@@ -8,7 +12,7 @@ This directory contains security documentation for the ATProto PDS Objective-C i
 |------|-------|-------|
 | [ADMIN_AUTH_CONFIGURATION.md](ADMIN_AUTH_CONFIGURATION) | Admin Auth Configuration & Rotation Guide | Admin authentication setup, password rotation, JWT key management |
 | [SECURITY_ANALYSIS_REPORT.md](SECURITY_ANALYSIS_REPORT) | Security Analysis Report - ATProto PDS | Static analysis findings, fuzzer results, code quality issues |
-| [SECURITY_PLAN.md](SECURITY_PLAN) | Security Validation Strategy | Comprehensive security testing strategy with clang-tidy, fuzzing, and sanitizers |
+| [SECURITY_PLAN.md](# Security plan) | Security Validation Strategy | Comprehensive security testing strategy with clang-tidy, fuzzing, and sanitizers |
 | [SECURITY_TESTING_PLAN.md](SECURITY_TESTING_PLAN) | ATProto PDS Security Testing Plan | Parsing exploits, SQL injection, blob upload security, fuzzing strategies |
 | [security_test_results.md](security_test_results) | Security Test Results | CBOR, HTTP, XRPC, SQL payload testing results (66 tests passing) |
 | [SQL_INJECTION_VULNERABILITY_REPORT.md](SQL_INJECTION_VULNERABILITY_REPORT) | Security Vulnerability Report | SQL injection vulnerabilities found and remediation guidance |
@@ -16,7 +20,7 @@ This directory contains security documentation for the ATProto PDS Objective-C i
 
 ## Security Reports
 
-Historical security analysis reports are available in [reports/](reports/). These reports document the progression of security issue resolution over time.
+Historical security analysis reports are available in [reports/](# Reports directory). These reports document the progression of security issue resolution over time.
 
 ## Quick Links
 

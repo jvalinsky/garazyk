@@ -1,3 +1,7 @@
+---
+title: Merkle Search Trees (MST)
+---
+
 # Merkle Search Trees (MST)
 
 ## Why This Matters
@@ -43,9 +47,10 @@ An MST is organized as a binary tree where:
 - **Internal nodes** — Contain hashes of child nodes
 - **Root node** — Hash of entire tree
 
-![MST Tree Structure](../12-diagrams/mst-tree-structure.svg)
+<!-- Image placeholder: MST Tree Structure -->
 
 ```
+
                     Root CID
                    /        \
               Node A          Node B
@@ -66,6 +71,7 @@ Each node contains:
 
 Records are ordered lexicographically by key:
 ```
+
 app.bsky.feed.like/abc123
 app.bsky.feed.like/def456
 app.bsky.feed.post/ghi789
@@ -392,6 +398,6 @@ MSTs combine the best of both worlds: the efficiency of binary search trees with
 
 ## Next Steps
 
-- **[Cryptography](./cryptography)** — Cryptographic operations
+- **[Cryptography](cryptography)** — Cryptographic operations
 - **[Repository Protocol](../07-repository-protocol/repository-basics)** — Repository operations
 - **[Sync & Firehose](../08-sync-firehose/firehose-overview)** — Real-time synchronization

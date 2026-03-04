@@ -1,3 +1,7 @@
+---
+title: PDSApplication Facade
+---
+
 # PDSApplication Facade
 
 ## Overview
@@ -13,6 +17,7 @@
 ### Service Composition
 
 ```
+
 PDSApplication
 ├── PDSAccountService
 ├── PDSRecordService
@@ -562,7 +567,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
    // Don't hardcode secrets in config.json
    config.jwtSecret = getenv("PDS_JWT_SECRET");
    config.databasePassword = getenv("PDS_DB_PASSWORD");
-   ```
+   ```text
 
 2. **Validate Configuration on Startup**
    ```objc
@@ -581,7 +586,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
        
        return YES;
    }
-   ```
+   ```text
 
 3. **Use Secure Defaults**
    ```objc
@@ -589,7 +594,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
    config.inviteCodeRequired = YES;  // Require invite codes by default
    config.rateLimitEnabled = YES;    // Enable rate limiting
    config.debugMode = NO;            // Disable debug mode in production
-   ```
+   ```text
 
 4. **Document Configuration Options**
    ```objc
@@ -604,7 +609,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
        "invite_code_required": true  // Require invite codes for signup
      }
    }
-   ```
+   ```text
 
 5. **Support Configuration Reloading**
    ```objc
@@ -622,7 +627,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
            PDS_LOG_ERROR(@"Failed to reload configuration: %@", error);
        }
    }
-   ```
+   ```text
 
 ### Performance Optimization
 
@@ -631,7 +636,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
    // Configure appropriate pool sizes
    config.databasePoolSize = 20;  // Based on expected concurrency
    config.maxConcurrentRequests = 100;
-   ```
+   ```text
 
 2. **Caching**
    ```objc
@@ -649,7 +654,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
        }
        return account;
    }
-   ```
+   ```text
 
 3. **Async Operations**
    ```objc
@@ -662,7 +667,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
            [self sendResponse:carData];
        });
    });
-   ```
+   ```text
 
 4. **Resource Limits**
    ```objc
@@ -670,7 +675,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
    config.maxBlobSize = 5 * 1024 * 1024;  // 5 MB
    config.maxRecordsPerRequest = 100;
    config.requestTimeout = 30;  // seconds
-   ```
+   ```text
 
 ### Security Best Practices
 
@@ -684,7 +689,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
        }
        return YES;
    }
-   ```
+   ```text
 
 2. **Rate Limiting**
    ```objc
@@ -697,7 +702,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
        [self.rateLimiter incrementRequestCount:identifier];
        return YES;
    }
-   ```
+   ```text
 
 3. **Audit Logging**
    ```objc
@@ -706,7 +711,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
        PDS_LOG_SECURITY(@"[Security] %@: %@", event, details);
        [self.auditLogger logEvent:event details:details];
    }
-   ```
+   ```text
 
 4. **Secrets Management**
    ```objc
@@ -720,7 +725,7 @@ PDS_LOG_DEBUG(@"Free disk space: %@ bytes", freeSpace);
        };
        PDS_LOG_INFO(@"Configuration: %@", safeConfig);
    }
-   ```
+   ```text
 
 ## Common Patterns
 
@@ -844,9 +849,9 @@ int main(int argc, const char *argv[]) {
 
 ## See Also
 
-- [Services Overview](./services-overview) - Service architecture
-- [Account Service](./account-service) - Account management
-- [Record Service](./record-service) - Record operations
+- [Services Overview](services-overview) - Service architecture
+- [Account Service](account-service) - Account management
+- [Record Service](record-service) - Record operations
 - [HTTP Server](../04-network-layer/http-server) - HTTP and XRPC
 - [Configuration Reference](../11-reference/config-reference) - Configuration options
 - [Security Best Practices](../06-authentication/security-best-practices) - Security guidance
@@ -860,7 +865,7 @@ int main(int argc, const char *argv[]) {
 
 ## Next Steps
 
-- **[Services Overview](./services-overview)** — Service architecture
-- **[Account Service](./account-service)** — Account management
-- **[Record Service](./record-service)** — Record operations
+- **[Services Overview](services-overview)** — Service architecture
+- **[Account Service](account-service)** — Account management
+- **[Record Service](record-service)** — Record operations
 - **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC

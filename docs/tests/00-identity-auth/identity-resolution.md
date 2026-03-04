@@ -1,3 +1,7 @@
+---
+title: Identity Resolution Tests
+---
+
 # Identity Resolution Tests
 
 Tests for handle resolution, DID resolution, and identifier validation.
@@ -29,16 +33,16 @@ resolver.session = mockSession;
 **Resolution methods tested:**
 
 1. **HTTPS well-known:**
-   ```
+   ```text
    GET https://example.com/.well-known/atproto-did
    → did:plc:abc
-   ```
+   ```text
 
 2. **DNS TXT fallback:**
-   ```
+   ```text
    dig TXT _atproto.example.com
    → "did=did:plc:abc"
-   ```
+   ```text
 
 #### Why It Matters
 

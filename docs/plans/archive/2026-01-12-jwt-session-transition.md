@@ -1,3 +1,7 @@
+---
+title: "Phase 2: JWT Session Token Transition Plan"
+---
+
 # Phase 2: JWT Session Token Transition Plan
 
 **Goal:** Migrate PDS session management from opaque UUID tokens to signed JWT access tokens as per ATProto specification.
@@ -52,6 +56,6 @@
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

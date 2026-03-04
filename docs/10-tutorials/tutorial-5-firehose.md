@@ -1,3 +1,7 @@
+---
+title: "Tutorial 5: Firehose"
+---
+
 # Tutorial 5: Firehose
 
 ## Overview
@@ -33,10 +37,10 @@ This is the most complex tutorial in the series, combining networking, concurren
 Before starting this tutorial, you should have:
 
 - **Completed Tutorials:**
-  - [Tutorial 1: Hello PDS](./tutorial-1-hello-pds) — HTTP server basics
-  - [Tutorial 2: Accounts](./tutorial-2-accounts) — Account management
-  - [Tutorial 3: Records](./tutorial-3-records) — Repository operations
-  - [Tutorial 4: Authentication](./tutorial-4-auth) — JWT and OAuth
+  - [Tutorial 1: Hello PDS](tutorial-1-hello-pds) — HTTP server basics
+  - [Tutorial 2: Accounts](tutorial-2-accounts) — Account management
+  - [Tutorial 3: Records](tutorial-3-records) — Repository operations
+  - [Tutorial 4: Authentication](tutorial-4-auth) — JWT and OAuth
 
 - **Knowledge:**
   - Understanding of WebSocket protocol (handshake, frames, opcodes)
@@ -75,7 +79,7 @@ The Firehose consists of four main components working together:
 
 Here's how a repository change flows through the system:
 
-```
+```objc
 Record Created → Repository Service → Commit Created → MST Updated
                                            ↓
                                     Firehose Handler
@@ -84,7 +88,7 @@ Record Created → Repository Service → Commit Created → MST Updated
                         ↓                  ↓                  ↓
                   Connection 1       Connection 2       Connection 3
                   (Fast consumer)    (Normal)           (Slow - dropped)
-```
+```objc
 
 When a record is created, updated, or deleted:
 1. The Repository Service creates a new commit
@@ -150,7 +154,7 @@ The Firehose uses WebSocket instead of alternatives like HTTP polling or Server-
 
 **WebSocket vs HTTP Polling:**
 
-```
+```objc
 HTTP Polling (inefficient):
 Client → Server: GET /events?since=100
 Server → Client: 200 OK []
@@ -168,7 +172,7 @@ Server → Client: 101 Switching Protocols
 Server → Client: event101
 Server → Client: event102
 [instant delivery, no polling overhead]
-```
+```objc
 
 Our `WebSocketConnection` class encapsulates all of this, providing a clean interface for sending messages and receiving callbacks.
 
@@ -197,7 +201,7 @@ typedef void (^WebSocketCloseHandler)(NSInteger code, NSString *reason);
 @property (nonatomic, copy) WebSocketCloseHandler closeHandler;
 
 @end
-```
+```objc
 
 ### Interface Design Decisions
 
@@ -413,7 +417,7 @@ Create `src/WebSocketConnection.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding the Implementation
 
@@ -424,7 +428,7 @@ This WebSocket implementation handles the complete RFC 6455 protocol. Let's brea
 ```objc
 getpeername(socket, (struct sockaddr *)&addr, &addrLen);
 inet_ntop(AF_INET, &addr.sin_addr, ipStr, sizeof(ipStr));
-```
+```objc
 
 We extract the remote IP address immediately for logging and debugging. `getpeername()` retrieves the peer's address from the connected socket, and `inet_ntop()` converts it to human-readable form.
 
@@ -433,7 +437,7 @@ We extract the remote IP address immediately for logging and debugging. `getpeer
 ```objc
 self.sendQueue = dispatch_queue_create("com.atproto.websocket.send", DISPATCH_QUEUE_SERIAL);
 self.receiveQueue = dispatch_queue_create("com.atproto.websocket.receive", DISPATCH_QUEUE_SERIAL);
-```
+```objc
 
 We use separate serial queues for sending and receiving. This provides:
 - **Thread safety**: Only one operation at a time per queue
@@ -446,7 +450,7 @@ The `sendMessage:` method builds RFC 6455-compliant frames:
 
 ```objc
 uint8_t byte1 = 0x82;  // FIN=1, opcode=binary
-```
+```objc
 
 Byte 1 encodes:
 - `FIN=1` (bit 7): This is the final fragment
@@ -463,7 +467,7 @@ if (message.length < 126) {
     uint8_t byte2 = 127;
     uint64_t len = htonll((uint64_t)message.length);
 }
-```
+```objc
 
 Byte 2 encodes payload length with three formats:
 - **0-125**: Length fits in 7 bits
@@ -480,7 +484,7 @@ self.pendingSendBytes += message.length;
 // ... send ...
 self.pendingSendCount--;
 self.pendingSendBytes -= message.length;
-```
+```objc
 
 We track both the number of pending sends and total bytes. This dual metric helps detect:
 - **Many small messages**: High count, low bytes (client processing slowly)
@@ -494,7 +498,7 @@ The `receiveLoop` method runs continuously on the receive queue, parsing incomin
 uint8_t opcode = header[0] & 0x0F;
 BOOL masked = (header[1] & 0x80) != 0;
 uint64_t payloadLen = header[1] & 0x7F;
-```
+```objc
 
 We extract:
 - **Opcode**: Frame type (text, binary, close, ping, pong)
@@ -510,7 +514,7 @@ if (masked) {
         bytes[i] ^= maskingKey[i % 4];
     }
 }
-```
+```objc
 
 Client-to-server frames are XOR-masked with a 4-byte key. This prevents cache poisoning attacks on intermediary proxies. We unmask by XORing each byte with the corresponding key byte (cycling through the 4-byte key).
 
@@ -526,7 +530,7 @@ if (opcode == 0x08) {  // Close
         self.messageHandler(payload);
     }
 }
-```
+```objc
 
 We handle three opcodes:
 - **0x08 (Close)**: Initiate graceful shutdown
@@ -543,7 +547,7 @@ We handle three opcodes:
     send(self.socket, frame.bytes, frame.length, 0);
     close(self.socket);
 }
-```
+```objc
 
 WebSocket close frames include a status code (1000 = normal, 1008 = policy violation) and optional reason string. This helps clients understand why the connection closed.
 
@@ -584,7 +588,7 @@ The three-layer structure serves multiple purposes:
 
 **Event Flow Through the System:**
 
-```
+```objc
 Repository Change
     ↓
 Create Commit (MST update, sign with private key)
@@ -598,7 +602,7 @@ Wrap in Frame Header (operation type + event type)
 Send via WebSocket (binary frame)
     ↓
 Client Receives and Verifies (check signature, verify hashes)
-```
+```objc
 
 Each step in this flow is critical for maintaining the integrity and verifiability of the AT Protocol's data model.
 
@@ -624,7 +628,7 @@ Create `src/EventFormatter.h`:
 - (nullable NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event error:(NSError **)error;
 
 @end
-```
+```objc
 
 ### Event Structure Explained
 
@@ -702,7 +706,7 @@ Create `src/EventFormatter.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding Event Encoding
 
@@ -724,7 +728,7 @@ NSMutableDictionary *eventDict = [@{
     @"blobs": event.blobs,
     @"time": event.time
 } mutableCopy];
-```
+```objc
 
 The `$type` field identifies this as a commit event. Other event types include:
 - `#identity`: DID document updates
@@ -736,7 +740,7 @@ The `$type` field identifies this as a commit event. Other event types include:
 ```objc
 @"rebase": @NO,
 @"tooBig": @NO,
-```
+```objc
 
 - **rebase**: Indicates the commit history was rewritten (rare, usually due to data corruption recovery)
 - **tooBig**: Indicates the commit was too large to include all blocks inline. Clients must fetch blocks separately via `com.atproto.sync.getRepo`.
@@ -750,7 +754,7 @@ NSData *headerData = [self encodeCBOR:header error:error];
 NSMutableData *frame = [NSMutableData data];
 [frame appendData:headerData];
 [frame appendData:cborData];
-```
+```objc
 
 Firehose frames consist of two CBOR-encoded parts:
 1. **Header**: `{op: 1, t: "#commit"}` where `op: 1` means "message" (vs. `op: -1` for error)
@@ -764,7 +768,7 @@ This two-part structure allows clients to parse the header without decoding the 
 // Simplified CBOR encoding for tutorial
 // In production, use ATProtoCBORSerialization
 return [NSJSONSerialization dataWithJSONObject:object options:0 error:error];
-```
+```objc
 
 This tutorial uses JSON as a stand-in for CBOR. In production, you must use proper DAG-CBOR encoding via `ATProtoCBORSerialization`. DAG-CBOR differs from standard CBOR in how it handles CIDs—they're encoded with a special tag (42) that preserves their content-addressing properties.
 
@@ -790,7 +794,7 @@ if (carBlocks.length > MAX_EVENT_SIZE) {
     event.tooBig = YES;
     event.blocks = [NSData data];  // Empty blocks
 }
-```
+```objc
 
 When an event is too big, clients must fetch the full repository state via `com.atproto.sync.getRepo` instead of relying on the inline blocks.
 
@@ -814,7 +818,7 @@ Create `src/SubscribeReposHandler.h`:
                     ops:(NSArray<NSDictionary *> *)ops;
 
 @end
-```
+```objc
 
 ## Step 6: Implement SubscribeRepos Handler
 
@@ -949,7 +953,7 @@ Create `src/SubscribeReposHandler.m`:
 }
 
 @end
-```
+```objc
 
 ## Step 7: Update HTTP Server for WebSocket Upgrade
 
@@ -1058,7 +1062,7 @@ Update `src/HttpServer.m` to handle WebSocket upgrade:
     // Hand off to SubscribeRepos handler
     [self.subscribeReposHandler acceptConnection:connection cursor:cursor];
 }
-```
+```objc
 
 ## Step 8: Update Main Entry Point
 
@@ -1110,7 +1114,7 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
-```
+```objc
 
 ## Step 9: Update Record Service to Broadcast Commits
 
@@ -1172,7 +1176,7 @@ Update `src/RecordService.m` to broadcast commits when records change:
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", repo, collection, rkey];
     completion(uri, cidString, nil);
 }
-```
+```objc
 
 ## Step 10: Create CMakeLists.txt
 
@@ -1204,7 +1208,7 @@ add_executable(tutorial-5-firehose
 target_link_libraries(tutorial-5-firehose
     ${FOUNDATION_LIBRARY}
 )
-```
+```objc
 
 ## Step 11: Build and Run
 
@@ -1220,7 +1224,7 @@ make
 
 # Run
 ./tutorial-5-firehose
-```
+```objc
 
 ## Step 12: Test the Firehose
 
@@ -1234,9 +1238,9 @@ brew install websocat
 
 # Connect to firehose
 websocat ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos
-```
+```objc
 
-### Test 2: Create a Record and Watch Event
+## Test 2: Create a Record and Watch Event
 
 In a third terminal:
 
@@ -1254,20 +1258,20 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
       "createdAt": "2026-03-03T12:00:00Z"
     }
   }'
-```
+```objc
 
 You should see the commit event appear in the websocat terminal.
 
-### Test 3: Test Cursor-Based Replay
+## Test 3: Test Cursor-Based Replay
 
 ```bash
 # Connect with cursor
 websocat "ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos?cursor=0"
-```
+```objc
 
 This should replay all events from the beginning.
 
-### Test 4: Test Backpressure
+## Test 4: Test Backpressure
 
 Create a slow consumer test:
 
@@ -1286,7 +1290,7 @@ ws = websocket.WebSocketApp(
 )
 
 ws.run_forever()
-```
+```objc
 
 The server should close the connection after detecting backpressure.
 
@@ -1307,7 +1311,7 @@ Each event has a monotonically increasing sequence number:
 ```objc
 self.sequenceNumber++;
 event.seq = self.sequenceNumber;
-```
+```objc
 
 ### Cursor-Based Replay
 
@@ -1318,7 +1322,7 @@ if (cursor && cursor.length > 0) {
     NSUInteger cursorSeq = [cursor integerValue];
     [self replayEventsAfterCursor:cursorSeq toConnection:connection];
 }
-```
+```objc
 
 ### Backpressure Handling
 
@@ -1329,7 +1333,7 @@ if (connection.pendingSendCount >= self.maxPendingSends ||
     connection.pendingSendBytes >= self.maxPendingBytes) {
     [connection closeWithCode:1008 reason:@"ConsumerTooSlow"];
 }
-```
+```objc
 
 ### CAR Block Encoding
 
@@ -1337,7 +1341,7 @@ Events include CAR-encoded blocks:
 
 ```objc
 event.blocks = carBlocks;  // CAR v1 format with commit + record blocks
-```
+```objc
 
 ## Production Considerations
 
@@ -1352,7 +1356,7 @@ CREATE TABLE firehose_events (
     data BLOB NOT NULL,
     created_at INTEGER NOT NULL
 );
-```
+```objc
 
 ### 2. Connection Limits
 
@@ -1363,7 +1367,7 @@ if (self.connections.count >= self.maxConnections) {
     [connection closeWithCode:1008 reason:@"ServerFull"];
     return;
 }
-```
+```objc
 
 ### 3. Rate Limiting
 
@@ -1373,7 +1377,7 @@ Limit events per connection:
 if (connection.eventsPerSecond > self.maxEventsPerSecond) {
     [connection closeWithCode:1008 reason:@"RateLimitExceeded"];
 }
-```
+```objc
 
 ### 4. Monitoring
 
@@ -1387,11 +1391,11 @@ Track firehose metrics:
         @"events_per_second": @(self.eventsPerSecond)
     };
 }
-```
+```objc
 
 ## Next Steps
 
-- **[Tutorial 6: Production Deployment](./tutorial-6-deployment)** — Deploy to production
+- **[Tutorial 6: Production Deployment](tutorial-6-deployment)** — Deploy to production
 - **[Firehose Overview](../08-sync-firehose/firehose-overview)** — Deep dive into firehose
 - **[Backpressure](../08-sync-firehose/backpressure)** — Advanced backpressure handling
 
@@ -1408,7 +1412,7 @@ The Firehose guarantees that events are delivered in the order they were committ
 ```objc
 self.sequenceNumber++;  // Monotonically increasing
 event.seq = self.sequenceNumber;
-```
+```objc
 
 Each event gets a sequence number that acts as a logical clock. This enables:
 
@@ -1429,7 +1433,7 @@ event.timestamp = [[NSDate date] timeIntervalSince1970];
 // 2. Precision: Two events in same millisecond have ambiguous order
 // 3. Timezone issues: UTC vs local time confusion
 // 4. No gap detection: Missing timestamp doesn't indicate missing event
-```
+```objc
 
 Sequence numbers avoid all these issues by providing a single, authoritative source of ordering.
 
@@ -1439,11 +1443,11 @@ Backpressure is the mechanism that prevents fast producers from overwhelming slo
 
 **The Backpressure Problem:**
 
-```
+```objc
 Server (fast producer):     1000 events/second
 Client (slow consumer):     10 events/second
 Result without backpressure: Server's send buffer grows unbounded → OOM crash
-```
+```objc
 
 **Our Solution:**
 
@@ -1452,7 +1456,7 @@ if (connection.pendingSendCount >= self.maxPendingSends ||
     connection.pendingSendBytes >= self.maxPendingBytes) {
     [connection closeWithCode:1008 reason:@"ConsumerTooSlow"];
 }
-```
+```objc
 
 We monitor two metrics:
 
@@ -1478,7 +1482,7 @@ if (connection.isSlow) {
 // 1. Blocks event queue → all clients suffer
 // 2. Slow client holds server resources hostage
 // 3. No incentive for client to optimize
-```
+```objc
 
 Closing the connection:
 - Protects server resources
@@ -1503,9 +1507,9 @@ while True:
         optimize_event_processing()
         time.sleep(5)  # Brief backoff
         # Reconnect and resume from cursor
-```
+```objc
 
-### Cursor-Based Replay and Reliability
+## Cursor-Based Replay and Reliability
 
 Cursors enable reliable synchronization even in the face of network failures, server restarts, and client crashes.
 
@@ -1522,7 +1526,7 @@ if (cursor && cursor.length > 0) {
     NSUInteger cursorSeq = [cursor integerValue];
     [self replayEventsAfterCursor:cursorSeq toConnection:connection];
 }
-```
+```objc
 
 **Replay Scenarios:**
 
@@ -1557,7 +1561,7 @@ CREATE TABLE firehose_events (
 -- Retention policy: keep events for 7 days
 DELETE FROM firehose_events 
 WHERE created_at < unixepoch('now', '-7 days');
-```
+```objc
 
 This enables:
 - Server restart without losing events
@@ -1571,7 +1575,7 @@ Understanding the complete lifecycle of a WebSocket connection helps debug issue
 
 **Phase 1: HTTP Upgrade (0-100ms)**
 
-```
+```objc
 Client → Server: GET /xrpc/com.atproto.sync.subscribeRepos HTTP/1.1
                  Upgrade: websocket
                  Connection: Upgrade
@@ -1582,7 +1586,7 @@ Server → Client: HTTP/1.1 101 Switching Protocols
                  Upgrade: websocket
                  Connection: Upgrade
                  Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
-```
+```objc
 
 The `Sec-WebSocket-Accept` is computed as:
 ```objc
@@ -1590,20 +1594,20 @@ NSString *magic = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 NSString *combined = [wsKey stringByAppendingString:magic];
 NSData *sha1 = SHA1(combined);
 NSString *acceptKey = Base64Encode(sha1);
-```
+```objc
 
 This prevents accidental WebSocket connections from non-WebSocket clients.
 
 **Phase 2: Active Streaming (minutes to hours)**
 
-```
+```objc
 Server → Client: [Binary Frame: Event 1001]
 Server → Client: [Binary Frame: Event 1002]
 Client → Server: [Ping Frame]
 Server → Client: [Pong Frame]
 Server → Client: [Binary Frame: Event 1003]
 ...
-```
+```objc
 
 During this phase:
 - Server broadcasts events as they occur
@@ -1613,11 +1617,11 @@ During this phase:
 
 **Phase 3: Graceful Shutdown (0-100ms)**
 
-```
+```objc
 Server → Client: [Close Frame: code=1000, reason="Normal closure"]
 Client → Server: [Close Frame: code=1000]
 [TCP FIN/ACK handshake]
-```
+```objc
 
 Close codes indicate why the connection ended:
 - `1000`: Normal closure (client disconnected)
@@ -1651,7 +1655,7 @@ Close codes indicate why the connection ended:
     
     return YES;
 }
-```
+```objc
 
 ### Performance Optimization Strategies
 
@@ -1671,7 +1675,7 @@ NSData *sharedEventData = eventData;  // Immutable, can be shared
 for (WebSocketConnection *conn in self.connections) {
     [conn sendMessage:sharedEventData];  // No copy needed
 }
-```
+```objc
 
 This reduces memory allocations from O(N) to O(1) per event, where N is the number of connections.
 
@@ -1689,7 +1693,7 @@ NSArray *encodedEvents = [self batchEncodeCommits:commits];
 for (NSData *encoded in encodedEvents) {
     [self broadcast:encoded];
 }
-```
+```objc
 
 Batch encoding amortizes CBOR encoding overhead across multiple events.
 
@@ -1720,7 +1724,7 @@ for (WebSocketConnection *conn in self.slowConnections) {
         [conn sendMessage:eventData];
     }
 }
-```
+```objc
 
 This ensures fast clients aren't delayed by slow clients.
 
@@ -1740,7 +1744,7 @@ This ensures fast clients aren't delayed by slow clients.
         [conn sendMessage:eventData];  // Small events not worth compressing
     }
 }
-```
+```objc
 
 Compression can reduce bandwidth by 60-80% for text-heavy events.
 
@@ -1764,7 +1768,7 @@ The Firehose is a public endpoint that must be protected against abuse.
     }
     return YES;
 }
-```
+```objc
 
 **2. Authentication (Optional):**
 
@@ -1786,7 +1790,7 @@ While the Firehose is typically public, you can require authentication:
     // Proceed with upgrade
     [self completeWebSocketUpgrade:clientSocket headers:headers];
 }
-```
+```objc
 
 **3. DoS Protection:**
 
@@ -1810,7 +1814,7 @@ if (message.length > MAX_MESSAGE_SIZE) {
     [connection closeWithCode:1009 reason:@"MessageTooBig"];
     return;
 }
-```
+```objc
 
 ## Troubleshooting
 
@@ -1824,7 +1828,7 @@ curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
   -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
   -H "Sec-WebSocket-Version: 13" \
   http://localhost:2583/xrpc/com.atproto.sync.subscribeRepos
-```
+```objc
 
 **Solution**: Verify your server is correctly parsing the WebSocket headers. Common issues:
 - Missing `Sec-WebSocket-Key` header
@@ -1836,14 +1840,14 @@ curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
 Check server logs for errors during the handshake:
 ```bash
 tail -f pds.log | grep -i websocket
-```
+```objc
 
 Common causes:
 - Socket not properly handed off to WebSocketConnection
 - Exception during connection initialization
 - Firewall or proxy interfering with WebSocket traffic
 
-### Event Streaming Issues
+## Event Streaming Issues
 
 **Problem: No events received after connecting**
 
@@ -1857,7 +1861,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{"repo":"did:plc:test","collection":"app.bsky.feed.post","record":{"text":"test"}}'
-```
+```objc
 
 **Solutions**:
 - Verify the SubscribeRepos handler is properly initialized
@@ -1873,7 +1877,7 @@ This should never happen if you're using a serial event queue. If it does:
 // Verify your event queue is serial, not concurrent
 self.eventQueue = dispatch_queue_create("com.atproto.firehose.events", 
                                        DISPATCH_QUEUE_SERIAL);  // Not CONCURRENT
-```
+```objc
 
 **Problem: Duplicate events received**
 
@@ -1887,9 +1891,9 @@ Check if you're accidentally adding the same connection multiple times:
     }
     [self.connections addObject:connection];
 }
-```
+```objc
 
-### Backpressure and Performance Issues
+## Backpressure and Performance Issues
 
 **Problem: Server closes connection with "ConsumerTooSlow"**
 
@@ -1914,14 +1918,14 @@ Check if slow consumers are accumulating in the send queue:
         }
     }
 }
-```
+```objc
 
 If you see connections with thousands of pending sends, your backpressure limits may be too high:
 
 ```objc
 self.maxPendingSends = 512;        // Lower this
 self.maxPendingBytes = 8 * 1024 * 1024;  // Or this
-```
+```objc
 
 **Problem: High CPU usage during broadcasts**
 
@@ -1934,7 +1938,7 @@ NSTimeInterval elapsed = -[start timeIntervalSinceNow];
 if (elapsed > 0.1) {  // 100ms
     NSLog(@"Warning: Slow event encoding: %.2fms", elapsed * 1000);
 }
-```
+```objc
 
 Common causes:
 - Inefficient CBOR encoding (use optimized library)
@@ -1961,7 +1965,7 @@ Verify the cursor is valid:
     NSLog(@"Replaying %lu events from cursor %lu", 
           (unsigned long)events.count, (unsigned long)cursor);
 }
-```
+```objc
 
 **Problem: Replay is too slow**
 
@@ -1978,7 +1982,7 @@ if (eventsToReplay > MAX_REPLAY_EVENTS) {
                        reason:@"TooFarBehind - use getRepo for full sync"];
     return;
 }
-```
+```objc
 
 ### Network and Protocol Issues
 
@@ -2006,7 +2010,7 @@ Enable WebSocket ping/pong keepalives:
     [frame appendBytes:&byte2 length:1];
     send(self.socket, frame.bytes, frame.length, 0);
 }
-```
+```objc
 
 **Problem: Events corrupted or unparseable**
 
@@ -2018,15 +2022,15 @@ NSLog(@"Sending frame: header=%lu body=%lu total=%lu",
       (unsigned long)headerData.length,
       (unsigned long)cborData.length,
       (unsigned long)(headerData.length + cborData.length));
-```
+```objc
 
 Check client-side parsing:
 ```bash
 # Use websocat with hex dump
 websocat -b ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos | xxd
-```
+```objc
 
-### Testing and Debugging Tools
+## Testing and Debugging Tools
 
 **Monitor active connections**:
 ```objc
@@ -2040,7 +2044,7 @@ websocat -b ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos | xxd
         };
     }
 }
-```
+```objc
 
 **Simulate slow consumer**:
 ```python
@@ -2057,7 +2061,7 @@ ws = websocket.WebSocketApp(
     on_message=on_message
 )
 ws.run_forever()
-```
+```objc
 
 **Test backpressure limits**:
 ```bash
@@ -2068,7 +2072,7 @@ done
 
 # Monitor server behavior
 watch -n 1 'curl -s http://localhost:2583/metrics | grep firehose'
-```
+```objc
 
 ## Summary
 
@@ -2163,7 +2167,7 @@ dispatch_async(self.eventQueue, ^{
         [self broadcastToConnections:event];
     });
 }];
-```
+```objc
 
 **Pitfall 2: Not Handling Connection Cleanup**
 
@@ -2177,7 +2181,7 @@ connection.closeHandler = ^(NSInteger code, NSString *reason) {
         [self.connections removeObject:connection];
     }
 };
-```
+```objc
 
 **Pitfall 3: Unbounded Replay**
 
@@ -2190,13 +2194,13 @@ if (self.sequenceNumber - cursor > MAX_REPLAY_EVENTS) {
     [connection closeWithCode:1008 reason:@"TooFarBehind"];
     return;
 }
-```
+```objc
 
 ### Next Steps
 
 Now that you have a working Firehose, you're ready to deploy your PDS to production:
 
-- **[Tutorial 6: Production Deployment](./tutorial-6-deployment)** — Deploy your PDS with Docker, nginx, and proper configuration
+- **[Tutorial 6: Production Deployment](tutorial-6-deployment)** — Deploy your PDS with Docker, nginx, and proper configuration
 
 ### Further Reading
 

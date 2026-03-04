@@ -1,3 +1,7 @@
+---
+title: Content Quality Validation Report
+---
+
 # Content Quality Validation Report
 
 Generated: 2026-03-04T00:40:40.698Z

@@ -1,8 +1,12 @@
+---
+title: JWT Tokens
+---
+
 # JWT Tokens
 
 ## Overview
 
-![JWT Token Flow](../12-diagrams/jwt-token-flow.svg)
+<!-- Image placeholder: JWT Token Flow -->
 
 *Complete JWT token lifecycle including minting, validation, and refresh operations*
 
@@ -431,10 +435,10 @@ Claims validation ensures the token is still valid and meets requirements:
 ## See Also
 
 **Basic Topics:**
-- [OAuth 2.0 with DPoP](./oauth2-dpop) — OAuth implementation
-- [Key Rotation](./key-rotation) — Key management
+- [OAuth 2.0 with DPoP](oauth2-dpop) — OAuth implementation
+- [Key Rotation](key-rotation) — Key management
 - [Authentication Helpers](../04-network-layer/auth-helpers) — Auth verification
 
 **Advanced Topics:**
-- [Secrets Management](./secrets-management) — Key storage and rotation
-- [Security Best Practices](./security-best-practices) — Defense in depth
+- [Secrets Management](secrets-management) — Key storage and rotation
+- [Security Best Practices](security-best-practices) — Defense in depth

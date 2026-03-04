@@ -1,3 +1,7 @@
+---
+title: Documentation Update Checklist
+---
+
 # Documentation Update Checklist
 
 This checklist ensures documentation stays synchronized with code changes and maintains accuracy across the PDS Objective-C Implementation Guide.
@@ -79,7 +83,7 @@ Check these sections based on your changes:
 | Configuration | `11-reference/config-reference.md` |
 | CLI | `11-reference/cli-reference.md` |
 
-### Step 2: Update Documentation Files
+## Step 2: Update Documentation Files
 
 For each affected file:
 
@@ -126,7 +130,7 @@ Manual verification:
 - [ ] Check for consistency with related sections
 - [ ] Ensure terminology matches glossary
 
-### Step 4: Update Related Documentation
+## Step 4: Update Related Documentation
 
 Check if these need updates:
 
@@ -162,7 +166,7 @@ When submitting a PR that affects documentation:
    - Updated `docs/04-network-layer/method-registry.md` for new registration pattern
    - Added example to `docs/10-tutorials/tutorial-2-accounts.md`
    - Updated `docs/12-diagrams/system-architecture.svg`
-   ```
+   ```text
 
 2. **Include documentation checklist:**
    - [ ] Identified all affected documentation sections
@@ -228,7 +232,7 @@ When cutting a release:
 1. **Tag documentation with version:**
    ```bash
    git tag -a docs-v1.0.0 -m "Documentation for v1.0.0"
-   ```
+   ```text
 
 2. **Update version references:**
    - [ ] Update version numbers in examples
@@ -256,7 +260,7 @@ python3 scripts/test-doc-links.py
 # Fix by updating paths or removing dead links
 ```
 
-### Outdated Code Examples
+## Outdated Code Examples
 
 ```bash
 # Find examples that reference changed files
@@ -265,7 +269,7 @@ grep -r "Sources/OldFileName" docs/
 # Update to new file names and verify examples still work
 ```
 
-### Inconsistent Terminology
+## Inconsistent Terminology
 
 ```bash
 # Find inconsistent terms
@@ -290,7 +294,7 @@ For critical fixes that need immediate documentation updates:
 1. **Create hotfix branch:**
    ```bash
    git checkout -b docs-hotfix-issue-123
-   ```
+   ```text
 
 2. **Make minimal necessary changes**
    - Focus only on the critical issue

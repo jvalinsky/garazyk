@@ -1,3 +1,7 @@
+---
+title: CAR & CBOR Tests
+---
+
 # CAR & CBOR Tests
 
 Tests for CAR file format and DAG-CBOR encoding.
@@ -14,6 +18,7 @@ Tests for CAR file format and DAG-CBOR encoding.
 **CAR v1 format structure:**
 
 ```
+
 [varint header-length][header][blocks...]
 header = { "roots": [<cid>...], "version": 1 }
 block = [varint cid-length][cid][bytes]

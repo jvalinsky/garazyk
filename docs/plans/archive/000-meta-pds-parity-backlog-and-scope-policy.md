@@ -1,3 +1,7 @@
+---
+title: "Meta: PDS parity backlog + scope policy"
+---
+
 # Meta: PDS parity backlog + scope policy
 
 ## Snapshot (as of 2026-02-13)

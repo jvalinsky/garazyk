@@ -1,3 +1,7 @@
+---
+title: CBOR Serialization
+---
+
 # CBOR Serialization
 
 ## Overview
@@ -9,6 +13,7 @@ CBOR (Concise Binary Object Representation) is used for serializing ATProto reco
 CBOR is a binary format that encodes JSON-like data structures efficiently:
 
 ```
+
 JSON: {"name": "Alice", "age": 30}
 CBOR: a2 64 6e 61 6d 65 65 41 6c 69 63 65 63 61 67 65 18 1e
       (binary representation)
@@ -260,6 +265,6 @@ NSLog(@"Record text: %@", text);
 
 ## See Also
 
-- [CAR Format](./car-format)
-- [CID and Hashing](./cid-and-hashing)
-- [Repository Basics](./repository-basics)
+- [CAR Format](car-format)
+- [CID and Hashing](cid-and-hashing)
+- [Repository Basics](repository-basics)

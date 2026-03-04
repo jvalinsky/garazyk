@@ -1,10 +1,14 @@
+---
+title: Performance Monitoring
+---
+
 # Performance Monitoring
 
 This guide covers performance monitoring, profiling, bottleneck detection, and optimization strategies for September PDS.
 
 ## Overview
 
-![Performance Monitoring Flow](../12-diagrams/performance-monitoring-flow.svg)
+<!-- Image placeholder: Performance Monitoring Flow -->
 
 Performance monitoring in September PDS involves:
 
@@ -41,7 +45,7 @@ instruments -t "Time Profiler" ./build/bin/kaszlak serve
 - Tight loops without optimization
 - Excessive object allocation
 
-#### Allocations
+## Allocations
 
 Track memory usage and leaks:
 
@@ -55,7 +59,7 @@ instruments -t "Allocations" ./build/bin/kaszlak serve
 - Excessive temporary objects
 - Retain cycles
 
-#### System Trace
+### System Trace
 
 Analyze system-level performance:
 
@@ -84,7 +88,7 @@ perf report
 perf script | stackcollapse-perf.pl | flamegraph.pl > flamegraph.svg
 ```
 
-### Xcode Profiler
+## Xcode Profiler
 
 For quick profiling during development:
 
@@ -324,7 +328,7 @@ EXPLAIN QUERY PLAN SELECT * FROM accounts WHERE handle = 'alice.example.com';
 .schema accounts
 ```
 
-### Index Optimization
+## Index Optimization
 
 Add indexes for frequently queried columns:
 
@@ -651,7 +655,7 @@ ab -n 1000 -c 10 -H "Authorization: Bearer <token>" \
    http://localhost:2583/xrpc/com.atproto.repo.listRecords
 ```
 
-### Using wrk
+## Using wrk
 
 More advanced load testing:
 
@@ -680,7 +684,7 @@ request = function()
 end
 ```
 
-### Monitoring During Load Tests
+## Monitoring During Load Tests
 
 Watch metrics during load tests:
 

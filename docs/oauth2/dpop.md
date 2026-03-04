@@ -1,3 +1,7 @@
+---
+title: DPoP (Demonstrating Proof-of-Possession) Implementation
+---
+
 # DPoP (Demonstrating Proof-of-Possession) Implementation
 
 DPoP (RFC 9449) binds OAuth 2.0 access tokens to a public/private key pair, preventing token theft and misuse. This document describes the DPoP implementation in ATProtoPDS.
@@ -70,6 +74,7 @@ The `verifyProof:method:url:nonce:requireNonce:outThumbprint:error:` method impl
 ### Step-by-Step Verification
 
 ```
+
 1. Parse JWT into 3 parts (header.payload.signature)
    └─ Fail if not exactly 3 dot-separated parts
 
@@ -149,6 +154,7 @@ DPoP nonces prevent replay attacks across sessions and provide freshness guarant
 ### Server-to-Client Challenge
 
 ```
+
 Client                                Server
   │                                     │
   │  POST /oauth/token                  │
@@ -421,10 +427,10 @@ BOOL verified = SecKeyVerifySignature(publicKey,
 
 ## Related Documentation
 
-- [Token Management](./token-management) - JWT tokens and DPoP binding via cnf.jkt
-- [Security](./security) - Security considerations for DPoP implementation
-- [Authorization Flow](./authorization-flow) - DPoP in token exchange
-- [Overview](./README) - OAuth2 implementation overview
+- [Token Management](token-management) - JWT tokens and DPoP binding via cnf.jkt
+- [Security](security) - Security considerations for DPoP implementation
+- [Authorization Flow](authorization-flow) - DPoP in token exchange
+- [Overview](README) - OAuth2 implementation overview
 
 ## References
 

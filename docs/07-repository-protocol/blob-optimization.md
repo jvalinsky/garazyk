@@ -1,3 +1,7 @@
+---
+title: Blob Optimization
+---
+
 # Blob Optimization
 
 ## Overview
@@ -7,6 +11,7 @@ This document covers performance optimization techniques for blob handling in th
 ## Optimization Strategies
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │              Blob Optimization Techniques                   │
 ├─────────────────────────────────────────────────────────────┤
@@ -507,6 +512,7 @@ The `PDSDatabasePool` implements an LRU (Least Recently Used) cache for actor da
 ### Pool Architecture
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │                  PDSDatabasePool                            │
 ├─────────────────────────────────────────────────────────────┤
@@ -611,7 +617,6 @@ When the cache is full, the least recently used entry is evicted:
     }
 }
 ```
-
 
 ### Background Eviction
 
@@ -731,6 +736,7 @@ DID resolution can be expensive (network requests to PLC directory, DNS lookups 
 ### Cache Architecture
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │                DID Document Cache                           │
 ├─────────────────────────────────────────────────────────────┤
@@ -840,6 +846,7 @@ The cache automatically handles expiration:
 
 **Without caching:**
 ```
+
 Request 1: Resolve did:plc:abc123 → PLC network request (200ms)
 Request 2: Resolve did:plc:abc123 → PLC network request (200ms)
 Request 3: Resolve did:plc:abc123 → PLC network request (200ms)
@@ -848,6 +855,7 @@ Total: 600ms
 
 **With caching:**
 ```
+
 Request 1: Resolve did:plc:abc123 → PLC network request (200ms) + cache
 Request 2: Resolve did:plc:abc123 → Cache hit (1ms)
 Request 3: Resolve did:plc:abc123 → Cache hit (1ms)
@@ -1260,8 +1268,8 @@ These optimizations work together to provide:
 
 ## See Also
 
-- [Blob Lifecycle](./blob-lifecycle) — Upload, download, and deletion workflows
-- [Blob Storage](./blob-storage) — Storage architecture and providers
+- [Blob Lifecycle](blob-lifecycle) — Upload, download, and deletion workflows
+- [Blob Storage](blob-storage) — Storage architecture and providers
 - [Blob Service](../03-application-layer/blob-service) — Service layer API
 - [SQLite Architecture](../05-database-layer/sqlite-architecture) — Database design patterns
 - [WAL Mode](../05-database-layer/wal-mode) — Write-Ahead Logging benefits

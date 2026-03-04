@@ -1,3 +1,7 @@
+---
+title: Security Analysis Report - ATProto PDS
+---
+
 # Security Analysis Report - ATProto PDS
 
 **Date:** January 7, 2025 (Updated: January 14, 2026)
@@ -171,7 +175,7 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 ## Related Documentation
 
 - [Security Documentation Index](README) - Overview of all security docs
-- [Security Plan](SECURITY_PLAN) - Comprehensive security testing strategy
+- [Security Plan](# Security plan) - Comprehensive security testing strategy
 - [Security Testing Plan](SECURITY_TESTING_PLAN) - Detailed fuzzing and exploit testing
 - [Security Test Results](security_test_results) - Current test results
 - [Reports](reports/README) - Historical security analysis reports

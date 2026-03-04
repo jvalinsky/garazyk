@@ -1,3 +1,7 @@
+---
+title: OAuth 2.0 & OIDC Tests
+---
+
 # OAuth 2.0 & OIDC Tests
 
 Tests for OAuth 2.0 authorization flows, PKCE, DPoP, and session management.
@@ -161,6 +165,7 @@ XCTAssertEqualObjects(challenge, expectedChallenge);
 
 The challenge is computed as:
 ```
+
 challenge = BASE64URL(SHA256(verifier))
 ```
 

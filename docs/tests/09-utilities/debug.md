@@ -1,3 +1,7 @@
+---
+title: Debug & Exploration Tests
+---
+
 # Debug & Exploration Tests
 
 Tests for debug handlers, MST viewer, and logging utilities.

@@ -1,3 +1,7 @@
+---
+title: SQLite Architecture
+---
+
 # SQLite Architecture
 
 ## Overview
@@ -533,6 +537,6 @@ sqlite3_bind_int(stmt, 2, (int)limit);
 
 ## Next Steps
 
-- **[Service Databases](./service-databases)** — Shared database details
-- **[Actor Databases](./actor-databases)** — Per-user database details
-- **[Migrations](./migrations)** — Schema versioning
+- **[Service Databases](service-databases)** — Shared database details
+- **[Actor Databases](actor-databases)** — Per-user database details
+- **[Migrations](migrations)** — Schema versioning

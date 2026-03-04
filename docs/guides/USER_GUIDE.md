@@ -1,3 +1,7 @@
+---
+title: ATProto PDS Explorer User Guide
+---
+
 # ATProto PDS Explorer User Guide
 
 This guide provides procedures for using the web-based ATProto PDS Explorer to browse and analyze AT Protocol data.
@@ -19,7 +23,7 @@ The ATProto PDS Explorer provides a web interface for exploring AT Protocol data
 1. Start the server:
    ```bash
    ./build/bin/kaszlak serve
-   ```
+   ```text
 
 2. Open browser: Visit `http://localhost:2583/explore/`
 
@@ -165,7 +169,7 @@ curl "http://localhost:2583/explore/api/account-details?did=did:plc:..."
 curl "http://localhost:2583/explore/api/account-records?did=did:plc:...&collection=app.bsky.feed.post"
 ```
 
-#### OpenAPI Specification
+## OpenAPI Specification
 - Interactive docs: `http://localhost:2583/explore/api/docs`
 - YAML download: `http://localhost:2583/explore/api/openapi.yaml`
 - JSON format: `http://localhost:2583/explore/api/openapi.yaml?format=json`
@@ -354,7 +358,7 @@ curl "http://localhost:2583/explore/api/record?uri=at://did:plc:.../app.bsky.fee
 curl "http://localhost:2583/explore/api/account-records?did=did:plc:...&collection=app.bsky.feed.like"
 ```
 
-### Monitoring
+## Monitoring
 
 ```bash
 # Server health
@@ -368,8 +372,8 @@ For API development details, see the [API Documentation](http://localhost:2583/e
 
 ## Related Documentation
 
-- **[Setup Guide](SETUP_GUIDE)** - Installation and server startup
-- **[Developer Guide](DEVELOPER_GUIDE)** - API development procedures
+- **[Setup Guide](# Setup guide)** - Installation and server startup
+- **[Developer Guide](./development/DEVELOPER_GUIDE)** - API development procedures
 - **[XRPC Protocol Reference](XRPC_PROTOCOL_REFERENCE)** - Protocol method reference
 - **[Architecture Diagrams](../architecture/ARCHITECTURE_DIAGRAMS)** - System visual overview
 - **[Data Models](../architecture/atproto_data_models)** - DID, CID, and record structures

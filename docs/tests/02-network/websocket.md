@@ -1,3 +1,7 @@
+---
+title: WebSocket & Firehose Tests
+---
+
 # WebSocket & Firehose Tests
 
 Tests for WebSocket server, firehose event streaming, and subscription handling.
@@ -118,6 +122,7 @@ HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
 ## Firehose Event Flow
 
 ```
+
 Client                          Server
   |                               |
   |--- WebSocket Connect -------->|

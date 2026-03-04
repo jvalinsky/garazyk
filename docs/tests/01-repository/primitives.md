@@ -1,3 +1,7 @@
+---
+title: Core Primitives Tests
+---
+
 # Core Primitives Tests
 
 Tests for fundamental data types: CIDs, TIDs, DIDs, handles, and validation.

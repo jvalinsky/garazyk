@@ -1,3 +1,7 @@
+---
+title: Actor Store Tests
+---
+
 # Actor Store Tests
 
 Tests for per-user SQLite databases storing accounts, records, blocks, and blobs.

@@ -1,3 +1,7 @@
+---
+title: Characterization Tests
+---
+
 # Characterization Tests
 
 Tests for reference implementation compliance.

@@ -1,3 +1,7 @@
+---
+title: Alerting
+---
+
 # Alerting
 
 This guide covers alerting strategies for September PDS, including alert rules, thresholds, notification channels, and best practices for production monitoring.
@@ -316,7 +320,7 @@ inhibit_rules:
     equal: ['alertname', 'instance']
 ```
 
-### PagerDuty Integration
+## PagerDuty Integration
 
 For critical alerts requiring immediate response:
 
@@ -411,7 +415,7 @@ rate(pds_http_responses_total[30d])
 avg_over_time(pds_blob_storage_bytes[30d])
 ```
 
-### Threshold Guidelines
+## Threshold Guidelines
 
 | Metric | Warning | Critical | Notes |
 |--------|---------|----------|-------|
@@ -487,7 +491,7 @@ docker compose logs pds
 - Implement health check endpoints
 - Review logs for warnings before failures
 
-### Example Runbook: PDSHighErrorRate
+## Example Runbook: PDSHighErrorRate
 
 **Description**: More than 5% of requests are returning 5xx errors.
 
@@ -544,7 +548,7 @@ amtool silence add \
   alertname="PDSHighLatency"
 ```
 
-### Flapping Alerts
+## Flapping Alerts
 
 For alerts that fire and resolve repeatedly:
 
@@ -598,7 +602,7 @@ curl -X POST http://localhost:9093/api/v1/alerts \
   }]'
 ```
 
-### Alert Drills
+## Alert Drills
 
 Regularly test alert response:
 

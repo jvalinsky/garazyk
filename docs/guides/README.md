@@ -1,3 +1,7 @@
+---
+title: Developer Guides
+---
+
 # Developer Guides
 
 Comprehensive guides for developing, deploying, and using the ATProto PDS server.
@@ -6,8 +10,8 @@ Comprehensive guides for developing, deploying, and using the ATProto PDS server
 
 | File | Description | Audience |
 |------|-------------|----------|
-| [SETUP_GUIDE.md](SETUP_GUIDE) | Installation, build configuration, and server startup | New developers, operators |
-| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE) | API extension procedures, project structure, and contribution guidelines | Contributors, API developers |
+| [SETUP_GUIDE.md](# Setup guide) | Installation, build configuration, and server startup | New developers, operators |
+| [DEVELOPER_GUIDE.md](./development/DEVELOPER_GUIDE) | API extension procedures, project structure, and contribution guidelines | Contributors, API developers |
 | [USER_GUIDE.md](USER_GUIDE) | Web explorer interface and CLI commands for PDS data exploration | End users, operators |
 | [DEPLOYMENT.md](DEPLOYMENT) | Production deployment with reverse proxy, TLS, and environment configuration | DevOps, system administrators |
 | [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) | Visual Mermaid diagrams for build, test, and debugging workflows | All developers |
@@ -19,12 +23,12 @@ Comprehensive guides for developing, deploying, and using the ATProto PDS server
 ## Quick Navigation
 
 ### Getting Started
-1. [Setup and Installation](SETUP_GUIDE) - Build and run the server
+1. [Setup and Installation](# Setup guide) - Build and run the server
 2. [User Guide](USER_GUIDE) - Explore data via web UI and CLI
 3. [Deployment](DEPLOYMENT) - Production configuration
 
 ### Development
-1. [Developer Guide](DEVELOPER_GUIDE) - Add new endpoints and features
+1. [Developer Guide](./development/DEVELOPER_GUIDE) - Add new endpoints and features
 2. [Objective-C Tips](objective_c_tips) - Code patterns and memory safety
 3. [Script Development](SCRIPT_DEVELOPMENT) - Shell script standards
 
@@ -35,8 +39,8 @@ Comprehensive guides for developing, deploying, and using the ATProto PDS server
 
 ## Related Documentation
 
-- **Architecture**: [../architecture/](../architecture/) - System design and diagrams
-- **OAuth2**: [../oauth2/](../oauth2/) - OAuth 2.0 and DPoP implementation
-- **Security**: [../security/](../security/) - Security policies and audit guides
+- **Architecture**: <!-- Link placeholder: ../architecture/ --> - System design and diagrams
+- **OAuth2**: <!-- Link placeholder: ../oauth2/ --> - OAuth 2.0 and DPoP implementation
+- **Security**: <!-- Link placeholder: ../security/ --> - Security policies and audit guides
 - **Testing**: [../TESTING.md](../TESTING) - Test suite documentation
-- **Skills**: [../skills/](../skills/) - Development skills and audit checklists
+- **Skills**: <!-- Link placeholder: ../skills/ --> - Development skills and audit checklists

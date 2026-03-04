@@ -1,3 +1,7 @@
+---
+title: Data Integrity Verification
+---
+
 # Data Integrity Verification
 
 ## Overview
@@ -245,7 +249,6 @@ Verify blob references are valid:
     return YES;
 }
 ```
-
 
 ### Account Consistency
 
@@ -530,7 +533,6 @@ Update query planner statistics:
     return YES;
 }
 ```
-
 
 ## Monitoring and Health Checks
 
@@ -902,9 +904,9 @@ Notify administrators of critical integrity issues:
 
 ## See Also
 
-- [Migration Strategy](./migration-strategy) — Versioning and compatibility
-- [Migration Rollback](./migration-rollback) — Rollback procedures
-- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migration strategies
-- [WAL Mode](./wal-mode) — Write-Ahead Logging benefits
-- [SQLite Architecture](./sqlite-architecture) — Database design patterns
+- [Migration Strategy](migration-strategy) — Versioning and compatibility
+- [Migration Rollback](migration-rollback) — Rollback procedures
+- [Zero-Downtime Migrations](zero-downtime-migrations) — Online migration strategies
+- [WAL Mode](wal-mode) — Write-Ahead Logging benefits
+- [SQLite Architecture](sqlite-architecture) — Database design patterns
 

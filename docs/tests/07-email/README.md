@@ -1,3 +1,7 @@
+---
+title: Email Tests
+---
+
 # Email Tests
 
 Tests for email providers, HTTP clients, and secrets management.

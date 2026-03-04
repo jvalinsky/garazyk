@@ -1,3 +1,7 @@
+---
+title: "Tutorial 6: Production Deployment"
+---
+
 # Tutorial 6: Production Deployment
 
 ## Overview
@@ -69,7 +73,7 @@ Before diving into deployment, let's understand the production architecture. Thi
 
 ### Production Architecture Diagram
 
-```
+```objc
 Internet (Untrusted)
     │
     ▼
@@ -96,7 +100,7 @@ Internet (Untrusted)
     │ • Persistent storage
     │ • Atomic writes (WAL mode)
     │ • Backup snapshots
-```
+```objc
 
 ### Why This Architecture?
 
@@ -189,7 +193,7 @@ sudo apt-get install -y sqlite3
 
 # Log out and back in for Docker group to take effect
 # Or run: newgrp docker
-```
+```objc
 
 **Understanding the dependencies:**
 
@@ -200,7 +204,7 @@ sudo apt-get install -y sqlite3
 
 **Security note:** The Docker installation script adds your user to the `docker` group, which grants root-equivalent privileges. This is necessary for running Docker commands without `sudo`, but be aware of the security implications. Never run untrusted containers.
 
-### 1.2 Create Directory Structure
+## 1.2 Create Directory Structure
 
 ```bash
 # Create deployment directory
@@ -214,7 +218,7 @@ sudo mkdir -p logs          # Application logs (if not using Docker logs)
 
 # Set ownership to your user
 sudo chown -R $USER:$USER /opt/atprotopds
-```
+```objc
 
 **Why `/opt/atprotopds`?**
 
@@ -242,7 +246,7 @@ cd src
 
 # Initialize submodules (required for secp256k1)
 git submodule update --init --recursive
-```
+```objc
 
 **Why submodules?**
 
@@ -250,7 +254,7 @@ The PDS depends on `libsecp256k1` for cryptographic operations (specifically, si
 
 **Submodule gotcha:** If you later `git pull` to update the PDS, remember to run `git submodule update` again. Submodules don't automatically update with the parent repository.
 
-### 2.2 Build the Image
+## 2.2 Build the Image
 
 The multi-stage Dockerfile builds the GNUstep runtime and PDS in a reproducible environment:
 
@@ -260,7 +264,7 @@ docker build -f docker/Dockerfile.gnustep -t nspds:local .
 
 # This takes 15-30 minutes on first build
 # Subsequent builds use Docker's layer cache and complete in 2-5 minutes
-```
+```objc
 
 **What happens during the build?**
 
@@ -291,7 +295,7 @@ The final image doesn't need compilers, headers, or build tools—only the runti
 ```bash
 docker run --rm nspds:local --version
 # Expected output: kaszlak version X.Y.Z
-```
+```objc
 
 This runs the `kaszlak` binary inside a temporary container (`--rm` removes it after exit). If you see the version number, the build succeeded.
 
@@ -390,7 +394,7 @@ JSON is human-readable, widely supported, and easy to validate. The PDS validate
     "skip_plc_operations": false
   }
 }
-```
+```objc
 
 ### Understanding the Configuration
 
@@ -405,7 +409,7 @@ Let's break down each section and understand why these values matter:
   "issuer": "https://pds.yourdomain.com",  // Your PDS's DID
   "available_user_domains": ["yourdomain.com"]  // Allowed handle domains
 }
-```
+```objc
 
 - **`host: "0.0.0.0"`**: Inside the Docker container, this means "listen on all network interfaces." The container's network is isolated, so this is safe. The Docker Compose port binding (`127.0.0.1:2583:2583`) restricts external access.
 - **`issuer`**: This is your PDS's identity in the AT Protocol network. It must match your domain exactly. Clients use this to verify they're talking to the right server.
@@ -416,7 +420,7 @@ Let's break down each section and understand why these values matter:
 "appViewURL": "https://api.bsky.app",
 "appViewDID": "did:web:api.bsky.app",
 "localAppViewEnabled": false
-```
+```objc
 
 The App View aggregates data from multiple PDSs to provide feeds, search, and discovery. Most PDSs use Bluesky's public App View. Setting `localAppViewEnabled: false` means your PDS won't try to run its own App View (which requires significant resources).
 
@@ -426,7 +430,7 @@ The App View aggregates data from multiple PDSs to provide feeds, search, and di
   "service_pool_max_size": 20,    // Connections for shared service DB
   "user_pool_max_size": 200       // Connections for user repositories
 }
-```
+```objc
 
 SQLite connection pools improve concurrency. The service pool handles authentication and metadata, while the user pool handles repository operations. These limits prevent resource exhaustion under load.
 
@@ -437,7 +441,7 @@ SQLite connection pools improve concurrency. The service pool handles authentica
   "refresh_token_ttl_seconds": 2592000,  // 30 days
   "invite_code_required": true           // CRITICAL: Prevents open registration
 }
-```
+```objc
 
 - **Access tokens** are short-lived (30 minutes) to limit the damage if stolen. Clients must refresh them regularly.
 - **Refresh tokens** are long-lived (30 days) so users don't have to log in constantly.
@@ -450,7 +454,7 @@ SQLite connection pools improve concurrency. The service pool handles authentica
   "retry_count": 5,
   "retry_delay_ms": 2000
 }
-```
+```objc
 
 The PLC (Public Ledger of Credentials) directory stores DID documents. **NEVER use `"mock"` in production**—it's only for testing. The real PLC directory is required for interoperability with other AT Protocol services.
 
@@ -467,7 +471,7 @@ The PLC (Public Ledger of Credentials) directory stores DID documents. **NEVER u
   "blob_limit": 1000,
   "blob_window": 3600
 }
-```
+```objc
 
 Rate limiting prevents abuse and DoS attacks. These limits are generous for legitimate use but prevent a single client from overwhelming your server. The PDS tracks limits by both DID (authenticated users) and IP (unauthenticated requests).
 
@@ -476,7 +480,7 @@ Rate limiting prevents abuse and DoS attacks. These limits are generous for legi
 "debug": {
   "skip_plc_operations": false  // CRITICAL: Must be false in production
 }
-```
+```objc
 
 Debug flags are for development only. **Never enable debug flags in production**—they bypass security checks and can expose sensitive data.
 
@@ -536,7 +540,7 @@ services:
 volumes:
   pds_data:
     name: pds_pds_data
-```
+```objc
 
 ### Understanding Docker Compose Configuration
 
@@ -544,7 +548,7 @@ volumes:
 ```yaml
 ports:
   - "127.0.0.1:2583:2583"
-```
+```objc
 
 This binds the container's port 2583 to `127.0.0.1:2583` on the host—**localhost only**. External traffic cannot reach this port directly; it must go through nginx. This is a critical security layer: even if nginx is misconfigured, the PDS isn't directly exposed to the internet.
 
@@ -553,7 +557,7 @@ This binds the container's port 2583 to `127.0.0.1:2583` on the host—**localho
 volumes:
   - pds_data:/var/lib/atprotopds                          # Persistent data
   - ./config.json:/var/lib/atprotopds/config.json:ro      # Read-only config
-```
+```objc
 
 - **`pds_data` volume**: Docker-managed persistent storage. Survives container deletion, updates, and restarts. This is where your SQLite databases and user blobs live.
 - **Config mount with `:ro`**: The `:ro` flag makes the config read-only inside the container. This prevents the PDS from accidentally modifying its own configuration.
@@ -562,14 +566,14 @@ volumes:
 ```yaml
 environment:
   - PDS_TRUST_PROXY_HEADERS=1  # CRITICAL for rate limiting
-```
+```objc
 
 **`PDS_TRUST_PROXY_HEADERS=1`** is essential when running behind a reverse proxy. Without it, the PDS sees all requests coming from `127.0.0.1` (nginx's IP), making IP-based rate limiting useless. With this flag, the PDS trusts the `X-Forwarded-For` header that nginx adds, allowing it to rate limit by actual client IP.
 
 **Restart Policy:**
 ```yaml
 restart: unless-stopped
-```
+```objc
 
 The container automatically restarts if it crashes, unless you explicitly stop it with `docker compose stop`. This ensures your PDS stays running even after server reboots or unexpected failures.
 
@@ -580,7 +584,7 @@ logging:
   options:
     max-size: "10m"
     max-file: "3"
-```
+```objc
 
 Without log rotation, Docker logs grow unbounded and can fill your disk. This configuration keeps the last 3 log files, each up to 10 MB, for a maximum of 30 MB of logs. Adjust these values based on your monitoring needs and disk space.
 
@@ -604,9 +608,9 @@ sudo certbot certonly --nginx -d pds.yourdomain.com
 # Certificate will be saved to:
 # /etc/letsencrypt/live/pds.yourdomain.com/fullchain.pem
 # /etc/letsencrypt/live/pds.yourdomain.com/privkey.pem
-```
+```objc
 
-### 4.2 Configure nginx
+## 4.2 Configure nginx
 
 Create `/etc/nginx/sites-available/pds`:
 
@@ -694,7 +698,7 @@ server {
         proxy_send_timeout 3600s;
     }
 }
-```
+```objc
 
 Create `/etc/nginx/proxy_params_pds`:
 
@@ -715,9 +719,9 @@ proxy_request_buffering off;
 proxy_connect_timeout 60s;
 proxy_send_timeout 60s;
 proxy_read_timeout 60s;
-```
+```objc
 
-### 4.3 Enable and Test nginx
+## 4.3 Enable and Test nginx
 
 ```bash
 # Enable the site
@@ -731,7 +735,7 @@ sudo systemctl reload nginx
 
 # Enable nginx on boot
 sudo systemctl enable nginx
-```
+```objc
 
 ---
 
@@ -745,9 +749,9 @@ docker volume create pds_pds_data
 
 # Verify
 docker volume inspect pds_pds_data
-```
+```objc
 
-### 5.2 Start the Container
+## 5.2 Start the Container
 
 ```bash
 cd /opt/atprotopds/src/docker/pds
@@ -760,7 +764,7 @@ docker compose up
 #   [INFO] Starting ATProto PDS on 0.0.0.0:2583
 #   [INFO] Issuer: https://pds.yourdomain.com
 #   [INFO] HTTP server listening on port 2583
-```
+```objc
 
 **Verify the server:**
 
@@ -777,9 +781,9 @@ curl https://pds.yourdomain.com/xrpc/com.atproto.server.describeServer
   "availableUserDomains": ["yourdomain.com"],
   "inviteCodeRequired": true
 }
-```
+```objc
 
-### 5.3 Start in Background
+## 5.3 Start in Background
 
 ```bash
 # Stop foreground process (Ctrl+C)
@@ -792,7 +796,7 @@ docker compose logs -f pds
 
 # Check status
 docker compose ps
-```
+```objc
 
 ---
 
@@ -805,9 +809,9 @@ docker compose ps
 docker exec nspds kaszlak invite create
 
 # Output: inv-abc123xyz456
-```
+```objc
 
-### 6.2 Create Account via API
+## 6.2 Create Account via API
 
 ```bash
 curl -X POST https://pds.yourdomain.com/xrpc/com.atproto.server.createAccount \
@@ -820,9 +824,9 @@ curl -X POST https://pds.yourdomain.com/xrpc/com.atproto.server.createAccount \
   }'
 
 # Response includes DID and access tokens
-```
+```objc
 
-### 6.3 Verify Account
+## 6.3 Verify Account
 
 ```bash
 # Create session
@@ -834,7 +838,7 @@ curl -X POST https://pds.yourdomain.com/xrpc/com.atproto.server.createSession \
   }'
 
 # Save the accessJwt from response for authenticated requests
-```
+```objc
 
 ---
 
@@ -852,9 +856,9 @@ sudo chmod +x /usr/local/bin/backup_pds.sh
 # Create backup directory
 sudo mkdir -p /var/backups/atprotopds
 sudo chown $USER:$USER /var/backups/atprotopds
-```
+```objc
 
-### 7.2 Test Manual Backup
+## 7.2 Test Manual Backup
 
 ```bash
 # Run manual backup
@@ -880,9 +884,9 @@ sudo chown $USER:$USER /var/backups/atprotopds
 #   === Backup Complete ===
 #   Archive: /var/backups/atprotopds/pds-backup-20260303_120000.tar.gz
 #   Status: All databases backed up successfully (2 DBs)
-```
+```objc
 
-### 7.3 Schedule Automated Backups
+## 7.3 Schedule Automated Backups
 
 ```bash
 # Edit crontab
@@ -894,9 +898,9 @@ crontab -e
   --backup-dir /var/backups/atprotopds \
   --retention 14 \
   >> /var/log/atprotopds/backup.log 2>&1
-```
+```objc
 
-### 7.4 Restore from Backup
+## 7.4 Restore from Backup
 
 ```bash
 # Stop the PDS
@@ -913,7 +917,7 @@ sudo rsync -av 20260303_120000/ /var/lib/docker/volumes/pds_pds_data/_data/
 # Restart PDS
 cd /opt/atprotopds/src/docker/pds
 docker compose up -d
-```
+```objc
 
 ---
 
@@ -931,9 +935,9 @@ docker compose logs --tail=100 pds
 # nginx logs
 sudo tail -f /var/log/nginx/pds_access.log
 sudo tail -f /var/log/nginx/pds_error.log
-```
+```objc
 
-### 8.2 Monitor Resource Usage
+## 8.2 Monitor Resource Usage
 
 ```bash
 # Container stats
@@ -945,9 +949,9 @@ du -sh /var/lib/docker/volumes/pds_pds_data/_data
 
 # Database sizes
 docker exec nspds sh -c 'du -sh /var/lib/atprotopds/data/*'
-```
+```objc
 
-### 8.3 Health Checks
+## 8.3 Health Checks
 
 Create a monitoring script `/usr/local/bin/check_pds_health.sh`:
 
@@ -970,7 +974,7 @@ fi
 
 echo "OK: PDS is healthy"
 exit 0
-```
+```objc
 
 Schedule health checks:
 
@@ -978,9 +982,9 @@ Schedule health checks:
 # Add to crontab (every 5 minutes)
 */5 * * * * /usr/local/bin/check_pds_health.sh || \
   echo "PDS health check failed at $(date)" >> /var/log/atprotopds/health.log
-```
+```objc
 
-### 8.4 Update the PDS
+## 8.4 Update the PDS
 
 ```bash
 # Pull latest code
@@ -1000,7 +1004,7 @@ docker compose up -d
 
 # Verify
 docker compose logs -f pds
-```
+```objc
 
 ---
 
@@ -1024,9 +1028,9 @@ sudo ufw enable
 
 # Verify
 sudo ufw status
-```
+```objc
 
-### 9.2 Fail2ban for Rate Limiting
+## 9.2 Fail2ban for Rate Limiting
 
 ```bash
 # Install fail2ban
@@ -1053,9 +1057,9 @@ EOF
 
 # Restart fail2ban
 sudo systemctl restart fail2ban
-```
+```objc
 
-### 9.3 Automatic Security Updates
+## 9.3 Automatic Security Updates
 
 ```bash
 # Install unattended-upgrades
@@ -1063,7 +1067,7 @@ sudo apt-get install -y unattended-upgrades
 
 # Enable automatic updates
 sudo dpkg-reconfigure -plow unattended-upgrades
-```
+```objc
 
 ---
 
@@ -1198,7 +1202,7 @@ docker compose ps
 
 # Inspect the container
 docker inspect nspds
-```
+```objc
 
 **Common causes and solutions**:
 
@@ -1210,7 +1214,7 @@ sudo lsof -i :2583
 
 # If another process is using it, stop it or change the PDS port
 sudo systemctl stop <service-name>
-```
+```objc
 
 **2. Config file syntax error**
 
@@ -1221,7 +1225,7 @@ docker run --rm -v $(pwd)/config.json:/config.json nspds:local \
 
 # If jq reports errors, fix the JSON syntax
 # Common issues: trailing commas, missing quotes, unescaped characters
-```
+```objc
 
 **3. Volume permissions**
 
@@ -1235,13 +1239,13 @@ docker compose down
 docker volume rm pds_pds_data
 docker volume create pds_pds_data
 docker compose up -d
-```
+```objc
 
 **4. Missing environment variables**
 
 Check that all required environment variables are set in `docker-compose.yml`. The PDS requires `PDS_ISSUER`, `PDS_DATA_DIR`, and `PDS_LEXICON_PATH` at minimum.
 
-### Issue: 502 Bad Gateway from nginx
+## Issue: 502 Bad Gateway from nginx
 
 **Symptoms**: Accessing `https://pds.yourdomain.com` returns "502 Bad Gateway" error.
 
@@ -1259,7 +1263,7 @@ curl http://localhost:2583/xrpc/com.atproto.server.describeServer
 # Check nginx error log
 sudo tail -f /var/log/nginx/pds_error.log
 # Look for "Connection refused" or "upstream timed out"
-```
+```objc
 
 **Common causes and solutions**:
 
@@ -1273,7 +1277,7 @@ docker compose up -d
 # Wait for it to be ready
 sleep 5
 curl http://localhost:2583/xrpc/com.atproto.server.describeServer
-```
+```objc
 
 **2. nginx can't reach PDS**
 
@@ -1284,7 +1288,7 @@ docker compose ps
 
 # Test from nginx's perspective
 sudo -u www-data curl http://localhost:2583/xrpc/com.atproto.server.describeServer
-```
+```objc
 
 **3. nginx configuration error**
 
@@ -1294,9 +1298,9 @@ sudo nginx -t
 
 # If errors, review /etc/nginx/sites-available/pds
 # Common issues: typos in upstream definition, missing semicolons
-```
+```objc
 
-### Issue: Rate Limiting Not Working
+## Issue: Rate Limiting Not Working
 
 **Symptoms**: Clients can make unlimited requests without being rate limited.
 
@@ -1313,7 +1317,7 @@ curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:2583/xrpc/com.atproto.server
 # Verify rate limit config
 docker exec nspds cat /var/lib/atprotopds/config.json | jq '.rate_limit'
 # Should show enabled: true
-```
+```objc
 
 **Common causes and solutions**:
 
@@ -1323,12 +1327,12 @@ Add to `docker-compose.yml`:
 ```yaml
 environment:
   - PDS_TRUST_PROXY_HEADERS=1
-```
+```objc
 
 Then restart:
 ```bash
 docker compose down && docker compose up -d
-```
+```objc
 
 **2. nginx not sending proxy headers**
 
@@ -1336,7 +1340,7 @@ Verify `/etc/nginx/proxy_params_pds` includes:
 ```nginx
 proxy_set_header X-Real-IP $remote_addr;
 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-```
+```objc
 
 **3. Rate limiting disabled in config**
 
@@ -1345,9 +1349,9 @@ Check `config.json`:
 "rate_limit": {
   "enabled": true  // Must be true
 }
-```
+```objc
 
-### Issue: Database Corruption
+## Issue: Database Corruption
 
 **Symptoms**: PDS logs show "database disk image is malformed" or similar SQLite errors.
 
@@ -1359,7 +1363,7 @@ docker exec nspds sqlite3 /var/lib/atprotopds/data/service/service.db "PRAGMA in
 # Should output: ok
 
 # If corrupted, you'll see error messages
-```
+```objc
 
 **Solution**:
 
@@ -1386,7 +1390,7 @@ docker compose up -d
 
 # Verify
 docker compose logs -f pds
-```
+```objc
 
 **Prevention**: SQLite corruption is usually caused by:
 - Sudden power loss (use UPS)
@@ -1394,7 +1398,7 @@ docker compose logs -f pds
 - Running out of disk space (monitor disk usage)
 - Improper shutdown (always use `docker compose down`, not `kill`)
 
-### Issue: TLS Certificate Renewal Fails
+## Issue: TLS Certificate Renewal Fails
 
 **Symptoms**: certbot renewal fails, or certificate expires.
 
@@ -1406,7 +1410,7 @@ sudo certbot certificates
 
 # Test renewal
 sudo certbot renew --dry-run
-```
+```objc
 
 **Common causes and solutions**:
 
@@ -1416,7 +1420,7 @@ Let's Encrypt needs port 80 for HTTP-01 challenge. Verify:
 ```bash
 sudo ufw status
 # Should show: 80/tcp ALLOW
-```
+```objc
 
 **2. DNS not pointing to server**
 
@@ -1424,7 +1428,7 @@ sudo ufw status
 # Verify DNS
 dig +short pds.yourdomain.com
 # Should return your server's IP
-```
+```objc
 
 **3. nginx not serving ACME challenge**
 
@@ -1433,9 +1437,9 @@ Verify `/etc/nginx/sites-available/pds` includes:
 location /.well-known/acme-challenge/ {
     root /var/www/html;
 }
-```
+```objc
 
-### Issue: High Memory Usage
+## Issue: High Memory Usage
 
 **Symptoms**: Server becomes slow, OOM killer terminates processes.
 
@@ -1450,7 +1454,7 @@ free -h
 
 # Check for memory leaks
 docker exec nspds ps aux
-```
+```objc
 
 **Solutions**:
 
@@ -1466,7 +1470,7 @@ services:
           memory: 2G
         reservations:
           memory: 1G
-```
+```objc
 
 **2. Reduce connection pool sizes** in `config.json`:
 
@@ -1475,7 +1479,7 @@ services:
   "service_pool_max_size": 10,  // Reduced from 20
   "user_pool_max_size": 100     // Reduced from 200
 }
-```
+```objc
 
 **3. Add swap space** (if not already present):
 
@@ -1486,9 +1490,9 @@ sudo mkswap /swapfile
 sudo swapon /swapfile
 # Make permanent:
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-```
+```objc
 
-### Issue: Disk Space Full
+## Issue: Disk Space Full
 
 **Symptoms**: PDS stops working, database writes fail, backups fail.
 
@@ -1503,7 +1507,7 @@ du -sh /var/lib/docker/volumes/pds_pds_data/_data/*
 
 # Check Docker disk usage
 docker system df
-```
+```objc
 
 **Solutions**:
 
@@ -1512,14 +1516,14 @@ docker system df
 ```bash
 docker system prune -a
 # WARNING: This removes all unused images, not just PDS
-```
+```objc
 
 **2. Clean up old backups**:
 
 ```bash
 # Keep only last 7 days
 find /var/backups/atprotopds -name "pds-backup-*.tar.gz" -mtime +7 -delete
-```
+```objc
 
 **3. Implement blob quotas** (if users are uploading large files):
 
@@ -1529,7 +1533,7 @@ Add to `config.json`:
   "max_size_bytes": 5242880,  // 5 MB per blob
   "max_total_bytes_per_account": 52428800  // 50 MB per user
 }
-```
+```objc
 
 **4. Move Docker data to larger disk**:
 
@@ -1548,9 +1552,9 @@ sudo nano /etc/docker/daemon.json
 
 # Start Docker
 sudo systemctl start docker
-```
+```objc
 
-### Getting Help
+## Getting Help
 
 If you're stuck:
 

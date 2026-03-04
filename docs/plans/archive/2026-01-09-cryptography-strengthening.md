@@ -1,3 +1,7 @@
+---
+title: Cryptography Implementation Strengthening Plan
+---
+
 # Cryptography Implementation Strengthening Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -220,7 +224,7 @@ Include configuration option to disable pinning in development.
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Security Docs](../../security/README) - Security-related documentation</content>
 <parameter name="filePath">docs/plans/2026-01-09-cryptography-strengthening.md

@@ -1,3 +1,7 @@
+---
+title: Security Validation Strategy for Objective-C PDS Implementation
+---
+
 # Security Validation Strategy for Objective-C PDS Implementation
 
 ## Executive Summary
@@ -7,6 +11,7 @@ Security validation strategy for the ATProto PDS Objective-C implementation usin
 ## Security Analysis Architecture
 
 ```
+
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Security Orchestrator                          │
 ├─────────────────┬─────────────────┬─────────────────────────────┤
@@ -46,7 +51,7 @@ scan-build --use-cc=clang --use-c++=clang++ \
 - `bugprone-misplaced-pointer-arithmetic-in-alloc` - Allocation errors
 - `bugprone-suspicious-memset-usage` - Zero-initialization bugs
 
-#### 1.2 C/Objective-C Security Checks
+## 1.2 C/Objective-C Security Checks
 ```bash
 # Run targeted clang-tidy checks
 clang-tidy ATProtoPDS/Sources/**/*.m \
@@ -64,7 +69,7 @@ clang-tidy ATProtoPDS/Sources/**/*.m \
 | `bugprone-signed-char-misuse` | Signed char overflow | HIGH |
 | `bugprone-sizeof-expression` | sizeof on pointers | MEDIUM |
 
-#### 1.3 Objective-C Specific Checks
+## 1.3 Objective-C Specific Checks
 ```bash
 clang-tidy ATProtoPDS/Sources/**/*.m \
   -checks='-*,objc-*' \
@@ -80,7 +85,7 @@ clang-tidy ATProtoPDS/Sources/**/*.m \
 | `objc-nsdate-formatter` | DateFormatter thread safety |
 | `objc-super-self` | super vs self in dealloc |
 
-#### 1.4 Security/Cryptography Checks
+### 1.4 Security/Cryptography Checks
 ```bash
 clang-tidy ATProtoPDS/Sources/**/*.m \
   -checks='-*,security-*,crypto-*' \
@@ -162,7 +167,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 }
 ```
 
-#### 2.2 CBOR/CAR Parsing Fuzzing
+## 2.2 CBOR/CAR Parsing Fuzzing
 ```c
 // fuzz_cbor.m - Fuzz CBOR decoding
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
@@ -178,7 +183,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 }
 ```
 
-#### 2.3 HTTP Request Fuzzing
+### 2.3 HTTP Request Fuzzing
 ```c
 // fuzz_http.m - Fuzz HTTP parsing
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
@@ -211,8 +216,9 @@ fuzz: $(FUZZ_TARGETS)
 timeout 24h ./fuzz_xrpc corpus/ -max_len=65536 -jobs=8 || echo "Fuzzing complete or timeout"
 ```
 
-### Corpus Management
+## Corpus Management
 ```
+
 fuzzing/
 ├── corpus_xrpc/       # XRPC method inputs
 ├── corpus_cbor/       # CAR/CBOR blobs  
@@ -241,7 +247,7 @@ ASAN_OPTIONS=detect_leaks=1:halt_on_error=0 \
   ./atprotopds_asan
 ```
 
-#### 3.2 UndefinedBehaviorSanitizer (UBSAN)
+## 3.2 UndefinedBehaviorSanitizer (UBSAN)
 Detects undefined behavior including integer overflow and null pointer dereference.
 
 ```bash
@@ -256,7 +262,7 @@ UBSAN_OPTIONS=print_summary=1:halt_on_error=0 \
   ./atprotopds_ubsan
 ```
 
-#### 3.3 ThreadSanitizer (TSAN)
+## 3.3 ThreadSanitizer (TSAN)
 Detects data races in concurrent code paths critical for PDS operations.
 
 ```bash
@@ -267,7 +273,7 @@ clang -fsanitize=thread -g -O2 \
   -o atprotopds_tsan
 ```
 
-#### 3.4 Combined Sanitizers
+## 3.4 Combined Sanitizers
 ```bash
 # Combined sanitizer build for maximum coverage
 clang -fsanitize=address,undefined,thread \
@@ -278,7 +284,7 @@ clang -fsanitize=address,undefined,thread \
   -o atprotopds_full
 ```
 
-### Runtime Configuration
+## Runtime Configuration
 
 ```bash
 # Sanitizer environment configuration

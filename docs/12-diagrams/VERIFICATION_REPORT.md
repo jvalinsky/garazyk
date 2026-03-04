@@ -1,3 +1,7 @@
+---
+title: Diagram Verification Report
+---
+
 # Diagram Verification Report
 
 ## Task: 12.3.4 Verify diagrams are clear and accurate
