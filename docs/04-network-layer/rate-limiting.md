@@ -2,6 +2,10 @@
 
 ## Overview
 
+![Rate Limiting Algorithm](../12-diagrams/rate-limiting-algorithm.svg)
+
+*Sliding window rate limiting with token bucket algorithm for smooth request throttling*
+
 Rate limiting prevents abuse by restricting the number of requests a client can make within a time window. The PDS implements sliding window rate limiting with SQLite persistence, supporting multiple limit types:
 
 - **DID-based API limits** — Per-user authenticated request limits

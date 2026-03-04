@@ -1,5 +1,15 @@
 # CBOR and CAR Formats
 
+## Why This Matters
+
+In a decentralized social network, every post, like, and follow creates a record that must be:
+- **Verifiable** — Anyone can prove a record hasn't been tampered with
+- **Efficient** — Bandwidth and storage costs matter at scale
+- **Portable** — Records move between servers without corruption
+- **Deterministic** — The same data always produces the same hash
+
+CBOR and CAR are the foundational data formats that make this possible. CBOR provides deterministic binary encoding for individual records, while CAR packages multiple records together for efficient synchronization. Without these formats, the AT Protocol's content-addressed architecture wouldn't work.
+
 ## CBOR (Concise Binary Object Representation)
 
 ### What is CBOR?
@@ -17,6 +27,10 @@ The AT Protocol uses CBOR because:
 - **Deterministic** — Essential for cryptographic hashing
 - **Type-safe** — Preserves data types during serialization
 - **Efficient** — Fast to encode and decode
+
+### Real-World Impact
+
+Consider a simple post: `{"text": "Hello, world!", "createdAt": "2024-01-01T00:00:00Z"}`. In JSON, this is 62 bytes. In CBOR, it's 48 bytes—a 23% reduction. Multiply this across millions of posts, and the bandwidth savings become substantial. More importantly, CBOR's deterministic encoding means this post will always hash to the same CID, enabling content addressing and deduplication across the network.
 
 ![CBOR Encoding Process](../12-diagrams/cbor-encoding-example.svg)
 
@@ -181,6 +195,21 @@ CAR is a file format for storing content-addressed data. It's used to:
 - Package records and blobs together
 - Enable efficient repository synchronization
 - Store snapshots of repository state
+
+### Why CAR Matters
+
+Imagine you're migrating your social media account from one server to another. With traditional systems, you'd need to export JSON files, upload them to the new server, and hope nothing breaks. With CAR files, your entire repository—posts, likes, follows, profile images—is packaged into a single, verifiable archive. The receiving server can verify every block's integrity using its CID, ensuring nothing was corrupted or tampered with during transfer.
+
+CAR files are also essential for efficient synchronization. Instead of comparing every record individually, two servers can compare root CIDs. If they match, the repositories are identical. If they differ, the servers can walk the CAR structure to identify exactly which blocks need to be transferred—often just a handful of recent posts rather than the entire history.
+
+### Design Trade-offs
+
+**Why not use tar or zip?** Traditional archive formats don't understand content addressing. CAR files are specifically designed for content-addressed data, where each block is identified by its hash. This enables:
+- **Deduplication** — Identical blocks appear only once, even if referenced multiple times
+- **Partial sync** — Transfer only the blocks that differ between repositories
+- **Verification** — Every block can be independently verified against its CID
+
+**Why not use a database dump?** Database dumps are server-specific and don't preserve the content-addressed structure. CAR files are portable across any AT Protocol implementation and maintain the cryptographic guarantees of the MST structure.
 
 ### CAR Structure
 

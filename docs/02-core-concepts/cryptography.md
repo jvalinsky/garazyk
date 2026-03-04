@@ -1,5 +1,29 @@
 # Cryptography in AT Protocol
 
+## Why This Matters
+
+In a decentralized social network, there's no central authority to trust. Every server operator, every relay, every client could potentially be malicious. Cryptography is what makes trust unnecessary:
+
+- **Authentication** — Prove you are who you claim to be without revealing your password
+- **Authorization** — Ensure users can only modify their own data, even on untrusted servers
+- **Integrity** — Detect any tampering with data, no matter how subtle
+- **Non-repudiation** — Users can't deny creating content they signed
+
+Without strong cryptography, decentralization would be impossible. Anyone could impersonate anyone else, modify others' posts, or forge entire social graphs.
+
+## Real-World Threat Model
+
+Consider these scenarios that cryptography prevents:
+
+**Scenario 1: Malicious PDS Operator**
+Alice's PDS operator decides to modify her posts to make her look bad. Without cryptography, this would be trivial. With cryptography, every post is signed with Alice's private key. Any modification breaks the signature, and other servers reject the tampered post.
+
+**Scenario 2: Token Theft**
+An attacker intercepts Alice's access token and tries to use it from their own device. Without DPoP, the token would work. With DPoP, the token is cryptographically bound to Alice's device's key pair. The attacker's requests fail signature verification.
+
+**Scenario 3: Repository Corruption**
+During migration, some of Alice's posts get corrupted. Without content addressing, this might go unnoticed. With CID-based verification, the receiving server detects the corruption immediately because the hash doesn't match.
+
 ## Overview
 
 The AT Protocol uses cryptography for:
@@ -23,6 +47,14 @@ The AT Protocol uses cryptography for:
 - Sign JWT tokens
 - Sign DPoP proofs
 
+**Why P-256?** The AT Protocol chose P-256 (also known as secp256r1) for several reasons:
+- **Widely supported** — Available in all major cryptographic libraries and hardware security modules
+- **NIST standardized** — Well-studied and trusted by security community
+- **Efficient** — Fast signature generation and verification on modern hardware
+- **Compact** — 256-bit keys provide strong security with reasonable size
+
+**Trade-off:** Some prefer secp256k1 (used by Bitcoin) for its simpler mathematical properties, but P-256's broader hardware support and standardization make it more practical for a protocol targeting mainstream adoption.
+
 ### SHA-256
 
 **Purpose:** Cryptographic hashing
@@ -34,6 +66,14 @@ The AT Protocol uses cryptography for:
 - Hash passwords
 - Verify data integrity
 
+**Why SHA-256?** Despite newer hash functions like SHA-3 and BLAKE2 being available, SHA-256 remains the standard choice because:
+- **Universal support** — Every platform has optimized SHA-256 implementations
+- **Hardware acceleration** — Modern CPUs have SHA-256 instructions
+- **Proven security** — No practical attacks after 20+ years of analysis
+- **Standardization** — Required by many compliance frameworks
+
+**Performance:** On modern hardware, SHA-256 can hash gigabytes per second, making it suitable for real-time content addressing.
+
 ### HMAC-SHA256
 
 **Purpose:** Message authentication codes
@@ -41,6 +81,8 @@ The AT Protocol uses cryptography for:
 **Usage:**
 - Verify JWT signatures
 - Authenticate API requests
+
+**Why HMAC?** HMAC provides authenticated encryption without requiring public-key cryptography. It's faster than ECDSA for symmetric scenarios and provides the same security guarantees when both parties share a secret.
 
 ## JWT (JSON Web Tokens)
 
@@ -168,6 +210,14 @@ eyJpc3MiOiJkaWQ6d2ViOnBkcy5leGFtcGxlLmNvbSIsInN1YiI6ImRpZDpwbGM6dXNlcjEyMyIsImV4
 
 DPoP is a mechanism to bind access tokens to a specific client's key pair. It prevents token theft by ensuring tokens can only be used by the client that created them.
 
+### Why DPoP Matters
+
+Traditional OAuth 2.0 bearer tokens are like cash—whoever holds the token can use it. If an attacker intercepts your access token (through network sniffing, malware, or a compromised server), they can impersonate you until the token expires.
+
+DPoP solves this by making tokens more like credit cards: they're only useful if you can prove you're the legitimate owner. Each API request includes a DPoP proof—a JWT signed with your device's private key. Even if an attacker steals your access token, they can't generate valid DPoP proofs without your private key.
+
+**Real-world impact:** In a decentralized network where you might interact with dozens of servers, DPoP ensures that a compromised relay or malicious PDS operator can't steal your credentials and impersonate you across the network.
+
 ### DPoP Proof Structure
 
 A DPoP proof is a JWT that contains:
@@ -254,6 +304,28 @@ Key rotation is important for:
 - **Security** — Limits damage if key is compromised
 - **Compliance** — Many standards require regular rotation
 - **Flexibility** — Allows changing signing algorithms
+
+### When to Rotate Keys
+
+**Scheduled rotation:** Rotate keys annually as a best practice, even if no compromise is suspected. This limits the window of exposure if a key was compromised without your knowledge.
+
+**Emergency rotation:** Rotate immediately if:
+- You suspect your private key was exposed
+- A device with stored keys was lost or stolen
+- A security vulnerability was discovered in your key storage
+- You're migrating to new hardware or security modules
+
+**Algorithm migration:** Rotate when upgrading to newer cryptographic algorithms (e.g., moving from RSA to ECDSA, or from P-256 to a post-quantum algorithm in the future).
+
+### Design Considerations
+
+The AT Protocol's key rotation design balances security with availability:
+
+**Grace period:** Old keys remain valid for verification after rotation. This prevents breaking existing signatures and allows time for the new key to propagate across the network.
+
+**Rotation keys vs. verification keys:** The DID document separates rotation keys (which can update the DID) from verification keys (which sign content). This allows you to rotate verification keys without needing to update rotation keys, reducing the risk of losing control of your DID.
+
+**Audit trail:** Every key rotation is recorded in the PLC audit log, providing a complete history of your identity's cryptographic evolution.
 
 ### Key Rotation Flow
 

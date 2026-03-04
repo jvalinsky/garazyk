@@ -2,6 +2,10 @@
 
 ## Overview
 
+![JWT Token Flow](../12-diagrams/jwt-token-flow.svg)
+
+*Complete JWT token lifecycle including minting, validation, and refresh operations*
+
 JWT (JSON Web Tokens) are used for:
 - **Access tokens** — Short-lived tokens for API access
 - **Refresh tokens** — Long-lived tokens for obtaining new access tokens
