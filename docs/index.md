@@ -128,24 +128,7 @@ This implementation targets both macOS and Linux/GNUstep, leveraging Objective-C
 - [Test Coverage Goals](11-reference/test-coverage-goals) — Coverage targets
 
 ### Diagrams
-- <!-- Link placeholder: System Architecture -->
-- <!-- Link placeholder: Request Flow -->
-- <!-- Link placeholder: Database Schema -->
-- <!-- Link placeholder: JWT Token Flow -->
-- <!-- Link placeholder: OAuth 2.0 with DPoP Flow -->
-- <!-- Link placeholder: Commit Broadcasting Flow -->
-- <!-- Link placeholder: WebSocket Upgrade Flow -->
-- <!-- Link placeholder: Rate Limiting Algorithm -->
-- <!-- Link placeholder: Secrets Management Flow -->
-- <!-- Link placeholder: PLC Directory Architecture -->
-- <!-- Link placeholder: DID Resolution Flow -->
-- <!-- Link placeholder: PLC Failover Mechanism -->
-- <!-- Link placeholder: Event Ordering Guarantee -->
-- <!-- Link placeholder: Reconnection Flow -->
-- <!-- Link placeholder: Event Replay Mechanism -->
-- <!-- Link placeholder: Test Organization Structure -->
-- <!-- Link placeholder: Property-Based Testing Flow -->
-- <!-- Link placeholder: E2E Test Architecture -->
+- *Diagrams for System Architecture, Auth Flow, and Database Schema are currently being generated. Check back shortly!*
 
 ## Learning Path
 

@@ -917,9 +917,13 @@ PDS_LOG_DEBUG(@"Request data: %@", sanitized);
 
 ### macOS: os_log Integration
 
-On macOS, logs are also sent to the unified logging system:
+On macOS, logs are also sent to the unified logging system. The capability is explicitly guarded to ensure it only compiles on Apple platforms:
 
 ```objc
+#if defined(__APPLE__) && __has_include(<os/log.h>)
+#define PDS_HAS_OS_LOG 1
+#endif
+
 #if PDS_HAS_OS_LOG
 - (void)logToOSLogWithLevel:(PDSLogLevel)level
                   formatted:(NSString *)formatted
