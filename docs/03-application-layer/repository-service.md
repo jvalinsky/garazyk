@@ -4,6 +4,34 @@
 
 The `PDSRepositoryService` manages ATProto repositories including Merkle Search Tree (MST) operations, commit processing, and repository synchronization. It provides the core data structure for storing and verifying records.
 
+### Why This Service Matters
+
+The Repository Service is the foundation of ATProto's data integrity model. It ensures:
+
+- **Cryptographic Verification**: Every repository state has a root CID that cryptographically commits to all records
+- **Efficient Synchronization**: MST structure enables efficient diff computation and incremental sync
+- **Tamper Evidence**: Any modification to records changes the root CID, making tampering detectable
+- **Decentralization**: Repositories can be exported, migrated, and verified independently
+
+Understanding the Repository Service is essential for implementing sync, backup, migration, and any operation that works with repository-level state rather than individual records.
+
+## When to Use This Service
+
+### Use Repository Service When:
+
+- **Exporting repositories**: Creating CAR files for backup, migration, or sync
+- **Synchronizing data**: Implementing incremental sync between PDS instances
+- **Computing repository state**: Getting the current root CID and commit information
+- **Implementing sync endpoints**: Backing `com.atproto.sync.*` XRPC methods
+- **Verifying repository integrity**: Checking that MST structure is valid
+
+### Don't Use Repository Service For:
+
+- **Individual record operations**: Use `PDSRecordService` for CRUD on specific records
+- **Blob management**: Use `PDSBlobService` for binary data
+- **Account operations**: Use `PDSAccountService` for authentication and account lifecycle
+- **Real-time updates**: Use Firehose for streaming changes to subscribers
+
 ## Responsibilities
 
 - MST loading and persistence
@@ -635,27 +663,246 @@ Common error scenarios:
 | Conflict | Concurrent modification | Return 409 |
 | Corrupted | Missing blocks or invalid structure | Return 500 |
 
+## Common Pitfalls and Troubleshooting
+
+### Pitfall 1: Memory Exhaustion on Large Repository Export
+
+**Problem**: Exporting large repositories causes out-of-memory errors.
+
+**Why it happens**: Loading entire repository into memory before serialization.
+
+**Solution**: Use streaming export with chunk producer:
+```objc
+// Bad: Loads entire repo into memory
+NSData *carData = [repositoryService getRepoContents:did since:nil error:&error];
+
+// Good: Streams repo in chunks
+PDSRepoChunkProducer producer = [repositoryService repoContentsChunkProducer:did
+                                                                       since:nil
+                                                                       error:&error];
+if (producer) {
+    while (YES) {
+        NSError *chunkError = nil;
+        NSData *chunk = producer(&chunkError);
+        if (!chunk) break;
+        
+        // Send chunk immediately without buffering
+        [outputStream write:chunk.bytes maxLength:chunk.length];
+    }
+}
+```
+
+### Pitfall 2: Incremental Sync Not Working
+
+**Problem**: `sinceRev` parameter doesn't reduce export size as expected.
+
+**Why it happens**: Misunderstanding what `sinceRev` does - it provides changes since a revision, not a minimal diff.
+
+**Solution**: Understand incremental sync semantics:
+```objc
+// Get baseline commit
+NSDictionary *lastSync = [self getLastSyncedCommit:did];
+NSString *sinceRev = lastSync[@"rev"];
+
+// Export changes since last sync
+NSData *deltaCAR = [repositoryService getRepoContents:did
+                                                since:sinceRev
+                                                error:&error];
+
+// Note: deltaCAR contains:
+// - New commit
+// - Changed MST nodes
+// - New/modified records
+// It does NOT contain unchanged records, but may contain unchanged MST nodes
+```
+
+### Pitfall 3: Commit Signature Verification Failures
+
+**Problem**: Repository updates fail with "invalid signature" errors.
+
+**Why it happens**: Commit signatures must be verified against the DID's signing key.
+
+**Solution**: Properly verify commits before applying:
+```objc
+- (BOOL)verifyCommit:(NSData *)commitData forDid:(NSString *)did error:(NSError **)error {
+    // 1. Parse commit structure
+    NSDictionary *commit = [self parseCommit:commitData];
+    NSData *signature = commit[@"sig"];
+    NSData *signedData = commit[@"data"];
+    
+    // 2. Resolve DID document
+    DIDDocument *didDoc = [self resolveDIDDocument:did error:error];
+    if (!didDoc) return NO;
+    
+    // 3. Get signing key
+    NSData *signingKey = didDoc.signingKey;
+    
+    // 4. Verify signature
+    BOOL valid = [Secp256k1 verifySignature:signature
+                                        data:signedData
+                                   publicKey:signingKey];
+    
+    if (!valid && error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidSignature
+                                     message:@"Commit signature verification failed"];
+    }
+    
+    return valid;
+}
+```
+
+### Pitfall 4: MST Corruption After Concurrent Updates
+
+**Problem**: Repository MST becomes corrupted after concurrent record updates.
+
+**Why it happens**: MST updates are not atomic across multiple operations.
+
+**Solution**: Use transactions and proper locking:
+```objc
+- (BOOL)updateMultipleRecords:(NSArray *)updates forDid:(NSString *)did error:(NSError **)error {
+    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    if (!store) return NO;
+    
+    __block BOOL success = NO;
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        // Load MST once
+        MST *mst = [self loadMSTForDid:did error:blockError];
+        if (!mst) return NO;
+        
+        // Apply all updates to MST
+        for (NSDictionary *update in updates) {
+            NSString *key = update[@"key"];
+            CID *cid = update[@"cid"];
+            [mst put:key valueCID:cid subKey:nil];
+        }
+        
+        // Compute new root
+        CID *newRoot = mst.rootCID;
+        
+        // Persist atomically
+        success = [transactor updateRepoRoot:did
+                                     rootCid:[newRoot bytes]
+                                         rev:[TID tid].stringValue
+                                       error:blockError];
+        return success;
+    } error:error];
+    
+    return success;
+}
+```
+
+### Troubleshooting Guide
+
+#### Issue: "Repository not found" for existing account
+
+**Symptoms**: Repository operations fail even though account exists.
+
+**Possible causes**:
+1. Repository not initialized
+2. Database corruption
+3. Actor store not created
+
+**Diagnosis**:
+```objc
+// Check if account exists
+PDSDatabaseAccount *account = [accountRepository accountForDid:did error:nil];
+PDS_LOG_DEBUG(@"Account exists: %@", account ? @"YES" : @"NO");
+
+// Check if actor store exists
+PDSActorStore *store = [_databasePool storeForDid:did error:nil];
+PDS_LOG_DEBUG(@"Actor store exists: %@", store ? @"YES" : @"NO");
+
+// Check if repo root exists
+NSData *rootCid = [store getRepoRootForDid:did error:nil];
+PDS_LOG_DEBUG(@"Repo root exists: %@", rootCid ? @"YES" : @"NO");
+
+// Initialize if missing
+if (!rootCid) {
+    [repositoryService initializeRepoForDid:did error:&error];
+}
+```
+
+#### Issue: CAR export produces invalid files
+
+**Symptoms**: Exported CAR files cannot be parsed or imported.
+
+**Possible causes**:
+1. Incorrect CAR header
+2. Missing blocks
+3. Invalid CID references
+
+**Diagnosis**:
+```objc
+// Validate CAR structure
+- (BOOL)validateCARFile:(NSString *)path error:(NSError **)error {
+    NSData *carData = [NSData dataWithContentsOfFile:path];
+    
+    // Parse CAR header
+    CARReader *reader = [[CARReader alloc] initWithData:carData];
+    CID *rootCID = [reader readHeader:error];
+    if (!rootCID) {
+        PDS_LOG_ERROR(@"Invalid CAR header");
+        return NO;
+    }
+    
+    // Verify all blocks
+    NSMutableSet *seenCIDs = [NSMutableSet set];
+    while (YES) {
+        CARBlock *block = [reader readNextBlock:error];
+        if (!block) break;
+        
+        [seenCIDs addObject:block.cid.stringValue];
+        
+        // Verify CID matches content
+        CID *computedCID = [CID cidForData:block.data];
+        if (![computedCID isEqual:block.cid]) {
+            PDS_LOG_ERROR(@"CID mismatch: expected=%@, computed=%@",
+                         block.cid.stringValue, computedCID.stringValue);
+            return NO;
+        }
+    }
+    
+    PDS_LOG_INFO(@"CAR file valid: %lu blocks", seenCIDs.count);
+    return YES;
+}
+```
+
 ## Best Practices
 
 1. **MST Operations**
-   - Load MST once per request
-   - Batch updates when possible
-   - Use transactions for consistency
+   - Load MST once per request to avoid redundant database queries
+   - Batch updates when possible to minimize MST recomputation
+   - Use transactions for consistency across multiple MST updates
+   - Cache MST root CID to avoid recomputation
+   - Monitor MST depth and rebalance if needed
 
 2. **Repository Export**
-   - Use chunk producer for large repos
-   - Implement streaming for memory efficiency
-   - Support incremental sync with sinceRev
+   - Use chunk producer for large repos to avoid memory exhaustion
+   - Implement streaming for memory efficiency (don't buffer entire export)
+   - Support incremental sync with sinceRev for bandwidth efficiency
+   - Compress CAR data for network transfer
+   - Validate exported CAR files before transmission
 
 3. **Commit Processing**
-   - Verify signatures before applying
-   - Check commit ordering
-   - Maintain commit history
+   - Verify signatures before applying commits
+   - Check commit ordering (parent CID references)
+   - Maintain commit history for audit and rollback
+   - Use atomic transactions for commit application
+   - Log all commit operations for debugging
 
 4. **Synchronization**
-   - Use sinceRev for incremental sync
-   - Implement retry logic for failed commits
-   - Handle concurrent modifications
+   - Use sinceRev for incremental sync to reduce bandwidth
+   - Implement retry logic for failed commits with exponential backoff
+   - Handle concurrent modifications with optimistic locking
+   - Verify repository integrity after sync
+   - Monitor sync lag and alert on delays
+
+5. **Performance**
+   - Cache frequently accessed MST nodes
+   - Use database indexes on CID and record keys
+   - Implement connection pooling for database access
+   - Monitor MST operation latency
+   - Profile and optimize hot paths
 
 ## Common Patterns
 
@@ -715,7 +962,18 @@ if (deltaCAR) {
 
 ## See Also
 
-- [Record Service](./record-service)
-- [Services Overview](./services-overview)
-- [MST Trees](../02-core-concepts/mst-trees)
-- [CAR Format](../07-repository-protocol/car-format)
+- [Record Service](./record-service) - Individual record operations
+- [Services Overview](./services-overview) - How Repository Service fits into the service layer
+- [MST Trees](../02-core-concepts/mst-trees) - Understanding Merkle Search Trees
+- [CAR Format](../07-repository-protocol/car-format) - Content Addressable aRchive format
+- [Repository Basics](../07-repository-protocol/repository-basics) - ATProto repository fundamentals
+- [Firehose Overview](../08-sync-firehose/firehose-overview) - Real-time repository updates
+- [Blob Service](./blob-service) - Binary blob storage
+- [Sync Endpoints](../04-network-layer/domain-methods) - XRPC sync method implementation
+
+## Additional Resources
+
+- [Repository Protocol Specification](https://atproto.com/specs/repository) - Official ATProto repository spec
+- [MST Implementation Guide](../02-core-concepts/mst-trees) - Detailed MST implementation
+- [CAR File Format](../07-repository-protocol/car-format) - CAR v1 specification
+- [Commit Structure](../07-repository-protocol/repository-basics) - Understanding commits and signatures

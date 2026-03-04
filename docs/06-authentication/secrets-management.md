@@ -4,6 +4,10 @@ This guide covers secrets management in September PDS, including key storage, ro
 
 ## Overview
 
+![Secrets Management Flow](../12-diagrams/secrets-management-flow.svg)
+
+*Secure storage and retrieval of sensitive configuration data with platform-specific implementations*
+
 September PDS manages several types of secrets:
 
 - **Signing keys**: secp256k1 private keys for AT Protocol signing

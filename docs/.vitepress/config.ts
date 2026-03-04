@@ -22,7 +22,7 @@ export default defineConfig({
       { text: 'Tutorials', link: '/10-tutorials/tutorial-1-hello-pds' },
       { text: 'Reference', link: '/11-reference/api-reference' },
       { text: 'Glossary', link: '/glossary' },
-      { text: 'GitHub', link: 'https://github.com/user/september-pds' }
+      { text: 'GitHub', link: 'https://github.com/jvalinsky/garazyk' }
     ],
     
     // Sidebar navigation
@@ -30,21 +30,50 @@ export default defineConfig({
     
     // Social links
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/user/september-pds' }
+      { icon: 'github', link: 'https://github.com/jvalinsky/garazyk' }
     ],
     
-    // Search configuration
+    // Search configuration with MiniSearch
     search: {
       provider: 'local',
       options: {
+        locales: {
+          root: {
+            translations: {
+              button: {
+                buttonText: 'Search',
+                buttonAriaLabel: 'Search documentation'
+              },
+              modal: {
+                noResultsText: 'No results for',
+                resetButtonTitle: 'Clear search',
+                footer: {
+                  selectText: 'to select',
+                  navigateText: 'to navigate',
+                  closeText: 'to close'
+                }
+              }
+            }
+          }
+        },
         miniSearch: {
+          options: {
+            fields: ['title', 'text', 'headings', 'code'],
+            storeFields: ['title', 'text'],
+            searchOptions: {
+              boost: { title: 4, headings: 3, text: 2, code: 1 },
+              fuzzy: 0.2,
+              prefix: true
+            }
+          },
           searchOptions: {
             fuzzy: 0.2,
             prefix: true,
             boost: {
               title: 4,
-              heading: 3,
-              text: 2
+              headings: 3,
+              text: 2,
+              code: 1
             }
           }
         }
@@ -53,7 +82,7 @@ export default defineConfig({
     
     // Edit link
     editLink: {
-      pattern: 'https://github.com/user/september-pds/edit/main/docs/:path',
+      pattern: 'https://github.com/jvalinsky/garazyk/edit/main/docs/:path',
       text: 'Edit this page on GitHub'
     },
     
@@ -72,10 +101,16 @@ export default defineConfig({
       }
     },
     
-    // Outline configuration
+    // Outline configuration (table of contents)
     outline: {
-      level: [2, 3],
+      level: 'deep', // Show all heading levels (h2-h6)
       label: 'On this page'
+    },
+    
+    // Document footer with prev/next navigation (enabled by default)
+    docFooter: {
+      prev: 'Previous',
+      next: 'Next'
     }
   },
   
@@ -86,17 +121,20 @@ export default defineConfig({
       light: 'github-light',
       dark: 'github-dark'
     },
-    // Language aliases for Objective-C
+    // Language aliases for Objective-C and other languages
     languageAlias: {
       'objectivec': 'objective-c',
-      'objc': 'objective-c',
-      'dot': 'plaintext',  // Graphviz DOT not supported by Shiki, fallback to plaintext
-      // PromQL is natively supported by Shiki - no alias needed
+      'objc': 'objective-c'
     },
-    // Support for code block features
+    // Support for code block features and diagram integration
     config: (md) => {
-      // Additional markdown-it plugins can be added here
-      // This will be extended in Phase 4 for code enhancements
+      // Import and use the code enhancer plugin
+      const { codeEnhancerPlugin } = require('./plugins/code-enhancer')
+      md.use(codeEnhancerPlugin)
+      
+      // Import and use the diagram loader plugin
+      const { diagramLoaderPlugin } = require('./plugins/diagram-loader')
+      md.use(diagramLoaderPlugin)
     }
   },
   
