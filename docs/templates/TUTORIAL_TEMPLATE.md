@@ -1,3 +1,7 @@
+---
+title: "Tutorial [N]: [Tutorial Title]"
+---
+
 # Tutorial [N]: [Tutorial Title]
 
 <!-- 
@@ -48,7 +52,7 @@ cd [project-name]
 mkdir -p src build
 ```
 
-### Step 2: Create CMakeLists.txt
+## Step 2: Create CMakeLists.txt
 
 [If applicable, show how to set up the build system]
 
@@ -161,7 +165,7 @@ make -j$(sysctl -n hw.ncpu)
 ./[target-name]
 ```
 
-### Linux Build
+## Linux Build
 
 ```bash
 # Create build directory
@@ -200,7 +204,7 @@ curl -X [METHOD] http://localhost:2583/[endpoint] \
 }
 ```
 
-### Test 2: [Another Test Description]
+## Test 2: [Another Test Description]
 
 [Explain what this test verifies]
 
@@ -210,10 +214,11 @@ curl -X [METHOD] http://localhost:2583/[endpoint] \
 
 **Expected Output:**
 ```
+
 [Expected output]
 ```
 
-### Test 3: [Edge Case Test]
+## Test 3: [Edge Case Test]
 
 [Explain what edge case this tests]
 
@@ -223,6 +228,7 @@ curl -X [METHOD] http://localhost:2583/[endpoint] \
 
 **Expected Output:**
 ```
+
 [Expected output]
 ```
 
@@ -255,6 +261,7 @@ curl -X [METHOD] http://localhost:2583/[endpoint] \
 [Optional: Include a diagram showing the flow]
 
 ```
+
 [ASCII diagram or reference to SVG]
 ```
 
@@ -291,7 +298,7 @@ curl -X [METHOD] http://localhost:2583/[endpoint] \
 
 **Explanation:** [Why this fixes the problem]
 
-### Issue 2: [Another Problem]
+## Issue 2: [Another Problem]
 
 **Symptoms:**
 - [Symptom 1]
@@ -304,7 +311,7 @@ curl -X [METHOD] http://localhost:2583/[endpoint] \
 
 **Explanation:** [Why this fixes the problem]
 
-### Issue 3: [Common Error]
+## Issue 3: [Common Error]
 
 **Symptoms:**
 - [Symptom 1]
@@ -349,9 +356,9 @@ The complete code for this tutorial is available in:
 
 [Link to related tutorials or next steps]
 
-- **[Tutorial N+1: Title](./tutorial-[N+1]-[name])** — [Brief description]
-- **[Related Documentation](../path/to/doc)** — [Brief description]
-- **[Advanced Topic](../path/to/advanced)** — [Brief description]
+- **[Tutorial N+1: Title](#)** — [Brief description]
+- **[Related Documentation](#)** — [Brief description]
+- **[Advanced Topic](#)** — [Brief description]
 
 ## Summary
 
@@ -369,9 +376,9 @@ You've successfully:
 
 [Optional: Links to related resources]
 
-- [Resource 1 Title](link) — [Description]
-- [Resource 2 Title](link) — [Description]
-- [Resource 3 Title](link) — [Description]
+- [Resource 1 Title](#) — [Description]
+- [Resource 2 Title](#) — [Description]
+- [Resource 3 Title](#) — [Description]
 
 ## Feedback
 
@@ -386,4 +393,4 @@ If you have questions or suggestions about this tutorial:
 **Version:** [Version number]  
 **Last Updated:** [Date]  
 **Example Code:** `examples/tutorial-[N]-[name]/`  
-**Related Tutorials:** [Tutorial N-1](./tutorial-[N-1]-[name]), [Tutorial N+1](./tutorial-[N+1]-[name])
+**Related Tutorials:** [Tutorial N-1](#), [Tutorial N+1](#)

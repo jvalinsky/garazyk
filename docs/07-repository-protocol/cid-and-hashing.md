@@ -1,3 +1,7 @@
+---
+title: CID and Hashing
+---
+
 # CID and Hashing
 
 ## Overview
@@ -7,6 +11,7 @@ CID (Content Identifier) is a self-describing content address that combines a ha
 ## CID Structure
 
 ```
+
 CIDv1: z<multibase><multicodec><multihash>
 
 Example: zbafy2bzaced4ueelaegfs5fq4a3fvh2ijmmq7xjlmakivezbsxyhynaiksqq
@@ -19,6 +24,7 @@ bafy    - multicodec (dag-cbor)
 ## Multihash Format
 
 ```
+
 <hash-function-code><digest-length><digest>
 
 Example: 12 20 <32-byte-sha256-hash>
@@ -280,6 +286,7 @@ if ([hash isEqualToData:cidDigest]) {
 ### CIDv0 (Legacy)
 
 ```
+
 Qm... (base58 encoded)
 - Only supports dag-pb codec
 - Shorter but less flexible
@@ -288,6 +295,7 @@ Qm... (base58 encoded)
 ### CIDv1 (Current)
 
 ```
+
 bafy... (base32 encoded)
 - Supports multiple codecs
 - Self-describing
@@ -407,6 +415,6 @@ return YES;
 
 ## See Also
 
-- [CBOR Serialization](./cbor-serialization)
-- [CAR Format](./car-format)
-- [Blob Storage](./blob-storage)
+- [CBOR Serialization](cbor-serialization)
+- [CAR Format](car-format)
+- [Blob Storage](blob-storage)

@@ -1,3 +1,7 @@
+---
+title: Security Audit Guide
+---
+
 # Security Audit Guide
 
 This guide explains how to use September PDS's security audit skills to identify and remediate common vulnerabilities in Objective-C code. The repository includes specialized audit tools in `.opencode/skills/` that automate vulnerability detection.

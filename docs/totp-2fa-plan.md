@@ -1,3 +1,7 @@
+---
+title: "TOTP 2FA Plan: Current State & Next Steps"
+---
+
 # TOTP 2FA Plan: Current State & Next Steps
 
 ## What Exists Today
@@ -79,6 +83,7 @@ The `com.atproto.server.getSession` response should include a field like `"twoFa
 ### Enrollment Flow
 
 ```
+
 Client                                PDS
   |                                    |
   |-- POST enableTwoFactor ----------->|
@@ -96,6 +101,7 @@ Client                                PDS
 ### Login Flow (OAuth2)
 
 ```
+
 Client                                PDS
   |                                    |
   |-- POST /oauth/token { code } ----->|
@@ -112,6 +118,7 @@ Client                                PDS
 ### Login Flow (Legacy `createSession`)
 
 ```
+
 Client                                PDS
   |                                    |
   |-- POST createSession { id, pw } -->|

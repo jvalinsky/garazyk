@@ -1,3 +1,7 @@
+---
+title: ATProto Compliance Review Skill
+---
+
 # ATProto Compliance Review Skill
 
 ## Overview

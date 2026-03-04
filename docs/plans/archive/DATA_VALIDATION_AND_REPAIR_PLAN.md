@@ -1,3 +1,7 @@
+---
+title: Data Validation and Repair Plan
+---
+
 # Data Validation and Repair Plan
 
 **Date:** January 11, 2026
@@ -98,5 +102,5 @@ return [NSString stringWithFormat:@"bafyrei%@", [hashString lowercaseString]];
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans

@@ -1,3 +1,7 @@
+---
+title: Examples
+---
+
 # Examples
 
 This directory contains example files for deploying and configuring the ATProto PDS.

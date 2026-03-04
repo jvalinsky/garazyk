@@ -1,3 +1,7 @@
+---
+title: libdispatch SIGILL Crash Debugging Session
+---
+
 # libdispatch SIGILL Crash Debugging Session
 
 **Date**: 2026-02-21  
@@ -11,6 +15,7 @@
 Both servers crash with `SIGILL` (Illegal instruction) after handling their first HTTP request. The crash happens consistently, every time, killing the process. systemd auto-restarts it (`Restart=on-failure`), but the next request kills it again — making every other request fail with a 502.
 
 ```
+
 dmesg output (consistent across all crashes):
 traps: -qos.overcommit[PID] trap invalid opcode ip:XXXX sp:XXXX error:0 in libdispatch.so[5c700,BASE+52000]
 ```
@@ -36,6 +41,7 @@ curl -s http://localhost:2583/               # Works, returns HTML
 
 Checked `dmesg`:
 ```
+
 traps: -qos.overcommit[68131] trap invalid opcode ip:7faa1d2e1700 sp:7faa127f9100 error:0 in libdispatch.so[5c700,7faa1d2a4000+52000]
 ```
 
@@ -43,7 +49,7 @@ Offset: `0x7faa1d2e1700 - 0x7faa1d2a4000 = 0x3D700`
 
 Checked history — crashes predate all code changes (going back to 20:09 UTC).
 
-### 21:17 UTC — Workaround: nginx static file serving
+## 21:17 UTC — Workaround: nginx static file serving
 
 **Decision**: Serve all static assets (CSS, JS, HTML, fonts) directly from nginx, bypassing the crashing PDS/PLC entirely. Only proxy dynamic API calls (`/xrpc/`, `/api/`, etc.) to the backend.
 
@@ -104,7 +110,7 @@ clang -o /tmp/test_dispatch test.m -ldispatch
 
 **Result**: ❌ Still crashes at same offset `+0x3D700`. The dispatch objects weren't being freed prematurely — the server object stays alive.
 
-### 21:42 UTC — Core dump analysis
+## 21:42 UTC — Core dump analysis
 
 Enabled core dumps and caught one:
 ```bash
@@ -117,6 +123,7 @@ curl http://localhost:2583/
 
 GDB analysis:
 ```
+
 Program terminated with signal SIGILL, Illegal instruction.
 #0  dispatch_group_leave () from /usr/local/lib/libdispatch.so
 #1  __41_i_HttpServer__readRequestFromConnection__block_invoke
@@ -137,7 +144,7 @@ Program terminated with signal SIGILL, Illegal instruction.
 
 The crash is NOT from the `dispatchRequest` path I was fixing earlier. It's from the **read completion** path.
 
-### 21:43 UTC — Root cause analysis
+## 21:43 UTC — Root cause analysis
 
 The `readRequestFromConnection` method:
 1. Calls `dispatch_group_enter(group)`

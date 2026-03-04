@@ -1,3 +1,7 @@
+---
+title: ATProto PDS Implementation Plan (Apple APIs Only)
+---
+
 # ATProto PDS Implementation Plan (Apple APIs Only)
 
 ## Overview
@@ -25,6 +29,7 @@ This plan outlines the implementation of a complete AT Protocol Personal Data Se
 ### Application Structure
 
 ```
+
 ATProtoPDS/
 ├── ATProtoPDS.xcodeproj/
 ├── ATProtoPDS/
@@ -551,6 +556,6 @@ ATProtoPDS/
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

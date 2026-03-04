@@ -1,3 +1,7 @@
+---
+title: Documentation Templates
+---
+
 # Documentation Templates
 
 This directory contains templates for creating new documentation following the PDS Objective-C Implementation Guide standards.
@@ -24,7 +28,7 @@ cp docs/templates/SERVICE_TEMPLATE.md docs/03-application-layer/notification-ser
 # Edit the file and replace placeholders
 ```
 
-### 2. XRPC Endpoint Documentation Template
+## 2. XRPC Endpoint Documentation Template
 
 **File:** `XRPC_ENDPOINT_TEMPLATE.md`
 
@@ -45,7 +49,7 @@ cp docs/templates/XRPC_ENDPOINT_TEMPLATE.md docs/11-reference/endpoints/com.atpr
 # Edit the file and replace placeholders
 ```
 
-### 3. Tutorial Template
+## 3. Tutorial Template
 
 **File:** `TUTORIAL_TEMPLATE.md`
 
@@ -107,22 +111,22 @@ Before committing new documentation:
 1. **Build check:** Ensure documentation builds without errors
    ```bash
    cd docs && bundle exec jekyll build
-   ```
+   ```text
 
 2. **Code validation:** Run code example validation
    ```bash
    ./scripts/validate-doc-code-examples.sh
-   ```
+   ```text
 
 3. **Link validation:** Check all internal links
    ```bash
    ./scripts/validate-doc-links.sh
-   ```
+   ```text
 
 4. **Diagram validation:** Validate SVG diagrams (if applicable)
    ```bash
    ./scripts/validate-doc-diagrams.sh
-   ```
+   ```text
 
 ## Documentation Standards
 

@@ -1,3 +1,7 @@
+---
+title: OAuth 2.0 with DPoP
+---
+
 # OAuth 2.0 with DPoP
 
 ## Overview
@@ -6,13 +10,14 @@ The PDS implements OAuth 2.0 with Demonstration of Proof-of-Possession (DPoP) fo
 
 ## OAuth 2.0 Flow
 
-![OAuth 2.0 with DPoP Flow](../12-diagrams/oauth2-dpop-flow.svg)
+<!-- Image placeholder: OAuth 2.0 with DPoP Flow -->
 
 *Complete OAuth 2.0 authorization flow with DPoP token binding*
 
 The flow consists of several key steps:
 
 ```
+
 ┌─────────────┐                                    ┌──────────────┐
 │   Client    │                                    │   PDS        │
 └──────┬──────┘                                    └──────┬───────┘
@@ -475,6 +480,7 @@ DPoP nonces prevent replay attacks:
 If DPoP verification fails due to missing nonce:
 
 ```
+
 HTTP/1.1 401 Unauthorized
 WWW-Authenticate: DPoP error="use_dpop_nonce"
 DPoP-Nonce: server-generated-nonce
@@ -590,7 +596,7 @@ NSData *data = [NSURLConnection sendSynchronousRequest:request
 
 ## See Also
 
-- [JWT Tokens](./jwt-tokens)
-- [Key Rotation](./key-rotation)
-- [TOTP and WebAuthn](./totp-webauthn)
+- [JWT Tokens](jwt-tokens)
+- [Key Rotation](key-rotation)
+- [TOTP and WebAuthn](totp-webauthn)
 - [Auth Helpers](../04-network-layer/auth-helpers)

@@ -1,3 +1,7 @@
+---
+title: OAuth2 AT Protocol Spec Remediation Plan
+---
+
 # OAuth2 AT Protocol Spec Remediation Plan
 
 Reference: [OAuth2 Spec Compliance Report](oauth2-spec-compliance-report)
@@ -147,7 +151,7 @@ These cause failures for any client making concurrent requests or following the 
      @"bearer_methods_supported": @[ @"header" ],
      @"resource_documentation": @"https://atproto.com/specs/oauth"
    }
-   ```
+   ```text
 2. Remove `protected_resources` nested object and `access_token_types_supported`.
 
 **Tests**:

@@ -1,3 +1,7 @@
+---
+title: Authentication Helpers
+---
+
 # Authentication Helpers
 
 ## Overview
@@ -17,6 +21,7 @@ The `XrpcAuthHelper` provides centralized authentication logic for XRPC endpoint
 ## Authentication Flow
 
 ```
+
 Authorization Header
     │
     ├─ Bearer \<JWT\>
@@ -323,6 +328,7 @@ if (!authorized) {
 Bearer tokens are JWT (JSON Web Tokens) with three parts:
 
 ```
+
 Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6cGxjOnVzZXIxMjMiLCJleHAiOjE2MzE1NTUyMDB9.signature
        └─ Header ─────────────────────────────────────────────────────────────────────────────────────────────────────┘
                  └─ Payload ──────────────────────────────────────────────────────────────────────────────────────────┘
@@ -367,6 +373,7 @@ Standard JWT claims:
 DPoP (Demonstration of Proof-of-Possession) uses two tokens:
 
 ```
+
 Authorization: DPoP \<access_token\>
 DPoP: \<dpop_proof\>
 ```
@@ -420,6 +427,7 @@ Payload:
 If DPoP verification fails due to missing nonce:
 
 ```
+
 HTTP/1.1 401 Unauthorized
 WWW-Authenticate: DPoP error="use_dpop_nonce"
 DPoP-Nonce: server-generated-nonce
@@ -588,8 +596,8 @@ if (authHeader) {
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch)
-- [Domain Methods](./domain-methods)
-- [Error Handling](./error-handling)
+- [XRPC Dispatch](xrpc-dispatch)
+- [Domain Methods](domain-methods)
+- [Error Handling](error-handling)
 - [JWT Tokens](../06-authentication/jwt-tokens)
 - [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop)

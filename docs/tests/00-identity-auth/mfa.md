@@ -1,3 +1,7 @@
+---
+title: MFA Tests
+---
+
 # MFA Tests
 
 Tests for multi-factor authentication including TOTP, WebAuthn/Passkeys, and YubiKey.
@@ -101,6 +105,7 @@ XCTAssertEqualObjects(result[@"credentialId"], credentialId);
 **Authenticator data structure:**
 
 ```
+
 Bytes 0-31:   RP ID hash (SHA-256)
 Byte 32:      Flags (0x40 = attested credential data present)
 Bytes 33-36:  Sign counter
@@ -171,6 +176,7 @@ Hardware security keys provide superior protection, but software fallback ensure
 ## MFA Flow
 
 ```
+
 1. Registration:
    User presents WebAuthn credential OR TOTP secret
    Server stores credential ID / secret

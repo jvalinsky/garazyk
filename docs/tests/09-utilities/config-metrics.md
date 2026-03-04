@@ -1,3 +1,7 @@
+---
+title: Configuration & Metrics Tests
+---
+
 # Configuration & Metrics Tests
 
 Tests for PDS configuration, metrics, and node info.
@@ -26,13 +30,13 @@ See [Controller Tests](../04-application/controller#pdsconfigurationtests) for f
 
 ## Configuration Hierarchy
 
-```
+```json
 Environment Variables (highest priority)
     ↓
 Configuration File (JSON)
     ↓
 Default Values (lowest priority)
-```
+```json
 
 ## Key Configuration Options
 
@@ -51,7 +55,7 @@ Default Values (lowest priority)
 ```bash
 ./build/tests/AllTests -only-testing:AllTests/PDSConfigurationTests
 ./build/tests/AllTests -only-testing:AllTests/NodeInfoTests
-```
+```json
 
 ## Related Documentation
 

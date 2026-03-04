@@ -1,3 +1,7 @@
+---
+title: End-to-End Integration Tests
+---
+
 # End-to-End Integration Tests
 
 Tests for complete system flows including account lifecycle and commit chains.
@@ -119,6 +123,7 @@ XCTAssertEqualObjects(event[@"$type"], @"com.atproto.sync.subscribeRepos#commit"
 ## Integration Test Flow
 
 ```
+
 1. Create Account → DID generated
 2. Create Session → Access token returned
 3. Put Record → CID computed, MST updated

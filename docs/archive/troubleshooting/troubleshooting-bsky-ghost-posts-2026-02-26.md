@@ -1,3 +1,7 @@
+---
+title: Troubleshooting Ghost Posts + `createRecord` Crash (GNUstep)
+---
+
 # Troubleshooting Ghost Posts + `createRecord` Crash (GNUstep)
 **Date**: February 26, 2026  
 **Recorded**: 2026-02-26T18:44:41Z  

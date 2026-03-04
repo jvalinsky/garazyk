@@ -1,3 +1,7 @@
+---
+title: Relay Service
+---
+
 # Relay Service
 
 ## Overview
@@ -16,6 +20,7 @@ The `PDSRelayService` notifies external relays of repository updates. It enables
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   Repository Change Events               │
 │  (PDSRecordDidChangeNotification)        │
@@ -117,6 +122,7 @@ Manually notifies a specific relay server to crawl this PDS.
 ### Automatic Notification
 
 ```
+
 1. Record is created/updated/deleted
    ↓
 2. PDSRecordDidChangeNotification posted
@@ -138,6 +144,7 @@ Manually notifies a specific relay server to crawl this PDS.
 The relay service sends a request like:
 
 ```
+
 POST /xrpc/com.atproto.sync.notifyOfUpdate HTTP/1.1
 Host: relay.example.com
 Content-Type: application/json
@@ -195,6 +202,7 @@ If a relay is unreachable:
 ### Retry Strategy
 
 ```
+
 Attempt 1: Immediate
 Attempt 2: 1 minute delay
 Attempt 3: 5 minutes delay
@@ -628,6 +636,7 @@ dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC),
 Log all relay operations:
 
 ```
+
 [INFO] Notifying relay: https://bsky.network
 [INFO] Relay notification succeeded: https://bsky.network
 [WARN] Relay notification failed: https://relay.example.com (attempt 1/5)
@@ -663,9 +672,9 @@ Log all relay operations:
 
 ## See Also
 
-- [Services Overview](./services-overview) - How Relay Service fits into the service layer
-- [PDSApplication](./pds-application) - Application-level integration
-- [Record Service](./record-service) - Record operations that trigger relay notifications
+- [Services Overview](services-overview) - How Relay Service fits into the service layer
+- [PDSApplication](pds-application) - Application-level integration
+- [Record Service](record-service) - Record operations that trigger relay notifications
 - [Firehose Overview](../08-sync-firehose/firehose-overview) - How relays consume PDS updates
 - [Commit Broadcasting](../08-sync-firehose/commit-broadcasting) - Understanding the notification flow
-- [Repository Service](./repository-service) - Repository-level operations
+- [Repository Service](repository-service) - Repository-level operations

@@ -1,3 +1,7 @@
+---
+title: Diagram Quick Reference
+---
+
 # Diagram Quick Reference
 
 A condensed guide to all diagrams available in this project.
@@ -22,6 +26,7 @@ A condensed guide to all diagrams available in this project.
 
 ### Understanding the System
 ```
+
 Start with: ARCHITECTURE_DIAGRAMS.md
 → high_level_architecture.dot
 → module_dependencies.dot
@@ -29,6 +34,7 @@ Start with: ARCHITECTURE_DIAGRAMS.md
 
 ### Working with ATProto Protocols
 ```
+
 Start with: DIAGRAMS_MERMAID.md
 → XRPC protocol flows
 → Repository operations
@@ -37,6 +43,7 @@ Start with: DIAGRAMS_MERMAID.md
 
 ### Development Tasks
 ```
+
 Start with: DEVELOPMENT_WORKFLOWS.md
 → Build and run process
 → Test pyramid
@@ -45,6 +52,7 @@ Start with: DEVELOPMENT_WORKFLOWS.md
 
 ### Database Work
 ```
+
 Start with: database_schema.dot
 → Check entity relationships
 → Understand transactions
@@ -52,6 +60,7 @@ Start with: database_schema.dot
 
 ### Authentication
 ```
+
 Start with: authentication_flow.dot
 → JWT token flow
 → Session management
@@ -176,7 +185,7 @@ Add to: `docs/architecture/DIAGRAMS_MERMAID.md`
 
 ### Architecture Documents
 - [README.md](README) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Component analysis for diagram context
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Component analysis for diagram context
 
 ### Diagram Documents
 - [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS) - System overview diagrams

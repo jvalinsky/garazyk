@@ -1,3 +1,7 @@
+---
+title: Service Databases Tests
+---
+
 # Service Databases Tests
 
 Tests for global service databases handling accounts, invite codes, DID cache, and handle reservations.

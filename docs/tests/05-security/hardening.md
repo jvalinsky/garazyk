@@ -1,3 +1,7 @@
+---
+title: Security Hardening Tests
+---
+
 # Security Hardening Tests
 
 Tests for input validation, CBOR security, and production hardening.

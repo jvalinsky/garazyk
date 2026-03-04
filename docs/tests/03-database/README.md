@@ -1,3 +1,7 @@
+---
+title: Database Tests
+---
+
 # Database Tests
 
 Tests for SQLite-based persistence: actor stores, service databases, and connection pooling.
@@ -52,4 +56,4 @@ Tests for SQLite-based persistence: actor stores, service databases, and connect
 - [Repository Tests](../01-repository/README) - MST and CAR persistence
 - [Application Tests](../04-application/README) - Services using databases
 - [Integration Tests](../06-integration/README) - E2E database operations
-- [SQLite Invariant Audit](../../skills/objc-sqlite-invariant-audit/SKILL) - SQLite correctness
+- <!-- Link placeholder: SQLite Invariant Audit --> - SQLite correctness

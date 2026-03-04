@@ -1,3 +1,7 @@
+---
+title: atproto Data Models Research
+---
+
 # atproto Data Models Research
 
 ## Overview
@@ -336,6 +340,7 @@ func VerifyCommitSignature(ctx context.Context, dir identity.Directory,
 ### 6.1 AT URI Structure
 
 ```
+
 at://<authority>/<collection>/<rkey>
 
 // Examples
@@ -348,6 +353,7 @@ at://alice.com/app.bsky.actor.profile/self
 NSIDs (Namespace Identifiers) follow the pattern: `authority.domain.name`
 
 ```
+
 app.bsky.feed.post          → authority: bsky.app
 com.example.api.getData     → authority: example.com
 edu.university.dept.blog    → authority: university.edu
@@ -419,6 +425,7 @@ const authParams = {
 ### 9.1 Service Roles
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │                      Client Applications                     │
 └─────────────────────────────────────────────────────────────┘
@@ -471,7 +478,7 @@ const authParams = {
 - [README.md](README) - Architecture documentation index
 - [atproto_pds_architecture.md](atproto_pds_architecture) - PDS role in ecosystem and API endpoints
 - [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) - NSID syntax and method patterns
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Repository engine component analysis
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Repository engine component analysis
 
 ### Diagram Documents
 - [DIAGRAMS_MERMAID.md](DIAGRAMS_MERMAID) - Data model class diagrams

@@ -1,3 +1,7 @@
+---
+title: Archived Documentation
+---
+
 # Archived Documentation
 
 This directory contains older documentation that is no longer actively maintained but preserved for historical reference.
