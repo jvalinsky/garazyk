@@ -1,5 +1,45 @@
 # PLC Directory
 
+## Why This Matters
+
+In traditional social networks, your identity is controlled by the platform. If Twitter bans your account, you lose your username, followers, and entire social graph. If Facebook shuts down, your identity disappears.
+
+The PLC (Public Ledger of Credentials) directory solves this by making identity portable and user-controlled:
+
+- **You own your identity** — Your DID is cryptographically yours, not controlled by any server
+- **You can migrate** — Move between servers without losing your identity or social graph
+- **You can verify history** — Every change to your identity is recorded in an immutable audit log
+- **You can recover** — With your rotation keys, you can regain control even if your PDS is compromised
+
+The PLC directory is what makes "credible exit" possible—the ability to leave a service provider without losing your digital identity.
+
+## Real-World Scenario
+
+Alice creates an account on Server A with the handle `@alice.bsky.social`. Her DID is `did:plc:abc123`, and her DID document points to Server A as her PDS.
+
+**Scenario 1: Server Migration**
+Server A becomes unreliable. Alice:
+1. Sets up an account on Server B
+2. Updates her DID document to point to Server B
+3. Migrates her repository (posts, likes, follows) to Server B
+4. Her followers automatically discover her new location via her DID
+
+Her identity (`did:plc:abc123`) never changed. Her handle (`@alice.bsky.social`) never changed. Only her PDS endpoint changed.
+
+**Scenario 2: Handle Change**
+Alice wants to change her handle to `@alice.example.com`. She:
+1. Updates her DID document's `alsoKnownAs` field
+2. Configures DNS for `alice.example.com` to point to her DID
+3. Her new handle is immediately recognized across the network
+
+**Scenario 3: Key Compromise**
+Alice's device is stolen. She:
+1. Uses her backup rotation key to update her DID document
+2. Rotates all verification keys
+3. The stolen keys become useless—they can't sign new operations
+
+The PLC directory is the foundation that makes all of this possible.
+
 The PLC (Public Ledger of Credentials) directory is a critical component of the AT Protocol that provides decentralized identity management through DID (Decentralized Identifier) resolution. September PDS includes both a PLC client for resolving DIDs and a standalone PLC server (`campagnola`) for running your own directory.
 
 ## Overview
@@ -12,6 +52,30 @@ The PLC directory serves as a distributed registry for `did:plc` identifiers, ma
 - **Services** — Service endpoints (PDS URL, etc.)
 
 ## PLC Protocol
+
+### Design Philosophy
+
+The PLC protocol is designed around several key principles:
+
+**Immutability:** Operations are append-only. Once published, an operation cannot be deleted or modified. This creates an auditable history of all identity changes.
+
+**Cryptographic verification:** Every operation is signed with a rotation key. This prevents unauthorized modifications and enables anyone to verify the operation chain's integrity.
+
+**Deterministic state:** The current DID state is computed by replaying all operations in order. This ensures all clients see the same state and can independently verify it.
+
+**Minimal trust:** You don't need to trust the PLC server. You can verify the entire operation chain yourself and detect any tampering or invalid operations.
+
+### Why Hash-Linked Chains?
+
+The operation chain structure (where each operation references the previous one's CID) provides several guarantees:
+
+**Tamper detection:** If someone modifies an old operation, its CID changes, breaking the chain. This is immediately detectable.
+
+**Ordering:** The chain establishes a clear chronological order of operations, preventing ambiguity about which state is current.
+
+**Concurrent update detection:** If two operations reference the same `prev` CID, it's clear that concurrent updates occurred, and conflict resolution is needed.
+
+**Efficient verification:** You can verify the chain incrementally—once you've verified operations 1-100, you only need to verify new operations, not re-verify the entire history.
 
 ### DID Format
 

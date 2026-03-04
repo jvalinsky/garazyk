@@ -10,6 +10,8 @@
     "validate:links": "tsx scripts/validate-docs.ts --links",
     "validate:diagrams": "tsx scripts/validate-docs.ts --diagrams",
     "validate:code-blocks": "tsx scripts/validate-docs.ts --code-blocks",
+    "validate:code-enhancements": "tsx scripts/validate-code-enhancements.ts",
+    "validate:search-navigation": "tsx scripts/validate-search-navigation.ts",
     "validate:all": "tsx scripts/validate-docs.ts --all"
   },
   "keywords": [
@@ -22,7 +24,9 @@
   "author": "September PDS Team",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.11.0",
+    "@types/node": "^20.19.35",
+    "glob": "^13.0.6",
+    "markdown-it-container": "^4.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vitepress": "^1.0.0",
