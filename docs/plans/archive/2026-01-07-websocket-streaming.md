@@ -1,3 +1,7 @@
+---
+title: WebSocket Event Streaming Implementation Plan
+---
+
 # WebSocket Event Streaming Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -378,7 +382,7 @@ git commit -m "docs: document WebSocket streaming and subscribeRepos endpoint"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation</content>
 <parameter name="filePath">streaming-worktree/docs/plans/2026-01-07-websocket-streaming.md

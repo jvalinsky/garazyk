@@ -1,3 +1,7 @@
+---
+title: Memory Management Guide Implementation Plan
+---
+
 # Memory Management Guide Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -16,7 +20,7 @@
 - Queue property standardization with PDS_DISPATCH_QUEUE_STRONG macro
 - Input validation and bounds checking patterns
 
-### Task 1: Research Retain Cycles & Block Patterns
+## Task 1: Research Retain Cycles & Block Patterns
 
 **Files:**
 - Read: `ATProtoPDS/Sources/**/*.m` (Sample)
@@ -99,5 +103,5 @@ git commit -m "docs: add memory management guide"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans

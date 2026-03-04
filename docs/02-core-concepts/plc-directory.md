@@ -1,3 +1,7 @@
+---
+title: PLC Directory
+---
+
 # PLC Directory
 
 ## Why This Matters
@@ -168,6 +172,7 @@ Permanently deactivates a DID:
 Operations form a hash-linked chain where each operation references the previous one:
 
 ```
+
 Genesis Operation (prev: null)
     ↓ (CID: bafyreiabc...)
 Update Operation 1 (prev: bafyreiabc...)
@@ -324,7 +329,7 @@ campagnola --port 2582 --database /path/to/plc.db
 - `--database <path>` — Path to SQLite database (optional, uses mock store if omitted)
 - `--help, -h` — Show help information
 
-### Server Implementation
+## Server Implementation
 
 ```objc
 // From ATProtoPDS/Sources/PLC/main.m
@@ -529,7 +534,7 @@ kaszlak account update-plc-endpoint did:plc:abc123 https://new-pds.example.com
 kaszlak account update-handle did:plc:abc123 newhandle.bsky.social
 ```
 
-### Programmatically
+## Programmatically
 
 ```objc
 // Create operation

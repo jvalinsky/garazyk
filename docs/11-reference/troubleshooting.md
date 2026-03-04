@@ -1,3 +1,7 @@
+---
+title: Troubleshooting Guide
+---
+
 # Troubleshooting Guide
 
 ## Common Issues and Solutions
@@ -24,7 +28,7 @@ cmake .. -DOPENSSL_DIR=/usr/local/opt/openssl -DSQLITE3_DIR=/usr/local/opt/sqlit
 cat ../CMakeLists.txt | grep -E "cmake_minimum_required|find_package"
 ```
 
-#### Xcode Build Fails
+## Xcode Build Fails
 
 **Problem:** `xcodebuild` fails with compilation errors
 
@@ -43,7 +47,7 @@ xcodebuild -scheme ATProtoPDS-CLI build -verbose
 xcodebuild -scheme ATProtoPDS-CLI build -showBuildSettings | grep -E "HEADER_SEARCH_PATHS|LIBRARY_SEARCH_PATHS"
 ```
 
-#### GNUstep Build Fails
+## GNUstep Build Fails
 
 **Problem:** Linux/GNUstep build fails
 
@@ -65,9 +69,9 @@ make -j$(nproc)
 ldd ./bin/kaszlak | grep "not found"
 ```
 
-### Runtime Issues
+## Runtime Issues
 
-#### Server Won't Start
+### Server Won't Start
 
 **Problem:** `kaszlak` starts but immediately exits
 
@@ -89,7 +93,7 @@ ls -la data/
 sqlite3 data/service.db "PRAGMA integrity_check;"
 ```
 
-#### Port Already in Use
+## Port Already in Use
 
 **Problem:** "Address already in use" error
 
@@ -108,7 +112,7 @@ kill -9 <PID>
 ps aux | grep kaszlak
 ```
 
-#### Database Locked
+## Database Locked
 
 **Problem:** "Database is locked" error
 
@@ -129,9 +133,9 @@ rm data/service.db
 sqlite3 data/service.db < backup.sql
 ```
 
-### Network Issues
+## Network Issues
 
-#### Connection Refused
+### Connection Refused
 
 **Problem:** Client can't connect to PDS
 
@@ -153,7 +157,7 @@ sudo iptables -L -n | grep 2583
 cat config.json | jq .server
 ```
 
-#### TLS Certificate Errors
+## TLS Certificate Errors
 
 **Problem:** "Certificate verification failed" error
 
@@ -175,7 +179,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -node
 cat config.json | jq '.server.tls = {cert: "cert.pem", key: "key.pem"}'
 ```
 
-#### WebSocket Connection Fails
+## WebSocket Connection Fails
 
 **Problem:** WebSocket upgrade fails
 
@@ -197,9 +201,9 @@ npm install -g wscat
 wscat -c ws://localhost:2583/xrpc/com.atproto.sync.subscribeRepos
 ```
 
-### Authentication Issues
+## Authentication Issues
 
-#### JWT Token Invalid
+### JWT Token Invalid
 
 **Problem:** "Invalid JWT token" error
 
@@ -223,7 +227,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
   -d '{"identifier":"user@example.com","password":"password"}'
 ```
 
-#### DPoP Proof Invalid
+## DPoP Proof Invalid
 
 **Problem:** "Invalid DPoP proof" error
 
@@ -245,7 +249,7 @@ curl -v -H "DPoP: <proof>" http://localhost:2583/xrpc/com.atproto.server.getSess
 # Create new DPoP proof with current timestamp
 ```
 
-#### OAuth Flow Fails
+## OAuth Flow Fails
 
 **Problem:** OAuth authorization fails
 
@@ -269,9 +273,9 @@ curl -X POST http://localhost:2583/oauth/token \
   -d "grant_type=authorization_code&code=<code>&client_id=<id>&client_secret=<secret>"
 ```
 
-### Performance Issues
+## Performance Issues
 
-#### High Memory Usage
+### High Memory Usage
 
 **Problem:** PDS process uses excessive memory
 
@@ -296,7 +300,7 @@ du -sh data/
 sqlite3 data/service.db "VACUUM;"
 ```
 
-#### Slow Response Times
+## Slow Response Times
 
 **Problem:** API responses are slow
 
@@ -322,7 +326,7 @@ sqlite3 data/service.db "PRAGMA busy_timeout = 5000;"
 cat config.json | jq '.debug.logQueries = true'
 ```
 
-#### High CPU Usage
+## High CPU Usage
 
 **Problem:** PDS process uses excessive CPU
 
@@ -348,9 +352,9 @@ ps -eLf | grep kaszlak | wc -l
 # Use thread profiler to identify bottlenecks
 ```
 
-### Data Issues
+## Data Issues
 
-#### Corrupted Database
+### Corrupted Database
 
 **Problem:** Database integrity check fails
 
@@ -377,7 +381,7 @@ sqlite3 data/service.db "PRAGMA integrity_check;"
 ./build/bin/kaszlak --config config.json
 ```
 
-#### Missing Records
+## Missing Records
 
 **Problem:** Records are missing from database
 
@@ -401,7 +405,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.sync.getRepo \
   -d '{"did":"did:plc:..."}'
 ```
 
-#### Inconsistent State
+## Inconsistent State
 
 **Problem:** Repository state is inconsistent
 
@@ -423,9 +427,9 @@ sqlite3 data/service.db "SELECT * FROM commits WHERE did = 'did:plc:...' ORDER B
 # Force re-sync with PLC directory
 ```
 
-### Testing Issues
+## Testing Issues
 
-#### Tests Fail to Build
+### Tests Fail to Build
 
 **Problem:** Test compilation fails
 
@@ -447,7 +451,7 @@ grep "testClasses" ATProtoPDS/Tests/test_main.m
 # Edit test_main.m and add class to testClasses array
 ```
 
-#### Tests Fail to Run
+## Tests Fail to Run
 
 **Problem:** Tests compile but fail to execute
 
@@ -469,7 +473,7 @@ ls -la ATProtoPDS/Tests/fixtures/
 chmod +x ./build/tests/AllTests
 ```
 
-#### Flaky Tests
+## Flaky Tests
 
 **Problem:** Tests pass sometimes, fail other times
 
@@ -508,7 +512,7 @@ export PDS_LOG_LEVEL=debug
 tail -f logs/pds.log
 ```
 
-### Use Debugger
+## Use Debugger
 
 ```bash
 # macOS: lldb
@@ -524,7 +528,7 @@ gdb ./build/bin/kaszlak
 (gdb) continue
 ```
 
-### Inspect Database
+## Inspect Database
 
 ```bash
 # Open database
@@ -560,7 +564,7 @@ grep -i error logs/pds.log
 grep "2024-01-01" logs/pds.log
 ```
 
-### Collect Diagnostics
+## Collect Diagnostics
 
 ```bash
 # Create diagnostic bundle
@@ -576,7 +580,7 @@ df -h > diagnostics/disk.txt
 tar -czf diagnostics.tar.gz diagnostics/
 ```
 
-### Report Issues
+## Report Issues
 
 When reporting issues, include:
 1. PDS version
@@ -604,7 +608,7 @@ sqlite3 data/service.db "REINDEX;"
 sqlite3 data/service.db "VACUUM;"
 ```
 
-### Network Optimization
+## Network Optimization
 
 ```bash
 # Increase buffer sizes
@@ -618,7 +622,7 @@ sysctl -w net.core.rmem_max=134217728
 sysctl -w net.core.wmem_max=134217728
 ```
 
-### Memory Optimization
+## Memory Optimization
 
 ```bash
 # Reduce cache size
@@ -633,7 +637,7 @@ watch -n 1 'ps aux | grep kaszlak | grep -v grep'
 
 ## Next Steps
 
-- **[CLI Reference](./cli-reference)** — Command-line interface
-- **[Config Reference](./config-reference)** — Configuration options
-- **[API Reference](./api-reference)** — XRPC endpoints
+- **[CLI Reference](cli-reference)** — Command-line interface
+- **[Config Reference](config-reference)** — Configuration options
+- **[API Reference](api-reference)** — XRPC endpoints
 

@@ -1,3 +1,7 @@
+---
+title: Input Validation
+---
+
 # Input Validation
 
 Input validation is a critical security layer that prevents malicious data from entering the system. September PDS implements comprehensive validation strategies at multiple levels to protect against injection attacks, data corruption, and protocol violations.
@@ -109,9 +113,9 @@ The `ATProtoValidator` class provides static methods for validating AT Protocol 
     }
 
     // Regex pattern for handle validation:
-    // ^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$
+    // ^([a-zA-Z0-9](#)?\.)+[a-zA-Z](#)?$
     NSRegularExpression *regex = [NSRegularExpression 
-        regularExpressionWithPattern:@"^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$" 
+        regularExpressionWithPattern:@"^([a-zA-Z0-9](#)?\\.)+[a-zA-Z](#)?$" 
         options:0 
         error:nil];
     

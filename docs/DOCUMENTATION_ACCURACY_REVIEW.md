@@ -1,3 +1,7 @@
+---
+title: Documentation Accuracy Review Report
+---
+
 # Documentation Accuracy Review Report
 
 **Date:** 2026-03-02  
@@ -46,6 +50,7 @@ This report documents a comprehensive review of all documentation files in the `
 
 **Problem:** Documentation shows registration order as:
 ```
+
 1. XrpcServerMethods
 2. XrpcIdentityMethods
 3. XrpcRepoMethods
@@ -57,6 +62,7 @@ This report documents a comprehensive review of all documentation files in the `
 
 **Actual order in XrpcMethodRegistry.m (lines 5362-5415):**
 ```
+
 1. XrpcServerMethods
 2. XrpcIdentityMethods
 3. XrpcRepoMethods
@@ -164,7 +170,7 @@ cd examples/tutorial-2-accounts/build
 2. **Timeout-based test:** Run with timeout to verify startup without crash
    ```bash
    timeout 5s ./tutorial-2-accounts || [ $? -eq 124 ]  # 124 = timeout exit code
-   ```
+   ```text
 3. **Background + functional test:**
    ```bash
    ./tutorial-2-accounts &
@@ -172,7 +178,7 @@ cd examples/tutorial-2-accounts/build
    sleep 2
    curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount ...
    kill $PID
-   ```
+   ```text
 
 **Recommendation:** 
 - Update tutorial documentation to clarify servers run indefinitely
@@ -255,6 +261,7 @@ PDSApplication *app = [[PDSApplication alloc]
 
 **Problem:** Documentation shows:
 ```
+
 ### updateRecord
 Endpoint: PUT /xrpc/com.atproto.repo.updateRecord
 ```

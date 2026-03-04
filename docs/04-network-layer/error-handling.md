@@ -1,3 +1,7 @@
+---
+title: Error Handling
+---
+
 # Error Handling
 
 ## Overview
@@ -66,6 +70,7 @@ Sets 401 Unauthorized response.
 
 **Response:**
 ```
+
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
 
@@ -104,6 +109,7 @@ Sets 403 Forbidden response.
 
 **Response:**
 ```
+
 HTTP/1.1 403 Forbidden
 Content-Type: application/json
 
@@ -142,6 +148,7 @@ Sets 400 Bad Request response.
 
 **Response:**
 ```
+
 HTTP/1.1 400 Bad Request
 Content-Type: application/json
 
@@ -180,6 +187,7 @@ Sets 404 Not Found response.
 
 **Response:**
 ```
+
 HTTP/1.1 404 Not Found
 Content-Type: application/json
 
@@ -218,6 +226,7 @@ Sets 500 Internal Server Error response.
 
 **Response:**
 ```
+
 HTTP/1.1 500 Internal Server Error
 Content-Type: application/json
 
@@ -263,6 +272,7 @@ Sets 405 Method Not Allowed response.
 
 **Response:**
 ```
+
 HTTP/1.1 405 Method Not Allowed
 Content-Type: application/json
 
@@ -493,6 +503,7 @@ if (!result) {
 ### Complete Error Response
 
 ```
+
 HTTP/1.1 400 Bad Request
 Content-Type: application/json
 Content-Length: 67
@@ -506,6 +517,7 @@ Content-Length: 67
 ### With Additional Headers
 
 ```
+
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
 WWW-Authenticate: Bearer realm="PDS"
@@ -614,6 +626,6 @@ response.body = [NSJSONSerialization dataWithJSONObject:result options:0 error:n
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch)
-- [Domain Methods](./domain-methods)
-- [Auth Helpers](./auth-helpers)
+- [XRPC Dispatch](xrpc-dispatch)
+- [Domain Methods](domain-methods)
+- [Auth Helpers](auth-helpers)

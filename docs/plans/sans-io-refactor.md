@@ -1,3 +1,7 @@
+---
+title: Sans-I/O Refactor Plan
+---
+
 # Sans-I/O Refactor Plan
 
 ## Executive Summary
@@ -561,6 +565,7 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
 ## Phase Dependency Graph
 
 ```
+
 Phase 0 (Characterization Tests)
   ├── 0.1 WebSocket frame tests
   ├── 0.2 WebSocket state tests
@@ -685,7 +690,8 @@ Each phase PR must pass before merging:
 
 ### Before: Tightly Coupled I/O and Protocol Logic
 
-```text
+```
+
        [ Network Socket ]
               │
               ▼ (Bytes via dispatch queue)
@@ -708,7 +714,8 @@ Each phase PR must pass before merging:
 
 ### After: "Sans-I/O" Architecture
 
-```text
+```
+
        [ Network Socket ]
               │
               ▼ (Bytes)

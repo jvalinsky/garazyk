@@ -1,3 +1,7 @@
+---
+title: Development Workflow Diagrams
+---
+
 # Development Workflow Diagrams
 
 Visual guides for common development tasks in this project.
@@ -298,8 +302,8 @@ graph TD
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE)** - API extension procedures
-- **[Setup Guide](SETUP_GUIDE)** - Build and run instructions
+- **[Developer Guide](./development/DEVELOPER_GUIDE)** - API extension procedures
+- **[Setup Guide](# Setup guide)** - Build and run instructions
 - **[Testing Guide](../TESTING)** - Test suite documentation
 - **[Architecture Diagrams](../architecture/DIAGRAMS_MERMAID)** - System Mermaid diagrams
 - **[Diagram Quick Reference](../architecture/DIAGRAM_QUICK_REFERENCE)** - Diagram selection guide

@@ -1,3 +1,7 @@
+---
+title: WebSocket Server
+---
+
 # WebSocket Server
 
 ## Overview
@@ -14,6 +18,7 @@ The WebSocket server handles real-time connections for the firehose (`subscribeR
 ### WebSocket Connection Lifecycle
 
 ```
+
 Client initiates HTTP upgrade request
     ↓
 HttpServer receives Upgrade header
@@ -36,6 +41,7 @@ SubscribeReposHandler unregisters connection
 **ASCII Diagram: WebSocket Upgrade Flow**
 
 ```
+
 ┌─────────────────────────────────────────────────────────┐
 │  Client initiates HTTP upgrade                          │
 │  GET /xrpc/com.atproto.sync.subscribeRepos              │
@@ -88,6 +94,7 @@ SubscribeReposHandler unregisters connection
 ### Frame Processing Pipeline
 
 ```
+
 Raw socket data
     ↓
 Parse WebSocket frame header
@@ -110,6 +117,7 @@ Process message
 The client initiates a WebSocket connection with an HTTP upgrade request:
 
 ```
+
 GET /xrpc/com.atproto.sync.subscribeRepos HTTP/1.1
 Host: pds.example.com
 Upgrade: websocket
@@ -123,6 +131,7 @@ Sec-WebSocket-Version: 13
 The server responds with a 101 status code:
 
 ```
+
 HTTP/1.1 101 Switching Protocols
 Upgrade: websocket
 Connection: Upgrade
@@ -277,6 +286,7 @@ The WebSocket server validates the upgrade request and calculates the accept key
 Each WebSocket frame has the following structure:
 
 ```
+
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-------+-+-------------+-------------------------------+
 |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
@@ -903,7 +913,7 @@ The WebSocketConnection handles the full lifecycle of a WebSocket connection:
 
 ## Next Steps
 
-- **[Commit Broadcasting](./commit-broadcasting)** — Broadcasting events
-- **[Backpressure](./backpressure)** — Flow control
-- **[Firehose Overview](./firehose-overview)** — Architecture overview
+- **[Commit Broadcasting](commit-broadcasting)** — Broadcasting events
+- **[Backpressure](backpressure)** — Flow control
+- **[Firehose Overview](firehose-overview)** — Architecture overview
 

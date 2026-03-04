@@ -1,3 +1,7 @@
+---
+title: Controller & Application Tests
+---
+
 # Controller & Application Tests
 
 Tests for PDS application lifecycle, controllers, and configuration.

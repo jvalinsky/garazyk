@@ -1,3 +1,7 @@
+---
+title: PKCE (Proof Key for Code Exchange)
+---
+
 # PKCE (Proof Key for Code Exchange)
 
 PKCE (RFC 7636) protects the authorization code flow from interception attacks by binding the code to a client-generated secret.
@@ -7,6 +11,7 @@ PKCE (RFC 7636) protects the authorization code flow from interception attacks b
 PKCE prevents an attacker who intercepts the authorization code from exchanging it for tokens. The client generates a `code_verifier` and sends its SHA-256 hash (`code_challenge`) during authorization. When exchanging the code, the client proves possession of the original verifier.
 
 ```
+
 ┌─────────┐                    ┌─────────┐                    ┌─────────┐
 │  Client │                    │   PDS   │                    │  Atta.. │
 └────┬────┘                    └────┬────┘                    └────┬────┘
@@ -69,6 +74,7 @@ PKCE prevents an attacker who intercepts the authorization code from exchanging 
 The code verifier is a cryptographically random string using the unreserved URL characters:
 
 ```
+
 CharacterSet: [A-Z] [a-z] [0-9] - . _ ~
 Length: 43-128 characters
 ```
@@ -87,6 +93,7 @@ Length: 43-128 characters
 ### Example
 
 ```
+
 Random bytes (hex):  7c3e8f2a1b9c4d5e6f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e
 Base64URL encoded:   HD6PKhucTV5vChssPU5fanuMHx8qO0vF5uT4qbDB4u4
 ```
@@ -96,6 +103,7 @@ Base64URL encoded:   HD6PKhucTV5vChssPU5fanuMHx8qO0vF5uT4qbDB4u4
 The code challenge is the SHA-256 hash of the verifier, Base64URL encoded:
 
 ```
+
 code_challenge = BASE64URL(SHA256(code_verifier))
 ```
 
@@ -113,6 +121,7 @@ code_challenge = BASE64URL(SHA256(code_verifier))
 ### Example
 
 ```
+
 verifier:   dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
 challenge:  E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
 ```
@@ -214,6 +223,7 @@ RFC 7636 provides test vectors for implementation verification:
 ### Authorization Request
 
 ```
+
 GET /oauth/authorize?
     client_id=my-app&
     redirect_uri=https://app.example.com/callback&
@@ -227,6 +237,7 @@ GET /oauth/authorize?
 ### Token Request
 
 ```
+
 POST /oauth/token
 Content-Type: application/x-www-form-urlencoded
 
@@ -276,6 +287,7 @@ Each client instance generates its own verifier, ensuring:
 ### Attack Scenario
 
 ```
+
 1. Client generates verifier (secret)
 2. Client sends challenge (public) to server
 3. Server issues code, stores challenge
@@ -347,7 +359,7 @@ if (codeAge > 600) {
 
 ## Related Documentation
 
-- [OAuth 2.0 Overview](./README)
-- [Authorization Flow](./authorization-flow)
-- [Token Management](./token-management)
-- [Security Considerations](./security)
+- [OAuth 2.0 Overview](README)
+- [Authorization Flow](authorization-flow)
+- [Token Management](token-management)
+- [Security Considerations](security)

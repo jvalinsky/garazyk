@@ -1,3 +1,7 @@
+---
+title: Security Best Practices
+---
+
 # Security Best Practices
 
 This document outlines security best practices for September PDS, focusing on defense in depth, least privilege, and secure development patterns. These principles should guide all security-related decisions and implementations.
@@ -578,7 +582,7 @@ npm update
 }
 ```
 
-### 4. Secrets Management
+## 4. Secrets Management
 
 **Never commit secrets:**
 

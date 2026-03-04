@@ -1,3 +1,7 @@
+---
+title: GNUstep Linux Support Plan
+---
+
 # GNUstep Linux Support Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -8,7 +12,7 @@
 
 **Tech Stack:** GNUstep (Clang, libobjc2, gnustep-base, libdispatch), CMake, OpenSSL, libqrencode.
 
-### Task 1: GNUstep Build Environment & CMake
+## Task 1: GNUstep Build Environment & CMake
 
 **Files:**
 - Create: `CMakeLists.txt`
@@ -134,6 +138,6 @@ git commit -m "feat: add Linux fallbacks for CoreImage and GUI"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

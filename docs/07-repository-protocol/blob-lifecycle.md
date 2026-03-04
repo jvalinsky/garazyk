@@ -1,3 +1,7 @@
+---
+title: Blob Lifecycle
+---
+
 # Blob Lifecycle
 
 ## Overview
@@ -7,6 +11,7 @@ This document covers the complete lifecycle of blobs in the September PDS, from 
 ## Lifecycle Stages
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │                     Blob Lifecycle                          │
 ├─────────────────────────────────────────────────────────────┤
@@ -43,6 +48,7 @@ This document covers the complete lifecycle of blobs in the September PDS, from 
 Blobs are uploaded via the `com.atproto.repo.uploadBlob` endpoint:
 
 ```
+
 POST /xrpc/com.atproto.repo.uploadBlob
 Authorization: Bearer <access_token>
 Content-Type: image/jpeg
@@ -334,6 +340,7 @@ Blobs use CIDv1 with raw codec (0x55) and SHA-256 hashing:
 Blobs are downloaded via the `com.atproto.sync.getBlob` endpoint:
 
 ```
+
 GET /xrpc/com.atproto.sync.getBlob?did=<did>&cid=<cid>
 ```
 
@@ -808,7 +815,7 @@ return data;
 
 ## See Also
 
-- [Blob Storage](./blob-storage) — Storage architecture and providers
+- [Blob Storage](blob-storage) — Storage architecture and providers
 - [Blob Service](../03-application-layer/blob-service) — Service layer API
-- [CID and Hashing](./cid-and-hashing) — Content addressing
-- [Repository Basics](./repository-basics) — Repository structure
+- [CID and Hashing](cid-and-hashing) — Content addressing
+- [Repository Basics](repository-basics) — Repository structure

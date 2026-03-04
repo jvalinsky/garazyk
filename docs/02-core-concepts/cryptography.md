@@ -1,3 +1,7 @@
+---
+title: Cryptography in AT Protocol
+---
+
 # Cryptography in AT Protocol
 
 ## Why This Matters
@@ -86,13 +90,14 @@ The AT Protocol uses cryptography for:
 
 ## JWT (JSON Web Tokens)
 
-![Cryptography Flow](../12-diagrams/cryptography-flow.svg)
+<!-- Image placeholder: Cryptography Flow -->
 
 ### Token Structure
 
 A JWT consists of three parts separated by dots:
 
 ```
+
 eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.
 eyJpc3MiOiJkaWQ6d2ViOnBkcy5leGFtcGxlLmNvbSIsInN1YiI6ImRpZDpwbGM6dXNlcjEyMyIsImV4cCI6MTIzNDU2Nzg5MH0.
 <signature>
@@ -330,6 +335,7 @@ The AT Protocol's key rotation design balances security with availability:
 ### Key Rotation Flow
 
 ```
+
 1. Generate new key pair
 2. Publish new public key in DID document
 3. Sign commits with new key

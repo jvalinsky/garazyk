@@ -1,3 +1,7 @@
+---
+title: Next Steps Plan
+---
+
 # Next Steps Plan
 
 **Created**: 2026-02-27
@@ -96,6 +100,7 @@
 ## Uncommitted Changes
 
 ```
+
 M ATProtoPDS/Sources/Database/Schema.h
 M ATProtoPDS/Sources/Database/Schema.m
 ?? ATProtoPDS/Sources/AppView/GraphService.h

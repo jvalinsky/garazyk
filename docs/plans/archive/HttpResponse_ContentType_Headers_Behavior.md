@@ -1,3 +1,7 @@
+---
+title: HttpResponse Content-Type and Headers Behavior
+---
+
 # HttpResponse Content-Type and Headers Behavior
 
 **Document:** HttpResponse Content-Type Property vs Headers  
@@ -135,5 +139,5 @@ A new test file was added at `ATProtoPDS/Tests/Network/HttpResponseTests.m` with
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans

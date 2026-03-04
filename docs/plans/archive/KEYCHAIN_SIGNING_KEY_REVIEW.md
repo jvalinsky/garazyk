@@ -1,3 +1,7 @@
+---
+title: Keychain Signing Key Implementation Review
+---
+
 # Keychain Signing Key Implementation Review
 
 **Review Date:** January 14, 2026 18:49 EST  
@@ -173,6 +177,6 @@ if (self.signingKey) {
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Security Docs](../../security/README) - Security-related documentation

@@ -1,3 +1,7 @@
+---
+title: Domain Methods
+---
+
 # Domain Methods
 
 ## Overview
@@ -7,6 +11,7 @@ Domain methods are the concrete implementations of XRPC endpoints organized by d
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   Domain Method Module                   │
 │  (e.g., XrpcRepoMethods)                 │
@@ -182,6 +187,7 @@ response.statusCode = 200;
 response.body = responseData;
 [response setHeaderValue:@"application/json" forName:@"Content-Type"];
 ```
+
 NSString *repo = params[@"repo"];
 NSString *collection = params[@"collection"];
 NSDictionary *record = params[@"record"];
@@ -481,7 +487,7 @@ response.body = blobData;
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch)
-- [Method Registry](./method-registry)
-- [Auth Helpers](./auth-helpers)
-- [Error Handling](./error-handling)
+- [XRPC Dispatch](xrpc-dispatch)
+- [Method Registry](method-registry)
+- [Auth Helpers](auth-helpers)
+- [Error Handling](error-handling)

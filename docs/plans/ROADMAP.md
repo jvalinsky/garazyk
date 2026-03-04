@@ -1,3 +1,7 @@
+---
+title: ATProto PDS Implementation Roadmap
+---
+
 # ATProto PDS Implementation Roadmap
 
 > **Phase Numbering Note**: This document uses phases 0-10, while `AGENTS.md` uses phases 1-6. 

@@ -1,3 +1,7 @@
+---
+title: "Developer Guide: ATProto PDS API Extension"
+---
+
 # Developer Guide: ATProto PDS API Extension
 
 This guide provides procedures for adding new endpoints, modifying existing functionality, and contributing to the ATProto PDS server codebase with a focus on Objective-C best practices.
@@ -5,6 +9,7 @@ This guide provides procedures for adding new endpoints, modifying existing func
 ## Project Structure
 
 ```
+
 ATProtoPDS/
 ├── Sources/
 │   ├── App/Explore/           # Web interface and API
@@ -147,6 +152,7 @@ To add a new XRPC endpoint, follow these steps:
 
 @end
 ```
+
 ATProtoPDS/
 ├── Sources/
 │   ├── App/Explore/           # Web interface and API
@@ -190,18 +196,21 @@ You can build targets using `xcodebuild` or from within Xcode.
 ```bash
 xcodebuild -scheme ATProtoPDS-CLI build
 ```
+
 The binary will be available at `./build/bin/kaszlak`.
 
 **Unit Tests:**
 ```bash
 xcodebuild -scheme AllTests build
 ```
+
 The test runner will be at `./build/tests/AllTests`.
 
 **Fuzzers:**
 ```bash
 xcodebuild -scheme Fuzzers build
 ```
+
 Fuzzer binaries will be at `./build/fuzzing/`.
 
 ### Running Tests
@@ -223,11 +232,11 @@ Fuzzer binaries will be at `./build/fuzzing/`.
 ./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/xrpc_valid_create.txt
 ```
 
-### Script Development Standards
+## Script Development Standards
 
 All shell scripts follow the bash scripting standards documented in `docs/guides/SCRIPT_DEVELOPMENT.md`. Key requirements:
 
-#### Script Structure
+### Script Structure
 - Use `#!/usr/bin/env bash` shebang for portability
 - Set shell options: `set -euo pipefail`
 - Include header documentation with purpose and usage
@@ -271,7 +280,7 @@ Document the endpoint specification before implementation:
 **Tags**: Records, Search
 ```
 
-### Step 2: Implement the Handler Method
+## Step 2: Implement the Handler Method
 
 Add the handler method to `ExploreHandler.m`:
 
@@ -388,7 +397,7 @@ xcodebuild -scheme AllTests build
 ./build/tests/AllTests
 ```
 
-### Integration Tests
+## Integration Tests
 
 Test the PDS server using the CLI and curl:
 
@@ -528,13 +537,13 @@ If you encounter build errors:
 
 ## Related Documentation
 
-- **[Setup Guide](SETUP_GUIDE)** - Build and installation instructions
-- **[Objective-C Tips](objective_c_tips)** - Memory management and coding patterns
-- **[XRPC Protocol Reference](XRPC_PROTOCOL_REFERENCE)** - Protocol quick reference
-- **[Script Development](SCRIPT_DEVELOPMENT)** - Shell script standards
-- **[Development Workflows](DEVELOPMENT_WORKFLOWS)** - Visual process diagrams
-- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS)** - System design overview
-- **[PDS Architecture](../architecture/atproto_pds_architecture)** - AT Protocol specifications
-- **[OAuth 2.0 Implementation](../oauth2/README)** - Authentication flow details
-- **[Security Plan](../security/SECURITY_PLAN)** - Security validation strategy
-- **[Testing Guide](../TESTING)** - Test suite documentation
+- **[Setup Guide](# Setup guide)** - Build and installation instructions
+- **<!-- Link placeholder: Objective-C Tips -->** - Memory management and coding patterns
+- **<!-- Link placeholder: XRPC Protocol Reference -->** - Protocol quick reference
+- **<!-- Link placeholder: Script Development -->** - Shell script standards
+- **<!-- Link placeholder: Development Workflows -->** - Visual process diagrams
+- **<!-- Link placeholder: Architecture Analysis -->** - System design overview
+- **<!-- Link placeholder: PDS Architecture -->** - AT Protocol specifications
+- **<!-- Link placeholder: OAuth 2.0 Implementation -->** - Authentication flow details
+- **<!-- Link placeholder: Security Plan -->** - Security validation strategy
+- **<!-- Link placeholder: Testing Guide -->** - Test suite documentation

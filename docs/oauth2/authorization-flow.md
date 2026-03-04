@@ -1,3 +1,7 @@
+---
+title: OAuth2 Authorization Flow
+---
+
 # OAuth2 Authorization Flow
 
 This document describes the OAuth2 authorization code flow implementation in the PDS, including user authentication, consent, and authorization code generation.
@@ -12,6 +16,7 @@ The PDS implements a two-phase OAuth2 authorization flow:
 ## Sequence Diagram
 
 ```
+
 ┌─────────┐     ┌──────────┐     ┌───────────────┐     ┌────────────┐     ┌──────────┐
 │  User   │     │  Client  │     │ OAuth2Handler │     │ OAuth2Server│     │ Database │
 └────┬────┘     └────┬─────┘     └───────┬───────┘     └──────┬─────┘     └────┬─────┘
@@ -126,6 +131,7 @@ Authenticates the user and creates a consent session.
 **Request:**
 
 ```
+
 POST /oauth/authorize/sign-in
 Content-Type: application/x-www-form-urlencoded
 X-CSRF-Token: <csrf_token from cookie>
@@ -177,6 +183,7 @@ Processes user consent decision and generates authorization code.
 **Request:**
 
 ```
+
 POST /oauth/authorize/confirm
 Content-Type: application/x-www-form-urlencoded
 
@@ -228,6 +235,7 @@ codeData = {
 
 HTTP 302 redirect to:
 ```
+
 redirect_uri?code=<authorization-code>&state=<state>
 ```
 
@@ -354,9 +362,9 @@ Authorization codes can store DPoP JWK:
 
 ## Related Documentation
 
-- [Token Management](./token-management) - Token exchange, refresh, and JWT structure
-- [Web UI](./web-ui) - Consent screen and sign-in page implementation
-- [Security](./security) - Security considerations for authorization flows
-- [PKCE](./pkce) - PKCE code challenge/verifier implementation
-- [DPoP](./dpop) - DPoP proof validation for token binding
-- [Overview](./README) - OAuth2 implementation overview
+- [Token Management](token-management) - Token exchange, refresh, and JWT structure
+- [Web UI](web-ui) - Consent screen and sign-in page implementation
+- [Security](security) - Security considerations for authorization flows
+- [PKCE](pkce) - PKCE code challenge/verifier implementation
+- [DPoP](dpop) - DPoP proof validation for token binding
+- [Overview](README) - OAuth2 implementation overview

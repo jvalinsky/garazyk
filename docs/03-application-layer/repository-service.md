@@ -1,3 +1,7 @@
+---
+title: Repository Service
+---
+
 # Repository Service
 
 ## Overview
@@ -45,6 +49,7 @@ Understanding the Repository Service is essential for implementing sync, backup,
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   XRPC Sync Endpoints                    │
 │  (com.atproto.sync.*)                    │
@@ -630,6 +635,7 @@ The Merkle Search Tree provides:
 Repository contents are exported as CAR (Content Addressable aRchive) v1:
 
 ```
+
 CAR Header
 ├── Root CID
 └── Block Count
@@ -645,6 +651,7 @@ Blocks
 Commits contain:
 
 ```
+
 Commit
 ├── MST Root CID
 ├── Signature (DID key)
@@ -962,13 +969,13 @@ if (deltaCAR) {
 
 ## See Also
 
-- [Record Service](./record-service) - Individual record operations
-- [Services Overview](./services-overview) - How Repository Service fits into the service layer
+- [Record Service](record-service) - Individual record operations
+- [Services Overview](services-overview) - How Repository Service fits into the service layer
 - [MST Trees](../02-core-concepts/mst-trees) - Understanding Merkle Search Trees
 - [CAR Format](../07-repository-protocol/car-format) - Content Addressable aRchive format
 - [Repository Basics](../07-repository-protocol/repository-basics) - ATProto repository fundamentals
 - [Firehose Overview](../08-sync-firehose/firehose-overview) - Real-time repository updates
-- [Blob Service](./blob-service) - Binary blob storage
+- [Blob Service](blob-service) - Binary blob storage
 - [Sync Endpoints](../04-network-layer/domain-methods) - XRPC sync method implementation
 
 ## Additional Resources

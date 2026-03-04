@@ -1,3 +1,7 @@
+---
+title: Database Migrations
+---
+
 # Database Migrations
 
 ## Overview
@@ -9,6 +13,7 @@ Database migrations manage schema changes and data transformations as the PDS ev
 The PDS uses a version-based migration system:
 
 ```
+
 Current Schema Version: 1
 ├── Migration 1: Initial schema
 ├── Migration 2: Add new table
@@ -21,6 +26,7 @@ Current Schema Version: 1
 Migrations are organized by database type:
 
 ```
+
 ATProtoPDS/Sources/Database/Migration/
 ├── ServiceDatabaseMigrations/
 │   ├── Migration_001_InitialSchema.m
@@ -519,6 +525,7 @@ VALUES (7, datetime('now'), 'Normalize handles to lowercase');
 ## Migration Execution Flow
 
 ```
+
 1. Check current schema version
    ↓
 2. Determine target schema version
@@ -678,13 +685,13 @@ Before deploying a migration:
 ## See Also
 
 **Basic Topics:**
-- [Service Databases](./service-databases) — Shared database
-- [Actor Databases](./actor-databases) — Per-user databases
-- [WAL Mode](./wal-mode) — Write-Ahead Logging
-- [SQLite Architecture](./sqlite-architecture) — Database design
+- [Service Databases](service-databases) — Shared database
+- [Actor Databases](actor-databases) — Per-user databases
+- [WAL Mode](wal-mode) — Write-Ahead Logging
+- [SQLite Architecture](sqlite-architecture) — Database design
 
 **Advanced Topics:**
-- [Migration Strategy](./migration-strategy) — Planning migrations
-- [Migration Rollback](./migration-rollback) — Rollback procedures
-- [Data Integrity](./data-integrity) — Consistency checks
-- [Zero-Downtime Migrations](./zero-downtime-migrations) — Online migrations
+- [Migration Strategy](migration-strategy) — Planning migrations
+- [Migration Rollback](migration-rollback) — Rollback procedures
+- [Data Integrity](data-integrity) — Consistency checks
+- [Zero-Downtime Migrations](zero-downtime-migrations) — Online migrations

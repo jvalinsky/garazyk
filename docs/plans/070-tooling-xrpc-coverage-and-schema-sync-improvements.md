@@ -1,3 +1,7 @@
+---
+title: "Tooling: maintain XRPC coverage + schema-sync accuracy"
+---
+
 # Tooling: maintain XRPC coverage + schema-sync accuracy
 
 ## Summary

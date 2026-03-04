@@ -1,3 +1,7 @@
+---
+title: "com.atproto.temp.* parity follow-up and hardening"
+---
+
 # `com.atproto.temp.*` parity follow-up and hardening
 
 ## Summary

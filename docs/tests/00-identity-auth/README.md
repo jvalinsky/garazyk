@@ -1,3 +1,7 @@
+---
+title: Identity & Authentication Tests
+---
+
 # Identity & Authentication Tests
 
 Tests for identity resolution, OAuth flows, JWT handling, cryptography, and multi-factor authentication.

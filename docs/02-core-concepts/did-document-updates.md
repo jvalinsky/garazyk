@@ -1,3 +1,7 @@
+---
+title: DID Document Updates
+---
+
 # DID Document Updates
 
 ## Why This Matters
@@ -89,6 +93,7 @@ The PLC approach provides blockchain-like guarantees (immutability, auditability
 PLC operations form a hash-linked chain similar to a blockchain:
 
 ```
+
 Genesis Operation (prev: null)
     ↓ (CID: bafyreiabc...)
 Update Operation #1 (prev: bafyreiabc...)

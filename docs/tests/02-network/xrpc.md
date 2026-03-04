@@ -1,3 +1,7 @@
+---
+title: XRPC Protocol Tests
+---
+
 # XRPC Protocol Tests
 
 Tests for XRPC method handling, input validation, error responses, and integration.
@@ -155,11 +159,13 @@ Lexicon validation ensures records conform to schema - preventing malformed data
 
 **Query (GET):**
 ```
+
 GET /xrpc/com.atproto.sync.getRepo?did=did:plc:abc
 ```
 
 **Procedure (POST):**
 ```
+
 POST /xrpc/com.atproto.repo.createRecord
 Content-Type: application/json
 

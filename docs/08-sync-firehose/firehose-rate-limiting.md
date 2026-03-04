@@ -1,3 +1,7 @@
+---
+title: Firehose Rate Limiting
+---
+
 # Firehose Rate Limiting
 
 ## Overview
@@ -593,7 +597,7 @@ static const NSTimeInterval WS_STALL_TIMEOUT = 60.0;  // 60 seconds
 
 ## Next Steps
 
-- **[Backpressure](./backpressure)** — Backpressure mechanisms
-- **[WebSocket Server](./websocket-server)** — WebSocket implementation
-- **[Commit Broadcasting](./commit-broadcasting)** — Event broadcasting
+- **[Backpressure](backpressure)** — Backpressure mechanisms
+- **[WebSocket Server](websocket-server)** — WebSocket implementation
+- **[Commit Broadcasting](commit-broadcasting)** — Event broadcasting
 - **[Request Throttling](../04-network-layer/request-throttling)** — HTTP throttling

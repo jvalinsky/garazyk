@@ -1,8 +1,12 @@
+---
+title: ATProto PDS Troubleshooting & Bug Logs (25 Feb 2026)
+---
+
 # ATProto PDS Troubleshooting & Bug Logs (25 Feb 2026)
 
 This document captures the errors, protocol subtleties, and infrastructure anomalies encountered during the development and verification of the ATProto PDS system, specifically regarding relay integration and repository ingestion.
 
-### 1. HTTP Server Transient Hang on describeRepo/getRepoStatus
+## 1. HTTP Server Transient Hang on describeRepo/getRepoStatus
 **Error:** PDS endpoints (like `getRepoStatus?did=...`) completely hang and stop responding to `curl` requests. The process itself docs not crash, but the thread enters a deadlock.
 **Cause:** Initially suspected to be a string formatting vulnerability regarding the `%3A` URL encoding in the DIDs. However, logging evaluation confirmed that `PDS_LOG_HTTP_INFO` safely formats strings natively. The true cause of the hang was a transient deadlock—likely a SQLite database lock or networking race condition induced by concurrent crawl limits.
 **Fix:** The transient lock was cleared by restarting the container (`docker compose up -d --force-recreate pds`). To aid in future debugging of potential concurrent lock-ups or abuse, we modified `HttpServer.m` to log the incoming `remoteAddress` of all connecting clients.

@@ -1,3 +1,7 @@
+---
+title: ATProto Scope Requirement Implementation Plan
+---
+
 # ATProto Scope Requirement Implementation Plan
 
 ## Objective
@@ -702,12 +706,12 @@ Execute the updated test script to verify end-to-end functionality.
 ```bash
     git add oauth-atproto-scope/test_endpoints.sh
     git commit -m "test: add scope validation to integration tests"
-    ```
+    ```text
 
 ---
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

@@ -1,3 +1,7 @@
+---
+title: Merkle Search Tree Tests
+---
+
 # Merkle Search Tree Tests
 
 Tests for MST (Merkle Search Tree) operations, persistence, and repository commits.
@@ -196,6 +200,7 @@ If any part of the repository is modified, the commit signature breaks.
 ## MST Structure
 
 ```
+
 MST
 ├── Depth = count of leading zeros in SHA-256(key)
 ├── Keys sorted lexicographically within each layer
@@ -213,6 +218,7 @@ Example:
 
 ### Depth Computation
 ```
+
 depth(key) = count_leading_zeros(SHA-256(key))
 ```
 
@@ -223,6 +229,7 @@ depth(key) = count_leading_zeros(SHA-256(key))
 
 ### CID Computation
 ```
+
 node_cid = CID(SHA-256(CBOR_encode(node)))
 ```
 

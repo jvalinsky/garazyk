@@ -1,3 +1,7 @@
+---
+title: Repository Basics
+---
+
 # Repository Basics
 
 ## Overview
@@ -11,6 +15,7 @@ A repository is a versioned data store for a user. It contains:
 ## Repository Structure
 
 ```
+
 Repository (did:plc:user123)
 ├── Records
 │   ├── app.bsky.feed.post/abc123
@@ -355,6 +360,6 @@ A commit contains:
 
 ## Next Steps
 
-- **[CBOR Serialization](./cbor-serialization)** — Data encoding
-- **[CAR Format](./car-format)** — Archive format
-- **[CID and Hashing](./cid-and-hashing)** — Content addressing
+- **[CBOR Serialization](cbor-serialization)** — Data encoding
+- **[CAR Format](car-format)** — Archive format
+- **[CID and Hashing](cid-and-hashing)** — Content addressing

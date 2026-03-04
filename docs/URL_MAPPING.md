@@ -1,3 +1,7 @@
+---
+title: "URL Mapping: Jekyll to VitePress"
+---
+
 # URL Mapping: Jekyll to VitePress
 
 This document tracks URL changes from the Jekyll documentation to the VitePress documentation.
@@ -10,11 +14,13 @@ The VitePress migration maintains the same file structure and naming convention 
 
 ### Jekyll Format
 ```
+
 https://pds.garazyk.xyz/docs/01-getting-started/overview.html
 ```
 
 ### VitePress Format
 ```
+
 https://pds.garazyk.xyz/docs/01-getting-started/overview
 ```
 

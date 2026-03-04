@@ -1,3 +1,7 @@
+---
+title: Event Ordering and Sequence Numbers
+---
+
 # Event Ordering and Sequence Numbers
 
 ## Overview
@@ -114,6 +118,7 @@ Each event is assigned the next sequence number before broadcasting:
 The PDS guarantees that sequence numbers are strictly increasing:
 
 ```
+
 Event 1: seq = 1000
 Event 2: seq = 1001
 Event 3: seq = 1002
@@ -383,6 +388,7 @@ When a gap is detected, clients should:
 The firehose can contain multiple event types in sequence:
 
 ```
+
 seq=1000: #commit (repo: did:plc:user1)
 seq=1001: #commit (repo: did:plc:user2)
 seq=1002: #identity (did: did:plc:user1, handle: alice.bsky.social)
@@ -449,9 +455,9 @@ Every event is persisted to the database:
 
 ## See Also
 
-- [Reconnection Strategy](./reconnection-strategy) — Handling disconnections
-- [Event Replay](./event-replay) — Cursor-based catch-up
-- [Reliability Guarantees](./reliability-guarantees) — Delivery semantics
-- [Commit Broadcasting](./commit-broadcasting) — Event distribution
-- [Firehose Overview](./firehose-overview) — Architecture overview
+- [Reconnection Strategy](reconnection-strategy) — Handling disconnections
+- [Event Replay](event-replay) — Cursor-based catch-up
+- [Reliability Guarantees](reliability-guarantees) — Delivery semantics
+- [Commit Broadcasting](commit-broadcasting) — Event distribution
+- [Firehose Overview](firehose-overview) — Architecture overview
 

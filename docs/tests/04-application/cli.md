@@ -1,3 +1,7 @@
+---
+title: CLI Tests
+---
+
 # CLI Tests
 
 Tests for CLI command dispatcher and subcommands.
@@ -139,6 +143,7 @@ XCTAssertNotNil(payload[@"exp"]); // Expiration
 ## CLI Commands
 
 ```
+
 kaszlak account create --email user@example.com --handle user.bsky.social --password secret
 kaszlak account list --json
 kaszlak account info --handle user.bsky.social

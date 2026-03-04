@@ -1,3 +1,7 @@
+---
+title: Integration Tests
+---
+
 # Integration Tests
 
 End-to-end tests for complete system flows, PLC directory, and federation.
