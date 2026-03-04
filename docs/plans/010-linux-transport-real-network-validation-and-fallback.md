@@ -23,7 +23,7 @@ Harden and validate the Linux/GNUstep network transport with real Linux verifica
   - better error reporting when multiple candidates fail
   - tests that exercise success/failure paths
 
-This is tracked at a high level in `tasks/project-tasks.md`.
+This is tracked at a high level in `docs/plans/archive/project-tasks-archived.md`.
 
 ## Scope
 

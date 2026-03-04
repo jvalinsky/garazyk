@@ -1,11 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Identity/HandleResolver.h"
+#import "Network/SSRFValidator.h"
 #import <arpa/inet.h>
-
-@interface HandleResolver (Testing)
-- (BOOL)isPrivateIPv4Address:(uint32_t)ip;
-- (BOOL)isPrivateIPv6Address:(struct in6_addr)ip6;
-@end
 
 @interface HandleResolverSecurityTests : XCTestCase
 @property (nonatomic, strong) HandleResolver *resolver;
@@ -65,13 +61,13 @@
     struct in_addr addr;
     inet_pton(AF_INET, ipStr, &addr);
     uint32_t ip = ntohl(addr.s_addr);
-    return [self.resolver isPrivateIPv4Address:ip];
+    return [SSRFValidator isPrivateIPv4Address:ip];
 }
 
 - (BOOL)checkIPv6:(const char *)ipStr {
     struct in6_addr addr;
     inet_pton(AF_INET6, ipStr, &addr);
-    return [self.resolver isPrivateIPv6Address:addr];
+    return [SSRFValidator isPrivateIPv6Address:addr];
 }
 
 @end

@@ -5,6 +5,7 @@
 #import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
+#import "Metrics/PDSMetrics.h"
 #import <sqlite3.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -243,6 +244,9 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     
     if (requestCount >= limit) {
         NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+        [[PDSMetrics sharedMetrics] incrementRateLimitRejection:
+            (type == RateLimitTypeDID ? @"did" :
+             type == RateLimitTypeIP ? @"ip" : @"custom")];
         return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
     }
     
@@ -362,6 +366,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     
     if (uploadCount >= limit) {
         NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+        [[PDSMetrics sharedMetrics] incrementRateLimitRejection:@"blob"];
         return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
     }
     

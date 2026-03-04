@@ -54,7 +54,10 @@ sudo apt-get install -y \
 sudo apt-get install -y \
   gnustep-make \
   libgnustep-base-dev \
-  libblocksruntime-dev
+  libblocksruntime-dev \
+  gnustep-devel \
+  libdispatch-dev \
+  uuid-dev
 
 # Install dependencies
 sudo apt-get install -y \
@@ -67,6 +70,10 @@ cmake --version
 clang --version
 gnustep-config --version
 ```
+
+### Note on Foundation Frameworks
+
+Keep in mind that while macOS uses Apple's native `Foundation.framework`, Linux builds link against `GNUstep Base`. You may need to use conditional compilation flags (e.g., `#if defined(__APPLE__)`) when dealing with very new macOS APIs (like `os_log`) that are not present in the GNUstep implementation.
 
 ## Building from Source
 
