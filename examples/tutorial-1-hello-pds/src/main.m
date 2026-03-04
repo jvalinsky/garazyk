@@ -1,9 +1,9 @@
 #import <Foundation/Foundation.h>
 
 // Import PDS headers
-#import "PDSApplication.h"
-#import "PDSConfiguration.h"
-#import "HttpServer.h"
+#import "App/PDSApplication.h"
+#import "App/PDSConfiguration.h"
+#import "Network/HttpServer.h"
 
 /*!
  @file main.m

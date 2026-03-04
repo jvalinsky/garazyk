@@ -3,7 +3,6 @@
 #import "PDSCLIInputHelper.h"
 #import "PDSCLIAccountManager.h"
 #import "Database/PDSDatabase.h"
-#import <sqlite3.h>
 
 @interface PDSInviteInfo : NSObject
 @property (nonatomic, copy) NSString *code;
@@ -21,11 +20,11 @@
 @interface PDSInviteManager : NSObject
 
 + (NSArray<PDSInviteInfo *> *)listInvitesWithContext:(PDSCLICommandContext *)context
-                                             filter:(NSString *)filter
-                                        includeUsed:(BOOL)includeUsed;
+                                              filter:(NSString *)filter
+                                         includeUsed:(BOOL)includeUsed;
 + (NSString *)createInviteWithContext:(PDSCLICommandContext *)context
-                              uses:(NSInteger)uses
-                            disabled:(BOOL)disabled;
+                               uses:(NSInteger)uses
+                             disabled:(BOOL)disabled;
 + (BOOL)revokeInviteWithContext:(PDSCLICommandContext *)context code:(NSString *)code;
 
 @end
@@ -37,8 +36,8 @@
 }
 
 + (NSArray<PDSInviteInfo *> *)listInvitesWithContext:(PDSCLICommandContext *)context
-                                             filter:(NSString *)filter
-                                        includeUsed:(BOOL)includeUsed {
+                                              filter:(NSString *)filter
+                                         includeUsed:(BOOL)includeUsed {
     NSString *dbPath = [self databasePathForContext:context];
     if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
         return @[];
@@ -50,29 +49,28 @@
         return @[];
     }
 
-    NSMutableArray<PDSInviteInfo *> *invites = [NSMutableArray array];
     NSString *sql = includeUsed
         ? @"SELECT code, account_did, uses, max_uses, disabled, created_at FROM invite_codes ORDER BY created_at DESC"
         : @"SELECT code, account_did, uses, max_uses, disabled, created_at FROM invite_codes WHERE disabled = 0 AND uses < max_uses ORDER BY created_at DESC";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db.sqliteHandle, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            PDSInviteInfo *info = [[PDSInviteInfo alloc] init];
-            const char *code = (const char *)sqlite3_column_text(stmt, 0);
-            const char *acct = (const char *)sqlite3_column_text(stmt, 1);
-            const char *created = (const char *)sqlite3_column_text(stmt, 5);
-            info.code = code ? [NSString stringWithUTF8String:code] : @"";
-            info.createdBy = acct ? [NSString stringWithUTF8String:acct] : @"";
-            info.uses = sqlite3_column_int(stmt, 2);
-            info.maxUses = sqlite3_column_int(stmt, 3);
-            info.disabled = sqlite3_column_int(stmt, 4) != 0;
-            info.createdAt = created ? [NSString stringWithUTF8String:created] : @"";
-            [invites addObject:info];
-        }
-        sqlite3_finalize(stmt);
-    }
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[] error:&error];
     [db close];
+
+    if (!rows) {
+        return @[];
+    }
+
+    NSMutableArray<PDSInviteInfo *> *invites = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        PDSInviteInfo *info = [[PDSInviteInfo alloc] init];
+        info.code = row[@"code"] ?: @"";
+        info.createdBy = row[@"account_did"] ?: @"";
+        info.uses = [row[@"uses"] integerValue];
+        info.maxUses = [row[@"max_uses"] integerValue];
+        info.disabled = [row[@"disabled"] integerValue] != 0;
+        info.createdAt = row[@"created_at"] ?: @"";
+        [invites addObject:info];
+    }
 
     if (filter.length > 0) {
         [invites filterUsingPredicate:[NSPredicate predicateWithFormat:@"code CONTAINS[cd] %@", filter]];
@@ -108,30 +106,21 @@
         return nil;
     }
 
+    NSString *uuid = [[NSUUID UUID] UUIDString];
+    NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+    fmt.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+    fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    NSString *now = [fmt stringFromDate:[NSDate date]];
+
     NSString *sql = @"INSERT INTO invite_codes (id, code, account_did, created_at, uses, max_uses, disabled) "
                     @"VALUES (?, ?, ?, ?, 0, ?, ?)";
-    sqlite3_stmt *stmt = NULL;
-    BOOL success = NO;
-    if (sqlite3_prepare_v2(db.sqliteHandle, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
-        NSString *uuid = [[NSUUID UUID] UUIDString];
-        NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-        fmt.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-        fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-        NSString *now = [fmt stringFromDate:[NSDate date]];
-
-        sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, code.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, @"admin".UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 4, now.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt, 5, uses);
-        sqlite3_bind_int(stmt, 6, disabled ? 1 : 0);
-        success = (sqlite3_step(stmt) == SQLITE_DONE);
-        sqlite3_finalize(stmt);
-    }
+    BOOL success = [db executeParameterizedUpdate:sql
+                                           params:@[uuid, code, @"admin", now, @(uses), @(disabled ? 1 : 0)]
+                                            error:&error];
     [db close];
 
     if (!success) {
-        PDS_LOG_ERROR(@"Failed to insert invite code into database");
+        PDS_LOG_ERROR(@"Failed to insert invite code into database: %@", error.localizedDescription);
         return nil;
     }
 
@@ -155,13 +144,15 @@
     }
 
     NSString *sql = @"UPDATE invite_codes SET disabled = 1 WHERE code = ?";
-    sqlite3_stmt *stmt = NULL;
-    BOOL success = NO;
-    if (sqlite3_prepare_v2(db.sqliteHandle, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_text(stmt, 1, code.UTF8String, -1, SQLITE_TRANSIENT);
-        success = (sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(db.sqliteHandle) > 0);
-        sqlite3_finalize(stmt);
+    BOOL success = [db executeParameterizedUpdate:sql params:@[code] error:&error];
+
+    if (success) {
+        NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:@"SELECT changes() AS cnt" params:@[] error:nil];
+        if ([rows.firstObject[@"cnt"] integerValue] == 0) {
+            success = NO;
+        }
     }
+
     [db close];
     return success;
 }

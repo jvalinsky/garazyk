@@ -30,7 +30,7 @@ Admin authentication is functional, but needs a clear production story: secret h
   - Logout behavior:
     - `logout` clears the cached `adminToken` and sets an in-memory `minimumTokenIssuedAt` to invalidate older tokens (until process restart).
 
-Also referenced by `tasks/project-tasks.md` (“Secure admin authentication + gating”).
+Also referenced by `docs/plans/archive/project-tasks-archived.md` (“Secure admin authentication + gating”).
 
 ## Execution update (2026-02-12)
 

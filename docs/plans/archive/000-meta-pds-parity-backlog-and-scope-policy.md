@@ -97,7 +97,7 @@ These are not treated as blockers for PDS parity unless scope policy is expanded
 - [x] Add repo-local scope config for schema-sync/coverage (default include `com.atproto.*`).
 - [x] Re-run diff report with scope config and attach updated snapshot numbers.
 - [x] File/track the concrete issues that came out of this scope decision (admin/temp/lexicon/tooling/spec-alignment).
-- [ ] (Optional) Update `tasks/project-tasks.md` to reference current issue drafts and remove duplicate backlog text.
+- [ ] (Optional) Update `docs/plans/archive/project-tasks-archived.md` to reference current issue drafts and remove duplicate backlog text.
 
 ## Exit criteria (for this meta issue)
 
@@ -105,4 +105,4 @@ These are not treated as blockers for PDS parity unless scope policy is expanded
 - [x] File one issue per **in-scope** missing endpoint group (none currently missing).
 - [x] File one reconciliation issue for **code methods with no lexicon** (none currently present in scope).
 - [x] File one tooling issue to parse `registerMethod:@"<nsid>"` and remove `unknown` noise.
-- [ ] (Optional) Update `tasks/project-tasks.md` to reference current issue drafts.
+- [ ] (Optional) Update `docs/plans/archive/project-tasks-archived.md` to reference current issue drafts.
