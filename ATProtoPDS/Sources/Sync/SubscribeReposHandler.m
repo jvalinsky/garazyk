@@ -18,6 +18,7 @@
 #import "Sync/Firehose.h"
 #import "Sync/WebSocketConnection.h"
 #import "Sync/WebSocketServer.h"
+#import "Metrics/PDSMetrics.h"
 
 NSString *const SubscribeReposHandlerErrorDomain =
     @"com.atproto.pds.subscribeRepos";
@@ -194,6 +195,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   @synchronized(self.attachedConnections) {
     [self.attachedConnections addObject:webSocketConnection];
   }
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)self.attachedConnections.count];
 
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didAcceptConnection:)]) {
@@ -218,6 +220,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   @synchronized(self.attachedConnections) {
     [self.attachedConnections addObject:connection];
   }
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)self.attachedConnections.count];
 
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didAcceptConnection:)]) {
@@ -452,6 +455,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     [self broadcastEventData:eventData];
+    [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"commit"];
+    [[PDSMetrics sharedMetrics] incrementRepoCommits];
+    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.sequenceNumber];
     PDS_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
                       repoDid, (unsigned long)self.sequenceNumber);
   });
@@ -490,6 +496,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     [self broadcastEventData:eventData];
+    [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
+    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.sequenceNumber];
     PDS_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
                       (unsigned long)self.sequenceNumber);
   });
@@ -528,6 +536,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     [self broadcastEventData:eventData];
+    [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
+    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.sequenceNumber];
     PDS_LOG_SYNC_INFO(@"Broadcast account takedown event for DID %@, seq %lu",
                       did, (unsigned long)self.sequenceNumber);
   });
@@ -934,6 +944,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   @synchronized(self.attachedConnections) {
     [self.attachedConnections removeObject:connection];
   }
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)self.attachedConnections.count];
 }
 
 - (BOOL)sendEventData:(NSData *)eventData

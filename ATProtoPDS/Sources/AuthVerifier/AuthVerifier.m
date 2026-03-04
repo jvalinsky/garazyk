@@ -12,6 +12,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
+#import "Metrics/PDSMetrics.h"
 #import "OAuthProvider/OAuthProviderProtocols.h"
 #import <Security/Security.h>
 
@@ -113,6 +114,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing token"}];
         }
+        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"missing_token"];
         return nil;
     }
     return [self verifyAuthHeader:[NSString stringWithFormat:@"Bearer %@", token]
@@ -159,6 +161,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorDPoPMissing
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing DPoP header"}];
         }
+        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"dpop_missing"];
         return nil;
     }
 
@@ -217,6 +220,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
             if (error) {
                 *error = dpopError;
             }
+            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"dpop_invalid"];
             return nil;
         }
     }
@@ -228,6 +232,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid JWT format"}];
         }
+        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_token"];
         return nil;
     }
 
@@ -244,6 +249,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing issuer claim"}];
         }
+        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"missing_issuer"];
         return nil;
     }
 
@@ -253,6 +259,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidToken
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid subject claim"}];
         }
+        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_subject"];
         return nil;
     }
 
@@ -273,6 +280,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                                             code:AuthVerifierErrorInvalidSignature
                                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT verification failed"}];
             }
+            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
             return nil;
         }
     } else if (self.keyResolver && [self.keyResolver isIssuerAllowed:issuer]) {
@@ -283,6 +291,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                              code:AuthVerifierErrorInvalidIssuer
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to fetch JWKS"}];
             }
+            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_issuer"];
             return nil;
         }
     } else {
@@ -291,6 +300,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                          code:AuthVerifierErrorInvalidIssuer
                                      userInfo:@{NSLocalizedDescriptionKey: @"Issuer not allowed"}];
         }
+        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_issuer"];
         return nil;
     }
 
@@ -337,6 +347,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                                          code:AuthVerifierErrorAccountTakedown
                                                      userInfo:@{NSLocalizedDescriptionKey: @"Account is suspended"}];
         }
+        [[PDSMetrics sharedMetrics] incrementAuthFailure:@"account_suspended"];
         return nil;
     }
 

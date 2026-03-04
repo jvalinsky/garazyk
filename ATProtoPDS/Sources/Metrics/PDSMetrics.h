@@ -63,6 +63,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) NSInteger activeConnections;
 
 /**
+ * @brief Server start time as a Unix timestamp (seconds since epoch).
+ */
+@property (nonatomic, readonly) NSTimeInterval serverStartTime;
+
+/**
  * @brief Records an HTTP request with method, endpoint, and status code.
  *
  * This method increments the HTTP request counter and can be used to track
@@ -110,6 +115,84 @@ NS_ASSUME_NONNULL_BEGIN
  * @param bytes The current size of the database in bytes.
  */
 - (void)setDatabaseSize:(unsigned long long)bytes;
+
+/**
+ * @brief Records an HTTP request latency observation for histogram metrics.
+ *
+ * Increments all histogram buckets where the threshold is >= the observed
+ * duration, increments the observation count, and adds to the cumulative sum.
+ *
+ * @param seconds The request duration in seconds.
+ * @param method The HTTP method (e.g., "GET", "POST").
+ * @param endpoint The API endpoint path (e.g., "/xrpc/com.atproto.server.createSession").
+ * @param status The HTTP response status code.
+ */
+- (void)observeRequestLatency:(NSTimeInterval)seconds
+                        method:(NSString *)method
+                      endpoint:(NSString *)endpoint
+                        status:(NSInteger)status;
+
+#pragma mark - Firehose Metrics
+
+/**
+ * @brief Sets the current number of firehose subscribers.
+ *
+ * @param count The current subscriber count.
+ */
+- (void)setFirehoseSubscribers:(NSInteger)count;
+
+/**
+ * @brief Increments the firehose event counter for the given event kind.
+ *
+ * @param kind The event kind (e.g., "commit", "identity", "account").
+ */
+- (void)incrementFirehoseEvent:(NSString *)kind;
+
+/**
+ * @brief Sets the current firehose sequence number.
+ *
+ * @param seq The latest sequence number.
+ */
+- (void)setFirehoseSeq:(int64_t)seq;
+
+#pragma mark - Rate Limiting Metrics
+
+/**
+ * @brief Increments the rate limit rejection counter for the given type.
+ *
+ * @param type The rate limit type (e.g., "did", "ip", "blob").
+ */
+- (void)incrementRateLimitRejection:(NSString *)type;
+
+#pragma mark - Auth Metrics
+
+/**
+ * @brief Increments the auth failure counter for the given reason.
+ *
+ * @param reason The failure reason (e.g., "invalid_token", "expired", "invalid_issuer").
+ */
+- (void)incrementAuthFailure:(NSString *)reason;
+
+/**
+ * @brief Increments the OAuth token grant counter for the given grant type.
+ *
+ * @param grantType The grant type (e.g., "authorization_code", "refresh_token").
+ */
+- (void)incrementOAuthTokenGrant:(NSString *)grantType;
+
+/**
+ * @brief Sets the current number of active auth sessions.
+ *
+ * @param count The current session count.
+ */
+- (void)setActiveAuthSessions:(NSInteger)count;
+
+#pragma mark - Repository Metrics
+
+/**
+ * @brief Increments the total repo commits counter.
+ */
+- (void)incrementRepoCommits;
 
 /**
  * @brief Exports all metrics in Prometheus text format.

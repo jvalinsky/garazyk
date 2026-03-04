@@ -20,6 +20,7 @@
 #import "../Database/PDSDatabase.h"
 #import "../Database/Service/ServiceDatabases.h"
 #import "../Debug/PDSLogger.h"
+#import "../Metrics/PDSMetrics.h"
 #import "../Identity/ATProtoHandleValidator.h"
 #import "../Sync/SubscribeReposHandler.h"
 #import "HttpRequest.h"
@@ -151,6 +152,9 @@
 
   // Register .well-known routes (handle resolution)
   [self registerWellKnownRoutesWithServer:server];
+
+  // Register Metrics endpoint (unauthenticated for Prometheus scraping)
+  [self registerMetricsEndpointWithServer:server];
 
   // Register Admin routes
   [self registerAdminRoutesWithServer:server];
@@ -581,6 +585,19 @@
                     }];
 
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: .well-known routes registered");
+}
+
+- (void)registerMetricsEndpointWithServer:(HttpServer *)server {
+  [server addRoute:@"GET"
+              path:@"/metrics"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             response.statusCode = HttpStatusOK;
+             [response setHeader:@"text/plain; version=0.0.4; charset=utf-8"
+                          forKey:@"Content-Type"];
+             [response setBodyString:[[PDSMetrics sharedMetrics] exportPrometheus]];
+           }];
+
+  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Metrics endpoint registered");
 }
 
 - (void)registerAdminRoutesWithServer:(HttpServer *)server {

@@ -351,7 +351,7 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Set proper priority and change frequency
     - _Requirements: 9.9_
   
-  - [~] 9.5 Update GitHub Actions workflow
+  - [ ] 9.5 Update GitHub Actions workflow
     - Update `.github/workflows/build-docs.yml`
     - Add validation step before build
     - Add VitePress build step
@@ -408,14 +408,14 @@ The implementation follows a 10-phase approach: setup, migration tooling, conten
     - Test mobile responsiveness
     - _Requirements: 10.10_
   
-  - [~] 10.6 Deploy to production
+  - [ ] 10.6 Deploy to production
     - Deploy VitePress site to production (pds.garazyk.xyz/docs)
     - Verify deployment with automated checks
     - Test production site functionality
     - Monitor for errors
     - _Requirements: 10.1, 10.10_
   
-  - [~] 10.7 Validate deployment
+  - [ ] 10.7 Validate deployment
     - Verify site accessible at pds.garazyk.xyz/docs
     - Test HTTPS configuration
     - Verify caching headers

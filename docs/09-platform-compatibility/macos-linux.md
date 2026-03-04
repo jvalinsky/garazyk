@@ -118,13 +118,30 @@ ATProtoPDS/Sources/Compat/
 
 ```objc
 // In os_log_compat.h
-#if TARGET_OS_LINUX
+#if !defined(__APPLE__)
     // GNUstep doesn't have os_log
     #define os_log(log, format, ...) NSLog(format, ##__VA_ARGS__)
     #define os_log_error(log, format, ...) NSLog(format, ##__VA_ARGS__)
 #else
     // macOS has os_log
     #import <os/log.h>
+#endif
+```
+
+### Deprecation Macros
+
+To avoid macro re-definition conflicts that cause parse errors on GNUstep, the deprecated attribute macro is explicitly undefined and redefined:
+
+```objc
+// In PDSTypes.h
+#ifdef DEPRECATED_MSG_ATTRIBUTE
+#undef DEPRECATED_MSG_ATTRIBUTE
+#endif
+
+#if defined(__APPLE__)
+#define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
+#else
+#define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
 #endif
 ```
 
