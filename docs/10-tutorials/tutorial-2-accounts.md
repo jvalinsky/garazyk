@@ -2,24 +2,53 @@
 
 ## Overview
 
-In this tutorial, you'll extend the PDS from Tutorial 1 to support account creation and management with JWT token generation.
+In this tutorial, you'll transform your basic PDS into a multi-user system by implementing account creation, authentication, and JWT token management. This is where your server becomes truly functional—users can create accounts, log in, and receive tokens that authenticate their requests.
+
+By the end of this tutorial, you'll have implemented the two most critical AT Protocol endpoints: `com.atproto.server.createAccount` and `com.atproto.server.createSession`. These form the foundation of user identity and authentication in the AT Protocol ecosystem.
+
+### What You'll Build
+
+A PDS with complete account management:
+- Account creation with email, password, and handle
+- Secure password hashing with salt
+- SQLite database persistence
+- JWT access and refresh token generation
+- Login/session creation endpoint
+- Proper error handling for duplicate accounts and invalid credentials
+
+This tutorial introduces real-world concerns: database transactions, cryptographic hashing, token generation, and secure credential storage.
 
 **Learning Objectives:**
-- Implement account creation endpoint
-- Generate JWT access and refresh tokens
-- Persist account data to database
-- Implement login endpoint
-- Handle authentication errors
+- Implement account creation endpoint (`com.atproto.server.createAccount`)
+- Generate and manage JWT access and refresh tokens
+- Persist account data to SQLite database with proper schema design
+- Implement login endpoint (`com.atproto.server.createSession`)
+- Handle authentication errors (duplicate accounts, invalid passwords)
+- Use CommonCrypto for password hashing and HMAC signatures
+- Understand DID generation and handle uniqueness constraints
 
-**Time:** 45 minutes
+**Estimated Time:** 45-60 minutes
 
 ## Prerequisites
 
-- Completed [Tutorial 1: Hello PDS](./tutorial-1-hello-pds)
-- Understanding of JWT tokens (see [JWT Tokens](../06-authentication/jwt-tokens))
-- Understanding of account service (see [Account Service](../03-application-layer/account-service))
+Before starting this tutorial, you should have:
+
+- **Completed:**
+  - [Tutorial 1: Hello PDS](./tutorial-1-hello-pds) — You'll extend that codebase
+  
+- **Understanding of:**
+  - JWT tokens and their structure (header, payload, signature)
+  - Basic cryptography concepts (hashing, salting, HMAC)
+  - SQL and database schemas
+  - HTTP POST requests with JSON bodies
+  
+- **Recommended Reading:**
+  - [JWT Tokens](../06-authentication/jwt-tokens) — Deep dive into token structure
+  - [Account Service](../03-application-layer/account-service) — Production implementation patterns
 
 ## Step 1: Create Account Data Model
+
+First, let's define what an account looks like in our system. This model represents all the information we need to store about a user.
 
 Create `src/Account.h`:
 
@@ -39,6 +68,28 @@ Create `src/Account.h`:
 
 @end
 ```
+
+### Understanding the Account Model
+
+**DID (Decentralized Identifier):** Every account has a unique DID like `did:plc:abc123`. This is the user's permanent identity in the AT Protocol network. Even if they change their handle or email, their DID stays the same.
+
+**Handle:** The user-friendly identifier like `alice.example.com`. Handles must be unique within your PDS and can be changed (though we don't implement that here).
+
+**Email:** Used for account recovery and notifications. Also must be unique.
+
+**Password Storage:** We never store passwords in plaintext. Instead, we store:
+- `passwordHash` — The result of hashing the password with the salt
+- `passwordSalt` — Random data mixed with the password before hashing
+
+This two-step approach (salt + hash) protects against rainbow table attacks. Even if two users have the same password, their hashes will differ because of unique salts.
+
+**JWT Tokens:** We store the current tokens so users can maintain sessions across server restarts. In production, you'd use a more sophisticated token management system.
+
+**Timestamps:** `createdAt` tracks when the account was created, useful for analytics and debugging.
+
+### Why This Design?
+
+This model balances simplicity with security. Production systems add more fields (profile data, preferences, verification status), but this core set handles the essential account lifecycle.
 
 ## Step 2: Create Account Repository
 
@@ -687,6 +738,8 @@ int main(int argc, char *argv[]) {
 
 ## Step 10: Build and Run
 
+Now let's compile and test the complete account management system:
+
 ```bash
 cd examples/tutorial-2-accounts
 mkdir -p build && cd build
@@ -695,9 +748,20 @@ make
 ./tutorial-2-accounts
 ```
 
+### What Happens During Startup?
+
+When your server starts, it:
+1. Opens (or creates) the SQLite database at `./pds-data/db/accounts.db`
+2. Creates the `accounts` table if it doesn't exist
+3. Initializes the JWT minter with your server's issuer DID
+4. Registers the XRPC endpoints for account creation and login
+5. Starts listening on port 2583
+
+The database schema uses `UNIQUE` constraints on `handle` and `email` to prevent duplicates at the database level—a critical safety feature.
+
 ## Step 11: Test Account Creation
 
-In another terminal:
+In another terminal, create your first account:
 
 ```bash
 # Create an account
@@ -719,7 +783,20 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
 # }
 ```
 
+### Understanding the Response
+
+The server returns:
+- **`did`** — A newly generated DID for this user (using UUID for simplicity; production uses PLC directory)
+- **`handle`** — The user's chosen handle
+- **`email`** — The registered email
+- **`accessJwt`** — Short-lived token (1 hour) for API requests
+- **`refreshJwt`** — Long-lived token (30 days) for obtaining new access tokens
+
+**Security Note:** In production, you'd never return the email in the response—that's private information. We include it here for tutorial clarity.
+
 ## Step 12: Test Login
+
+Now test logging in with the account you just created:
 
 ```bash
 # Login with account
@@ -735,9 +812,45 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
 #   "did": "did:plc:...",
 #   "handle": "alice",
 #   "email": "alice@example.com",
-#   "accessJwt": "eyJ...",
-#   "refreshJwt": "eyJ..."
+#   "accessJwt": "eyJ...",  # New token!
+#   "refreshJwt": "eyJ..."  # New token!
 # }
+```
+
+### Why New Tokens?
+
+Each login generates fresh tokens. This is a security best practice—old tokens should be invalidated when users explicitly log in again. In a production system, you'd track token families and implement token rotation.
+
+## Real-World Usage Patterns
+
+**Account Creation Flow:**
+1. User submits email, password, and desired handle
+2. Server validates inputs (format, length, uniqueness)
+3. Server generates DID and hashes password
+4. Server stores account in database
+5. Server generates JWT tokens
+6. User receives tokens and can immediately make authenticated requests
+
+**Login Flow:**
+1. User submits handle (or email) and password
+2. Server looks up account
+3. Server verifies password hash
+4. Server generates new tokens
+5. User receives fresh tokens
+
+**Token Usage:**
+- Include `accessJwt` in `Authorization: Bearer <token>` header for API requests
+- When `accessJwt` expires, use `refreshJwt` to get a new one (not implemented in this tutorial)
+
+## Common Pitfalls
+
+**Password Security:** This tutorial uses a simple HMAC-SHA256 approach for demonstration. Production systems should use bcrypt, scrypt, or Argon2—algorithms specifically designed for password hashing with built-in work factors.
+
+**DID Generation:** We're using UUIDs for DIDs (`did:plc:<uuid>`). Real PDS implementations register DIDs with the PLC directory and use proper cryptographic key pairs.
+
+**Token Storage:** Storing tokens in the database means they survive server restarts, but it also means you need a token revocation strategy. Production systems use Redis or similar for token management.
+
+**SQL Injection:** We're using SQLite's prepared statements (`sqlite3_bind_*`), which protects against SQL injection. Never concatenate user input into SQL strings!
 ```
 
 ## Next Steps
@@ -747,29 +860,97 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
 
 ## Troubleshooting
 
-**Handle already taken:**
+### Handle Already Taken
+
+If you try to create an account with a handle that already exists:
+
 ```bash
-# Use a different handle
+# This will fail if "alice" already exists
 curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
   -H "Content-Type: application/json" \
   -d '{
     "email": "bob@example.com",
     "password": "secure_password",
-    "handle": "bob"
+    "handle": "alice"
   }' | jq .
+
+# Error response:
+# {
+#   "error": "Handle already taken"
+# }
 ```
 
-**Invalid password on login:**
+**Solution:** Use a different handle. The database's `UNIQUE` constraint on the `handle` column prevents duplicates.
+
+### Invalid Password on Login
+
+If login fails with "Invalid password":
+
 ```bash
-# Verify you're using the correct password
-# Check the error message for details
+# Check that you're using the exact password from account creation
+# Passwords are case-sensitive
 ```
 
-**Database errors:**
+**Common causes:**
+- Typo in password
+- Using email instead of handle for identifier
+- Account doesn't exist (check handle spelling)
+
+### Database Errors
+
+If you see SQLite errors like "database is locked" or "unable to open database file":
+
 ```bash
 # Clear database and restart
 rm -rf pds-data/
+mkdir -p pds-data/db
 ./tutorial-2-accounts
+```
+
+**Prevention:** Ensure only one instance of the server is running. SQLite doesn't handle concurrent writes well without WAL mode (which we'll cover in later tutorials).
+
+### JWT Token Parsing Errors
+
+If tokens look malformed or clients can't parse them:
+
+```bash
+# Verify token structure (should have 3 parts separated by dots)
+echo "eyJ..." | cut -d'.' -f1 | base64 -d
+
+# Should show: {"alg":"HS256","typ":"JWT"}
+```
+
+**Common issues:**
+- Base64 URL encoding vs standard Base64 (we handle this in `base64URLEncode`)
+- Missing or extra padding characters
+- Signature verification failures (check secret key consistency)
+
+### Memory Leaks
+
+If you notice memory growing over time:
+
+**Check for:**
+- Unclosed SQLite statements (we call `sqlite3_finalize` after each query)
+- Unreleased `NSData` or `NSString` objects (ARC should handle this)
+- Database connections not closed (we close in `dealloc`)
+
+**Debug with:**
+```bash
+# On macOS, use Instruments to profile memory
+instruments -t Leaks ./tutorial-2-accounts
+```
+
+### Port Already in Use
+
+If port 2583 is already bound:
+
+```bash
+# Find and kill the process
+lsof -i :2583
+kill -9 <PID>
+
+# Or change the port in main.m
+config.serverPort = 3000;
 ```
 
 ## Summary
@@ -782,3 +963,62 @@ You've successfully extended the PDS to support:
 - Token-based authentication
 
 This foundation enables building more complex features like record operations and firehose subscriptions.
+
+
+Excellent work! You've built a fully functional account management system. Let's review what you accomplished:
+
+**Core Concepts Mastered:**
+- Account data modeling with proper security considerations
+- SQLite database integration with prepared statements
+- Password hashing with salt using CommonCrypto
+- JWT token generation with HMAC-SHA256 signatures
+- XRPC endpoint implementation for account operations
+- Error handling for duplicate accounts and invalid credentials
+- DID generation and handle uniqueness enforcement
+
+**What You Built:**
+A production-ready (with caveats) account system that:
+- Creates accounts with email, password, and handle
+- Stores credentials securely with salted hashes
+- Generates JWT access and refresh tokens
+- Implements login/session creation
+- Persists data to SQLite with proper schema constraints
+- Handles common error cases gracefully
+
+**Key Takeaways:**
+- **Never store plaintext passwords** — Always hash with a salt
+- **Use prepared statements** — Protects against SQL injection
+- **Enforce uniqueness at the database level** — UNIQUE constraints prevent race conditions
+- **Generate fresh tokens on login** — Improves security posture
+- **Validate all inputs** — Check for null, empty, or malformed data
+- **Return appropriate HTTP status codes** — 200 for success, 400 for bad requests, 401 for auth failures
+
+**Security Considerations:**
+This tutorial demonstrates core concepts but simplifies some aspects for clarity:
+- Production systems use bcrypt/Argon2 instead of HMAC-SHA256 for passwords
+- Real DIDs are registered with the PLC directory, not generated locally
+- Token management should use Redis or similar for revocation support
+- Rate limiting should protect account creation and login endpoints
+- Email verification should be required before accounts are fully active
+
+**Architectural Patterns:**
+You've now seen the three-layer architecture that September PDS uses:
+1. **Data Layer** — `AccountRepository` handles database operations
+2. **Service Layer** — `AccountService` implements business logic
+3. **API Layer** — `XrpcDispatcher` handles HTTP/XRPC routing
+
+This separation of concerns makes code testable, maintainable, and easier to reason about.
+
+## Next Steps
+
+With account management working, you're ready to add data storage and retrieval:
+
+- **[Tutorial 3: Record Operations](./tutorial-3-records)** — Implement record CRUD operations with MST integration
+- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add JWT verification and protected endpoints
+- **[Tutorial 5: Firehose](./tutorial-5-firehose)** — Broadcast changes via WebSocket
+
+**Further Reading:**
+- [Account Service Architecture](../03-application-layer/account-service) — Production implementation details
+- [JWT Tokens Deep Dive](../06-authentication/jwt-tokens) — Token structure and verification
+- [SQLite Best Practices](../05-database-layer/sqlite-architecture) — WAL mode, connection pooling, migrations
+- [Security Best Practices](../06-authentication/security-best-practices) — Comprehensive security guide

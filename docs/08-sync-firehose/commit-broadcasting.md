@@ -2,6 +2,10 @@
 
 ## Overview
 
+![Commit Broadcasting Flow](../12-diagrams/commit-broadcasting-flow.svg)
+
+*Process for broadcasting repository commits to firehose subscribers in real-time*
+
 Commit broadcasting is the mechanism that sends repository commits to all connected firehose subscribers in real-time. It:
 - Captures commits from the repository service
 - Formats commits as firehose events

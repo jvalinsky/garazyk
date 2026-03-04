@@ -1,5 +1,31 @@
 # Merkle Search Trees (MST)
 
+## Why This Matters
+
+Traditional databases use indexes and primary keys to organize data. But in a decentralized network where data moves between servers, you need a data structure that:
+- **Proves integrity** — Any tampering is immediately detectable
+- **Enables efficient sync** — Servers can quickly identify differences
+- **Maintains order** — Records can be efficiently queried by key
+- **Produces verifiable state** — A single hash proves the entire repository state
+
+Merkle Search Trees (MSTs) provide all of these properties. They're the backbone of AT Protocol repositories, enabling users to move their data between servers while maintaining cryptographic proof that nothing was altered.
+
+## Real-World Scenario
+
+Imagine Alice has 10,000 posts on Server A and wants to migrate to Server B. Without MSTs, Server B would need to:
+1. Download all 10,000 posts
+2. Verify each post individually
+3. Hope nothing was corrupted or tampered with
+
+With MSTs, the process is elegant:
+1. Server B requests Alice's root CID from Server A
+2. Server B compares its local root CID (if any) with Server A's
+3. If they differ, Server B walks the tree structure to identify exactly which records differ
+4. Server B downloads only the changed records (maybe just 50 recent posts)
+5. Server B verifies the entire repository by recomputing the root CID
+
+This is the power of Merkle trees: efficient synchronization with cryptographic verification.
+
 ## Overview
 
 A Merkle Search Tree (MST) is a data structure that stores all records in a repository. It provides:
@@ -335,6 +361,26 @@ When records are modified, a new commit is created:
 
 - **O(n)** — n = number of records
 - **Efficient storage** — Only store changed nodes
+
+### Why These Characteristics Matter
+
+The O(log n) complexity means that even with millions of records, operations remain fast. A repository with 1 million records requires only about 20 comparisons to find any record (log₂(1,000,000) ≈ 20). This is crucial for real-time applications where users expect instant responses.
+
+The diff operation's O(log n) complexity is particularly important for synchronization. Instead of comparing all records, the algorithm only traverses branches where the CIDs differ. In practice, this means syncing a repository with 100,000 records might only require examining a few hundred nodes if only recent posts have changed.
+
+### Design Trade-offs
+
+**Why not use a hash table?** Hash tables provide O(1) lookups but don't support:
+- Range queries (finding all posts in a date range)
+- Ordered iteration (displaying posts chronologically)
+- Efficient diff computation (identifying changes between repositories)
+
+**Why not use a B-tree?** B-trees are excellent for databases but don't provide:
+- Cryptographic verification (Merkle property)
+- Content addressing (deterministic CIDs)
+- Efficient network synchronization
+
+MSTs combine the best of both worlds: the efficiency of binary search trees with the verifiability of Merkle trees.
 
 ## Best Practices
 

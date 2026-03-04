@@ -4,6 +4,33 @@
 
 The `PDSBlobService` manages binary blob storage and retrieval for ATProto repositories. It handles blob uploads, downloads, metadata management, and deletion with content-addressed storage using CIDs.
 
+### Why This Service Matters
+
+Blobs enable rich media in ATProto - images, videos, audio, and other binary data. The Blob Service ensures:
+
+- **Content Addressing**: Each blob has a unique CID based on its content, enabling deduplication and integrity verification
+- **Efficient Storage**: Large files can be streamed without loading into memory
+- **Quota Management**: Per-user storage limits prevent abuse
+- **Immutability**: Once uploaded, blobs cannot be modified (only deleted), ensuring data integrity
+
+Understanding blob management is essential for implementing media-rich applications like social networks, photo sharing, or document storage on ATProto.
+
+## When to Use This Service
+
+### Use Blob Service When:
+
+- **Uploading media**: Images, videos, audio files for posts or profiles
+- **Storing documents**: PDFs, text files, or other binary data
+- **Managing avatars and banners**: Profile images that need to be referenced in records
+- **Implementing embeds**: Media that will be embedded in posts or other records
+
+### Don't Use Blob Service For:
+
+- **Text data**: Use records for structured text (posts, profiles, etc.)
+- **Small metadata**: Store in record fields rather than as separate blobs
+- **Temporary data**: Blobs are permanent until explicitly deleted
+- **Frequently changing data**: Blobs are immutable; use records for mutable data
+
 ## Responsibilities
 
 - Blob upload and CID generation
@@ -353,31 +380,241 @@ Common error scenarios:
 | Storage error | Backend failure | Return 500 |
 | Unauthorized | DID mismatch | Return 403 |
 
+## Common Pitfalls and Troubleshooting
+
+### Pitfall 1: Blob Size Limits
+
+**Problem**: Large blob uploads fail or cause memory issues.
+
+**Why it happens**: Loading entire blobs into memory can exhaust available RAM.
+
+**Solution**: Use streaming for large files and enforce size limits:
+```objc
+// Check size before upload
+NSUInteger maxBlobSize = 5 * 1024 * 1024; // 5 MB
+if (blobData.length > maxBlobSize) {
+    *error = [ATProtoError errorWithCode:ATProtoErrorCodeBlobTooLarge
+                                 message:@"Blob exceeds maximum size"];
+    return nil;
+}
+
+// For very large files, use streaming
+NSInputStream *stream = [NSInputStream inputStreamWithFileAtPath:filePath];
+[self uploadBlobFromStream:stream mimeType:mimeType forDid:did error:&error];
+```
+
+### Pitfall 2: MIME Type Validation
+
+**Problem**: Malicious files uploaded with incorrect MIME types.
+
+**Why it happens**: Trusting client-provided MIME types without verification.
+
+**Solution**: Validate MIME types against file content:
+```objc
+- (NSString *)detectMIMEType:(NSData *)data {
+    // Check magic bytes
+    uint8_t bytes[12];
+    [data getBytes:&bytes length:MIN(12, data.length)];
+    
+    // JPEG
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+        return @"image/jpeg";
+    }
+    // PNG
+    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+        return @"image/png";
+    }
+    // PDF
+    if (bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46) {
+        return @"application/pdf";
+    }
+    
+    return @"application/octet-stream";
+}
+
+// Verify MIME type matches content
+NSString *detectedType = [self detectMIMEType:blobData];
+if (![detectedType isEqualToString:providedMimeType]) {
+    PDS_LOG_WARN(@"MIME type mismatch: provided=%@, detected=%@", 
+                 providedMimeType, detectedType);
+    // Use detected type or reject upload
+}
+```
+
+### Pitfall 3: Orphaned Blobs
+
+**Problem**: Blobs remain in storage after records are deleted, wasting space.
+
+**Why it happens**: No automatic garbage collection for unreferenced blobs.
+
+**Solution**: Implement blob garbage collection:
+```objc
+- (void)garbageCollectBlobsForDid:(NSString *)did {
+    // 1. Get all blob CIDs from records
+    NSSet *referencedCIDs = [self getAllBlobCIDsFromRecords:did];
+    
+    // 2. Get all stored blobs
+    NSArray *storedBlobs = [blobService listBlobsForDID:did limit:1000 cursor:nil error:nil];
+    
+    // 3. Delete unreferenced blobs
+    for (NSDictionary *blob in storedBlobs) {
+        NSString *cid = blob[@"cid"];
+        if (![referencedCIDs containsObject:cid]) {
+            NSError *error = nil;
+            [blobService deleteBlobWithCID:cid did:did error:&error];
+            if (!error) {
+                PDS_LOG_INFO(@"Garbage collected blob: %@", cid);
+            }
+        }
+    }
+}
+```
+
+### Pitfall 4: CID Collisions
+
+**Problem**: Different blobs appear to have the same CID.
+
+**Why it happens**: Hash collisions (extremely rare) or implementation bugs.
+
+**Solution**: Verify CID generation and handle collisions:
+```objc
+- (CID *)generateCIDForBlob:(NSData *)data error:(NSError **)error {
+    // Generate SHA-256 hash
+    NSData *hash = [self sha256Hash:data];
+    
+    // Create CIDv1 with raw codec
+    CID *cid = [CID cidWithVersion:1
+                            codec:CIDCodecRaw
+                             hash:hash
+                        hashType:CIDHashTypeSHA256];
+    
+    // Verify CID is unique (check if blob already exists)
+    NSData *existingBlob = [self.blobStorage getBlobWithCID:cid did:did error:nil];
+    if (existingBlob) {
+        // Verify content matches
+        if ([existingBlob isEqualToData:data]) {
+            // Same content, deduplication working correctly
+            PDS_LOG_DEBUG(@"Blob already exists with CID: %@", cid.stringValue);
+        } else {
+            // Hash collision (should never happen with SHA-256)
+            PDS_LOG_ERROR(@"CID collision detected: %@", cid.stringValue);
+            if (error) {
+                *error = [NSError errorWithDomain:@"BlobService"
+                                             code:500
+                                         userInfo:@{NSLocalizedDescriptionKey: @"CID collision"}];
+            }
+            return nil;
+        }
+    }
+    
+    return cid;
+}
+```
+
+### Troubleshooting Guide
+
+#### Issue: "Blob not found" for recently uploaded blob
+
+**Symptoms**: Upload succeeds but immediate retrieval fails.
+
+**Possible causes**:
+1. Asynchronous storage backend
+2. Caching issues
+3. DID mismatch
+
+**Diagnosis**:
+```objc
+// Verify upload completed
+NSDictionary *uploadResult = [blobService uploadBlob:data
+                                             forDid:did
+                                           mimeType:mimeType
+                                              error:&error];
+NSString *cid = uploadResult[@"blob"][@"ref"][@"$link"];
+PDS_LOG_DEBUG(@"Uploaded blob CID: %@", cid);
+
+// Immediate retrieval
+NSData *retrieved = [blobService getBlob:[cid dataUsingEncoding:NSUTF8StringEncoding]
+                                  forDid:did
+                                   error:&error];
+PDS_LOG_DEBUG(@"Retrieved blob: %@", retrieved ? @"YES" : @"NO");
+
+// Check storage backend directly
+BOOL exists = [self.blobStorage blobExistsWithCID:cid did:did];
+PDS_LOG_DEBUG(@"Blob exists in storage: %d", exists);
+```
+
+#### Issue: Memory exhaustion during blob operations
+
+**Symptoms**: Application crashes or becomes unresponsive when handling blobs.
+
+**Possible causes**:
+1. Loading large blobs into memory
+2. Not releasing blob data
+3. Concurrent blob operations
+
+**Diagnosis**:
+```objc
+// Monitor memory usage
+- (void)logMemoryUsage {
+    struct task_basic_info info;
+    mach_msg_type_number_t size = sizeof(info);
+    kern_return_t kerr = task_info(mach_task_self(),
+                                   TASK_BASIC_INFO,
+                                   (task_info_t)&info,
+                                   &size);
+    if (kerr == KERN_SUCCESS) {
+        NSUInteger memoryMB = info.resident_size / (1024 * 1024);
+        PDS_LOG_DEBUG(@"Memory usage: %lu MB", memoryMB);
+    }
+}
+
+// Use autorelease pools for batch operations
+for (NSString *cid in blobCIDs) {
+    @autoreleasepool {
+        NSData *blob = [blobService getBlob:cid forDid:did error:nil];
+        [self processBlob:blob];
+        // blob released at end of pool
+    }
+}
+```
+
 ## Best Practices
 
 1. **Upload Validation**
-   - Validate MIME type
-   - Check blob size limits
-   - Verify DID ownership
-   - Rate limit uploads per user
+   - Validate MIME type against file content (magic bytes)
+   - Check blob size limits before upload (5-10 MB typical)
+   - Verify DID ownership before allowing upload
+   - Rate limit uploads per user (e.g., 100 MB per hour)
+   - Scan for malware in uploaded content
 
 2. **Storage Management**
-   - Use file-backed storage for large blobs
+   - Use file-backed storage for large blobs (> 1 MB)
    - Implement garbage collection for orphaned blobs
-   - Monitor storage usage
-   - Set size quotas per user
+   - Monitor storage usage per user and globally
+   - Set size quotas per user (e.g., 1 GB total)
+   - Archive or compress old blobs
 
 3. **Performance**
-   - Use streaming for large downloads
-   - Cache frequently accessed blobs
-   - Implement CDN for blob distribution
-   - Use compression where appropriate
+   - Use streaming for large downloads (don't load into memory)
+   - Cache frequently accessed blobs (avatars, popular images)
+   - Implement CDN for blob distribution in production
+   - Use compression where appropriate (gzip for text, optimize images)
+   - Batch blob operations to reduce overhead
 
 4. **Security**
-   - Validate blob content (magic bytes)
-   - Scan for malware
-   - Implement access controls
-   - Log blob operations
+   - Validate blob content (magic bytes) to prevent file type spoofing
+   - Scan for malware and malicious content
+   - Implement access controls (verify DID ownership)
+   - Log blob operations for audit trails
+   - Use HTTPS for blob transfers
+   - Sanitize filenames and metadata
+
+5. **Reliability**
+   - Verify CID after upload (recompute and compare)
+   - Implement retry logic for failed uploads
+   - Use checksums to detect corruption
+   - Backup blob storage regularly
+   - Monitor storage backend health
 
 ## Common Patterns
 
@@ -479,6 +716,9 @@ for (NSDictionary *blob in allBlobs) {
 
 ## See Also
 
-- [Repository Service](./repository-service)
-- [Services Overview](./services-overview)
-- [Blob Storage](../07-repository-protocol/blob-storage)
+- [Repository Service](./repository-service) - Repository-level operations
+- [Services Overview](./services-overview) - How Blob Service fits into the service layer
+- [Blob Storage](../07-repository-protocol/blob-storage) - Storage backend implementation
+- [Blob Lifecycle](../07-repository-protocol/blob-lifecycle) - Understanding blob lifecycle management
+- [Blob Quotas](../07-repository-protocol/blob-quotas) - Implementing storage quotas
+- [CID and Hashing](../07-repository-protocol/cid-and-hashing) - Content addressing fundamentals

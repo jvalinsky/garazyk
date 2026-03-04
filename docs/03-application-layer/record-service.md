@@ -4,6 +4,17 @@
 
 The `PDSRecordService` provides CRUD (Create, Read, Update, Delete) operations for ATProto records within repositories. It handles record validation, MST updates, transaction management, and batch operations.
 
+### Why This Service Matters
+
+Records are the fundamental unit of data in ATProto. Every post, like, follow, and profile is stored as a record in a user's repository. The Record Service ensures:
+
+- **Data Integrity**: Records are validated against lexicons before storage
+- **Cryptographic Verification**: Each record gets a CID for content-addressed storage
+- **Atomic Operations**: Batch writes succeed or fail as a unit
+- **Consistency**: MST updates maintain repository integrity
+
+Understanding the Record Service is essential for implementing any ATProto application, as it's the primary interface for reading and writing user data.
+
 ## Responsibilities
 
 - Record creation and updates (put operations)
@@ -471,39 +482,271 @@ Notification userInfo contains:
 - `rkey`: Record key
 - `action`: "create" or "delete"
 
-## Error Handling
+## When to Use This Service
 
-Common error scenarios:
+### Use Record Service When:
 
-| Error | Cause | Handling |
-|-------|-------|----------|
-| Unauthorized | actorDid != did | Reject with 403 |
-| Not found | Record doesn't exist | Return 404 |
-| Validation failed | Record doesn't match lexicon | Return 400 with details |
-| Conflict | swapCommit doesn't match | Return 409 |
-| Invalid collection | Collection NSID unknown | Return 400 |
+- **Creating or updating records**: Any time you need to store data in a user's repository (posts, profiles, follows, etc.)
+- **Reading individual records**: Fetching a specific record by its AT URI
+- **Listing collections**: Retrieving all records of a specific type (e.g., all posts)
+- **Batch operations**: Performing multiple writes atomically (create post + update profile in one transaction)
+- **Implementing XRPC endpoints**: The service is designed to back `com.atproto.repo.*` endpoints
 
-## Best Practices
+### Don't Use Record Service For:
 
-1. **Validation**
-   - Use `PDSValidationModeOptimistic` by default
-   - Use `PDSValidationModeRequired` for critical collections
-   - Use `PDSValidationModeOff` only for performance-critical paths
+- **Repository-level operations**: Use `PDSRepositoryService` for MST management, commits, and exports
+- **Blob storage**: Use `PDSBlobService` for binary data (images, videos)
+- **Cross-repository queries**: Record Service operates on single repositories; use indexing for search
+- **Real-time updates**: Use the Firehose (`PDSFirehoseService`) for streaming changes
 
-2. **Batch Operations**
-   - Group related writes together
-   - Use swapCommit for optimistic concurrency control
-   - Keep batch sizes reasonable (< 1000 writes)
+## Common Pitfalls and Troubleshooting
 
-3. **Pagination**
-   - Always provide a limit
-   - Store cursor for next page
-   - Handle cursor expiration gracefully
+### Pitfall 1: Validation Mode Confusion
 
-4. **Authorization**
-   - Always verify actorDid matches did for self-modification
-   - Check permissions for delegated operations
-   - Log authorization failures
+**Problem**: Records fail validation unexpectedly, or invalid records are accepted.
+
+**Why it happens**: The three validation modes have different behaviors that aren't always intuitive.
+
+**Understanding validation modes**:
+- `PDSValidationModeRequired`: Strict - fails if lexicon unknown or validation fails. Use for critical data.
+- `PDSValidationModeOptimistic`: Default - validates if lexicon known, allows unknown types. Best for most cases.
+- `PDSValidationModeOff`: No validation - accepts anything. Only for performance-critical paths or testing.
+
+**Solution**:
+```objc
+// For user-generated content (posts, profiles)
+[recordService putRecord:@"app.bsky.feed.post"
+                   rkey:rkey
+                  value:post
+                 forDid:userDid
+               actorDid:userDid
+         validationMode:PDSValidationModeOptimistic  // Allow future record types
+                  error:&error];
+
+// For system-critical records (account settings)
+[recordService putRecord:@"app.bsky.actor.profile"
+                   rkey:@"self"
+                  value:profile
+                 forDid:userDid
+               actorDid:userDid
+         validationMode:PDSValidationModeRequired  // Strict validation
+                  error:&error];
+```
+
+### Pitfall 2: Timestamp Coherence Violations
+
+**Problem**: Record creation fails with "createdAt timestamp incoherent" error.
+
+**Why it happens**: ATProto requires `createdAt` timestamps to be monotonically increasing within a collection and match the record key (TID) ordering.
+
+**Solution**:
+```objc
+// Use TID for both rkey and timestamp
+TID *tid = [TID tid];
+NSString *rkey = tid.stringValue;
+NSString *createdAt = [tid toISO8601String];
+
+NSDictionary *post = @{
+    @"text": @"Hello world!",
+    @"createdAt": createdAt,  // Must match TID timestamp
+    @"facets": @[]
+};
+
+[recordService putRecord:@"app.bsky.feed.post"
+                   rkey:rkey  // TID as rkey
+                  value:post
+                 forDid:userDid
+               actorDid:userDid
+         validationMode:PDSValidationModeOptimistic
+                  error:&error];
+```
+
+### Pitfall 3: Batch Write Failures
+
+**Problem**: Batch writes fail partway through, leaving repository in inconsistent state.
+
+**Why it happens**: Not understanding that batch writes are atomic - all succeed or all fail.
+
+**Solution**: Design batch operations carefully:
+```objc
+// Good: Related operations that should succeed/fail together
+NSArray *writes = @[
+    @{
+        @"action": @"create",
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": postRkey,
+        @"value": post
+    },
+    @{
+        @"action": @"create",
+        @"collection": @"app.bsky.feed.repost",
+        @"rkey": repostRkey,
+        @"value": repost
+    }
+];
+
+// If either fails, neither is applied
+[recordService applyWrites:writes
+                     forDid:userDid
+                   actorDid:userDid
+             validationMode:PDSValidationModeOptimistic
+                 swapCommit:nil
+                      error:&error];
+```
+
+### Pitfall 4: Pagination Cursor Expiration
+
+**Problem**: Pagination fails with "invalid cursor" after some time.
+
+**Why it happens**: Cursors may be time-limited or invalidated by repository changes.
+
+**Solution**: Handle cursor expiration gracefully:
+```objc
+- (NSArray *)fetchAllRecords:(NSString *)collection forDid:(NSString *)did {
+    NSMutableArray *allRecords = [NSMutableArray array];
+    NSString *cursor = nil;
+    NSInteger maxPages = 100;  // Prevent infinite loops
+    
+    for (NSInteger page = 0; page < maxPages; page++) {
+        NSError *error = nil;
+        NSArray *records = [recordService listRecords:collection
+                                              forDid:did
+                                               limit:50
+                                              cursor:cursor
+                                               error:&error];
+        
+        if (!records) {
+            if (error.code == 400 && [error.localizedDescription containsString:@"cursor"]) {
+                // Cursor expired, restart from beginning
+                PDS_LOG_WARN(@"Cursor expired, restarting pagination");
+                cursor = nil;
+                continue;
+            }
+            break;
+        }
+        
+        [allRecords addObjectsFromArray:records];
+        
+        if (records.count < 50) break;  // Last page
+        cursor = records.lastObject[@"cursor"];
+    }
+    
+    return allRecords;
+}
+```
+
+### Pitfall 5: Authorization Bypass
+
+**Problem**: Users can modify other users' records.
+
+**Why it happens**: Not properly checking that `actorDid` matches `did` for self-modification.
+
+**Solution**: Always verify authorization:
+```objc
+- (BOOL)checkAuthorizationForDid:(NSString *)did
+                        actorDid:(NSString *)actorDid
+                           error:(NSError **)error {
+    // For self-modification, DIDs must match
+    if (![actorDid isEqualToString:did]) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeUnauthorized
+                                         message:@"Cannot modify another user's repository"];
+        }
+        return NO;
+    }
+    return YES;
+}
+```
+
+### Troubleshooting Guide
+
+#### Issue: "Record not found" for existing record
+
+**Symptoms**: `getRecord` returns nil even though record exists.
+
+**Possible causes**:
+1. Incorrect AT URI format
+2. Record in different repository
+3. Database corruption
+
+**Diagnosis**:
+```objc
+// Verify URI format
+NSString *uri = @"at://did:plc:user123/app.bsky.feed.post/abc123";
+NSArray *components = [uri componentsSeparatedByString:@"/"];
+PDS_LOG_DEBUG(@"URI components: %@", components);
+// Should be: ["at:", "", "did:plc:user123", "app.bsky.feed.post", "abc123"]
+
+// Check database directly
+PDSActorStore *store = [_databasePool storeForDid:did error:nil];
+NSArray *allRecords = [store listRecordsForDid:did
+                                    collection:collection
+                                         limit:1000
+                                        offset:0
+                                         error:nil];
+PDS_LOG_DEBUG(@"Total records in collection: %lu", allRecords.count);
+```
+
+#### Issue: Validation fails with cryptic error
+
+**Symptoms**: Record validation fails with unclear error message.
+
+**Possible causes**:
+1. Missing required fields
+2. Wrong field types
+3. Lexicon not loaded
+
+**Diagnosis**:
+```objc
+// Enable detailed validation logging
+ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
+    initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+
+NSError *validationError = nil;
+BOOL valid = [validator validateRecord:value
+                            collection:collection
+                                  mode:ATProtoValidationModeRequired
+                                 error:&validationError];
+
+if (!valid) {
+    PDS_LOG_ERROR(@"Validation failed: %@", validationError);
+    PDS_LOG_ERROR(@"Record value: %@", value);
+    
+    // Check if lexicon is loaded
+    ATProtoLexicon *lexicon = [[ATProtoLexiconRegistry sharedRegistry]
+                               lexiconForNSID:collection];
+    PDS_LOG_DEBUG(@"Lexicon loaded: %@", lexicon ? @"YES" : @"NO");
+}
+```
+
+#### Issue: Batch write fails with no clear error
+
+**Symptoms**: `applyWrites` returns NO but error is vague.
+
+**Possible causes**:
+1. One write in batch is invalid
+2. swapCommit mismatch
+3. Transaction deadlock
+
+**Diagnosis**:
+```objc
+// Test each write individually
+for (NSDictionary *write in writes) {
+    NSError *error = nil;
+    BOOL success = [recordService putRecord:write[@"collection"]
+                                       rkey:write[@"rkey"]
+                                      value:write[@"value"]
+                                     forDid:did
+                                   actorDid:actorDid
+                             validationMode:PDSValidationModeOptimistic
+                                      error:&error];
+    
+    if (!success) {
+        PDS_LOG_ERROR(@"Write failed: %@", write);
+        PDS_LOG_ERROR(@"Error: %@", error);
+    }
+}
+```
 
 ## Common Patterns
 
@@ -575,6 +818,9 @@ if (!result && error.code == 409) {
 
 ## See Also
 
-- [Repository Service](./repository-service)
-- [Services Overview](./services-overview)
-- [Repository Basics](../07-repository-protocol/repository-basics)
+- [Repository Service](./repository-service) - MST management and repository operations
+- [Services Overview](./services-overview) - How Record Service fits into the service layer
+- [Repository Basics](../07-repository-protocol/repository-basics) - Understanding ATProto repositories
+- [Lexicon Validation](../02-core-concepts/atproto-basics) - Record schema validation
+- [CBOR Serialization](../07-repository-protocol/cbor-serialization) - How records are encoded
+- [MST Trees](../02-core-concepts/mst-trees) - Understanding the underlying data structure

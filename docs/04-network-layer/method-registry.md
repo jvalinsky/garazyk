@@ -2,6 +2,10 @@
 
 ## Overview
 
+![XRPC Method Registration](../12-diagrams/method-registration.svg)
+
+*XrpcMethodRegistry orchestration layer delegating to domain-specific method modules*
+
 The `XrpcMethodRegistry` orchestrates the registration of all ATProto XRPC methods with the dispatcher. It acts as a thin orchestration layer that delegates endpoint registration to domain-specific modules, ensuring all methods are registered in the correct order with proper dependencies.
 
 ## Architecture
