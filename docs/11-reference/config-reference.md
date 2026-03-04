@@ -1,3 +1,7 @@
+---
+title: Configuration Reference
+---
+
 # Configuration Reference
 
 ## Configuration File
@@ -18,7 +22,7 @@ The PDS is configured via `config.json` in the working directory.
     "host": "0.0.0.0"
   }
 }
-```
+```json
 
 ### server.port
 
@@ -32,7 +36,7 @@ The PDS is configured via `config.json` in the working directory.
     "port": 2583
   }
 }
-```
+```json
 
 ### server.issuer
 
@@ -46,7 +50,7 @@ The PDS is configured via `config.json` in the working directory.
     "issuer": "https://pds.example.com"
   }
 }
-```
+```json
 
 ## Database Configuration
 
@@ -62,7 +66,7 @@ The PDS is configured via `config.json` in the working directory.
     "path": "./pds-data/db"
   }
 }
-```
+```json
 
 ### database.maxConnections
 
@@ -76,7 +80,7 @@ The PDS is configured via `config.json` in the working directory.
     "maxConnections": 10
   }
 }
-```
+```json
 
 ## PLC Configuration
 
@@ -92,7 +96,7 @@ The PDS is configured via `config.json` in the working directory.
     "url": "https://plc.directory"
   }
 }
-```
+```json
 
 ### plc.timeout
 
@@ -106,7 +110,7 @@ The PDS is configured via `config.json` in the working directory.
     "timeout": 5000
   }
 }
-```
+```json
 
 ## Session Configuration
 
@@ -122,7 +126,7 @@ The PDS is configured via `config.json` in the working directory.
     "inviteCodeRequired": true
   }
 }
-```
+```json
 
 ### session.accessTokenExpiry
 
@@ -136,7 +140,7 @@ The PDS is configured via `config.json` in the working directory.
     "accessTokenExpiry": 3600
   }
 }
-```
+```json
 
 ### session.refreshTokenExpiry
 
@@ -150,7 +154,7 @@ The PDS is configured via `config.json` in the working directory.
     "refreshTokenExpiry": 2592000
   }
 }
-```
+```json
 
 ## Rate Limiting Configuration
 
@@ -166,7 +170,7 @@ The PDS is configured via `config.json` in the working directory.
     "enabled": true
   }
 }
-```
+```json
 
 ### rateLimit.requestsPerHour
 
@@ -180,7 +184,7 @@ The PDS is configured via `config.json` in the working directory.
     "requestsPerHour": 1000
   }
 }
-```
+```json
 
 ### rateLimit.authenticatedRequestsPerHour
 
@@ -194,7 +198,7 @@ The PDS is configured via `config.json` in the working directory.
     "authenticatedRequestsPerHour": 10000
   }
 }
-```
+```json
 
 ## Debug Configuration
 
@@ -210,7 +214,7 @@ The PDS is configured via `config.json` in the working directory.
     "verbose": false
   }
 }
-```
+```json
 
 ### debug.logLevel
 
@@ -225,7 +229,7 @@ The PDS is configured via `config.json` in the working directory.
     "logLevel": "info"
   }
 }
-```
+```json
 
 ### debug.enableProfiling
 
@@ -239,7 +243,7 @@ The PDS is configured via `config.json` in the working directory.
     "enableProfiling": false
   }
 }
-```
+```json
 
 ## Complete Example
 
@@ -274,7 +278,7 @@ The PDS is configured via `config.json` in the working directory.
     "enableProfiling": false
   }
 }
-```
+```json
 
 ## Environment Variables
 
@@ -301,7 +305,7 @@ export PDS_RATE_LIMIT_ENABLED=true
 # Debug
 export PDS_DEBUG_VERBOSE=false
 export PDS_DEBUG_LOG_LEVEL=info
-```
+```json
 
 ## Configuration Priority
 
@@ -319,9 +323,9 @@ The PDS validates configuration on startup:
 ```bash
 # Check configuration
 ./kaszlak --config config.json --validate-config
-```
+```json
 
 ## Next Steps
 
-- **[CLI Reference](./cli-reference)** — Command-line interface
-- **[Troubleshooting](./troubleshooting)** — Common issues
+- **[CLI Reference](cli-reference)** — Command-line interface
+- **[Troubleshooting](troubleshooting)** — Common issues

@@ -1,3 +1,7 @@
+---
+title: "Implementation Plan: TOTP & Passkeys (Apple APIs Only)"
+---
+
 # Implementation Plan: TOTP & Passkeys (Apple APIs Only)
 
 ## Goal
@@ -106,6 +110,6 @@ Implements the Relying Party (Server) logic for WebAuthn.
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Security Docs](../../security/README) - Security-related documentation

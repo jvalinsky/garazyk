@@ -1,8 +1,12 @@
+---
+title: Method Registry
+---
+
 # Method Registry
 
 ## Overview
 
-![XRPC Method Registration](../12-diagrams/method-registration.svg)
+<!-- Image placeholder: XRPC Method Registration -->
 
 *XrpcMethodRegistry orchestration layer delegating to domain-specific method modules*
 
@@ -11,6 +15,7 @@ The `XrpcMethodRegistry` orchestrates the registration of all ATProto XRPC metho
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   XrpcMethodRegistry                     │
 │  (Orchestration Layer)                   │
@@ -151,6 +156,7 @@ Handles `app.bsky.*` endpoints:
 Methods are registered in dependency order:
 
 ```
+
 1. XrpcServerMethods (no dependencies on other XRPC methods)
 2. XrpcIdentityMethods (used by other methods)
 3. XrpcRepoMethods (depends on identity resolution)
@@ -344,7 +350,7 @@ If a method is registered twice:
 
 ## See Also
 
-- [XRPC Dispatch](./xrpc-dispatch)
-- [Domain Methods](./domain-methods)
-- [Auth Helpers](./auth-helpers)
-- [Error Handling](./error-handling)
+- [XRPC Dispatch](xrpc-dispatch)
+- [Domain Methods](domain-methods)
+- [Auth Helpers](auth-helpers)
+- [Error Handling](error-handling)

@@ -1,3 +1,7 @@
+---
+title: Actor Databases
+---
+
 # Actor Databases
 
 ## Overview
@@ -7,6 +11,7 @@ Actor databases are per-user SQLite databases that store all data specific to a 
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────────────────────┐
 │   Database Directory Structure                           │
 ├──────────────────────────────────────────────────────────┤
@@ -490,6 +495,7 @@ NSUInteger size = [databasePool currentPoolSize];
 DIDs are sharded by their first 2 characters to distribute databases:
 
 ```
+
 did:plc:user1 → ${dbDirectory}/di/did:plc:user1/data.sqlite
 did:plc:user2 → ${dbDirectory}/di/did:plc:user2/data.sqlite
 did:web:example.com → ${dbDirectory}/di/did:web:example.com/data.sqlite
@@ -505,6 +511,7 @@ Benefits:
 Signing keys are stored as PEM files alongside databases:
 
 ```
+
 ${dbDirectory}/di/did:plc:user1/
 ├── data.sqlite
 └── signing_key.pem
@@ -621,7 +628,7 @@ NSArray *records = [databasePool executeForDid:userDid
 
 ## See Also
 
-- [Service Databases](./service-databases)
-- [Migrations](./migrations)
-- [WAL Mode](./wal-mode)
-- [SQLite Architecture](./sqlite-architecture)
+- [Service Databases](service-databases)
+- [Migrations](migrations)
+- [WAL Mode](wal-mode)
+- [SQLite Architecture](sqlite-architecture)

@@ -1,3 +1,7 @@
+---
+title: HTTP Server
+---
+
 # HTTP Server
 
 ## Overview
@@ -14,6 +18,7 @@ The HTTP server is a custom implementation that:
 ### Request Processing Pipeline
 
 ```
+
 HTTP Request
     ↓
 HttpServer (parse headers/body)
@@ -401,12 +406,12 @@ response.headers[@"ETag"] = [self calculateETag:response.body];
 ## See Also
 
 **Basic Topics:**
-- [XRPC Dispatch](./xrpc-dispatch) — XRPC routing
-- [Method Registry](./method-registry) — Method registration
+- [XRPC Dispatch](xrpc-dispatch) — XRPC routing
+- [Method Registry](method-registry) — Method registration
 - [Authentication](../06-authentication/jwt-tokens) — Authentication details
 
 **Advanced Topics:**
-- [Rate Limiting](./rate-limiting) — Request rate control
-- [DoS Protection](./dos-protection) — Attack mitigation
-- [Request Throttling](./request-throttling) — Traffic management
-- [Input Validation](./input-validation) — Request validation
+- [Rate Limiting](rate-limiting) — Request rate control
+- [DoS Protection](dos-protection) — Attack mitigation
+- [Request Throttling](request-throttling) — Traffic management
+- [Input Validation](input-validation) — Request validation

@@ -1,3 +1,7 @@
+---
+title: AT Protocol Basics
+---
+
 # AT Protocol Basics
 
 ## Why This Matters
@@ -133,6 +137,7 @@ NSIDs solve the namespace collision problem in a decentralized network. Without 
 ### NSID Structure
 
 ```
+
 com.atproto.server.createAccount
 │   │       │      │
 │   │       │      └─ Method name
@@ -190,6 +195,7 @@ Repositories are the key to data portability. Instead of your data being scatter
 ### Repository Structure
 
 ```
+
 Repository (did:plc:user123)
 ├── Records
 │   ├── app.bsky.feed.post/abc123
@@ -210,6 +216,7 @@ Repository (did:plc:user123)
 Records are identified by a collection name and a record key (rkey):
 
 ```
+
 Collection: app.bsky.feed.post
 RKey: abc123
 Full URI: at://did:plc:user123/app.bsky.feed.post/abc123
@@ -252,6 +259,7 @@ Commits provide several critical guarantees:
 ### Commit Flow
 
 ```
+
 User creates/updates record
     ↓
 Record is inserted into repository
@@ -523,6 +531,7 @@ Access tokens are JWT tokens that:
 
 **Token Structure:**
 ```
+
 Header: { "alg": "ES256", "typ": "JWT" }
 Payload: { "iss": "did:web:pds.example.com", "sub": "did:plc:user123", "exp": 1234567890 }
 Signature: <ECDSA signature>
@@ -562,7 +571,7 @@ If an access token is stolen, it's only useful for an hour. If a refresh token i
 
 ## Next Steps
 
-- **[CBOR and CAR](./cbor-and-car)** — Data serialization formats
-- **[MST Trees](./mst-trees)** — Merkle Search Tree details
-- **[Cryptography](./cryptography)** — Cryptographic operations
+- **[CBOR and CAR](cbor-and-car)** — Data serialization formats
+- **[MST Trees](mst-trees)** — Merkle Search Tree details
+- **[Cryptography](cryptography)** — Cryptographic operations
 - **[Application Layer](../03-application-layer/pds-application)** — Service implementation

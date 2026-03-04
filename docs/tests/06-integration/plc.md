@@ -1,3 +1,7 @@
+---
+title: PLC Directory Tests
+---
+
 # PLC Directory Tests
 
 Tests for PLC DID operations, server, and key parsing.

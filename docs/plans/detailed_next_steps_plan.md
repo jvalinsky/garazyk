@@ -1,3 +1,7 @@
+---
+title: Detailed Next Steps Plan (2026-02-19, Deep Audit Revision)
+---
+
 # Detailed Next Steps Plan (2026-02-19, Deep Audit Revision)
 
 ## Objective

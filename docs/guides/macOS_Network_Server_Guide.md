@@ -1,3 +1,7 @@
+---
+title: macOS Network Server Application Development Guide
+---
+
 # macOS Network Server Application Development Guide
 
 ## Table of Contents
@@ -126,7 +130,7 @@ extension StreamBasedServer: StreamDelegate {
             print("Stream opened")
         case .hasBytesAvailable:
             if let inputStream = aStream as? InputStream {
-                var buffer = [UInt8](repeating: 0, count: 1024)
+                var buffer = [UInt8\](#)
                 let bytesRead = inputStream.read(&buffer, maxLength: 1024)
                 if bytesRead > 0 {
                     let data = Data(bytes: buffer, count: bytesRead)
@@ -257,7 +261,7 @@ class GCDBasedServer {
     
     private func handleClientData(socketFileDescriptor: Int, 
                                   source: DispatchSourceReadProtocol) {
-        var buffer = [UInt8](repeating: 0, count: 4096)
+        var buffer = [UInt8\](#)
         let bytesRead = read(socketFileDescriptor, &buffer, buffer.count)
         
         if bytesRead > 0 {
@@ -290,7 +294,7 @@ class NWTCPServer {
     private var listener: NWListener?
     private let port: NWEndpoint.Port
     private let queue = DispatchQueue(label: "com.server.network", qos: .userInitiated)
-    private var connections = [NWConnection]()
+    private var connections = NWConnection
     private let connectionsQueue = DispatchQueue(label: "com.server.connections")
     
     init(port: UInt16) {
@@ -636,7 +640,7 @@ extension BonjourServer: NetServiceDelegate {
 ```swift
 class ServiceBrowser {
     private var browser: NetServiceBrowser?
-    private var discoveredServices = [NetService]()
+    private var discoveredServices = NetService
     private let browseQueue = DispatchQueue(label: "com.server.browse")
     
     func browseForServices(type: String, domain: String) {
@@ -1051,7 +1055,7 @@ struct CertificateKeyManager {
     }
     
     func getCertificateChain(forIdentity identity: SecIdentity) -> [SecCertificate] {
-        var certificates = [SecCertificate]()
+        var certificates = SecCertificate
         var certificate: SecCertificate?
         
         var policy = SecPolicyCreateBasicX509()
@@ -1232,7 +1236,7 @@ struct CryptoManager {
     // MARK: - Hashing Functions
     
     func md5Hash(data: Data) -> Data {
-        var hash = [UInt8](repeating: 0, count: Int(CC_MD5_DIGEST_LENGTH))
+        var hash = [UInt8\](#))
         data.withUnsafeBytes { bytes in
             _ = CC_MD5(bytes.baseAddress, CC_LONG(data.count), &hash)
         }
@@ -1240,7 +1244,7 @@ struct CryptoManager {
     }
     
     func sha256Hash(data: Data) -> Data {
-        var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+        var hash = [UInt8\](#))
         data.withUnsafeBytes { bytes in
             _ = CC_SHA256(bytes.baseAddress, CC_LONG(data.count), &hash)
         }
@@ -1248,7 +1252,7 @@ struct CryptoManager {
     }
     
     func sha512Hash(data: Data) -> Data {
-        var hash = [UInt8](repeating: 0, count: Int(CC_SHA512_DIGEST_LENGTH))
+        var hash = [UInt8\](#))
         data.withUnsafeBytes { bytes in
             _ = CC_SHA512(bytes.baseAddress, CC_LONG(data.count), &hash)
         }
@@ -1336,7 +1340,7 @@ struct CryptoManager {
     // MARK: - Random Data Generation
     
     func generateRandomBytes(count: Int) -> Data? {
-        var bytes = [UInt8](repeating: 0, count: count)
+        var bytes = [UInt8\](#)
         let status = SecRandomCopyBytes(kSecRandomDefault, count, &bytes)
         
         guard status == errSecSuccess else {
@@ -1378,7 +1382,7 @@ struct CryptoManager {
 struct HMACManager {
     
     func createHMAC(data: Data, key: Data, algorithm: HMACAlgorithm) -> Data {
-        var digest = [UInt8](repeating: 0, count: algorithm.digestLength)
+        var digest = [UInt8](#)
         
         data.withUnsafeBytes { dataBytes in
             key.withUnsafeBytes { keyBytes in
@@ -2828,7 +2832,7 @@ This  guide covers the major APIs and frameworks available for building network 
 ## Related Documentation
 
 - **[Objective-C Tips](objective_c_tips)** - Memory management and GCD patterns
-- **[Developer Guide](DEVELOPER_GUIDE)** - Project structure and build system
+- **[Developer Guide](./development/DEVELOPER_GUIDE)** - Project structure and build system
 - **[Deployment Guide](DEPLOYMENT)** - Production deployment with launchd
 - **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS)** - System components
 - **[Security Plan](../security/SECURITY_PLAN)** - Security hardening

@@ -1,3 +1,7 @@
+---
+title: Security Tests
+---
+
 # Security Tests
 
 Tests for authorization, security hardening, and input validation.

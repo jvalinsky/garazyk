@@ -1,3 +1,7 @@
+---
+title: Setup Guide
+---
+
 # Setup Guide
 
 ## Prerequisites
@@ -24,7 +28,7 @@ cmake --version
 clang --version
 ```
 
-### Linux (GNUstep)
+## Linux (GNUstep)
 
 **Required:**
 - Ubuntu 24.04 LTS or similar
@@ -243,7 +247,7 @@ Create `config.json` in the repository root:
 ./build-linux/bin/september --data-dir ./pds-data --config ./config.json --verbose
 ```
 
-### Production Mode
+## Production Mode
 
 For production deployment, see [Production Deployment Guide](../10-tutorials/tutorial-6-deployment).
 
@@ -271,7 +275,7 @@ Expected response:
 }
 ```
 
-### Create a Test Account
+## Create a Test Account
 
 ```bash
 curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \
@@ -310,7 +314,7 @@ sudo apt-get install clang
 sudo apt-get install gnustep-make libgnustep-base-dev
 ```
 
-### Runtime Issues
+## Runtime Issues
 
 **Port already in use:**
 ```bash
@@ -360,7 +364,7 @@ Use the provided build script for a clean rebuild:
 ./build/tests/AllTests -XCTest MSTInteropTests,CARInteropTests
 ```
 
-### Code Quality Checks
+## Code Quality Checks
 
 ```bash
 # ShellCheck all scripts
@@ -387,7 +391,7 @@ docker run -it \
 
 ## Next Steps
 
-- **[Architecture Overview](./architecture-overview)** — Understand system design
+- **[Architecture Overview](architecture-overview)** — Understand system design
 - **[Core Concepts](../02-core-concepts/atproto-basics)** — Learn AT Protocol basics
 - **[Tutorials](../10-tutorials/tutorial-1-hello-pds)** — Hands-on learning
 - **[Reference](../11-reference/cli-reference)** — CLI command reference

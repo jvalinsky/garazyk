@@ -1,3 +1,7 @@
+---
+title: "Service Template"
+---
+
 # [Service Name] Service
 
 <!-- 
@@ -24,6 +28,7 @@ The `[ServiceClassName]` manages [primary responsibility]. It coordinates betwee
 ## Architecture
 
 ```
+
 [ASCII diagram showing how this service fits into the architecture]
 Example:
 
@@ -34,9 +39,9 @@ Example:
                  │
 ┌────────────────▼────────────────────────┐
 │   [ServiceClassName]                    │
-│  - [method1]()                          │
-│  - [method2]()                          │
-│  - [method3]()                          │
+│  - method1                          │
+│  - method2                          │
+│  - method3                          │
 └────────────────┬────────────────────────┘
                  │
         ┌────────┴────────┐
@@ -255,9 +260,9 @@ if (result) {
 
 ## See Also
 
-- [Related Documentation 1](../path/to/doc1)
-- [Related Documentation 2](../path/to/doc2)
-- [Related Documentation 3](../path/to/doc3)
+- [Related Documentation 1](#)
+- [Related Documentation 2](#)
+- [Related Documentation 3](#)
 
 ---
 

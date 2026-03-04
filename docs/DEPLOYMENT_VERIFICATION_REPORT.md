@@ -1,3 +1,7 @@
+---
+title: Documentation Deployment Verification Report
+---
+
 # Documentation Deployment Verification Report
 
 **Date:** 2026-03-02  
@@ -19,6 +23,7 @@ The PDS Objective-C Implementation Guide documentation has been successfully bui
 
 **Pages Verified:**
 ```
+
 ✅ Main index page (index.html)
 ✅ Table of contents (SUMMARY.html)
 ✅ Glossary (GLOSSARY.html)
@@ -96,6 +101,7 @@ The PDS Objective-C Implementation Guide documentation has been successfully bui
 
 **Deployment URL:**
 ```
+
 https://<username>.github.io/<repository>/
 ```
 
@@ -199,6 +205,7 @@ https://<username>.github.io/<repository>/
 
 ### Primary Access Point
 ```
+
 https://<username>.github.io/<repository>/
 ```
 
@@ -221,6 +228,7 @@ jekyll serve
 
 ### Automatic Deployment Flow
 ```
+
 1. Developer pushes to main branch
    ↓
 2. GitHub Actions workflow triggers

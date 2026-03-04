@@ -1,3 +1,7 @@
+---
+title: Admin Control Panel Implementation Plan
+---
+
 # Admin Control Panel Implementation Plan
 
 **Created:** 2026-02-20
@@ -239,6 +243,7 @@ Add optional email notification when reports are resolved:
 ### 3.1 New Files
 
 ```
+
 ATProtoPDS/Sources/App/AdminUI/Assets/
 ├── admin-panel.html      # Main panel HTML (embedded in index.html or separate)
 ├── admin-panel.css       # Panel-specific styles
@@ -255,6 +260,7 @@ ATProtoPDS/Sources/App/AdminUI/Assets/
 **Window:** `win-admin-panel`
 
 ```
+
 ┌──────────────────────────────────────────────────────────────────┐
 │ Admin Control Panel                                    [Close]    │
 ├──────────────────────────────────────────────────────────────────┤
@@ -300,6 +306,7 @@ ATProtoPDS/Sources/App/AdminUI/Assets/
 
 **Get Info window (classic modal):**
 ```
+
 ┌───────────────────────────────────────────┐
 │ Account Info: [handle]          [Close]   │
 ├───────────────────────────────────────────┤

@@ -1,3 +1,7 @@
+---
+title: Compatibility Layer
+---
+
 # Compatibility Layer
 
 ## Overview
@@ -14,6 +18,7 @@ The compatibility layer provides platform-agnostic abstractions for platform-spe
 ### Compatibility Shims
 
 ```
+
 ┌─────────────────────────────────────────────────────────┐
 │              Application Code                           │
 │  (Uses unified APIs from compatibility layer)           │
@@ -1079,7 +1084,7 @@ Both macOS and GNUstep support ARC, but with different runtime implementations.
 
 ## Next Steps
 
-- **[Network Transport](./network-transport)** — Platform-specific network I/O
-- **[ARC Runtime](./arc-runtime)** — ARC considerations
-- **[macOS/Linux](./macos-linux)** — Platform overview
+- **[Network Transport](network-transport)** — Platform-specific network I/O
+- **[ARC Runtime](arc-runtime)** — ARC considerations
+- **[macOS/Linux](macos-linux)** — Platform overview
 

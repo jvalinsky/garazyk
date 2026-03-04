@@ -1,3 +1,7 @@
+---
+title: Objective-C Coding Guidelines & Tips
+---
+
 # Objective-C Coding Guidelines & Tips
 
 > **Status:** Draft
@@ -381,6 +385,7 @@ Use `objc_setAssociatedObject` to attach data to categories when you cannot subc
 ```objective-c
 objc_setAssociatedObject(self, &kKey, value, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 ```
+
 ---
 
 ## Part 6: Memory Debugging Session (Jan 2026)
@@ -488,7 +493,7 @@ grep -A5 "addRoute.*handler:" ATProtoPDS/Sources/**/*.m | grep -E "(weakSelf|__w
 ctest --test-dir build --output-on-failure
 ```
 
-### 6. Session Summary
+## 6. Session Summary
 
 | Category | Before | After | Status |
 |----------|--------|-------|--------|
@@ -504,7 +509,7 @@ ctest --test-dir build --output-on-failure
 
 ## Related Documentation
 
-- **[Developer Guide](DEVELOPER_GUIDE)** - API extension procedures and project structure
+- **[Developer Guide](./development/DEVELOPER_GUIDE)** - API extension procedures and project structure
 - **[Security Best Practices](../security/SECURITY_PLAN)** - Security validation strategy
 - **[Security Analysis Report](../security/SECURITY_ANALYSIS_REPORT)** - Static analysis findings
 - **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS)** - System design patterns

@@ -1,3 +1,7 @@
+---
+title: AT Protocol PDS Architecture and Specifications
+---
+
 # AT Protocol PDS Architecture and Specifications
 
 ## 1. What is atproto and How PDS Fits Into the Ecosystem
@@ -35,6 +39,7 @@ The HTTP API uses **XRPC** (Cross-server Remote Procedure Call) with common conv
 
 **Endpoint Structure:**
 ```
+
 /xrpc/{NSID}
 ```
 
@@ -111,7 +116,7 @@ POST /xrpc/com.atproto.server.createSession
 }
 ```
 
-### Inter-Service Authentication
+## Inter-Service Authentication
 
 JWT tokens signed by account's atproto signing key:
 
@@ -151,6 +156,7 @@ The official PDS uses SQLite for development but can use PostgreSQL for producti
 Repositories are **Merkle Search Trees (MST)** - content-addressed data structures:
 
 ```
+
 ┌────────────────┐
 │     Commit     │  (Signed Root - contains signature)
 └───────┬────────┘
@@ -262,7 +268,7 @@ GitHub: `DavidBuchanan314/millipds` (149 stars)
 
 ### Architecture Documents
 - [README.md](README) - Architecture documentation index
-- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS) - Deep code analysis and component details
+- [ARCHITECTURE_ANALYSIS.md](# Architecture analysis) - Deep code analysis and component details
 - [atproto_data_models.md](atproto_data_models) - DID, MST, and repository structure
 - [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) - XRPC method quick reference
 
@@ -276,4 +282,4 @@ GitHub: `DavidBuchanan314/millipds` (149 stars)
 - [../tests/02-network/xrpc.md](../tests/02-network/xrpc) - XRPC test documentation
 
 ### Security Documentation
-- [../security/](../security/) - Security audit and hardening guides
+- <!-- Link placeholder: ../security/ --> - Security audit and hardening guides

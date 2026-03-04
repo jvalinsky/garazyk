@@ -1,3 +1,7 @@
+---
+title: Zero-Downtime Migrations
+---
+
 # Zero-Downtime Migrations
 
 ## Overview
@@ -106,7 +110,6 @@ CREATE INDEX idx_accounts_user_handle ON accounts(user_handle);
     [self.db executeSQL:sql withParameters:@[account.handle, account.did] error:nil];
 }
 ```
-
 
 ### Blue-Green Deployment
 
@@ -508,7 +511,6 @@ typedef NS_ENUM(NSInteger, PDSMigrationStage) {
 @end
 ```
 
-
 ### Feature Flags
 
 Control migration rollout with feature flags:
@@ -762,7 +764,7 @@ Always test migrations on staging environment first:
 ./scripts/deploy-migration.sh --environment production --version 10
 ```
 
-### 2. Prepare Rollback Plan
+## 2. Prepare Rollback Plan
 
 Have rollback plan ready before migration:
 
@@ -884,9 +886,9 @@ Schedule migrations during low-traffic periods:
 
 ## See Also
 
-- [Migration Strategy](./migration-strategy) — Versioning and compatibility
-- [Migration Rollback](./migration-rollback) — Rollback procedures
-- [Data Integrity](./data-integrity) — Verification and consistency checks
-- [WAL Mode](./wal-mode) — Write-Ahead Logging benefits
-- [SQLite Architecture](./sqlite-architecture) — Database design patterns
+- [Migration Strategy](migration-strategy) — Versioning and compatibility
+- [Migration Rollback](migration-rollback) — Rollback procedures
+- [Data Integrity](data-integrity) — Verification and consistency checks
+- [WAL Mode](wal-mode) — Write-Ahead Logging benefits
+- [SQLite Architecture](sqlite-architecture) — Database design patterns
 

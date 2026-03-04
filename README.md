@@ -67,14 +67,14 @@ The server will start on `http://localhost:2583` by default.
 
 The complete **PDS Objective-C Implementation Guide** is available at:
 
-📖 **[PDS Implementation Guide](https://jvalinsky.github.io/September/)**
+📖 **[https://pds.garazyk.xyz/docs](https://pds.garazyk.xyz/docs)**
 
 ### Quick Links
 
-- **[Getting Started](https://jvalinsky.github.io/September/01-getting-started/overview.html)** — What is a PDS and why Objective-C
-- **[Architecture Overview](https://jvalinsky.github.io/September/01-getting-started/architecture-overview.html)** — System components and design patterns
-- **[API Reference](https://jvalinsky.github.io/September/11-reference/api-reference.html)** — XRPC endpoints and specifications
-- **[Troubleshooting Guide](https://jvalinsky.github.io/September/11-reference/troubleshooting.html)** — Common issues and solutions
+- **[Getting Started](https://pds.garazyk.xyz/docs/01-getting-started/overview)** — What is a PDS and why Objective-C
+- **[Architecture Overview](https://pds.garazyk.xyz/docs/01-getting-started/architecture-overview)** — System components and design patterns
+- **[API Reference](https://pds.garazyk.xyz/docs/11-reference/api-reference)** — XRPC endpoints and specifications
+- **[Troubleshooting Guide](https://pds.garazyk.xyz/docs/11-reference/troubleshooting)** — Common issues and solutions
 
 The guide covers:
 - Core AT Protocol concepts (DAG-CBOR, CAR, MST, cryptography)
@@ -91,12 +91,12 @@ The guide covers:
 
 The guide includes comprehensive coverage of production-ready features:
 
-- **Security & Hardening** — [Secrets management](https://jvalinsky.github.io/September/06-authentication/secrets-management.html), [input validation](https://jvalinsky.github.io/September/04-network-layer/input-validation.html), [security best practices](https://jvalinsky.github.io/September/06-authentication/security-best-practices.html)
-- **Performance & Reliability** — [Rate limiting](https://jvalinsky.github.io/September/04-network-layer/rate-limiting.html), [DoS protection](https://jvalinsky.github.io/September/04-network-layer/dos-protection.html), [blob optimization](https://jvalinsky.github.io/September/07-repository-protocol/blob-optimization.html)
-- **Operations & Monitoring** — [Metrics collection](https://jvalinsky.github.io/September/11-reference/metrics-collection.html), [logging strategy](https://jvalinsky.github.io/September/11-reference/logging-strategy.html), [alerting](https://jvalinsky.github.io/September/11-reference/alerting.html)
-- **Database Management** — [Migration strategy](https://jvalinsky.github.io/September/05-database-layer/migration-strategy.html), [zero-downtime migrations](https://jvalinsky.github.io/September/05-database-layer/zero-downtime-migrations.html), [data integrity](https://jvalinsky.github.io/September/05-database-layer/data-integrity.html)
-- **Blob Management** — [Lifecycle](https://jvalinsky.github.io/September/07-repository-protocol/blob-lifecycle.html), [garbage collection](https://jvalinsky.github.io/September/07-repository-protocol/blob-garbage-collection.html), [quotas](https://jvalinsky.github.io/September/07-repository-protocol/blob-quotas.html)
-- **Identity & PLC** — [PLC directory](https://jvalinsky.github.io/September/02-core-concepts/plc-directory.html), [DID updates](https://jvalinsky.github.io/September/02-core-concepts/did-document-updates.html), [failover strategies](https://jvalinsky.github.io/September/11-reference/plc-failover.html)
+- **Security & Hardening** — [Secrets management](https://pds.garazyk.xyz/docs/06-authentication/secrets-management), [input validation](https://pds.garazyk.xyz/docs/04-network-layer/input-validation), [security best practices](https://pds.garazyk.xyz/docs/06-authentication/security-best-practices)
+- **Performance & Reliability** — [Rate limiting](https://pds.garazyk.xyz/docs/04-network-layer/rate-limiting), [DoS protection](https://pds.garazyk.xyz/docs/04-network-layer/dos-protection), [blob optimization](https://pds.garazyk.xyz/docs/07-repository-protocol/blob-optimization)
+- **Operations & Monitoring** — [Metrics collection](https://pds.garazyk.xyz/docs/11-reference/metrics-collection), [logging strategy](https://pds.garazyk.xyz/docs/11-reference/logging-strategy), [alerting](https://pds.garazyk.xyz/docs/11-reference/alerting)
+- **Database Management** — [Migration strategy](https://pds.garazyk.xyz/docs/05-database-layer/migration-strategy), [zero-downtime migrations](https://pds.garazyk.xyz/docs/05-database-layer/zero-downtime-migrations), [data integrity](https://pds.garazyk.xyz/docs/05-database-layer/data-integrity)
+- **Blob Management** — [Lifecycle](https://pds.garazyk.xyz/docs/07-repository-protocol/blob-lifecycle), [garbage collection](https://pds.garazyk.xyz/docs/07-repository-protocol/blob-garbage-collection), [quotas](https://pds.garazyk.xyz/docs/07-repository-protocol/blob-quotas)
+- **Identity & PLC** — [PLC directory](https://pds.garazyk.xyz/docs/02-core-concepts/plc-directory), [DID updates](https://pds.garazyk.xyz/docs/02-core-concepts/did-document-updates), [failover strategies](https://pds.garazyk.xyz/docs/11-reference/plc-failover)
 
 ## Building from Source
 

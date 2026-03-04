@@ -1,3 +1,7 @@
+---
+title: Characterization Tests
+---
+
 # Characterization Tests
 
 Tests verifying compliance with reference implementations (Go, TypeScript).

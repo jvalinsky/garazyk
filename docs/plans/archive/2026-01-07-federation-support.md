@@ -1,3 +1,7 @@
+---
+title: Federation Support Implementation Plan
+---
+
 # Federation Support Implementation Plan
 
 ## Goal
@@ -281,7 +285,7 @@ kill $LOCAL_PID
 kill $REMOTE_PID
 ```
 
-### Step 2: Update README with federation documentation
+## Step 2: Update README with federation documentation
 
 ```markdown
 ## Federation Support
@@ -303,9 +307,11 @@ Run the integration test:
 ```bash
 ./test_federation.sh
 ```
+
+# Placeholder
 ```
 
-### Step 3: Run integration tests
+## Step 3: Run integration tests
 
 ```bash
 cd federation-worktree && chmod +x test_federation.sh && ./test_federation.sh
@@ -432,6 +438,8 @@ Run the integration test:
 ```bash
 ./test_federation.sh
 ```
+
+# Placeholder
 ```
 
 **Step 3: Run integration tests**
@@ -451,7 +459,7 @@ git commit -m "docs: add federation documentation and integration tests"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2026-01-07-federation-support.md

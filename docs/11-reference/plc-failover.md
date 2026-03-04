@@ -1,3 +1,7 @@
+---
+title: PLC Failover and Redundancy
+---
+
 # PLC Failover and Redundancy
 
 This guide covers redundancy strategies and fallback mechanisms for PLC directory integration in September PDS.
@@ -42,6 +46,7 @@ The retry policy distinguishes between transient and permanent failures:
 ### Example Retry Sequence
 
 ```
+
 Attempt 0: Immediate request
   ↓ (500 Server Error)
 Attempt 1: Retry after 0.5s
@@ -238,6 +243,7 @@ For production deployments, consider infrastructure-level redundancy:
 Configure multiple A/AAAA records for your PLC domain:
 
 ```
+
 plc.example.com.  300  IN  A  203.0.113.10
 plc.example.com.  300  IN  A  203.0.113.11
 plc.example.com.  300  IN  A  203.0.113.12
@@ -248,6 +254,7 @@ The OS resolver will automatically try different IPs on connection failure.
 #### Load Balancer with Health Checks
 
 ```
+
                     ┌─────────────────┐
                     │  Load Balancer  │
                     │  (HAProxy/nginx)│
@@ -264,6 +271,7 @@ The OS resolver will automatically try different IPs on connection failure.
 Health check configuration (HAProxy example):
 
 ```
+
 backend plc_servers
     mode http
     balance roundrobin
@@ -283,7 +291,7 @@ backend plc_servers
    // Track in PDSMetrics
    [metrics incrementCounter:@"plc.resolution.success"];
    [metrics incrementCounter:@"plc.resolution.failure"];
-   ```
+   ```text
 
 2. **PLC Resolution Latency**
    ```objective-c
@@ -291,18 +299,18 @@ backend plc_servers
    NSDictionary *doc = [resolver resolveDID:did error:&error];
    NSTimeInterval duration = [NSDate timeIntervalSinceReferenceDate] - start;
    [metrics recordHistogram:@"plc.resolution.duration" value:duration];
-   ```
+   ```text
 
 3. **Cache Hit Rate**
    ```objective-c
    [metrics incrementCounter:@"plc.cache.hit"];
    [metrics incrementCounter:@"plc.cache.miss"];
-   ```
+   ```text
 
 4. **Retry Attempts**
    ```objective-c
    [metrics recordHistogram:@"plc.retry.attempts" value:attemptNumber];
-   ```
+   ```text
 
 ### Alert Thresholds
 
@@ -448,7 +456,7 @@ traceroute plc.directory
 - Deploy PLC server closer to PDS (same region/datacenter)
 - Increase cache size to reduce PLC requests
 
-#### Issue: Frequent Cache Misses
+## Issue: Frequent Cache Misses
 
 **Symptoms**: High PLC request rate, poor performance
 
@@ -465,7 +473,7 @@ NSLog(@"Cache count: %lu / %lu",
 - Implement persistent cache (Redis, SQLite)
 - Pre-warm cache with frequently-accessed DIDs
 
-#### Issue: PLC Server Unreachable
+### Issue: PLC Server Unreachable
 
 **Symptoms**: All resolutions failing, network errors
 

@@ -1,3 +1,7 @@
+---
+title: PLC Signature Encoding Notes
+---
+
 # PLC Signature Encoding Notes
 
 This project follows the official did:plc reference implementation for signature encoding.
@@ -25,6 +29,6 @@ This project follows the official did:plc reference implementation for signature
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

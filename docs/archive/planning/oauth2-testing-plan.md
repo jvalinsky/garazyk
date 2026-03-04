@@ -1,3 +1,7 @@
+---
+title: OAuth2 Testing Plan
+---
+
 # OAuth2 Testing Plan
 
 **Goal**: Debug and fix OAuth2 implementation to successfully log in with bsky clients
@@ -28,25 +32,25 @@
   curl -X POST https://crimson-comet.exe.xyz/xrpc/com.atproto.server.createSession \
     -H "Content-Type: application/json" \
     -d '{"identifier":"test5.garazyk.xyz","password":"TestPassword123"}'
-  ```
+  ```text
 - [ ] Test `com.atproto.server.getSession` with returned access token
 - [ ] Test `app.bsky.actor.getPreferences` (requires auth)
   ```bash
   curl -X GET "http://localhost:2583/xrpc/app.bsky.actor.getPreferences" \
     -H "Authorization: Bearer <token>"
-  ```
+  ```text
 - [ ] Test `app.bsky.actor.putPreferences`
   ```bash
   curl -X POST "http://localhost:2583/xrpc/app.bsky.actor.putPreferences" \
     -H "Authorization: Bearer <token>" \
     -H "Content-Type: application/json" \
     -d '{"preferences":{"adultContentEnabled":true}}'
-  ```
+  ```text
 - [ ] Test `app.bsky.feed.getTimeline`
 - [ ] Test `app.bsky.actor.getProfile` (public, no auth)
   ```bash
   curl "http://localhost:2583/xrpc/app.bsky.actor.getProfile?actor=did:plc:z72i7hdynmk6r22z5s6nt7"
-  ```
+  ```text
 - [ ] Test `app.bsky.feed.getAuthorFeed`
 - [ ] Test `app.bsky.graph.getFollowers` and `getFollows`
 - [ ] Test `app.bsky.notification.listNotifications`
@@ -66,7 +70,7 @@
 - [ ] Check if `actor_preferences` table exists in database
   ```bash
   ./build/bin/kaszlak db dump service
-  ```
+  ```text
 - [ ] Verify table schema matches ActorService expectations
 - [ ] Verify `getPreferencesForActor:error:` returns correct format
   - Should return: `{"preferences": {...}}`
@@ -78,18 +82,18 @@
   ```bash
   git clone https://github.com/bluesky-social/social-app.git
   cd social-app
-  ```
+  ```text
 - [ ] Install dependencies
   ```bash
   npm install
-  ```
+  ```text
 - [ ] Configure to point to local PDS
   - Find config file (likely `.env` or similar)
   - Update `PDS_URL` to point to `http://localhost:2583`
 - [ ] Run social-app locally
   ```bash
   npm run dev
-  ```
+  ```text
 - [ ] Attempt login with test5.garazyk.xyz / TestPassword123
 - [ ] Check console for errors
 - [ ] Verify posts and profile render correctly

@@ -1,3 +1,7 @@
+---
+title: Delete Spam Accounts Implementation Plan
+---
+
 # Delete Spam Accounts Implementation Plan
 
 ## Objective
@@ -185,7 +189,7 @@ git commit -m "feat: verify spam account deletions"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation</content>
 <parameter name="filePath">docs/plans/2025-01-08-delete-spam-accounts.md

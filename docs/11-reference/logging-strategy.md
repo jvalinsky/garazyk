@@ -1,3 +1,7 @@
+---
+title: Logging Strategy
+---
+
 # Logging Strategy
 
 This guide covers the logging system in September PDS, including log levels, structured logging, component-based filtering, and sensitive data redaction.
@@ -18,7 +22,7 @@ September PDS uses a custom `PDSLogger` class that provides:
 
 The following diagram illustrates the complete logging pipeline from log statement macros through formatters to output destinations and aggregation systems:
 
-![Logging Pipeline](../12-diagrams/logging-pipeline.svg)
+<!-- Image placeholder: Logging Pipeline -->
 
 The pipeline consists of seven phases:
 
@@ -43,7 +47,7 @@ typedef NS_ENUM(NSInteger, PDSLogLevel) {
 };
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L25-L30)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ### Setting the Log Level
 
@@ -86,7 +90,7 @@ PDS_LOG_WARN(@"Deprecated API called: %@", apiName);
 PDS_LOG_ERROR(@"Failed to connect to database: %@", error);
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L232-L262)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ### Macro Definitions
 
@@ -106,7 +110,7 @@ The basic logging macros are defined as follows:
     [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelError file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L236-L262)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 These macros automatically capture the file name and line number for debugging context.
 
@@ -121,7 +125,7 @@ PDS_LOG_WARN_C(PDSLogComponentHTTP, @"Slow request: %0.2fs", duration);
 PDS_LOG_ERROR_C(PDSLogComponentSync, @"Firehose connection lost: %@", error);
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L268-L294)*
+*Source: <!-- `../../ATProtoPDS/Sources/Debug/PDSLogger.h` -->*
 
 ### Macro Definitions for Component Logging
 
@@ -139,7 +143,7 @@ PDS_LOG_ERROR_C(PDSLogComponentSync, @"Firehose connection lost: %@", error);
     [[PDSLogger sharedLogger] logWithLevel:PDSLogLevelError component:COMPONENT file:__FILE__ line:__LINE__ format:FORMAT, ##__VA_ARGS__]
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L268-L294)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ### Component-Specific Shortcuts
 
@@ -163,7 +167,7 @@ PDS_LOG_SYNC_ERROR(@"Broadcast failed: %@", error);
 PDS_LOG_SYNC_INFO(@"Subscriber connected: %@", subscriberID);
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L296-L327)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ### Complete Component Shorthand Macro Definitions
 
@@ -231,7 +235,7 @@ The following shorthand macros are available for all log levels and components:
 #define PDS_LOG_CLI_DEBUG(FORMAT, ...) PDS_LOG_DEBUG_C(PDSLogComponentCLI, FORMAT, ##__VA_ARGS__)
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L296-L454)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ## Real-World Usage Examples
 
@@ -248,7 +252,7 @@ if (!db) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Services/PDSAdminService.m](../../ATProtoPDS/Sources/Services/PDSAdminService.m#L122-L125)*
+*Reference: `../../ATProtoPDS/Sources/Services/PDSAdminService.m`*
 
 #### Network/Proxy Errors
 
@@ -264,7 +268,7 @@ if (!token) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcProxyHandler.m](../../ATProtoPDS/Sources/Network/XrpcProxyHandler.m#L57-L61)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcProxyHandler.m`*
 
 #### Repository Initialization Errors
 
@@ -276,7 +280,7 @@ if (![repositoryService initializeRepoForDid:createdDid error:&initError]) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcServerMethods.m](../../ATProtoPDS/Sources/Network/XrpcServerMethods.m#L507-L509)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcServerMethods.m`*
 
 ### Info Logging Patterns
 
@@ -288,7 +292,7 @@ PDS_LOG_INFO(@"PDSRelayService started with %lu relays",
              (unsigned long)self.relays.count);
 ```
 
-*Source: [ATProtoPDS/Sources/App/Services/PDSRelayService.m](../../ATProtoPDS/Sources/App/Services/PDSRelayService.m#L50-L52)*
+*Reference: `../../ATProtoPDS/Sources/App/Services/PDSRelayService.m`*
 
 #### Email Provider Configuration
 
@@ -298,7 +302,7 @@ PDS_LOG_INFO(@"Initialized Resend email provider (source: %@, from: %@)",
              source, config.resendFromAddress);
 ```
 
-*Source: [ATProtoPDS/Sources/App/PDSController.m](../../ATProtoPDS/Sources/App/PDSController.m#L310-L313)*
+*Reference: `../../ATProtoPDS/Sources/App/PDSController.m`*
 
 #### Lexicon Loading
 
@@ -308,7 +312,7 @@ PDS_LOG_INFO(@"[LexiconRegistry] Loaded %lu lexicons (%lu errors) from %@",
              (unsigned long)loadedCount, (unsigned long)errorCount, path);
 ```
 
-*Source: [ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m](../../ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m#L83-L85)*
+*Reference: `../../ATProtoPDS/Sources/Lexicon/ATProtoLexiconRegistry.m`*
 
 #### Account Operations
 
@@ -318,7 +322,7 @@ PDS_LOG_INFO(@"Taking down account: %@ reason: %@", did, reason);
 return [_database takeDownAccount:did reason:reason takedownRef:nil error:error];
 ```
 
-*Source: [ATProtoPDS/Sources/Services/PDSAdminService.m](../../ATProtoPDS/Sources/Services/PDSAdminService.m#L154-L156)*
+*Reference: `../../ATProtoPDS/Sources/Services/PDSAdminService.m`*
 
 ### Component-Specific Logging Examples
 
@@ -333,7 +337,7 @@ if (dpopProof.length == 0) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L187-L191)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m`*
 
 ```objc
 // From XrpcAuthHelper.m - JWT verification failure
@@ -345,7 +349,7 @@ if (!isValid || verifyError) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L257-L261)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m`*
 
 ```objc
 // From XrpcAuthHelper.m - Suspended account detection
@@ -355,7 +359,7 @@ if (isTakedown) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L316-L319)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m`*
 
 ```objc
 // From OAuthProvider.m - Debug logging for token issuance
@@ -363,7 +367,7 @@ PDS_LOG_AUTH_DEBUG(@"Tokens issued: sub=%@ client_id=%@", sub, clientID);
 completion(response, nil);
 ```
 
-*Source: [ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m](../../ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m#L509-L511)*
+*Source: <!-- `../../ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m` -->*
 
 #### CLI Logging
 
@@ -380,7 +384,7 @@ if (context.verbose) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m](../../ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m#L91-L98)*
+*Reference: `../../ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m`*
 
 ### Structured Logging with Context
 
@@ -395,7 +399,7 @@ PDS_LOG_ERROR(@"[XRPC] Unhandled exception in %@: %@ (%@)\n%@",
               methodId, name, reason, [stack componentsJoinedByString:@"\n"]);
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcHandler.m](../../ATProtoPDS/Sources/Network/XrpcHandler.m#L161-L164)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcHandler.m`*
 
 This pattern provides comprehensive debugging information including the full stack trace.
 
@@ -414,7 +418,7 @@ The following component tags are defined:
 - **`PDSLogComponentExplore`**: Explorer UI
 - **`PDSLogComponentCLI`**: CLI commands
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L49-L58)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ## Structured Logging
 
@@ -425,6 +429,7 @@ The logger supports both text and JSON output formats.
 Human-readable format for development:
 
 ```
+
 [2025-01-15 14:32:45.123] [INFO] [Auth] [XrpcAuthHelper.m:224] User authenticated: did:plc:abc123
 [2025-01-15 14:32:45.456] [ERROR] [Database] [PDSDatabase.m:89] Query failed: table not found
 ```
@@ -447,7 +452,7 @@ Machine-parseable format for log aggregation:
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.m](../../ATProtoPDS/Sources/Debug/PDSLogger.m#L244-L275)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.m`*
 
 ### Configuring Output Format
 
@@ -464,7 +469,7 @@ logger.logFormat = PDSLogFormatJSON;
 logger.logFormat = PDSLogFormatBoth;
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L39-L46)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ## Correlation IDs
 
@@ -483,11 +488,11 @@ PDS_LOG_DEBUG(@"Validating parameters");
 [[PDSLogger sharedLogger] clearCorrelationID];
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L197-L212)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 Correlation IDs are stored in thread-local storage, so they're automatically isolated per-thread.
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.m](../../ATProtoPDS/Sources/Debug/PDSLogger.m#L382-L395)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.m`*
 
 ## Log File Management
 
@@ -507,13 +512,14 @@ logger.maxLogFiles = 5;  // Keep 5 rotated files
 logger.printToStdout = YES;
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L100-L109)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 ### Log Rotation
 
 Logs are automatically rotated when they exceed `maxLogFileSize`:
 
 ```
+
 server.log       (current)
 server.log.1     (previous)
 server.log.2
@@ -522,7 +528,7 @@ server.log.4
 server.log.5     (oldest, deleted on next rotation)
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.m](../../ATProtoPDS/Sources/Debug/PDSLogger.m#L407-L445)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.m`*
 
 ### Manual Rotation
 
@@ -552,7 +558,7 @@ logger.enabledComponents = [NSSet setWithObjects:
 logger.enabledComponents = nil;
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.h](../../ATProtoPDS/Sources/Debug/PDSLogger.h#L115-L116)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.h`*
 
 This is useful for debugging specific subsystems without noise from others.
 
@@ -576,7 +582,7 @@ logger.asyncLogging = YES;
 - Slightly more complex debugging (logs appear delayed)
 - Better for production, worse for development
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.m](../../ATProtoPDS/Sources/Debug/PDSLogger.m#L233-L242)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.m`*
 
 ## Sensitive Data Redaction
 
@@ -613,7 +619,7 @@ PDS_LOG_AUTH_WARN(@"Invalid DPoP proof (%@)",
                   XrpcAuthSanitizedErrorSummary(dpopError));
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L65-L72)*
+*Source: <!-- `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m` -->*
 
 This pattern extracts only the error domain and code, avoiding potentially sensitive information in the error's `userInfo` dictionary or localized description.
 
@@ -629,7 +635,7 @@ if (takedownError) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L311-L315)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m`*
 
 ```objc
 // From PDSAdminAuth.m - JWT verification failure
@@ -645,14 +651,14 @@ if (![verifier verifyJWT:jwt error:&verifyError]) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Admin/PDSAdminAuth.m](../../ATProtoPDS/Sources/Admin/PDSAdminAuth.m#L373-L377)*
+*Reference: `../../ATProtoPDS/Sources/Admin/PDSAdminAuth.m`*
 
 **Additional sanitized error helpers:**
 
 The same pattern is used in multiple modules with module-specific helper functions:
 
-- `PDSAdminAuthSanitizedErrorSummary()` in [ATProtoPDS/Sources/Admin/PDSAdminAuth.m](../../ATProtoPDS/Sources/Admin/PDSAdminAuth.m#L152-L159)
-- `XrpcAuthSanitizedErrorSummary()` in [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L65-L72)
+- `PDSAdminAuthSanitizedErrorSummary()` in `../../ATProtoPDS/Sources/Admin/PDSAdminAuth.m`
+- `XrpcAuthSanitizedErrorSummary()` in `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m`
 
 #### 2. Sanitized URLs
 
@@ -674,7 +680,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 PDS_LOG_SERVICE_INFO(@"Forwarding request to %@", PDSSanitizedURLString(url));
 ```
 
-*Source: [ATProtoPDS/Sources/Federation/FederationClient.m](../../ATProtoPDS/Sources/Federation/FederationClient.m#L27-L35)*
+*Reference: `../../ATProtoPDS/Sources/Federation/FederationClient.m`*
 
 This prevents logging of sensitive data that might be in URL query parameters (tokens, API keys, etc.).
 
@@ -686,7 +692,7 @@ PDS_LOG_SERVICE_INFO(@"Forwarding XRPC request (method=%@, did=%@) to %@",
                      method ?: @"", did ?: @"", PDSSanitizedURLString(url));
 ```
 
-*Source: [ATProtoPDS/Sources/Federation/FederationClient.m](../../ATProtoPDS/Sources/Federation/FederationClient.m#L183)*
+*Reference: `../../ATProtoPDS/Sources/Federation/FederationClient.m`*
 
 ```objc
 // From FederationClient.m - HTTP forwarding
@@ -694,7 +700,7 @@ PDS_LOG_SERVICE_INFO(@"Forwarding HTTP request (method=%@) to %@",
                      method ?: @"", PDSSanitizedURLString(url));
 ```
 
-*Source: [ATProtoPDS/Sources/Federation/FederationClient.m](../../ATProtoPDS/Sources/Federation/FederationClient.m#L241)*
+*Reference: `../../ATProtoPDS/Sources/Federation/FederationClient.m`*
 
 ```objc
 // From FederationClient.m - Binary XRPC forwarding
@@ -702,7 +708,7 @@ PDS_LOG_SERVICE_INFO(@"Forwarding binary XRPC request (method=%@, did=%@) to %@"
                      method ?: @"", did ?: @"", PDSSanitizedURLString(url));
 ```
 
-*Source: [ATProtoPDS/Sources/Federation/FederationClient.m](../../ATProtoPDS/Sources/Federation/FederationClient.m#L328)*
+*Reference: `../../ATProtoPDS/Sources/Federation/FederationClient.m`*
 
 #### 3. Redacting Record Data
 
@@ -725,7 +731,7 @@ for (NSDictionary *op in event.ops) {
 payload[@"ops"] = sanitizedOps;
 ```
 
-*Source: [ATProtoPDS/Sources/Sync/EventFormatter.m](../../ATProtoPDS/Sources/Sync/EventFormatter.m#L28-L40)*
+*Reference: `../../ATProtoPDS/Sources/Sync/EventFormatter.m`*
 
 This pattern removes the `recordCBOR` field which contains the full record data (potentially sensitive user content) while keeping the metadata needed for debugging.
 
@@ -748,11 +754,11 @@ Input validation helpers strip null bytes before processing to prevent injection
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Security/PDSInputValidator.m](../../ATProtoPDS/Sources/Security/PDSInputValidator.m#L140-L148)*
+*Reference: `../../ATProtoPDS/Sources/Security/PDSInputValidator.m`*
 
 Similar sanitization is applied in:
-- `sanitizePathInput:error:` - [ATProtoPDS/Sources/Security/PDSInputValidator.m](../../ATProtoPDS/Sources/Security/PDSInputValidator.m#L150-L162)
-- `sanitizeJSONField:error:` - [ATProtoPDS/Sources/Security/PDSInputValidator.m](../../ATProtoPDS/Sources/Security/PDSInputValidator.m#L164-L172)
+- `sanitizePathInput:error:` - `../../ATProtoPDS/Sources/Security/PDSInputValidator.m`
+- `sanitizeJSONField:error:` - `../../ATProtoPDS/Sources/Security/PDSInputValidator.m`
 
 ### Best Practices for Redaction
 
@@ -783,7 +789,7 @@ The following data types should **NEVER** appear in logs:
 PDS_LOG_AUTH_DEBUG(@"Tokens issued: sub=%@ client_id=%@", sub, clientID);
 ```
 
-*Source: [ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m](../../ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m#L509-L511)*
+*Reference: `../../ATProtoPDS/Sources/OAuthProvider/OAuthProvider.m`*
 
 ```objc
 // GOOD: Log token validation failure without exposing token
@@ -791,14 +797,14 @@ PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@",
                   request.remoteAddress ?: @"unknown");
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L258-L260)*
+*Source: <!-- `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m` -->*
 
 ```objc
 // GOOD: Log password operations without the password value
 PDS_LOG_INFO(@"Updating password for account: %@", did);
 ```
 
-*Source: [ATProtoPDS/Sources/Services/PDSAdminService.m](../../ATProtoPDS/Sources/Services/PDSAdminService.m#L205-L207)*
+*Reference: `../../ATProtoPDS/Sources/Services/PDSAdminService.m`*
 
 #### Personal Information
 
@@ -814,7 +820,7 @@ PDS_LOG_INFO(@"Updating password for account: %@", did);
 PDS_LOG_INFO(@"[Resend] Sending email to: %@ subject: %@", to, subject);
 ```
 
-*Source: [ATProtoPDS/Sources/Email/PDSResendEmailProvider.m](../../ATProtoPDS/Sources/Email/PDSResendEmailProvider.m#L74-L76)*
+*Reference: `../../ATProtoPDS/Sources/Email/PDSResendEmailProvider.m`*
 
 **Note:** Email logging is currently used for debugging email delivery. In production environments with strict privacy requirements, consider logging only email domain or a hash.
 
@@ -825,7 +831,7 @@ PDS_LOG_INFO(@"[Resend] Sending email to: %@ subject: %@", to, subject);
 PDS_LOG_HTTP_INFO(@"[%@] %@ %@", request.remoteAddress, request.methodString, logPath);
 ```
 
-*Source: [ATProtoPDS/Sources/Network/HttpServer.m](../../ATProtoPDS/Sources/Network/HttpServer.m#L990-L992)*
+*Reference: `../../ATProtoPDS/Sources/Network/HttpServer.m`*
 
 ```objc
 // Acceptable: IP addresses for authentication failures
@@ -833,7 +839,7 @@ PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@",
                   request.remoteAddress ?: @"unknown");
 ```
 
-*Source: [ATProtoPDS/Sources/Network/XrpcAuthHelper.m](../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m#L258-L260)*
+*Reference: `../../ATProtoPDS/Sources/Network/XrpcAuthHelper.m`*
 
 **Privacy considerations for IP addresses:**
 - IP addresses are logged for security monitoring, rate limiting, and debugging
@@ -859,7 +865,7 @@ if (op[@"recordCBOR"]) {
 }
 ```
 
-*Source: [ATProtoPDS/Sources/Sync/EventFormatter.m](../../ATProtoPDS/Sources/Sync/EventFormatter.m#L33-L37)*
+*Reference: `../../ATProtoPDS/Sources/Sync/EventFormatter.m`*
 
 ### Creating New Sanitization Helpers
 
@@ -924,7 +930,7 @@ On macOS, logs are also sent to the unified logging system:
 #endif
 ```
 
-*Source: [ATProtoPDS/Sources/Debug/PDSLogger.m](../../ATProtoPDS/Sources/Debug/PDSLogger.m#L289-L311)*
+*Reference: `../../ATProtoPDS/Sources/Debug/PDSLogger.m`*
 
 View logs with Console.app or `log` command:
 
@@ -936,7 +942,7 @@ log stream --predicate 'subsystem == "com.atproto.pds"'
 log stream --predicate 'subsystem == "com.atproto.pds" && category == "Auth"'
 ```
 
-### Linux/GNUstep: NSLog Fallback
+## Linux/GNUstep: NSLog Fallback
 
 On Linux, the system falls back to `NSLog`:
 
@@ -948,7 +954,7 @@ On Linux, the system falls back to `NSLog`:
     NSLog(@"[ATProtoPDS INFO] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
 ```
 
-*Source: [Sources/Compat/os/log.h](../../Sources/Compat/os/log.h#L17-L23)*
+*Reference: `../../Sources/Compat/os/log.h`*
 
 ## Configuration Examples
 

@@ -1,3 +1,7 @@
+---
+title: PDS Implementation Guide - Link Testing Report
+---
+
 # PDS Implementation Guide - Link Testing Report
 
 **Date:** 2025-02-27  
@@ -56,7 +60,7 @@ All internal links, cross-references, file path references, and anchor links in 
 
 ### Automated Link Validation
 Created Python script `scripts/test-pds-guide-links.py` that:
-1. Extracts all markdown links `[text](url)` from documentation
+1. Extracts all markdown links `<!-- Link placeholder: text -->` from documentation
 2. Resolves relative paths to absolute file paths
 3. Verifies target files exist
 4. Validates anchor links against heading structure

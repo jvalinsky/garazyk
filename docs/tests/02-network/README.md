@@ -1,3 +1,7 @@
+---
+title: Network Tests
+---
+
 # Network Tests
 
 Tests for HTTP server, XRPC protocol, WebSocket/firehose, and network transport layer.

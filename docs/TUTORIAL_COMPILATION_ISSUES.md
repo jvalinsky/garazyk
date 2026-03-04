@@ -1,3 +1,7 @@
+---
+title: Tutorial Compilation Issues - Task 12.3.2 Verification Report
+---
+
 # Tutorial Compilation Issues - Task 12.3.2 Verification Report
 
 ## Executive Summary
@@ -21,6 +25,7 @@ The tutorial examples (tutorials 1-6) currently **do not compile** due to fundam
 
 **Sample Errors:**
 ```
+
 error: unknown type name 'NS_ASSUME_NONNULL_BEGIN'
 error: cannot find interface declaration for 'NSObject'
 error: unknown type name 'NSString'

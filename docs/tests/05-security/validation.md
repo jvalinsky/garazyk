@@ -1,3 +1,7 @@
+---
+title: Input Validation Tests
+---
+
 # Input Validation Tests
 
 Tests for identifier, path, SQL, and JSON input validation.
@@ -81,36 +85,42 @@ XCTAssertTrue(hasNull);
 
 ### NSID (Namespaced ID)
 ```
+
 Format: nsid.authority.name
 Rules: lowercase, alphanumeric + dot, max 317 chars
 ```
 
 ### DID
 ```
+
 did:plc: 24-char base32lower
 did:web: domain[:port][/path]
 ```
 
 ### AT-URI
 ```
+
 Format: at://did/collection/rkey
 Rules: valid DID, valid NSID, valid rkey
 ```
 
 ### SQL Input
 ```
+
 Blocked: ; -- ' " /* */
 Escaped: Single quotes doubled
 ```
 
 ### Path Input
 ```
+
 Blocked: ../, ..\, null bytes
 Allowed: Alphanumeric, -, _, ., /
 ```
 
 ### JSON Field
 ```
+
 Escaped: <, >, &, ", '
 Removed: <script>, javascript:, on*=
 ```

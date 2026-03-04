@@ -1,3 +1,7 @@
+---
+title: Security Hardening Implementation Plan
+---
+
 # Security Hardening Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -10,7 +14,7 @@
 
 ---
 
-### Task 1: OAuth Client Secret Validation
+## Task 1: OAuth Client Secret Validation
 
 **Files:**
 - Modify: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
@@ -342,7 +346,7 @@ git commit -m "feat(config): make JWT issuer configurable"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Security Docs](../../security/README) - Security-related documentation
 - [OAuth2 Documentation](../../oauth2/README) - OAuth2 implementation details

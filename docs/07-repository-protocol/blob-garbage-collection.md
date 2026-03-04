@@ -1,3 +1,7 @@
+---
+title: Blob Garbage Collection
+---
+
 # Blob Garbage Collection
 
 ## Overview
@@ -51,6 +55,7 @@ The `$link` field contains the blob's CID. Garbage collection must scan all reco
 The classic garbage collection approach:
 
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │              Mark-and-Sweep Algorithm                       │
 ├─────────────────────────────────────────────────────────────┤
@@ -122,7 +127,6 @@ The classic garbage collection approach:
     return referencedCIDs;
 }
 ```
-
 
 ### Extracting Blob CIDs from Records
 
@@ -391,7 +395,7 @@ kaszlak gc blobs --all
 - Storage may accumulate between runs
 
 
-### Scheduled Background Cleanup
+## Scheduled Background Cleanup
 
 Run garbage collection periodically in the background:
 
@@ -511,7 +515,6 @@ Run garbage collection periodically in the background:
   }
 }
 ```
-
 
 ### Incremental Cleanup
 
@@ -768,8 +771,7 @@ kaszlak gc blobs --did did:plc:abc123 --dry-run
 #   ...
 ```
 
-
-### Transaction Safety
+## Transaction Safety
 
 Always use database transactions when deleting blobs:
 
@@ -860,7 +862,7 @@ Remember that multiple users may reference the same blob data:
        cid BLOB PRIMARY KEY,
        ref_count INTEGER NOT NULL DEFAULT 0
    );
-   ```
+   ```text
 
 2. **Increment on upload, decrement on metadata deletion:**
    ```objc
@@ -872,7 +874,7 @@ Remember that multiple users may reference the same blob data:
    
    // Delete from provider only when ref_count = 0
    DELETE FROM shared_blob_refs WHERE cid = ? AND ref_count = 0;
-   ```
+   ```text
 
 
 ## Performance Considerations
@@ -960,7 +962,6 @@ WHERE marked_for_deletion = 1 AND marked_at < ?;
 -- Slow: Full table scan
 SELECT cid FROM blobs WHERE size > 1000000; -- No index on size
 ```
-
 
 ### Parallel Processing
 
@@ -1140,7 +1141,6 @@ Log garbage collection activity:
 }
 ```
 
-
 ## Best Practices
 
 ### 1. Start Conservative
@@ -1157,7 +1157,7 @@ kaszlak gc blobs --did did:plc:abc123
 # Monitor for issues before enabling automatic GC
 ```
 
-### 2. Use Grace Periods
+## 2. Use Grace Periods
 
 Never delete blobs immediately:
 
@@ -1229,12 +1229,12 @@ Keep deleted blob data for recovery:
 }
 ```
 
-
 ### 6. Document Deduplication Behavior
 
 Make it clear to operators that blob data is deduplicated:
 
 ```
+
 # In documentation or admin guide:
 
 IMPORTANT: Blob data is content-addressed and deduplicated across users.
@@ -1246,7 +1246,7 @@ Garbage collection must check ALL users before deleting blob data from
 the provider. Metadata deletion is per-user, but data deletion is global.
 ```
 
-### 7. Rate Limit GC Operations
+## 7. Rate Limit GC Operations
 
 Prevent GC from overwhelming the system:
 
@@ -1285,7 +1285,6 @@ Expose GC status via admin endpoint:
                                                       error:nil];
 }
 ```
-
 
 ## Common Pitfalls
 
@@ -1681,7 +1680,6 @@ Here's a complete example combining the strategies above:
 @end
 ```
 
-
 ## Configuration
 
 ### Configuration File
@@ -1747,9 +1745,9 @@ Add GC settings to `config.json`:
 
 ## See Also
 
-- [Blob Lifecycle](./blob-lifecycle) — Upload, download, and deletion workflows
-- [Blob Optimization](./blob-optimization) — Performance optimization techniques
-- [Blob Storage](./blob-storage) — Storage architecture and providers
+- [Blob Lifecycle](blob-lifecycle) — Upload, download, and deletion workflows
+- [Blob Optimization](blob-optimization) — Performance optimization techniques
+- [Blob Storage](blob-storage) — Storage architecture and providers
 - [Blob Service](../03-application-layer/blob-service) — Service layer API
 - [Database Layer](../05-database-layer/sqlite-architecture) — Database architecture
 

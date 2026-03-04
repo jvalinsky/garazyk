@@ -1,3 +1,7 @@
+---
+title: Implement `com.atproto.lexicon.resolveLexicon`
+---
+
 # Implement `com.atproto.lexicon.resolveLexicon`
 
 ## Summary

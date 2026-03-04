@@ -1,3 +1,7 @@
+---
+title: CLI Improvements and Crash Fixes Implementation Plan
+---
+
 # CLI Improvements and Crash Fixes Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -8,7 +12,7 @@
 
 **Tech Stack:** Objective-C, Foundation, SQLite3.
 
-### Task 1: Standardize Command Registration
+## Task 1: Standardize Command Registration
 
 **Files:**
 - Modify: `ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m`
@@ -128,5 +132,5 @@ git commit -m "cli: improve account command help and validation"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans

@@ -1,3 +1,7 @@
+---
+title: Property-Based Testing
+---
+
 # Property-Based Testing
 
 September PDS uses property-based testing (PBT) principles to validate correctness properties across a wide range of inputs. While the project doesn't use a formal PBT framework like QuickCheck or Hypothesis, it employs randomized testing, fuzzing, and invariant checking to achieve similar goals.
@@ -65,6 +69,7 @@ September includes a comprehensive fuzzing infrastructure in `fuzzing/`:
 ### Fuzzer Targets
 
 ```
+
 fuzzing/
 ├── fuzz_xrpc          # XRPC request parsing
 ├── fuzz_cbor          # CBOR decoding
@@ -96,7 +101,7 @@ make -j$(sysctl -n hw.ncpu)
 ./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/xrpc_valid_create.txt
 ```
 
-### Fuzzer Implementation Pattern
+## Fuzzer Implementation Pattern
 
 ```objective-c
 // fuzz_cbor.m

@@ -1,3 +1,7 @@
+---
+title: Addressing Test and Feature Gaps Implementation Plan
+---
+
 # Addressing Test and Feature Gaps Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -8,7 +12,7 @@
 
 **Tech Stack:** Objective-C, CMake, XCTest, GNUstep (for Linux), secp256k1, SQLite
 
-### Task 1: Implement PDSNetworkTransport for Linux
+## Task 1: Implement PDSNetworkTransport for Linux
 
 **Files:**
 - Modify: `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`
@@ -321,6 +325,6 @@ git commit -m "feat: integrate GNUstep for Linux tests"
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Tests Docs](../../tests/README) - Testing documentation

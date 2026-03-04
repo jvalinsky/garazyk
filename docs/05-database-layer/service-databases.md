@@ -1,3 +1,7 @@
+---
+title: Service Databases
+---
+
 # Service Databases
 
 ## Overview
@@ -7,6 +11,7 @@ Service databases are shared SQLite databases that store system-level data used 
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   Service Databases (Shared)             │
 ├──────────────────────────────────────────┤
@@ -742,7 +747,7 @@ return @{
 
 ## See Also
 
-- [Actor Databases](./actor-databases)
-- [Migrations](./migrations)
-- [WAL Mode](./wal-mode)
-- [SQLite Architecture](./sqlite-architecture)
+- [Actor Databases](actor-databases)
+- [Migrations](migrations)
+- [WAL Mode](wal-mode)
+- [SQLite Architecture](sqlite-architecture)

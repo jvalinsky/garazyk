@@ -1,3 +1,7 @@
+---
+title: Blob Storage
+---
+
 # Blob Storage
 
 ## Overview
@@ -7,6 +11,7 @@ Blob storage manages binary files (images, videos, etc.) associated with records
 ## Blob Lifecycle
 
 ```
+
 1. Upload
    ├─ Receive binary data
    ├─ Generate CID
@@ -79,6 +84,7 @@ Blob storage manages binary files (images, videos, etc.) associated with records
 ### Directory Structure
 
 ```
+
 ${blobDirectory}/
 ├── ${cidPrefix2}/
 │   ├── ${cidPrefix4}/
@@ -384,11 +390,11 @@ NSLog(@"Post created with image: %@", postCid.stringValue);
 
 **Basic Topics:**
 - [Blob Service](../03-application-layer/blob-service) — Blob service layer
-- [CID and Hashing](./cid-and-hashing) — Content addressing
-- [Repository Basics](./repository-basics) — Repository structure
+- [CID and Hashing](cid-and-hashing) — Content addressing
+- [Repository Basics](repository-basics) — Repository structure
 
 **Advanced Topics:**
-- [Blob Lifecycle](./blob-lifecycle) — Upload/download/deletion
-- [Blob Optimization](./blob-optimization) — Chunking and caching
-- [Blob Garbage Collection](./blob-garbage-collection) — Cleanup strategies
-- [Blob Quotas](./blob-quotas) — Size limits and enforcement
+- [Blob Lifecycle](blob-lifecycle) — Upload/download/deletion
+- [Blob Optimization](blob-optimization) — Chunking and caching
+- [Blob Garbage Collection](blob-garbage-collection) — Cleanup strategies
+- [Blob Quotas](blob-quotas) — Size limits and enforcement

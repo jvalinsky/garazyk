@@ -1,3 +1,7 @@
+---
+title: Federation Tests
+---
+
 # Federation Tests
 
 Tests for cross-PDS communication and relay synchronization.
@@ -95,6 +99,7 @@ client.delegate = self;  // Implements RelayClientDelegate
 ## Federation Flow
 
 ```
+
 Client → Local PDS → Resolve DID → Remote PDS → Response
                       ↓
               didDocument.service

@@ -1,3 +1,7 @@
+---
+title: OAuth 2.0 Token Management
+---
+
 # OAuth 2.0 Token Management
 
 This document describes the token lifecycle, JWT structure, and session management in the ATProto PDS OAuth 2.0 implementation.
@@ -126,6 +130,7 @@ Successful token responses follow OAuth 2.0 format with ATProto extensions:
 ### 1. Authorization Code Flow
 
 ```
+
 ┌─────────┐     ┌─────────┐     ┌─────────┐
 │  Client │     │   PDS   │     │  User   │
 └────┬────┘     └────┬────┘     └────┬────┘
@@ -525,7 +530,7 @@ store.minter = jwtMinter;
 
 ## Related Documentation
 
-- [DPoP](./dpop) - DPoP proof verification and token binding
-- [Authorization Flow](./authorization-flow) - Code generation and exchange
-- [Security](./security) - Security considerations for token handling
-- [Overview](./README) - OAuth2 implementation overview
+- [DPoP](dpop) - DPoP proof verification and token binding
+- [Authorization Flow](authorization-flow) - Code generation and exchange
+- [Security](security) - Security considerations for token handling
+- [Overview](README) - OAuth2 implementation overview

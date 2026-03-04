@@ -1,3 +1,7 @@
+---
+title: Pluggable Email System with Resend Provider - Implementation Plan
+---
+
 # Pluggable Email System with Resend Provider - Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -536,7 +540,7 @@ git commit -m "feat(email): implement PDSKeychainSecretsProvider for secure keyc
 
 ---
 
-### Task 4: Create PDSEmailHTTPClient Utility
+## Task 4: Create PDSEmailHTTPClient Utility
 
 **Files:**
 - Create: `ATProtoPDS/Sources/Email/PDSEmailHTTPClient.h`
@@ -1355,12 +1359,12 @@ Create `config/EMAIL_SETUP.md`:
 1. Set your Resend API key:
    ```bash
    export RESEND_API_KEY="re_your_api_key_here"
-   ```
+   ```text
 
 2. Use the environment config:
    ```bash
    ./kaszlak serve --config config/email-resend-env.json
-   ```
+   ```text
 
 ### Option 2: macOS Keychain (Recommended for Production)
 
@@ -1369,12 +1373,12 @@ Create `config/EMAIL_SETUP.md`:
    security add-generic-password -s "com.yourcompany.pds" \
      -a "resend_api_key" \
      -w "re_your_api_key_here"
-   ```
+   ```text
 
 2. Use the Keychain config:
    ```bash
    ./kaszlak serve --config config/email-resend-keychain.json
-   ```
+   ```text
 
 ### Environment Variable Overrides
 
@@ -1636,5 +1640,5 @@ Two approaches for implementation:
 - [Plans Index](README) - All project plans
 - [Roadmap](ROADMAP) - Project milestones
 - [Architecture Overview](../architecture/README) - Protocol-based design patterns
-- [Developer Guide](../guides/DEVELOPER_GUIDE) - Development workflows
+- [Developer Guide](../guides/development/DEVELOPER_GUIDE) - Development workflows
 - [Deployment Guide](../guides/DEPLOYMENT) - Production deployment instructions

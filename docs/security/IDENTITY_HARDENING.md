@@ -1,3 +1,7 @@
+---
+title: Identity Security Hardening (March 2026)
+---
+
 # Identity Security Hardening (March 2026)
 
 This document outlines the security enhancements implemented for ATProto PDS identity management, focusing on rotation keys and JWT signing keys.

@@ -1,3 +1,7 @@
+---
+title: Security and Architectural Remediation Report - 2026-03-02
+---
+
 # Security and Architectural Remediation Report - 2026-03-02
 
 ## Overview

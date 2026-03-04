@@ -1,3 +1,7 @@
+---
+title: VitePress Migration Report
+---
+
 # VitePress Migration Report
 
 **Generated:** 2026-03-03T22:47:23.385Z

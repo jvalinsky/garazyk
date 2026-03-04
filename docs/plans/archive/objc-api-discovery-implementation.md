@@ -1,3 +1,7 @@
+---
+title: Objective-C API Discovery
+---
+
 name: objc-api-discovery
 description: Use when searching for Objective-C APIs that correspond to known Swift methods, especially for undocumented or hard-to-find functionality. Look for: "What's the ObjC equivalent of Swift's X?", "Can't find ObjC API for Y", "Swift has Z but ObjC doesn't". NOT for basic documented APIs or general questions.
 
@@ -311,6 +315,6 @@ free(methods);
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans</content>
 <parameter name="filePath">/Users/jack/.config/opencode/superpowers/skills/objc-api-discovery.md

@@ -1,3 +1,7 @@
+---
+title: End-to-End Testing
+---
+
 # End-to-End Testing
 
 September PDS uses end-to-end (E2E) testing to validate complete workflows across the entire system. E2E tests exercise the full stack from HTTP requests through to database persistence, ensuring all components work together correctly.
@@ -273,7 +277,7 @@ services:
       - "2582:2582"
 ```
 
-### Running PLC Integration Tests
+## Running PLC Integration Tests
 
 ```bash
 # Start PLC test environment

@@ -1,3 +1,7 @@
+---
+title: Admin Service
+---
+
 # Admin Service
 
 ## Overview
@@ -46,6 +50,7 @@ Understanding the Admin Service is crucial for implementing responsible moderati
 ## Architecture
 
 ```
+
 ┌──────────────────────────────────────────┐
 │   XRPC Admin Endpoints                   │
 │  (com.atproto.admin.*)                   │
@@ -227,6 +232,7 @@ All admin actions are logged with:
 
 **Example log entry:**
 ```
+
 {
   "admin": "did:plc:admin123",
   "action": "suspend",
@@ -242,6 +248,7 @@ All admin actions are logged with:
 ### Typical Moderation Process
 
 ```
+
 1. Report received
    ↓
 2. Admin reviews content
@@ -576,8 +583,8 @@ for (NSString *did in violatingAccounts) {
 
 ## See Also
 
-- [Services Overview](./services-overview) - How Admin Service fits into the service layer
-- [PDSApplication](./pds-application) - Application-level integration
+- [Services Overview](services-overview) - How Admin Service fits into the service layer
+- [PDSApplication](pds-application) - Application-level integration
 - [Authentication](../06-authentication/jwt-tokens) - Admin authentication and authorization
 - [Security Best Practices](../06-authentication/security-best-practices) - Security considerations for admin operations
 - [Logging Strategy](../11-reference/logging-strategy) - Audit logging implementation

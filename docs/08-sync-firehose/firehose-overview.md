@@ -1,3 +1,7 @@
+---
+title: Firehose Overview
+---
+
 # Firehose Overview
 
 ## What is the Firehose?
@@ -14,6 +18,7 @@ The firehose is a real-time event stream that broadcasts all commits to the PDS.
 The firehose is served via WebSocket upgrade on the HTTP port:
 
 ```
+
 Client connects to: ws://pds.example.com/xrpc/com.atproto.sync.subscribeRepos
     ↓
 HttpServer upgrades connection to WebSocket
@@ -28,6 +33,7 @@ Client receives commit events
 ### Event Flow
 
 ```
+
 Record is created/updated
     ↓
 PDSRecordService.createRecord
@@ -323,6 +329,6 @@ Each commit has a sequence number for tracking position:
 
 ## Next Steps
 
-- **[WebSocket Server](./websocket-server)** — WebSocket implementation
-- **[Commit Broadcasting](./commit-broadcasting)** — Broadcasting details
-- **[Backpressure](./backpressure)** — Flow control
+- **[WebSocket Server](websocket-server)** — WebSocket implementation
+- **[Commit Broadcasting](commit-broadcasting)** — Broadcasting details
+- **[Backpressure](backpressure)** — Flow control

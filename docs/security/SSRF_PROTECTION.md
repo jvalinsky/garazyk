@@ -1,3 +1,7 @@
+---
+title: SSRF Protection for Handle Resolution
+---
+
 # SSRF Protection for Handle Resolution
 
 Server-Side Request Forgery (SSRF) allows attackers to induce the server to make HTTP requests to unintended locations. In handle resolution, an attacker could:
@@ -10,6 +14,7 @@ Server-Side Request Forgery (SSRF) allows attackers to induce the server to make
 ATProto handles resolve to DIDs through HTTP requests to `.well-known/atproto-did` endpoints. Without SSRF protection:
 
 ```
+
 Handle: attacker-controlled.domain.internal
 ↓
 Resolver makes HTTPS request to: https://attacker-controlled.domain.internal/.well-known/atproto-did
@@ -129,6 +134,6 @@ Tests are located in `ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m` with 
 
 - [Security Documentation Index](README) - Overview of all security docs
 - [Security Testing Plan](SECURITY_TESTING_PLAN) - Attack vectors and test cases
-- [Security Plan](SECURITY_PLAN) - Comprehensive security strategy
+- [Security Plan](# Security plan) - Comprehensive security strategy
 - [Identity Resolution Tests](../tests/00-identity-auth/identity-resolution) - Handle/DID tests
 - [OAuth2 Security](../oauth2/security) - OAuth2 security implementation

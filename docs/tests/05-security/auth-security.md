@@ -1,3 +1,7 @@
+---
+title: Authorization Security Tests
+---
+
 # Authorization Security Tests
 
 Tests for XRPC endpoint authorization and access control.

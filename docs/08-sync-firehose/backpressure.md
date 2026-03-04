@@ -1,3 +1,7 @@
+---
+title: Backpressure and Flow Control
+---
+
 # Backpressure and Flow Control
 
 ## Overview
@@ -14,6 +18,7 @@ Backpressure is the mechanism that prevents overwhelming slow clients with event
 ### Without Backpressure
 
 ```
+
 Server broadcasts commit
     ↓
 Send to all subscribers
@@ -34,6 +39,7 @@ Data loss
 ### With Backpressure
 
 ```
+
 Server broadcasts commit
     ↓
 Check subscriber buffer levels
@@ -54,6 +60,7 @@ No data loss
 **ASCII Diagram: Backpressure Flow Control**
 
 ```
+
 ┌─────────────────────────────────────────────────────────┐
 │  CommitBroadcaster.broadcastCommit                      │
 └────────────────────┬────────────────────────────────────┘
@@ -616,7 +623,7 @@ static const NSUInteger MAX_STALL_COUNT = 12;                       // 60 second
 
 ## Next Steps
 
-- **[Commit Broadcasting](./commit-broadcasting)** — Broadcasting events
-- **[WebSocket Server](./websocket-server)** — WebSocket implementation
-- **[Firehose Overview](./firehose-overview)** — Architecture overview
+- **[Commit Broadcasting](commit-broadcasting)** — Broadcasting events
+- **[WebSocket Server](websocket-server)** — WebSocket implementation
+- **[Firehose Overview](firehose-overview)** — Architecture overview
 

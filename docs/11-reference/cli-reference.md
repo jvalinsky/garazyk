@@ -1,3 +1,7 @@
+---
+title: CLI Reference
+---
+
 # CLI Reference
 
 ## Overview
@@ -377,14 +381,14 @@ export PATH=$PATH:./build/bin
 ./kaszlak --version
 ```
 
-### Configuration error
+## Configuration error
 
 ```bash
 # Validate configuration
 ./kaszlak config validate --config config.json
 ```
 
-### Database error
+## Database error
 
 ```bash
 # Check database
@@ -393,5 +397,5 @@ export PATH=$PATH:./build/bin
 
 ## Next Steps
 
-- **[API Reference](./api-reference)** — API endpoints
-- **[Troubleshooting](./troubleshooting)** — Common issues
+- **[API Reference](api-reference)** — API endpoints
+- **[Troubleshooting](troubleshooting)** — Common issues

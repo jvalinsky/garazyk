@@ -1,3 +1,7 @@
+---
+title: "Phase 0 Implementation Plan: Core Repository Features"
+---
+
 # Phase 0 Implementation Plan: Core Repository Features
 
 ## Overview
@@ -22,14 +26,14 @@ Phase 0 implements core repository functionality required for basic PDS operatio
    [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
        // Parse writes array, validate permissions, execute in transaction
    }];
-   ```
+   ```text
 
 2. **Controller Method** (`PDSController.m`):
    ```objc
    - (nullable NSDictionary *)applyWrites:(NSArray *)writes
                                  repo:(NSString *)repo
                                error:(NSError **)error;
-   ```
+   ```text
 
 3. **Database Transaction** (`PDSDatabase.m`):
    - Batch insert/update/delete operations
@@ -289,6 +293,6 @@ This Phase 0 plan provides foundation for production-ready PDS core functionalit
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans
 - [Architecture Docs](../../architecture/README) - System architecture documentation

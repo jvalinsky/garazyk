@@ -1,3 +1,7 @@
+---
+title: Objective-C Codebase Compliance Comparison Plan
+---
+
 # Objective-C Codebase Compliance Comparison Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:dispatching-parallel-agents to execute this comparison task-by-task.
@@ -137,6 +141,6 @@
 
 ## Related Documentation
 
-- [Archive Index](./README) - Index of all archived plans
+- [Archive Index](README) - Index of all archived plans
 - [Current Plans](../README) - Active implementation plans</content>
 <parameter name="filePath">docs/plans/2026-01-09-objective-c-comparison.md

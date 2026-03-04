@@ -1,3 +1,7 @@
+---
+title: Platform-Specific Network Transport
+---
+
 # Platform-Specific Network Transport
 
 ## Overview
@@ -14,6 +18,7 @@ Network I/O is implemented differently on macOS and Linux/GNUstep. This document
 ### Network Transport Layer
 
 ```
+
 ┌─────────────────────────────────────────────────────────┐
 │              Application Code                           │
 │  (HttpServer, WebSocketConnection)                      │
@@ -526,7 +531,7 @@ On Linux/GNUstep, use libcurl for HTTP/HTTPS:
 
 ## Next Steps
 
-- **[ARC Runtime](./arc-runtime)** — ARC considerations
-- **[Compatibility Layer](./compatibility-layer)** — Compatibility shims
-- **[macOS/Linux](./macos-linux)** — Platform overview
+- **[ARC Runtime](arc-runtime)** — ARC considerations
+- **[Compatibility Layer](compatibility-layer)** — Compatibility shims
+- **[macOS/Linux](macos-linux)** — Platform overview
 

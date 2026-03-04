@@ -1,3 +1,7 @@
+---
+title: "Tutorial 3: Record Operations"
+---
+
 # Tutorial 3: Record Operations
 
 ## Overview
@@ -34,8 +38,8 @@ This tutorial bridges the gap between account management (Tutorial 2) and authen
 Before starting this tutorial, you should have:
 
 - **Completed Tutorials:**
-  - [Tutorial 1: Hello PDS](./tutorial-1-hello-pds) — Basic server setup
-  - [Tutorial 2: Account Management](./tutorial-2-accounts) — Account creation and JWT minting
+  - [Tutorial 1: Hello PDS](tutorial-1-hello-pds) — Basic server setup
+  - [Tutorial 2: Account Management](tutorial-2-accounts) — Account creation and JWT minting
   
 - **Knowledge:**
   - Understanding of AT URIs and their components
@@ -66,7 +70,7 @@ Create `src/Record.h`:
 @property (nonatomic, assign) NSTimeInterval createdAt;
 
 @end
-```
+```objc
 
 ### Understanding the Record Model
 
@@ -107,7 +111,7 @@ Create `src/RecordRepository.h`:
 - (BOOL)deleteRecordAtURI:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
 
 @end
-```
+```objc
 
 ### Understanding the Repository Interface
 
@@ -345,7 +349,7 @@ Create `src/RecordRepository.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding the Implementation
 
@@ -588,7 +592,7 @@ Create `src/RecordRepository.m`:
 }
 
 @end
-```
+```objc
 
 ## Step 4: Create CID Generator
 
@@ -605,7 +609,7 @@ Create `src/SimpleCIDGenerator.h`:
 + (NSString *)generateCIDForJSON:(NSDictionary *)json;
 
 @end
-```
+```objc
 
 ### Understanding CID Generation
 
@@ -655,7 +659,7 @@ Create `src/SimpleCIDGenerator.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding the Implementation
 
@@ -723,7 +727,7 @@ Create `src/RecordService.h`:
                error:(NSError **)error;
 
 @end
-```
+```objc
 
 ### Understanding the Service Layer
 
@@ -863,7 +867,7 @@ Create `src/RecordService.m`:
 }
 
 @end
-```
+```objc
 
 ### Understanding the Service Implementation
 
@@ -1015,7 +1019,7 @@ Create `src/RecordService.m`:
 }
 
 @end
-```
+```objc
 
 ## Step 8: Add Record Endpoints to XRPC Dispatcher
 
@@ -1230,7 +1234,7 @@ Update `src/XrpcDispatcher.m` to add record endpoints:
     
     return json[@"sub"];
 }
-```
+```objc
 
 ### Understanding the XRPC Endpoints
 
@@ -1499,7 +1503,7 @@ Update `src/XrpcDispatcher.m` to add record endpoints:
     
     return json[@"sub"];
 }
-```
+```objc
 
 ## Step 9: Update Main Entry Point
 
@@ -1573,7 +1577,7 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
-```
+```objc
 
 ## Step 10: Build and Run
 
@@ -1583,7 +1587,7 @@ mkdir -p build && cd build
 cmake ..
 make
 ./tutorial-3-records
-```
+```objc
 
 ## Step 11: Test Record Creation
 
@@ -1620,7 +1624,7 @@ curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
 #   "uri": "at://did:plc:.../app.bsky.feed.post/...",
 #   "cid": "bafyrei..."
 # }
-```
+```objc
 
 ## Step 12: Test Record Retrieval
 
@@ -1637,7 +1641,7 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
 #     "createdAt": "2024-01-01T00:00:00Z"
 #   }
 # }
-```
+```objc
 
 ## Step 13: Test Record Listing
 
@@ -1658,7 +1662,7 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.listRecords?repo=alice&coll
 #     }
 #   ]
 # }
-```
+```objc
 
 ## Step 14: Test Record Deletion
 
@@ -1684,12 +1688,12 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
 # {
 #   "error": "RecordNotFound"
 # }
-```
+```objc
 
 ## Next Steps
 
-- **[Tutorial 4: Authentication](./tutorial-4-auth)** — Add OAuth/JWT verification
-- **[Tutorial 5: Firehose](./tutorial-5-firehose)** — Add WebSocket subscriptions
+- **[Tutorial 4: Authentication](tutorial-4-auth)** — Add OAuth/JWT verification
+- **[Tutorial 5: Firehose](tutorial-5-firehose)** — Add WebSocket subscriptions
 
 ## Troubleshooting
 
@@ -1700,7 +1704,7 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
 {
   "error": "AuthRequired"
 }
-```
+```objc
 
 **Causes and Solutions:**
 
@@ -1712,7 +1716,7 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
    # Right - include Bearer token
    curl -X POST http://localhost:2583/xrpc/com.atproto.repo.createRecord \
      -H "Authorization: Bearer $ACCESS_TOKEN"
-   ```
+   ```objc
 
 2. **Malformed JWT token**
    ```bash
@@ -1721,7 +1725,7 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
    
    # Decode and inspect payload
    echo $ACCESS_TOKEN | cut -d'.' -f2 | base64 -d | jq .
-   ```
+   ```objc
 
 3. **Expired token**
    - Check the `exp` claim in the JWT payload
@@ -1735,7 +1739,7 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
 {
   "error": "RecordNotFound"
 }
-```
+```objc
 
 **Causes and Solutions:**
 
@@ -1746,26 +1750,26 @@ curl -s "http://localhost:2583/xrpc/com.atproto.repo.getRecord?repo=alice&collec
    
    # Check that you're using the exact rkey from creation
    # rkeys are case-sensitive and must match exactly
-   ```
+   ```objc
 
 2. **Wrong DID/handle**
    ```bash
    # Make sure you're querying the right repository
    # The repo parameter should match the account that created the record
-   ```
+   ```objc
 
 3. **Record was deleted**
    ```bash
    # List all records to see what exists
    curl -s "http://localhost:2583/xrpc/com.atproto.repo.listRecords?repo=alice&collection=app.bsky.feed.post" | jq .
-   ```
+   ```objc
 
 ### Database Errors
 
 **Symptom:**
-```
+```objc
 Failed to open database: unable to open database file
-```
+```objc
 
 **Causes and Solutions:**
 
@@ -1773,7 +1777,7 @@ Failed to open database: unable to open database file
    ```bash
    # Create the directory before starting the server
    mkdir -p ./pds-data/db
-   ```
+   ```objc
 
 2. **Permission issues**
    ```bash
@@ -1782,7 +1786,7 @@ Failed to open database: unable to open database file
    
    # Fix permissions if needed
    chmod 755 ./pds-data/
-   ```
+   ```objc
 
 3. **Database corruption**
    ```bash
@@ -1790,7 +1794,7 @@ Failed to open database: unable to open database file
    rm -rf pds-data/
    mkdir -p pds-data/db
    ./tutorial-3-records
-   ```
+   ```objc
 
 ### Invalid Request Errors
 
@@ -1799,7 +1803,7 @@ Failed to open database: unable to open database file
 {
   "error": "InvalidRequest"
 }
-```
+```objc
 
 **Causes and Solutions:**
 
@@ -1811,19 +1815,19 @@ Failed to open database: unable to open database file
    # deleteRecord requires: collection, rkey
    
    # Check your request includes all required fields
-   ```
+   ```objc
 
 2. **Malformed JSON**
    ```bash
    # Validate JSON syntax
    echo '{"collection":"app.bsky.feed.post","record":{"text":"test"}}' | jq .
-   ```
+   ```objc
 
 3. **Wrong HTTP method**
    ```bash
    # createRecord and deleteRecord use POST
    # getRecord and listRecords use GET
-   ```
+   ```objc
 
 ### CID Mismatch Issues
 
@@ -1840,7 +1844,7 @@ Failed to open database: unable to open database file
    ```bash
    # Don't include timestamps in the record value if you want stable CIDs
    # Timestamps should be metadata, not content
-   ```
+   ```objc
 
 ### Performance Issues
 
@@ -1853,14 +1857,14 @@ Failed to open database: unable to open database file
    -- Add indexes for common queries
    CREATE INDEX idx_records_did_collection ON records(did, collection);
    CREATE INDEX idx_records_created_at ON records(created_at);
-   ```
+   ```objc
 
 2. **Large result sets**
    ```bash
    # Always use pagination
    # Limit results to reasonable sizes (50-100 records)
    curl -s "http://localhost:2583/xrpc/com.atproto.repo.listRecords?repo=alice&collection=app.bsky.feed.post&limit=50"
-   ```
+   ```objc
 
 3. **No connection pooling**
    - This tutorial uses a single database connection
@@ -1953,13 +1957,13 @@ This tutorial simplified several aspects for learning. Production systems need:
 
 Now that you understand record operations, you're ready to tackle authentication and real-time sync:
 
-**[Tutorial 4: Authentication](./tutorial-4-auth)**
+**[Tutorial 4: Authentication](tutorial-4-auth)**
 - Implement OAuth 2.0 with DPoP
 - Add proper JWT signature verification
 - Implement token refresh flow
 - Add authorization checks for all operations
 
-**[Tutorial 5: Firehose](./tutorial-5-firehose)**
+**[Tutorial 5: Firehose](tutorial-5-firehose)**
 - Implement WebSocket server for real-time updates
 - Broadcast record changes to subscribers
 - Handle backpressure and reconnection
@@ -1984,14 +1988,14 @@ You now have the foundation to build AT Protocol applications. The next tutorial
 ### Record URI Format
 
 Records are identified by AT URIs with the format:
-```
+```objc
 at://<did>/<collection>/<rkey>
-```
+```objc
 
 Example:
-```
+```objc
 at://did:plc:abc123/app.bsky.feed.post/xyz789
-```
+```objc
 
 ### CID Generation
 

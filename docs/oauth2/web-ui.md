@@ -1,3 +1,7 @@
+---
+title: OAuth2 Web UI (Consent Screen)
+---
+
 # OAuth2 Web UI (Consent Screen)
 
 ## Overview
@@ -14,6 +18,7 @@ The OAuth2 consent screen provides a two-step authorization flow with Classic Ma
 ## UI Flow Diagram
 
 ```
+
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    GET /oauth/authorize                             │
 │  client_id, redirect_uri, scope, state, code_challenge, login_hint  │
@@ -135,6 +140,7 @@ The OAuth2 consent screen provides a two-step authorization flow with Classic Ma
 ### HTML Template Location
 
 ```
+
 ATProtoPDS/Sources/Auth/Assets/authorize.html
 ```
 
@@ -195,12 +201,12 @@ NSString *csrfToken = [[NSUUID UUID] UUIDString];
 1. **Meta tag** (readable by JavaScript):
    ```html
    <meta name="csrf-token" content="{{csrf_token}}">
-   ```
+   ```text
 
 2. **HttpOnly cookie** (sent automatically with requests):
-   ```
+   ```text
    Set-Cookie: csrf_token=<UUID>; Path=/oauth; HttpOnly; SameSite=Strict
-   ```
+   ```text
 
 ### Token Validation (OAuth2Handler.m:507-524)
 
@@ -269,6 +275,7 @@ static NSMutableDictionary *sPendingConsents = nil;
 ### Token Lifecycle
 
 ```
+
 ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
 │    Sign-In       │────▶│  Pending Consents│────▶│     Consent      │
 │    Success       │     │    (5 min TTL)   │     │    Validation    │
@@ -362,6 +369,7 @@ scopeStr.split(' ').forEach(s => {
 ### Visual Display
 
 ```
+
 This application will be able to:
 ┌─────────────────────────────────────────────┐
 │ ✓ Full access to your account               │
@@ -494,6 +502,6 @@ When `login_hint` is provided:
 
 ## Related Documentation
 
-- [Authorization Flow](./authorization-flow) - Full authorization code flow
-- [Security](./security) - Security considerations for the consent flow
-- [Overview](./README) - OAuth2 implementation overview
+- [Authorization Flow](authorization-flow) - Full authorization code flow
+- [Security](security) - Security considerations for the consent flow
+- [Overview](README) - OAuth2 implementation overview

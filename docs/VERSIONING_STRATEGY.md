@@ -1,3 +1,7 @@
+---
+title: Documentation Versioning Strategy
+---
+
 # Documentation Versioning Strategy
 
 ## Overview
@@ -106,6 +110,7 @@ Archive documentation when:
 ### Archive Location
 
 ```
+
 docs/
 ├── archive/
 │   ├── v0.9/          # Pre-1.0 documentation
@@ -199,7 +204,7 @@ version_history:
     changes: "Initial release"
 ```
 
-### CHANGELOG.md
+## CHANGELOG.md
 
 Maintain a documentation-specific changelog:
 

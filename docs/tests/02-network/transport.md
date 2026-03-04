@@ -1,3 +1,7 @@
+---
+title: Network Transport Tests
+---
+
 # Network Transport Tests
 
 Tests for network transport layer, SSL pinning, and rate limiting.
@@ -151,6 +155,7 @@ NSDictionary *headers = @{
 ## Response Headers
 
 ```
+
 X-RateLimit-Limit: 5000
 X-RateLimit-Remaining: 4999
 X-RateLimit-Reset: 1704067200

@@ -1,3 +1,7 @@
+---
+title: ATProto PDS Security Testing Plan
+---
+
 # ATProto PDS Security Testing Plan
 
 **Generated:** 2026-01-07
@@ -35,6 +39,7 @@ Security testing focuses on three critical areas:
 ### Entry Points
 
 ```
+
                     ┌─────────────────────────┐
                     │     Network Layer       │
                     │  HTTP/WebSocket Server  │
@@ -143,7 +148,7 @@ cbor_nested_array.bin  // Array of arrays
 cbor_infinite_loop.bin // Indefinite length
 ```
 
-### 2. CAR (Content Addressable Records) Attacks
+## 2. CAR (Content Addressable Records) Attacks
 
 **Test Vectors:**
 
@@ -178,7 +183,7 @@ car_attacks = {
 3. **Archive Truncation**: Partial CAR file causing infinite loop
 4. **Duplicate Block IDs**: Hash table collision attacks
 
-### 3. HTTP Request Parsing Attacks
+## 3. HTTP Request Parsing Attacks
 
 **Test Vectors:**
 
@@ -224,7 +229,7 @@ http_attacks = {
 4. **Null Byte Injection**: Path with embedded null bytes
 5. **HTTP Method Confusion**: Non-standard methods
 
-### 4. JSON Parsing Attacks
+## 4. JSON Parsing Attacks
 
 **Test Vectors:**
 
@@ -272,7 +277,7 @@ json_attacks = {
 3. **Memory Exhaustion**: Huge strings, deep arrays
 4. **Encoding Attacks**: Overlong UTF-8, BOM injection
 
-### 5. XRPC Endpoint Attacks
+## 5. XRPC Endpoint Attacks
 
 **Test Vectors:**
 
@@ -362,7 +367,7 @@ sql_injection_tests = {
 }
 ```
 
-### 2. Column/Table Name Injection
+## 2. Column/Table Name Injection
 
 **Test Cases:**
 
@@ -390,7 +395,7 @@ column_injection = {
 }
 ```
 
-### 3. Prepared Statement Verification
+## 3. Prepared Statement Verification
 
 **Checklist:**
 
@@ -440,7 +445,7 @@ mime_bypass_tests = {
 }
 ```
 
-### 2. File Size/Resource Attacks
+## 2. File Size/Resource Attacks
 
 **Test Cases:**
 
@@ -473,7 +478,7 @@ resource_attacks = {
 }
 ```
 
-### 3. Path Traversal in Filenames
+## 3. Path Traversal in Filenames
 
 **Test Cases:**
 
@@ -502,7 +507,7 @@ path_traversal = {
 }
 ```
 
-### 4. Image-Specific Attacks
+## 4. Image-Specific Attacks
 
 **Test Cases:**
 
@@ -536,7 +541,7 @@ image_attacks = {
 }
 ```
 
-### 5. Archive-Based Attacks
+## 5. Archive-Based Attacks
 
 **Test Cases:**
 
@@ -575,6 +580,7 @@ archive_attacks = {
 **Directory Structure:**
 
 ```
+
 fuzzing/
 ├── corpus_cbor/
 │   ├── basic/
@@ -840,7 +846,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 ## Related Documentation
 
 - [Security Documentation Index](README) - Overview of all security docs
-- [Security Plan](SECURITY_PLAN) - Comprehensive security strategy
+- [Security Plan](# Security plan) - Comprehensive security strategy
 - [Security Analysis Report](SECURITY_ANALYSIS_REPORT) - Current findings
 - [Security Test Results](security_test_results) - Test execution results
 - [SQL Injection Report](SQL_INJECTION_VULNERABILITY_REPORT) - SQL vulnerabilities

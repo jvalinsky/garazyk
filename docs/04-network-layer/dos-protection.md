@@ -1,3 +1,7 @@
+---
+title: DoS Protection
+---
+
 # DoS Protection
 
 ## Overview
@@ -142,7 +146,7 @@ http {
 }
 ```
 
-### Layer 2: HTTP Server Level
+## Layer 2: HTTP Server Level
 
 **Connection Management:**
 
@@ -760,6 +764,6 @@ self.maxWebSocketConnectionsPerIP = 5;
 
 ## Next Steps
 
-- **[Rate Limiting](./rate-limiting)** — Rate limiting strategies
-- **[Request Throttling](./request-throttling)** — Per-endpoint throttling
-- **[Input Validation](./input-validation)** — Input validation strategies
+- **[Rate Limiting](rate-limiting)** — Rate limiting strategies
+- **[Request Throttling](request-throttling)** — Per-endpoint throttling
+- **[Input Validation](input-validation)** — Input validation strategies
