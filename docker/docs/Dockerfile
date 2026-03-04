@@ -1,11 +1,14 @@
 # Dockerfile for VitePress documentation deployment
 FROM nginx:alpine
 
+# Remove default nginx config to avoid server_name conflicts
+RUN rm /etc/nginx/conf.d/default.conf
+
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/docs.conf
+COPY nginx-local.conf /etc/nginx/conf.d/docs.conf
 
 # Copy built documentation
-COPY dist/ /var/www/docs/
+COPY .vitepress/dist/ /var/www/docs/
 
 # Expose port 80
 EXPOSE 80

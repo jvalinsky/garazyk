@@ -5,35 +5,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-// Stub for PDSMetrics (macOS-only due to os_unfair_lock)
-@interface PDSMetrics : NSObject
-+ (instancetype)sharedMetrics;
-- (NSUInteger)httpRequestsTotal;
-- (NSUInteger)repositoryCount;
-- (NSUInteger)blobCount;
-- (NSUInteger)activeConnections;
-- (NSUInteger)httpLatencyMs;
-- (void)incrementHttpRequests;
-- (void)recordHttpLatency:(NSTimeInterval)latency;
-@end
-
-@implementation PDSMetrics
-+ (instancetype)sharedMetrics {
-    static PDSMetrics *shared = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        shared = [[PDSMetrics alloc] init];
-    });
-    return shared;
-}
-- (NSUInteger)httpRequestsTotal { return 0; }
-- (NSUInteger)repositoryCount { return 0; }
-- (NSUInteger)blobCount { return 0; }
-- (NSUInteger)activeConnections { return 0; }
-- (NSUInteger)httpLatencyMs { return 0; }
-- (void)incrementHttpRequests {}
-- (void)recordHttpLatency:(NSTimeInterval)latency {}
-@end
 
 // Stub for KeyManager (macOS-only due to Security framework)
 @interface KeyManager : NSObject

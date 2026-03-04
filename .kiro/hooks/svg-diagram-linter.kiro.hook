@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "SVG Diagram Linter",
+  "description": "Automatically lint, debug, fix, and improve SVG diagrams to ensure proper alignment, spacing, and visual quality",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review this SVG diagram for visual quality issues. Check for: 1) Children nodes that are too close together or overlapping, 2) Misaligned arrows or connectors, 3) Inconsistent spacing between elements, 4) Text that extends beyond boundaries, 5) Overall layout balance. If you find issues, fix them by adjusting coordinates, spacing, and alignment to improve readability and visual clarity."
+  },
+  "workspaceFolderName": "garazyk",
+  "shortName": "svg-diagram-linter"
+}

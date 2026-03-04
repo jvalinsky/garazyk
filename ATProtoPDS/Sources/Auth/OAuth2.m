@@ -11,27 +11,28 @@
  */
 
 #import "Auth/OAuth2.h"
-#import "Auth/Session.h"
-#import "Auth/PDSKeyManagerFactory.h"
-#import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/JWT.h"
-#import "Auth/Secp256k1.h"
-#import "Core/DID.h"
-#import "Identity/HandleResolver.h"
-#import "Database/PDSDatabase.h"
+#import "Auth/Session.h"
 #import "Auth/TOTPService.h"
 #import "Auth/Base32Utils.h"
 #import "Auth/CryptoUtils.h"
-#import "Debug/PDSLogger.h"
-#import <CommonCrypto/CommonDigest.h>
-#import <Security/Security.h>
 #import "Auth/PDSReplayCache.h"
 #import "Auth/PDSNonceManager.h"
 #import "App/PDSConfiguration.h"
+#import "AuthCrypto/AuthCryptoJWK.h"
 #import "AuthCrypto/AuthCryptoDPoP.h"
 #import "AuthCrypto/AuthCryptoBase64URL.h"
-#import "AuthCrypto/AuthCryptoJWK.h"
 #import "AuthCrypto/AuthCryptoECDSA.h"
+#import "Auth/Secp256k1.h"
+#import "Database/PDSDatabase.h"
+#import "Debug/PDSLogger.h"
+#import "Metrics/PDSMetrics.h"
+#import "Core/DID.h"
+#import "Auth/PDSKeyManagerProtocol.h"
+#import "Auth/PDSKeyManagerFactory.h"
+#import "Identity/HandleResolver.h"
+#import <CommonCrypto/CommonDigest.h>
+#import <Security/Security.h>
 
 NSString * const OAuth2ScopeAtproto = @"atproto";
 NSString * const OAuth2ScopeTransitionGeneric = @"transition:generic";
@@ -789,6 +790,8 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                                            scope:scope
                                dpopKeyThumbprint:request.dpopKeyThumbprint];
 
+    [[PDSMetrics sharedMetrics] incrementOAuthTokenGrant:@"authorization_code"];
+    [[PDSMetrics sharedMetrics] setActiveAuthSessions:(NSInteger)self.activeSessions.count];
     completion(session, nil);
 }
 
@@ -827,6 +830,8 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
     [self.activeSessions removeObjectForKey:existingSession.sessionID];
 
+    [[PDSMetrics sharedMetrics] incrementOAuthTokenGrant:@"refresh_token"];
+    [[PDSMetrics sharedMetrics] setActiveAuthSessions:(NSInteger)self.activeSessions.count];
     completion(newSession, nil);
 }
 
