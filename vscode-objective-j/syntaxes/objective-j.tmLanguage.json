@@ -1,0 +1,893 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Objective-J",
+  "scopeName": "source.objective-j",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#import-statement" },
+    { "include": "#forward-declarations" },
+    { "include": "#pragma-mark" },
+    { "include": "#protocol-definition" },
+    { "include": "#class-implementation" },
+    { "include": "#objj-exception-handling" },
+    { "include": "#objj-selector-literal" },
+    { "include": "#objj-ref-deref" },
+    { "include": "#objj-literals" },
+    { "include": "#at-keywords" },
+    { "include": "#message-send" },
+    { "include": "#javascript" }
+  ],
+  "repository": {
+
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.objective-j",
+          "match": "(//).*$",
+          "captures": {
+            "1": { "name": "punctuation.definition.comment.objective-j" }
+          }
+        },
+        {
+          "name": "comment.block.objective-j",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.comment.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.comment.end.objective-j" }
+          }
+        }
+      ]
+    },
+
+    "import-statement": {
+      "patterns": [
+        {
+          "name": "meta.import.framework.objective-j",
+          "match": "(@import)\\s+(<)([^>]*)(>)",
+          "captures": {
+            "1": { "name": "keyword.control.import.objective-j" },
+            "2": { "name": "punctuation.definition.import.begin.objective-j" },
+            "3": { "name": "string.quoted.other.lt-gt.objective-j" },
+            "4": { "name": "punctuation.definition.import.end.objective-j" }
+          }
+        },
+        {
+          "name": "meta.import.local.objective-j",
+          "match": "(@import)\\s+(\"[^\"]*\")",
+          "captures": {
+            "1": { "name": "keyword.control.import.objective-j" },
+            "2": { "name": "string.quoted.double.objective-j" }
+          }
+        }
+      ]
+    },
+
+    "forward-declarations": {
+      "patterns": [
+        {
+          "match": "(@class)\\s+([a-zA-Z_]\\w*)",
+          "captures": {
+            "1": { "name": "keyword.other.class-forward.objective-j" },
+            "2": { "name": "entity.name.type.class.objective-j" }
+          }
+        },
+        {
+          "match": "(@global)\\s+([a-zA-Z_]\\w*)",
+          "captures": {
+            "1": { "name": "keyword.other.global.objective-j" },
+            "2": { "name": "variable.other.global.objective-j" }
+          }
+        },
+        {
+          "match": "(@typedef)\\s+([a-zA-Z_]\\w*)",
+          "captures": {
+            "1": { "name": "keyword.other.typedef.objective-j" },
+            "2": { "name": "entity.name.type.typedef.objective-j" }
+          }
+        }
+      ]
+    },
+
+    "pragma-mark": {
+      "match": "(#pragma\\s+mark)\\s+(.*)",
+      "captures": {
+        "1": { "name": "keyword.other.pragma-mark.objective-j" },
+        "2": { "name": "meta.toc-list.pragma-mark.objective-j" }
+      }
+    },
+
+    "protocol-definition": {
+      "name": "meta.protocol.objective-j",
+      "begin": "(@protocol)\\s+([a-zA-Z_]\\w*)(?:\\s*(<)([^>]*)(>))?",
+      "end": "(@end)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.protocol.objective-j" },
+        "2": { "name": "entity.name.type.protocol.objective-j" },
+        "3": { "name": "punctuation.definition.protocols.begin.objective-j" },
+        "4": { "name": "entity.other.inherited-class.objective-j" },
+        "5": { "name": "punctuation.definition.protocols.end.objective-j" }
+      },
+      "endCaptures": {
+        "1": { "name": "storage.type.protocol.end.objective-j" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        {
+          "name": "keyword.other.protocol.required.objective-j",
+          "match": "@required"
+        },
+        {
+          "name": "keyword.other.protocol.optional.objective-j",
+          "match": "@optional"
+        },
+        { "include": "#method-declaration" }
+      ]
+    },
+
+    "class-implementation": {
+      "name": "meta.implementation.objective-j",
+      "begin": "(@implementation)\\s+([a-zA-Z_]\\w*)(?:\\s*(:)\\s*([a-zA-Z_]\\w*))?(?:\\s*(<)([^>]*)(>))?(?:\\s*(\\()([^)]*)(\\)))?",
+      "end": "(@end)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.implementation.objective-j" },
+        "2": { "name": "entity.name.type.class.objective-j" },
+        "3": { "name": "punctuation.separator.inheritance.objective-j" },
+        "4": { "name": "entity.other.inherited-class.objective-j" },
+        "5": { "name": "punctuation.definition.protocols.begin.objective-j" },
+        "6": { "name": "entity.other.inherited-class.protocol.objective-j" },
+        "7": { "name": "punctuation.definition.protocols.end.objective-j" },
+        "8": { "name": "punctuation.definition.category.begin.objective-j" },
+        "9": { "name": "entity.name.type.category.objective-j" },
+        "10": { "name": "punctuation.definition.category.end.objective-j" }
+      },
+      "endCaptures": {
+        "1": { "name": "storage.type.implementation.end.objective-j" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#instance-variables" },
+        { "include": "#method-definition" },
+        { "include": "#pragma-mark" },
+        { "include": "#objj-exception-handling" },
+        { "include": "#objj-selector-literal" },
+        { "include": "#objj-ref-deref" },
+        { "include": "#objj-literals" },
+        { "include": "#at-keywords" },
+        { "include": "#message-send" },
+        { "include": "#javascript" }
+      ]
+    },
+
+    "instance-variables": {
+      "name": "meta.instance-variables.objective-j",
+      "begin": "(?<=@implementation[^{]*)\\{|(?<=\\>)\\s*\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.instance-variables.begin.objective-j" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.instance-variables.end.objective-j" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        {
+          "name": "keyword.other.outlet.objective-j",
+          "match": "@outlet\\b"
+        },
+        {
+          "name": "keyword.other.accessors.objective-j",
+          "match": "@accessors\\b"
+        },
+        {
+          "name": "meta.accessors-config.objective-j",
+          "begin": "(?<=@accessors)\\s*(\\()",
+          "end": "\\)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.accessors.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.accessors.end.objective-j" }
+          },
+          "patterns": [
+            {
+              "match": "\\b(property|getter|setter|readonly|readwrite|copy)\\b",
+              "name": "keyword.other.accessors-attribute.objective-j"
+            },
+            {
+              "match": "\\b[a-zA-Z_]\\w*\\b",
+              "name": "variable.other.accessors-value.objective-j"
+            }
+          ]
+        },
+        {
+          "name": "storage.type.primitive.objective-j",
+          "match": "\\b(id|BOOL|SEL|int|unsigned|float|double|char|void|long|short|signed)\\b"
+        },
+        {
+          "name": "support.type.protocol-qualified.objective-j",
+          "match": "\\b([A-Z]\\w*)\\s*(<)([^>]*)(>)",
+          "captures": {
+            "1": { "name": "storage.type.objj.objective-j" },
+            "2": { "name": "punctuation.definition.protocol.begin.objective-j" },
+            "3": { "name": "entity.other.inherited-class.protocol.objective-j" },
+            "4": { "name": "punctuation.definition.protocol.end.objective-j" }
+          }
+        },
+        {
+          "name": "storage.type.objj.objective-j",
+          "match": "\\b[A-Z]\\w*\\b"
+        },
+        {
+          "name": "variable.other.ivar.objective-j",
+          "match": "\\b[_a-z][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+
+    "method-declaration": {
+      "name": "meta.method-declaration.objective-j",
+      "begin": "^\\s*([+-])\\s*",
+      "end": ";",
+      "beginCaptures": {
+        "1": { "name": "storage.type.method.objective-j" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.terminator.method-declaration.objective-j" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#method-return-type" },
+        { "include": "#method-selector-param" },
+        {
+          "name": "entity.name.function.objective-j",
+          "match": "\\b[a-zA-Z_]\\w*\\b"
+        }
+      ]
+    },
+
+    "method-definition": {
+      "name": "meta.method.objective-j",
+      "begin": "^\\s*([+-])\\s*",
+      "end": "(?=\\{)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.method.objective-j" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#method-return-type" },
+        { "include": "#method-selector-param" },
+        {
+          "name": "entity.name.function.objective-j",
+          "match": "\\b[a-zA-Z_]\\w*\\b"
+        }
+      ]
+    },
+
+    "method-return-type": {
+      "name": "meta.return-type.objective-j",
+      "begin": "\\(",
+      "end": "\\)",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.type.begin.objective-j" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.type.end.objective-j" }
+      },
+      "patterns": [
+        {
+          "name": "keyword.other.action.objective-j",
+          "match": "@action"
+        },
+        {
+          "name": "storage.type.primitive.objective-j",
+          "match": "\\b(id|void|BOOL|SEL|int|unsigned|float|double|char|long|short|signed)\\b"
+        },
+        {
+          "comment": "Protocol-qualified type e.g. id<CPTableViewDelegate>",
+          "match": "(<)([^>]*)(>)",
+          "captures": {
+            "1": { "name": "punctuation.definition.protocol.begin.objective-j" },
+            "2": { "name": "entity.other.inherited-class.protocol.objective-j" },
+            "3": { "name": "punctuation.definition.protocol.end.objective-j" }
+          }
+        },
+        {
+          "name": "storage.type.objj.objective-j",
+          "match": "\\b[A-Z]\\w*\\b"
+        }
+      ]
+    },
+
+    "method-selector-param": {
+      "comment": "Matches label:(Type)paramName segments in method signatures",
+      "match": "([a-zA-Z_]\\w*)(:\\s*)(\\()([^)]*)(\\))\\s*([a-zA-Z_]\\w*)",
+      "captures": {
+        "1": { "name": "entity.name.function.selector-part.objective-j" },
+        "2": { "name": "punctuation.separator.method.objective-j" },
+        "3": { "name": "punctuation.definition.type.begin.objective-j" },
+        "4": { "name": "storage.type.parameter.objective-j" },
+        "5": { "name": "punctuation.definition.type.end.objective-j" },
+        "6": { "name": "variable.parameter.objective-j" }
+      }
+    },
+
+    "objj-exception-handling": {
+      "patterns": [
+        {
+          "name": "keyword.control.exception.try.objective-j",
+          "match": "@try\\b"
+        },
+        {
+          "name": "keyword.control.exception.catch.objective-j",
+          "match": "@catch\\b"
+        },
+        {
+          "name": "keyword.control.exception.finally.objective-j",
+          "match": "@finally\\b"
+        },
+        {
+          "name": "keyword.control.exception.throw.objective-j",
+          "match": "@throw\\b"
+        }
+      ]
+    },
+
+    "objj-selector-literal": {
+      "name": "meta.selector-literal.objective-j",
+      "begin": "(@selector)(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "keyword.other.selector.objective-j" },
+        "2": { "name": "punctuation.definition.selector.begin.objective-j" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.selector.end.objective-j" }
+      },
+      "patterns": [
+        {
+          "name": "support.function.selector-name.objective-j",
+          "match": "[a-zA-Z_]\\w*"
+        },
+        {
+          "name": "punctuation.separator.selector.objective-j",
+          "match": ":"
+        }
+      ]
+    },
+
+    "objj-ref-deref": {
+      "patterns": [
+        {
+          "name": "meta.ref.objective-j",
+          "begin": "(@ref)(\\()",
+          "end": "\\)",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.ref.objective-j" },
+            "2": { "name": "punctuation.definition.ref.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.ref.end.objective-j" }
+          },
+          "patterns": [
+            { "include": "#javascript" }
+          ]
+        },
+        {
+          "name": "meta.deref.objective-j",
+          "begin": "(@deref)(\\()",
+          "end": "\\)",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.deref.objective-j" },
+            "2": { "name": "punctuation.definition.deref.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.deref.end.objective-j" }
+          },
+          "patterns": [
+            { "include": "#javascript" }
+          ]
+        }
+      ]
+    },
+
+    "objj-literals": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.at.objective-j",
+          "begin": "@\"",
+          "end": "\"",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.objective-j" }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.objective-j",
+              "match": "\\\\(?:[\\\\\"'nrtbf0/]|u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2})"
+            }
+          ]
+        },
+        {
+          "name": "meta.dictionary-literal.objective-j",
+          "begin": "@\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.dictionary.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.dictionary.end.objective-j" }
+          },
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#objj-literals" },
+            { "include": "#message-send" },
+            { "include": "#javascript" }
+          ]
+        },
+        {
+          "name": "meta.array-literal.objective-j",
+          "begin": "@\\[",
+          "end": "\\]",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.array.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.array.end.objective-j" }
+          },
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#objj-literals" },
+            { "include": "#message-send" },
+            { "include": "#javascript" }
+          ]
+        },
+        {
+          "name": "constant.language.boolean.yes.objective-j",
+          "match": "\\bYES\\b"
+        },
+        {
+          "name": "constant.language.boolean.no.objective-j",
+          "match": "\\bNO\\b"
+        },
+        {
+          "name": "constant.language.nil.objective-j",
+          "match": "\\bnil\\b"
+        },
+        {
+          "name": "constant.language.nil.objective-j",
+          "match": "\\bNil\\b"
+        },
+        {
+          "name": "constant.language.null.objective-j",
+          "match": "\\bNULL\\b"
+        }
+      ]
+    },
+
+    "at-keywords": {
+      "patterns": [
+        {
+          "name": "keyword.other.accessors.objective-j",
+          "match": "@accessors\\b"
+        },
+        {
+          "name": "keyword.other.outlet.objective-j",
+          "match": "@outlet\\b"
+        },
+        {
+          "name": "keyword.other.action.objective-j",
+          "match": "@action\\b"
+        },
+        {
+          "name": "keyword.other.each.objective-j",
+          "match": "@each\\b"
+        }
+      ]
+    },
+
+    "message-send": {
+      "comment": "Match [receiver msg:arg] but not plain JS arrays like [1,2,3]. Lookahead requires identifier, self, super, or nested [.",
+      "name": "meta.message-send.objective-j",
+      "begin": "\\[(?=\\s*(?:self|super|_cmd|[A-Za-z_$]|\\[))",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.message.begin.objective-j" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.message.end.objective-j" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#message-send" },
+        {
+          "comment": "Selector parts (label before colon) inside message sends",
+          "match": "\\b([a-zA-Z_]\\w*)(:)",
+          "captures": {
+            "1": { "name": "support.function.selector-part.objective-j" },
+            "2": { "name": "punctuation.separator.selector.objective-j" }
+          }
+        },
+        { "include": "#objj-selector-literal" },
+        { "include": "#objj-ref-deref" },
+        { "include": "#objj-literals" },
+        { "include": "#at-keywords" },
+        { "include": "#javascript" }
+      ]
+    },
+
+    "javascript": {
+      "patterns": [
+        { "include": "#js-template-string" },
+        { "include": "#js-strings" },
+        { "include": "#js-regex" },
+        { "include": "#js-numbers" },
+        { "include": "#js-language-variables" },
+        { "include": "#js-keywords" },
+        { "include": "#js-operators" },
+        { "include": "#js-types" },
+        { "include": "#js-function" },
+        { "include": "#js-support" },
+        { "include": "#js-block" }
+      ]
+    },
+
+    "js-template-string": {
+      "name": "string.template.objective-j",
+      "begin": "`",
+      "end": "`",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.template.begin.objective-j" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.template.end.objective-j" }
+      },
+      "patterns": [
+        {
+          "name": "meta.template.expression.objective-j",
+          "begin": "\\$\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.template-expression.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.template-expression.end.objective-j" }
+          },
+          "patterns": [
+            { "include": "#objj-literals" },
+            { "include": "#message-send" },
+            { "include": "#javascript" }
+          ]
+        },
+        {
+          "name": "constant.character.escape.objective-j",
+          "match": "\\\\."
+        }
+      ]
+    },
+
+    "js-strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.objective-j",
+          "begin": "(?<!@)\"",
+          "end": "\"",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.objective-j" }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.objective-j",
+              "match": "\\\\(?:[\\\\\"'nrtbf0/]|u[0-9a-fA-F]{4}|u\\{[0-9a-fA-F]+\\}|x[0-9a-fA-F]{2})"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.objective-j",
+          "begin": "'",
+          "end": "'",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.objective-j" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.objective-j" }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.objective-j",
+              "match": "\\\\(?:[\\\\\"'nrtbf0/]|u[0-9a-fA-F]{4}|u\\{[0-9a-fA-F]+\\}|x[0-9a-fA-F]{2})"
+            }
+          ]
+        }
+      ]
+    },
+
+    "js-regex": {
+      "patterns": [
+        {
+          "comment": "Regex literal after operator or statement start",
+          "name": "string.regexp.objective-j",
+          "begin": "(?<=[=(:,;!&|?~^]|^|return|typeof|void|delete|throw|case|in|of|instanceof)\\s*(/(?![/*]))",
+          "end": "(/)[gimsuy]*",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.string.begin.objective-j" }
+          },
+          "endCaptures": {
+            "1": { "name": "punctuation.definition.string.end.objective-j" }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.objective-j",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+
+    "js-numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.objective-j",
+          "match": "\\b0[xX][0-9a-fA-F](?:[0-9a-fA-F_]*[0-9a-fA-F])?n?\\b"
+        },
+        {
+          "name": "constant.numeric.binary.objective-j",
+          "match": "\\b0[bB][01](?:[01_]*[01])?n?\\b"
+        },
+        {
+          "name": "constant.numeric.octal.objective-j",
+          "match": "\\b0[oO][0-7](?:[0-7_]*[0-7])?n?\\b"
+        },
+        {
+          "name": "constant.numeric.float.objective-j",
+          "match": "(?:\\b[0-9](?:[0-9_]*[0-9])?\\.(?:[0-9](?:[0-9_]*[0-9])?)?|\\B\\.[0-9](?:[0-9_]*[0-9])?)(?:[eE][+-]?[0-9](?:[0-9_]*[0-9])?)?\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.objective-j",
+          "match": "\\b[0-9](?:[0-9_]*[0-9])?n?\\b"
+        }
+      ]
+    },
+
+    "js-language-variables": {
+      "patterns": [
+        {
+          "name": "variable.language.self.objective-j",
+          "match": "\\bself\\b"
+        },
+        {
+          "name": "variable.language.super.objective-j",
+          "match": "\\bsuper\\b"
+        },
+        {
+          "name": "variable.language.this.objective-j",
+          "match": "\\bthis\\b"
+        },
+        {
+          "name": "variable.language.cmd.objective-j",
+          "match": "\\b_cmd\\b"
+        },
+        {
+          "name": "variable.language.arguments.objective-j",
+          "match": "\\barguments\\b"
+        },
+        {
+          "name": "constant.language.boolean.true.objective-j",
+          "match": "\\btrue\\b"
+        },
+        {
+          "name": "constant.language.boolean.false.objective-j",
+          "match": "\\bfalse\\b"
+        },
+        {
+          "name": "constant.language.null.objective-j",
+          "match": "\\bnull\\b"
+        },
+        {
+          "name": "constant.language.undefined.objective-j",
+          "match": "\\bundefined\\b"
+        },
+        {
+          "name": "constant.language.nan.objective-j",
+          "match": "\\bNaN\\b"
+        },
+        {
+          "name": "constant.language.infinity.objective-j",
+          "match": "\\bInfinity\\b"
+        }
+      ]
+    },
+
+    "js-keywords": {
+      "patterns": [
+        {
+          "name": "storage.type.var.objective-j",
+          "match": "\\b(var|let|const)\\b"
+        },
+        {
+          "name": "keyword.control.flow.objective-j",
+          "match": "\\b(if|else|for|while|do|switch|case|default|break|continue|return|throw|try|catch|finally|with)\\b"
+        },
+        {
+          "name": "keyword.operator.expression.objective-j",
+          "match": "\\b(new|delete|typeof|instanceof|in|of|void)\\b"
+        },
+        {
+          "name": "keyword.control.async.objective-j",
+          "match": "\\b(async|await|yield)\\b"
+        },
+        {
+          "name": "storage.type.function.objective-j",
+          "match": "\\bfunction\\b"
+        },
+        {
+          "name": "storage.type.class.objective-j",
+          "match": "\\b(class|extends)\\b"
+        },
+        {
+          "name": "keyword.control.module.objective-j",
+          "match": "\\b(export|import|from|as)\\b"
+        },
+        {
+          "name": "keyword.operator.spread.objective-j",
+          "match": "\\.\\.\\."
+        }
+      ]
+    },
+
+    "js-operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.objective-j",
+          "match": "===|!==|==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.logical.objective-j",
+          "match": "&&|\\|\\||!"
+        },
+        {
+          "name": "keyword.operator.nullish.objective-j",
+          "match": "\\?\\?(?!=)"
+        },
+        {
+          "name": "keyword.operator.optional-chaining.objective-j",
+          "match": "\\?\\."
+        },
+        {
+          "name": "keyword.operator.assignment.compound.objective-j",
+          "match": "\\+\\+|--|\\+=|-=|\\*\\*=|\\*=|/=|%=|&&=|\\|\\|=|\\?\\?=|&=|\\|=|\\^=|<<=|>>>=|>>="
+        },
+        {
+          "name": "keyword.operator.assignment.objective-j",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.arithmetic.objective-j",
+          "match": "\\*\\*|\\+|-|\\*|/|%"
+        },
+        {
+          "name": "keyword.operator.bitwise.objective-j",
+          "match": ">>>|>>|<<|&|\\||\\^|~"
+        },
+        {
+          "name": "keyword.operator.ternary.objective-j",
+          "match": "\\?"
+        },
+        {
+          "name": "keyword.operator.arrow.objective-j",
+          "match": "=>"
+        }
+      ]
+    },
+
+    "js-types": {
+      "patterns": [
+        {
+          "name": "storage.type.primitive.objective-j",
+          "match": "\\b(id|void|BOOL|SEL|int|unsigned|float|double|char|long|short|signed)\\b"
+        },
+        {
+          "comment": "Any CP-prefixed class (Cappuccino framework pattern)",
+          "name": "support.class.cappuccino.objective-j",
+          "match": "\\bCP[A-Z]\\w*\\b"
+        },
+        {
+          "comment": "Any CG-prefixed type (CoreGraphics-style types)",
+          "name": "support.type.cg.objective-j",
+          "match": "\\bCG[A-Z]\\w*\\b"
+        },
+        {
+          "comment": "Cappuccino/ObjJ enum-like constants kCP...",
+          "name": "support.constant.cappuccino.objective-j",
+          "match": "\\bkCP[A-Z]\\w*\\b"
+        },
+        {
+          "comment": "Notification name constants (CPSomethingNotification pattern)",
+          "name": "support.constant.notification.objective-j",
+          "match": "\\bCP\\w+Notification\\b"
+        }
+      ]
+    },
+
+    "js-function": {
+      "patterns": [
+        {
+          "comment": "Named function declaration",
+          "match": "\\b(function)(\\*?)\\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\\s*\\(",
+          "captures": {
+            "1": { "name": "storage.type.function.objective-j" },
+            "2": { "name": "keyword.generator.asterisk.objective-j" },
+            "3": { "name": "entity.name.function.objective-j" }
+          }
+        },
+        {
+          "comment": "Variable assignment to function/arrow",
+          "match": "\\b([a-zA-Z_$][a-zA-Z0-9_$]*)\\s*=\\s*(?=function\\b|\\(.*\\)\\s*=>|[a-zA-Z_$]\\w*\\s*=>)",
+          "captures": {
+            "1": { "name": "entity.name.function.objective-j" }
+          }
+        },
+        {
+          "comment": "CG geometry/transform functions — pattern-based",
+          "name": "support.function.cg.objective-j",
+          "match": "\\bCG(?:Rect|Point|Size|AffineTransform)\\w*\\b"
+        },
+        {
+          "comment": "ObjJ runtime functions",
+          "name": "support.function.objj-runtime.objective-j",
+          "match": "\\b(objj_msgSend|objj_allocateClassPair|objj_registerClassPair|class_addMethod|class_getName|class_getSuperclass|class_getInstanceVariable|sel_getName|sel_getUid|sel_registerName|protocol_getName)\\b"
+        }
+      ]
+    },
+
+    "js-support": {
+      "patterns": [
+        {
+          "name": "support.class.builtin.objective-j",
+          "match": "\\b(Object|Array|String|Number|Boolean|RegExp|Date|Error|TypeError|RangeError|SyntaxError|ReferenceError|Promise|Map|Set|WeakMap|WeakSet|Symbol|Proxy|Reflect|ArrayBuffer|DataView|Int8Array|Uint8Array|Float32Array|Float64Array|JSON|Math)\\b"
+        },
+        {
+          "name": "support.function.builtin.objective-j",
+          "match": "\\b(alert|confirm|prompt|setTimeout|setInterval|clearTimeout|clearInterval|requestAnimationFrame|cancelAnimationFrame|parseInt|parseFloat|isNaN|isFinite|encodeURIComponent|decodeURIComponent|encodeURI|decodeURI|eval)\\b"
+        },
+        {
+          "name": "support.variable.dom.objective-j",
+          "match": "\\b(window|document|console|navigator|location|history|screen|performance|localStorage|sessionStorage|XMLHttpRequest|fetch)\\b"
+        },
+        {
+          "name": "support.function.console.objective-j",
+          "match": "(?<=console\\.)(log|warn|error|info|debug|trace|dir|table|time|timeEnd|group|groupEnd|assert|count|clear)\\b"
+        }
+      ]
+    },
+
+    "js-block": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.block.begin.objective-j" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.block.end.objective-j" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#objj-exception-handling" },
+        { "include": "#objj-selector-literal" },
+        { "include": "#objj-ref-deref" },
+        { "include": "#objj-literals" },
+        { "include": "#at-keywords" },
+        { "include": "#message-send" },
+        { "include": "#javascript" }
+      ]
+    }
+  }
+}
