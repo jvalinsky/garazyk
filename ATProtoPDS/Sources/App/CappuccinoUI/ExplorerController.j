@@ -25,16 +25,36 @@
     CPPopUpButton _recordModePopup;
     CPPopUpButton _profileViewModePopup;
     CPPopUpButton _mstExportFormatPopup;
+    CPPopUpButton _didViewModePopup;
+    CPPopUpButton _plcViewModePopup;
     CPTextView _didTextView;
     CPTextView _plcTextView;
+    CPView _didRenderedView;
+    CPTableView _didSummaryTable;
+    CPTableView _didItemsTable;
+    CPView _plcRenderedView;
+    CPTableView _plcOpsTable;
+    CPTableView _plcDetailTable;
     CPTextView _recordDetailTextView;
+    CPView _recordRenderedView;
+    CPTableView _recordSummaryTable;
+    CPTextView _recordBodyTextView;
     CPTextView _feedTextView;
-    CPTextView _graphTextView;
+    CPView _feedRenderedView;
+    CPTableView _feedTable;
+    CPTableView _feedDetailTable;
+    CPTableView _graphTable;
+    CPTableView _graphDetailTable;
     CPTextView _profileTextView;
+    CPView _profileRenderedView;
+    CPTableView _profileSummaryTable;
+    CPTextView _profileBioTextView;
     CPTextView _utilityTextView;
     CPTextField _mstDidField;
+    CPView _mstTreeListView;
+    CPTableView _mstStatsTable;
+    CPTableView _mstNodesTable;
     CPTextView _mstTreeTextView;
-    CPTextView _mstStatsTextView;
     CPTextField _oauthHandleField;
     CPTextField _oauthDidField;
     CPTextField _postTextField;
@@ -49,16 +69,28 @@
     id _currentProfilePayload;
     id _currentMSTTreePayload;
     id _currentMSTStatsPayload;
-    CPString _currentRecordRendered;
-    CPString _currentFeedRendered;
-    CPString _currentProfileRendered;
+    id _currentDIDPayload;
+    id _currentPLCPayload;
     CPString _currentDID;
     CPString _currentHandle;
     CPString _selectedCollection;
+    CPString _currentFeedMode;
     BOOL _mstExpanded;
     id _dpopKeyPair;
     CPString _oauthAccessToken;
     CPString _oauthSessionDid;
+    CPArray _recordSummaryRows;
+    CPArray _feedRows;
+    CPArray _feedDetailRows;
+    CPArray _graphRows;
+    CPArray _graphDetailRows;
+    CPArray _profileSummaryRows;
+    CPArray _mstStatsRows;
+    CPArray _mstNodeRows;
+    CPArray _didSummaryRows;
+    CPArray _didItemRows;
+    CPArray _plcOpRows;
+    CPArray _plcDetailRows;
 }
 
 - (id)initWithSessionState:(SessionState)sessionState apiClient:(UIAPIClient)apiClient
@@ -76,16 +108,28 @@
         _currentProfilePayload = nil;
         _currentMSTTreePayload = nil;
         _currentMSTStatsPayload = nil;
-        _currentRecordRendered = @"";
-        _currentFeedRendered = @"";
-        _currentProfileRendered = @"";
+        _currentDIDPayload = nil;
+        _currentPLCPayload = nil;
         _currentDID = nil;
         _currentHandle = nil;
         _selectedCollection = nil;
+        _currentFeedMode = @"Posts";
         _mstExpanded = NO;
         _dpopKeyPair = nil;
         _oauthAccessToken = nil;
         _oauthSessionDid = nil;
+        _recordSummaryRows = [];
+        _feedRows = [];
+        _feedDetailRows = [];
+        _graphRows = [];
+        _graphDetailRows = [];
+        _profileSummaryRows = [];
+        _mstStatsRows = [];
+        _mstNodeRows = [];
+        _didSummaryRows = [];
+        _didItemRows = [];
+        _plcOpRows = [];
+        _plcDetailRows = [];
     }
     return self;
 }
@@ -175,13 +219,145 @@
 - (void)setUpDetailTabs
 {
     var didTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
-    _didTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 10.0, 730.0, 500.0)
+    var didViewLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 40.0, 18.0)];
+    [didViewLabel setStringValue:@"View:"];
+    [didViewLabel setEditable:NO];
+    [didViewLabel setBezeled:NO];
+    [didViewLabel setDrawsBackground:NO];
+    [didTab addSubview:didViewLabel];
+
+    _didViewModePopup = [[CPPopUpButton alloc] initWithFrame:CGRectMake(52.0, 10.0, 120.0, 24.0)];
+    [_didViewModePopup addItemsWithTitles:[@"Rendered,JSON" componentsSeparatedByString:@","]];
+    [_didViewModePopup setTarget:self];
+    [_didViewModePopup setAction:@selector(handleDidViewModeChanged:)];
+    [didTab addSubview:_didViewModePopup];
+
+    _didRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [didTab addSubview:_didRenderedView];
+
+    _didSummaryTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 166.0)];
+    [_didSummaryTable setDelegate:self];
+    [_didSummaryTable setDataSource:self];
+    [_didSummaryTable setAllowsEmptySelection:YES];
+    [_didSummaryTable setAllowsMultipleSelection:NO];
+
+    var didSummaryFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"did_summary_field"];
+    [[didSummaryFieldColumn headerView] setStringValue:@"Field"];
+    [didSummaryFieldColumn setWidth:200.0];
+    [_didSummaryTable addTableColumn:didSummaryFieldColumn];
+
+    var didSummaryValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"did_summary_value"];
+    [[didSummaryValueColumn headerView] setStringValue:@"Value"];
+    [didSummaryValueColumn setWidth:510.0];
+    [_didSummaryTable addTableColumn:didSummaryValueColumn];
+
+    var didSummaryScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 166.0)];
+    [didSummaryScroll setHasVerticalScroller:YES];
+    [didSummaryScroll setAutohidesScrollers:YES];
+    [didSummaryScroll setDocumentView:_didSummaryTable];
+    [_didRenderedView addSubview:didSummaryScroll];
+
+    _didItemsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 282.0)];
+    [_didItemsTable setDelegate:self];
+    [_didItemsTable setDataSource:self];
+    [_didItemsTable setAllowsEmptySelection:YES];
+    [_didItemsTable setAllowsMultipleSelection:NO];
+
+    var didItemTypeColumn = [[CPTableColumn alloc] initWithIdentifier:@"did_item_type"];
+    [[didItemTypeColumn headerView] setStringValue:@"Type"];
+    [didItemTypeColumn setWidth:120.0];
+    [_didItemsTable addTableColumn:didItemTypeColumn];
+
+    var didItemLabelColumn = [[CPTableColumn alloc] initWithIdentifier:@"did_item_label"];
+    [[didItemLabelColumn headerView] setStringValue:@"Label"];
+    [didItemLabelColumn setWidth:220.0];
+    [_didItemsTable addTableColumn:didItemLabelColumn];
+
+    var didItemValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"did_item_value"];
+    [[didItemValueColumn headerView] setStringValue:@"Value"];
+    [didItemValueColumn setWidth:370.0];
+    [_didItemsTable addTableColumn:didItemValueColumn];
+
+    var didItemsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 176.0, 730.0, 282.0)];
+    [didItemsScroll setHasVerticalScroller:YES];
+    [didItemsScroll setAutohidesScrollers:YES];
+    [didItemsScroll setDocumentView:_didItemsTable];
+    [_didRenderedView addSubview:didItemsScroll];
+
+    _didTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)
                                                   inView:didTab];
+    [_didTextView setHidden:YES];
     [self addTabItemWithLabel:@"DID" contentView:didTab];
 
     var plcTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
-    _plcTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 10.0, 730.0, 500.0)
+    var plcViewLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 40.0, 18.0)];
+    [plcViewLabel setStringValue:@"View:"];
+    [plcViewLabel setEditable:NO];
+    [plcViewLabel setBezeled:NO];
+    [plcViewLabel setDrawsBackground:NO];
+    [plcTab addSubview:plcViewLabel];
+
+    _plcViewModePopup = [[CPPopUpButton alloc] initWithFrame:CGRectMake(52.0, 10.0, 120.0, 24.0)];
+    [_plcViewModePopup addItemsWithTitles:[@"Rendered,JSON" componentsSeparatedByString:@","]];
+    [_plcViewModePopup setTarget:self];
+    [_plcViewModePopup setAction:@selector(handlePLCViewModeChanged:)];
+    [plcTab addSubview:_plcViewModePopup];
+
+    _plcRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [plcTab addSubview:_plcRenderedView];
+
+    _plcOpsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 258.0)];
+    [_plcOpsTable setDelegate:self];
+    [_plcOpsTable setDataSource:self];
+    [_plcOpsTable setAllowsEmptySelection:YES];
+    [_plcOpsTable setAllowsMultipleSelection:NO];
+
+    var plcWhenColumn = [[CPTableColumn alloc] initWithIdentifier:@"plc_op_when"];
+    [[plcWhenColumn headerView] setStringValue:@"When"];
+    [plcWhenColumn setWidth:170.0];
+    [_plcOpsTable addTableColumn:plcWhenColumn];
+
+    var plcSummaryColumn = [[CPTableColumn alloc] initWithIdentifier:@"plc_op_summary"];
+    [[plcSummaryColumn headerView] setStringValue:@"Summary"];
+    [plcSummaryColumn setWidth:180.0];
+    [_plcOpsTable addTableColumn:plcSummaryColumn];
+
+    var plcDetailsColumn = [[CPTableColumn alloc] initWithIdentifier:@"plc_op_details"];
+    [[plcDetailsColumn headerView] setStringValue:@"Details"];
+    [plcDetailsColumn setWidth:360.0];
+    [_plcOpsTable addTableColumn:plcDetailsColumn];
+
+    var plcOpsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 258.0)];
+    [plcOpsScroll setHasVerticalScroller:YES];
+    [plcOpsScroll setAutohidesScrollers:YES];
+    [plcOpsScroll setDocumentView:_plcOpsTable];
+    [_plcRenderedView addSubview:plcOpsScroll];
+
+    _plcDetailTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 190.0)];
+    [_plcDetailTable setDelegate:self];
+    [_plcDetailTable setDataSource:self];
+    [_plcDetailTable setAllowsEmptySelection:YES];
+    [_plcDetailTable setAllowsMultipleSelection:NO];
+
+    var plcDetailFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"plc_detail_field"];
+    [[plcDetailFieldColumn headerView] setStringValue:@"Field"];
+    [plcDetailFieldColumn setWidth:210.0];
+    [_plcDetailTable addTableColumn:plcDetailFieldColumn];
+
+    var plcDetailValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"plc_detail_value"];
+    [[plcDetailValueColumn headerView] setStringValue:@"Value"];
+    [plcDetailValueColumn setWidth:500.0];
+    [_plcDetailTable addTableColumn:plcDetailValueColumn];
+
+    var plcDetailScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 268.0, 730.0, 190.0)];
+    [plcDetailScroll setHasVerticalScroller:YES];
+    [plcDetailScroll setAutohidesScrollers:YES];
+    [plcDetailScroll setDocumentView:_plcDetailTable];
+    [_plcRenderedView addSubview:plcDetailScroll];
+
+    _plcTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)
                                                   inView:plcTab];
+    [_plcTextView setHidden:YES];
     [self addTabItemWithLabel:@"PLC" contentView:plcTab];
 
     var collectionsTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
@@ -255,8 +431,45 @@
     [_recordModePopup setAction:@selector(handleRecordModeChanged:)];
     [recordsTab addSubview:_recordModePopup];
 
+    _recordRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 266.0, 730.0, 236.0)];
+    [recordsTab addSubview:_recordRenderedView];
+
+    _recordSummaryTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 124.0)];
+    [_recordSummaryTable setDelegate:self];
+    [_recordSummaryTable setDataSource:self];
+    [_recordSummaryTable setAllowsEmptySelection:YES];
+    [_recordSummaryTable setAllowsMultipleSelection:NO];
+
+    var recordFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"record_field"];
+    [[recordFieldColumn headerView] setStringValue:@"Field"];
+    [recordFieldColumn setWidth:180.0];
+    [_recordSummaryTable addTableColumn:recordFieldColumn];
+
+    var recordValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"record_value"];
+    [[recordValueColumn headerView] setStringValue:@"Value"];
+    [recordValueColumn setWidth:540.0];
+    [_recordSummaryTable addTableColumn:recordValueColumn];
+
+    var recordSummaryScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 124.0)];
+    [recordSummaryScroll setHasVerticalScroller:YES];
+    [recordSummaryScroll setAutohidesScrollers:YES];
+    [recordSummaryScroll setDocumentView:_recordSummaryTable];
+    [_recordRenderedView addSubview:recordSummaryScroll];
+
+    var recordBodyLabel = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, 132.0, 120.0, 18.0)];
+    [recordBodyLabel setStringValue:@"Record Content"];
+    [recordBodyLabel setEditable:NO];
+    [recordBodyLabel setBezeled:NO];
+    [recordBodyLabel setDrawsBackground:NO];
+    [recordBodyLabel setFont:[CPFont boldSystemFontOfSize:12.0]];
+    [_recordRenderedView addSubview:recordBodyLabel];
+
+    _recordBodyTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(0.0, 154.0, 730.0, 82.0)
+                                                         inView:_recordRenderedView];
+
     _recordDetailTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 266.0, 730.0, 236.0)
                                                            inView:recordsTab];
+    [_recordDetailTextView setHidden:YES];
     [self addTabItemWithLabel:@"Records" contentView:recordsTab];
 
     var feedTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
@@ -283,8 +496,66 @@
     [_feedViewModePopup setAction:@selector(handleFeedViewModeChanged:)];
     [feedTab addSubview:_feedViewModePopup];
 
+    _feedRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [feedTab addSubview:_feedRenderedView];
+
+    _feedTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 262.0)];
+    [_feedTable setDelegate:self];
+    [_feedTable setDataSource:self];
+    [_feedTable setAllowsEmptySelection:YES];
+    [_feedTable setAllowsMultipleSelection:NO];
+
+    var feedTypeColumn = [[CPTableColumn alloc] initWithIdentifier:@"feed_type"];
+    [[feedTypeColumn headerView] setStringValue:@"Type"];
+    [feedTypeColumn setWidth:80.0];
+    [_feedTable addTableColumn:feedTypeColumn];
+
+    var feedActorColumn = [[CPTableColumn alloc] initWithIdentifier:@"feed_actor"];
+    [[feedActorColumn headerView] setStringValue:@"Actor"];
+    [feedActorColumn setWidth:170.0];
+    [_feedTable addTableColumn:feedActorColumn];
+
+    var feedPrimaryColumn = [[CPTableColumn alloc] initWithIdentifier:@"feed_primary"];
+    [[feedPrimaryColumn headerView] setStringValue:@"Summary"];
+    [feedPrimaryColumn setWidth:340.0];
+    [_feedTable addTableColumn:feedPrimaryColumn];
+
+    var feedCreatedColumn = [[CPTableColumn alloc] initWithIdentifier:@"feed_created"];
+    [[feedCreatedColumn headerView] setStringValue:@"Created At"];
+    [feedCreatedColumn setWidth:130.0];
+    [_feedTable addTableColumn:feedCreatedColumn];
+
+    var feedTableScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 262.0)];
+    [feedTableScroll setHasVerticalScroller:YES];
+    [feedTableScroll setAutohidesScrollers:YES];
+    [feedTableScroll setDocumentView:_feedTable];
+    [_feedRenderedView addSubview:feedTableScroll];
+
+    _feedDetailTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 186.0)];
+    [_feedDetailTable setDelegate:self];
+    [_feedDetailTable setDataSource:self];
+    [_feedDetailTable setAllowsEmptySelection:YES];
+    [_feedDetailTable setAllowsMultipleSelection:NO];
+
+    var feedDetailFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"feed_detail_field"];
+    [[feedDetailFieldColumn headerView] setStringValue:@"Field"];
+    [feedDetailFieldColumn setWidth:160.0];
+    [_feedDetailTable addTableColumn:feedDetailFieldColumn];
+
+    var feedDetailValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"feed_detail_value"];
+    [[feedDetailValueColumn headerView] setStringValue:@"Value"];
+    [feedDetailValueColumn setWidth:550.0];
+    [_feedDetailTable addTableColumn:feedDetailValueColumn];
+
+    var feedDetailScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 272.0, 730.0, 186.0)];
+    [feedDetailScroll setHasVerticalScroller:YES];
+    [feedDetailScroll setAutohidesScrollers:YES];
+    [feedDetailScroll setDocumentView:_feedDetailTable];
+    [_feedRenderedView addSubview:feedDetailScroll];
+
     _feedTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)
                                                    inView:feedTab];
+    [_feedTextView setHidden:YES];
     [self addTabItemWithLabel:@"Feed" contentView:feedTab];
 
     var graphTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
@@ -293,8 +564,60 @@
     [loadGraphButton setTarget:self];
     [loadGraphButton setAction:@selector(handleLoadGraph:)];
     [graphTab addSubview:loadGraphButton];
-    _graphTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)
-                                                    inView:graphTab];
+
+    _graphTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 304.0)];
+    [_graphTable setDelegate:self];
+    [_graphTable setDataSource:self];
+    [_graphTable setAllowsEmptySelection:YES];
+    [_graphTable setAllowsMultipleSelection:NO];
+
+    var graphHandleColumn = [[CPTableColumn alloc] initWithIdentifier:@"graph_handle"];
+    [[graphHandleColumn headerView] setStringValue:@"Handle"];
+    [graphHandleColumn setWidth:170.0];
+    [_graphTable addTableColumn:graphHandleColumn];
+
+    var graphDidColumn = [[CPTableColumn alloc] initWithIdentifier:@"graph_did"];
+    [[graphDidColumn headerView] setStringValue:@"DID"];
+    [graphDidColumn setWidth:320.0];
+    [_graphTable addTableColumn:graphDidColumn];
+
+    var graphDisplayNameColumn = [[CPTableColumn alloc] initWithIdentifier:@"graph_display_name"];
+    [[graphDisplayNameColumn headerView] setStringValue:@"Display Name"];
+    [graphDisplayNameColumn setWidth:130.0];
+    [_graphTable addTableColumn:graphDisplayNameColumn];
+
+    var graphCreatedColumn = [[CPTableColumn alloc] initWithIdentifier:@"graph_created"];
+    [[graphCreatedColumn headerView] setStringValue:@"Created At"];
+    [graphCreatedColumn setWidth:100.0];
+    [_graphTable addTableColumn:graphCreatedColumn];
+
+    var graphScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 304.0)];
+    [graphScroll setHasVerticalScroller:YES];
+    [graphScroll setAutohidesScrollers:YES];
+    [graphScroll setDocumentView:_graphTable];
+    [graphTab addSubview:graphScroll];
+
+    _graphDetailTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 146.0)];
+    [_graphDetailTable setDelegate:self];
+    [_graphDetailTable setDataSource:self];
+    [_graphDetailTable setAllowsEmptySelection:YES];
+    [_graphDetailTable setAllowsMultipleSelection:NO];
+
+    var graphDetailFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"graph_detail_field"];
+    [[graphDetailFieldColumn headerView] setStringValue:@"Field"];
+    [graphDetailFieldColumn setWidth:170.0];
+    [_graphDetailTable addTableColumn:graphDetailFieldColumn];
+
+    var graphDetailValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"graph_detail_value"];
+    [[graphDetailValueColumn headerView] setStringValue:@"Value"];
+    [graphDetailValueColumn setWidth:540.0];
+    [_graphDetailTable addTableColumn:graphDetailValueColumn];
+
+    var graphDetailScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 356.0, 730.0, 146.0)];
+    [graphDetailScroll setHasVerticalScroller:YES];
+    [graphDetailScroll setAutohidesScrollers:YES];
+    [graphDetailScroll setDocumentView:_graphDetailTable];
+    [graphTab addSubview:graphDetailScroll];
     [self addTabItemWithLabel:@"Graph" contentView:graphTab];
 
     var profileTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
@@ -317,8 +640,45 @@
     [_profileViewModePopup setAction:@selector(handleProfileViewModeChanged:)];
     [profileTab addSubview:_profileViewModePopup];
 
+    _profileRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [profileTab addSubview:_profileRenderedView];
+
+    _profileSummaryTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 218.0)];
+    [_profileSummaryTable setDelegate:self];
+    [_profileSummaryTable setDataSource:self];
+    [_profileSummaryTable setAllowsEmptySelection:YES];
+    [_profileSummaryTable setAllowsMultipleSelection:NO];
+
+    var profileFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"profile_field"];
+    [[profileFieldColumn headerView] setStringValue:@"Field"];
+    [profileFieldColumn setWidth:200.0];
+    [_profileSummaryTable addTableColumn:profileFieldColumn];
+
+    var profileValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"profile_value"];
+    [[profileValueColumn headerView] setStringValue:@"Value"];
+    [profileValueColumn setWidth:510.0];
+    [_profileSummaryTable addTableColumn:profileValueColumn];
+
+    var profileSummaryScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 218.0)];
+    [profileSummaryScroll setHasVerticalScroller:YES];
+    [profileSummaryScroll setAutohidesScrollers:YES];
+    [profileSummaryScroll setDocumentView:_profileSummaryTable];
+    [_profileRenderedView addSubview:profileSummaryScroll];
+
+    var profileBioLabel = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, 226.0, 120.0, 18.0)];
+    [profileBioLabel setStringValue:@"Bio"];
+    [profileBioLabel setEditable:NO];
+    [profileBioLabel setBezeled:NO];
+    [profileBioLabel setDrawsBackground:NO];
+    [profileBioLabel setFont:[CPFont boldSystemFontOfSize:12.0]];
+    [_profileRenderedView addSubview:profileBioLabel];
+
+    _profileBioTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(0.0, 250.0, 730.0, 208.0)
+                                                         inView:_profileRenderedView];
+
     _profileTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)
                                                       inView:profileTab];
+    [_profileTextView setHidden:YES];
     [self addTabItemWithLabel:@"Profile" contentView:profileTab];
 
     var mstTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
@@ -355,10 +715,71 @@
     [exportMSTButton setAction:@selector(handleExportMST:)];
     [mstTab addSubview:exportMSTButton];
 
-    _mstStatsTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 44.0, 730.0, 130.0)
-                                                       inView:mstTab];
+    _mstStatsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 130.0)];
+    [_mstStatsTable setDelegate:self];
+    [_mstStatsTable setDataSource:self];
+    [_mstStatsTable setAllowsEmptySelection:YES];
+    [_mstStatsTable setAllowsMultipleSelection:NO];
+
+    var mstMetricColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_metric"];
+    [[mstMetricColumn headerView] setStringValue:@"Metric"];
+    [mstMetricColumn setWidth:220.0];
+    [_mstStatsTable addTableColumn:mstMetricColumn];
+
+    var mstMetricValueColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_metric_value"];
+    [[mstMetricValueColumn headerView] setStringValue:@"Value"];
+    [mstMetricValueColumn setWidth:490.0];
+    [_mstStatsTable addTableColumn:mstMetricValueColumn];
+
+    var mstStatsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 130.0)];
+    [mstStatsScroll setHasVerticalScroller:YES];
+    [mstStatsScroll setAutohidesScrollers:YES];
+    [mstStatsScroll setDocumentView:_mstStatsTable];
+    [mstTab addSubview:mstStatsScroll];
+
+    _mstTreeListView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 182.0, 730.0, 320.0)];
+    [mstTab addSubview:_mstTreeListView];
+
+    _mstNodesTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 320.0)];
+    [_mstNodesTable setDelegate:self];
+    [_mstNodesTable setDataSource:self];
+    [_mstNodesTable setAllowsEmptySelection:YES];
+    [_mstNodesTable setAllowsMultipleSelection:NO];
+
+    var mstNodeLevelColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_node_level"];
+    [[mstNodeLevelColumn headerView] setStringValue:@"Level"];
+    [mstNodeLevelColumn setWidth:60.0];
+    [_mstNodesTable addTableColumn:mstNodeLevelColumn];
+
+    var mstNodeKindColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_node_kind"];
+    [[mstNodeKindColumn headerView] setStringValue:@"Kind"];
+    [mstNodeKindColumn setWidth:90.0];
+    [_mstNodesTable addTableColumn:mstNodeKindColumn];
+
+    var mstNodeEntriesColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_node_entries"];
+    [[mstNodeEntriesColumn headerView] setStringValue:@"Entries"];
+    [mstNodeEntriesColumn setWidth:80.0];
+    [_mstNodesTable addTableColumn:mstNodeEntriesColumn];
+
+    var mstNodeLeftColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_node_left"];
+    [[mstNodeLeftColumn headerView] setStringValue:@"Left"];
+    [mstNodeLeftColumn setWidth:70.0];
+    [_mstNodesTable addTableColumn:mstNodeLeftColumn];
+
+    var mstNodeCidColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_node_cid"];
+    [[mstNodeCidColumn headerView] setStringValue:@"CID"];
+    [mstNodeCidColumn setWidth:410.0];
+    [_mstNodesTable addTableColumn:mstNodeCidColumn];
+
+    var mstNodesScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 320.0)];
+    [mstNodesScroll setHasVerticalScroller:YES];
+    [mstNodesScroll setAutohidesScrollers:YES];
+    [mstNodesScroll setDocumentView:_mstNodesTable];
+    [_mstTreeListView addSubview:mstNodesScroll];
+
     _mstTreeTextView = [self buildReadOnlyTextViewWithFrame:CGRectMake(10.0, 182.0, 730.0, 320.0)
                                                       inView:mstTab];
+    [_mstTreeTextView setHidden:YES];
     [self addTabItemWithLabel:@"MST Utility" contentView:mstTab];
 
     var utilitiesTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
@@ -560,6 +981,396 @@
     {
         return String(object);
     }
+}
+
+- (id)fieldValueRowWithField:(CPString)field value:(id)value
+{
+    return {
+        field: [self safeString:field],
+        value: [self safeString:value]
+    };
+}
+
+- (CPString)singleLineSummary:(id)value maxLength:(int)maxLength
+{
+    var normalized = [self safeString:value];
+    if (!normalized.length)
+        return @"";
+
+    normalized = normalized.replace(/\s+/g, " ");
+    return [self abbreviatedString:normalized maxLength:maxLength];
+}
+
+- (CPArray)pathComponentsForATURI:(CPString)uri
+{
+    var raw = [self safeString:uri];
+    if (!raw.length)
+        return [];
+
+    if (raw.indexOf("at://") === 0)
+        raw = raw.substring(5);
+
+    return raw.split("/");
+}
+
+- (CPString)collectionFromRecordURI:(CPString)uri
+{
+    var parts = [self pathComponentsForATURI:uri];
+    if (!parts || parts.length < 2)
+        return @"";
+    return [self safeString:parts[1]];
+}
+
+- (CPString)rkeyFromRecordURI:(CPString)uri
+{
+    var parts = [self pathComponentsForATURI:uri];
+    if (!parts || parts.length < 3)
+        return @"";
+    return [self safeString:parts[2]];
+}
+
+- (CPString)stableJSONString:(id)object
+{
+    if (object === nil || object === undefined)
+        return @"";
+
+    try
+    {
+        return JSON.stringify(object);
+    }
+    catch (e)
+    {
+        return [self safeString:object];
+    }
+}
+
+- (CPArray)sortedKeysForObject:(id)object
+{
+    var keys = [];
+    if (!object)
+        return keys;
+
+    for (var key in object)
+    {
+        if (object.hasOwnProperty && !object.hasOwnProperty(key))
+            continue;
+        keys.push(key);
+    }
+    keys.sort();
+    return keys;
+}
+
+- (CPArray)normalizedArrayValue:(id)value
+{
+    if (value === nil || value === undefined)
+        return [];
+    if (value instanceof Array)
+        return value;
+    return [value];
+}
+
+- (CPArray)didSummaryRowsFromPayload:(id)didPayload
+{
+    var rows = [];
+    if (!didPayload)
+        return rows;
+
+    if (didPayload.error)
+    {
+        rows.push([self fieldValueRowWithField:@"Error" value:didPayload.error]);
+        return rows;
+    }
+
+    var aliases = [self normalizedArrayValue:didPayload.alsoKnownAs],
+        services = [self normalizedArrayValue:didPayload.service],
+        verificationMethods = [self normalizedArrayValue:didPayload.verificationMethod],
+        primaryAlias = aliases.length ? [self safeString:aliases[0]] : @"",
+        handle = primaryAlias.replace(/^at:\/\//, "");
+
+    rows.push([self fieldValueRowWithField:@"DID" value:(didPayload.id || @"")]);
+    rows.push([self fieldValueRowWithField:@"Primary Handle" value:handle]);
+    rows.push([self fieldValueRowWithField:@"Alias Count" value:aliases.length]);
+    rows.push([self fieldValueRowWithField:@"Service Count" value:services.length]);
+    rows.push([self fieldValueRowWithField:@"Verification Methods" value:verificationMethods.length]);
+    return rows;
+}
+
+- (CPArray)didItemRowsFromPayload:(id)didPayload
+{
+    var rows = [];
+    if (!didPayload)
+        return rows;
+
+    if (didPayload.error)
+    {
+        rows.push({type: @"Error", label: @"Message", value: didPayload.error});
+        return rows;
+    }
+
+    var aliases = [self normalizedArrayValue:didPayload.alsoKnownAs];
+    for (var i = 0; i < aliases.length; i++)
+        rows.push({type: @"Alias", label: ("#" + (i + 1)), value: [self safeString:aliases[i]]});
+
+    var services = [self normalizedArrayValue:didPayload.service];
+    for (var j = 0; j < services.length; j++)
+    {
+        var service = services[j] || {},
+            label = [self safeString:service.id || ("#" + (j + 1))];
+        if (service.type)
+            label = label + " (" + service.type + ")";
+        rows.push({type: @"Service", label: label, value: [self safeString:(service.serviceEndpoint || @"")]});
+    }
+
+    var verificationMethods = [self normalizedArrayValue:didPayload.verificationMethod];
+    for (var k = 0; k < verificationMethods.length; k++)
+    {
+        var method = verificationMethods[k] || {},
+            methodLabel = [self safeString:method.id || ("#" + (k + 1))],
+            methodValue = method.publicKeyMultibase || method.publicKeyBase58 || method.controller || @"";
+        rows.push({type: @"Verification", label: methodLabel, value: [self safeString:methodValue]});
+    }
+
+    var contextEntries = [self normalizedArrayValue:didPayload["@context"]];
+    for (var c = 0; c < contextEntries.length; c++)
+        rows.push({type: @"Context", label: ("#" + (c + 1)), value: [self safeString:contextEntries[c]]});
+
+    if (!rows.length)
+        rows.push({type: @"Info", label: @"Details", value: @"No DID detail entries returned."});
+    return rows;
+}
+
+- (void)refreshDIDView
+{
+    var mode = [_didViewModePopup titleOfSelectedItem],
+        showJSON = (mode && [mode isEqual:@"JSON"]);
+
+    [_didRenderedView setHidden:showJSON];
+    [_didTextView setHidden:!showJSON];
+
+    if (showJSON)
+    {
+        [self setTextView:_didTextView content:(_currentDIDPayload ? [self prettyJSON:_currentDIDPayload] : @"")];
+        return;
+    }
+
+    if (!_currentDIDPayload)
+    {
+        _didSummaryRows = [];
+        _didItemRows = [];
+        [_didSummaryTable reloadData];
+        [_didItemsTable reloadData];
+        return;
+    }
+
+    _didSummaryRows = [self didSummaryRowsFromPayload:_currentDIDPayload];
+    _didItemRows = [self didItemRowsFromPayload:_currentDIDPayload];
+    [_didSummaryTable reloadData];
+    [_didItemsTable reloadData];
+}
+
+- (CPArray)normalizedPLCOpsFromPayload:(id)plcPayload
+{
+    if (!plcPayload)
+        return [];
+
+    if (plcPayload instanceof Array)
+        return plcPayload;
+    if (plcPayload.operations instanceof Array)
+        return plcPayload.operations;
+    if (plcPayload.log instanceof Array)
+        return plcPayload.log;
+    if (plcPayload.history instanceof Array)
+        return plcPayload.history;
+    return [];
+}
+
+- (CPArray)plcChangeLinesForOperation:(id)operation previous:(id)previous
+{
+    var lines = [];
+    if (!operation)
+        return lines;
+
+    if (!previous)
+    {
+        lines.push(@"Identity created");
+        return lines;
+    }
+
+    if ([self stableJSONString:(operation.alsoKnownAs || [])] !== [self stableJSONString:(previous.alsoKnownAs || [])])
+        lines.push(@"Alias updated");
+    if ([self stableJSONString:(operation.services || {})] !== [self stableJSONString:(previous.services || {})])
+        lines.push(@"Service updated");
+    if ([self stableJSONString:(operation.verificationMethods || {})] !== [self stableJSONString:(previous.verificationMethods || {})])
+        lines.push(@"Verification method updated");
+
+    var currentRotation = operation.rotationKeys || [],
+        previousRotation = previous.rotationKeys || [],
+        addedCount = 0,
+        removedCount = 0;
+
+    for (var i = 0; i < currentRotation.length; i++)
+    {
+        if (previousRotation.indexOf(currentRotation[i]) < 0)
+            addedCount += 1;
+    }
+    for (var j = 0; j < previousRotation.length; j++)
+    {
+        if (currentRotation.indexOf(previousRotation[j]) < 0)
+            removedCount += 1;
+    }
+
+    if (addedCount > 0)
+        lines.push("Rotation keys added (" + addedCount + ")");
+    if (removedCount > 0)
+        lines.push("Rotation keys removed (" + removedCount + ")");
+
+    if (!lines.length)
+        lines.push(@"PLC operation updated");
+    return lines;
+}
+
+- (CPArray)plcDetailRowsForOperation:(id)operation changeLines:(CPArray)changeLines
+{
+    var rows = [];
+    if (!operation)
+        return rows;
+
+    rows.push([self fieldValueRowWithField:@"Operation Type" value:(operation.type || @"plc_operation")]);
+    rows.push([self fieldValueRowWithField:@"Prev CID" value:(operation.prev || @"(none)")]);
+    rows.push([self fieldValueRowWithField:@"Signature" value:[self abbreviatedString:(operation.sig || @"") maxLength:56]]);
+
+    for (var i = 0; i < changeLines.length; i++)
+        rows.push([self fieldValueRowWithField:("Change " + (i + 1)) value:changeLines[i]]);
+
+    var aliases = operation.alsoKnownAs || [];
+    for (var a = 0; a < aliases.length; a++)
+        rows.push([self fieldValueRowWithField:("Alias " + (a + 1)) value:aliases[a]]);
+
+    var serviceKeys = [self sortedKeysForObject:(operation.services || {})];
+    for (var s = 0; s < serviceKeys.length; s++)
+    {
+        var serviceKey = serviceKeys[s],
+            service = (operation.services || {})[serviceKey] || {},
+            serviceValue = [self safeString:service.endpoint || @""];
+        if (service.type)
+            serviceValue = service.type + " @ " + serviceValue;
+        rows.push([self fieldValueRowWithField:("Service " + serviceKey) value:serviceValue]);
+    }
+
+    var verificationKeys = [self sortedKeysForObject:(operation.verificationMethods || {})];
+    for (var v = 0; v < verificationKeys.length; v++)
+    {
+        var verificationKey = verificationKeys[v],
+            verificationValue = (operation.verificationMethods || {})[verificationKey];
+        rows.push([self fieldValueRowWithField:("Verification " + verificationKey) value:verificationValue]);
+    }
+
+    var rotationKeys = operation.rotationKeys || [];
+    for (var r = 0; r < rotationKeys.length; r++)
+        rows.push([self fieldValueRowWithField:("Rotation Key " + (r + 1)) value:rotationKeys[r]]);
+
+    return rows;
+}
+
+- (CPArray)plcOperationRowsFromPayload:(id)plcPayload
+{
+    var rows = [];
+    if (!plcPayload)
+        return rows;
+
+    if (plcPayload.error)
+    {
+        var errorRows = [];
+        errorRows.push([self fieldValueRowWithField:@"Error" value:plcPayload.error]);
+        rows.push({
+            when: @"",
+            summary: @"Error",
+            details: [self safeString:plcPayload.error],
+            detailRows: errorRows
+        });
+        return rows;
+    }
+
+    var operations = [self normalizedPLCOpsFromPayload:plcPayload];
+    if (!operations || !operations.length)
+    {
+        var infoRows = [];
+        infoRows.push([self fieldValueRowWithField:@"Info" value:@"No PLC operations returned."]);
+        rows.push({
+            when: @"",
+            summary: @"No operations",
+            details: @"No PLC operations returned.",
+            detailRows: infoRows
+        });
+        return rows;
+    }
+
+    for (var i = 0; i < operations.length; i++)
+    {
+        var operation = operations[i] || {},
+            previous = (i + 1 < operations.length) ? operations[i + 1] : nil,
+            when = operation.createdAt || operation.created_at || operation.signedAt || operation.updatedAt || ("Entry " + (i + 1)),
+            changeLines = [self plcChangeLinesForOperation:operation previous:previous];
+
+        rows.push({
+            when: [self safeString:when],
+            summary: [self safeString:(changeLines.length ? changeLines[0] : @"PLC operation")],
+            details: [self singleLineSummary:changeLines.join(" • ") maxLength:180],
+            detailRows: [self plcDetailRowsForOperation:operation changeLines:changeLines]
+        });
+    }
+
+    return rows;
+}
+
+- (void)refreshPLCSelectionDetail
+{
+    var selectedRow = _plcOpsTable ? [_plcOpsTable selectedRow] : -1;
+    if (selectedRow < 0 || selectedRow >= _plcOpRows.length)
+    {
+        _plcDetailRows = [];
+        [_plcDetailTable reloadData];
+        return;
+    }
+
+    var selected = _plcOpRows[selectedRow] || {};
+    _plcDetailRows = selected.detailRows || [];
+    [_plcDetailTable reloadData];
+}
+
+- (void)refreshPLCView
+{
+    var mode = [_plcViewModePopup titleOfSelectedItem],
+        showJSON = (mode && [mode isEqual:@"JSON"]);
+
+    [_plcRenderedView setHidden:showJSON];
+    [_plcTextView setHidden:!showJSON];
+
+    if (showJSON)
+    {
+        [self setTextView:_plcTextView content:(_currentPLCPayload ? [self prettyJSON:_currentPLCPayload] : @"")];
+        return;
+    }
+
+    if (!_currentPLCPayload)
+    {
+        _plcOpRows = [];
+        _plcDetailRows = [];
+        [_plcOpsTable reloadData];
+        [_plcDetailTable reloadData];
+        return;
+    }
+
+    _plcOpRows = [self plcOperationRowsFromPayload:_currentPLCPayload];
+    [_plcOpsTable reloadData];
+
+    if (_plcOpRows.length > 0)
+    {
+        var selectedRow = [_plcOpsTable selectedRow];
+        if (selectedRow < 0 || selectedRow >= _plcOpRows.length)
+            [_plcOpsTable selectRowIndexes:[CPIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    }
+    [self refreshPLCSelectionDetail];
 }
 
 - (CPString)oauthStorageKeyState
@@ -1341,8 +2152,25 @@
 
     [self setStatus:@"Loading DID, PLC log, and collections..."];
 
+    _currentDIDPayload = nil;
+    _currentPLCPayload = nil;
     [self setTextView:_didTextView content:@"Loading..."];
     [self setTextView:_plcTextView content:@"Loading..."];
+    _didSummaryRows = [];
+    _didSummaryRows.push([self fieldValueRowWithField:@"Status" value:@"Loading DID document..."]);
+    _didItemRows = [];
+    [_didSummaryTable reloadData];
+    [_didItemsTable reloadData];
+    _plcOpRows = [];
+    _plcOpRows.push({
+        when: @"",
+        summary: @"Loading",
+        details: @"Loading PLC operation log...",
+        detailRows: []
+    });
+    _plcDetailRows = [];
+    [_plcOpsTable reloadData];
+    [_plcDetailTable reloadData];
 
     var pending = 3,
         didPayload = nil,
@@ -1354,8 +2182,12 @@
             if (pending > 0)
                 return;
 
+            _currentDIDPayload = didPayload;
+            _currentPLCPayload = plcPayload;
             [self setTextView:_didTextView content:[self prettyJSON:didPayload]];
             [self setTextView:_plcTextView content:[self prettyJSON:plcPayload]];
+            [self refreshDIDView];
+            [self refreshPLCView];
 
             _collections = [self normalizeCollectionsFromDescribe:describePayload];
             [_collectionsTable reloadData];
@@ -1363,23 +2195,42 @@
             _records = [];
             _selectedCollection = nil;
             _currentRecordPayload = nil;
-            _currentRecordRendered = @"";
             [_recordsTable reloadData];
+            _recordSummaryRows = [];
+            [_recordSummaryTable reloadData];
+            [self setTextView:_recordBodyTextView content:@""];
             [self setTextView:_recordDetailTextView content:@""];
+            [self refreshRecordDetailView];
 
             _currentFeedPayload = nil;
-            _currentFeedRendered = @"";
+            _feedRows = [];
+            _feedDetailRows = [];
+            [_feedTable reloadData];
+            [_feedDetailTable reloadData];
             [self setTextView:_feedTextView content:@""];
+            [self refreshFeedView];
+
+            _graphRows = [];
+            _graphDetailRows = [];
+            [_graphTable reloadData];
+            [_graphDetailTable reloadData];
 
             _currentProfilePayload = nil;
-            _currentProfileRendered = @"";
+            _profileSummaryRows = [];
+            [_profileSummaryTable reloadData];
+            [self setTextView:_profileBioTextView content:@""];
             [self setTextView:_profileTextView content:@""];
+            [self refreshProfileView];
 
             _currentMSTTreePayload = nil;
             _currentMSTStatsPayload = nil;
             _mstExpanded = NO;
-            [self setTextView:_mstStatsTextView content:@""];
+            _mstStatsRows = [];
+            _mstNodeRows = [];
+            [_mstStatsTable reloadData];
+            [_mstNodesTable reloadData];
             [self setTextView:_mstTreeTextView content:@""];
+            [self refreshMSTViews];
 
             if (describePayload && describePayload.error)
                 [self setStatus:@"Loaded DID/PLC; failed to load collections."];
@@ -1462,8 +2313,11 @@
         else
         {
             _currentRecordPayload = nil;
-            _currentRecordRendered = @"";
+            _recordSummaryRows = [];
+            [_recordSummaryTable reloadData];
+            [self setTextView:_recordBodyTextView content:@"No records in this collection."];
             [self setTextView:_recordDetailTextView content:@"No records in this collection."];
+            [self refreshRecordDetailView];
         }
     }];
 }
@@ -1478,7 +2332,8 @@
 
     if (!uri)
     {
-        [self setTextView:_recordDetailTextView content:@"Record URI missing."];
+        _currentRecordPayload = {error: @"Record URI missing."};
+        [self refreshRecordDetailView];
         return;
     }
 
@@ -1493,13 +2348,50 @@
         if (errorMessage && !_currentRecordPayload.error)
             _currentRecordPayload.error = errorMessage;
 
-        _currentRecordRendered = [self renderRecordSummary:_currentRecordPayload];
         [self refreshRecordDetailView];
         [self setStatus:@"Record detail loaded."];
     }];
 }
 
-- (CPString)renderRecordSummary:(id)recordPayload
+- (CPArray)recordSummaryRowsForPayload:(id)recordPayload
+{
+    if (!recordPayload)
+        return [];
+
+    var rows = [];
+    if (recordPayload.error)
+    {
+        rows.push([self fieldValueRowWithField:@"Error" value:recordPayload.error]);
+        return rows;
+    }
+
+    var value = recordPayload.value || recordPayload,
+        type = value.$type || recordPayload.$type || @"unknown",
+        uri = recordPayload.uri || value.uri || @"",
+        collection = recordPayload.collection || [self collectionFromRecordURI:uri],
+        rkey = recordPayload.rkey || [self rkeyFromRecordURI:uri],
+        createdAt = value.createdAt || recordPayload.createdAt || @"";
+
+    rows.push([self fieldValueRowWithField:@"Type" value:type]);
+    rows.push([self fieldValueRowWithField:@"URI" value:uri]);
+    rows.push([self fieldValueRowWithField:@"CID" value:(recordPayload.cid || @"")]);
+    rows.push([self fieldValueRowWithField:@"Collection" value:collection]);
+    rows.push([self fieldValueRowWithField:@"RKey" value:rkey]);
+    rows.push([self fieldValueRowWithField:@"Created At" value:createdAt]);
+
+    if (type === @"app.bsky.feed.post")
+        rows.push([self fieldValueRowWithField:@"Text Preview" value:[self singleLineSummary:value.text maxLength:180]]);
+    else if (type === @"app.bsky.actor.profile")
+        rows.push([self fieldValueRowWithField:@"Display Name" value:(value.displayName || @"")]);
+    else if (type === @"app.bsky.feed.like" || type === @"app.bsky.feed.repost")
+        rows.push([self fieldValueRowWithField:@"Subject URI" value:((value.subject && value.subject.uri) || @"")]);
+    else if (type === @"app.bsky.graph.follow")
+        rows.push([self fieldValueRowWithField:@"Subject DID" value:(value.subject || @"")]);
+
+    return rows;
+}
+
+- (CPString)recordBodyForPayload:(id)recordPayload
 {
     if (!recordPayload)
         return @"";
@@ -1508,157 +2400,237 @@
         return "Error: " + recordPayload.error;
 
     var value = recordPayload.value || recordPayload,
-        recordType = value.$type || recordPayload.$type || "unknown",
-        lines = [];
+        type = value.$type || recordPayload.$type || @"unknown";
 
-    lines.push("Type: " + recordType);
-    lines.push("URI: " + (recordPayload.uri || ""));
-    lines.push("CID: " + (recordPayload.cid || ""));
+    if (type === @"app.bsky.feed.post")
+        return [self safeString:value.text];
 
-    if (recordType === "app.bsky.feed.post")
+    if (type === @"app.bsky.actor.profile")
+        return [self safeString:value.description];
+
+    if (type === @"app.bsky.feed.like" || type === @"app.bsky.feed.repost")
     {
-        lines.push("");
-        lines.push("Text:");
-        lines.push(value.text || "");
-        lines.push("");
-        lines.push("Created At: " + (value.createdAt || recordPayload.createdAt || ""));
-    }
-    else if (recordType === "app.bsky.actor.profile")
-    {
-        lines.push("");
-        lines.push("Display Name: " + (value.displayName || ""));
-        lines.push("Description:");
-        lines.push(value.description || "");
-    }
-    else if (recordType === "app.bsky.feed.like" || recordType === "app.bsky.feed.repost")
-    {
-        lines.push("");
-        lines.push("Subject URI: " + ((value.subject && value.subject.uri) || ""));
-        lines.push("Created At: " + (value.createdAt || recordPayload.createdAt || ""));
-    }
-    else if (recordType === "app.bsky.graph.follow")
-    {
-        lines.push("");
-        lines.push("Subject DID: " + (value.subject || ""));
-        lines.push("Created At: " + (value.createdAt || recordPayload.createdAt || ""));
-    }
-    else
-    {
-        lines.push("");
-        lines.push("No specialized renderer available. Switch to JSON for full payload.");
+        var subjectURI = (value.subject && value.subject.uri) || @"",
+            subjectCID = (value.subject && value.subject.cid) || @"";
+        return "Subject URI: " + subjectURI + "\nSubject CID: " + subjectCID;
     }
 
-    return lines.join("\n");
+    if (type === @"app.bsky.graph.follow")
+        return "Following DID: " + [self safeString:value.subject];
+
+    return [self prettyJSON:value];
 }
 
 - (void)refreshRecordDetailView
 {
-    if (!_currentRecordPayload)
+    var mode = [_recordModePopup titleOfSelectedItem],
+        showJSON = (mode && [mode isEqual:@"JSON"]);
+
+    [_recordRenderedView setHidden:showJSON];
+    [_recordDetailTextView setHidden:!showJSON];
+
+    if (showJSON)
     {
-        [self setTextView:_recordDetailTextView content:@""];
+        [self setTextView:_recordDetailTextView content:(_currentRecordPayload ? [self prettyJSON:_currentRecordPayload] : @"")];
         return;
     }
 
-    var mode = [_recordModePopup titleOfSelectedItem];
-    if (mode && [mode isEqual:@"JSON"])
-        [self setTextView:_recordDetailTextView content:[self prettyJSON:_currentRecordPayload]];
-    else
-        [self setTextView:_recordDetailTextView content:_currentRecordRendered];
+    if (!_currentRecordPayload)
+    {
+        _recordSummaryRows = [];
+        [_recordSummaryTable reloadData];
+        [self setTextView:_recordBodyTextView content:@""];
+        return;
+    }
+
+    _recordSummaryRows = [self recordSummaryRowsForPayload:_currentRecordPayload];
+    [_recordSummaryTable reloadData];
+    [self setTextView:_recordBodyTextView content:[self recordBodyForPayload:_currentRecordPayload]];
 }
 
-- (CPString)renderFeedSummary:(id)feedPayload mode:(CPString)mode
+- (CPArray)feedEntriesFromPayload:(id)feedPayload mode:(CPString)mode
 {
     if (!feedPayload)
-        return @"";
+        return [];
+
+    var rows = [],
+        i = 0;
 
     if (feedPayload.error)
-        return "Error: " + feedPayload.error;
-
-    var feed = feedPayload.feed || [],
-        lines = [];
-
-    lines.push(mode + " for " + (_currentHandle || _currentDID));
-    lines.push("Items: " + feed.length);
-    lines.push("");
-
-    for (var i = 0; i < feed.length; i++)
     {
-        var entry = feed[i];
-        if ([mode isEqual:@"Posts"])
-        {
-            var postRecord = entry.record || (entry.post && entry.post.record) || {},
-                postAuthor = (entry.author && (entry.author.handle || entry.author.did)) ||
-                             (entry.post && entry.post.author && (entry.post.author.handle || entry.post.author.did)) ||
-                             _currentDID,
-                postText = [self safeString:postRecord.text];
+        var errorDetailRows = [];
+        errorDetailRows.push([self fieldValueRowWithField:@"Error" value:feedPayload.error]);
+        rows.push({
+            type: @"Error",
+            actor: @"",
+            primary: [self safeString:feedPayload.error],
+            createdAt: @"",
+            detailRows: errorDetailRows
+        });
+        return rows;
+    }
 
-            lines.push((i + 1) + ". " + [self safeString:postAuthor] + ": " + postText);
-        }
-        else
+    if ([mode isEqual:@"Posts"])
+    {
+        var posts = feedPayload.posts || [];
+        for (i = 0; i < posts.length; i++)
         {
-            var subjectURI = (entry.subject && entry.subject.uri) ||
-                             (entry.record && entry.record.subject && entry.record.subject.uri) ||
-                             entry.uri ||
-                             @"";
-            lines.push((i + 1) + ". " + [self safeString:subjectURI]);
+            var post = posts[i] || {},
+                record = post.record || {},
+                actor = post.author || {};
+
+            rows.push({
+                type: @"Post",
+                actor: [self safeString:(actor.handle || actor.did || @"")],
+                primary: [self singleLineSummary:record.text maxLength:140],
+                createdAt: [self safeString:(record.createdAt || post.indexedAt || @"")],
+                detailRows: [
+                    [self fieldValueRowWithField:@"Actor Handle" value:(actor.handle || @"")],
+                    [self fieldValueRowWithField:@"Actor DID" value:(actor.did || @"")],
+                    [self fieldValueRowWithField:@"URI" value:(post.uri || @"")],
+                    [self fieldValueRowWithField:@"CID" value:(post.cid || @"")],
+                    [self fieldValueRowWithField:@"Created At" value:(record.createdAt || post.indexedAt || @"")],
+                    [self fieldValueRowWithField:@"Text" value:(record.text || @"")]
+                ]
+            });
+        }
+    }
+    else
+    {
+        var source = [mode isEqual:@"Likes"] ? (feedPayload.likes || []) : (feedPayload.reposts || []),
+            typeLabel = [mode isEqual:@"Likes"] ? @"Like" : @"Repost";
+
+        for (i = 0; i < source.length; i++)
+        {
+            var entry = source[i] || {},
+                actorInfo = entry.actor || entry.author || {},
+                subject = entry.subject || {},
+                subjectAuthor = subject.author || {};
+
+            rows.push({
+                type: typeLabel,
+                actor: [self safeString:(actorInfo.handle || actorInfo.did || @"")],
+                primary: [self singleLineSummary:(subject.uri || @"") maxLength:140],
+                createdAt: [self safeString:(entry.createdAt || @"")],
+                detailRows: [
+                    [self fieldValueRowWithField:@"Actor Handle" value:(actorInfo.handle || @"")],
+                    [self fieldValueRowWithField:@"Actor DID" value:(actorInfo.did || @"")],
+                    [self fieldValueRowWithField:@"URI" value:(entry.uri || @"")],
+                    [self fieldValueRowWithField:@"CID" value:(entry.cid || @"")],
+                    [self fieldValueRowWithField:@"Subject URI" value:(subject.uri || @"")],
+                    [self fieldValueRowWithField:@"Subject CID" value:(subject.cid || @"")],
+                    [self fieldValueRowWithField:@"Subject Author" value:(subjectAuthor.handle || subjectAuthor.did || @"")],
+                    [self fieldValueRowWithField:@"Created At" value:(entry.createdAt || @"")]
+                ]
+            });
         }
     }
 
-    if (!feed.length)
-        lines.push("No entries returned.");
+    return rows;
+}
 
-    return lines.join("\n");
+- (void)refreshFeedSelectionDetail
+{
+    var selectedRow = _feedTable ? [_feedTable selectedRow] : -1;
+    if (selectedRow < 0 || selectedRow >= _feedRows.length)
+    {
+        _feedDetailRows = [];
+        [_feedDetailTable reloadData];
+        return;
+    }
+
+    var selected = _feedRows[selectedRow] || {};
+    _feedDetailRows = selected.detailRows || [];
+    [_feedDetailTable reloadData];
 }
 
 - (void)refreshFeedView
 {
-    if (!_currentFeedPayload)
+    var viewMode = [_feedViewModePopup titleOfSelectedItem],
+        showJSON = (viewMode && [viewMode isEqual:@"JSON"]);
+
+    [_feedRenderedView setHidden:showJSON];
+    [_feedTextView setHidden:!showJSON];
+
+    if (showJSON)
     {
-        [self setTextView:_feedTextView content:@""];
+        [self setTextView:_feedTextView content:(_currentFeedPayload ? [self prettyJSON:_currentFeedPayload] : @"")];
         return;
     }
 
-    var mode = [_feedViewModePopup titleOfSelectedItem];
-    if (mode && [mode isEqual:@"JSON"])
-        [self setTextView:_feedTextView content:[self prettyJSON:_currentFeedPayload]];
-    else
-        [self setTextView:_feedTextView content:_currentFeedRendered];
+    if (!_currentFeedPayload)
+    {
+        _feedRows = [];
+        _feedDetailRows = [];
+        [_feedTable reloadData];
+        [_feedDetailTable reloadData];
+        return;
+    }
+
+    _feedRows = [self feedEntriesFromPayload:_currentFeedPayload mode:(_currentFeedMode || [_feedModePopup titleOfSelectedItem] || @"Posts")];
+    [_feedTable reloadData];
+
+    if (_feedRows.length > 0)
+    {
+        var selectedRow = [_feedTable selectedRow];
+        if (selectedRow < 0 || selectedRow >= _feedRows.length)
+            [_feedTable selectRowIndexes:[CPIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+    }
+    [self refreshFeedSelectionDetail];
 }
 
-- (CPString)renderProfileSummary:(id)profilePayload
+- (CPArray)profileSummaryRowsFromPayload:(id)profilePayload
 {
     if (!profilePayload)
-        return @"";
+        return [];
 
+    var rows = [];
     if (profilePayload.error)
-        return "Error: " + profilePayload.error;
+    {
+        rows.push([self fieldValueRowWithField:@"Error" value:profilePayload.error]);
+        return rows;
+    }
 
-    var lines = [];
-    lines.push("Handle: " + [self safeString:profilePayload.handle]);
-    lines.push("DID: " + [self safeString:profilePayload.did]);
-    lines.push("Display Name: " + [self safeString:profilePayload.displayName]);
-    lines.push("Followers: " + [self safeString:profilePayload.followersCount]);
-    lines.push("Following: " + [self safeString:profilePayload.followsCount]);
-    lines.push("Posts: " + [self safeString:profilePayload.postsCount]);
-    lines.push("");
-    lines.push("Description:");
-    lines.push([self safeString:profilePayload.description]);
-    return lines.join("\n");
+    rows.push([self fieldValueRowWithField:@"Handle" value:profilePayload.handle]);
+    rows.push([self fieldValueRowWithField:@"DID" value:profilePayload.did]);
+    rows.push([self fieldValueRowWithField:@"Display Name" value:profilePayload.displayName]);
+    rows.push([self fieldValueRowWithField:@"Followers" value:profilePayload.followersCount]);
+    rows.push([self fieldValueRowWithField:@"Following" value:profilePayload.followsCount]);
+    rows.push([self fieldValueRowWithField:@"Posts" value:profilePayload.postsCount]);
+    rows.push([self fieldValueRowWithField:@"Created At" value:profilePayload.createdAt]);
+    rows.push([self fieldValueRowWithField:@"Avatar" value:profilePayload.avatar]);
+    rows.push([self fieldValueRowWithField:@"Banner" value:profilePayload.banner]);
+    return rows;
 }
 
 - (void)refreshProfileView
 {
-    if (!_currentProfilePayload)
+    var mode = [_profileViewModePopup titleOfSelectedItem],
+        showJSON = (mode && [mode isEqual:@"JSON"]);
+
+    [_profileRenderedView setHidden:showJSON];
+    [_profileTextView setHidden:!showJSON];
+
+    if (showJSON)
     {
-        [self setTextView:_profileTextView content:@""];
+        [self setTextView:_profileTextView content:(_currentProfilePayload ? [self prettyJSON:_currentProfilePayload] : @"")];
         return;
     }
 
-    var mode = [_profileViewModePopup titleOfSelectedItem];
-    if (mode && [mode isEqual:@"JSON"])
-        [self setTextView:_profileTextView content:[self prettyJSON:_currentProfilePayload]];
+    if (!_currentProfilePayload)
+    {
+        _profileSummaryRows = [];
+        [_profileSummaryTable reloadData];
+        [self setTextView:_profileBioTextView content:@""];
+        return;
+    }
+
+    _profileSummaryRows = [self profileSummaryRowsFromPayload:_currentProfilePayload];
+    [_profileSummaryTable reloadData];
+    if (_currentProfilePayload.error)
+        [self setTextView:_profileBioTextView content:("Error: " + _currentProfilePayload.error)];
     else
-        [self setTextView:_profileTextView content:_currentProfileRendered];
+        [self setTextView:_profileBioTextView content:[self safeString:_currentProfilePayload.description]];
 }
 
 - (CPString)activeMSTDid
@@ -1669,87 +2641,125 @@
     return _currentDID || @"";
 }
 
-- (CPString)renderMSTStatsSummary
+- (CPArray)mstStatsRowsFromPayloads
 {
     if (!_currentMSTStatsPayload && !_currentMSTTreePayload)
-        return @"";
+        return [];
 
+    var rows = [];
     if (_currentMSTStatsPayload && _currentMSTStatsPayload.error)
-        return "Error: " + _currentMSTStatsPayload.error;
+    {
+        rows.push([self fieldValueRowWithField:@"Error" value:_currentMSTStatsPayload.error]);
+        return rows;
+    }
 
     var stats = _currentMSTStatsPayload || {},
-        tree = _currentMSTTreePayload || {},
-        lines = [];
+        tree = _currentMSTTreePayload || {};
 
-    lines.push("DID: " + [self safeString:[self activeMSTDid]]);
-    lines.push("Nodes: " + [self safeString:(stats.nodeCount !== undefined ? stats.nodeCount : tree.nodeCount)]);
-    lines.push("Entries: " + [self safeString:(stats.entryCount !== undefined ? stats.entryCount : tree.entryCount)]);
-    lines.push("Depth: " + [self safeString:(stats.maxDepth !== undefined ? stats.maxDepth : tree.maxDepth)]);
+    rows.push([self fieldValueRowWithField:@"DID" value:[self activeMSTDid]]);
+    rows.push([self fieldValueRowWithField:@"Root CID" value:(tree.rootCID || @"")]);
+    rows.push([self fieldValueRowWithField:@"Nodes" value:(stats.nodeCount !== undefined ? stats.nodeCount : tree.nodeCount)]);
+    rows.push([self fieldValueRowWithField:@"Entries" value:(stats.entryCount !== undefined ? stats.entryCount : tree.entryCount)]);
+    rows.push([self fieldValueRowWithField:@"Depth" value:(stats.maxDepth !== undefined ? stats.maxDepth : tree.maxDepth)]);
 
     if (stats.leafNodeCount !== undefined)
-        lines.push("Leaf Nodes: " + [self safeString:stats.leafNodeCount]);
+        rows.push([self fieldValueRowWithField:@"Leaf Nodes" value:stats.leafNodeCount]);
 
-    if (tree.rootCID)
-        lines.push("Root CID: " + [self safeString:tree.rootCID]);
-
-    return lines.join("\n");
+    return rows;
 }
 
-- (CPString)renderCollapsedMSTTreeSummary:(id)treePayload
+- (CPArray)mstNodeRowsFromTreePayload:(id)treePayload
 {
     if (!treePayload)
-        return @"";
+        return [];
 
+    var rows = [];
     if (treePayload.error)
-        return "Error: " + treePayload.error;
+    {
+        rows.push({
+            level: @"",
+            kind: @"error",
+            entries: @"",
+            left: @"",
+            cid: [self safeString:treePayload.error]
+        });
+        return rows;
+    }
 
     var nodes = treePayload.nodes;
-    if (!nodes || nodes.length === undefined)
-        return [self prettyJSON:treePayload];
+    if (!nodes || nodes.length === undefined || !nodes.length)
+    {
+        rows.push({
+            level: @"",
+            kind: @"info",
+            entries: @"",
+            left: @"",
+            cid: @"No nodes returned."
+        });
+        return rows;
+    }
 
-    var lines = [];
-    lines.push("MST Tree Summary");
-    lines.push("Root CID: " + [self safeString:treePayload.rootCID]);
-    lines.push("Nodes: " + [self safeString:treePayload.nodeCount]);
-    lines.push("Entries: " + [self safeString:treePayload.entryCount]);
-    lines.push("Depth: " + [self safeString:treePayload.maxDepth]);
-    lines.push("");
-    lines.push("Node List (first " + Math.min(nodes.length, 120) + "):");
-
-    for (var i = 0; i < nodes.length && i < 120; i++)
+    var limit = Math.min(nodes.length, 400);
+    for (var i = 0; i < limit; i++)
     {
         var node = nodes[i] || {},
             level = (node.level === undefined || node.level === nil) ? @"?" : String(node.level),
             kind = node.kind || ((node.level === 0) ? @"leaf" : @"internal"),
-            entryCount = (node.entries && node.entries.length !== undefined) ? node.entries.length : 0,
-            leftPresent = node.left ? @"yes" : @"no",
-            cid = [self abbreviatedString:node.cid maxLength:20];
+            entryCount = (node.entries && node.entries.length !== undefined) ? node.entries.length : 0;
 
-        lines.push((i + 1) + ". L" + level + " " + kind + " entries=" + entryCount + " left=" + leftPresent + " cid=" + cid);
+        rows.push({
+            level: level,
+            kind: kind,
+            entries: String(entryCount),
+            left: node.left ? @"yes" : @"no",
+            cid: [self safeString:node.cid]
+        });
     }
 
-    if (nodes.length > 120)
-        lines.push("... " + (nodes.length - 120) + " additional node(s) omitted.");
+    if (nodes.length > limit)
+    {
+        rows.push({
+            level: @"",
+            kind: @"note",
+            entries: @"",
+            left: @"",
+            cid: ("Showing first " + limit + " of " + nodes.length + " nodes")
+        });
+    }
 
-    lines.push("");
-    lines.push("Use Expand/Collapse to switch to full JSON view.");
-    return lines.join("\n");
+    return rows;
 }
 
 - (void)refreshMSTViews
 {
-    [self setTextView:_mstStatsTextView content:[self renderMSTStatsSummary]];
+    _mstStatsRows = [self mstStatsRowsFromPayloads];
+    [_mstStatsTable reloadData];
 
     if (!_currentMSTTreePayload)
     {
+        _mstNodeRows = [];
+        [_mstNodesTable reloadData];
+        [_mstTreeListView setHidden:NO];
+        [_mstTreeTextView setHidden:YES];
         [self setTextView:_mstTreeTextView content:@""];
         return;
     }
 
+    _mstNodeRows = [self mstNodeRowsFromTreePayload:_currentMSTTreePayload];
+    [_mstNodesTable reloadData];
+
     if (_mstExpanded)
+    {
+        [_mstTreeListView setHidden:YES];
+        [_mstTreeTextView setHidden:NO];
         [self setTextView:_mstTreeTextView content:[self prettyJSON:_currentMSTTreePayload]];
+    }
     else
-        [self setTextView:_mstTreeTextView content:[self renderCollapsedMSTTreeSummary:_currentMSTTreePayload]];
+    {
+        [_mstTreeListView setHidden:NO];
+        [_mstTreeTextView setHidden:YES];
+        [self setTextView:_mstTreeTextView content:@""];
+    }
 }
 
 - (void)loadMSTBundleForDid:(CPString)did
@@ -1764,7 +2774,11 @@
         [_mstDidField setStringValue:did];
 
     [self setStatus:@"Loading MST tree and stats..."];
-    [self setTextView:_mstStatsTextView content:@"Loading..."];
+    _mstStatsRows = [];
+    _mstStatsRows.push([self fieldValueRowWithField:@"Status" value:@"Loading..."]);
+    [_mstStatsTable reloadData];
+    _mstNodeRows = [];
+    [_mstNodesTable reloadData];
     [self setTextView:_mstTreeTextView content:@"Loading..."];
 
     var encodedDid = encodeURIComponent(String(did)),
@@ -2025,17 +3039,26 @@
                     queryParams:{did: _currentDID, limit: 30}
                      completion:function(statusCode, payload, errorMessage)
     {
+        _currentFeedMode = mode;
         _currentFeedPayload = payload || {error: errorMessage || "Feed request failed"};
         if (errorMessage && !_currentFeedPayload.error)
             _currentFeedPayload.error = errorMessage;
 
-        _currentFeedRendered = [self renderFeedSummary:_currentFeedPayload mode:mode];
         [self refreshFeedView];
 
         if (_currentFeedPayload.error)
             [self setStatus:@"Failed to load " + mode + "."];
         else
-            [self setStatus:@"Loaded " + ((_currentFeedPayload.feed && _currentFeedPayload.feed.length) || 0) + " " + [mode lowercaseString] + "."];
+        {
+            var loadedCount = 0;
+            if ([mode isEqual:@"Posts"])
+                loadedCount = (_currentFeedPayload.posts && _currentFeedPayload.posts.length) ? _currentFeedPayload.posts.length : 0;
+            else if ([mode isEqual:@"Likes"])
+                loadedCount = (_currentFeedPayload.likes && _currentFeedPayload.likes.length) ? _currentFeedPayload.likes.length : 0;
+            else
+                loadedCount = (_currentFeedPayload.reposts && _currentFeedPayload.reposts.length) ? _currentFeedPayload.reposts.length : 0;
+            [self setStatus:@"Loaded " + loadedCount + " " + [mode lowercaseString] + "."];
+        }
     }];
 }
 
@@ -2056,32 +3079,57 @@
     {
         if (errorMessage)
         {
-            [self setTextView:_graphTextView content:"Error: " + errorMessage];
+            _graphRows = [{handle: @"", did: @"", displayName: @"", createdAt: @"", avatar: @"", error: errorMessage}];
+            [_graphTable reloadData];
+            _graphDetailRows = [];
+            _graphDetailRows.push([self fieldValueRowWithField:@"Error" value:errorMessage]);
+            [_graphDetailTable reloadData];
             [self setStatus:@"Failed to load graph follows."];
             return;
         }
 
-        var actors = (payload && payload.actors) ? payload.actors : [],
-            lines = [];
+        _graphRows = (payload && payload.actors) ? payload.actors : [];
+        if (!_graphRows || !_graphRows.length)
+            _graphRows = [];
+        [_graphTable reloadData];
 
-        lines.push("Following for " + (_currentHandle || _currentDID));
-        lines.push("Actors: " + actors.length);
-        lines.push("");
-
-        for (var i = 0; i < actors.length; i++)
+        if (_graphRows.length > 0)
+            [_graphTable selectRowIndexes:[CPIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+        else
         {
-            var actor = actors[i],
-                handle = actor.handle || actor.did || "",
-                did = actor.did || "";
-            lines.push((i + 1) + ". " + handle + " (" + did + ")");
+            _graphDetailRows = [];
+            _graphDetailRows.push([self fieldValueRowWithField:@"Info" value:@"No follows returned."]);
+            [_graphDetailTable reloadData];
         }
 
-        lines.push("");
-        lines.push("Raw payload:");
-        lines.push([self prettyJSON:payload]);
-        [self setTextView:_graphTextView content:lines.join("\n")];
-        [self setStatus:@"Loaded " + actors.length + " follow entries."];
+        [self refreshGraphDetailView];
+        [self setStatus:@"Loaded " + _graphRows.length + " follow entries."];
     }];
+}
+
+- (void)refreshGraphDetailView
+{
+    var selectedRow = _graphTable ? [_graphTable selectedRow] : -1;
+    if (selectedRow < 0 || selectedRow >= _graphRows.length)
+    {
+        _graphDetailRows = [];
+        [_graphDetailTable reloadData];
+        return;
+    }
+
+    var actor = _graphRows[selectedRow] || {};
+    _graphDetailRows = [];
+    if (actor.error)
+        _graphDetailRows.push([self fieldValueRowWithField:@"Error" value:actor.error]);
+    else
+    {
+        _graphDetailRows.push([self fieldValueRowWithField:@"Handle" value:actor.handle]);
+        _graphDetailRows.push([self fieldValueRowWithField:@"DID" value:actor.did]);
+        _graphDetailRows.push([self fieldValueRowWithField:@"Display Name" value:actor.displayName]);
+        _graphDetailRows.push([self fieldValueRowWithField:@"Created At" value:actor.createdAt]);
+        _graphDetailRows.push([self fieldValueRowWithField:@"Avatar" value:actor.avatar]);
+    }
+    [_graphDetailTable reloadData];
 }
 
 - (void)loadActorProfile
@@ -2103,7 +3151,6 @@
         if (errorMessage && !_currentProfilePayload.error)
             _currentProfilePayload.error = errorMessage;
 
-        _currentProfileRendered = [self renderProfileSummary:_currentProfilePayload];
         [self refreshProfileView];
 
         if (_currentProfilePayload.error)
@@ -2438,6 +3485,16 @@
     [self loadRecordsForCollection:(collection.name || @"")];
 }
 
+- (void)handleDidViewModeChanged:(id)sender
+{
+    [self refreshDIDView];
+}
+
+- (void)handlePLCViewModeChanged:(id)sender
+{
+    [self refreshPLCView];
+}
+
 - (void)handleRecordModeChanged:(id)sender
 {
     [self refreshRecordDetailView];
@@ -2483,7 +3540,7 @@
 
     _mstExpanded = !_mstExpanded;
     [self refreshMSTViews];
-    [self setStatus:(_mstExpanded ? @"MST tree expanded (JSON view)." : @"MST tree collapsed (summary view).")];
+    [self setStatus:(_mstExpanded ? @"MST tree expanded (JSON view)." : @"MST tree collapsed (table view).")];
 }
 
 - (void)handleExportMST:(id)sender
@@ -2552,6 +3609,30 @@
         return _collections.length;
     if (tableView === _recordsTable)
         return _records.length;
+    if (tableView === _didSummaryTable)
+        return _didSummaryRows.length;
+    if (tableView === _didItemsTable)
+        return _didItemRows.length;
+    if (tableView === _plcOpsTable)
+        return _plcOpRows.length;
+    if (tableView === _plcDetailTable)
+        return _plcDetailRows.length;
+    if (tableView === _recordSummaryTable)
+        return _recordSummaryRows.length;
+    if (tableView === _feedTable)
+        return _feedRows.length;
+    if (tableView === _feedDetailTable)
+        return _feedDetailRows.length;
+    if (tableView === _graphTable)
+        return _graphRows.length;
+    if (tableView === _graphDetailTable)
+        return _graphDetailRows.length;
+    if (tableView === _profileSummaryTable)
+        return _profileSummaryRows.length;
+    if (tableView === _mstStatsTable)
+        return _mstStatsRows.length;
+    if (tableView === _mstNodesTable)
+        return _mstNodeRows.length;
     return 0;
 }
 
@@ -2582,11 +3663,149 @@
 
         var identifier = [tableColumn identifier];
         if ([identifier isEqual:@"rkey"])
-            return record.rkey || @"";
+            return record.rkey || [self rkeyFromRecordURI:record.uri] || @"";
         if ([identifier isEqual:@"cid"])
             return record.cid || @"";
         if ([identifier isEqual:@"uri"])
             return record.uri || @"";
+    }
+
+    if (tableView === _didSummaryTable)
+    {
+        var didSummaryRow = _didSummaryRows[row] || {},
+            didSummaryIdentifier = [tableColumn identifier];
+        if ([didSummaryIdentifier isEqual:@"did_summary_field"])
+            return didSummaryRow.field || @"";
+        if ([didSummaryIdentifier isEqual:@"did_summary_value"])
+            return didSummaryRow.value || @"";
+    }
+
+    if (tableView === _didItemsTable)
+    {
+        var didItemRow = _didItemRows[row] || {},
+            didItemIdentifier = [tableColumn identifier];
+        if ([didItemIdentifier isEqual:@"did_item_type"])
+            return didItemRow.type || @"";
+        if ([didItemIdentifier isEqual:@"did_item_label"])
+            return didItemRow.label || @"";
+        if ([didItemIdentifier isEqual:@"did_item_value"])
+            return didItemRow.value || @"";
+    }
+
+    if (tableView === _plcOpsTable)
+    {
+        var plcOpRow = _plcOpRows[row] || {},
+            plcOpIdentifier = [tableColumn identifier];
+        if ([plcOpIdentifier isEqual:@"plc_op_when"])
+            return plcOpRow.when || @"";
+        if ([plcOpIdentifier isEqual:@"plc_op_summary"])
+            return plcOpRow.summary || @"";
+        if ([plcOpIdentifier isEqual:@"plc_op_details"])
+            return plcOpRow.details || @"";
+    }
+
+    if (tableView === _plcDetailTable)
+    {
+        var plcDetailRow = _plcDetailRows[row] || {},
+            plcDetailIdentifier = [tableColumn identifier];
+        if ([plcDetailIdentifier isEqual:@"plc_detail_field"])
+            return plcDetailRow.field || @"";
+        if ([plcDetailIdentifier isEqual:@"plc_detail_value"])
+            return plcDetailRow.value || @"";
+    }
+
+    if (tableView === _recordSummaryTable)
+    {
+        var recordRow = _recordSummaryRows[row] || {},
+            recordIdentifier = [tableColumn identifier];
+        if ([recordIdentifier isEqual:@"record_field"])
+            return recordRow.field || @"";
+        if ([recordIdentifier isEqual:@"record_value"])
+            return recordRow.value || @"";
+    }
+
+    if (tableView === _feedTable)
+    {
+        var feedRow = _feedRows[row] || {},
+            feedIdentifier = [tableColumn identifier];
+        if ([feedIdentifier isEqual:@"feed_type"])
+            return feedRow.type || @"";
+        if ([feedIdentifier isEqual:@"feed_actor"])
+            return feedRow.actor || @"";
+        if ([feedIdentifier isEqual:@"feed_primary"])
+            return feedRow.primary || @"";
+        if ([feedIdentifier isEqual:@"feed_created"])
+            return feedRow.createdAt || @"";
+    }
+
+    if (tableView === _feedDetailTable)
+    {
+        var feedDetailRow = _feedDetailRows[row] || {},
+            feedDetailIdentifier = [tableColumn identifier];
+        if ([feedDetailIdentifier isEqual:@"feed_detail_field"])
+            return feedDetailRow.field || @"";
+        if ([feedDetailIdentifier isEqual:@"feed_detail_value"])
+            return feedDetailRow.value || @"";
+    }
+
+    if (tableView === _graphTable)
+    {
+        var graphRow = _graphRows[row] || {},
+            graphIdentifier = [tableColumn identifier];
+        if ([graphIdentifier isEqual:@"graph_handle"])
+            return graphRow.handle || @"";
+        if ([graphIdentifier isEqual:@"graph_did"])
+            return graphRow.did || @"";
+        if ([graphIdentifier isEqual:@"graph_display_name"])
+            return graphRow.displayName || @"";
+        if ([graphIdentifier isEqual:@"graph_created"])
+            return graphRow.createdAt || @"";
+    }
+
+    if (tableView === _graphDetailTable)
+    {
+        var graphDetailRow = _graphDetailRows[row] || {},
+            graphDetailIdentifier = [tableColumn identifier];
+        if ([graphDetailIdentifier isEqual:@"graph_detail_field"])
+            return graphDetailRow.field || @"";
+        if ([graphDetailIdentifier isEqual:@"graph_detail_value"])
+            return graphDetailRow.value || @"";
+    }
+
+    if (tableView === _profileSummaryTable)
+    {
+        var profileRow = _profileSummaryRows[row] || {},
+            profileIdentifier = [tableColumn identifier];
+        if ([profileIdentifier isEqual:@"profile_field"])
+            return profileRow.field || @"";
+        if ([profileIdentifier isEqual:@"profile_value"])
+            return profileRow.value || @"";
+    }
+
+    if (tableView === _mstStatsTable)
+    {
+        var mstStatsRow = _mstStatsRows[row] || {},
+            mstStatsIdentifier = [tableColumn identifier];
+        if ([mstStatsIdentifier isEqual:@"mst_metric"])
+            return mstStatsRow.field || @"";
+        if ([mstStatsIdentifier isEqual:@"mst_metric_value"])
+            return mstStatsRow.value || @"";
+    }
+
+    if (tableView === _mstNodesTable)
+    {
+        var mstNodeRow = _mstNodeRows[row] || {},
+            mstNodeIdentifier = [tableColumn identifier];
+        if ([mstNodeIdentifier isEqual:@"mst_node_level"])
+            return mstNodeRow.level || @"";
+        if ([mstNodeIdentifier isEqual:@"mst_node_kind"])
+            return mstNodeRow.kind || @"";
+        if ([mstNodeIdentifier isEqual:@"mst_node_entries"])
+            return mstNodeRow.entries || @"";
+        if ([mstNodeIdentifier isEqual:@"mst_node_left"])
+            return mstNodeRow.left || @"";
+        if ([mstNodeIdentifier isEqual:@"mst_node_cid"])
+            return mstNodeRow.cid || @"";
     }
 
     return @"";
@@ -2619,6 +3838,25 @@
         var recordRow = [_recordsTable selectedRow];
         if (recordRow >= 0)
             [self loadRecordDetailForRow:recordRow];
+        return;
+    }
+
+    if (tableView === _feedTable)
+    {
+        [self refreshFeedSelectionDetail];
+        return;
+    }
+
+    if (tableView === _plcOpsTable)
+    {
+        [self refreshPLCSelectionDetail];
+        return;
+    }
+
+    if (tableView === _graphTable)
+    {
+        [self refreshGraphDetailView];
+        return;
     }
 }
 
