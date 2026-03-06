@@ -51,7 +51,7 @@ targets:
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=OFF \
               -DBUILD_FUZZERS=OFF
-            make -j$(sysctl -n hw.ncpu) september
+            cmake --build . --target september --parallel $(sysctl -n hw.ncpu)
 
   # Standalone PLC Server
   atproto-plc:
@@ -88,7 +88,7 @@ targets:
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=OFF \
               -DBUILD_FUZZERS=OFF
-            make -j$(sysctl -n hw.ncpu) atproto-plc
+            cmake --build . --target atproto-plc --parallel $(sysctl -n hw.ncpu)
 
   # Test Runner - wrapper around CMake build
   AllTests:
@@ -125,7 +125,7 @@ targets:
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=ON \
               -DBUILD_FUZZERS=OFF
-            make -j$(sysctl -n hw.ncpu) AllTests
+            cmake --build . --target AllTests --parallel $(sysctl -n hw.ncpu)
 
   # Fuzzers - aggregate target to build all fuzzers
   Fuzzers:
@@ -159,4 +159,4 @@ targets:
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=OFF \
               -DBUILD_FUZZERS=ON
-            make -j$(sysctl -n hw.ncpu) fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth
+            cmake --build . --parallel $(sysctl -n hw.ncpu) --target fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth
