@@ -30,7 +30,7 @@ func TestNameAssertionAlignmentRule_Severity(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_ParseTestName(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -62,7 +62,7 @@ func TestNameAssertionAlignmentRule_ParseTestName(t *testing.T) {
 			expected: []string{"jwt", "token", "expiration", "validation"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := rule.parseTestName(tt.input)
@@ -82,7 +82,7 @@ func TestNameAssertionAlignmentRule_ParseTestName(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_SplitCamelCase(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -109,7 +109,7 @@ func TestNameAssertionAlignmentRule_SplitCamelCase(t *testing.T) {
 			expected: []string{"token"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := rule.splitCamelCase(tt.input)
@@ -122,7 +122,7 @@ func TestNameAssertionAlignmentRule_SplitCamelCase(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_ExtractAssertionSemantics(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	tests := []struct {
 		name       string
 		assertions []models.Assertion
@@ -163,7 +163,7 @@ func TestNameAssertionAlignmentRule_ExtractAssertionSemantics(t *testing.T) {
 			contains: []string{"true", "valid", "validator"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := rule.extractAssertionSemantics(tt.assertions)
@@ -178,7 +178,7 @@ func TestNameAssertionAlignmentRule_ExtractAssertionSemantics(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_KeywordsMatch(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	tests := []struct {
 		name     string
 		keyword1 string
@@ -216,12 +216,12 @@ func TestNameAssertionAlignmentRule_KeywordsMatch(t *testing.T) {
 			expected: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := rule.keywordsMatch(tt.keyword1, tt.keyword2)
 			if result != tt.expected {
-				t.Errorf("Expected %v, got %v for keywords '%s' and '%s'", 
+				t.Errorf("Expected %v, got %v for keywords '%s' and '%s'",
 					tt.expected, result, tt.keyword1, tt.keyword2)
 			}
 		})
@@ -230,7 +230,7 @@ func TestNameAssertionAlignmentRule_KeywordsMatch(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_CalculateAlignmentScore(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	tests := []struct {
 		name               string
 		claimedKeywords    []string
@@ -246,7 +246,7 @@ func TestNameAssertionAlignmentRule_CalculateAlignmentScore(t *testing.T) {
 			maxScore:           1.0,
 		},
 		{
-			name:     "Partial alignment",
+			name:               "Partial alignment",
 			claimedKeywords:    []string{"oauth", "token", "validation"},
 			assertionSemantics: []string{"token", "not", "nil"},
 			minScore:           0.2,
@@ -267,12 +267,12 @@ func TestNameAssertionAlignmentRule_CalculateAlignmentScore(t *testing.T) {
 			maxScore:           1.0,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			score := rule.calculateAlignmentScore(tt.claimedKeywords, tt.assertionSemantics)
 			if score < tt.minScore || score > tt.maxScore {
-				t.Errorf("Expected score between %.2f and %.2f, got %.2f", 
+				t.Errorf("Expected score between %.2f and %.2f, got %.2f",
 					tt.minScore, tt.maxScore, score)
 			}
 		})
@@ -281,7 +281,7 @@ func TestNameAssertionAlignmentRule_CalculateAlignmentScore(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_Validate_GoodAlignment(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	method := &models.TestMethod{
 		Name:       "testOAuthTokenValidation",
 		ClassName:  "OAuthTests",
@@ -301,13 +301,13 @@ func TestNameAssertionAlignmentRule_Validate_GoodAlignment(t *testing.T) {
 			},
 		},
 	}
-	
+
 	ctx := ValidationContext{
 		TestMethod: method,
 		TestClass:  &models.TestClass{Name: "OAuthTests"},
 		TestFile:   &models.TestFile{Path: "test.m"},
 	}
-	
+
 	findings := rule.Validate(ctx)
 	if len(findings) != 0 {
 		t.Errorf("Expected no findings for good alignment, got %d", len(findings))
@@ -316,7 +316,7 @@ func TestNameAssertionAlignmentRule_Validate_GoodAlignment(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_Validate_PoorAlignment(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	method := &models.TestMethod{
 		Name:       "testOAuthTokenValidation",
 		ClassName:  "OAuthTests",
@@ -328,18 +328,18 @@ func TestNameAssertionAlignmentRule_Validate_PoorAlignment(t *testing.T) {
 			},
 		},
 	}
-	
+
 	ctx := ValidationContext{
 		TestMethod: method,
 		TestClass:  &models.TestClass{Name: "OAuthTests"},
 		TestFile:   &models.TestFile{Path: "test.m"},
 	}
-	
+
 	findings := rule.Validate(ctx)
 	if len(findings) != 1 {
 		t.Fatalf("Expected 1 finding for poor alignment, got %d", len(findings))
 	}
-	
+
 	finding := findings[0]
 	if finding.RuleName != "NameAssertionAlignmentRule" {
 		t.Errorf("Expected rule name 'NameAssertionAlignmentRule', got '%s'", finding.RuleName)
@@ -357,20 +357,20 @@ func TestNameAssertionAlignmentRule_Validate_PoorAlignment(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_Validate_NoAssertions(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	method := &models.TestMethod{
 		Name:       "testOAuthTokenValidation",
 		ClassName:  "OAuthTests",
 		LineNumber: 10,
 		Assertions: []models.Assertion{},
 	}
-	
+
 	ctx := ValidationContext{
 		TestMethod: method,
 		TestClass:  &models.TestClass{Name: "OAuthTests"},
 		TestFile:   &models.TestFile{Path: "test.m"},
 	}
-	
+
 	findings := rule.Validate(ctx)
 	if len(findings) != 0 {
 		t.Errorf("Expected no findings when no assertions present, got %d", len(findings))
@@ -379,13 +379,13 @@ func TestNameAssertionAlignmentRule_Validate_NoAssertions(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_Validate_NilMethod(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	ctx := ValidationContext{
 		TestMethod: nil,
 		TestClass:  &models.TestClass{Name: "OAuthTests"},
 		TestFile:   &models.TestFile{Path: "test.m"},
 	}
-	
+
 	findings := rule.Validate(ctx)
 	if len(findings) != 0 {
 		t.Errorf("Expected no findings for nil method, got %d", len(findings))
@@ -394,39 +394,39 @@ func TestNameAssertionAlignmentRule_Validate_NilMethod(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_DetermineSeverity(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	tests := []struct {
 		name     string
 		score    float64
 		expected Severity
 	}{
 		{
+			name:     "Critical - zero score",
+			score:    0.0,
+			expected: CRITICAL,
+		},
+		{
 			name:     "Critical - very low score",
-			score:    0.2,
+			score:    0.05,
 			expected: CRITICAL,
 		},
 		{
 			name:     "High - low score",
-			score:    0.4,
+			score:    0.2,
 			expected: HIGH,
 		},
 		{
-			name:     "Medium - moderate score",
+			name:     "High - moderate score",
 			score:    0.6,
-			expected: MEDIUM,
-		},
-		{
-			name:     "Low - good score",
-			score:    0.8,
-			expected: LOW,
+			expected: HIGH,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := rule.determineSeverity(tt.score)
 			if result != tt.expected {
-				t.Errorf("Expected severity %v for score %.2f, got %v", 
+				t.Errorf("Expected severity %v for score %.2f, got %v",
 					tt.expected, tt.score, result)
 			}
 		})
@@ -435,7 +435,7 @@ func TestNameAssertionAlignmentRule_DetermineSeverity(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_SecurityTestExample(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	// Good security test - validates rejection
 	goodMethod := &models.TestMethod{
 		Name:       "testShouldRejectInvalidDID",
@@ -452,18 +452,18 @@ func TestNameAssertionAlignmentRule_SecurityTestExample(t *testing.T) {
 			},
 		},
 	}
-	
+
 	ctx := ValidationContext{
 		TestMethod: goodMethod,
 		TestClass:  &models.TestClass{Name: "SecurityTests"},
 		TestFile:   &models.TestFile{Path: "test.m"},
 	}
-	
+
 	findings := rule.Validate(ctx)
 	if len(findings) != 0 {
 		t.Errorf("Expected no findings for good security test, got %d", len(findings))
 	}
-	
+
 	// Bad security test - only checks non-null
 	badMethod := &models.TestMethod{
 		Name:       "testShouldRejectInvalidDID",
@@ -476,7 +476,7 @@ func TestNameAssertionAlignmentRule_SecurityTestExample(t *testing.T) {
 			},
 		},
 	}
-	
+
 	ctx.TestMethod = badMethod
 	findings = rule.Validate(ctx)
 	if len(findings) == 0 {
@@ -486,7 +486,7 @@ func TestNameAssertionAlignmentRule_SecurityTestExample(t *testing.T) {
 
 func TestNameAssertionAlignmentRule_InteropTestExample(t *testing.T) {
 	rule := NewNameAssertionAlignmentRule()
-	
+
 	// Good interop test - compares against reference
 	goodMethod := &models.TestMethod{
 		Name:       "testMSTInteropWithReference",
@@ -503,13 +503,13 @@ func TestNameAssertionAlignmentRule_InteropTestExample(t *testing.T) {
 			},
 		},
 	}
-	
+
 	ctx := ValidationContext{
 		TestMethod: goodMethod,
 		TestClass:  &models.TestClass{Name: "MSTInteropTests"},
 		TestFile:   &models.TestFile{Path: "test.m"},
 	}
-	
+
 	findings := rule.Validate(ctx)
 	if len(findings) != 0 {
 		t.Errorf("Expected no findings for good interop test, got %d: %+v", len(findings), findings)

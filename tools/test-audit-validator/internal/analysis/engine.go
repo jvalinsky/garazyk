@@ -38,62 +38,7 @@ func (e *StaticAnalysisEngine) Close() {
 // ParseFile parses an Objective-C file and returns a translation unit
 // It configures clang arguments for Objective-C with ARC and handles parsing errors gracefully
 func (e *StaticAnalysisEngine) ParseFile(filePath string) (clang.TranslationUnit, error) {
-	// Validate file path
-	if filePath == "" {
-		return clang.TranslationUnit{}, fmt.Errorf("file path cannot be empty")
-	}
-	
-	// Check if file has .m or .h extension
-	ext := strings.ToLower(filepath.Ext(filePath))
-	if ext != ".m" && ext != ".h" {
-		return clang.TranslationUnit{}, fmt.Errorf("file must have .m or .h extension, got: %s", ext)
-	}
-	
-	// Configure clang arguments for Objective-C with ARC
-	args := e.getClangArguments()
-	
-	// Parse the file with lenient error handling
-	// Note: We do NOT use SkipFunctionBodies because we need to analyze method bodies
-	// for assertions, variables, and method calls
-	// CXTranslationUnit_DetailedPreprocessingRecord provides detailed preprocessing info
-	// CXTranslationUnit_KeepGoing continues parsing even with errors
-	options := clang.TranslationUnit_DetailedPreprocessingRecord |
-		clang.TranslationUnit_KeepGoing
-	
-	tu := e.index.ParseTranslationUnit(
-		filePath,
-		args,
-		nil, // unsaved files
-		uint32(options),
-	)
-	
-	// Check if parsing succeeded
-	if !tu.IsValid() {
-		return clang.TranslationUnit{}, fmt.Errorf("failed to parse file: %s", filePath)
-	}
-	
-	// Check for fatal diagnostics
-	diagnostics := tu.Diagnostics()
-	hasFatalError := false
-	var errorMessages []string
-	
-	for _, diag := range diagnostics {
-		severity := diag.Severity()
-		if severity == clang.Diagnostic_Error || severity == clang.Diagnostic_Fatal {
-			hasFatalError = true
-			errorMessages = append(errorMessages, diag.Spelling())
-		}
-	}
-	
-	// If there are fatal errors, we can still return the TU but warn the caller
-	// This implements the "graceful fallback" strategy
-	if hasFatalError {
-		// Return the TU anyway - caller can decide whether to use it
-		// Some analysis may still be possible even with parse errors
-		return tu, fmt.Errorf("parse errors in %s: %s", filePath, strings.Join(errorMessages, "; "))
-	}
-	
-	return tu, nil
+	return e.ParseFileWithCommandLine(filePath, e.getClangArguments(), false)
 }
 
 // getClangArguments returns the clang compiler arguments for Objective-C with ARC
@@ -136,21 +81,79 @@ func (e *StaticAnalysisEngine) ParseFileWithFallback(filePath string) (clang.Tra
 		"-Wno-everything",
 		"-ferror-limit=0", // Don't stop on errors
 	}
-	
-	options := clang.TranslationUnit_KeepGoing |
-		clang.TranslationUnit_IgnoreNonErrorsFromIncludedFiles
-	
-	tu = e.index.ParseTranslationUnit(
-		filePath,
-		args,
-		nil,
-		uint32(options),
-	)
-	
-	if !tu.IsValid() {
-		return clang.TranslationUnit{}, fmt.Errorf("failed to parse file even with fallback: %s (original error: %v)", filePath, err)
+	return e.ParseFileWithCommandLine(filePath, args, false)
+}
+
+// ParseFileWithCommandLine parses a file with explicit clang command-line arguments.
+// If fullArgv is true, commandLineArgs must include argv[0] and will be passed to
+// ParseTranslationUnit2FullArgv.
+func (e *StaticAnalysisEngine) ParseFileWithCommandLine(filePath string, commandLineArgs []string, fullArgv bool) (clang.TranslationUnit, error) {
+	// Validate file path
+	if filePath == "" {
+		return clang.TranslationUnit{}, fmt.Errorf("file path cannot be empty")
 	}
-	
+
+	// Check if file has .m or .h extension
+	ext := strings.ToLower(filepath.Ext(filePath))
+	if ext != ".m" && ext != ".h" {
+		return clang.TranslationUnit{}, fmt.Errorf("file must have .m or .h extension, got: %s", ext)
+	}
+
+	if len(commandLineArgs) == 0 {
+		commandLineArgs = e.getClangArguments()
+	}
+
+	// Note: We do NOT use SkipFunctionBodies because we need to analyze method
+	// bodies for assertions, variables, and method calls.
+	options := clang.TranslationUnit_DetailedPreprocessingRecord |
+		clang.TranslationUnit_KeepGoing
+
+	var (
+		tu clang.TranslationUnit
+		ec clang.ErrorCode
+	)
+	if fullArgv {
+		ec = e.index.ParseTranslationUnit2FullArgv(
+			filePath,
+			commandLineArgs,
+			nil, // unsaved files
+			uint32(options),
+			&tu,
+		)
+	} else {
+		ec = e.index.ParseTranslationUnit2(
+			filePath,
+			commandLineArgs,
+			nil, // unsaved files
+			uint32(options),
+			&tu,
+		)
+	}
+	if ec != clang.Error_Success || !tu.IsValid() {
+		if tu.IsValid() {
+			tu.Dispose()
+		}
+		return clang.TranslationUnit{}, fmt.Errorf("failed to parse file %s (error: %s)", filePath, ec.Spelling())
+	}
+
+	// Check for parse diagnostics
+	diagnostics := tu.Diagnostics()
+	hasParseErrors := false
+	var errorMessages []string
+
+	for _, diag := range diagnostics {
+		severity := diag.Severity()
+		if severity == clang.Diagnostic_Error || severity == clang.Diagnostic_Fatal {
+			hasParseErrors = true
+			errorMessages = append(errorMessages, diag.Spelling())
+		}
+	}
+
+	// Return translation unit and error together to enable partial analysis.
+	if hasParseErrors {
+		return tu, fmt.Errorf("parse errors in %s: %s", filePath, strings.Join(errorMessages, "; "))
+	}
+
 	return tu, nil
 }
 
