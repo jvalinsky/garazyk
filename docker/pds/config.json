@@ -8,9 +8,11 @@
       "garazyk.xyz"
     ]
   },
-  "appViewURL": "https://api.bsky.app",
-  "appViewDID": "did:web:api.bsky.app",
-  "localAppViewEnabled": false,
+  "appview": {
+    "url": "https://api.bsky.app",
+    "did": "did:web:api.bsky.app",
+    "local_enabled": false
+  },
   "database": {
     "service_pool_max_size": 20,
     "user_pool_max_size": 200
