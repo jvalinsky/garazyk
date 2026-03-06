@@ -6,258 +6,114 @@ title: API Reference
 
 ## Overview
 
-This document provides a comprehensive reference for all XRPC endpoints implemented by the PDS.
+This page is a map to the runtime API surface, not a giant payload dump. The useful contributor question is usually not "what does one response example look like?" It is "which surface am I changing, and where do I verify it?"
 
-## Server Methods (com.atproto.server.*)
+September exposes three different kinds of HTTP surface:
 
-### describeServer
+| Surface | Role |
+| --- | --- |
+| `/xrpc/com.atproto.*` | protocol-facing ATProto methods |
+| `/api/pds/*` | contributor-facing explorer and inspection endpoints |
+| `/ui` | browser UI built on top of inspection and protocol data |
 
-Get server information.
+Keeping those roles separate makes the code much easier to reason about.
 
-**Endpoint:** `GET /xrpc/com.atproto.server.describeServer`
+## Which Surface to Use
 
-**Parameters:** None
+### XRPC
 
-**Response:**
-```json
-{
-  "did": "did:web:pds.example.com",
-  "availableUserDomains": ["example.com"],
-  "inviteCodeRequired": false,
-  "phoneNumberRequired": false,
-  "links": {
-    "privacyPolicy": "https://pds.example.com/privacy",
-    "termsOfService": "https://pds.example.com/terms"
-  }
-}
+Use the XRPC surface when you are working on protocol behavior, auth, record creation, repository operations, sync, or any client-facing ATProto contract.
+
+Typical method families include:
+
+- `com.atproto.server.*` for server identity, sessions, and account bootstrap
+- `com.atproto.repo.*` for record and repository operations
+- `com.atproto.sync.*` for sync and firehose behavior
+- `com.atproto.identity.*` and related identity flows where implemented
+
+### Explorer API
+
+Use `/api/pds/*` when you need fast inspection of runtime state without building a separate client. This surface is for contributors and operators:
+
+- accounts and repositories,
+- record lookup,
+- DID and PLC inspection,
+- CID and blob helpers,
+- generated OpenAPI,
+- and lightweight browser-friendly tooling.
+
+### Browser UI
+
+Use `/ui` when you need the richer contributor workflow rather than raw JSON. The UI is especially useful for comparing structured rendering to the Explorer API responses beneath it.
+
+## Endpoint Families
+
+| Area | What changes usually mean |
+| --- | --- |
+| discovery and sessions | config, issuer, auth helpers, account bootstrap, `describeServer` behavior |
+| repository and records | lexicon shapes, repository service logic, MST/CAR behavior, auth scopes |
+| sync and firehose | commit sequencing, cursor behavior, WebSocket delivery, backpressure |
+| explorer and tooling | handler wiring, operator workflows, generated OpenAPI, UI-facing inspection data |
+
+That framing is more useful than a long list of similar request and response payloads because it tells you where else to look when you touch one endpoint.
+
+## How to Trace an Endpoint in the Repo
+
+When you need source truth for an endpoint, follow the same path every time:
+
+1. Start at route registration in `PDSHttpServerBuilder` or the relevant CLI or handler entrypoint.
+2. Find the method or handler that owns auth, parsing, and response shaping.
+3. Identify the service layer or repository/database layer it calls into.
+4. Read the closest tests before assuming behavior is intentional.
+
+This workflow matters because endpoint bugs often live one layer away from the place where the HTTP route is declared.
+
+## OpenAPI Scope
+
+The generated OpenAPI document is useful, but it does not describe the entire runtime surface.
+
+What it does cover:
+
+- the Explorer API under `/api/pds/*`
+- the Swagger UI served at `/api/pds/docs`
+- generated `openapi.yaml` and `openapi.json` outputs
+
+What it does not replace:
+
+- the XRPC method registry as the source of protocol truth
+- service and repository code as the source of behavior truth
+- tests as the source of intended invariants
+
+Use [Explorer, OpenAPI & UI](./explorer-openapi-ui) when you are specifically working with those contributor-facing surfaces.
+
+## Practical Verification Order
+
+When a change touches an API path, verify in this order:
+
+1. the underlying service or repository behavior,
+2. the protocol route or handler response,
+3. the Explorer or OpenAPI surface if it depends on that behavior,
+4. the UI if the data is rendered there.
+
+That order keeps failures local and avoids debugging the browser first when the real problem is lower in the stack.
+
+## Related Reading
+
+- [Tutorial 8: Endpoint Workflow](../10-tutorials/tutorial-8-endpoint-workflow)
+- [Explorer, OpenAPI & UI](./explorer-openapi-ui)
+- [CLI Reference](./cli-reference)
+- [Config Reference](./config-reference)
+- [Testing Map](./testing-map)
+
+## Appendix
+
+### Minimal inspection loop
+
+```bash
+curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
+curl -sS http://127.0.0.1:2583/api/pds/openapi.yaml | head
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
 ```
-
-### createAccount
-
-Create a new user account.
-
-**Endpoint:** `POST /xrpc/com.atproto.server.createAccount`
-
-**Parameters:**
-```json
-{
-  "email": "user@example.com",
-  "handle": "user.example.com",
-  "password": "password123",
-  "inviteCode": "optional-invite-code"
-}
-```
-
-**Response:**
-```json
-{
-  "did": "did:plc:user123",
-  "handle": "user.example.com",
-  "email": "user@example.com",
-  "accessJwt": "eyJhbGc...",
-  "refreshJwt": "eyJhbGc..."
-}
-```
-
-### createSession
-
-Authenticate and create a session.
-
-**Endpoint:** `POST /xrpc/com.atproto.server.createSession`
-
-**Parameters:**
-```json
-{
-  "identifier": "user.example.com",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "did": "did:plc:user123",
-  "handle": "user.example.com",
-  "email": "user@example.com",
-  "accessJwt": "eyJhbGc...",
-  "refreshJwt": "eyJhbGc..."
-}
-```
-
-### refreshSession
-
-Refresh an access token.
-
-**Endpoint:** `POST /xrpc/com.atproto.server.refreshSession`
-
-**Headers:**
-```
-
-Authorization: Bearer <refresh-token>
-```
-
-**Response:**
-```json
-{
-  "did": "did:plc:user123",
-  "handle": "user.example.com",
-  "accessJwt": "eyJhbGc...",
-  "refreshJwt": "eyJhbGc..."
-}
-```
-
-## Repository Methods (com.atproto.repo.*)
-
-### createRecord
-
-Create a new record in a repository.
-
-**Endpoint:** `POST /xrpc/com.atproto.repo.createRecord`
-
-**Headers:**
-```
-
-Authorization: Bearer <access-token>
-```
-
-**Parameters:**
-```json
-{
-  "repo": "did:plc:user123",
-  "collection": "app.bsky.feed.post",
-  "record": {
-    "text": "Hello, world!",
-    "createdAt": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "uri": "at://did:plc:user123/app.bsky.feed.post/abc123",
-  "cid": "bafyreiabc123..."
-}
-```
-
-### getRecord
-
-Get a record from a repository.
-
-**Endpoint:** `GET /xrpc/com.atproto.repo.getRecord`
-
-**Parameters:**
-```
-
-repo=did:plc:user123
-collection=app.bsky.feed.post
-rkey=abc123
-```
-
-**Response:**
-```json
-{
-  "uri": "at://did:plc:user123/app.bsky.feed.post/abc123",
-  "cid": "bafyreiabc123...",
-  "value": {
-    "text": "Hello, world!",
-    "createdAt": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
-### updateRecord
-
-Update an existing record.
-
-**Endpoint:** `PUT /xrpc/com.atproto.repo.updateRecord`
-
-**Headers:**
-```
-
-Authorization: Bearer <access-token>
-```
-
-**Parameters:**
-```json
-{
-  "repo": "did:plc:user123",
-  "collection": "app.bsky.feed.post",
-  "rkey": "abc123",
-  "record": {
-    "text": "Updated text",
-    "createdAt": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "uri": "at://did:plc:user123/app.bsky.feed.post/abc123",
-  "cid": "bafyreiabc123..."
-}
-```
-
-### deleteRecord
-
-Delete a record from a repository.
-
-**Endpoint:** `DELETE /xrpc/com.atproto.repo.deleteRecord`
-
-**Headers:**
-```
-
-Authorization: Bearer <access-token>
-```
-
-**Parameters:**
-```
-
-repo=did:plc:user123
-collection=app.bsky.feed.post
-rkey=abc123
-```
-
-**Response:**
-```json
-{}
-```
-
-### listRecords
-
-List records in a collection.
-
-**Endpoint:** `GET /xrpc/com.atproto.repo.listRecords`
-
-**Parameters:**
-```
-
-repo=did:plc:user123
-collection=app.bsky.feed.post
-limit=50
-cursor=optional-cursor
-```
-
-**Response:**
-```json
-{
-  "records": [
-    {
-      "uri": "at://did:plc:user123/app.bsky.feed.post/abc123",
-      "cid": "bafyreiabc123...",
-      "value": { "text": "Hello" }
-    }
-  ],
-  "cursor": "next-cursor"
-}
-```
-
-## Sync Methods (com.atproto.sync.*)
-
-### subscribeRepos
-
-Subscribe to repository updates via WebSocket.
 
 **Endpoint:** `GET /xrpc/com.atproto.sync.subscribeRepos` (WebSocket upgrade)
 
