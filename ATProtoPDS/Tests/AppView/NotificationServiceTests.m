@@ -33,7 +33,7 @@
     [super tearDown];
 }
 
-- (void)testServiceInitialization {
+- (void)testServiceInitializationConfiguresDatabase {
     XCTAssertNotNil(self.service);
     XCTAssertEqual(self.service.database, self.database);
 }
@@ -65,7 +65,7 @@
     XCTAssertNil(error);
 }
 
-- (void)testRegisterPushUpdateExisting {
+- (void)testRegisterPushUpdateExistingIsSuccessful {
     NSError *error = nil;
     [self.service registerPushForActor:@"did:plc:user2"
                           deviceToken:@"token-456"
@@ -98,7 +98,7 @@
     XCTAssertTrue(success);
 }
 
-- (void)testUnregisterNonExistent {
+- (void)testUnregisterNonExistentIsSuccessful {
     NSError *error = nil;
     BOOL success = [self.service unregisterPushForActor:@"did:plc:nonexistent" error:&error];
     XCTAssertTrue(success);
@@ -111,7 +111,7 @@
     XCTAssertNotNil(error);
 }
 
-- (void)testGetNotificationsEmpty {
+- (void)testGetNotificationsEmptyReturnsEmptyArray {
     NSError *error = nil;
     NSArray *notifications = [self.service getNotificationsForActor:@"did:plc:user4" limit:10 cursor:nil error:&error];
     
@@ -119,7 +119,7 @@
     XCTAssertEqual(notifications.count, 0);
 }
 
-- (void)testGetNotificationsWithData {
+- (void)testGetNotificationsWithDataReturnsNotifications {
     [self insertNotification:@"did:plc:user5" reason:@"reply" subjectURI:@"at://did:plc:author/app.bsky.feed.post/123"];
     [self insertNotification:@"did:plc:user5" reason:@"like" subjectURI:@"at://did:plc:author/app.bsky.feed.post/456"];
     
@@ -130,7 +130,7 @@
     XCTAssertEqual(notifications.count, 2);
 }
 
-- (void)testGetNotificationsLimit {
+- (void)testGetNotificationsLimitReturnsLimitedNotifications {
     for (int i = 0; i < 10; i++) {
         [self insertNotification:@"did:plc:user6" reason:@"mention" subjectURI:[NSString stringWithFormat:@"at://did:plc:author/app.bsky.feed.post/%d", i]];
     }
@@ -142,7 +142,7 @@
     XCTAssertEqual(notifications.count, 3);
 }
 
-- (void)testGetNotificationsWithCursor {
+- (void)testGetNotificationsWithCursorMatchesAllCount {
     [self insertNotification:@"did:plc:user7" reason:@"repost" subjectURI:@"at://did:plc:a/post1"];
     [self insertNotification:@"did:plc:user7" reason:@"repost" subjectURI:@"at://did:plc:a/post2"];
     [self insertNotification:@"did:plc:user7" reason:@"repost" subjectURI:@"at://did:plc:a/post3"];
@@ -152,7 +152,7 @@
     XCTAssertEqual(all.count, 3);
 }
 
-- (void)testGetNotificationsDifferentActors {
+- (void)testGetNotificationsDifferentActorsMatchesNotifs2Count {
     [self insertNotification:@"did:plc:actor1" reason:@"like" subjectURI:@"at://did:plc:a/post1"];
     [self insertNotification:@"did:plc:actor2" reason:@"like" subjectURI:@"at://did:plc:a/post2"];
     
@@ -179,7 +179,7 @@
     XCTAssertTrue(success);
 }
 
-- (void)testMarkNotificationsAsReadWithLimit {
+- (void)testMarkNotificationsAsReadWithLimitIsSuccessful {
     for (int i = 0; i < 5; i++) {
         [self insertNotification:@"did:plc:user9" reason:@"reply" subjectURI:[NSString stringWithFormat:@"at://did:plc:a/post%d", i] isRead:NO];
     }
@@ -189,7 +189,7 @@
     XCTAssertTrue(success);
 }
 
-- (void)testMarkNotificationsAsReadNonexistentActor {
+- (void)testMarkNotificationsAsReadNonexistentActorIsSuccessful {
     NSError *error = nil;
     BOOL success = [self.service markNotificationsAsReadForActor:@"did:plc:nonexistent" limit:10 error:&error];
     XCTAssertTrue(success);

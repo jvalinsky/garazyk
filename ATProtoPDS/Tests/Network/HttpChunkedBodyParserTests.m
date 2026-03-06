@@ -139,7 +139,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(size, (NSUInteger)26);
 }
 
-- (void)testResetParser {
+- (void)testResetParserIsCompleteAndEqual {
     HttpChunkedBodyParser *parser = [[HttpChunkedBodyParser alloc] init];
 
     NSData *data1 = [@"5\r\nHello\r\n" dataUsingEncoding:NSUTF8StringEncoding];

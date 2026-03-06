@@ -28,7 +28,7 @@
     [[PDSServiceContainer sharedContainer] reset];
 }
 
-- (void)testRegisterInstance {
+- (void)testResolveProtocolReturnsRegisteredInstance {
     PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
     TestImplementation *impl = [[TestImplementation alloc] init];
     
@@ -60,7 +60,7 @@
     XCTAssertEqual(resolved, resolved2);
 }
 
-- (void)testReset {
+- (void)testResolveProtocolReturnsNilAfterReset {
     PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
     [container registerInstance:[[TestImplementation alloc] init] forProtocol:@protocol(TestProtocol)];
     

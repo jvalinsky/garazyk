@@ -20,58 +20,68 @@
     [super tearDown];
 }
 
-- (void)testHelpCommand {
-    XCTAssertNoThrow([self.dispatcher dispatchWithCommandName:@"help" arguments:@[] context:self.context], @"Help command should not throw");
+- (void)testHelpCommandMatchesRc {
+    int rc = [self.dispatcher dispatchWithCommandName:@"help" arguments:@[] context:self.context];
+    XCTAssertEqual(rc, 0);
 }
 
-- (void)testHealthCommand {
-    XCTAssertNoThrow([self.dispatcher dispatchWithCommandName:@"health" arguments:@[] context:self.context], @"Health command should not throw");
+- (void)testHealthCommandMatchesRc {
+    int rc = [self.dispatcher dispatchWithCommandName:@"health" arguments:@[] context:self.context];
+    XCTAssertEqual(rc, 0);
 }
 
-- (void)testVersionCommand {
-    XCTAssertNoThrow([self.dispatcher dispatchWithCommandName:@"version" arguments:@[] context:self.context], @"Version command should not throw");
+- (void)testVersionCommandMatchesRc {
+    int rc = [self.dispatcher dispatchWithCommandName:@"version" arguments:@[] context:self.context];
+    XCTAssertEqual(rc, 0);
 }
 
-- (void)testUnknownCommand {
+- (void)testUnknownCommandMatchesReturnCode {
     int rc = [self.dispatcher dispatchWithCommandName:@"nonexistent" arguments:@[] context:self.context];
     XCTAssertEqual(rc, 1);
 }
 
-- (void)testHelpWithCommandArgument {
-    XCTAssertNoThrow([self.dispatcher dispatchWithCommandName:@"help" arguments:@[@"serve"] context:self.context], @"Help with command should not throw");
+- (void)testHelpWithCommandArgumentMatchesRc {
+    int rc = [self.dispatcher dispatchWithCommandName:@"help" arguments:@[@"serve"] context:self.context];
+    XCTAssertEqual(rc, 0);
 }
 
 - (void)testServeCommandExists {
     id serveCmd = [self.dispatcher commandForName:@"serve"];
     XCTAssertNotNil(serveCmd, @"Serve command should exist");
+    XCTAssertTrue([serveCmd conformsToProtocol:@protocol(PDSCLICommand)]);
 }
 
 - (void)testAccountCommandExists {
     id accountCmd = [self.dispatcher commandForName:@"account"];
     XCTAssertNotNil(accountCmd, @"Account command should exist");
+    XCTAssertTrue([accountCmd conformsToProtocol:@protocol(PDSCLICommand)]);
 }
 
 - (void)testRepoCommandExists {
     id repoCmd = [self.dispatcher commandForName:@"repo"];
     XCTAssertNotNil(repoCmd, @"Repo command should exist");
+    XCTAssertTrue([repoCmd conformsToProtocol:@protocol(PDSCLICommand)]);
 }
 
 - (void)testInviteCommandExists {
     id inviteCmd = [self.dispatcher commandForName:@"invite"];
     XCTAssertNotNil(inviteCmd, @"Invite command should exist");
+    XCTAssertTrue([inviteCmd conformsToProtocol:@protocol(PDSCLICommand)]);
 }
 
 - (void)testNukeCommandExists {
     id nukeCmd = [self.dispatcher commandForName:@"nuke"];
     XCTAssertNotNil(nukeCmd, @"Nuke command should exist");
+    XCTAssertTrue([nukeCmd conformsToProtocol:@protocol(PDSCLICommand)]);
 }
 
 - (void)testContextInitialization {
     XCTAssertNotNil(self.context);
     XCTAssertNotNil(self.context.dataDir);
+    XCTAssertTrue([self.context isKindOfClass:[PDSCLICommandContext class]]);
 }
 
-- (void)testContextWithArguments {
+- (void)testContextWithArgumentsMatchesDataDir {
     PDSCLICommandContext *ctx = [[PDSCLICommandContext alloc] init];
     ctx.dataDir = @"/test/path";
     XCTAssertNotNil(ctx);

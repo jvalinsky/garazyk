@@ -57,7 +57,7 @@
     XCTAssertNotNil(self.blobStorage.provider, @"Provider should be set");
 }
 
-- (void)testDataSetup {
+- (void)testDataSetupCreatesNonEmptyData {
     XCTAssertNotNil(self.testData, @"Test data should be created");
     XCTAssertGreaterThan(self.testData.length, 0, @"Test data should have content");
 }
@@ -183,6 +183,7 @@
     CID *otherCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:otherDID error:&error];
 
     XCTAssertNotNil(otherCID, @"Upload with different DID should succeed");
+    XCTAssertTrue([otherCID isKindOfClass:[CID class]], @"Should return valid CID");
 }
 
 - (void)testBlobDIDIsolation {
@@ -214,7 +215,7 @@
     
     // This should fail if magic byte validation is enforced
     // Note: If this fails to be invalid (i.e. returns true), it means implementation is loose.
-    // We expect it to be loose currently if the previous test used "fake-image-data" and passed.
+    // We expect it to be loose currently if a prior test used "fake-image-data" and passed.
     // However, if we want to enforce it, we should update strictness.
     // Let's assume strict validation is desired and see if it fails.
     BOOL isValid = [self.blobStorage validateBlob:data mimeType:@"image/jpeg" error:&error];

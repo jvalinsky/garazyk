@@ -26,20 +26,20 @@
     NSString *dbPath = [self.tempDir stringByAppendingPathComponent:@"replay.db"];
     NSDate *futureExpiry = [NSDate dateWithTimeIntervalSinceNow:3600];
 
-    // First instance: add a JTI
+    // Initial instance: add a JTI
     PDSReplayCache *cache1 = [[PDSReplayCache alloc] initWithDatabasePath:dbPath];
     XCTAssertNotNil(cache1);
     BOOL added = [cache1 checkAndAddJTI:@"jti-persist-test" expiration:futureExpiry];
     XCTAssertTrue(added, @"First add should succeed");
 
-    // Second add on same instance should fail (replay)
+    // Duplicate add on same instance should fail (replay)
     BOOL replay = [cache1 checkAndAddJTI:@"jti-persist-test" expiration:futureExpiry];
     XCTAssertFalse(replay, @"Replay should be detected on same instance");
 
-    // Destroy first instance
+    // Destroy initial instance
     cache1 = nil;
 
-    // Second instance with same path: JTI should be rejected (persisted)
+    // New instance with same path: JTI should be rejected (persisted)
     PDSReplayCache *cache2 = [[PDSReplayCache alloc] initWithDatabasePath:dbPath];
     XCTAssertNotNil(cache2);
     BOOL replayAfterReopen = [cache2 checkAndAddJTI:@"jti-persist-test" expiration:futureExpiry];

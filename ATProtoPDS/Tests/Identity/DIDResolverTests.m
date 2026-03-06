@@ -42,7 +42,7 @@
 }
 
 #ifndef GNUSTEP
-- (void)testDIDResolutionCaching {
+- (void)testDIDResolutionCachingReturnsCachedDocument {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
     // Mock a document in cache to avoid network calls
@@ -92,7 +92,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testTTLCaching {
+- (void)testTTLCachingReturnsCachedDocumentWithSameDid {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
     // Mock a cached document
@@ -117,7 +117,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testExpiredCacheEviction {
+- (void)testExpiredCacheEvictionReturnsNilDocument {
     DIDResolver *resolver = [[DIDResolver alloc] init];
 
     // Mock a cached document

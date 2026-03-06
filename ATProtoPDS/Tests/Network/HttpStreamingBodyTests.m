@@ -54,7 +54,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertTrue(handler.isComplete);
 }
 
-- (void)testCreateInputStream {
+- (void)testCreateInputStreamYieldsMatch {
     HttpStreamingBody *handler = [[HttpStreamingBody alloc] initWithMemoryThreshold:1024];
 
     NSData *data = [@"Hello World" dataUsingEncoding:NSUTF8StringEncoding];

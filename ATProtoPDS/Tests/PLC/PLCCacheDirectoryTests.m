@@ -114,7 +114,7 @@
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 3);
 }
 
-- (void)testFlushAllCaches {
+- (void)testFlushAllCachesResetsCacheMissCount {
     NSString *did = @"did:plc:flushall";
     
     PLCOperation *op = [[PLCOperation alloc] init];
@@ -133,7 +133,7 @@
     XCTAssertEqual(self.cacheDirectory.cacheMissCount, 2);
 }
 
-- (void)testCacheWithDifferentTTL {
+- (void)testCacheWithDifferentTTLCausesMisses {
     self.cacheDirectory.ttl = 0.1;
     
     NSString *did = @"did:plc:ttl";

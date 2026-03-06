@@ -108,7 +108,7 @@ NS_ASSUME_NONNULL_BEGIN
     close(fds[1]);
 }
 
-- (void)testOutboundConnectionToLocalhost {
+- (void)testOutboundConnectionToLocalhostFails {
     PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithHost:@"127.0.0.1" port:0];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.localhost", DISPATCH_QUEUE_SERIAL);
     

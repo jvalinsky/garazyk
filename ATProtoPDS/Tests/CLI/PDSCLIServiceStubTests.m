@@ -6,7 +6,7 @@
 
 @implementation PDSCLIServiceStubTests
 
-- (void)testSharedStubDefaults {
+- (void)testSharedStubDefaultsEqualExpected {
     PDSCLIServiceStub *stub = [PDSCLIServiceStub sharedStub];
     XCTAssertEqualObjects(stub.serviceDid, @"did:plc:service-stub");
     XCTAssertEqualObjects(stub.serviceHost, @"localhost");

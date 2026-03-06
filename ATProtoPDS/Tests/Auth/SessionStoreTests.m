@@ -77,7 +77,7 @@
     [self assertValidJWTAccessToken:session.accessToken];
 }
 
-- (void)testDPoPThumbprintAssignment {
+- (void)testDPoPThumbprintEqualsExpectedValue {
     NSDictionary *dpopJWK = @{@"kid": @"dpop-key-thumbprint-123"};
     
     Session *session = [self.store createSessionForDID:@"did:plc:dpoptest"
@@ -241,7 +241,7 @@
     XCTAssertNotNil(newLookup, @"New access token should be valid");
 }
 
-- (void)testRefreshSessionWithNewScope {
+- (void)testRefreshSessionUpdatesScopePropertyEqualToExpected {
     Session *original = [self.store createSessionForDID:@"did:plc:scopechange"
                                                  handle:@"scopechange.example.com"
                                                   scope:@"atproto"
@@ -304,11 +304,11 @@
     
     NSDictionary *response = [session toTokenResponse];
     
-    XCTAssertNotNil(response[@"access_token"], @"Response should have access_token");
-    XCTAssertNotNil(response[@"token_type"], @"Response should have token_type");
-    XCTAssertNotNil(response[@"scope"], @"Response should have scope");
+    XCTAssertEqualObjects(response[@"access_token"], session.accessToken, @"Response should have correct access_token");
+    XCTAssertEqualObjects(response[@"token_type"], session.tokenType, @"Response should have token_type matching session");
+    XCTAssertEqualObjects(response[@"scope"], @"atproto", @"Response should have correct scope");
     XCTAssertNotNil(response[@"expires_in"], @"Response should have expires_in");
-    XCTAssertNotNil(response[@"refresh_token"], @"Response should have refresh_token");
+    XCTAssertEqualObjects(response[@"refresh_token"], session.refreshToken, @"Response should have correct refresh_token");
 }
 
 

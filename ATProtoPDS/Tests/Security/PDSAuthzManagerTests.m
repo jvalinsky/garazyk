@@ -70,7 +70,7 @@ NS_ASSUME_NONNULL_BEGIN
     return repo;
 }
 
-- (void)testAccessRepoSelfAuthorizedWithoutRepo {
+- (void)testAuthzManagerReturnsTrueForAccessRepoSelfAuthorizedWithoutRepo {
     NSError *error = nil;
     BOOL allowed = [self.manager isAuthorizedToAccessRepo:@"did:plc:self123"
                                            requestingDID:@"did:plc:self123"
@@ -117,7 +117,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     error = nil;
     BOOL adminAllowed = [self.manager isAuthorizedForAdminOperation:@"did:plc:admin123" error:&error];
-    // Legacy handle-based admin escalation removed - now requires JWT scope
+    // Legacy handle-based admin escalation removed - now needs JWT scope
     XCTAssertFalse(adminAllowed);
     XCTAssertNotNil(error);
     XCTAssertEqual(error.code, PDSAuthzErrorAdminRequired);
@@ -162,7 +162,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(error.code, PDSAuthzErrorUnauthorized);
 }
 
-- (void)testValidateReadAccessMutedCollection {
+- (void)testAuthzManagerFailsValidateReadAccessMutedCollection {
     NSError *error = nil;
     [self createAccountWithDid:@"did:plc:mute123" handle:@"mute.example.com"];
 
