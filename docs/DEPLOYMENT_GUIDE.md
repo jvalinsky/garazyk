@@ -206,7 +206,7 @@ Documentation container (port 80)
 
 ### Pre-Deployment
 
-- [ ] All validation checks pass (`npm run validate`)
+- [ ] All validation checks pass (`npm run validate:all`)
 - [ ] Build succeeds locally (`npm run docs:build`)
 - [ ] Preview looks correct (`npm run docs:preview`)
 - [ ] All tests pass

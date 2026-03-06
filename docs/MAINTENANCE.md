@@ -41,7 +41,7 @@ This guide provides comprehensive instructions for maintaining and updating the 
 
 5. **Run validation**:
    ```bash
-   npm run validate
+   npm run validate:all
    ```text
    This checks for broken links, missing diagrams, and code block issues
 
@@ -245,7 +245,7 @@ npm run validate:diagrams
 npm run validate:code-blocks
 
 # Run all validations
-npm run validate
+npm run validate:all
 ```
 
 ## Deployment to Production
