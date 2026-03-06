@@ -34,7 +34,7 @@
            @"  list <did>             List all records in the user's repository\n"
            @"  get <did> <uri>        Fetch a specific record\n"
            @"  root <did>             Return the current root CID of the repository\n"
-           @"  create-record <did> <col> <rkey> <json>  Create a new record\n"
+           @"  create-record <did> <col> [rkey] <json>  Create a new record\n"
            @"  delete-record <did> <col> <rkey>         Delete a record\n"
            @"  repair <did>           Force reinitialize a corrupted repository";
 }
@@ -71,15 +71,35 @@
 }
 
 - (void)executeCreateRecordWithArgs:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
-    if (args.count < 4) {
-        [context printError:@"Usage: pds repo create-record <did> <collection> <rkey> <json_value>"];
+    if (args.count < 3) {
+        [context printError:@"Usage: pds repo create-record <did> <collection> [rkey] <json_value>"];
         return;
     }
 
     NSString *did = args[0];
     NSString *collection = args[1];
-    NSString *rkey = args[2];
-    NSString *jsonValue = args[3];
+    NSString *rkey = nil;
+    NSString *jsonValue = nil;
+    
+    if (args.count >= 4) {
+        rkey = args[2];
+        jsonValue = args[3];
+    } else {
+        jsonValue = args[2];
+    }
+    
+    if ([rkey isKindOfClass:[NSString class]]) {
+        rkey = [rkey stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    }
+    
+    if (rkey.length == 0) {
+        if ([collection isEqualToString:@"app.bsky.feed.post"]) {
+            rkey = [TID tid].stringValue;
+        } else {
+            [context printError:@"rkey is required for non-post collections. For app.bsky.feed.post, omit rkey to auto-generate a TID."];
+            return;
+        }
+    }
 
     PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
     PDSRecordService *recordService = [[PDSRecordService alloc] initWithDatabasePool:pool];
@@ -372,4 +392,3 @@
 }
 
 @end
-
