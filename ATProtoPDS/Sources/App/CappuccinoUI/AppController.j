@@ -18,6 +18,8 @@
 @implementation AppController : CPObject
 {
     CPWindow _window;
+    CPTextField _clockLabel;
+    id _clockTimer;
     SessionState _sessionState;
     UIAPIClient _apiClient;
     ExplorerController _explorerController;
@@ -53,7 +55,26 @@
                                            styleMask:CPTitledWindowMask | CPClosableWindowMask | CPResizableWindowMask];
     [_window setTitle:@"September UI (Objective-J)"];
 
-    var tabView = [[CPTabView alloc] initWithFrame:[[_window contentView] bounds]];
+    var contentBounds = [[_window contentView] bounds],
+        statusBarHeight = 26.0;
+
+    var statusBar = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, statusBarHeight)];
+    [statusBar setAutoresizingMask:CPViewWidthSizable | CPViewMinYMargin];
+
+    _clockLabel = [[CPTextField alloc] initWithFrame:CGRectMake(contentBounds.size.width - 260.0, 4.0, 248.0, 18.0)];
+    [_clockLabel setAutoresizingMask:CPViewMinXMargin];
+    [_clockLabel setEditable:NO];
+    [_clockLabel setBezeled:NO];
+    [_clockLabel setDrawsBackground:NO];
+    [_clockLabel setAlignment:CPRightTextAlignment];
+    [_clockLabel setFont:[CPFont systemFontOfSize:12.0]];
+    [_clockLabel setStringValue:@"Clock: --:--:--"];
+    [statusBar addSubview:_clockLabel];
+
+    var tabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0,
+                                                               statusBarHeight,
+                                                               contentBounds.size.width,
+                                                               contentBounds.size.height - statusBarHeight)];
     [tabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     [self addTabToView:tabView label:@"Explorer" contentView:[_explorerController rootView]];
@@ -61,7 +82,9 @@
     [self addTabToView:tabView label:@"MST" contentView:[_mstController rootView]];
     [self addTabToView:tabView label:@"OAuth Demo" contentView:[_oauthDemoController rootView]];
 
+    [[_window contentView] addSubview:statusBar];
     [[_window contentView] addSubview:tabView];
+    [self startStatusClock];
     [_window orderFront:self];
 }
 
@@ -71,6 +94,31 @@
     [item setLabel:label];
     [item setView:contentView];
     [tabView addTabViewItem:item];
+}
+
+- (void)updateClockLabel
+{
+    if (!_clockLabel)
+        return;
+
+    var now = new Date();
+    [_clockLabel setStringValue:("Clock: " + now.toLocaleTimeString())];
+}
+
+- (void)startStatusClock
+{
+    [self updateClockLabel];
+    if (!(window && window.setInterval))
+        return;
+
+    if (_clockTimer)
+        window.clearInterval(_clockTimer);
+
+    var clockSelf = self;
+    _clockTimer = window.setInterval(function()
+    {
+        [clockSelf updateClockLabel];
+    }, 1000);
 }
 
 @end

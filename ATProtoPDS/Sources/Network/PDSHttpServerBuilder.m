@@ -8,6 +8,7 @@
 
 #import "PDSHttpServerBuilder.h"
 #import "../Admin/PDSAdminHandler.h"
+#import "../App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "../App/Explore/ExploreHandler.h"
 #import "../App/MSTViewer/MSTViewerHandler.h"
 #import "../App/NodeInfo/NodeInfoHandler.h"
@@ -48,6 +49,7 @@
     _enableOAuthDemo = YES;
     _enableMSTViewer = YES;
     _enableNodeInfo = YES;
+    _enableCappuccinoUIDefault = YES;
   }
   return self;
 }
@@ -140,6 +142,9 @@
     [self registerOAuthDemoRoutesWithServer:server];
   }
 
+  // Register Objective-J/Cappuccino UI routes
+  [self registerCappuccinoUIRoutesWithServer:server];
+
   // Register MST Viewer routes
   if (self.enableMSTViewer) {
     [self registerMSTViewerRoutesWithServer:server];
@@ -160,7 +165,16 @@
   [self registerAdminRoutesWithServer:server];
 
   // Register wildcard route LAST (must be after all specific routes)
-  if (self.enableExploreUI && exploreHandler) {
+  if (self.enableCappuccinoUIDefault) {
+    // Cutover: Objective-J UI is the default entrypoint.
+    CappuccinoUIHandler *defaultUIHandler = [CappuccinoUIHandler sharedHandler];
+    [server addRoute:@"GET"
+                path:@"/*"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+               [defaultUIHandler handleRequest:request response:response];
+             }];
+  } else if (self.enableExploreUI && exploreHandler) {
+    // Legacy fallback: keep ExploreHandler as the default.
     [server addRoute:@"GET"
                 path:@"/*"
              handler:^(HttpRequest *request, HttpResponse *response) {
@@ -330,6 +344,12 @@
              [exploreHandler handleRequest:request response:response];
            }];
 
+  [server addRoute:@"POST"
+              path:@"/api/pds/:endpoint"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [exploreHandler handleRequest:request response:response];
+           }];
+
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Explore routes registered");
 
   return exploreHandler;
@@ -366,6 +386,31 @@
            }];
 
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: OAuth Demo routes registered");
+}
+
+- (void)registerCappuccinoUIRoutesWithServer:(HttpServer *)server {
+  CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
+
+  // Prefer direct data directory injection, fall back to controller wiring.
+  if (self.dataDirectory.length > 0) {
+    [cappuccinoUIHandler setDataDirectory:self.dataDirectory];
+  } else if (self.controller) {
+    [cappuccinoUIHandler setController:self.controller];
+  }
+
+  [server addRoute:@"GET"
+              path:@"/ui"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [cappuccinoUIHandler handleRequest:request response:response];
+           }];
+
+  [server addRoute:@"GET"
+              path:@"/ui/*"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [cappuccinoUIHandler handleRequest:request response:response];
+           }];
+
+  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Cappuccino UI routes registered");
 }
 
 - (void)registerMSTViewerRoutesWithServer:(HttpServer *)server {

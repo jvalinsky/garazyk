@@ -263,8 +263,8 @@
     XCTAssertTrue(builder.enableNodeInfo);
 }
 
-- (void)testInitWithConfiguration {
-    // Note: This test requires PDSConfiguration to be mockable or use shared instance
+- (void)testInitWithConfigurationSetsDefaultPortWithNilConfig {
+    // Note: This test needs PDSConfiguration to be mockable or use shared instance
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:nil];
     
     XCTAssertNotNil(builder);
@@ -274,7 +274,7 @@
 
 #pragma mark - Property Tests
 
-- (void)testPortConfiguration {
+- (void)testPortConfigurationSetsPort {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     
     builder.port = 8080;
@@ -302,7 +302,7 @@
     XCTAssertFalse(builder.enableNodeInfo);
 }
 
-- (void)testIssuerConfiguration {
+- (void)testIssuerConfigurationSetsIssuer {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     
     XCTAssertNil(builder.issuer);
@@ -313,7 +313,7 @@
 
 #pragma mark - Build Tests
 
-- (void)testBuildWithMinimalConfigurationSucceeds {
+- (void)testBuildWithMinimalConfigurationReturnsNonNullServerAndNoError {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     
     // Disable features that require dependencies
@@ -478,6 +478,72 @@
     XCTAssertNil(error);
 }
 
+- (void)testUiRoutesServeObjectiveJShellAndPreserveLegacyRoot {
+    NSString *tempDir = [self makeTemporaryDirectory];
+    PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir
+                                                            serviceMaxSize:10
+                                                          userDatabaseSize:10];
+
+    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    builder.controller = controller;
+    builder.port = 0;
+
+    // Keep Explore UI enabled to validate wildcard precedence against /ui/*.
+    builder.enableOAuth = NO;
+    builder.enableXrpc = NO;
+    builder.enableOAuthDemo = NO;
+    builder.enableMSTViewer = NO;
+    builder.enableNodeInfo = NO;
+
+    NSError *buildError = nil;
+    self.testServer = [builder buildWithError:&buildError];
+    XCTAssertNotNil(self.testServer);
+    XCTAssertNil(buildError);
+    if (!self.testServer) {
+        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        return;
+    }
+
+    NSError *startError = nil;
+    BOOL started = [self.testServer startWithError:&startError];
+    if (!started) {
+        NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
+        if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] &&
+            underlying.code == EPERM) {
+            [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+            XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
+            return;
+        }
+        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+        XCTFail(@"Failed to start HTTP server: %@", startError);
+        return;
+    }
+
+    UInt16 actualPort = self.testServer.port;
+
+    NSString *uiURL = [NSString stringWithFormat:@"http://localhost:%d/ui", actualPort];
+    [self verifyEndpointReturns200:uiURL
+                   withContentType:@"text/html"
+                       expectation:@"Objective-J UI root"];
+
+    NSString *uiWildcardURL =
+        [NSString stringWithFormat:@"http://localhost:%d/ui/explore/accounts",
+                                   actualPort];
+    [self verifyEndpointReturns200:uiWildcardURL
+                   withContentType:@"text/html"
+                       expectation:@"Objective-J UI wildcard"];
+
+    NSString *legacyRootURL = [NSString stringWithFormat:@"http://localhost:%d/",
+                               actualPort];
+    [self verifyEndpointReturns200:legacyRootURL
+                   withContentType:@"text/html"
+                       expectation:@"Legacy Explore root"];
+
+    [self.testServer stop];
+    self.testServer = nil;
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+}
+
 #pragma mark - Multiple Build Tests
 
 - (void)testBuilderCanBuildMultipleServers {
@@ -506,7 +572,7 @@
 
 #pragma mark - Edge Cases
 
-- (void)testBuildWithZeroPort {
+- (void)testBuildWithZeroPortReturnsNonNullServer {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     builder.port = 0;  // Usually means "pick an available port"
     
@@ -522,9 +588,11 @@
     HttpServer *server = [builder buildWithError:&error];
     
     XCTAssertNotNil(server);
+    XCTAssertEqual(server.port, 0);
+    XCTAssertNil(error);
 }
 
-- (void)testConfigureServerCanBeCalledMultipleTimes {
+- (void)testConfigureServerCanBeCalledMultipleTimesReturnsSuccess {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     
     // Disable features that require dependencies
@@ -571,7 +639,7 @@
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
-- (void)testPreservation_OAuthWellKnownEndpointsWork {
+- (void)testPreservation_OAuthWellKnownEndpointsAreRegisteredValidatesServerBuildReturnsNoError {
     // Setup: Create a minimal server with OAuth enabled
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
@@ -655,7 +723,7 @@
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
-- (void)testPreservation_NodeInfoWellKnownEndpointWorks {
+- (void)testPreservation_NodeInfoWellKnownEndpointValidatesServerBuildReturnsNoError {
     // Setup: Create a minimal server with NodeInfo enabled
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
@@ -722,7 +790,7 @@
  
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
-- (void)testPreservation_XrpcMethodsWork {
+- (void)testPreservation_XrpcMethodsValidatesServerBuildReturnsNoError {
     // Setup: Create a server with XRPC enabled
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
