@@ -105,3 +105,18 @@ source.tar.gz
 # Build artifacts
 build_output.txt
 buildServer.json
+
+# Generated audit/result JSON artifacts
+ATProtoPDS/audit_results*.json
+ATProtoPDS/batch*_report.json
+tools/test-audit-validator/batch*_*.json
+tools/test-audit-validator/repo_scan*.json
+
+# Generated test-audit artifacts
+tools/test-audit-validator/test-audit-validator
+tools/test-audit-validator/audit-report.md
+tools/test-audit-validator/auth_report.md
+tools/test-audit-validator/critical-findings.md
+tools/test-audit-validator/batch*_fixes.txt
+tools/test-audit-validator/batch*_remaining.txt
+tools/test-audit-validator/.artifacts/

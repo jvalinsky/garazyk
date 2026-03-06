@@ -1,0 +1,153 @@
+name: Test Audit
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'ATProtoPDS/Tests/**'
+      - 'tools/test-audit-validator/**'
+      - '.github/workflows/test-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build + Unit Tests (nix)
+    runs-on: macos-14
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: tools/test-audit-validator
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Build tool
+        run: nix develop . --command make build
+
+      - name: Run focused test packages
+        run: nix develop . --command go test ./internal/config ./internal/validation ./internal/report ./cmd/test-audit-validator -count=1
+
+  audit-gates:
+    name: Audit Gate (${{ matrix.id }})
+    needs: build-and-test
+    runs-on: macos-14
+    timeout-minutes: 25
+    continue-on-error: ${{ matrix.allow_failure }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: auto-gate
+            make_target: audit-gate
+            report_name: audit-auto.json
+            allow_failure: false
+          - id: clang-strict
+            make_target: audit-clang-gate
+            report_name: audit-clang.json
+            allow_failure: true
+    defaults:
+      run:
+        working-directory: tools/test-audit-validator
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Execute gate
+        id: gate
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/test-audit
+
+          set +e
+          nix develop . --command make "${{ matrix.make_target }}" \
+            >"/tmp/test-audit/run-${{ matrix.id }}.log" 2>&1
+          status=$?
+          set -e
+
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          exit "${status}"
+
+      - name: Upload gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-audit-${{ matrix.id }}
+          path: |
+            tools/test-audit-validator/.artifacts/test-audit/${{ matrix.report_name }}
+            /tmp/test-audit/run-${{ matrix.id }}.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Post summary
+        if: always()
+        env:
+          MODE: ${{ matrix.id }}
+          TARGET: ${{ matrix.make_target }}
+          EXIT_CODE: ${{ steps.gate.outputs.exit_code }}
+          REPORT_PATH: tools/test-audit-validator/.artifacts/test-audit/${{ matrix.report_name }}
+          LOG_PATH: /tmp/test-audit/run-${{ matrix.id }}.log
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          import os
+          from pathlib import Path
+
+          mode = os.environ["MODE"]
+          target = os.environ["TARGET"]
+          exit_code = os.environ.get("EXIT_CODE", "unknown")
+          report_path = Path(os.environ["REPORT_PATH"])
+          log_path = Path(os.environ["LOG_PATH"])
+
+          print(f"### Test Audit: {mode}")
+          print("")
+          print(f"- target: `{target}`")
+          print(f"- exit_code: `{exit_code}`")
+
+          if report_path.exists():
+            data = json.loads(report_path.read_text())
+            stats = data.get("statistics", {})
+            sev = stats.get("issues_by_severity", {})
+            meta = data.get("metadata", {})
+            errors = data.get("errors", [])
+            print(f"- findings: `{stats.get('issues_found', 0)}`")
+            print(f"- critical: `{sev.get('critical', 0)}`")
+            print(f"- high: `{sev.get('high', 0)}`")
+            print(f"- parser_mode: `{meta.get('parser_mode', 'n/a')}`")
+            print(f"- clang_attempted_count: `{meta.get('clang_attempted_count', 0)}`")
+            print(f"- clang_success_count: `{meta.get('clang_success_count', 0)}`")
+            print(f"- clang_fallback_count: `{meta.get('clang_fallback_count', 0)}`")
+            print(f"- parser_errors: `{len(errors)}`")
+          else:
+            print("- report: missing")
+
+          if log_path.exists():
+            print("")
+            print("<details><summary>gate log tail</summary>")
+            print("")
+            print("```text")
+            for line in log_path.read_text().splitlines()[-40:]:
+              print(line)
+            print("```")
+            print("</details>")
+          PY
