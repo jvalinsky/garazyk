@@ -4,337 +4,99 @@ title: Test Organization
 
 # Test Organization
 
-September PDS uses a comprehensive test suite with over 1,000 tests organized by functional area. This document describes the test structure, naming conventions, and discovery mechanism.
+## Overview
 
-## Test Directory Structure
+September's test suite is broad enough that a raw directory listing is not a good onboarding experience on its own. This page explains how the suite is organized and why the structure matters. Use [Testing Map](./testing-map) first when you need a practical "what should I run?" answer.
 
-Tests mirror the source code organization under `ATProtoPDS/Tests/`:
+## The Organizing Principle
 
-```
+Tests mostly mirror the runtime seams they protect. That matters because the fastest way to find the right tests is usually to ask which subsystem you changed, not which assertion style you prefer.
 
-ATProtoPDS/Tests/
-├── Admin/              # Admin endpoints & moderation tests
-├── App/                # Application layer tests
-├── Auth/               # Authentication & OAuth tests
-├── Blob/               # Blob storage tests
-├── CharacterizationTests/  # Characterization tests
-├── CLI/                # CLI command tests
-├── Core/               # Core protocol tests (CBOR, CAR, CID, MST)
-├── Database/           # Database layer tests
-├── Email/              # Email provider tests
-├── Identity/           # DID & handle resolution tests
-├── Integration/        # Integration tests
-├── Interop/            # Interoperability tests
-├── Lexicon/            # Lexicon validation tests
-├── Metrics/            # Metrics collection tests
-├── Network/            # HTTP server & XRPC tests
-├── PLC/                # PLC directory tests
-├── Repository/         # Repository operations tests
-├── Security/           # Security hardening tests
-├── Services/           # Service layer tests
-├── Sync/               # Firehose & WebSocket tests
-├── XRPC/               # XRPC protocol tests
-├── fixtures/           # Test fixtures and data
-└── test_main.m         # Test runner entry point
-```
+At a high level:
 
-## Test Discovery Mechanism
+| Test area | Typical purpose |
+| --- | --- |
+| `Tests/Network`, `Tests/XRPC` | request parsing, routing, protocol response behavior |
+| `Tests/Auth`, `Tests/Identity`, `Tests/PLC` | session logic, OAuth, DID and handle flows |
+| `Tests/Repository`, `Tests/Core` | MST, CAR, CID, CBOR, repository invariants |
+| `Tests/Database`, `Tests/Services`, `Tests/App` | persistence, service composition, application wiring |
+| `Tests/Sync`, `Tests/Integration`, `Tests/Federation` | firehose, multi-component behavior, end-to-end seams |
+| `Tests/CLI`, `Tests/Admin`, `Tests/Email` | operator workflows and supporting infrastructure |
+| `Tests/Security`, `Tests/CharacterizationTests` | hardening and behavior-locking coverage |
 
-September uses Objective-C runtime reflection for test discovery. The test runner (`test_main.m`) discovers test methods dynamically:
+That structure is deliberate. It gives contributors a short path from a changed file to the closest protective test surface.
 
-### Discovery Algorithm
+## Discovery and Registration
 
-```objective-c
-NSArray *discoverTestMethodsForClass(Class testClass) {
-  NSMutableArray *methods = [NSMutableArray array];
-  unsigned int methodCount;
-  Method *methodList = class_copyMethodList(testClass, &methodCount);
-  
-  for (unsigned int i = 0; i < methodCount; i++) {
-    Method method = methodList[i];
-    SEL selector = method_getName(method);
-    NSString *methodName = NSStringFromSelector(selector);
-    
-    // Match methods starting with "test"
-    if ([methodName hasPrefix:@"test"]) {
-      char *returnType = method_copyReturnType(method);
-      int numArgs = method_getNumberOfArguments(method);
-      
-      // Must return void and take no arguments (except self, _cmd)
-      if (returnType && strcmp(returnType, "v") == 0 && numArgs == 2) {
-        [methods addObject:methodName];
-      }
-      free(returnType);
-    }
-  }
-  free(methodList);
-  return [methods copy];
-}
-```
+The repository uses a custom test runner. Runtime method discovery is part of the story, but it is not the only requirement.
 
-### Test Class Registration
+The practical rule contributors must remember is:
 
-Test classes must be registered in the `testClasses` array in `test_main.m`:
+> New test classes must be added to `ATProtoPDS/Tests/test_main.m`.
 
-```objective-c
-NSArray *testClasses = @[
-  @"MSTInteropTests",
-  @"CARInteropTests",
-  @"OAuthIntegrationTests",
-  @"FirehoseIntegrationTests",
-  // ... 150+ test classes
-];
-```
+If you forget that explicit registration step, a test can compile and still never run. That makes this one of the highest-leverage bits of project-specific knowledge in the suite.
 
-**Adding a new test class:**
+## Naming and Intent
 
-1. Create test class inheriting from `XCTestCase`
-2. Add class name to `testClasses` array in `test_main.m`
-3. Rebuild and run tests
+Most test names are descriptive enough to tell you the intended protection level:
 
-## Naming Conventions
+- service and component tests usually name the concrete class or subsystem,
+- integration tests describe a workflow or seam,
+- characterization tests document behavior that should not drift accidentally,
+- security tests call out the attack or hardening property they protect.
 
-### Test Class Names
+That naming style is worth preserving because it reduces the amount of suite archaeology new contributors have to do.
 
-Test classes follow the pattern: `<Component><TestType>Tests`
+## How to Choose the Right Suite
 
-Examples:
-- `MSTInteropTests` - MST interoperability tests
-- `OAuthIntegrationTests` - OAuth integration tests
-- `PDSAccountServiceTests` - PDSAccountService unit tests
-- `ActorStoreCharacterizationTests` - ActorStore characterization tests
+The best workflow is usually:
 
-### Test Method Names
+1. run the nearest subsystem test,
+2. run the next broader seam that could expose regressions,
+3. run the full suite only after the targeted signals are clean.
 
-Test methods must:
-- Start with `test` prefix
-- Use camelCase
-- Be descriptive of what is being tested
-- Return `void`
-- Take no parameters
+That keeps feedback fast and helps you interpret failures. A full test pass is still important, but it is usually the last confirmation step, not the first debugging tool.
 
-Examples:
-```objective-c
-- (void)testCreateAccount;
-- (void)testBroadcastCommitCARContainsRecordBlocks;
-- (void)testFullOAuthFlow;
-- (void)testHandleResolutionWithSSRFProtection;
-```
+## Adding a New Test
 
-### Test Categories
+When you add coverage, check all of these:
 
-Tests are organized into several categories:
+1. the class lives in the directory that matches the behavior it protects,
+2. the class name and method names explain the behavior under test,
+3. any fixtures live near the existing fixture conventions,
+4. the class is registered in `ATProtoPDS/Tests/test_main.m`,
+5. you ran the smallest useful suite before widening out.
 
-1. **Unit Tests** - Test individual components in isolation
-   - Example: `PDSAccountServiceTests`, `JWTTests`
+That list matters more than any individual code snippet because it is what keeps new coverage visible and maintainable.
 
-2. **Integration Tests** - Test multiple components working together
-   - Example: `OAuthIntegrationTests`, `FirehoseIntegrationTests`
-   - Located in `ATProtoPDS/Tests/Integration/`
+## Deep Catalog vs Contributor Path
 
-3. **Interoperability Tests** - Test compliance with AT Protocol specs
-   - Example: `MSTInteropTests`, `CARInteropTests`
-   - Located in `ATProtoPDS/Tests/Interop/`
+This page and [Testing Map](./testing-map) are the contributor-facing path through the test suite. The older, denser catalog under [`docs/tests/`](../tests/README) remains available for deep lookup by area and topic.
 
-4. **Characterization Tests** - Document existing behavior
-   - Example: `ActorStoreCharacterizationTests`, `MSTCharacterizationTests`
-   - Located in `ATProtoPDS/Tests/CharacterizationTests/`
+That split is intentional:
 
-5. **Security Tests** - Test security hardening and attack prevention
-   - Example: `CBORSecurityTests`, `HandleResolverSSRFTests`
-   - Located in `ATProtoPDS/Tests/Security/`
+- VitePress reference pages explain how to work with the suite,
+- `docs/tests/` provides the broader inventory.
 
-## Test Fixtures
+## Related Reading
 
-Test fixtures are stored in `ATProtoPDS/Tests/fixtures/`:
+- [Testing Map](./testing-map)
+- [Property-Based Testing](./property-based-testing)
+- [E2E Testing](./e2e-testing)
+- [docs/tests/README](../tests/README)
 
-```
+## Appendix
 
-fixtures/
-├── car/           # CAR file test data
-├── cbor/          # CBOR encoding test data
-├── did/           # DID document fixtures
-├── lexicons/      # Lexicon schema fixtures
-└── mst/           # MST tree fixtures
-```
-
-### Using Fixtures
-
-```objective-c
-NSBundle *bundle = [NSBundle bundleForClass:[self class]];
-NSString *fixturePath = [bundle pathForResource:@"test-car" ofType:@"car"];
-NSData *carData = [NSData dataWithContentsOfFile:fixturePath];
-```
-
-## Test Environment Configuration
-
-The test runner configures the environment for non-interactive testing:
-
-```objective-c
-// Disable interactive features
-setenv("PDS_RUNNING_TESTS", "1", 1);
-setenv("PDS_USE_KEYCHAIN", "0", 1);
-setenv("PDS_USE_SECURE_ENCLAVE", "0", 1);
-setenv("PDS_USE_BIOMETRIC_PROTECTION", "0", 1);
-
-// Bind to loopback to avoid macOS network permission prompts
-setenv("PDS_LISTEN_HOST", "127.0.0.1", 1);
-
-// Disable rate limiting
-RateLimiterSetDisabledGlobally(YES);
-[RateLimiter sharedLimiter].enabled = NO;
-
-// Disable biometric protection
-[PDSConfiguration sharedConfiguration].useBiometricProtection = NO;
-[PDSConfiguration sharedConfiguration].useKeychain = NO;
-```
-
-## Running Tests
-
-### Run All Tests
+### Core commands
 
 ```bash
-./build/tests/AllTests
-```
-
-### Run Specific Test Class
-
-```bash
-./build/tests/AllTests -XCTest MSTInteropTests
-```
-
-### Run Multiple Test Classes
-
-```bash
-./build/tests/AllTests -XCTest MSTInteropTests,CARInteropTests
-```
-
-### Build and Run Tests (macOS)
-
-```bash
+xcodegen generate
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
 ```
 
-## Test Output
+### Target a specific class
 
-The test runner provides detailed output:
-
+```bash
+./build/tests/AllTests -XCTest MSTInteropTests
 ```
-
-=== Starting Test Suite: All Tests ===
-Test suites: 150
-
-Test Case '-[MSTInteropTests testBasicTreeOperations]' started.
-Test Case '-[MSTInteropTests testBasicTreeOperations]' passed (0.023 seconds).
-
-Test Case '-[OAuthIntegrationTests testFullOAuthFlow]' started.
-Test Case '-[OAuthIntegrationTests testFullOAuthFlow]' passed (0.156 seconds).
-
-=== Test Suite Finished ===
-Tests run: 1017
-Failures: 0
-```
-
-### Failure Output
-
-When tests fail, detailed diagnostics are provided:
-
-```
-
-FAIL: -[HandleResolverTests testSSRFProtection] at HandleResolverTests.m:45: 
-Expected private IP to be rejected
-```
-
-## Test Lifecycle
-
-### Setup and Teardown
-
-```objective-c
-@interface MyTests : XCTestCase
-@property (nonatomic, strong) PDSController *controller;
-@property (nonatomic, copy) NSString *tempDir;
-@end
-
-@implementation MyTests
-
-- (void)setUp {
-    [super setUp];
-    
-    // Create temporary directory
-    NSString *guid = [[NSProcessInfo processInfo] globallyUniqueString];
-    self.tempDir = [NSTemporaryDirectory() stringByAppendingPathComponent:guid];
-    [[NSFileManager defaultManager] createDirectoryAtPath:self.tempDir 
-                              withIntermediateDirectories:YES 
-                                               attributes:nil 
-                                                    error:nil];
-    
-    // Initialize controller
-    self.controller = [[PDSController alloc] initWithDirectory:self.tempDir
-                                                serviceMaxSize:5
-                                              userDatabaseSize:5];
-}
-
-- (void)tearDown {
-    // Cleanup
-    [self.controller stopServer];
-    if (self.tempDir) {
-        [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
-    }
-    [super tearDown];
-}
-
-- (void)testSomething {
-    // Test implementation
-}
-
-@end
-```
-
-## Platform-Specific Tests
-
-Some tests are platform-specific and use conditional compilation:
-
-```objective-c
-#ifndef GNUSTEP
-- (void)testMacOSSpecificFeature {
-    // macOS-only test
-}
-#endif
-
-#ifdef __linux__
-- (void)testLinuxSpecificFeature {
-    // Linux-only test
-}
-#endif
-```
-
-## Test Skipping
-
-Tests can be skipped conditionally:
-
-```objective-c
-- (void)testRequiresNetworkAccess {
-    if (getenv("PDS_SKIP_NETWORK_TESTS")) {
-        XCTSkip(@"Network tests disabled");
-    }
-    // Test implementation
-}
-```
-
-## Best Practices
-
-1. **Isolation** - Each test should be independent and not rely on other tests
-2. **Cleanup** - Always clean up resources in `tearDown`
-3. **Descriptive Names** - Test names should clearly describe what is being tested
-4. **Fast Execution** - Keep tests fast; use mocks for slow operations
-5. **Deterministic** - Tests should produce the same result every time
-6. **Temporary Files** - Use unique temporary directories for each test
-7. **Error Messages** - Provide clear failure messages with context
-
-## See Also
-
-- [Property-Based Testing](property-based-testing) - PBT framework and generators
-- [E2E Testing](e2e-testing) - End-to-end test scenarios
-- [Test Coverage Goals](test-coverage-goals) - Coverage targets and gaps
-- [Troubleshooting](troubleshooting) - Common test failures and solutions

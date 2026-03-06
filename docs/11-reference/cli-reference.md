@@ -6,396 +6,213 @@ title: CLI Reference
 
 ## Overview
 
-The PDS command-line interface is provided by the `kaszlak` binary (macOS) or `september` binary (Linux).
+The CLI grammar is expressed as `pds <command>`, but in this repository you will usually invoke the built binary directly, for example `./build/bin/kaszlak`.
 
-## Global Options
+This page documents the commands that are actually registered in the current codebase.
 
-### --help
+## Global Flags
 
-Display help message.
+| Flag | Purpose |
+| --- | --- |
+| `--config`, `-c` | config file path |
+| `--data-dir`, `-d` | data directory |
+| `--verbose`, `-v` | debug-level logging |
+| `--json`, `-j` | JSON output for supported commands |
+| `--help`, `-h` | usage output |
 
-```bash
-./kaszlak --help
-```
+## Command Map
 
-### --version
+| Command | What it does |
+| --- | --- |
+| `serve` | start the PDS server |
+| `health` | local health checks against config, storage, DBs, daemon state, and HTTP reachability |
+| `account` | account creation and account lifecycle management |
+| `invite` | invite code management |
+| `oauth` | OAuth client registration and inspection |
+| `repo` | direct repository inspection and mutation helpers |
+| `admin` | administrator management |
+| `daemon` | background-process lifecycle management |
+| `init` | interactive config bootstrap |
+| `install` | service installation and related management |
+| `nuke-data` | destructive data reset command |
+| `help` | help output |
+| `version` | version output |
 
-Display version information.
+## `serve`
 
-```bash
-./kaszlak --version
-```
+Use `serve` for normal local development and most manual verification.
 
-### --config
+Supported options include:
 
-Specify configuration file path.
+- `--port`
+- `--data-dir`
+- `--config`
+- `--log-level`
+- `--log-components`
+- `--foreground`
 
-```bash
-./kaszlak --config ./config.json
-```
+Aliases: `start`, `run`, `server`
 
-### --data-dir
-
-Specify data directory path.
-
-```bash
-./kaszlak --data-dir ./pds-data
-```
-
-### --verbose
-
-Enable verbose logging.
-
-```bash
-./kaszlak --verbose
-```
-
-### --json
-
-Output in JSON format.
-
-```bash
-./kaszlak --json
-```
-
-## Commands
-
-### server
-
-Start the PDS server.
+Example:
 
 ```bash
-./kaszlak server --config config.json --data-dir ./pds-data
+./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 ```
 
-**Options:**
-- `--config` — Configuration file path
-- `--data-dir` — Data directory path
-- `--port` — Server port (overrides config)
-- `--verbose` — Verbose logging
+## `health`
 
-### account
+`health` is a local operator check, not a replacement for application-level protocol tests. It inspects:
 
-Manage user accounts.
+- expected databases,
+- storage availability,
+- memory usage,
+- daemon status,
+- and HTTP reachability of `describeServer`.
 
-#### account create
+Alias: `status`
 
-Create a new user account.
+## `account`
+
+This command owns contributor and operator flows for account state. Current subcommands:
+
+- `list`
+- `info <did|handle>`
+- `create`
+- `deactivate <did>`
+- `reactivate <did>`
+- `delete <did>`
+- `update-email <did> <email>`
+- `update-handle <did> <handle>`
+- `update-plc-endpoint <did> <endpoint>`
+
+Contributor note:
+
+- `create` can prompt interactively on a TTY
+- `list` and `info` support `--json`
+
+## `invite`
+
+Current subcommands:
+
+- `list`
+- `create`
+- `revoke <code>`
+
+Use `invite create` and `invite list` when validating registration policy changes.
+
+## `oauth`
+
+Current command family:
+
+- `oauth client register`
+- `oauth client list`
+- `oauth client delete`
+
+This command talks to the service database and is useful when you are testing OAuth client metadata and registration flows without going through the browser.
+
+## `repo`
+
+Current subcommands:
+
+- `list <did>`
+- `get <did> <uri>`
+- `root <did>`
+- `create-record <did> <collection> [rkey] <json>`
+- `delete-record <did> <collection> <rkey>`
+- `repair <did>`
+
+This is the fastest CLI path for validating repository behavior without building a separate client.
+
+## `admin`
+
+Current subcommands:
+
+- `list`
+- `add <did|handle>`
+- `remove <did>`
+- `create`
+
+This manages administrator DIDs and admin account creation. It is separate from application-level moderation APIs.
+
+## `daemon`
+
+Current subcommands:
+
+- `start`
+- `stop`
+- `restart`
+- `status`
+
+Use this when you want a background local process and PID-file-based lifecycle management instead of foreground `serve`.
+
+## `init`
+
+`init` is the interactive setup wizard. It writes a config file and prompts for:
+
+- host and port,
+- data directory,
+- PLC mode,
+- email provider basics,
+- registration policy.
+
+It is useful for bootstrapping, but contributors should still validate the output against [Config Reference](./config-reference) because older wizard output and older docs have not always stayed perfectly aligned.
+
+## `install`
+
+`install` handles macOS-style service installation and related helper flows. Its surface currently includes:
+
+- `daemon`
+- `agent`
+- `all`
+- `uninstall`
+- `service`
+- `status`
+
+This is a service-management convenience layer, not the main development path.
+
+## `nuke-data`
+
+This is the destructive reset command. It removes:
+
+- actor databases,
+- service and sequencer databases,
+- DID cache data,
+- blobs,
+- and related runtime data.
+
+Aliases: `reset`, `nuke`
+
+Use it only when you explicitly intend to destroy local state.
+
+## Recommended Contributor Usage Patterns
+
+### Build and run
 
 ```bash
-./kaszlak account create \
-  --email user@example.com \
-  --handle user.example.com \
-  --password password123
+xcodegen generate
+xcodebuild -scheme ATProtoPDS-CLI build
+./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 ```
 
-**Options:**
-- `--email` — User email (required)
-- `--handle` — User handle (required)
-- `--password` — User password (required)
-- `--invite-code` — Invite code (if required)
-
-**Output:**
-```json
-{
-  "did": "did:plc:user123",
-  "handle": "user.example.com",
-  "email": "user@example.com"
-}
-```
-
-#### account delete
-
-Delete a user account.
+### Inspect local state
 
 ```bash
-./kaszlak account delete --did did:plc:user123
+./build/bin/kaszlak account list
+./build/bin/kaszlak invite list
+./build/bin/kaszlak repo root did:plc:example
 ```
 
-**Options:**
-- `--did` — User DID (required)
+## Common Documentation Drift to Avoid
 
-#### account list
+The CLI docs were previously wrong in two ways:
 
-List all user accounts.
+- documenting command names that are not registered anymore,
+- and omitting registered commands such as `serve`, `daemon`, `oauth`, `install`, and `nuke-data`.
 
-```bash
-./kaszlak account list --limit 10
-```
+If this page drifts again, regenerate it from the registered command implementations instead of copying old examples forward.
 
-**Options:**
-- `--limit` — Number of accounts to list
-- `--cursor` — Pagination cursor
+## Related Reading
 
-### invite
-
-Manage invite codes.
-
-#### invite create
-
-Create an invite code.
-
-```bash
-./kaszlak invite create
-```
-
-**Output:**
-```json
-{
-  "code": "abc123def456",
-  "createdAt": "2024-01-01T00:00:00Z",
-  "expiresAt": "2024-02-01T00:00:00Z"
-}
-```
-
-#### invite list
-
-List all invite codes.
-
-```bash
-./kaszlak invite list
-```
-
-**Output:**
-```json
-{
-  "invites": [
-    {
-      "code": "abc123def456",
-      "createdAt": "2024-01-01T00:00:00Z",
-      "expiresAt": "2024-02-01T00:00:00Z",
-      "usedBy": "did:plc:user123"
-    }
-  ]
-}
-```
-
-#### invite revoke
-
-Revoke an invite code.
-
-```bash
-./kaszlak invite revoke --code abc123def456
-```
-
-**Options:**
-- `--code` — Invite code (required)
-
-### database
-
-Manage databases.
-
-#### database migrate
-
-Run database migrations.
-
-```bash
-./kaszlak database migrate
-```
-
-#### database backup
-
-Backup databases.
-
-```bash
-./kaszlak database backup --output ./backup.tar.gz
-```
-
-**Options:**
-- `--output` — Output file path (required)
-
-#### database restore
-
-Restore databases from backup.
-
-```bash
-./kaszlak database restore --input ./backup.tar.gz
-```
-
-**Options:**
-- `--input` — Input file path (required)
-
-### admin
-
-Administrative commands.
-
-#### admin takedown
-
-Takedown a record.
-
-```bash
-./kaszlak admin takedown --uri at://did:plc:user123/app.bsky.feed.post/abc123
-```
-
-**Options:**
-- `--uri` — Record URI (required)
-
-#### admin suspend
-
-Suspend a user account.
-
-```bash
-./kaszlak admin suspend --did did:plc:user123
-```
-
-**Options:**
-- `--did` — User DID (required)
-
-#### admin label
-
-Apply a label to a record.
-
-```bash
-./kaszlak admin label --uri at://did:plc:user123/app.bsky.feed.post/abc123 --label spam
-```
-
-**Options:**
-- `--uri` — Record URI (required)
-- `--label` — Label to apply (required)
-
-### health
-
-Check server health.
-
-```bash
-./kaszlak health
-```
-
-**Output:**
-```json
-{
-  "status": "ok",
-  "uptime": 3600,
-  "version": "1.0.0"
-}
-```
-
-### config
-
-Manage configuration.
-
-#### config validate
-
-Validate configuration file.
-
-```bash
-./kaszlak config validate --config config.json
-```
-
-**Options:**
-- `--config` — Configuration file path (required)
-
-#### config show
-
-Display current configuration.
-
-```bash
-./kaszlak config show
-```
-
-## Examples
-
-### Start Server
-
-```bash
-./kaszlak server \
-  --config ./config.json \
-  --data-dir ./pds-data \
-  --verbose
-```
-
-### Create Account
-
-```bash
-./kaszlak account create \
-  --email alice@example.com \
-  --handle alice.example.com \
-  --password secure-password-123
-```
-
-### Create Invite Code
-
-```bash
-./kaszlak invite create
-```
-
-### Backup Database
-
-```bash
-./kaszlak database backup --output ./backup-$(date +%Y%m%d).tar.gz
-```
-
-### Check Health
-
-```bash
-./kaszlak health --json
-```
-
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Command-line syntax error |
-| 3 | Configuration error |
-| 4 | Database error |
-| 5 | Network error |
-
-## Environment Variables
-
-### PDS_CONFIG
-
-Configuration file path.
-
-```bash
-export PDS_CONFIG=./config.json
-./kaszlak server
-```
-
-### PDS_DATA_DIR
-
-Data directory path.
-
-```bash
-export PDS_DATA_DIR=./pds-data
-./kaszlak server
-```
-
-### PDS_LOG_LEVEL
-
-Log level.
-
-```bash
-export PDS_LOG_LEVEL=debug
-./kaszlak server
-```
-
-## Troubleshooting
-
-### Command not found
-
-```bash
-# Make sure binary is in PATH
-export PATH=$PATH:./build/bin
-./kaszlak --version
-```
-
-## Configuration error
-
-```bash
-# Validate configuration
-./kaszlak config validate --config config.json
-```
-
-## Database error
-
-```bash
-# Check database
-./kaszlak database migrate
-```
-
-## Next Steps
-
-- **[API Reference](api-reference)** — API endpoints
-- **[Troubleshooting](troubleshooting)** — Common issues
+- [Setup](../01-getting-started/setup)
+- [Config Reference](./config-reference)
+- [Testing Map](./testing-map)

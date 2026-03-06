@@ -187,10 +187,8 @@ if (!app) {
   "server": {
     "host": "0.0.0.0",
     "port": 2583,
+    "data_dir": "./pds-data",
     "issuer": "https://pds.example.com"
-  },
-  "database": {
-    "path": "./pds-data/db"
   },
   "plc": {
     "url": "https://plc.directory"
@@ -198,9 +196,9 @@ if (!app) {
   "session": {
     "invite_code_required": true
   },
-  "debug": {
-    "verbose": false,
-    "log_level": "info"
+  "logging": {
+    "level": "info",
+    "format": "text"
   }
 }
 ```

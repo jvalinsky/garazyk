@@ -188,11 +188,6 @@ response.body = responseData;
 [response setHeaderValue:@"application/json" forName:@"Content-Type"];
 ```
 
-NSString *repo = params[@"repo"];
-NSString *collection = params[@"collection"];
-NSDictionary *record = params[@"record"];
-```
-
 ### Step 3: Validate Parameters
 
 ```objc

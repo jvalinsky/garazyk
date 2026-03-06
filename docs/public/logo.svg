@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">September PDS</title>
+  <desc id="desc">Stylized network node logo for September PDS documentation.</desc>
+  <rect width="128" height="128" rx="24" fill="#102820"/>
+  <circle cx="34" cy="34" r="10" fill="#f2c14e"/>
+  <circle cx="94" cy="34" r="10" fill="#f2c14e"/>
+  <circle cx="64" cy="64" r="12" fill="#f6f1e9"/>
+  <circle cx="34" cy="94" r="10" fill="#f2c14e"/>
+  <circle cx="94" cy="94" r="10" fill="#f2c14e"/>
+  <path d="M40 40 56 56M72 56 88 40M40 88 56 72M72 72 88 88" stroke="#f6f1e9" stroke-width="7" stroke-linecap="round"/>
+  <text x="64" y="118" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#f6f1e9">SPDS</text>
+</svg>
