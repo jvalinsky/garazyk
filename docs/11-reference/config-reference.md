@@ -4,328 +4,201 @@ title: Configuration Reference
 
 # Configuration Reference
 
-## Configuration File
+## Overview
 
-The PDS is configured via `config.json` in the working directory.
+This page documents the configuration keys that `PDSConfiguration` actually reads today. It is intentionally narrower and more operational than older config docs.
 
-## Server Configuration
+The most important rule is simple:
 
-### server.host
+> Use the keys the loader reads, not the keys older examples happened to show.
 
-**Type:** string  
-**Default:** `0.0.0.0`  
-**Description:** Server bind address
+## Two Sources of Truth
 
-```json
-{
-  "server": {
-    "host": "0.0.0.0"
-  }
-}
-```json
+September configuration comes from:
 
-### server.port
+- JSON config files loaded through `PDSConfiguration`
+- environment variables that override config-file values
 
-**Type:** integer  
-**Default:** `2583`  
-**Description:** Server port
+Contributor confusion usually comes from mixing those two layers or assuming the runtime defaults are secure production defaults.
 
-```json
-{
-  "server": {
-    "port": 2583
-  }
-}
-```json
+## Real Key Shapes
 
-### server.issuer
+### Server
 
-**Type:** string  
-**Required:** Yes  
-**Description:** Server DID or URL (used as JWT issuer)
+| Key | Purpose |
+| --- | --- |
+| `server.host` | bind host |
+| `server.port` | bind port |
+| `server.data_dir` | base data directory |
+| `server.issuer` | canonical issuer, if explicitly set |
+| `server.available_user_domains` | allowed handle domains |
 
-```json
-{
-  "server": {
-    "issuer": "https://pds.example.com"
-  }
-}
-```json
+Related env overrides:
 
-## Database Configuration
+- `PDS_HOST`
+- `PDS_HOSTNAME`
+- `PDS_DATA_DIR`
+- `PDS_ISSUER`
+- `PDS_AVAILABLE_USER_DOMAINS`
 
-### database.path
+### PLC
 
-**Type:** string  
-**Default:** `./pds-data/db`  
-**Description:** Path to database directory
+| Key | Purpose |
+| --- | --- |
+| `plc.url` | PLC directory URL |
+| `plc.retry_count` | retry count |
+| `plc.retry_delay_ms` | retry delay in milliseconds |
 
-```json
-{
-  "database": {
-    "path": "./pds-data/db"
-  }
-}
-```json
+### Debug
 
-### database.maxConnections
+| Key | Purpose |
+| --- | --- |
+| `debug.skip_plc_operations` | bypass PLC work for local or test scenarios |
+| `debug.verbose_logging` | verbose debug logging toggle |
+| `debug.in_memory_databases` | use in-memory DBs |
+| `debug.reset_on_startup` | reset state at startup |
+| `debug.use_new_repository` | opt into alternate repository implementation |
 
-**Type:** integer  
-**Default:** `10`  
-**Description:** Maximum database connections
+### Database pools
 
-```json
-{
-  "database": {
-    "maxConnections": 10
-  }
-}
-```json
+| Key | Purpose |
+| --- | --- |
+| `database.user_pool_max_size` | actor-store pool size |
+| `database.service_pool_max_size` | shared service DB pool size |
+| `database.did_cache_pool_max_size` | DID cache pool size |
+| `database.sequencer_pool_max_size` | sequencer pool size |
 
-## PLC Configuration
+### Session
 
-### plc.url
+| Key | Purpose |
+| --- | --- |
+| `session.access_token_ttl_seconds` | access token TTL |
+| `session.refresh_token_ttl_seconds` | refresh token TTL |
+| `session.invite_code_required` | registration policy toggle |
 
-**Type:** string  
-**Default:** `https://plc.directory`  
-**Description:** PLC directory URL
+### Verification and email
 
-```json
-{
-  "plc": {
-    "url": "https://plc.directory"
-  }
-}
-```json
+| Key | Purpose |
+| --- | --- |
+| `phone_verification.provider` | verification provider selector |
+| `email.provider` | `none`, `mock`, `smtp`, or `resend` |
+| `email.smtp_host` | SMTP host |
+| `email.smtp_port` | SMTP port |
+| `email.smtp_username` | SMTP username |
+| `email.smtp_password` | SMTP password |
+| `email.smtp_use_tls` | SMTP TLS toggle |
+| `email.resend_api_key_source` | Resend secret source |
+| `email.resend_api_key_env_var` | env var name for Resend key |
+| `email.resend_keychain_service` | keychain service name |
+| `email.resend_keychain_account` | keychain account name |
+| `email.resend_from_address` | default from address |
+| `email.resend_api_endpoint` | optional Resend API override |
 
-### plc.timeout
+### Rate limiting
 
-**Type:** integer  
-**Default:** `5000`  
-**Description:** PLC request timeout in milliseconds
+| Key | Purpose |
+| --- | --- |
+| `rate_limit.enabled` | master toggle |
+| `rate_limit.requests_per_minute` | general request budget |
+| `rate_limit.burst_size` | burst allowance |
+| `rate_limit.did_limit` | DID-scoped request limit |
+| `rate_limit.did_window` | DID window in seconds |
+| `rate_limit.ip_limit` | IP-scoped request limit |
+| `rate_limit.ip_window` | IP window in seconds |
+| `rate_limit.blob_limit` | blob upload limit |
+| `rate_limit.blob_window` | blob limit window |
 
-```json
-{
-  "plc": {
-    "timeout": 5000
-  }
-}
-```json
+Key env overrides use the `PDS_RATELIMIT_*` prefix.
 
-## Session Configuration
+### Logging
 
-### session.inviteCodeRequired
+| Key | Purpose |
+| --- | --- |
+| `logging.file_path` | log file path |
+| `logging.level` | `debug`, `info`, `warn`, or `error` |
+| `logging.format` | `text`, `json`, or `both` |
+| `logging.max_file_size_mb` | rotation size |
+| `logging.max_files` | retained rotated files |
+| `logging.async` | async logging toggle |
+| `logging.components` | enabled component list |
 
-**Type:** boolean  
-**Default:** `true`  
-**Description:** Require invite codes for account creation
+### NodeInfo and links
 
-```json
-{
-  "session": {
-    "inviteCodeRequired": true
-  }
-}
-```json
+| Key | Purpose |
+| --- | --- |
+| `nodeinfo.enabled` | NodeInfo route toggle |
+| `nodeinfo.software_name` | NodeInfo software name |
+| `nodeinfo.software_version` | NodeInfo software version |
+| `nodeinfo.repository_url` | repository URL |
+| `nodeinfo.homepage_url` | homepage URL |
+| `nodeinfo.open_registrations` | open registration flag for discovery |
+| `links.privacy_policy` | privacy policy URL |
+| `links.terms_of_service` | terms URL |
 
-### session.accessTokenExpiry
+### Relays and AppView
 
-**Type:** integer  
-**Default:** `3600`  
-**Description:** Access token expiry in seconds
+| Key | Purpose |
+| --- | --- |
+| `relays` | relay URL array |
+| `appview.url` | upstream AppView URL |
+| `appview.did` | upstream AppView DID |
+| `appview.local_enabled` | local AppView toggle |
 
-```json
-{
-  "session": {
-    "accessTokenExpiry": 3600
-  }
-}
-```json
+This `appview` block is the current loader shape. Older camelCase examples such as `appViewURL` and `localAppViewEnabled` should be treated as stale unless the code changes.
 
-### session.refreshTokenExpiry
+## Defaults vs Recommended Practice
 
-**Type:** integer  
-**Default:** `2592000`  
-**Description:** Refresh token expiry in seconds (30 days)
+`PDSConfiguration` includes development-oriented defaults. Some of the important ones are surprising if you read them as deployment guidance:
 
-```json
-{
-  "session": {
-    "refreshTokenExpiry": 2592000
-  }
-}
-```json
+| Runtime default | Why it exists | Production implication |
+| --- | --- | --- |
+| `plc.url = "mock"` | easy local and test bootstrap | never use this in production |
+| `invite_code_required = NO` | friction-free local setup | do not copy into production docs |
+| `debug.skip_plc_operations = YES` | local iteration convenience | disable in production |
+| `server.port = 8080` in config object | class-level default before CLI overrides | `pds serve` still defaults to 2583 |
 
-## Rate Limiting Configuration
+Use runtime defaults to understand the code. Use deployment docs to understand the safe operational baseline.
 
-### rateLimit.enabled
-
-**Type:** boolean  
-**Default:** `true`  
-**Description:** Enable rate limiting
-
-```json
-{
-  "rateLimit": {
-    "enabled": true
-  }
-}
-```json
-
-### rateLimit.requestsPerHour
-
-**Type:** integer  
-**Default:** `1000`  
-**Description:** Requests per hour limit
-
-```json
-{
-  "rateLimit": {
-    "requestsPerHour": 1000
-  }
-}
-```json
-
-### rateLimit.authenticatedRequestsPerHour
-
-**Type:** integer  
-**Default:** `10000`  
-**Description:** Authenticated requests per hour limit
-
-```json
-{
-  "rateLimit": {
-    "authenticatedRequestsPerHour": 10000
-  }
-}
-```json
-
-## Debug Configuration
-
-### debug.verbose
-
-**Type:** boolean  
-**Default:** `false`  
-**Description:** Enable verbose logging
-
-```json
-{
-  "debug": {
-    "verbose": false
-  }
-}
-```json
-
-### debug.logLevel
-
-**Type:** string  
-**Default:** `info`  
-**Options:** `debug`, `info`, `warn`, `error`  
-**Description:** Log level
-
-```json
-{
-  "debug": {
-    "logLevel": "info"
-  }
-}
-```json
-
-### debug.enableProfiling
-
-**Type:** boolean  
-**Default:** `false`  
-**Description:** Enable performance profiling
-
-```json
-{
-  "debug": {
-    "enableProfiling": false
-  }
-}
-```json
-
-## Complete Example
+## Minimal Local Example
 
 ```json
 {
   "server": {
     "host": "0.0.0.0",
     "port": 2583,
-    "issuer": "https://pds.example.com"
+    "data_dir": "./pds-data"
   },
-  "database": {
-    "path": "./pds-data/db",
-    "maxConnections": 10
-  },
-  "plc": {
-    "url": "https://plc.directory",
-    "timeout": 5000
-  },
-  "session": {
-    "inviteCodeRequired": true,
-    "accessTokenExpiry": 3600,
-    "refreshTokenExpiry": 2592000
-  },
-  "rateLimit": {
-    "enabled": true,
-    "requestsPerHour": 1000,
-    "authenticatedRequestsPerHour": 10000
-  },
-  "debug": {
-    "verbose": false,
-    "logLevel": "info",
-    "enableProfiling": false
-  }
+  "plc": { "url": "mock" },
+  "session": { "invite_code_required": false }
 }
-```json
+```
 
-## Environment Variables
+## Recommended Production Baseline
 
-Configuration can also be set via environment variables:
+For production-oriented contributor work, keep these expectations in mind:
 
-```bash
-# Server
-export PDS_SERVER_HOST=0.0.0.0
-export PDS_SERVER_PORT=2583
-export PDS_SERVER_ISSUER=https://pds.example.com
+- real issuer
+- real PLC directory
+- invite codes enabled
+- debug flags disabled
+- explicit AppView settings if proxying remote AppView traffic
+- explicit `PDS_TRUST_PROXY_HEADERS=1` when running behind the documented nginx setup
 
-# Database
-export PDS_DATABASE_PATH=./pds-data/db
+Use [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment) for the operational walkthrough.
 
-# PLC
-export PDS_PLC_URL=https://plc.directory
+## Common Drift Patterns
 
-# Session
-export PDS_SESSION_INVITE_CODE_REQUIRED=true
+These are the config mistakes older docs tended to make:
 
-# Rate Limiting
-export PDS_RATE_LIMIT_ENABLED=true
+- camelCase keys instead of snake_case
+- documenting keys the loader does not read
+- treating class defaults as safe deployment defaults
+- omitting the environment-variable override layer
 
-# Debug
-export PDS_DEBUG_VERBOSE=false
-export PDS_DEBUG_LOG_LEVEL=info
-```json
+If a config example and the code disagree, trust `PDSConfiguration`.
 
-## Configuration Priority
+## Related Reading
 
-Configuration is loaded in this order (later overrides earlier):
-
-1. Default values
-2. `config.json` file
-3. Environment variables
-4. Command-line arguments
-
-## Validation
-
-The PDS validates configuration on startup:
-
-```bash
-# Check configuration
-./kaszlak --config config.json --validate-config
-```json
-
-## Next Steps
-
-- **[CLI Reference](cli-reference)** — Command-line interface
-- **[Troubleshooting](troubleshooting)** — Common issues
+- [Setup](../01-getting-started/setup)
+- [Email & Verification](../06-authentication/email-and-verification)
+- [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)

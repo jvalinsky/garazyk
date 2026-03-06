@@ -11,6 +11,8 @@ title: Table of Contents
 ### 01 Getting Started
 - [Overview](01-getting-started/overview)
 - [Architecture Overview](01-getting-started/architecture-overview)
+- [Codebase Map](01-getting-started/codebase-map)
+- [Request Lifecycle](01-getting-started/request-lifecycle)
 - [Setup](01-getting-started/setup)
 
 ### 02 Core Concepts
@@ -57,6 +59,7 @@ title: Table of Contents
 ### 06 Authentication
 - [JWT Tokens](06-authentication/jwt-tokens)
 - [OAuth 2.0 with DPoP](06-authentication/oauth2-dpop)
+- [Email & Verification](06-authentication/email-and-verification)
 - [Key Rotation](06-authentication/key-rotation)
 - [TOTP and WebAuthn](06-authentication/totp-webauthn)
 - [Secrets Management](06-authentication/secrets-management)
@@ -91,17 +94,22 @@ title: Table of Contents
 - [ARC Runtime](09-platform-compatibility/arc-runtime)
 
 ### 10 Tutorials
+- [Tutorials Overview](10-tutorials/index)
 - [Tutorial 1: Hello PDS](10-tutorials/tutorial-1-hello-pds)
 - [Tutorial 2: Accounts](10-tutorials/tutorial-2-accounts)
 - [Tutorial 3: Records](10-tutorials/tutorial-3-records)
 - [Tutorial 4: Authentication](10-tutorials/tutorial-4-auth)
 - [Tutorial 5: Firehose](10-tutorials/tutorial-5-firehose)
 - [Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment)
+- [Tutorial 7: Objective-J UI](10-tutorials/tutorial-7-objective-j-ui)
+- [Tutorial 8: Endpoint Workflow](10-tutorials/tutorial-8-endpoint-workflow)
 
 ### 11 Reference
 - [API Reference](11-reference/api-reference)
 - [Config Reference](11-reference/config-reference)
 - [CLI Reference](11-reference/cli-reference)
+- [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui)
+- [Testing Map](11-reference/testing-map)
 - [Troubleshooting](11-reference/troubleshooting)
 - [Metrics Collection](11-reference/metrics-collection)
 - [Logging Strategy](11-reference/logging-strategy)
