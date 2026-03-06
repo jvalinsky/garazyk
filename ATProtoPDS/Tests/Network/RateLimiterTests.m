@@ -113,7 +113,7 @@
     XCTAssertEqual(nilIpResult.limit, 100, @"Nil IP limit should be 100");
 }
 
-- (void)testDifferentIdentifiersIndependent {
+- (void)testDifferentIdentifiersIndependentHasFewerRemainingRequests {
     NSString *did1 = @"did:test:user1";
     NSString *did2 = @"did:test:user2";
     [self.limiter checkRateLimitForDid:did1];
@@ -124,7 +124,7 @@
     XCTAssertLessThan(result1_ind.remaining, result2_ind.remaining, @"did1 should have fewer remaining requests");
 }
 
-- (void)testDifferentTypesIndependent {
+- (void)testDifferentTypesIndependentPreserveLimits {
     NSString *typeTestDid = @"did:test:typespecific";
     NSString *typeTestIp = @"ip:test:typespecific";
     [self.limiter checkRateLimitForDid:typeTestDid];

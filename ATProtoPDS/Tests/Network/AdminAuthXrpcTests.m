@@ -230,7 +230,7 @@
     return [self.controller.jwtMinter signPayload:claims error:error];
 }
 
-- (void)testGetAccountInfoRequiresAuth {
+- (void)testGetAccountInfoReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
                                               queryParams:@{@"did": self.userDid}
@@ -238,7 +238,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testGetAccountInfosRequiresAuth {
+- (void)testGetAccountInfosReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
                                               queryString:[NSString stringWithFormat:@"dids=%@", self.userDid]
                                               queryParams:@{@"dids": self.userDid}
@@ -246,7 +246,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testGetAccountInfoNonAdminForbidden {
+- (void)testGetAccountInfoReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfo"
                                               queryString:[NSString stringWithFormat:@"did=%@", self.userDid]
@@ -255,7 +255,7 @@
     XCTAssertEqual(response.statusCode, 403);
 }
 
-- (void)testGetAccountInfosNonAdminForbidden {
+- (void)testGetAccountInfosReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getAccountInfos"
                                               queryString:[NSString stringWithFormat:@"dids=%@", self.userDid]
@@ -329,7 +329,7 @@
     XCTAssertEqual(infos.count, 2);
 }
 
-- (void)testGetInviteCodesRequiresAuth {
+- (void)testGetInviteCodesReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
                                               queryString:@"limit=10"
                                               queryParams:@{@"limit": @"10"}
@@ -337,7 +337,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testGetInviteCodesNonAdminForbidden {
+- (void)testGetInviteCodesReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.getInviteCodes"
                                               queryString:@"limit=10"
@@ -368,7 +368,7 @@
     XCTAssertNotNil(first[@"uses"]);
 }
 
-- (void)testSearchAccountsRequiresAuth {
+- (void)testSearchAccountsReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.admin.searchAccounts"
                                               queryString:@"limit=10"
                                               queryParams:@{@"limit": @"10"}
@@ -389,7 +389,7 @@
     XCTAssertEqualObjects(accounts.firstObject[@"did"], self.userDid);
 }
 
-- (void)testSendEmailRequiresAuth {
+- (void)testSendEmailReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.sendEmail"
                                                       body:@{
                                                           @"recipientDid": self.userDid,
@@ -400,7 +400,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testSendEmailAdminSuccess {
+- (void)testSendEmailReturnsSuccessForAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.sendEmail"
                                                       body:@{
@@ -472,7 +472,7 @@
     XCTAssertNotNil(error);
 }
 
-- (void)testUpdateAccountSigningKeyAdminSuccess {
+- (void)testUpdateAccountSigningKeyReturnsSuccessForAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateAccountSigningKey"
                                                       body:@{
@@ -483,14 +483,14 @@
     XCTAssertEqual(response.statusCode, 200);
 }
 
-- (void)testModerateAccountRequiresAuth {
+- (void)testModerateAccountReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{@"did": self.userDid, @"reason": @"test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testModerateAccountNonAdminForbidden {
+- (void)testModerateAccountReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{@"did": self.userDid, @"reason": @"test"}
@@ -547,21 +547,21 @@
     XCTAssertEqual([row[@"applied"] integerValue], 1);
 }
 
-- (void)testTakeDownAccountRequiresAuth {
+- (void)testTakeDownAccountReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.takeDownAccount"
                                                       body:@{@"did": self.userDid, @"reason": @"test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testAdminDeleteAccountRequiresAuth {
+- (void)testAdminDeleteAccountReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testAdminDeleteAccountNonAdminForbidden {
+- (void)testAdminDeleteAccountReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.deleteAccount"
                                                       body:@{@"did": self.userDid}
@@ -590,14 +590,14 @@
     XCTAssertNil(account);
 }
 
-- (void)testDisableAccountInvitesRequiresAuth {
+- (void)testDisableAccountInvitesReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
                                                       body:@{@"account": self.userDid}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testDisableAccountInvitesNonAdminForbidden {
+- (void)testDisableAccountInvitesReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableAccountInvites"
                                                       body:@{@"account": self.userDid}
@@ -628,7 +628,7 @@
     XCTAssertEqual(disabledValue.integerValue, 0);
 }
 
-- (void)testDisableInviteCodesRequiresAuth {
+- (void)testDisableInviteCodesReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.disableInviteCodes"
                                                       body:@{@"accounts": @[self.userDid]}
                                                    headers:@{}];
@@ -657,14 +657,14 @@
     XCTAssertGreaterThanOrEqual(disabledCount.integerValue, 2);
 }
 
-- (void)testLabelCreateRequiresAuth {
+- (void)testLabelCreateReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
                                                       body:@{@"src": self.adminDid, @"uri": @"at://did:plc:test/app.bsky.feed.post/1", @"val": @"spam"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testLabelCreateNonAdminForbidden {
+- (void)testLabelCreateReturnsForbiddenForNonAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.label.createLabel"
                                                       body:@{@"src": self.adminDid, @"uri": @"at://did:plc:test/app.bsky.feed.post/1", @"val": @"spam"}

@@ -95,11 +95,11 @@
 
 #pragma mark - Initialization Tests
 
-- (void)testInitWithServiceDatabases {
+- (void)testInitWithServiceDatabasesCreatesAdminService {
     PDSAdminController *controller = [[PDSAdminController alloc] initWithServiceDatabases:self.serviceDatabases];
 
     XCTAssertNotNil(controller);
-    XCTAssertNotNil(controller.adminService);
+    XCTAssertTrue(controller.adminService != nil);
 }
 
 - (void)testInitWithServiceDatabasesAndAccountService {
@@ -107,7 +107,7 @@
                                                                             accountService:nil];
 
     XCTAssertNotNil(controller);
-    XCTAssertNotNil(controller.adminService);
+    XCTAssertTrue(controller.adminService != nil);
 }
 
 #pragma mark - Account Administration Tests
@@ -136,6 +136,7 @@
     
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, @"PDSAdminControllerErrorDomain");
 }
 
 - (void)testReinstateAccountWithNilDid {
@@ -153,6 +154,7 @@
     
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, @"PDSAdminControllerErrorDomain");
 }
 
 - (void)testIsAccountTakedownActiveWithNilDid {
@@ -170,6 +172,7 @@
     
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, @"PDSAdminControllerErrorDomain");
 }
 
 #pragma mark - Moderation Tests
@@ -291,7 +294,7 @@
 
 #pragma mark - Labeling Tests
 
-- (void)testCreateLabelWithValidParams {
+- (void)testCreateLabelWithValidParamsReturnsLabelObject {
     NSDictionary *params = @{
         @"uri": @"at://did:plc:test123/app.bsky.feed.post/abc",
         @"val": @"spam",
@@ -333,7 +336,7 @@
     XCTAssertNotNil(error);
 }
 
-- (void)testGetLabelsWithEmptyParams {
+- (void)testGetLabelsWithEmptyParamsReturnsEmptyArray {
     NSDictionary *params = @{};
     
     NSError *error = nil;
@@ -346,7 +349,7 @@
     }
 }
 
-- (void)testGetLabelsWithLimit {
+- (void)testGetLabelsWithLimitReturnsArray {
     NSDictionary *params = @{
         @"limit": @5
     };
@@ -356,10 +359,11 @@
     
     if (result) {
         XCTAssertNotNil(result[@"labels"]);
+        XCTAssertTrue([result[@"labels"] isKindOfClass:[NSArray class]]);
     }
 }
 
-- (void)testGetLabelsWithUriPatterns {
+- (void)testGetLabelsWithUriPatternsReturnsArray {
     NSDictionary *params = @{
         @"uriPatterns": @[@"at://did:plc:test*"],
         @"limit": @10
@@ -370,6 +374,7 @@
     
     if (result) {
         XCTAssertNotNil(result[@"labels"]);
+        XCTAssertTrue([result[@"labels"] isKindOfClass:[NSArray class]]);
     }
 }
 
@@ -383,6 +388,7 @@
     
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result[@"status"], @"error");
+    XCTAssertNotNil(error);
 }
 
 - (void)testModerateRecordWithEmptyParams {
@@ -393,6 +399,7 @@
     
     XCTAssertNotNil(result);
     XCTAssertEqualObjects(result[@"status"], @"error");
+    XCTAssertNotNil(error);
 }
 
 @end

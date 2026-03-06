@@ -120,7 +120,7 @@
 }
 
 - (void)testCreateAccountDuplicateHandle {
-    // Create first account
+    // Set up original account
     NSArray *args = @[@"create", @"--email", @"test1@example.com", @"--handle", @"duplicate.example.com", @"--password", @"pw1"];
     [self.dispatcher dispatchWithCommandName:@"account" arguments:args context:self.context];
     

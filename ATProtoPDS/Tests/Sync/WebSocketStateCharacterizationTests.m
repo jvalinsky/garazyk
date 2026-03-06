@@ -59,7 +59,7 @@
     [super tearDown];
 }
 
-// Since timers use dispatch_source, testing real timeouts requires waiting.
+// Since timers use dispatch_source, testing real timeouts needs waiting.
 // We will test the direct handler methods instead to characterize the logic.
 
 - (void)testHeartbeatTimeoutClosesConnection {
@@ -112,7 +112,7 @@
     XCTAssertEqualObjects(self.connection.closeReason, @"Outbound queue limit exceeded");
 }
 
-- (void)testMissingPongTriggersTimeout {
+- (void)testMissingPongTriggersTimeoutClosesConnection {
     self.connection.state = WebSocketConnectionStateConnected;
     
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
@@ -123,7 +123,7 @@
     XCTAssertEqualObjects(self.connection.closeReason, @"Heartbeat timeout");
 }
 
-- (void)testPongResetsWaiting {
+- (void)testPongResetsWaitingValidatesCloseCodeIsDifferent {
     self.connection.state = WebSocketConnectionStateConnected;
     
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];

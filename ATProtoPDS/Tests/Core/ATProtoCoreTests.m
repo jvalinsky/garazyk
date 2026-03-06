@@ -50,7 +50,7 @@
     XCTAssertTrue([cid1 isEqualToCID:cid2]);
 }
 
-- (void)testCIDBytes {
+- (void)testCIDBytesReturnsNonEmptyData {
     NSData *multihash = [CID sha256Digest:[@"bytes test" dataUsingEncoding:NSUTF8StringEncoding]];
     CID *cid = [CID cidWithMultihash:multihash codec:0x71];
     NSData *bytes = [cid bytes];
@@ -129,7 +129,7 @@
     XCTAssertEqual(tids.count, 100);
 }
 
-- (void)testTIDOrdering {
+- (void)testTIDOrderingYieldsDescending {
     NSString *tid1 = [[TID tid] stringValue];
     [NSThread sleepForTimeInterval:0.01];
     NSString *tid2 = [[TID tid] stringValue];
@@ -140,7 +140,7 @@
 #pragma mark - DID Tests
 
 /* Removed tests for non-existent DID class
-- (void)testDIDWebParsing {
+- (void)testDIDWebParsingReturnsParsedObject {
     NSString *did = @"did:web:example.com";
     DID *parsed = [DID didWithString:did];
 
@@ -167,14 +167,15 @@
     XCTAssertEqual(((uint8_t *)encoded.bytes)[0], 42);
 }
 
-- (void)testCBORStringEncoding {
+- (void)testEncodeTextStringReturnsNonEmptyData {
     CBORValue *value = [CBORValue textString:@"hello"];
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
+    XCTAssertGreaterThan(encoded.length, 0);
 }
 
-- (void)testCBORArrayEncoding {
+- (void)testEncodeArrayReturnsNonEmptyData {
     NSArray<CBORValue *> *array = @[
         [CBORValue unsignedInteger:1],
         [CBORValue unsignedInteger:2],
@@ -184,18 +185,20 @@
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
+    XCTAssertGreaterThan(encoded.length, 0);
 }
 
-- (void)testCBORMapEncoding {
+- (void)testEncodeMapReturnsNonEmptyData {
     NSMutableDictionary<CBORValue *, CBORValue *> *map = [NSMutableDictionary dictionary];
     map[[CBORValue textString:@"key"]] = [CBORValue textString:@"value"];
     CBORValue *value = [CBORValue map:map];
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
+    XCTAssertGreaterThan(encoded.length, 0);
 }
 
-- (void)testCBORRoundTrip {
+- (void)testCBORRoundTripYieldsMap {
     NSMutableDictionary<CBORValue *, CBORValue *> *original = [NSMutableDictionary dictionary];
     original[[CBORValue textString:@"name"]] = [CBORValue textString:@"test"];
     original[[CBORValue textString:@"count"]] = [CBORValue unsignedInteger:42];
@@ -212,7 +215,7 @@
 
 #pragma mark - MST Tests
 
-- (void)testMSTBasicOperations {
+- (void)testMSTBasicOperationsGetEqualsObject {
     MST *mst = [[MST alloc] init];
 
     CID *cid1 = [CID sha256:[@"value1" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -248,7 +251,7 @@
     XCTAssertEqual(entries.count, 10);
 }
 
-- (void)testMSTPrefixQuery {
+- (void)testEntriesWithPrefixReturnsExpectedCount {
     MST *mst = [[MST alloc] init];
 
     CID *cid1 = [CID sha256:[@"app.bsky.feed.post1" dataUsingEncoding:NSUTF8StringEncoding]];
@@ -278,7 +281,7 @@
 
 #pragma mark - JWT Tests
 
-- (void)testJWTMinting {
+- (void)testJWTMintingProducesThreeParts {
     JWTMinter *minter = [[JWTMinter alloc] init];
     minter.issuer = @"test-issuer";
 
@@ -307,9 +310,10 @@
     XCTAssertNotNil(jwt);
     XCTAssertNotNil(jwt.header);
     XCTAssertNotNil(jwt.payload);
+    XCTAssertEqualObjects(jwt.payload.sub, @"did:web:test.com");
 }
 
-- (void)testJWTVerification {
+- (void)testJWTVerificationSucceeds {
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
 

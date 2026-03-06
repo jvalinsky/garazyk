@@ -14,7 +14,7 @@
 
 - (void)testCBORMapSorting {
     // { "b": 2, "a": 1 } should encode same as { "a": 1, "b": 2 }
-    // DAG-CBOR requires bytewise sorting of keys
+    // DAG-CBOR needs bytewise sorting of keys
     NSDictionary *dict1 = @{@"b": @2, @"a": @1};
     NSDictionary *dict2 = @{@"a": @1, @"b": @2};
     

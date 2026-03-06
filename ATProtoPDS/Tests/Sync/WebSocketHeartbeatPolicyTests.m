@@ -54,7 +54,7 @@
     XCTAssertEqual(action, WSHeartbeatActionNone, @"Should not timeout because pong was received");
 }
 
-- (void)testNextPingInterval {
+- (void)testNextPingIntervalSendsPingAfterInterval {
     NSTimeInterval now = 100.0;
     [self.policy pingSent:now];
     [self.policy pongReceived:now + 1.0];

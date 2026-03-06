@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Pool/DatabasePool.h"
 
 @interface ServiceDatabasesTests : XCTestCase
 
@@ -40,6 +41,7 @@
     XCTAssertNotNil(self.serviceDatabases.servicePool);
     XCTAssertNotNil(self.serviceDatabases.didCachePool);
     XCTAssertNotNil(self.serviceDatabases.sequencerPool);
+    XCTAssertEqual(self.serviceDatabases.servicePool.maxSize, 10);
 }
 
 - (void)testAccountCreation {
@@ -111,7 +113,7 @@
     [reopened closeAll];
 }
 
-- (void)testDIDCaching {
+- (void)testDIDCachingRetrievesCachedDocument {
     NSString *did = @"did:plc:cache_test";
     NSDictionary *document = @{@"@context": @"https://www.w3.org/ns/did/v1", @"id": did};
     NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:3600];
@@ -123,7 +125,7 @@
     XCTAssertEqualObjects(fetched[@"id"], did);
 }
 
-- (void)testDIDCachingExpiry {
+- (void)testDIDCachingExpiryReturnsNilDocument {
     NSString *did = @"did:plc:expired_test";
     NSDictionary *document = @{@"id": did};
     NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:-1];
@@ -168,7 +170,7 @@
     XCTAssertNil(fetched, @"Account should be deleted");
 }
 
-- (void)testCloseAll {
+- (void)testCloseAllCreateAccountNoThrow {
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
     account.did = @"did:plc:close_test";
     account.handle = @"close.test";

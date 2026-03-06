@@ -25,7 +25,7 @@
  * Generated automatically. Please implement specific scenarios.
  */
 
-- (void)testCharacterization_initWithRootCID {
+- (void)testCharacterization_initWithRootCIDMatchesEmptyTreeHash {
     /* Target Method:
      - (instancetype)initWithRootCID:(nullable CID *)rootCID;
     */
@@ -33,9 +33,10 @@
     MST *tree = [[MST alloc] initWithRootCID:nil];
     XCTAssertNotNil(tree);
     XCTAssertNotNil(tree.emptyTreeHash);
+    XCTAssertTrue([tree isKindOfClass:[MST class]]);
 }
 
-- (void)testCharacterization_initWithRootNode {
+- (void)testCharacterization_initWithRootNodeMatchesRootCID {
     /* Target Method:
      - (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
     */
@@ -44,9 +45,10 @@
     MST *tree = [[MST alloc] initWithRootNode:rootNode];
     XCTAssertNotNil(tree);
     XCTAssertNotNil(tree.rootCID);
+    XCTAssertTrue([tree isKindOfClass:[MST class]]);
 }
 
-- (void)testCharacterization_get {
+- (void)testCharacterization_getMatchesValueCID {
     /* Target Method:
      - (nullable CID *)get:(NSString *)key;
     */
@@ -59,7 +61,7 @@
     XCTAssertEqualObjects(result.stringValue, cid.stringValue);
 }
 
-- (void)testCharacterization_get_2 {
+- (void)testCharacterization_get_2MatchesValueCID {
     /* Target Method:
      - (nullable CID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
     */
@@ -73,7 +75,7 @@
     XCTAssertEqualObjects(result.stringValue, cid.stringValue);
 }
 
-- (void)testCharacterization_put {
+- (void)testCharacterization_putMatchesValueCID {
     /* Target Method:
      - (void)put:(NSString *)key valueCID:(CID *)valueCID;
     */
@@ -81,9 +83,10 @@
     CID *cid = [CID sha256:[@"value" dataUsingEncoding:NSUTF8StringEncoding]];
     [self.subject put:@"key" valueCID:cid];
     XCTAssertNotNil([self.subject get:@"key"]);
+    XCTAssertEqualObjects([self.subject get:@"key"].stringValue, cid.stringValue);
 }
 
-- (void)testCharacterization_put_2 {
+- (void)testCharacterization_put_2MatchesValueCID {
     /* Target Method:
      - (void)put:(NSString *)key valueCID:(CID *)valueCID subKey:(nullable NSString *)subKey;
     */
@@ -92,9 +95,10 @@
     [self.subject put:@"app.bsky.feed.post" valueCID:cid subKey:@"rkey1"];
 
     XCTAssertNotNil([self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"]);
+    XCTAssertEqualObjects([self.subject get:@"app.bsky.feed.post" subKey:@"rkey1"].stringValue, cid.stringValue);
 }
 
-- (void)testCharacterization_delete {
+- (void)testCharacterization_deleteGetIsNil {
     /* Target Method:
      - (void)delete:(NSString *)key;
     */
@@ -107,7 +111,7 @@
     XCTAssertNil([self.subject get:@"key"]);
 }
 
-- (void)testCharacterization_delete_2 {
+- (void)testCharacterization_delete_2GetIsNil {
     /* Target Method:
      - (void)delete:(NSString *)key subKey:(nullable NSString *)subKey;
     */
@@ -135,7 +139,7 @@
     XCTAssertTrue([keys containsObject:@"b"]);
 }
 
-- (void)testCharacterization_entriesWithPrefix {
+- (void)testCharacterization_entriesWithPrefixMatchesEntries {
     /* Target Method:
      - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
     */
@@ -148,7 +152,7 @@
     XCTAssertEqual(feedEntries.count, 2);
 }
 
-- (void)testCharacterization_exportCAR {
+- (void)testCharacterization_exportCARReturnsData {
     /* Target Method:
      - (NSData *)exportCAR;
     */
@@ -161,7 +165,7 @@
     XCTAssertGreaterThan(carData.length, 0U);
 }
 
-- (void)testCharacterization_serializeToCBOR {
+- (void)testCharacterization_serializeToCBORReturnsData {
     /* Target Method:
      - (NSData *)serializeToCBOR;
     */
@@ -174,7 +178,7 @@
     XCTAssertGreaterThan(cbor.length, 0U);
 }
 
-- (void)testCharacterization_Class_deserializeFromCBOR {
+- (void)testRoundtripEqualObjectStringValue {
     /* Target Method:
      + (nullable instancetype)deserializeFromCBOR:(NSData *)data;
     */
@@ -268,7 +272,7 @@
     XCTAssertGreaterThan(nodeData.length, 0U);
 }
 
-- (void)testCharacterization_toJSON {
+- (void)testCharacterization_toJSONMatchesDictionaryElements {
     /* Target Method:
      - (nullable NSDictionary *)toJSON;
     */
@@ -276,11 +280,12 @@
     [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     NSDictionary *json = [self.subject toJSON];
     XCTAssertNotNil(json);
+    XCTAssertTrue([json isKindOfClass:[NSDictionary class]]);
     XCTAssertNotNil(json[@"rootCID"]);
     XCTAssertNotNil(json[@"nodeCount"]);
 }
 
-- (void)testCharacterization_getStatistics {
+- (void)testCharacterization_getStatisticsMatchesDictionaryElements {
     /* Target Method:
      - (NSDictionary *)getStatistics;
     */
@@ -288,11 +293,12 @@
     [self.subject put:@"a" valueCID:[CID sha256:[@"1" dataUsingEncoding:NSUTF8StringEncoding]]];
     NSDictionary *stats = [self.subject getStatistics];
     XCTAssertNotNil(stats);
+    XCTAssertTrue([stats isKindOfClass:[NSDictionary class]]);
     XCTAssertNotNil(stats[@"nodeCount"]);
     XCTAssertNotNil(stats[@"entryCount"]);
 }
 
-- (void)testCharacterization_toDOT {
+- (void)testCharacterization_toDOTReturnsString {
     /* Target Method:
      - (nullable NSString *)toDOT;
     */

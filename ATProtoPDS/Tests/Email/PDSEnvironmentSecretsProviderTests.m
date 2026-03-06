@@ -7,13 +7,13 @@
 
 @implementation PDSEnvironmentSecretsProviderTests
 
-- (void)testInitWithPrefix {
+- (void)testInitWithPrefixSetsPrefix {
     PDSEnvironmentSecretsProvider *provider = [[PDSEnvironmentSecretsProvider alloc] initWithPrefix:@"TEST_PREFIX_"];
     XCTAssertNotNil(provider);
     XCTAssertEqualObjects(provider.keyPrefix, @"TEST_PREFIX_");
 }
 
-- (void)testInitWithoutPrefix {
+- (void)testInitWithoutPrefixSetsEmptyPrefix {
     PDSEnvironmentSecretsProvider *provider = [[PDSEnvironmentSecretsProvider alloc] init];
     XCTAssertNotNil(provider);
     XCTAssertEqualObjects(provider.keyPrefix, @"");

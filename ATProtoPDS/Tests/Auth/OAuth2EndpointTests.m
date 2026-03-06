@@ -63,7 +63,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testOAuthAuthorizeEndpointRejectsInvalidClient {
+- (void)testOAuthAuthorizeEndpointBlocksBadClient {
     // Test with invalid client_id
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/authorize?client_id=invalid-client&redirect_uri=http://localhost:3000/callback&response_type=code"]];
     request.HTTPMethod = @"GET";
@@ -123,7 +123,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testOAuthTokenEndpointRejectsInvalidClient {
+- (void)testOAuthTokenEndpointBlocksBadClient {
     // Test with invalid client_id
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/token"]];
     request.HTTPMethod = @"POST";
@@ -150,7 +150,7 @@
 #pragma mark - Revoke Endpoint Tests
 
 #ifndef GNUSTEP
-- (void)testOAuthRevokeEndpointRevokesTokens {
+- (void)testOAuthRevokeEndpointReturnsStatus200ForSuccessfulRevocation {
     // Test token revocation
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:8443/oauth/revoke"]];
     request.HTTPMethod = @"POST";

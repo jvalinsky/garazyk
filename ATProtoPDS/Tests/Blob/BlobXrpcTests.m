@@ -182,7 +182,7 @@
 
 - (void)testGetBlob {
     NSError *error = nil;
-    // 1. Upload a blob first
+    // 1. Upload a blob initially
     NSString *blobContent = @"Retrievable Blob Content";
     NSData *blobData = [blobContent dataUsingEncoding:NSUTF8StringEncoding];
     

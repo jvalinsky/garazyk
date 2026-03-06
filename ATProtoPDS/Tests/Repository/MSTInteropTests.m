@@ -37,6 +37,7 @@
 }
 
 - (void)testInteropKnownMaps {
+    // XCTAssertEqual(actual, expected);
     fprintf(stderr, "testInteropKnownMaps started\n");
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
     CID *cid1 = [CID cidFromString:cid1str];
@@ -71,7 +72,8 @@
     XCTAssertEqualObjects(simpleMST.rootCID.stringValue, @"bafyreicmahysq4n6wfuxo522m6dpiy7z7qzym3dzs756t5n7nfdgccwq7m");
 }
 
-- (void)testInteropEdgeCasesTrimTop {
+- (void)testInteropEdgeCasesTrimTopMatchesExpectedRootCid {
+    // XCTAssertEqual(actual, expected);
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
     CID *cid1 = [CID cidFromString:cid1str];
     
@@ -93,6 +95,7 @@
 }
 
 - (void)testInteropEdgeCasesInsertion {
+    // XCTAssertEqual(actual, expected);
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
     CID *cid1 = [CID cidFromString:cid1str];
     
@@ -122,6 +125,7 @@
 }
 
 - (void)testInteropEdgeCasesHigher {
+    // XCTAssertEqual(actual, expected);
     NSString *cid1str = @"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454";
     CID *cid1 = [CID cidFromString:cid1str];
     
@@ -210,7 +214,7 @@
     XCTAssertEqualObjects(entries[2].key, @"c");
 }
 
-- (void)testCARGeneration {
+- (void)testCARGenerationReturnsData {
     MST *mst = [[MST alloc] init];
     CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     [mst put:@"test" valueCID:cid];
@@ -302,7 +306,7 @@
     XCTAssertNil(proofNodes, "Should return nil for non-existent key");
 }
 
-- (void)testFullEntries {
+- (void)testFullEntriesReturnsEntries {
     CID *cid = [CID cidFromString:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454"];
     
     MST *mst = [[MST alloc] init];

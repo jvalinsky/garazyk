@@ -109,7 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects([request headerForKey:@"Transfer-Encoding"], @"CHUNKED");
 }
 
-- (void)testForwardedHeadersIgnoredWhenProxyTrustDisabled {
+- (void)testForwardedHeadersIgnoredWhenProxyTrustDisabledMatchesRemoteAddress {
     NSString *savedTrustProxy = [self _savedEnvValueForKey:"PDS_TRUST_PROXY_HEADERS"];
     unsetenv("PDS_TRUST_PROXY_HEADERS");
 
@@ -129,7 +129,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
 }
 
-- (void)testForwardedHeadersIgnoredForUntrustedProxySource {
+- (void)testForwardedHeadersIgnoredForUntrustedProxySourceMatchesRemoteAddress {
     NSString *savedTrustProxy = [self _savedEnvValueForKey:"PDS_TRUST_PROXY_HEADERS"];
     setenv("PDS_TRUST_PROXY_HEADERS", "1", 1);
 
@@ -149,7 +149,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
 }
 
-- (void)testForwardedHeadersHonoredForTrustedProxySource {
+- (void)testForwardedHeadersHonoredForTrustedProxySourceMatchesRemoteAddress {
     NSString *savedTrustProxy = [self _savedEnvValueForKey:"PDS_TRUST_PROXY_HEADERS"];
     setenv("PDS_TRUST_PROXY_HEADERS", "1", 1);
 

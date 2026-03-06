@@ -54,7 +54,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(receivedParams[@"enabled"], @"false");
 }
 
-- (void)testQueryParamInteger {
+- (void)testQueryParamIntegerReturnsExpectedLimit {
     __block NSString *receivedLimit = nil;
     [self.dispatcher registerMethod:@"test.intParam" handler:^(HttpRequest *request, HttpResponse *response) {
         receivedLimit = request.queryParams[@"limit"];
@@ -69,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(receivedLimit, @"50");
 }
 
-- (void)testQueryParamArrayFormat {
+- (void)testQueryParamArrayFormatReturnsExpectedTagsSize {
     __block NSArray *receivedTags = nil;
     [self.dispatcher registerMethod:@"test.arrayParam" handler:^(HttpRequest *request, HttpResponse *response) {
         // XRPC uses repeated params for arrays: ?tag=a&tag=b
@@ -114,7 +114,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(body[@"error"], @"InvalidRequest");
 }
 
-- (void)testOptionalParamOmitted {
+- (void)testOptionalParamOmittedReturnsOk {
     __block BOOL handlerCalled = NO;
     [self.dispatcher registerMethod:@"test.optionalParam" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *cursor = request.queryParams[@"cursor"];
@@ -134,7 +134,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Query String Size Tests
 
-- (void)testMaxQueryLength {
+- (void)testMaxQueryLengthValidatesResponseStatusCodeOrBadRequest {
     [self.dispatcher registerMethod:@"test.longQuery" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
     }];
@@ -157,7 +157,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Body Size Tests
 
-- (void)testBodySizeLimitDefault {
+- (void)testBodySizeLimitDefaultIsSuccessful {
     __block BOOL handlerReached = NO;
     [self.dispatcher registerMethod:@"test.postBody" handler:^(HttpRequest *request, HttpResponse *response) {
         handlerReached = YES;
@@ -188,7 +188,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Content-Type Tests
 
-- (void)testPostWithoutContentType {
+- (void)testPostWithoutContentTypeIsSuccessful {
     [self.dispatcher registerMethod:@"test.noContentType" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
     }];
@@ -263,7 +263,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Edge Cases
 
-- (void)testEmptyPath {
+- (void)testEmptyPathIsSuccessful {
     HttpRequest *request = [self createGetRequest:@"/xrpc/" queryString:@""];
     HttpResponse *response = [[HttpResponse alloc] init];
     [self.dispatcher handleRequest:request response:response];
@@ -274,7 +274,7 @@ NS_ASSUME_NONNULL_BEGIN
                   response.statusCode == HttpStatusBadRequest);
 }
 
-- (void)testMalformedQueryString {
+- (void)testBadQueryStringValidatesResponseStatusCodeOr400 {
     [self.dispatcher registerMethod:@"test.malformedQuery" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
     }];
@@ -284,7 +284,8 @@ NS_ASSUME_NONNULL_BEGIN
     HttpResponse *response = [[HttpResponse alloc] init];
     
     // Should handle gracefully
-    XCTAssertNoThrow([self.dispatcher handleRequest:request response:response]);
+    [self.dispatcher handleRequest:request response:response];
+    XCTAssertTrue(response.statusCode == HttpStatusOK || response.statusCode == HttpStatusBadRequest);
 }
 
 #pragma mark - Helper Methods

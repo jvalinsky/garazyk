@@ -49,7 +49,6 @@ static NSData *HexToNSData(NSString *hex) {
     
     NSData *cidBytes = [cid bytes];
     XCTAssertNotNil(cidBytes, @"CID bytes should not be nil");
-    fprintf(stderr, "CID bytes length: %lu\n", (unsigned long)cidBytes.length);
     
     NSMutableData *carHeader = [NSMutableData data];
     uint32_t version = OSSwapHostToBigInt32(1);
@@ -122,13 +121,13 @@ static NSData *HexToNSData(NSString *hex) {
     NSData *carData = [writer serialize];
     XCTAssertNotNil(carData, @"Serialized data should not be nil");
 
-    // Debug: print first 100 bytes
+    // Debug: print leading 100 bytes
     const uint8_t *bytes = carData.bytes;
     NSMutableString *hex = [NSMutableString string];
     for (NSUInteger i = 0; i < MIN(100, carData.length); i++) {
         [hex appendFormat:@"%02x ", bytes[i]];
     }
-    NSLog(@"CAR v1 data (first %lu bytes): %@", (unsigned long)MIN(100, carData.length), hex);
+    NSLog(@"CAR v1 data (leading %lu bytes): %@", (unsigned long)MIN(100, carData.length), hex);
 
     NSError *error = nil;
     CARReader *reader = [CARReader readFromData:carData error:&error];

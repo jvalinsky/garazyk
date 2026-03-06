@@ -8,12 +8,12 @@
 
 #pragma mark - parseQueryString
 
-- (void)testParseQueryString_Empty {
+- (void)testParseQueryString_EmptyMatchesResultObject {
   NSDictionary *result = [HttpParsing parseQueryString:@""];
   XCTAssertEqualObjects(result, @{});
 }
 
-- (void)testParseQueryString_SingleParam {
+- (void)testParseQueryString_SingleParamReturnsExpectedDictionary {
   NSDictionary *result = [HttpParsing parseQueryString:@"key=value"];
   XCTAssertEqualObjects(result[@"key"], @"value");
 }
@@ -34,22 +34,22 @@
   XCTAssertEqualObjects(values[1], @"b");
 }
 
-- (void)testParseQueryString_KeyWithoutValue {
+- (void)testParseQueryString_KeyWithoutValueReturnsExpectedDictionary {
   NSDictionary *result = [HttpParsing parseQueryString:@"flag"];
   XCTAssertEqualObjects(result[@"flag"], @"");
 }
 
-- (void)testParseQueryString_PercentEncoded {
+- (void)testParseQueryString_PercentEncodedReturnsExpectedDictionary {
   NSDictionary *result = [HttpParsing parseQueryString:@"key=hello%20world"];
   XCTAssertEqualObjects(result[@"key"], @"hello world");
 }
 
-- (void)testParseQueryString_PlusAsSpace {
+- (void)testParseQueryString_PlusAsSpaceReturnsExpectedDictionary {
   NSDictionary *result = [HttpParsing parseQueryString:@"key=hello+world"];
   XCTAssertEqualObjects(result[@"key"], @"hello world");
 }
 
-- (void)testParseQueryString_EmptyValue {
+- (void)testParseQueryString_EmptyValueReturnsExpectedDictionary {
   NSDictionary *result = [HttpParsing parseQueryString:@"key="];
   XCTAssertEqualObjects(result[@"key"], @"");
 }
@@ -61,16 +61,16 @@
 
 #pragma mark - urlDecode
 
-- (void)testUrlDecode_Plain {
+- (void)testUrlDecode_PlainReturnsUnchanged {
   XCTAssertEqualObjects([HttpParsing urlDecode:@"hello"], @"hello");
 }
 
-- (void)testUrlDecode_PercentEncoded {
+- (void)testUrlDecode_PercentEncodedMatchesObject {
   XCTAssertEqualObjects([HttpParsing urlDecode:@"hello%20world"],
                         @"hello world");
 }
 
-- (void)testUrlDecode_PlusToSpace {
+- (void)testUrlDecode_PlusToSpaceMatchesObject {
   XCTAssertEqualObjects([HttpParsing urlDecode:@"hello+world"],
                         @"hello world");
 }
@@ -109,7 +109,7 @@
   XCTAssertEqual([HttpParsing methodFromString:@"HEAD"], HttpMethodHEAD);
 }
 
-- (void)testMethodFromString_Unknown {
+- (void)testMethodFromString_UnknownReturnsUnknown {
   XCTAssertEqual([HttpParsing methodFromString:@"TRACE"], HttpMethodUnknown);
 }
 

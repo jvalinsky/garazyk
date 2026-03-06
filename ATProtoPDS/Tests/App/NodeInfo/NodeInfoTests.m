@@ -25,11 +25,11 @@
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:baseURL configuration:config];
 
     XCTAssertNotNil(provider);
-    XCTAssertNotNil(provider.nodeInfo20);
-    XCTAssertNotNil(provider.nodeInfo21);
+    XCTAssertTrue([provider.nodeInfo20 isKindOfClass:[NSDictionary class]]);
+    XCTAssertTrue([provider.nodeInfo21 isKindOfClass:[NSDictionary class]]);
 }
 
-- (void)testProviderVersionFields {
+- (void)testProviderVersionFieldsMatchExpected {
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
@@ -47,11 +47,11 @@
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     NSDictionary *software = nodeInfo21[@"software"];
     XCTAssertNotNil(software);
-    XCTAssertNotNil(software[@"name"]);
-    XCTAssertNotNil(software[@"version"]);
+    XCTAssertTrue([software[@"name"] isKindOfClass:[NSString class]]);
+    XCTAssertTrue([software[@"version"] isKindOfClass:[NSString class]]);
 }
 
-- (void)testProviderProtocolsField {
+- (void)testProviderProtocolsFieldContainsAtproto {
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
@@ -68,8 +68,8 @@
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
     NSDictionary *services = nodeInfo21[@"services"];
     XCTAssertNotNil(services);
-    XCTAssertNotNil(services[@"inbound"]);
-    XCTAssertNotNil(services[@"outbound"]);
+    XCTAssertTrue([services[@"inbound"] isKindOfClass:[NSArray class]]);
+    XCTAssertTrue([services[@"outbound"] isKindOfClass:[NSArray class]]);
 }
 
 - (void)testProviderOpenRegistrations {
@@ -77,7 +77,7 @@
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
-    XCTAssertNotNil(nodeInfo21[@"openRegistrations"]);
+    XCTAssertTrue([nodeInfo21[@"openRegistrations"] isKindOfClass:[NSNumber class]]);
 }
 
 - (void)testProviderUsageField {
@@ -90,9 +90,9 @@
 
     NSDictionary *users = usage[@"users"];
     XCTAssertNotNil(users);
-    XCTAssertNotNil(users[@"total"]);
-    XCTAssertNotNil(users[@"activeMonth"]);
-    XCTAssertNotNil(users[@"activeHalfyear"]);
+    XCTAssertTrue([users[@"total"] isKindOfClass:[NSNumber class]]);
+    XCTAssertTrue([users[@"activeMonth"] isKindOfClass:[NSNumber class]]);
+    XCTAssertTrue([users[@"activeHalfyear"] isKindOfClass:[NSNumber class]]);
 }
 
 - (void)testProviderMetadataField {
@@ -100,7 +100,7 @@
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
-    XCTAssertNotNil(nodeInfo21[@"metadata"]);
+    XCTAssertTrue([nodeInfo21[@"metadata"] isKindOfClass:[NSDictionary class]]);
 }
 
 - (void)testProviderDiscoveryDocument {
@@ -131,13 +131,13 @@
 }
 
 - (void)testSchemaConstants {
-    XCTAssertNotNil(NodeInfoSchemaRel20);
-    XCTAssertNotNil(NodeInfoSchemaRel21);
-    XCTAssertNotNil(NodeInfoSchemaProfile20);
-    XCTAssertNotNil(NodeInfoSchemaProfile21);
-    XCTAssertNotNil(NodeInfoVersion20);
-    XCTAssertNotNil(NodeInfoVersion21);
-    XCTAssertNotNil(NodeInfoProtocolAtproto);
+    XCTAssertTrue([NodeInfoSchemaRel20 isKindOfClass:[NSString class]]);
+    XCTAssertTrue([NodeInfoSchemaRel21 isKindOfClass:[NSString class]]);
+    XCTAssertTrue([NodeInfoSchemaProfile20 isKindOfClass:[NSString class]]);
+    XCTAssertTrue([NodeInfoSchemaProfile21 isKindOfClass:[NSString class]]);
+    XCTAssertTrue([NodeInfoVersion20 isKindOfClass:[NSString class]]);
+    XCTAssertTrue([NodeInfoVersion21 isKindOfClass:[NSString class]]);
+    XCTAssertTrue([NodeInfoProtocolAtproto isKindOfClass:[NSString class]]);
 }
 
 - (void)testHandlerSingleton {

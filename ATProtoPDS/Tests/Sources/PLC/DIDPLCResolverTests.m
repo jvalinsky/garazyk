@@ -17,7 +17,7 @@
     XCTAssertEqual(error.code, DIDPLCResolverErrorInvalidDID);
 }
 
-- (void)testTimeoutHandling {
+- (void)testResolverReturnsErrorOnTimeout {
     // Port 1 (should fail immediately or timeout depending on system)
     DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"http://localhost:1"];
     resolver.timeout = 0.5; // Very short timeout

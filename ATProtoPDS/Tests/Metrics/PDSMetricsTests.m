@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
                   @"Missing process_resident_memory_bytes");
 }
 
-- (void)testConcurrentIncrements {
+- (void)testConcurrentIncrementsAreValid {
     PDSMetrics *metrics = [[PDSMetrics alloc] init];
     NSInteger iterations = 1000;
     dispatch_group_t group = dispatch_group_create();

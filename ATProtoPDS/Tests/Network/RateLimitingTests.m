@@ -20,9 +20,9 @@
     self.server = nil;
     [super tearDown];}
 
-- (void)testOAuthEndpointRateLimitingSetup {
+- (void)testOAuthEndpointRateLimitingSetupValidatesServerIsRunning {
     // Basic test to verify HttpServer can be configured with routes
-    // Full rate limiting integration testing requires running server with actual HTTP requests
+    // Full rate limiting integration testing needs running server with actual HTTP requests
     
     __block BOOL handlerCalled = NO;
     
@@ -50,6 +50,7 @@
     // Test RateLimiter configuration directly rather than through HTTP requests
     RateLimiter *limiter = [[RateLimiter alloc] init];
     XCTAssertNotNil(limiter, @"RateLimiter should initialize");
+    XCTAssertTrue([limiter isKindOfClass:[RateLimiter class]]);
 }
 
 @end

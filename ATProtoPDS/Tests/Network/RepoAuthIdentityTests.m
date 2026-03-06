@@ -8,7 +8,7 @@
 
 @implementation RepoAuthIdentityTests
 
-- (void)testIdentityUpdateHandleRequiresAuth {
+- (void)testIdentityUpdateHandleReturnsStatus401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
                                                       body:@{@"handle": @"repoauth1-renamed.test"}
                                                    headers:@{}];
@@ -71,7 +71,7 @@
     XCTAssertEqual(submitResponse.statusCode, 200);
 }
 
-- (void)testIdentityUpdateHandleUniqueness {
+- (void)testIdentityUpdateHandleUniquenessReturns409 {
     // repoauth2.test is taken by did2
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"

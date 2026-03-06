@@ -74,7 +74,7 @@
     XCTAssertNil(map[prevKey], @"Should not have 'prev' field when nil");
 }
 
-- (void)testCommitSerializationWithPrev {
+- (void)testCommitSerializationWithPrevContainsCIDTag {
     NSString *did = @"did:plc:z72ietkcondg5a46mkxsrvpv";
     CID *dataCID = [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"];
     NSString *rev = @"3l66k7pp33p";
@@ -88,6 +88,7 @@
     
     CBORValue *prevKey = [CBORValue textString:@"prev"];
     XCTAssertNotNil(map[prevKey], @"Should have 'prev' field when set");
+    XCTAssertEqual(map[prevKey].type, CBORTypeTag, @"Prev should be a CID tag");
 }
 
 - (void)testCommitSigning {
@@ -242,7 +243,7 @@
     
     RepoCommit *originalCommit = [RepoCommit createCommitWithDid:did data:dataCID rev:rev prev:prevCID];
     
-    // Sign it first
+    // Sign the commit
     Secp256k1 *secp = [Secp256k1 shared];
     NSError *error = nil;
     Secp256k1KeyPair *keyPair = [secp generateKeyPairWithError:&error];

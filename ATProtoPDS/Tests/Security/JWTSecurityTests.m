@@ -33,7 +33,7 @@
     XCTAssertFalse(verified, @"Should not verify token with alg: none");
 }
 
-- (void)testSignatureStripping {
+- (void)testSignatureStrippingFailsVerification {
     JWTVerifier *verifierWithKey = [[JWTVerifier alloc] init];
     NSData *dummyKey = [NSMutableData dataWithLength:65];
     verifierWithKey.publicKey = dummyKey;

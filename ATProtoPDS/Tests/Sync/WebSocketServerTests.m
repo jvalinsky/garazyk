@@ -88,7 +88,7 @@
     XCTAssertEqual(self.server.connections.count, 0);
 }
 
-- (void)testConnectionsPropertyReturnsSnapshot {
+- (void)testConnectionsSnapshotReturnsSet {
     NSSet<WebSocketConnection *> *snapshot = self.server.connections;
     XCTAssertNotNil(snapshot);
     XCTAssertEqual(snapshot.count, 0);
@@ -104,6 +104,7 @@
 }
 
 - (void)testStopOnIdleServer {
+    XCTAssertNotNil(self.server);
     XCTAssertNoThrow([self.server stop]);
 }
 
@@ -131,6 +132,7 @@
 
 - (void)testBroadcastWithNoConnections {
     NSData *message = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertEqual(self.server.connections.count, 0U);
     XCTAssertNoThrow([self.server broadcastMessage:message toConnectionsMatching:nil]);
 }
 
@@ -144,7 +146,7 @@
     XCTAssertEqual(error.code, WebSocketServerErrorCodeListenerFailed);
 }
 
-- (void)testBroadcastWithPredicate {
+- (void)testBroadcastWithPredicateMatchesSentMessageCount {
     TestWebSocketConnection *allowed = [[TestWebSocketConnection alloc] init];
     allowed.tag = 1;
     TestWebSocketConnection *blocked = [[TestWebSocketConnection alloc] init];
@@ -222,17 +224,17 @@
     XCTAssertEqual(spy.callbackCount, (NSUInteger)1);
 }
 
-- (void)testDelegateAssignment {
+- (void)testDelegateAssignmentSetsDelegate {
     id delegate = [[NSObject alloc] init];
     self.server.delegate = delegate;
     XCTAssertEqual(self.server.delegate, delegate);
 }
 
-- (void)testHostPropertyImmutable {
+- (void)testHostEqualsLocalhost {
     XCTAssertEqualObjects(self.server.host, @"localhost");
 }
 
-- (void)testPortPropertyImmutable {
+- (void)testPortEquals9999 {
     XCTAssertEqual(self.server.port, 9999);
 }
 
