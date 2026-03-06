@@ -12,7 +12,7 @@ title: Architecture Overview
 
 The PDS is built as a layered architecture with clear separation of concerns:
 
-```
+```text
 
 ┌─────────────────────────────────────────────────────────────────┐
 │                        HTTP Clients                             │
@@ -175,7 +175,7 @@ The database layer uses SQLite with two types of databases:
 
 Here's how a typical request flows through the system:
 
-```
+```text
 
 1. Client sends HTTP request
    GET /xrpc/com.atproto.repo.getRecord?did=did:plc:xxx&collection=app.bsky.feed.post&rkey=abc123
@@ -214,7 +214,7 @@ Here's how a typical request flows through the system:
 
 ### Record Creation Flow
 
-```
+```text
 
 Client Request (createRecord)
     ↓
@@ -235,7 +235,7 @@ Response to client
 
 ### Firehose Flow
 
-```
+```text
 
 Client WebSocket Connection (subscribeRepos)
     ↓
@@ -259,7 +259,7 @@ Client receives commit event
 
 When the PDS starts:
 
-```
+```text
 
 1. PDSApplication.init
    - Load configuration
@@ -274,7 +274,7 @@ When the PDS starts:
 
 For each request:
 
-```
+```text
 
 1. Extract JWT token from Authorization header
 2. Verify JWT signature with public key
@@ -288,7 +288,7 @@ For each request:
 
 For each database operation:
 
-```
+```text
 
 1. Get database connection from pool
 2. Begin transaction (if needed)
