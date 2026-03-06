@@ -448,7 +448,7 @@ Configure alert thresholds based on your needs:
 
 4. **Verify the fix**:
    ```bash
-   npm run validate
+   npm run validate:all
    npm run docs:build
    ```text
 
