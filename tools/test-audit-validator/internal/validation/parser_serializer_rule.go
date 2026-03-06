@@ -27,7 +27,7 @@ func (r *ParserSerializerRule) Severity() Severity {
 // Validate applies the rule
 func (r *ParserSerializerRule) Validate(ctx ValidationContext) []Finding {
 	// This rule operates at the class level to check for missing companion tests
-	if ctx.TestClass == nil {
+	if ctx.TestClass == nil || ctx.TestMethod != nil {
 		return nil
 	}
 
@@ -107,17 +107,49 @@ func (r *ParserSerializerRule) isParserTest(method *models.TestMethod) bool {
 		return false
 	}
 
-	// Check for parser keywords in name
-	parserKeywords := []string{
-		"parse", "decoder", "decode", "unmarshal", "read",
-	}
+	// Only match if the method or class indicates a data format context
+	// "parse" and "read" are too generic on their own
+	hasDataFormatContext := r.hasDataFormatContext(method)
 
-	for _, keyword := range parserKeywords {
+	// Strong parser keywords — these alone indicate a parser test
+	strongKeywords := []string{"decoder", "decode", "unmarshal", "deserializ"}
+	for _, keyword := range strongKeywords {
 		if strings.Contains(nameLower, keyword) {
 			return true
 		}
 	}
 
+	// Weak parser keywords — only match with data format context
+	if hasDataFormatContext {
+		weakKeywords := []string{"parse", "read"}
+		for _, keyword := range weakKeywords {
+			if strings.Contains(nameLower, keyword) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// hasDataFormatContext checks if the test method or its class is about a data format
+func (r *ParserSerializerRule) hasDataFormatContext(method *models.TestMethod) bool {
+	nameLower := strings.ToLower(method.Name)
+	classLower := strings.ToLower(method.ClassName)
+	combined := nameLower + " " + classLower
+
+	formatKeywords := []string{
+		"json", "cbor", "xml", "protobuf", "proto", "msgpack", "yaml", "yml",
+		"plist", "bson", "avro", "thrift", "dagcbor", "dag-cbor",
+		"serializ", "deserializ", "marshal", "codec", "lexicon",
+		"car", "cid", "tid", "nsid", "aturi", "did",
+	}
+
+	for _, kw := range formatKeywords {
+		if strings.Contains(combined, kw) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -130,15 +162,21 @@ func (r *ParserSerializerRule) isSerializerTest(method *models.TestMethod) bool 
 		return false
 	}
 
-	// Check for serializer keywords in name
-	serializerKeywords := []string{
-		"serialize", "encoder", "encode", "marshal", "write",
+	// Strong serializer keywords
+	if strings.Contains(nameLower, "serialize") ||
+		strings.Contains(nameLower, "encoder") ||
+		strings.Contains(nameLower, "encode") {
+		return true
 	}
 
-	for _, keyword := range serializerKeywords {
-		if strings.Contains(nameLower, keyword) {
-			return true
-		}
+	// "marshal" but not "unmarshal"
+	if strings.Contains(nameLower, "marshal") && !strings.Contains(nameLower, "unmarshal") {
+		return true
+	}
+
+	// Weak keyword "write" — only with data format context
+	if r.hasDataFormatContext(method) && strings.Contains(nameLower, "write") {
+		return true
 	}
 
 	return false
@@ -157,13 +195,15 @@ func (r *ParserSerializerRule) isRoundTripTest(method *models.TestMethod) bool {
 	}
 
 	// Check for both parse and serialize operations
+	// Use word-boundary-aware matching to avoid "unmarshal" matching "marshal"
 	hasParse := strings.Contains(sourceCode, "parse") ||
 		strings.Contains(sourceCode, "decode") ||
 		strings.Contains(sourceCode, "unmarshal")
 
+	// For serialize-side keywords, ensure we don't match "unmarshal" as "marshal"
 	hasSerialize := strings.Contains(sourceCode, "serialize") ||
 		strings.Contains(sourceCode, "encode") ||
-		strings.Contains(sourceCode, "marshal")
+		r.containsMarshalNotUnmarshal(sourceCode)
 
 	return hasParse && hasSerialize
 }
@@ -193,23 +233,47 @@ func (r *ParserSerializerRule) isPrettyPrinterTest(method *models.TestMethod) bo
 	return false
 }
 
+// containsMarshalNotUnmarshal checks if source contains "marshal" that is not part of "unmarshal"
+func (r *ParserSerializerRule) containsMarshalNotUnmarshal(source string) bool {
+	idx := 0
+	for {
+		pos := strings.Index(source[idx:], "marshal")
+		if pos < 0 {
+			return false
+		}
+		absPos := idx + pos
+		// Check that this "marshal" is not preceded by "un"
+		if absPos < 2 || source[absPos-2:absPos] != "un" {
+			return true
+		}
+		idx = absPos + len("marshal")
+		if idx >= len(source) {
+			return false
+		}
+	}
+}
+
 // extractTestSubject extracts the subject being tested from the test name
 func (r *ParserSerializerRule) extractTestSubject(testName string) string {
 	// Remove common test prefixes
 	name := strings.TrimPrefix(testName, "test")
 	name = strings.TrimPrefix(name, "Test")
 
-	// Remove common operation keywords (case-insensitive)
 	nameLower := strings.ToLower(name)
+
+	// Remove operation keywords from the name, keeping the subject
+	// Order matters - remove longer keywords first to avoid partial matches
 	operations := []string{
-		"parser", "parse", "decoder", "decode", "unmarshal",
-		"serializer", "serialize", "encoder", "encode", "marshal",
-		"roundtrip", "round_trip", "bidirectional",
-		"pretty", "prettyprint", "format",
+		"prettyprint", "roundtrip", "round_trip", "bidirectional",
+		"serializer", "serialize", "deserializer", "deserialize",
+		"parser", "parse", "decoder", "decode", "encoder", "encode",
+		"unmarshal", "marshal", "writer", "write", "reader", "read",
+		"pretty", "format", "print",
 		"basic", "complex", "simple",
 	}
 
 	for _, op := range operations {
+		// Remove the operation keyword but preserve what comes before/after
 		nameLower = strings.ReplaceAll(nameLower, op, "")
 	}
 
@@ -217,5 +281,9 @@ func (r *ParserSerializerRule) extractTestSubject(testName string) string {
 	nameLower = strings.TrimSuffix(nameLower, "test")
 	nameLower = strings.TrimSuffix(nameLower, "s")
 
-	return strings.TrimSpace(nameLower)
+	// Clean up any extra whitespace or underscores
+	nameLower = strings.TrimSpace(nameLower)
+	nameLower = strings.Trim(nameLower, "_")
+
+	return nameLower
 }

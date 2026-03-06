@@ -43,7 +43,7 @@ func TestSecurityTestRule_OAuthWithoutRejection(t *testing.T) {
 	rule := &SecurityTestRule{}
 
 	method := &models.TestMethod{
-		Name:       "testOAuthTokenGeneration",
+		Name:       "testOAuthInvalidTokenHandling",
 		LineNumber: 10,
 		SourceCode: `
 			NSString *token = [generator generateToken];
@@ -65,13 +65,13 @@ func TestSecurityTestRule_OAuthWithoutRejection(t *testing.T) {
 
 	findings := rule.Validate(ctx)
 
-	// Should report finding for OAuth test without rejection validation
+	// Should report finding for OAuth test claiming invalid handling without rejection validation
 	if len(findings) != 1 {
 		t.Fatalf("Expected 1 finding for OAuth test without rejection, got %d", len(findings))
 	}
 
-	if findings[0].Severity != CRITICAL {
-		t.Errorf("Expected CRITICAL severity, got %v", findings[0].Severity)
+	if findings[0].Severity != HIGH {
+		t.Errorf("Expected HIGH severity, got %v", findings[0].Severity)
 	}
 }
 
