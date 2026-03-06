@@ -110,6 +110,35 @@
     XCTAssertNotNil(paths[@"/api/pds/openapi.json"]);
 }
 
+- (void)testGenerateOpenAPISpecCreateRecordRkeyIsOptionalForPosts {
+    NSDictionary *spec = [self.handler generateOpenAPISpec];
+    NSDictionary *paths = spec[@"paths"];
+    NSDictionary *createRecordPath = paths[@"/api/pds/create-record"];
+    XCTAssertTrue([createRecordPath isKindOfClass:[NSDictionary class]]);
+
+    NSDictionary *postOperation = createRecordPath[@"post"];
+    XCTAssertTrue([postOperation isKindOfClass:[NSDictionary class]]);
+
+    NSArray *parameters = postOperation[@"parameters"];
+    XCTAssertTrue([parameters isKindOfClass:[NSArray class]]);
+
+    NSDictionary *rkeyParam = nil;
+    for (NSDictionary *param in parameters) {
+        if ([param[@"name"] isEqualToString:@"rkey"]) {
+            rkeyParam = param;
+            break;
+        }
+    }
+    XCTAssertNotNil(rkeyParam);
+    XCTAssertEqualObjects(rkeyParam[@"required"], @NO);
+
+    NSDictionary *schema = rkeyParam[@"schema"];
+    XCTAssertTrue([schema isKindOfClass:[NSDictionary class]]);
+    NSString *description = schema[@"description"];
+    XCTAssertTrue([description containsString:@"app.bsky.feed.post"]);
+    XCTAssertTrue([description containsString:@"TID"]);
+}
+
 - (void)testHandleApiOpenapiSpecReturnsJSONWhenRequested {
     HttpResponse *response = [HttpResponse response];
     [self.handler handleApiOpenapiSpec:@{@"format": @"json"} response:response];
