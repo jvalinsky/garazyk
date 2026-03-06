@@ -79,7 +79,7 @@
     [self waitForExpectations:@[exp] timeout:1.0];
 }
 
-- (void)testFragmentedFrames {
+- (void)testFragmentedFramesMatchesFirstObject {
     // Current WebSocketConnection doesn't fully support FIN=0 continuation frame reassembly in the parser itself.
     // Let's see what the current behavior actually is.
     // ACTUALLY, looking at handleReceivedData: it seems to dispatch every frame it sees directly.
@@ -99,7 +99,7 @@
     XCTAssertEqualObjects(self.delegate.texts.firstObject, @"Hello");
 }
 
-- (void)testMaskedClientServerFrame {
+- (void)testMaskedClientServerFrameMatchesLastObject {
     uint8_t frameBytes[] = {
         0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D, 0x7F, 0x9F, 0x4D, 0x51, 0x58
     };
@@ -108,11 +108,12 @@
     XCTAssertEqualObjects(self.delegate.texts.lastObject, @"Hello");
 }
 
-- (void)testInterleavedControlFrames {
+- (void)testConnectionReadyStateEqual {
     // Current behavior: opcode 9 is PING.
     uint8_t pingFrame[] = {0x89, 0x04, 'p','i','n','g'};
     [self.connection handleReceivedData:[NSData dataWithBytes:pingFrame length:sizeof(pingFrame)]];
     // Connection calls sendPong, but we didn't mock connection. Let's just ensure it doesn't crash.
+    XCTAssertEqual(self.connection.state, WebSocketConnectionStateConnected, @"connection should remain open");
     [self waitForMainQueue];
 }
 
@@ -135,7 +136,7 @@
     XCTAssertEqualObjects(self.connection.closeReason, @"");
 }
 
-- (void)testOversizedFrameRejection {
+- (void)testOversizedFrameRejectionClosesConnection {
     // frame > 16MB. 
     // Opcode=2, Len=127, 8-byte length = 17MB
     uint8_t frame[] = {0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 0x00};
@@ -180,7 +181,7 @@
     XCTAssertEqual(self.delegate.messages.lastObject.length, 127);
 }
 
-- (void)testPartialFrameDelivery {
+- (void)testPartialFrameDeliveryMatchesLastObject {
     uint8_t frameBytes[] = {
         0x81, 0x85, 0x37, 0xFA, 0x21, 0x3D, 0x7F, 0x9F, 0x4D, 0x51, 0x58
     };

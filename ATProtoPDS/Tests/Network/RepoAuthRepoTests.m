@@ -6,7 +6,7 @@
 
 @implementation RepoAuthRepoTests
 
-- (void)testDeleteRecordRequiresAuth {
+- (void)testDeleteRecordReturns401WithoutAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
         @"text": @"delete auth test",
@@ -29,7 +29,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testPutRecordRequiresAuth {
+- (void)testPutRecordReturns401WithoutAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
         @"text": @"put auth test",
@@ -44,7 +44,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testApplyWritesRequiresAuth {
+- (void)testApplyWritesReturns401WithoutAuth {
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
         @"text": @"apply auth test",
@@ -75,7 +75,7 @@
     XCTAssertEqual(response.statusCode, 403);
 }
 
-- (void)testRepoListMissingBlobsRequiresAuth {
+- (void)testRepoListMissingBlobsReturns401WithoutAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.listMissingBlobs"
                                                queryParams:@{}
                                                    headers:@{}];
@@ -92,7 +92,7 @@
     XCTAssertTrue([response.jsonBody[@"blobs"] isKindOfClass:[NSArray class]]);
 }
 
-- (void)testRepoImportRepoRequiresAuth {
+- (void)testRepoImportRepoReturns401WithoutAuth {
     NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
     HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
                                                      bodyData:carData
@@ -103,7 +103,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testRepoImportRepoRequiresContentLengthHeader {
+- (void)testRepoImportRepoReturnsBadRequestWithoutContentLengthHeader {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
     HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"

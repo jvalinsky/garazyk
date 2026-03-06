@@ -126,7 +126,7 @@
     XCTAssertEqual([result[@"disabled"] boolValue], NO);
 }
 
-- (void)testCreateDisabledInvite {
+- (void)testCreateDisabledInviteSetsDisabledFlag {
     self.context.jsonOutput = YES;
     
     [self.dispatcher dispatchWithCommandName:@"invite" arguments:@[@"create", @"--disabled"] context:self.context];
@@ -137,7 +137,7 @@
     XCTAssertEqual([result[@"disabled"] boolValue], YES);
 }
 
-- (void)testRevokeInvite {
+- (void)testRevokeInviteValidatesSuccess {
     [self.dispatcher dispatchWithCommandName:@"invite" arguments:@[@"revoke", @"ABCD-1234"] context:self.context];
     
     BOOL foundSuccess = NO;
@@ -150,7 +150,7 @@
     XCTAssertTrue(foundSuccess);
 }
 
-- (void)testRevokeMissingArg {
+- (void)testRevokeMissingArgGeneratesError {
     [self.dispatcher dispatchWithCommandName:@"invite" arguments:@[@"revoke"] context:self.context];
     
     XCTAssertTrue(self.context.errorMessages.count > 0);

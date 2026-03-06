@@ -30,7 +30,7 @@
     return database;
 }
 
-- (void)testFactorySelectionWithKeychainDisabled {
+- (void)testManagerIsKindOfPDSOpenSSLSessionKeyManagerWhenKeychainDisabled {
     NSString *dbPath = nil;
     PDSDatabase *database = [self openTemporaryDatabaseAtPath:&dbPath];
     BOOL originalUseKeychain = [PDSConfiguration sharedConfiguration].useKeychain;

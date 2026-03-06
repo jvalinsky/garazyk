@@ -246,6 +246,7 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Test 3: CID Format Compliance
 
 - (void)testCIDFormatCompliance {
+    // XCTAssertEqual(actual, expected);
     NSLog(@"=== TEST: CID Format Compliance ===");
     
     __autoreleasing NSError *error = nil;
@@ -487,7 +488,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSDictionary *account = [self createTestAccountWithHandle:@"authtest.example.com"];
     NSString *did = account[@"did"];
     
-    // Create a record first
+    // Initialize a record initially
     NSDictionary *record = @{
         @"$type": @"app.bsky.feed.post",
         @"text": @"Auth test post"

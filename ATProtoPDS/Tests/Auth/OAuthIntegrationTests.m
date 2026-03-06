@@ -124,7 +124,7 @@
 }
 
 #ifndef GNUSTEP
-- (void)testConnectivity {
+- (void)testHealthEndpointReturns200Status {
     NSUInteger port = self.server.port;
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%lu/health", (unsigned long)port]];
     
@@ -151,12 +151,12 @@
 }
 
 - (void)testFullOAuthFlow {
-    // Phase 1: Client generates PKCE parameters
+    // Client generates PKCE parameters
     NSString *verifier = [PKCEUtil generateCodeVerifier];
     NSString *challenge = [PKCEUtil generateCodeChallengeWithVerifier:verifier];
     
-    // Phase 2: Seed authorization code directly since /oauth/authorize now serves
-    // a consent page (200 HTML) and resolveIdentity requires DNS. We test the core
+    // Seed authorization code directly since /oauth/authorize now serves
+    // a consent page (200 HTML) and resolveIdentity needs DNS. We test the core
     // auth code + token exchange flow (PKCE + DPoP) without the consent UI.
     NSUInteger port = self.server.port;
 
@@ -176,7 +176,7 @@
 
     XCTAssertNotNil(authCode, @"Should have authorization code");
     
-    // Phase 3: Token Exchange with DPoP
+    // Token Exchange with DPoP
     NSError *keyError = nil;
     SecKeyRef privateKey = PDSTestCreateFixedP256PrivateKey(&keyError);
     XCTAssertNotNil((__bridge id)privateKey, @"Failed to import DPoP key: %@", keyError);
@@ -187,7 +187,7 @@
     
     NSString *body = [NSString stringWithFormat:@"grant_type=authorization_code&client_id=test-client&redirect_uri=http://127.0.0.1:3000/callback&code=%@&code_verifier=%@", authCode, verifier];
 
-    // Step 1: Send initial token request without nonce to get DPoP-Nonce from server
+    // Request without nonce
     NSMutableURLRequest *nonceRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:tokenUri]];
     nonceRequest.HTTPMethod = @"POST";
     [nonceRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
@@ -211,7 +211,7 @@
 
     XCTAssertNotNil(dpopNonce, @"Server should return DPoP-Nonce header");
 
-    // Re-seed authorization code since the first attempt consumed it
+    // Validate authorization code by re-seeding it
     NSString *authCode2 = [[NSUUID UUID] UUIDString];
     NSDictionary *codeData2 = @{
         @"client_id": @"test-client",
@@ -226,7 +226,7 @@
     };
     self.oauthServer.authorizationCodes[authCode2] = codeData2;
 
-    // Step 2: Retry with nonce-bound DPoP proof
+    // Request with nonce
     DPoPToken *dpopToken2 = [DPoPUtil createDPoPForMethod:@"POST" uri:tokenUri nonce:dpopNonce key:privateKey error:nil];
     XCTAssertNotNil(dpopToken2, @"Failed to create DPoP token with nonce");
 
@@ -260,7 +260,7 @@
         [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
     }
     
-    // Phase 4: Verify Token with DPoP binding
+    // Verify Token with DPoP binding
     // We can directly check if the session exists and has the correct thumbprint
     XCTAssertNotNil(accessToken);
     BOOL found = NO;

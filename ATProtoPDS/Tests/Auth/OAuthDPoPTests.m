@@ -76,7 +76,7 @@
     XCTAssertEqualObjects(error.domain, AuthCryptoDPoPErrorDomain);
 }
 
-- (void)testDPoPHtuBinding {
+- (void)testVerifyDPoPFalseMismatchingUriForHtuBinding {
     NSError *error = nil;
     DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST" uri:@"https://server.example.com/a" nonce:nil key:_privateKey error:&error];
     
@@ -201,7 +201,7 @@
     XCTAssertNil(payload[@"nonce"]);
 }
 
-- (void)testDPoPEmptyJWTParts {
+- (void)testVerifyDPoPFalseForEmptyJWTParts {
     NSError *error = nil;
     BOOL valid = [DPoPUtil verifyDPoP:@"a..c" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
     XCTAssertFalse(valid);

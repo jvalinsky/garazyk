@@ -90,7 +90,7 @@
     
     // Assuming refresh token validation doesn't require code/redirectUri
     // Let's verify implementation details in OAuthSession.m:106
-    // It checks grantType first.
+    // It primarily checks grantType.
     // If 'authorization_code', checks code & redirectUri.
     // DPoP is checked for ALL types.
     

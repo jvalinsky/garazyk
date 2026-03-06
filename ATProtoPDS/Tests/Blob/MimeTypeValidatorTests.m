@@ -28,11 +28,11 @@
     XCTAssertTrue([self.validator isValidMimeType:@"image/png" error:nil], @"image/png should be valid");
 }
 
-- (void)testValidWithSubtype {
+- (void)testValidWithSubtypeIsValid {
     XCTAssertTrue([self.validator isValidMimeType:@"application/pdf" error:nil], @"application/pdf should be valid");
 }
 
-- (void)testInvalidNoSlash {
+- (void)testInvalidNoSlashIsInvalid {
     XCTAssertFalse([self.validator isValidMimeType:@"imagejpeg" error:nil], @"imagejpeg should be invalid");
 }
 
@@ -40,7 +40,7 @@
     XCTAssertFalse([self.validator isValidMimeType:@"/jpeg" error:nil], @"/jpeg should be invalid");
 }
 
-- (void)testInvalidEmptySubtype {
+- (void)testInvalidEmptySubtypeIsInvalid {
     XCTAssertFalse([self.validator isValidMimeType:@"image/" error:nil], @"image/ should be invalid");
 }
 
@@ -52,11 +52,11 @@
     XCTAssertFalse([self.validator isValidMimeType:@"" error:nil], @"empty string should be invalid");
 }
 
-- (void)testCaseNormalization {
+- (void)testCaseNormalizationIsValid {
     XCTAssertTrue([self.validator isValidMimeType:@"IMAGE/JPEG" error:nil], @"Uppercase should be normalized");
 }
 
-- (void)testWhitespaceTrimming {
+- (void)testWhitespaceTrimmingIsValid {
     XCTAssertTrue([self.validator isValidMimeType:@"  image/jpeg  " error:nil], @"Whitespace should be trimmed");
 }
 
@@ -138,7 +138,7 @@
     XCTAssertTrue([self.validator validateSize:5 * 1024 * 1024 forMimeType:@"image/jpeg" error:nil], @"Boundary size (5MB) should be valid");
 }
 
-- (void)testTooLargeImage {
+- (void)testTooLargeImageExceedsLimit {
     XCTAssertFalse([self.validator validateSize:6 * 1024 * 1024 forMimeType:@"image/jpeg" error:nil], @"6MB should exceed image limit");
 }
 
@@ -146,7 +146,7 @@
     XCTAssertTrue([self.validator validateSize:10 * 1024 forMimeType:@"video/mp4 * 1024" error:nil], @"10MB video should be valid");
 }
 
-- (void)testTooLargeVideo {
+- (void)testTooLargeVideoExceedsLimit {
     XCTAssertFalse([self.validator validateSize:51 * 1024 * 1024 forMimeType:@"video/mp4" error:nil], @"51MB video should exceed limit");
 }
 

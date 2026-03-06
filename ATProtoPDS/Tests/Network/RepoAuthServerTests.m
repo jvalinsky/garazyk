@@ -6,7 +6,7 @@
 
 @implementation RepoAuthServerTests
 
-- (void)testDeleteSessionRequiresAuth {
+- (void)testDeleteSessionReturns401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.deleteSession"
                                                       body:@{}
                                                    headers:@{}];
@@ -54,7 +54,7 @@
     XCTAssertEqualObjects(dbCode, code);
 }
 
-- (void)testCreateInviteCodesRejectsOtherAccounts {
+- (void)testCreateInviteCodesReturnsForbiddenForOtherAccounts {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createInviteCodes"
                                                       body:@{@"codeCount": @1,
@@ -84,7 +84,7 @@
     XCTAssertEqual(codes.count, 3U);
 }
 
-- (void)testCreateAppPasswordRequiresAuth {
+- (void)testCreateAppPasswordReturns401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAppPassword"
                                                       body:@{@"name": @"test-app"}
                                                    headers:@{}];
@@ -132,7 +132,7 @@
     XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
 }
 
-- (void)testGetAccountInviteCodesRequiresAuth {
+- (void)testGetAccountInviteCodesReturns401WithoutAuth {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.server.getAccountInviteCodes"
                                                queryParams:@{}
                                                    headers:@{}];
@@ -201,7 +201,7 @@
     XCTAssertEqualObjects(response.jsonBody[@"tokenRequired"], @NO);
 }
 
-- (void)testUpdateEmailRequiresAuth {
+- (void)testUpdateEmailReturns401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.updateEmail"
                                                       body:@{@"email": @"updated@example.com"}
                                                    headers:@{}];

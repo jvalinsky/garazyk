@@ -251,7 +251,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
     }
 }
 
-- (void)testRegisterMethodsProvidesCoverageForCoreNamespaces {
+- (void)testRegisterMethodsStatusCodeNotEqual {
     NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     tempURL = [tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtURL:tempURL withIntermediateDirectories:YES attributes:nil error:nil];

@@ -72,6 +72,7 @@
     
     XCTAssertNotNil(app);
     XCTAssertNotNil(app.dataDirectory);
+    XCTAssertTrue([app isKindOfClass:[PDSApplication class]], @"Should create a valid app instance");
 }
 
 - (void)testDefaultPortValues {
@@ -88,10 +89,12 @@
 
 - (void)testServiceDatabasesInitialized {
     XCTAssertNotNil(self.application.serviceDatabases);
+    XCTAssertTrue([self.application.serviceDatabases isKindOfClass:[PDSServiceDatabases class]], @"Should initialize as ServiceDatabases");
 }
 
 - (void)testUserDatabasePoolInitialized {
     XCTAssertNotNil(self.application.userDatabasePool);
+    XCTAssertTrue([self.application.userDatabasePool isKindOfClass:[PDSDatabasePool class]], @"Should initialize as DatabasePool");
 }
 
 - (void)testJwtMinterInitialized {
@@ -149,6 +152,7 @@
     [self.application startWithError:&error];
     
     XCTAssertNotNil(self.application.httpServer);
+    XCTAssertGreaterThan(self.application.httpPort, 0, @"HTTP port should be mapped");
 }
 
 - (void)testPortsAssignedAfterStart {
@@ -161,7 +165,7 @@
     XCTAssertEqual(self.application.wsPort, self.application.httpPort);
 }
 
-- (void)testStopSucceeds {
+- (void)testStopSetsIsRunningFalse {
     NSError *error = nil;
     [self.application startWithError:&error];
     
@@ -231,7 +235,7 @@
 
 #pragma mark - Multiple Start/Stop Cycles
 
-- (void)testCanRestartAfterStop {
+- (void)testCanRestartAfterStopSetsIsRunningFalse {
     NSError *error1 = nil;
     [self.application startWithError:&error1];
     XCTAssertTrue(self.application.isRunning);
@@ -254,7 +258,7 @@
     XCTAssertFalse(self.application.isRunning);
 }
 
-- (void)testMultipleStopsDoNotCrash {
+- (void)testMultipleStopsSetsIsRunningFalse {
     NSError *error = nil;
     [self.application startWithError:&error];
     

@@ -87,7 +87,7 @@
     }
 }
 
-- (void)testEviction {
+- (void)testEvictionRemovesUnusedStoresFromSmallPool {
     PDSDatabasePool *smallPool = [[PDSDatabasePool alloc] initWithDbDirectory:self.testDirectory maxSize:3];
     
     for (int i = 0; i < 5; i++) {
@@ -243,7 +243,7 @@
 }
 
 #ifndef GNUSTEP
-- (void)testConcurrentAccessPatterns {
+- (void)testConcurrentAccessPatternsReturnsExpectedStoreCount {
     XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Concurrent access"];
 
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
@@ -302,7 +302,7 @@
 }
 
 #ifndef GNUSTEP
-- (void)testEvictionUnderLoad {
+- (void)testEvictionUnderLoadMaintainsValidPoolSize {
     XCTestExpectation *expectation = [[XCTestExpectation alloc] initWithDescription:@"Eviction under load"];
 
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
