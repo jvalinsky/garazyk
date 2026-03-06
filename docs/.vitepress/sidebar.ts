@@ -7,6 +7,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
     items: [
       { text: 'Overview', link: '/01-getting-started/overview' },
       { text: 'Architecture Overview', link: '/01-getting-started/architecture-overview' },
+      { text: 'Codebase Map', link: '/01-getting-started/codebase-map' },
+      { text: 'Request Lifecycle', link: '/01-getting-started/request-lifecycle' },
       { text: 'Setup', link: '/01-getting-started/setup' }
     ]
   },
@@ -73,6 +75,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
     items: [
       { text: 'JWT Tokens', link: '/06-authentication/jwt-tokens' },
       { text: 'OAuth 2.0 with DPoP', link: '/06-authentication/oauth2-dpop' },
+      { text: 'Email & Verification', link: '/06-authentication/email-and-verification' },
       { text: 'TOTP & WebAuthn', link: '/06-authentication/totp-webauthn' },
       { text: 'Key Rotation', link: '/06-authentication/key-rotation' },
       { text: 'Secrets Management', link: '/06-authentication/secrets-management' },
@@ -123,12 +126,15 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
     text: '10 Tutorials',
     collapsed: false,
     items: [
+      { text: 'Tutorials Overview', link: '/10-tutorials/index' },
       { text: 'Tutorial 1: Hello PDS', link: '/10-tutorials/tutorial-1-hello-pds' },
       { text: 'Tutorial 2: Accounts', link: '/10-tutorials/tutorial-2-accounts' },
       { text: 'Tutorial 3: Records', link: '/10-tutorials/tutorial-3-records' },
       { text: 'Tutorial 4: Authentication', link: '/10-tutorials/tutorial-4-auth' },
       { text: 'Tutorial 5: Firehose', link: '/10-tutorials/tutorial-5-firehose' },
-      { text: 'Tutorial 6: Deployment', link: '/10-tutorials/tutorial-6-deployment' }
+      { text: 'Tutorial 6: Deployment', link: '/10-tutorials/tutorial-6-deployment' },
+      { text: 'Tutorial 7: Objective-J UI', link: '/10-tutorials/tutorial-7-objective-j-ui' },
+      { text: 'Tutorial 8: Endpoint Workflow', link: '/10-tutorials/tutorial-8-endpoint-workflow' }
     ]
   },
   {
@@ -138,6 +144,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'API Reference', link: '/11-reference/api-reference' },
       { text: 'CLI Reference', link: '/11-reference/cli-reference' },
       { text: 'Config Reference', link: '/11-reference/config-reference' },
+      { text: 'Explorer, OpenAPI & UI', link: '/11-reference/explorer-openapi-ui' },
+      { text: 'Testing Map', link: '/11-reference/testing-map' },
       { text: 'Test Organization', link: '/11-reference/test-organization' },
       { text: 'Property-Based Testing', link: '/11-reference/property-based-testing' },
       { text: 'E2E Testing', link: '/11-reference/e2e-testing' },
