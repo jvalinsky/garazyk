@@ -525,6 +525,7 @@ static void PDSControllerLogEphemeralJWTKeyModeOnce(void) {
   builder.enableOAuthDemo = YES;
   builder.enableMSTViewer = YES;
   builder.enableNodeInfo = YES;
+  builder.enableCappuccinoUIDefault = YES;
 
   NSError *buildError = nil;
   _httpServer = [builder buildWithError:&buildError];
