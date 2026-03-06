@@ -707,6 +707,12 @@
         stringByAppendingPathComponent:@"AdminUI/Assets"],
     [[fm currentDirectoryPath] stringByAppendingPathComponent:
                                    @"ATProtoPDS/Sources/App/AdminUI/Assets"],
+    [[[fm currentDirectoryPath]
+        stringByAppendingPathComponent:
+            @"../ATProtoPDS/Sources/App/AdminUI/Assets"]
+        stringByStandardizingPath],
+    @"/usr/share/atprotopds/assets/AdminUI",
+    @"/usr/local/share/atprotopds/assets/AdminUI",
     @"/Users/jack/Software/objpds/ATProtoPDS/Sources/App/AdminUI/Assets"
   ];
 
