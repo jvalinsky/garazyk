@@ -32,9 +32,9 @@ func TestCoverageGapRule_MultipleClaimsSingleValidation(t *testing.T) {
 	rule := NewCoverageGapRule()
 
 	tests := []struct {
-		name           string
-		testMethod     *models.TestMethod
-		expectFinding  bool
+		name             string
+		testMethod       *models.TestMethod
+		expectFinding    bool
 		expectedSeverity Severity
 	}{
 		{
@@ -47,7 +47,7 @@ func TestCoverageGapRule_MultipleClaimsSingleValidation(t *testing.T) {
 					{Type: "XCTAssertNotNil", LineNumber: 12},
 				},
 			},
-			expectFinding:  true,
+			expectFinding:    true,
 			expectedSeverity: MEDIUM,
 		},
 		{
@@ -58,7 +58,7 @@ func TestCoverageGapRule_MultipleClaimsSingleValidation(t *testing.T) {
 				LineNumber: 20,
 				Assertions: []models.Assertion{},
 			},
-			expectFinding:  true,
+			expectFinding:    true,
 			expectedSeverity: MEDIUM,
 		},
 		{
@@ -82,6 +82,18 @@ func TestCoverageGapRule_MultipleClaimsSingleValidation(t *testing.T) {
 				LineNumber: 40,
 				Assertions: []models.Assertion{
 					{Type: "XCTAssertNotNil", LineNumber: 42},
+				},
+			},
+			expectFinding: false,
+		},
+		{
+			name: "Substring 'and' should not count as multiple claims",
+			testMethod: &models.TestMethod{
+				Name:       "testRandomness",
+				ClassName:  "EntropyTests",
+				LineNumber: 45,
+				Assertions: []models.Assertion{
+					{Type: "XCTAssertTrue", LineNumber: 46},
 				},
 			},
 			expectFinding: false,
@@ -119,9 +131,9 @@ func TestCoverageGapRule_ErrorHandlingWithoutException(t *testing.T) {
 	rule := NewCoverageGapRule()
 
 	tests := []struct {
-		name           string
-		testMethod     *models.TestMethod
-		expectFinding  bool
+		name             string
+		testMethod       *models.TestMethod
+		expectFinding    bool
 		expectedSeverity Severity
 	}{
 		{
@@ -134,8 +146,7 @@ func TestCoverageGapRule_ErrorHandlingWithoutException(t *testing.T) {
 					{Type: "XCTAssertNil", LineNumber: 12},
 				},
 			},
-			expectFinding:  true,
-			expectedSeverity: HIGH,
+			expectFinding: false,
 		},
 		{
 			name: "Error handling with XCTAssertThrows",
@@ -175,8 +186,74 @@ func TestCoverageGapRule_ErrorHandlingWithoutException(t *testing.T) {
 					{Type: "XCTAssertFalse", LineNumber: 42},
 				},
 			},
-			expectFinding:  true,
-			expectedSeverity: HIGH,
+			expectFinding: false,
+		},
+		{
+			name: "Error handling with error code assertion",
+			testMethod: &models.TestMethod{
+				Name:       "testRejectsMalformedRequest",
+				ClassName:  "ValidationTests",
+				LineNumber: 45,
+				Assertions: []models.Assertion{
+					{
+						Type:       "XCTAssertEqual",
+						Arguments:  []string{"error.code", "400"},
+						LineNumber: 47,
+					},
+				},
+			},
+			expectFinding: false,
+		},
+		{
+			name: "NoError phrasing should not imply error-path claim",
+			testMethod: &models.TestMethod{
+				Name:       "testPreservation_ServerBuildReturnsNoError",
+				ClassName:  "ServerTests",
+				LineNumber: 46,
+				Assertions: []models.Assertion{},
+			},
+			expectFinding: false,
+		},
+		{
+			name: "Error handling with failure decision assertion",
+			testMethod: &models.TestMethod{
+				Name:       "testFailsImmediatelyOn404",
+				ClassName:  "RetryPolicyTests",
+				LineNumber: 47,
+				Assertions: []models.Assertion{
+					{
+						Type:       "XCTAssertEqual",
+						Arguments:  []string{"result.decision", "HttpRetryDecisionFail"},
+						LineNumber: 48,
+					},
+				},
+			},
+			expectFinding: false,
+		},
+		{
+			name: "Error handling with conditional XCTFail branch",
+			testMethod: &models.TestMethod{
+				Name:       "testEventSizeConstraintFailsEncoding",
+				ClassName:  "FirehoseTests",
+				LineNumber: 49,
+				Assertions: []models.Assertion{
+					{Type: "XCTFail", LineNumber: 50},
+				},
+				SourceCode: "if (encoded == nil && error != nil) { /* pass */ } else { XCTFail(@\"expected failure\"); }",
+			},
+			expectFinding: false,
+		},
+		{
+			name: "Invalidates keyword does not imply error handling claim",
+			testMethod: &models.TestMethod{
+				Name:       "testLogoutInvalidatesToken",
+				ClassName:  "AuthTests",
+				LineNumber: 48,
+				Assertions: []models.Assertion{
+					{Type: "XCTAssertTrue", LineNumber: 49},
+				},
+			},
+			expectFinding: false,
 		},
 		{
 			name: "Test without error keywords",
@@ -223,9 +300,9 @@ func TestCoverageGapRule_StateTransitionWithoutChecks(t *testing.T) {
 	rule := NewCoverageGapRule()
 
 	tests := []struct {
-		name           string
-		testMethod     *models.TestMethod
-		expectFinding  bool
+		name             string
+		testMethod       *models.TestMethod
+		expectFinding    bool
 		expectedSeverity Severity
 	}{
 		{
@@ -238,7 +315,7 @@ func TestCoverageGapRule_StateTransitionWithoutChecks(t *testing.T) {
 					{Type: "XCTAssertTrue", LineNumber: 12},
 				},
 			},
-			expectFinding:  true,
+			expectFinding:    true,
 			expectedSeverity: MEDIUM,
 		},
 		{
@@ -249,7 +326,7 @@ func TestCoverageGapRule_StateTransitionWithoutChecks(t *testing.T) {
 				LineNumber: 20,
 				Assertions: []models.Assertion{},
 			},
-			expectFinding:  true,
+			expectFinding:    true,
 			expectedSeverity: MEDIUM,
 		},
 		{
@@ -275,7 +352,7 @@ func TestCoverageGapRule_StateTransitionWithoutChecks(t *testing.T) {
 					{Type: "XCTAssertNotNil", LineNumber: 42},
 				},
 			},
-			expectFinding:  true,
+			expectFinding:    true,
 			expectedSeverity: MEDIUM,
 		},
 		{
@@ -289,6 +366,37 @@ func TestCoverageGapRule_StateTransitionWithoutChecks(t *testing.T) {
 				},
 			},
 			expectFinding: false,
+		},
+		{
+			name: "Ambiguous block wording without block method call should not trigger",
+			testMethod: &models.TestMethod{
+				Name:       "testOAuthAuthorizeEndpointBlocksBadClient",
+				ClassName:  "OAuthTests",
+				LineNumber: 55,
+				Assertions: []models.Assertion{
+					{Type: "XCTAssertEqual", LineNumber: 56},
+				},
+				MethodCalls: []models.MethodCall{
+					{Selector: "handleAuthorizeRequest:", LineNumber: 57},
+				},
+			},
+			expectFinding: false,
+		},
+		{
+			name: "Block transition with matching method call should still trigger when under-asserted",
+			testMethod: &models.TestMethod{
+				Name:       "testBlockUser",
+				ClassName:  "ModerationTests",
+				LineNumber: 58,
+				Assertions: []models.Assertion{
+					{Type: "XCTAssertTrue", LineNumber: 59},
+				},
+				MethodCalls: []models.MethodCall{
+					{Selector: "blockUser:", LineNumber: 60},
+				},
+			},
+			expectFinding:    true,
+			expectedSeverity: MEDIUM,
 		},
 	}
 
@@ -323,9 +431,9 @@ func TestCoverageGapRule_ConcurrencyWithoutRaceTesting(t *testing.T) {
 	rule := NewCoverageGapRule()
 
 	tests := []struct {
-		name           string
-		testMethod     *models.TestMethod
-		expectFinding  bool
+		name             string
+		testMethod       *models.TestMethod
+		expectFinding    bool
 		expectedSeverity Severity
 	}{
 		{
@@ -341,7 +449,7 @@ func TestCoverageGapRule_ConcurrencyWithoutRaceTesting(t *testing.T) {
 					{Selector: "doSomething", LineNumber: 11},
 				},
 			},
-			expectFinding:  true,
+			expectFinding:    true,
 			expectedSeverity: MEDIUM,
 		},
 		{
@@ -386,6 +494,21 @@ func TestCoverageGapRule_ConcurrencyWithoutRaceTesting(t *testing.T) {
 			},
 			expectFinding: false,
 		},
+		{
+			name: "Substring matches should not imply concurrency claims",
+			testMethod: &models.TestMethod{
+				Name:       "testGetRepoContentsDeltaIncludesOnlyPostSinceRecordBlocks",
+				ClassName:  "RepoTests",
+				LineNumber: 45,
+				Assertions: []models.Assertion{
+					{Type: "XCTAssertEqual", LineNumber: 46},
+				},
+				MethodCalls: []models.MethodCall{
+					{Selector: "loadDelta", LineNumber: 47},
+				},
+			},
+			expectFinding: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -419,9 +542,9 @@ func TestCoverageGapRule_PerformanceWithoutTiming(t *testing.T) {
 	rule := NewCoverageGapRule()
 
 	tests := []struct {
-		name           string
-		testMethod     *models.TestMethod
-		expectFinding  bool
+		name             string
+		testMethod       *models.TestMethod
+		expectFinding    bool
 		expectedSeverity Severity
 	}{
 		{
@@ -437,7 +560,7 @@ func TestCoverageGapRule_PerformanceWithoutTiming(t *testing.T) {
 					{Selector: "parse", LineNumber: 11},
 				},
 			},
-			expectFinding:  true,
+			expectFinding:    true,
 			expectedSeverity: MEDIUM,
 		},
 		{
