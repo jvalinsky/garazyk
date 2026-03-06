@@ -7,6 +7,7 @@
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
+#import "Core/TID.h"
 #import "Compat/Foundation/NSDataCompat.h"
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCrypto.h>
@@ -619,15 +620,31 @@
 - (void)handleApiCreateRecord:(NSDictionary *)params response:(HttpResponse *)response {
     NSString *did = params[@"did"];
     NSString *collection = params[@"collection"];
-    NSString *rkey = params[@"rkey"];
     NSString *valueJson = params[@"value"];
+    NSString *rkey = [params[@"rkey"] isKindOfClass:[NSString class]]
+        ? [(NSString *)params[@"rkey"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
+        : nil;
 
-    if (!did || !collection || !rkey || !valueJson) {
+    if (!did || !collection || !valueJson) {
         [response setJsonBody:@{
             @"error": @"Missing required parameters",
-            @"required": @[@"did", @"collection", @"rkey", @"value"]
+            @"required": @[@"did", @"collection", @"value"]
         }];
         return;
+    }
+    
+    if (rkey.length == 0) {
+        if ([collection isEqualToString:@"app.bsky.feed.post"]) {
+            // app.bsky.feed.post has key type "tid"; generate a proper rkey when omitted.
+            rkey = [TID tid].stringValue;
+        } else {
+            [response setJsonBody:@{
+                @"error": @"Missing required parameters",
+                @"required": @[@"did", @"collection", @"rkey", @"value"],
+                @"note": @"rkey is required for non-post collections. app.bsky.feed.post auto-generates a TID rkey when omitted."
+            }];
+            return;
+        }
     }
 
     NSError *jsonError = nil;
@@ -976,15 +993,10 @@
 }
 
 - (void)handleApiAccounts:(NSDictionary *)params response:(HttpResponse *)response {
-    NSString *cached = [self.cache getAccountList];
-    if (cached) {
-        [response setBody:[cached dataUsingEncoding:NSUTF8StringEncoding]];
-        return;
-    }
-    
+    // Account listings should reflect recent CLI/admin changes immediately.
+    // Avoid server-side response caching for this endpoint.
     NSString *accounts = [self fetchAccountList];
     if (accounts) {
-        [self.cache setAccountList:accounts];
         [response setBody:[accounts dataUsingEncoding:NSUTF8StringEncoding]];
     } else {
         [response setJsonBody:@{@"accounts": @[]}];
@@ -2552,8 +2564,8 @@
     createRkeyParam.name = @"rkey";
     createRkeyParam.in = @"query";
     createRkeyParam.type = @"string";
-    createRkeyParam.paramDescription = @"The record key (unique within collection)";
-    createRkeyParam.required = YES;
+    createRkeyParam.paramDescription = @"The record key (unique within collection). Optional for app.bsky.feed.post; if omitted, a TID rkey is generated.";
+    createRkeyParam.required = NO;
 
     APIResponseDescriptor *createResponse = [[APIResponseDescriptor alloc] init];
     createResponse.statusCode = @"200";
@@ -2801,10 +2813,10 @@
         @"type": @"object",
         @"description": @"Response from creating a new record",
         @"properties": @{
-            @"uri": @{@"type": @"string", @"description": @"Created record URI", @"example": @"at://did:plc:g3x5vnga7kiu3oaookgeozpb/app.bsky.feed.post/newkey"},
+            @"uri": @{@"type": @"string", @"description": @"Created record URI", @"example": @"at://did:plc:g3x5vnga7kiu3oaookgeozpb/app.bsky.feed.post/3k5d3f4g5h6j7"},
             @"did": @{@"type": @"string", @"description": @"Repository DID", @"example": @"did:plc:g3x5vnga7kiu3oaookgeozpb"},
             @"collection": @{@"type": @"string", @"description": @"Collection namespace", @"example": @"app.bsky.feed.post"},
-            @"rkey": @{@"type": @"string", @"description": @"Record key", @"example": @"newkey"},
+            @"rkey": @{@"type": @"string", @"description": @"Record key", @"example": @"3k5d3f4g5h6j7"},
             @"cid": @{@"type": @"string", @"description": @"Generated CID", @"example": @"bafyreinewcid"},
             @"value": @{@"type": @"object", @"description": @"Record value that was stored"},
             @"createdAt": @{@"type": @"string", @"description": @"ISO 8601 timestamp", @"example": @"2024-01-08T20:30:00Z"}

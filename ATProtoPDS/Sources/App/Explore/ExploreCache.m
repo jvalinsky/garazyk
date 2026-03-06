@@ -17,6 +17,9 @@ static NSTimeInterval const kDidTTL = 3600;
 static NSTimeInterval const kPlcTTL = 86400;
 static NSTimeInterval const kAccountListTTL = 300;
 static NSInteger const kMaxMemoryItems = 200;
+static NSString *const kAccountListCacheKey = @"accounts:list";
+static NSString *const kAccountListValueKey = @"value";
+static NSString *const kAccountListTimestampKey = @"timestamp";
 
 + (instancetype)sharedCache {
     static ExploreCache *instance = nil;
@@ -67,6 +70,7 @@ static NSInteger const kMaxMemoryItems = 200;
 }
 
 - (NSString *)accountCachePath {
+    [self createDirectoryIfNeeded:self.cacheDirectory];
     NSString *path = [self.cacheDirectory stringByAppendingPathComponent:@"accounts.json"];
     return path;
 }
@@ -162,8 +166,24 @@ static NSInteger const kMaxMemoryItems = 200;
 #pragma mark - Account List
 
 - (nullable NSString *)getAccountList {
-    NSString *cached = [self.memoryCache objectForKey:@"accounts:list"];
-    if (cached) return cached;
+    id cachedEntry = [self.memoryCache objectForKey:kAccountListCacheKey];
+    if (cachedEntry) {
+        // Backward-compatibility: ignore legacy string entries that had no TTL.
+        if ([cachedEntry isKindOfClass:[NSString class]]) {
+            [self.memoryCache removeObjectForKey:kAccountListCacheKey];
+        } else if ([cachedEntry isKindOfClass:[NSDictionary class]]) {
+            NSString *value = cachedEntry[kAccountListValueKey];
+            NSDate *timestamp = cachedEntry[kAccountListTimestampKey];
+            if ([value isKindOfClass:[NSString class]] &&
+                [timestamp isKindOfClass:[NSDate class]] &&
+                [timestamp timeIntervalSinceNow] > -kAccountListTTL) {
+                return value;
+            }
+            [self.memoryCache removeObjectForKey:kAccountListCacheKey];
+        } else {
+            [self.memoryCache removeObjectForKey:kAccountListCacheKey];
+        }
+    }
     
     if ([[NSFileManager defaultManager] fileExistsAtPath:self.accountCachePath]) {
         NSString *diskCached = [NSString stringWithContentsOfFile:self.accountCachePath 
@@ -173,7 +193,10 @@ static NSInteger const kMaxMemoryItems = 200;
             NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:self.accountCachePath error:nil];
             NSDate *modDate = attrs[NSFileModificationDate];
             if (modDate && [modDate timeIntervalSinceNow] > -kAccountListTTL) {
-                [self.memoryCache setObject:diskCached forKey:@"accounts:list"];
+                [self.memoryCache setObject:@{
+                    kAccountListValueKey: diskCached,
+                    kAccountListTimestampKey: modDate
+                } forKey:kAccountListCacheKey];
                 return diskCached;
             }
         }
@@ -184,7 +207,10 @@ static NSInteger const kMaxMemoryItems = 200;
 - (void)setAccountList:(NSString *)accountList {
     if (!accountList) return;
     
-    [self.memoryCache setObject:accountList forKey:@"accounts:list"];
+    [self.memoryCache setObject:@{
+        kAccountListValueKey: accountList,
+        kAccountListTimestampKey: [NSDate date]
+    } forKey:kAccountListCacheKey];
     [accountList writeToFile:self.accountCachePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
 }
 

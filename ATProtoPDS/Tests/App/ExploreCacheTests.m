@@ -71,6 +71,20 @@
     XCTAssertEqualObjects(cached, accountList);
 }
 
+- (void)testAccountListFallsBackToDiskWhenMemoryEntryExpired {
+    NSString *freshDiskValue = @"[{\"did\":\"did:plc:fresh\",\"handle\":\"fresh.example.com\"}]";
+    [self.cache setAccountList:freshDiskValue];
+
+    NSCache *memoryCache = [self.cache valueForKey:@"memoryCache"];
+    [memoryCache setObject:@{
+        @"value": @"[{\"did\":\"did:plc:stale\",\"handle\":\"stale.example.com\"}]",
+        @"timestamp": [NSDate dateWithTimeIntervalSinceNow:-3600.0]
+    } forKey:@"accounts:list"];
+
+    NSString *cached = [self.cache getAccountList];
+    XCTAssertEqualObjects(cached, freshDiskValue);
+}
+
 - (void)testClearExpiredEntriesRemovesOldDidCache {
     NSString *did = @"did:plc:expired";
     NSString *document = @"{\"id\":\"did:plc:expired\"}";
