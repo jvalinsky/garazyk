@@ -42,8 +42,8 @@ func TestFalsePositiveDetectionRule_OnlyNonNullChecks(t *testing.T) {
 
 	// Test with only XCTAssertNotNil assertions
 	method := &models.TestMethod{
-		Name:      "testOAuthTokenGeneration",
-		ClassName: "TestClass",
+		Name:       "testOAuthTokenGeneration",
+		ClassName:  "TestClass",
 		LineNumber: 10,
 		Assertions: []models.Assertion{
 			{Type: "XCTAssertNotNil", Arguments: []string{"token"}, LineNumber: 12, IsReachable: true},
@@ -85,8 +85,8 @@ func TestFalsePositiveDetectionRule_OnlyNonNullChecks_WithOtherAssertions(t *tes
 
 	// Test with mixed assertions (should not trigger)
 	method := &models.TestMethod{
-		Name:      "testOAuthTokenGeneration",
-		ClassName: "TestClass",
+		Name:       "testOAuthTokenGeneration",
+		ClassName:  "TestClass",
 		LineNumber: 10,
 		Assertions: []models.Assertion{
 			{Type: "XCTAssertNotNil", Arguments: []string{"token"}, LineNumber: 12, IsReachable: true},
@@ -125,8 +125,8 @@ func TestFalsePositiveDetectionRule_OnlyNoThrowChecks(t *testing.T) {
 
 	// Test with only XCTAssertNoThrow assertions
 	method := &models.TestMethod{
-		Name:      "testParseValidInput",
-		ClassName: "TestClass",
+		Name:       "testParseValidInput",
+		ClassName:  "TestClass",
 		LineNumber: 20,
 		Assertions: []models.Assertion{
 			{Type: "XCTAssertNoThrow", Arguments: []string{"[parser parse:input]"}, LineNumber: 22, IsReachable: true},
@@ -339,7 +339,7 @@ func TestFalsePositiveDetectionRule_SetupWithoutVerification_WeakAssertions(t *t
 	// Verify we have both types of findings
 	foundOnlyNonNull := false
 	foundSetupWeak := false
-	
+
 	for _, finding := range findings {
 		if strings.Contains(finding.Message, "only checks that results are non-null") {
 			foundOnlyNonNull = true
@@ -348,7 +348,7 @@ func TestFalsePositiveDetectionRule_SetupWithoutVerification_WeakAssertions(t *t
 			foundSetupWeak = true
 		}
 	}
-	
+
 	if !foundOnlyNonNull {
 		t.Error("Expected to find only-non-null-checks finding")
 	}
@@ -395,6 +395,88 @@ func TestFalsePositiveDetectionRule_SetupWithoutVerification_GoodTest(t *testing
 	for _, finding := range findings {
 		if finding.Severity == HIGH && finding.Message != "" {
 			t.Errorf("Should not detect setup-without-verification for test with strong assertions")
+		}
+	}
+}
+
+func TestFalsePositiveDetectionRule_SetupWithoutVerification_DelegatedVerificationHelper(t *testing.T) {
+	rule := NewFalsePositiveDetectionRule()
+
+	ctx := ValidationContext{
+		TestMethod: &models.TestMethod{
+			Name:       "testPreservation_EndpointsAreRegistered",
+			ClassName:  "BuilderTests",
+			LineNumber: 10,
+			Assertions: []models.Assertion{},
+			MethodCalls: []models.MethodCall{
+				{Receiver: "builder", Selector: "setEnableOAuth:", LineNumber: 11},
+				{Receiver: "builder", Selector: "buildWithError:", LineNumber: 12},
+				{Receiver: "self", Selector: "verifyEndpointIsRegistered:expectation:", LineNumber: 13},
+			},
+		},
+		TestClass: &models.TestClass{Name: "BuilderTests"},
+		TestFile:  &models.TestFile{Path: "builder_test.m"},
+	}
+
+	findings := rule.Validate(ctx)
+	for _, finding := range findings {
+		if finding.Severity == HIGH && strings.Contains(finding.Message, "has no assertions") {
+			t.Fatalf("did not expect setup-without-verification finding when helper verification is delegated: %+v", finding)
+		}
+	}
+}
+
+func TestFalsePositiveDetectionRule_SetupWithoutVerification_PerformanceMeasurement(t *testing.T) {
+	rule := NewFalsePositiveDetectionRule()
+
+	ctx := ValidationContext{
+		TestMethod: &models.TestMethod{
+			Name:       "testComponentFilteringPerformance",
+			ClassName:  "LoggerPerfTests",
+			LineNumber: 20,
+			Assertions: []models.Assertion{},
+			MethodCalls: []models.MethodCall{
+				{Receiver: "logger", Selector: "setLogLevel:", LineNumber: 21},
+				{Receiver: "self", Selector: "measureBlock:", LineNumber: 22},
+			},
+			SourceCode: "[self measureBlock:^{ /* benchmark */ }];",
+		},
+		TestClass: &models.TestClass{Name: "LoggerPerfTests"},
+		TestFile:  &models.TestFile{Path: "perf_test.m"},
+	}
+
+	findings := rule.Validate(ctx)
+	for _, finding := range findings {
+		if finding.Severity == HIGH && strings.Contains(finding.Message, "has no assertions") {
+			t.Fatalf("did not expect setup-without-verification finding for performance measurement test: %+v", finding)
+		}
+	}
+}
+
+func TestFalsePositiveDetectionRule_SetupWithoutVerification_ExpectationDrivenAsync(t *testing.T) {
+	rule := NewFalsePositiveDetectionRule()
+
+	ctx := ValidationContext{
+		TestMethod: &models.TestMethod{
+			Name:       "testConcurrentAccess",
+			ClassName:  "RouteTrieTests",
+			LineNumber: 30,
+			Assertions: []models.Assertion{},
+			MethodCalls: []models.MethodCall{
+				{Receiver: "self", Selector: "expectationWithDescription:", LineNumber: 31},
+				{Receiver: "queue", Selector: "dispatch_async", LineNumber: 32},
+				{Receiver: "self", Selector: "waitForExpectationsWithTimeout:handler:", LineNumber: 33},
+			},
+			SourceCode: "XCTestExpectation *e = [self expectationWithDescription:@\"x\"]; [self waitForExpectationsWithTimeout:5 handler:nil];",
+		},
+		TestClass: &models.TestClass{Name: "RouteTrieTests"},
+		TestFile:  &models.TestFile{Path: "concurrency_test.m"},
+	}
+
+	findings := rule.Validate(ctx)
+	for _, finding := range findings {
+		if finding.Severity == HIGH && strings.Contains(finding.Message, "has no assertions") {
+			t.Fatalf("did not expect setup-without-verification finding for expectation-driven async test: %+v", finding)
 		}
 	}
 }
@@ -548,7 +630,7 @@ func TestFalsePositiveDetectionRule_MultiplePatterns(t *testing.T) {
 	if len(findings) < 1 {
 		t.Errorf("Expected at least 1 finding (unreachable), got %d", len(findings))
 	}
-	
+
 	// Verify we got the unreachable assertion finding
 	foundUnreachable := false
 	for _, finding := range findings {
@@ -556,7 +638,7 @@ func TestFalsePositiveDetectionRule_MultiplePatterns(t *testing.T) {
 			foundUnreachable = true
 		}
 	}
-	
+
 	if !foundUnreachable {
 		t.Error("Expected to find unreachable assertion finding")
 	}

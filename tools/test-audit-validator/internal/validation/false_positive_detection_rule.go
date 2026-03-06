@@ -54,7 +54,7 @@ func (r *FalsePositiveDetectionRule) Validate(ctx ValidationContext) []Finding {
 
 	// Check for each false positive pattern
 	// Note: Some checks require assertions, others don't (like setup-without-verification)
-	
+
 	if len(method.Assertions) > 0 {
 		// These checks require assertions to be present
 		if finding := r.checkOnlyNonNullChecks(method, ctx); finding != nil {
@@ -195,7 +195,9 @@ func (r *FalsePositiveDetectionRule) isTrivialAssertion(assertion models.Asserti
 	// Check for XCTAssertTrue/False with constant values
 	if assertion.Type == "XCTAssertTrue" {
 		for _, arg := range assertion.Arguments {
-			argNormalized := strings.TrimSpace(strings.ToUpper(arg))
+			// Extract first argument before comma (XCTAssertTrue(YES, @"message"))
+			firstArg := strings.TrimSpace(strings.SplitN(arg, ",", 2)[0])
+			argNormalized := strings.ToUpper(firstArg)
 			if argNormalized == "YES" || argNormalized == "TRUE" || argNormalized == "1" {
 				return true
 			}
@@ -204,7 +206,8 @@ func (r *FalsePositiveDetectionRule) isTrivialAssertion(assertion models.Asserti
 
 	if assertion.Type == "XCTAssertFalse" {
 		for _, arg := range assertion.Arguments {
-			argNormalized := strings.TrimSpace(strings.ToUpper(arg))
+			firstArg := strings.TrimSpace(strings.SplitN(arg, ",", 2)[0])
+			argNormalized := strings.ToUpper(firstArg)
 			if argNormalized == "NO" || argNormalized == "FALSE" || argNormalized == "0" {
 				return true
 			}
@@ -215,7 +218,7 @@ func (r *FalsePositiveDetectionRule) isTrivialAssertion(assertion models.Asserti
 	if assertion.Type == "XCTAssertEqual" && len(assertion.Arguments) >= 2 {
 		arg1 := strings.TrimSpace(assertion.Arguments[0])
 		arg2 := strings.TrimSpace(assertion.Arguments[1])
-		
+
 		// Check if both arguments are the same constant
 		if arg1 == arg2 {
 			// Check if it's a constant (number or boolean literal)
@@ -241,23 +244,30 @@ func (r *FalsePositiveDetectionRule) isTrivialAssertion(assertion models.Asserti
 // isConstantLiteral checks if a string represents a constant literal
 func (r *FalsePositiveDetectionRule) isConstantLiteral(s string) bool {
 	s = strings.TrimSpace(s)
-	
+
 	// Check for numeric literals
 	if len(s) > 0 && (s[0] >= '0' && s[0] <= '9') {
 		return true
 	}
-	
+
 	// Check for boolean literals
 	sLower := strings.ToLower(s)
 	if sLower == "true" || sLower == "false" || sLower == "yes" || sLower == "no" {
 		return true
 	}
-	
+
 	return false
 }
 
 // checkSetupWithoutVerification detects tests that set up state but don't verify it
 func (r *FalsePositiveDetectionRule) checkSetupWithoutVerification(method *models.TestMethod, ctx ValidationContext) *Finding {
+	// Some tests verify behavior indirectly (helper assertions, perf harnesses, async expectations).
+	if r.hasDelegatedVerification(method) ||
+		r.isPerformanceMeasurementTest(method) ||
+		r.hasExpectationDrivenVerification(method) {
+		return nil
+	}
+
 	// Look for method calls that suggest setup/mutation
 	setupCallCount := 0
 
@@ -341,6 +351,65 @@ func (r *FalsePositiveDetectionRule) isSetupMethodCall(call models.MethodCall) b
 	}
 
 	return false
+}
+
+func (r *FalsePositiveDetectionRule) hasDelegatedVerification(method *models.TestMethod) bool {
+	verificationPrefixes := []string{"verify", "assert", "expect", "check", "validate"}
+	for _, call := range method.MethodCalls {
+		selectorLower := strings.ToLower(call.Selector)
+		for _, prefix := range verificationPrefixes {
+			if strings.HasPrefix(selectorLower, prefix) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (r *FalsePositiveDetectionRule) isPerformanceMeasurementTest(method *models.TestMethod) bool {
+	nameLower := strings.ToLower(method.Name)
+	if strings.Contains(nameLower, "performance") || strings.Contains(nameLower, "benchmark") {
+		return true
+	}
+
+	sourceLower := strings.ToLower(method.SourceCode)
+	if strings.Contains(sourceLower, "measureblock") || strings.Contains(sourceLower, "measuremetrics") {
+		return true
+	}
+
+	for _, call := range method.MethodCalls {
+		selectorLower := strings.ToLower(call.Selector)
+		if strings.Contains(selectorLower, "measure") ||
+			strings.Contains(selectorLower, "benchmark") ||
+			strings.Contains(selectorLower, "duration") ||
+			strings.Contains(selectorLower, "elapsedtime") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *FalsePositiveDetectionRule) hasExpectationDrivenVerification(method *models.TestMethod) bool {
+	sourceLower := strings.ToLower(method.SourceCode)
+	if strings.Contains(sourceLower, "expectationwithdescription") &&
+		strings.Contains(sourceLower, "waitforexpectationswithtimeout") {
+		return true
+	}
+
+	hasExpectation := false
+	hasWait := false
+	for _, call := range method.MethodCalls {
+		selectorLower := strings.ToLower(call.Selector)
+		if strings.Contains(selectorLower, "expectationwithdescription") {
+			hasExpectation = true
+		}
+		if strings.Contains(selectorLower, "waitforexpectationswithtimeout") {
+			hasWait = true
+		}
+	}
+
+	return hasExpectation && hasWait
 }
 
 // checkUnreachableAssertions detects assertions in unreachable code paths
