@@ -41,7 +41,7 @@ cd "$DOCS_DIR"
 
 if [ -f "scripts/validate-docs.ts" ]; then
     echo "Running documentation validation..."
-    npm run validate || {
+    npm run validate:all || {
         echo -e "${RED}✗ Validation failed${NC}"
         exit 1
     }
