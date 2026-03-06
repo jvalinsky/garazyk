@@ -7,14 +7,14 @@
 
 @implementation CryptoTests
 
-- (void)testSHA256 {
+- (void)testSHA256MatchesExpectedHex {
     NSData *input = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *hash = [CryptoUtils sha256:input];
     NSString *hex = [CryptoUtils hexStringFromData:hash];
     XCTAssertEqualObjects(hex, @"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
 }
 
-- (void)testHMACSHA1 {
+- (void)testHMACSHA1MatchesExpectedHex {
     NSData *key = [@"key" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *data = [@"data" dataUsingEncoding:NSUTF8StringEncoding];
     NSData *hmac = [CryptoUtils hmacSHA1WithKey:key data:data];

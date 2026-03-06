@@ -68,7 +68,7 @@
     }];
 }
 
-- (void)testTOTPGeneration {
+- (void)testTOTPGenerationReturnsConsistentCode {
     NSData *secretData = [@"12345678901234567890" dataUsingEncoding:NSUTF8StringEncoding];
     TOTPGenerator *gen = [[TOTPGenerator alloc] initWithSecret:secretData];
     

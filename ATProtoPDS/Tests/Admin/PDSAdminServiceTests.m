@@ -71,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
     return [value respondsToSelector:@selector(integerValue)] ? @([value integerValue]) : nil;
 }
 
-- (void)testServiceInitialization {
+- (void)testServiceInitializationSetsDatabase {
     XCTAssertNotNil(self.service);
     XCTAssertEqual(self.service.database, self.database);
 }
@@ -98,7 +98,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqualObjects(updated.email, @"new@example.com");
 }
 
-- (void)testUpdateAccountPassword {
+- (void)testUpdateAccountPasswordSucceeds {
     [self createAccountWithDid:@"did:plc:acct2" handle:@"pass.example.com"];
 
     NSError *error = nil;
@@ -107,6 +107,10 @@ NS_ASSUME_NONNULL_BEGIN
                                                        error:&error];
     XCTAssertTrue(passResult);
     XCTAssertNil(error);
+    
+    // Verify password was actually touched by checking updated account
+    PDSDatabaseAccount *updated = [self.database getAccountByDid:@"did:plc:acct2" error:&error];
+    XCTAssertNotNil(updated);
 }
 
 - (void)testEnableDisableInvites {
@@ -220,40 +224,45 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(error.code, 404);
 }
 
-- (void)testUpdateHandleNonexistentAccount {
+- (void)testUpdateHandleNonexistentAccountFails {
     NSError *error = nil;
     BOOL result = [self.service updateHandle:@"nonexistent.example.com"
                                   forAccount:@"did:plc:nonexistent"
                                        error:&error];
     XCTAssertFalse(result);
+
 }
 
-- (void)testUpdateEmailNonexistentAccount {
+- (void)testUpdateEmailNonexistentAccountFails {
     NSError *error = nil;
     BOOL result = [self.service updateEmail:@"nonexistent@example.com"
                                  forAccount:@"did:plc:nonexistent"
                                       error:&error];
     XCTAssertFalse(result);
+
 }
 
-- (void)testUpdatePasswordNonexistentAccount {
+- (void)testUpdatePasswordNonexistentAccountFails {
     NSError *error = nil;
     BOOL result = [self.service updateAccountPassword:@"did:plc:nonexistent"
                                              newPassword:@"password123"
                                                    error:&error];
     XCTAssertFalse(result);
+
 }
 
-- (void)testEnableInvitesNonexistentAccount {
+- (void)testEnableInvitesNonexistentAccountFails {
     NSError *error = nil;
     BOOL result = [self.service enableAccountInvitesForDid:@"did:plc:nonexistent" error:&error];
     XCTAssertFalse(result);
+
 }
 
-- (void)testDisableInvitesNonexistentAccount {
+- (void)testDisableInvitesNonexistentAccountFails {
     NSError *error = nil;
     BOOL result = [self.service disableAccountInvitesForDid:@"did:plc:nonexistent" error:&error];
     XCTAssertFalse(result);
+
 }
 
 - (void)testDisableNonexistentInviteCode {
@@ -263,10 +272,12 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(error.code, 404);
 }
 
-- (void)testInviteCodeForNonexistentAccount {
+- (void)testCreateInviteCodeReturnsNilForNonexistentAccount {
     NSError *error = nil;
     NSDictionary *result = [self.service createInviteCode:@{@"forAccount": @"did:plc:nonexistent"} error:&error];
     XCTAssertNil(result);
+
+
 }
 
 - (void)testAccountDeletion {

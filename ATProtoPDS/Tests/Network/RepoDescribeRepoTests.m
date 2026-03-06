@@ -52,7 +52,7 @@
                   @"handleIsCorrect should be present");
 }
 
-- (void)testDescribeRepoNotFound {
+- (void)testDescribeRepoNotFoundMatchesStatusCode {
   HttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.describeRepo"
                        queryParams:@{@"repo" : @"did:plc:notfound1234567890"}
@@ -60,7 +60,7 @@
   XCTAssertEqual(response.statusCode, 404);
 }
 
-- (void)testDescribeRepoMissingParam {
+- (void)testDescribeRepoMissingParamMatchesStatusCode {
   HttpResponse *response =
       [self sendGetRequestWithPath:@"/xrpc/com.atproto.repo.describeRepo"
                        queryParams:@{}

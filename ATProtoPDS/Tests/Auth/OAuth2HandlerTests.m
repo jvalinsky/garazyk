@@ -163,7 +163,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     };
 }
 
-- (void)testTokenRequestRejectsInvalidClientSecret {
+- (void)testTokenRequestBlocksBadClientSecret {
     // Setup request with valid client_id but wrong client_secret (when secret is configured)
     NSString *body = @"grant_type=authorization_code&code=valid&client_id=test-client-confidential&client_secret=wrong";
 
@@ -185,7 +185,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertEqual(response.statusCode, 401, @"Should return 401 for invalid client secret");
 }
 
-- (void)testAuthorizeRejectsMissingState {
+- (void)testAuthorizeBlocksMissingState {
     // Setup request without state parameter
     NSDictionary *queryParams = @{
         @"client_id": @"test-client",
@@ -200,14 +200,9 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertEqual(response.statusCode, 400, @"Should return 400 for missing state parameter");
 }
 
-- (void)testRevokeRejectsCrossClientToken {
-    // This test would require setting up sessions with different client IDs
-    // For now, the implementation prevents cross-client revocation
-    // In a full test, we'd create sessions for different clients and try to revoke across clients
-    XCTAssertTrue(YES, @"Token revocation ownership check implemented");
-}
 
-- (void)testConfigurableIssuer {
+
+- (void)testIssuerEqualityWithEnvironmentVariable {
     // Test that issuer can be configured via environment variable
     setenv("PDS_ISSUER", "https://custom.pds.example.com", 1);
 
@@ -562,7 +557,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertTrue([location containsString:expectedIssuerParam]);
 }
 
-- (void)testAuthorizeDenyRejectsUnregisteredRedirect {
+- (void)testAuthorizeConfirmDenyReturns400ForEvilRedirect {
     NSString *body = @"decision=deny&client_id=test-client&state=deny-state&redirect_uri=https%3A%2F%2Fevil.example%2Fcallback";
 
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
@@ -581,7 +576,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_request");
 }
 
-- (void)testAuthorizeAllowRejectsUnregisteredRedirect {
+- (void)testAuthorizeAllowBlocksUnregisteredRedirect {
     NSString *csrfToken = @"csrf-allow-reject";
     NSString *signInBody = @"handle=test-user.test&password=test-password";
     HttpRequest *signInRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
@@ -764,7 +759,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     // The handler should extract and parse client_metadata without crashing
     // Expected: Returns 400 because client is not registered (validation not yet implemented)
     // But the parsing should succeed (check logs for "Parsed client_metadata with 3 keys")
-    // Authorization path now requires PAR, so this test exercises metadata via PAR-backed authorize.
+    // Authorization path now needs PAR, so this test exercises metadata via PAR-backed authorize.
 
     // With client_metadata support, the client should be validated via metadata
     // and the consent page should be served (200) or redirect issued (302)
@@ -812,7 +807,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     XCTAssertEqualObjects(noMetadataResponse.jsonBody[@"error"], @"unauthorized_client", @"Should fail with unauthorized_client");
 }
 
-- (void)testAuthorizeRejectsDirectRequestWithoutRequestURI {
+- (void)testAuthorizeBlocksDirectRequestWithoutRequestURI {
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/oauth/authorize"
@@ -1088,7 +1083,7 @@ static SecKeyRef oauth2HandlerCreateFixedP256PrivateKey(NSError **error) {
     }
 }
 
-- (void)testTokenRequestWithExpiredJWTAssertion {
+- (void)testTokenRequestWithOldJWTAssertion {
     NSError *error = nil;
     SecKeyRef privateKey = oauth2HandlerCreateFixedP256PrivateKey(&error);
     XCTAssertTrue(privateKey != NULL, @"Should create private key");

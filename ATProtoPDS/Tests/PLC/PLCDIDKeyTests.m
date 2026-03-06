@@ -39,14 +39,14 @@
     XCTAssertTrue(first == 0x02 || first == 0x03);
 }
 
-- (void)testRejectsUnsupportedMultibasePrefix {
+- (void)testParseReturnsErrorForUnsupportedMultibasePrefix {
     NSError *error = nil;
     PLCDIDKey *parsed = [PLCDIDKey parseFromString:@"did:key:babc" error:&error];
     XCTAssertNil(parsed);
     XCTAssertNotNil(error);
 }
 
-- (void)testRejectsUnsupportedMulticodec {
+- (void)testParseReturnsErrorForUnsupportedMulticodec {
     // Construct a did:key with an unsupported multicodec prefix (ed25519-pub: 0xed 0x01)
     uint8_t bytes[] = {0xED, 0x01, 0x02, 0xAA};
     NSData *data = [NSData dataWithBytes:bytes length:sizeof(bytes)];

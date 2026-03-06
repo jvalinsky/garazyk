@@ -123,7 +123,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertFalse([self isValidRecordPath:@"app.bsky.feed.post//rkey"], @"Double slash should be rejected");
 }
 
-- (void)testTIDMonotonicity {
+- (void)testTIDMonotonicityYieldsDescendingOrder {
     // TIDs should be time-ordered - later timestamp = lexically greater
     NSString *earlier = @"3jqfcqzm3fo2j";
     NSString *later = @"3k5f2x7a8c9d1";

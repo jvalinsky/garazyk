@@ -7,22 +7,28 @@
 @implementation PDSNewArchitectureTests
 
 - (void)testActorStoreTests {
-    [self invokeTest:[ActorStoreTests class] selector:@selector(testStoreInitialization)];
+    [self invokeTestClassNamed:@"ActorStoreTests" selector:@selector(testStoreInitialization)];
 }
 
 - (void)testDatabasePoolTests {
-    [self invokeTest:[DatabasePoolTests class] selector:@selector(testPoolInitialization)];
+    [self invokeTestClassNamed:@"DatabasePoolTests" selector:@selector(testPoolInitialization)];
 }
 
 - (void)testServiceDatabasesTests {
-    [self invokeTest:[ServiceDatabasesTests class] selector:@selector(testServiceDatabasesInitialization)];
+    [self invokeTestClassNamed:@"ServiceDatabasesTests" selector:@selector(testServiceDatabasesInitialization)];
 }
 
 - (void)testPDSControllerTests {
-    [self invokeTest:[PDSControllerTests class] selector:@selector(testControllerInitialization)];
+    [self invokeTestClassNamed:@"PDSControllerTests" selector:@selector(testControllerInitialization)];
 }
 
-- (void)invokeTest:(Class)testClass selector:(SEL)selector {
+- (void)invokeTestClassNamed:(NSString *)className selector:(SEL)selector {
+    Class testClass = NSClassFromString(className);
+    XCTAssertNotNil(testClass, @"Expected test class %@ to exist", className);
+    if (testClass == Nil) {
+        return;
+    }
+
     XCTestCase *test = [[testClass alloc] init];
     [test setUp];
     [test performSelector:selector];

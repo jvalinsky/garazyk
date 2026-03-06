@@ -25,7 +25,7 @@
     [super tearDown];
 }
 
-- (void)testGetServiceAuth {
+- (void)testGetServiceAuthReturnsToken {
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                                   methodString:@"GET"
                                                           path:@"/xrpc/com.atproto.server.getServiceAuth"

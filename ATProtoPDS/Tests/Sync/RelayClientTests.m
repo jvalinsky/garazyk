@@ -113,6 +113,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
     [client firehoseSubscription:subscription didCloseWithError:nil];
+    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.cursorExpectation] timeout:1.0];
     XCTAssertFalse(client.isConnected);
@@ -133,6 +134,7 @@ NS_ASSUME_NONNULL_BEGIN
     FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:0 collections:nil];
     NSError *closeError = [NSError errorWithDomain:@"test" code:9 userInfo:nil];
     [client firehoseSubscription:subscription didCloseWithError:closeError];
+    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.cursorExpectation, delegate.disconnectExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.disconnectError.domain, RelayClientErrorDomain);
@@ -151,6 +153,7 @@ NS_ASSUME_NONNULL_BEGIN
     FirehoseErrorEvent *errorEvent = [FirehoseErrorEvent eventWithError:@"FutureCursor" message:@"cursor ahead"];
     [client firehoseSubscription:subscription didReceiveIdentityEvent:identity];
     [client firehoseSubscription:subscription didReceiveErrorEvent:errorEvent];
+    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.identityExpectation, delegate.errorExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.identityEvent.did, @"did:plc:alice");
@@ -179,6 +182,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                                  ops:@[@{@"action": @"create"}]];
     event.seq = 456;
     [client firehoseSubscription:subscription didReceiveCommitEvent:event];
+    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
     // Note: currentCursor might be based on event.rev or seq, not commit CID

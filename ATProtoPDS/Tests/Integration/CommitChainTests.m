@@ -83,7 +83,7 @@
 - (void)testCommitChainIntegrity {
     NSError *error = nil;
 
-    // 1. Create first record (Genesis + 1)
+    // 1. Create initial record (Genesis + 1)
     NSDictionary *record1 = @{@"text": @"post 1", @"createdAt": [[TID tid] stringValue]};
     BOOL success1 = [self.controller putRecord:@"app.bsky.feed.post"
                                           rkey:@"post1"
@@ -112,7 +112,7 @@
     
     XCTAssertNotNil(map1[@"sig"], @"Commit 1 should be signed");
     
-    // 4. Create second record
+    // 4. Create another record
     NSDictionary *record2 = @{@"text": @"post 2", @"createdAt": [[TID tid] stringValue]};
     BOOL success2 = [self.controller putRecord:@"app.bsky.feed.post"
                                           rkey:@"post2"

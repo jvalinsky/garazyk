@@ -93,7 +93,7 @@
     [super tearDown];
 }
 
-- (void)testBroadcastCommitWithOps {
+- (void)testBroadcastCommitWithOpsValidatesMaxSeqIsGreater {
     RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:test" 
                                                    data:[CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] 
                                                     rev:@"3l66k7pp33p" 
@@ -118,6 +118,15 @@
                                                          ops:ops 
                                                        blobs:blobs], 
                       @"Should handle broadcast with ops and blobs");
+                      
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSError *err = nil;
+        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+        XCTAssertGreaterThan(maxSeq, 0);
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
 #ifndef GNUSTEP
@@ -135,12 +144,12 @@
         }
     ];
     
-    MockWebSocketConnection *mockConn = [[MockWebSocketConnection alloc] init];
+    MockWebSocketConnection *testConn = [[MockWebSocketConnection alloc] init];
     // Use didAcceptConnection directly to bypass connection wrapping
-    [(id)self.handler webSocketServer:nil didAcceptConnection:mockConn];
+    [(id)self.handler webSocketServer:nil didAcceptConnection:testConn];
     
     // Simulate backpressure by increasing count
-    mockConn.simulatedPendingSendCount = self.handler.maxPendingSendsPerConnection + 1;
+    testConn.simulatedPendingSendCount = self.handler.maxPendingSendsPerConnection + 1;
     
     [self.handler broadcastRepositoryCommit:commit forRepo:@"did:plc:test" ops:ops blobs:@[]];
     
@@ -151,15 +160,15 @@
     });
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
     
-    XCTAssertTrue(mockConn.didClose, @"Connection should be closed due to count backpressure");
-    XCTAssertEqual(mockConn.closedCode, 1008);
+    XCTAssertTrue(testConn.didClose, @"Connection should be closed due to count backpressure");
+    XCTAssertEqual(testConn.closedCode, 1008);
     
     // Reset and test bytes backpressure
-    MockWebSocketConnection *mockConn2 = [[MockWebSocketConnection alloc] init];
-    [(id)self.handler webSocketServer:nil didAcceptConnection:mockConn2];
+    MockWebSocketConnection *testConn2 = [[MockWebSocketConnection alloc] init];
+    [(id)self.handler webSocketServer:nil didAcceptConnection:testConn2];
     
-    mockConn2.simulatedPendingSendCount = 0;
-    mockConn2.simulatedPendingSendBytes = self.handler.maxPendingBytesPerConnection + 1;
+    testConn2.simulatedPendingSendCount = 0;
+    testConn2.simulatedPendingSendBytes = self.handler.maxPendingBytesPerConnection + 1;
     
     [self.handler broadcastRepositoryCommit:commit forRepo:@"did:plc:test" ops:ops blobs:@[]];
     
@@ -169,8 +178,8 @@
     });
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
     
-    XCTAssertTrue(mockConn2.didClose, @"Connection should be closed due to bytes backpressure");
-    XCTAssertEqual(mockConn2.closedCode, 1008);
+    XCTAssertTrue(testConn2.didClose, @"Connection should be closed due to bytes backpressure");
+    XCTAssertEqual(testConn2.closedCode, 1008);
 }
 #endif
 
@@ -504,21 +513,48 @@
 }
 #endif
 
-- (void)testBroadcastIdentityChange {
+- (void)testBroadcastIdentityChangePersistsEvent {
     XCTAssertNoThrow([self.handler broadcastIdentityChange:@"did:plc:test" handle:@"test.bsky.social"],
                      @"Should handle identity broadcast with handle");
     XCTAssertNoThrow([self.handler broadcastIdentityChange:@"did:plc:test2" handle:nil],
                      @"Should handle identity broadcast without handle");
+                     
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSError *err = nil;
+        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+        XCTAssertGreaterThan(maxSeq, 0);
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
-- (void)testBroadcastAccountTakedown {
+- (void)testBroadcastAccountTakedownValidatesMaxSeqIsGreater {
     XCTAssertNoThrow([self.handler broadcastAccountTakedown:@"did:plc:malicious"],
                      @"Should handle account takedown broadcast");
+                     
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSError *err = nil;
+        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+        XCTAssertGreaterThan(maxSeq, 0);
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
-- (void)testBroadcastInfoEvent {
+- (void)testBroadcastInfoEventValidatesMaxSeqIsGreater {
     XCTAssertNoThrow([self.handler broadcastInfo:@"OutdatedCursor" message:@"Requested sequence too far back"],
                       @"Should handle info event broadcast");
+                      
+    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSError *err = nil;
+        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+        XCTAssertGreaterThan(maxSeq, 0);
+        [persistExp fulfill];
+    });
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
 #ifndef GNUSTEP

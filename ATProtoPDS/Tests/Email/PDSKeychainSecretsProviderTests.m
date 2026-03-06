@@ -59,7 +59,7 @@
     }
 }
 
-- (void)testInitWithService {
+- (void)testInitWithServiceSetsService {
     NSString *customService = @"com.example.custom.service";
     PDSKeychainSecretsProvider *provider = [[PDSKeychainSecretsProvider alloc] initWithService:customService];
     
@@ -67,7 +67,7 @@
     XCTAssertEqualObjects(provider.service, customService);
 }
 
-- (void)testInitDefaultService {
+- (void)testInitDefaultServiceSetsDefaultService {
     PDSKeychainSecretsProvider *provider = [[PDSKeychainSecretsProvider alloc] init];
     
     XCTAssertNotNil(provider);

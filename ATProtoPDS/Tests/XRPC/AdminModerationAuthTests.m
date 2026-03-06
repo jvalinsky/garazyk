@@ -6,7 +6,7 @@
 
 @implementation AdminModerationAuthTests
 
-- (void)testModerateAccountRequiresAuth {
+- (void)testModerateAccountReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{
                                                           @"did": self.userDid,
@@ -16,7 +16,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testModerateAccountNonAdminForbidden {
+- (void)testModerateAccountReturnsForbiddenForNonAdmin {
     NSDictionary *headers = @{@"authorization": [NSString stringWithFormat:@"Bearer %@", self.userJwt]};
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{
@@ -27,7 +27,7 @@
     XCTAssertEqual(response.statusCode, 403);
 }
 
-- (void)testModerateRecordRequiresAuth {
+- (void)testModerateRecordReturnsUnauthorizedWithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
                                                       body:@{
                                                           @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
@@ -37,7 +37,7 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testModerateRecordNonAdminForbidden {
+- (void)testModerateRecordReturnsForbiddenForNonAdmin {
     NSDictionary *headers = @{@"authorization": [NSString stringWithFormat:@"Bearer %@", self.userJwt]};
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
                                                       body:@{
