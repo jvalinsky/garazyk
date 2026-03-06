@@ -78,11 +78,14 @@ func (r *CoverageGapRule) Validate(ctx ValidationContext) []Finding {
 
 // checkMultipleClaimsSingleValidation detects tests claiming multiple behaviors but only validating one
 func (r *CoverageGapRule) checkMultipleClaimsSingleValidation(method *models.TestMethod, ctx ValidationContext) *Finding {
-	nameLower := strings.ToLower(method.Name)
-
-	// Look for "And" or "And" patterns in test names
-	hasMultipleClaims := strings.Contains(nameLower, "and") ||
-		strings.Contains(method.Name, "And")
+	// Look for standalone "and" tokens in test names.
+	hasMultipleClaims := false
+	for _, token := range splitTestNameTokens(method.Name) {
+		if token == "and" {
+			hasMultipleClaims = true
+			break
+		}
+	}
 
 	if !hasMultipleClaims {
 		return nil
@@ -112,50 +115,11 @@ func (r *CoverageGapRule) checkMultipleClaimsSingleValidation(method *models.Tes
 
 // checkErrorHandlingWithoutException detects error handling claims without exception checks
 func (r *CoverageGapRule) checkErrorHandlingWithoutException(method *models.TestMethod, ctx ValidationContext) *Finding {
-	nameLower := strings.ToLower(method.Name)
-
-	// Look for error handling keywords in test name
-	errorKeywords := []string{
-		"error", "invalid", "malformed", "reject", "fail",
-		"throw", "exception", "handle", "bad", "wrong",
-	}
-
-	claimsErrorHandling := false
-	for _, keyword := range errorKeywords {
-		if strings.Contains(nameLower, keyword) {
-			claimsErrorHandling = true
-			break
-		}
-	}
-
-	if !claimsErrorHandling {
+	if !r.claimsErrorHandling(method.Name) {
 		return nil
 	}
 
-	// Check if test has exception-related assertions
-	hasExceptionCheck := false
-	for _, assertion := range method.Assertions {
-		if assertion.Type == "XCTAssertThrows" ||
-			assertion.Type == "XCTAssertThrowsError" ||
-			assertion.Type == "XCTAssertThrowsSpecific" {
-			hasExceptionCheck = true
-			break
-		}
-	}
-
-	// Also check for error parameter validation patterns
-	hasErrorValidation := false
-	for _, assertion := range method.Assertions {
-		for _, arg := range assertion.Arguments {
-			argLower := strings.ToLower(arg)
-			if strings.Contains(argLower, "error") && assertion.Type == "XCTAssertNotNil" {
-				hasErrorValidation = true
-				break
-			}
-		}
-	}
-
-	if !hasExceptionCheck && !hasErrorValidation {
+	if !r.hasErrorValidationAssertions(method) {
 		// Use the rule's base severity (MEDIUM) but this specific gap type is more severe
 		return &Finding{
 			RuleName:   r.Name(),
@@ -176,10 +140,89 @@ func (r *CoverageGapRule) checkErrorHandlingWithoutException(method *models.Test
 	return nil
 }
 
+func (r *CoverageGapRule) claimsErrorHandling(methodName string) bool {
+	tokens := splitTestNameTokens(methodName)
+	errorKeywords := []string{
+		"error", "invalid", "malformed", "reject", "fail",
+		"throw", "exception",
+	}
+
+	for i, token := range tokens {
+		for _, keyword := range errorKeywords {
+			// Avoid false positive matches such as "invalidates" in non-error-flow tests.
+			if keyword == "invalid" && strings.HasPrefix(token, "invalidat") {
+				continue
+			}
+			// Exclude explicit success-phrased names like "...NoError".
+			if keyword == "error" && isNegatedErrorToken(tokens, i) {
+				continue
+			}
+			if tokenMatchesKeyword(token, keyword) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (r *CoverageGapRule) hasErrorValidationAssertions(method *models.TestMethod) bool {
+	sourceLower := strings.ToLower(method.SourceCode)
+	if strings.Contains(sourceLower, "error != nil") ||
+		strings.Contains(sourceLower, "nil != error") ||
+		strings.Contains(sourceLower, "if (error)") {
+		return true
+	}
+
+	errorValidationArgKeywords := []string{
+		"error", "status", "code", "fail", "failure", "exception",
+		"invalid", "cancel", "retry", "decision", "denied",
+	}
+
+	for _, assertion := range method.Assertions {
+		typeLower := strings.ToLower(assertion.Type)
+		switch typeLower {
+		case "xctassertthrows", "xctassertthrowserror", "xctassertthrowsspecific":
+			return true
+		case "xctassertfalse", "xctassertnil":
+			// Negative assertions are often the expected behavior for invalid/failure paths.
+			return true
+		case "xctfail":
+			// Conditional XCTFail branches are commonly used for explicit error-path checks.
+			return true
+		}
+
+		for _, arg := range assertion.Arguments {
+			argLower := strings.ToLower(arg)
+			for _, keyword := range errorValidationArgKeywords {
+				if strings.Contains(argLower, keyword) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func isNegatedErrorToken(tokens []string, idx int) bool {
+	if idx < 0 || idx >= len(tokens) {
+		return false
+	}
+	if !tokenMatchesKeyword(tokens[idx], "error") {
+		return false
+	}
+
+	if idx > 0 {
+		prev := tokens[idx-1]
+		if prev == "no" || prev == "without" || prev == "non" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // checkStateTransitionWithoutChecks detects state transition claims without before/after checks
 func (r *CoverageGapRule) checkStateTransitionWithoutChecks(method *models.TestMethod, ctx ValidationContext) *Finding {
-	nameLower := strings.ToLower(method.Name)
-
 	// Look for state transition keywords
 	transitionKeywords := []string{
 		"remove", "delete", "add", "insert", "update", "change",
@@ -190,15 +233,24 @@ func (r *CoverageGapRule) checkStateTransitionWithoutChecks(method *models.TestM
 
 	claimsStateTransition := false
 	matchedKeyword := ""
-	for _, keyword := range transitionKeywords {
-		if strings.Contains(nameLower, keyword) {
-			claimsStateTransition = true
-			matchedKeyword = keyword
+	for _, token := range splitTestNameTokens(method.Name) {
+		for _, keyword := range transitionKeywords {
+			if tokenMatchesKeyword(token, keyword) {
+				claimsStateTransition = true
+				matchedKeyword = keyword
+				break
+			}
+		}
+		if claimsStateTransition {
 			break
 		}
 	}
 
 	if !claimsStateTransition {
+		return nil
+	}
+
+	if isAmbiguousTransitionKeyword(matchedKeyword) && !r.hasTransitionMethodCall(method, matchedKeyword) {
 		return nil
 	}
 
@@ -226,22 +278,93 @@ func (r *CoverageGapRule) checkStateTransitionWithoutChecks(method *models.TestM
 	return nil
 }
 
+func splitTestNameTokens(name string) []string {
+	if strings.HasPrefix(name, "test") && len(name) > 4 {
+		name = name[4:]
+	}
+
+	tokens := make([]string, 0, 8)
+	var current strings.Builder
+	flush := func() {
+		if current.Len() == 0 {
+			return
+		}
+		tokens = append(tokens, current.String())
+		current.Reset()
+	}
+
+	for i, r := range name {
+		if r == '_' || r == '-' || r == ':' || r == ' ' {
+			flush()
+			continue
+		}
+		if i > 0 && r >= 'A' && r <= 'Z' && current.Len() > 0 {
+			flush()
+		}
+		if r >= 'A' && r <= 'Z' {
+			r = r - 'A' + 'a'
+		}
+		current.WriteRune(r)
+	}
+	flush()
+	return tokens
+}
+
+func tokenMatchesKeyword(token, keyword string) bool {
+	if token == keyword {
+		return true
+	}
+
+	if len(keyword) <= 4 {
+		suffixes := []string{"s", "ed", "ing", "er", "ers"}
+		for _, suffix := range suffixes {
+			if token == keyword+suffix {
+				return true
+			}
+		}
+		return false
+	}
+
+	return strings.HasPrefix(token, keyword)
+}
+
+func isAmbiguousTransitionKeyword(keyword string) bool {
+	switch keyword {
+	case "block", "kick", "ban", "mute":
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *CoverageGapRule) hasTransitionMethodCall(method *models.TestMethod, keyword string) bool {
+	for _, call := range method.MethodCalls {
+		if strings.Contains(strings.ToLower(call.Selector), keyword) {
+			return true
+		}
+	}
+	return false
+}
+
 // checkConcurrencyWithoutRaceTesting detects concurrency claims without race testing
 func (r *CoverageGapRule) checkConcurrencyWithoutRaceTesting(method *models.TestMethod, ctx ValidationContext) *Finding {
-	nameLower := strings.ToLower(method.Name)
-
 	// Look for concurrency keywords
 	concurrencyKeywords := []string{
 		"concurrent", "parallel", "thread", "race", "sync",
-		"async", "lock", "mutex", "atomic", "queue",
+		"async", "lock", "mutex", "queue",
 	}
 
 	claimsConcurrency := false
 	matchedKeyword := ""
-	for _, keyword := range concurrencyKeywords {
-		if strings.Contains(nameLower, keyword) {
-			claimsConcurrency = true
-			matchedKeyword = keyword
+	for _, token := range splitTestNameTokens(method.Name) {
+		for _, keyword := range concurrencyKeywords {
+			if tokenMatchesKeyword(token, keyword) {
+				claimsConcurrency = true
+				matchedKeyword = keyword
+				break
+			}
+		}
+		if claimsConcurrency {
 			break
 		}
 	}

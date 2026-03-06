@@ -49,3 +49,46 @@ func TestFindingConfidenceBounds(t *testing.T) {
 		})
 	}
 }
+
+func TestDedupeFindings(t *testing.T) {
+	input := []Finding{
+		{
+			RuleName:   "ParserSerializerRule",
+			FilePath:   "a.m",
+			TestClass:  "A",
+			TestMethod: "testOne",
+			LineNumber: 10,
+			Message:    "missing round-trip",
+			Confidence: 0.7,
+		},
+		{
+			RuleName:   "ParserSerializerRule",
+			FilePath:   "a.m",
+			TestClass:  "A",
+			TestMethod: "testOne",
+			LineNumber: 10,
+			Message:    "missing round-trip",
+			Confidence: 0.9, // differs but same dedupe key
+		},
+		{
+			RuleName:   "CoverageGapRule",
+			FilePath:   "a.m",
+			TestClass:  "A",
+			TestMethod: "testTwo",
+			LineNumber: 20,
+			Message:    "insufficient assertions",
+		},
+	}
+
+	got := DedupeFindings(input)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 findings after dedupe, got %d", len(got))
+	}
+
+	if got[0].RuleName != "ParserSerializerRule" || got[0].TestMethod != "testOne" {
+		t.Fatalf("expected first finding to preserve original order, got %+v", got[0])
+	}
+	if got[1].RuleName != "CoverageGapRule" || got[1].TestMethod != "testTwo" {
+		t.Fatalf("expected second finding to be CoverageGapRule, got %+v", got[1])
+	}
+}

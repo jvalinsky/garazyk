@@ -1,10 +1,22 @@
 package validation
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/september-pds/test-audit-validator/internal/models"
+)
+
+// SecurityTestType represents the type of security test
+type SecurityTestType string
+
+const (
+	SecurityTypeOAuth     SecurityTestType = "oauth"
+	SecurityTypeDPoP      SecurityTestType = "dpop"
+	SecurityTypeJWT       SecurityTestType = "jwt"
+	SecurityTypeSSRF      SecurityTestType = "ssrf"
+	SecurityTypeInputVal  SecurityTestType = "input_validation"
+	SecurityTypeRateLimit SecurityTestType = "rate_limit"
+	SecurityTypeNone      SecurityTestType = "none"
 )
 
 // SecurityTestRule validates security tests
@@ -17,7 +29,7 @@ func (r *SecurityTestRule) Name() string {
 
 // Description returns the rule description
 func (r *SecurityTestRule) Description() string {
-	return "Validates that security tests actually test security properties"
+	return "Validates that security tests actually test security properties (rejection of malicious inputs, cryptographic validation)"
 }
 
 // Severity returns the rule severity
@@ -33,23 +45,40 @@ func (r *SecurityTestRule) Validate(ctx ValidationContext) []Finding {
 
 	var findings []Finding
 
-	// Check if this is a security test
-	securityType := r.detectSecurityTestType(ctx.TestMethod)
-	if securityType == "" {
+	// Detect security test type
+	securityType := r.detectSecurityTestType(ctx.TestMethod, ctx.TestClass)
+
+	// If not a security test, skip
+	if securityType == SecurityTypeNone {
 		return nil
 	}
 
-	// Verify the test validates rejection/security properties
-	if !r.validatesSecurityProperty(ctx.TestMethod, securityType) {
+	// Check if test validates rejection/security properties
+	hasRejectionValidation := r.hasRejectionValidation(ctx.TestMethod, securityType)
+
+	if !hasRejectionValidation {
+		// Only flag if the test name specifically claims to test rejection/invalid/expired
+		nameIndicatesRejection := false
+		nameLower := strings.ToLower(ctx.TestMethod.Name)
+		for _, keyword := range []string{"invalid", "reject", "expired", "tamper", "malformed", "unauthorized"} {
+			if strings.Contains(nameLower, keyword) {
+				nameIndicatesRejection = true
+				break
+			}
+		}
+		if !nameIndicatesRejection {
+			return findings
+		}
+
 		findings = append(findings, Finding{
 			RuleName:       r.Name(),
-			Severity:       r.Severity(),
+			Severity:       HIGH,
 			TestMethod:     ctx.TestMethod.Name,
 			TestClass:      ctx.TestClass.Name,
 			FilePath:       ctx.TestFile.Path,
 			LineNumber:     ctx.TestMethod.LineNumber,
-			Message:        "Security test does not verify rejection of malicious/invalid inputs",
-			Recommendation: r.getRecommendation(securityType),
+			Message:        r.getSecurityMessage(securityType),
+			Recommendation: r.getSecurityRecommendation(securityType),
 			Confidence:     0.8,
 		})
 	}
@@ -58,209 +87,82 @@ func (r *SecurityTestRule) Validate(ctx ValidationContext) []Finding {
 }
 
 // detectSecurityTestType identifies the type of security test
-func (r *SecurityTestRule) detectSecurityTestType(method *models.TestMethod) string {
+func (r *SecurityTestRule) detectSecurityTestType(method *models.TestMethod, class *models.TestClass) SecurityTestType {
 	nameLower := strings.ToLower(method.Name)
+	classLower := strings.ToLower(class.Name)
 	sourceCode := strings.ToLower(method.SourceCode)
 
-	// OAuth/DPoP tests
-	if strings.Contains(nameLower, "oauth") || strings.Contains(nameLower, "dpop") ||
-		strings.Contains(sourceCode, "oauth") || strings.Contains(sourceCode, "dpop") {
-		return "oauth_dpop"
+	// OAuth tests - only match on 'oauth' specifically, not 'token' (too broad)
+	if r.matchesKeywords(nameLower, classLower, sourceCode, []string{"oauth"}) {
+		return SecurityTypeOAuth
+	}
+
+	// DPoP tests
+	if r.matchesKeywords(nameLower, classLower, sourceCode, []string{"dpop", "proof"}) {
+		return SecurityTypeDPoP
 	}
 
 	// JWT tests
-	if strings.Contains(nameLower, "jwt") || strings.Contains(nameLower, "token") {
-		if strings.Contains(sourceCode, "jwt") || strings.Contains(sourceCode, "token") {
-			return "jwt"
-		}
+	if r.matchesKeywords(nameLower, classLower, sourceCode, []string{"jwt", "jws", "jwe"}) {
+		return SecurityTypeJWT
 	}
 
 	// SSRF protection tests
-	if strings.Contains(nameLower, "ssrf") || strings.Contains(nameLower, "urlvalidation") {
-		return "ssrf"
+	if r.matchesKeywords(nameLower, classLower, sourceCode, []string{"ssrf", "urlvalidat", "urlcheck"}) {
+		return SecurityTypeSSRF
 	}
 
 	// Input validation tests
-	if (strings.Contains(nameLower, "validation") || strings.Contains(nameLower, "invalid")) &&
-		(strings.Contains(nameLower, "input") || strings.Contains(nameLower, "malformed")) {
-		return "input_validation"
+	if r.matchesKeywords(nameLower, classLower, sourceCode, []string{"inputvalidat", "malformed", "sanitiz", "xss", "injection"}) {
+		return SecurityTypeInputVal
 	}
 
 	// Rate limiting tests
-	if strings.Contains(nameLower, "ratelimit") || strings.Contains(nameLower, "throttle") {
-		return "rate_limiting"
+	if r.matchesKeywords(nameLower, classLower, sourceCode, []string{"ratelimit", "throttl", "dos", "ddos"}) {
+		return SecurityTypeRateLimit
 	}
 
-	return ""
+	return SecurityTypeNone
 }
 
-// validatesSecurityProperty checks if the test validates security properties
-func (r *SecurityTestRule) validatesSecurityProperty(method *models.TestMethod, securityType string) bool {
-	sourceCode := strings.ToLower(method.SourceCode)
-
-	switch securityType {
-	case "oauth_dpop":
-		return r.validatesOAuthDPoP(method, sourceCode)
-	case "jwt":
-		return r.validatesJWT(method, sourceCode)
-	case "ssrf":
-		return r.validatesSSRF(method, sourceCode)
-	case "input_validation":
-		return r.validatesInputValidation(method, sourceCode)
-	case "rate_limiting":
-		return r.validatesRateLimiting(method, sourceCode)
+// matchesKeywords checks if any keyword matches in the method name or class name.
+// Deliberately does NOT match on source code to avoid false positives from
+// incidental keyword usage (e.g., "token" in any auth-adjacent test).
+func (r *SecurityTestRule) matchesKeywords(name, class, source string, keywords []string) bool {
+	for _, keyword := range keywords {
+		if strings.Contains(name, keyword) || strings.Contains(class, keyword) {
+			return true
+		}
 	}
-
 	return false
 }
 
-// validatesOAuthDPoP checks OAuth/DPoP signature validation
-func (r *SecurityTestRule) validatesOAuthDPoP(method *models.TestMethod, sourceCode string) bool {
-	// Check for signature validation
-	signatureKeywords := []string{
-		"verify", "signature", "invalid", "tampered", "reject",
-	}
-
-	hasSignatureCheck := false
-	for _, keyword := range signatureKeywords {
-		if strings.Contains(sourceCode, keyword) {
-			hasSignatureCheck = true
-			break
-		}
-	}
-
-	if !hasSignatureCheck {
+// hasRejectionValidation checks if test validates rejection/security properties
+func (r *SecurityTestRule) hasRejectionValidation(method *models.TestMethod, securityType SecurityTestType) bool {
+	switch securityType {
+	case SecurityTypeOAuth, SecurityTypeDPoP:
+		return r.hasSignatureValidation(method)
+	case SecurityTypeJWT:
+		return r.hasJWTValidation(method)
+	case SecurityTypeSSRF:
+		return r.hasURLRejection(method)
+	case SecurityTypeInputVal:
+		return r.hasInputRejection(method)
+	case SecurityTypeRateLimit:
+		return r.hasThrottlingCheck(method)
+	default:
 		return false
 	}
-
-	// Check for rejection assertions
-	return r.hasRejectionAssertion(method)
 }
 
-// validatesJWT checks JWT expiration and signature validation
-func (r *SecurityTestRule) validatesJWT(method *models.TestMethod, sourceCode string) bool {
-	// Check for expiration or signature checks
-	jwtKeywords := []string{
-		"expir", "signature", "invalid", "verify", "reject",
-	}
-
-	hasJWTCheck := false
-	for _, keyword := range jwtKeywords {
-		if strings.Contains(sourceCode, keyword) {
-			hasJWTCheck = true
-			break
-		}
-	}
-
-	if !hasJWTCheck {
-		return false
-	}
-
-	// Check for rejection assertions
-	return r.hasRejectionAssertion(method)
-}
-
-// validatesSSRF checks SSRF protection
-func (r *SecurityTestRule) validatesSSRF(method *models.TestMethod, sourceCode string) bool {
-	// Check for URL rejection
-	ssrfKeywords := []string{
-		"reject", "block", "deny", "invalid", "malicious",
-	}
-
-	hasSSRFCheck := false
-	for _, keyword := range ssrfKeywords {
-		if strings.Contains(sourceCode, keyword) {
-			hasSSRFCheck = true
-			break
-		}
-	}
-
-	if !hasSSRFCheck {
-		return false
-	}
-
-	// Check for rejection assertions
-	return r.hasRejectionAssertion(method)
-}
-
-// validatesInputValidation checks input validation
-func (r *SecurityTestRule) validatesInputValidation(method *models.TestMethod, sourceCode string) bool {
-	// Check for malformed input rejection
-	validationKeywords := []string{
-		"malformed", "invalid", "reject", "error", "fail",
-	}
-
-	hasValidationCheck := false
-	for _, keyword := range validationKeywords {
-		if strings.Contains(sourceCode, keyword) {
-			hasValidationCheck = true
-			break
-		}
-	}
-
-	if !hasValidationCheck {
-		return false
-	}
-
-	// Check for rejection assertions
-	return r.hasRejectionAssertion(method)
-}
-
-// validatesRateLimiting checks rate limiting
-func (r *SecurityTestRule) validatesRateLimiting(method *models.TestMethod, sourceCode string) bool {
-	// Check for throttling verification
-	rateLimitKeywords := []string{
-		"throttle", "block", "limit", "exceed", "reject",
-	}
-
-	hasRateLimitCheck := false
-	for _, keyword := range rateLimitKeywords {
-		if strings.Contains(sourceCode, keyword) {
-			hasRateLimitCheck = true
-			break
-		}
-	}
-
-	if !hasRateLimitCheck {
-		return false
-	}
-
-	// Check for rejection assertions
-	return r.hasRejectionAssertion(method)
-}
-
-// hasRejectionAssertion checks if the test has assertions that verify rejection
-func (r *SecurityTestRule) hasRejectionAssertion(method *models.TestMethod) bool {
-	// Check for assertions that verify rejection
-	rejectionPatterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)xctassertfalse`),
-		regexp.MustCompile(`(?i)xctassertnil`),
-		regexp.MustCompile(`(?i)xctassertthrows`),
-		regexp.MustCompile(`(?i)xctassertnotnilwitherror`),
-		regexp.MustCompile(`(?i)xctassertequal.*false`),
-		regexp.MustCompile(`(?i)xctassertequal.*nil`),
-		regexp.MustCompile(`(?i)xctasserttrue.*block`), // For rate limiting: isBlocked
-		regexp.MustCompile(`(?i)xctasserttrue.*reject`),
-	}
-
+// hasSignatureValidation checks for signature/cryptographic validation
+func (r *SecurityTestRule) hasSignatureValidation(method *models.TestMethod) bool {
+	// Check for XCTAssertFalse on validation result
 	for _, assertion := range method.Assertions {
-		assertionType := strings.ToLower(assertion.Type)
-		
-		// Check if assertion type indicates rejection
-		if strings.Contains(assertionType, "false") ||
-			strings.Contains(assertionType, "nil") ||
-			strings.Contains(assertionType, "throws") {
-			return true
-		}
-
-		// Check assertion arguments for rejection indicators
-		for _, arg := range assertion.Arguments {
-			argLower := strings.ToLower(arg)
-			if strings.Contains(argLower, "false") ||
-				strings.Contains(argLower, "nil") ||
-				strings.Contains(argLower, "error") ||
-				strings.Contains(argLower, "reject") ||
-				strings.Contains(argLower, "block") { // For rate limiting
+		if assertion.Type == "XCTAssertFalse" {
+			// Check if asserting on validation/verification result
+			args := strings.Join(assertion.Arguments, " ")
+			if r.containsValidationKeywords(args) {
 				return true
 			}
 		}
@@ -268,29 +170,190 @@ func (r *SecurityTestRule) hasRejectionAssertion(method *models.TestMethod) bool
 
 	// Check source code for rejection patterns
 	sourceCode := strings.ToLower(method.SourceCode)
-	for _, pattern := range rejectionPatterns {
-		if pattern.MatchString(sourceCode) {
-			return true
+	validationKeywords := []string{
+		"verify", "validate", "check", "tamper", "invalid", "reject",
+	}
+
+	hasValidationCall := false
+	for _, keyword := range validationKeywords {
+		if strings.Contains(sourceCode, keyword) {
+			hasValidationCall = true
+			break
 		}
 	}
 
+	// Must have both validation call and assertion of failure
+	return hasValidationCall && r.hasFailureAssertion(method)
+}
+
+// hasJWTValidation checks for JWT expiration/signature validation
+func (r *SecurityTestRule) hasJWTValidation(method *models.TestMethod) bool {
+	sourceCode := strings.ToLower(method.SourceCode)
+
+	// Check for expiration or signature keywords
+	jwtKeywords := []string{
+		"expir", "signature", "invalid", "tamper", "verify",
+	}
+
+	hasJWTValidation := false
+	for _, keyword := range jwtKeywords {
+		if strings.Contains(sourceCode, keyword) {
+			hasJWTValidation = true
+			break
+		}
+	}
+
+	// Must have JWT validation and failure assertion
+	return hasJWTValidation && r.hasFailureAssertion(method)
+}
+
+// hasURLRejection checks for URL rejection validation
+func (r *SecurityTestRule) hasURLRejection(method *models.TestMethod) bool {
+	sourceCode := strings.ToLower(method.SourceCode)
+
+	// Check for malicious URL patterns
+	maliciousPatterns := []string{
+		"169.254", "localhost", "127.0.0.1", "malicious", "internal",
+	}
+
+	hasMaliciousURL := false
+	for _, pattern := range maliciousPatterns {
+		if strings.Contains(sourceCode, pattern) {
+			hasMaliciousURL = true
+			break
+		}
+	}
+
+	// Must have malicious URL and failure assertion
+	return hasMaliciousURL && r.hasFailureAssertion(method)
+}
+
+// hasInputRejection checks for input rejection validation
+func (r *SecurityTestRule) hasInputRejection(method *models.TestMethod) bool {
+	sourceCode := strings.ToLower(method.SourceCode)
+
+	// Check for malformed/malicious input
+	inputKeywords := []string{
+		"malformed", "invalid", "malicious", "script", "inject",
+	}
+
+	hasMaliciousInput := false
+	for _, keyword := range inputKeywords {
+		if strings.Contains(sourceCode, keyword) {
+			hasMaliciousInput = true
+			break
+		}
+	}
+
+	// Check for rejection assertions
+	hasRejection := false
+	for _, assertion := range method.Assertions {
+		if assertion.Type == "XCTAssertNil" || assertion.Type == "XCTAssertFalse" {
+			hasRejection = true
+			break
+		}
+		if assertion.Type == "XCTAssertNotNil" {
+			// Check if asserting on error
+			args := strings.Join(assertion.Arguments, " ")
+			if strings.Contains(strings.ToLower(args), "error") {
+				hasRejection = true
+				break
+			}
+		}
+	}
+
+	return hasMaliciousInput && hasRejection
+}
+
+// hasThrottlingCheck checks for rate limiting/throttling validation
+func (r *SecurityTestRule) hasThrottlingCheck(method *models.TestMethod) bool {
+	sourceCode := strings.ToLower(method.SourceCode)
+
+	// Check for loop exceeding limit
+	hasLoop := strings.Contains(sourceCode, "for") || strings.Contains(sourceCode, "while")
+	hasLimit := strings.Contains(sourceCode, "limit")
+
+	// Check for blocking/throttling assertions
+	hasBlockCheck := false
+	for _, assertion := range method.Assertions {
+		if assertion.Type == "XCTAssertTrue" {
+			args := strings.Join(assertion.Arguments, " ")
+			argsLower := strings.ToLower(args)
+			if strings.Contains(argsLower, "block") || strings.Contains(argsLower, "throttl") {
+				hasBlockCheck = true
+				break
+			}
+		}
+	}
+
+	return hasLoop && hasLimit && hasBlockCheck
+}
+
+// hasFailureAssertion checks if test asserts failure/rejection
+func (r *SecurityTestRule) hasFailureAssertion(method *models.TestMethod) bool {
+	for _, assertion := range method.Assertions {
+		switch assertion.Type {
+		case "XCTAssertFalse", "XCTAssertNil":
+			return true
+		case "XCTAssertNotNil":
+			// Check if asserting on error
+			args := strings.Join(assertion.Arguments, " ")
+			if strings.Contains(strings.ToLower(args), "error") {
+				return true
+			}
+		}
+	}
 	return false
 }
 
-// getRecommendation returns a recommendation based on security test type
-func (r *SecurityTestRule) getRecommendation(securityType string) string {
+// containsValidationKeywords checks if arguments contain validation keywords
+func (r *SecurityTestRule) containsValidationKeywords(args string) bool {
+	argsLower := strings.ToLower(args)
+	keywords := []string{"valid", "verify", "check", "auth"}
+	for _, keyword := range keywords {
+		if strings.Contains(argsLower, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// getSecurityMessage returns the appropriate message for the security type
+func (r *SecurityTestRule) getSecurityMessage(securityType SecurityTestType) string {
 	switch securityType {
-	case "oauth_dpop":
-		return "Add assertions to verify that tampered tokens are rejected (XCTAssertFalse for validation result)"
-	case "jwt":
-		return "Add assertions to verify that expired or invalid JWTs are rejected (XCTAssertThrows or XCTAssertFalse)"
-	case "ssrf":
-		return "Add assertions to verify that malicious URLs are rejected (XCTAssertFalse for validation result)"
-	case "input_validation":
-		return "Add assertions to verify that malformed inputs are rejected (XCTAssertThrows or XCTAssertNotNil for error)"
-	case "rate_limiting":
-		return "Add assertions to verify that requests are throttled after limits (XCTAssertTrue for isBlocked)"
+	case SecurityTypeOAuth:
+		return "OAuth test does not verify signature validation or token rejection"
+	case SecurityTypeDPoP:
+		return "DPoP test does not verify proof signature validation or rejection"
+	case SecurityTypeJWT:
+		return "JWT test does not verify expiration or signature checks"
+	case SecurityTypeSSRF:
+		return "SSRF protection test does not verify malicious URL rejection"
+	case SecurityTypeInputVal:
+		return "Input validation test does not verify malformed input rejection"
+	case SecurityTypeRateLimit:
+		return "Rate limiting test does not verify request throttling"
 	default:
-		return "Add assertions to verify that security properties are enforced"
+		return "Security test does not validate security properties"
+	}
+}
+
+// getSecurityRecommendation returns the appropriate recommendation for the security type
+func (r *SecurityTestRule) getSecurityRecommendation(securityType SecurityTestType) string {
+	switch securityType {
+	case SecurityTypeOAuth:
+		return "Add assertions that verify tampered or invalid tokens are rejected (XCTAssertFalse on validation result)"
+	case SecurityTypeDPoP:
+		return "Add assertions that verify invalid DPoP proofs are rejected (XCTAssertFalse on verification result)"
+	case SecurityTypeJWT:
+		return "Add assertions that verify expired or tampered JWTs are rejected (XCTAssertFalse on validation, XCTAssertNotNil on error)"
+	case SecurityTypeSSRF:
+		return "Add assertions that verify malicious URLs (169.254.169.254, localhost) are rejected (XCTAssertFalse on allowed, XCTAssertNotNil on error)"
+	case SecurityTypeInputVal:
+		return "Add assertions that verify malformed inputs are rejected (XCTAssertNil on result, XCTAssertNotNil on error)"
+	case SecurityTypeRateLimit:
+		return "Add assertions that verify requests are blocked after exceeding limit (XCTAssertTrue on isBlocked)"
+	default:
+		return "Add assertions that verify security properties are enforced"
 	}
 }
