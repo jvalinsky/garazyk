@@ -61,11 +61,12 @@ NS_ASSUME_NONNULL_BEGIN
     NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
+    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.commitEvent.repo, @"did:plc:alice");
     XCTAssertEqualObjects(delegate.commitEvent.commit, @"bafycommit");
-    // XCTAssertEqualObjects(delegate.commitEvent.previous, @"bafyprev");  // Removed: 'previous' field no longer exists
+    // Removed: 'prevCid' field no longer exists
     XCTAssertEqual(delegate.commitEvent.ops.count, 1);
 }
 #endif
@@ -84,6 +85,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
+    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.identityExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.identityEvent.did, @"did:plc:bob");
@@ -104,6 +106,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
+    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.errorExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.errorEvent.message, @"oops");

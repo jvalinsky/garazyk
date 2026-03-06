@@ -172,7 +172,7 @@
     XCTAssertTrue([respStr containsString:@"200 OK"]);
 }
 
-- (void)testPipelinedRequests {
+- (void)testPipelinedRequestsMatchesPartsCount {
     [self.server handleNewConnection:self.connection];
     
     NSString *req = @"GET /test HTTP/1.1\r\nHost: localhost\r\n\r\n"
@@ -190,7 +190,7 @@
     XCTAssertEqual(parts.count, 3); // 2 occurrences = 3 parts
 }
 
-- (void)testChunkedBody {
+- (void)testChunkedBodyContainsString200OK {
     [self.server handleNewConnection:self.connection];
     
     NSString *req = @"POST /echo HTTP/1.1\r\n"
@@ -210,7 +210,7 @@
     XCTAssertTrue([respStr containsString:@"Wikipedia"]);
 }
 
-- (void)testOversizedHeader {
+- (void)testOversizedHeaderContainsString413 {
     [self.server handleNewConnection:self.connection];
     
     NSMutableString *req = [NSMutableString stringWithString:@"GET /test HTTP/1.1\r\n"];
@@ -231,7 +231,7 @@
     XCTAssertTrue([respStr containsString:@"413"]);
 }
 
-- (void)testMissingContentLengthForPost {
+- (void)testMissingContentLengthForPostContainsString411 {
     [self.server handleNewConnection:self.connection];
     
     NSString *req = @"POST /echo HTTP/1.1\r\n"

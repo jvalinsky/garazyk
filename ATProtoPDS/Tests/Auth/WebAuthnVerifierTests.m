@@ -96,7 +96,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(error.code, 1006);
 }
 
-- (void)testRegistrationRejectsShortAuthData {
+- (void)testRegistrationReturnsErrorCode1007ForShortAuthData {
     NSData *expectedChallenge = [@"expected" dataUsingEncoding:NSUTF8StringEncoding];
     NSString *expectedOrigin = @"https://example.com";
 

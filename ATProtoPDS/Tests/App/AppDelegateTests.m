@@ -131,7 +131,7 @@ static void StubAppDelegateSetupStatusBar(id self, SEL _cmd) {
     XCTAssertEqual(mock.stopCalls, 1);
 }
 
-- (void)testApplicationWillTerminateStopsServer {
+- (void)testApplicationWillTerminateIncrementsStopCalls {
     AppDelegate *delegate = [[AppDelegate alloc] init];
     AppDelegateMockController *mock = [[AppDelegateMockController alloc] init];
     delegate.pdsController = (id)mock;

@@ -8,7 +8,7 @@
 
 @implementation HttpRouteTrieTests
 
-- (void)testBasicInsertionAndRetrieval {
+- (void)testBasicInsertionAndRetrievalReturnsValidHandler {
     HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
     
     [trie insertRoute:@"GET" pattern:@"/api/v1/status" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
@@ -17,9 +17,10 @@
     HttpRouteHandler handler = [trie handlerForMethod:@"GET" path:@"/api/v1/status" outParameters:&params];
     
     XCTAssertNotNil(handler);
+    XCTAssertEqual(params.count, 0U); // additional assert to avoid FalsePositive
 }
 
-- (void)testParameterExtraction {
+- (void)testParameterExtractionMatchesParamsId {
     HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
     
     [trie insertRoute:@"GET" pattern:@"/users/:id" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
@@ -31,7 +32,7 @@
     XCTAssertEqualObjects(params[@"id"], @"123");
 }
 
-- (void)testWildcardMatching {
+- (void)testWildcardMatchingReturnsValidHandler {
     HttpRouteTrie *trie = [[HttpRouteTrie alloc] init];
     
     [trie insertRoute:@"GET" pattern:@"/files/*" handler:^(HttpRequest *req, HttpResponse *res){} priority:1];
@@ -40,6 +41,7 @@
     HttpRouteHandler handler = [trie handlerForMethod:@"GET" path:@"/files/document.txt" outParameters:&params];
     
     XCTAssertNotNil(handler);
+    XCTAssertTrue([params isKindOfClass:[NSDictionary class]]);
 }
 
 #ifndef GNUSTEP

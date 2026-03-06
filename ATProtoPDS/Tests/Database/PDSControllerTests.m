@@ -115,6 +115,7 @@
     XCTAssertNotNil(session, @"Login should succeed: %@", loginError);
     XCTAssertNotNil(session[@"accessJwt"]);
     XCTAssertNotNil(session[@"refreshJwt"]);
+    XCTAssertGreaterThan([session[@"accessJwt"] length], 0);
 }
 
 - (void)testLoginInvalidPassword {
@@ -153,6 +154,7 @@
     NSDictionary *refresh = [self.controller refreshAccessToken:refreshToken error:&refreshError];
     XCTAssertNotNil(refresh, @"Refresh should succeed: %@", refreshError);
     XCTAssertNotNil(refresh[@"accessJwt"]);
+    XCTAssertGreaterThan([refresh[@"accessJwt"] length], 0);
 }
 
 - (void)testRefreshInvalidToken {
@@ -268,7 +270,7 @@
     XCTAssertTrue(deleted, @"Delete record should succeed: %@", deleteError);
 }
 
-- (void)testListRecords {
+- (void)testListRecordsReturnsRecords {
     __autoreleasing NSError *error = nil;
     
     [self.controller createAccountForEmail:@"list@example.com" 
@@ -309,6 +311,7 @@
     
     XCTAssertNotNil(health);
     XCTAssertNotNil(health[@"timestamp"]);
+    XCTAssertGreaterThan([health[@"timestamp"] doubleValue], 0);
 }
 
 - (void)testMetrics {
@@ -318,6 +321,7 @@
     XCTAssertNotNil(metrics[@"timestamp"]);
     XCTAssertNotNil(metrics[@"user_databases"]);
     XCTAssertNotNil(metrics[@"service_databases"]);
+    XCTAssertGreaterThan([metrics[@"timestamp"] doubleValue], 0);
 }
 
 - (void)testModerateAccountEndpoint {
@@ -371,7 +375,7 @@
 }
 
 - (void)testGetLabelsEndpoint {
-    // Determine existing labels or create one first
+    // Create a label before fetching
     NSDictionary *label = @{
         @"src": @"did:plc:admin",
         @"uri": @"at://did:plc:test/app.bsky.feed.post/123",

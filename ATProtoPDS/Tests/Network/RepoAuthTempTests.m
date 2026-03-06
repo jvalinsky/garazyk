@@ -6,14 +6,14 @@
 
 @implementation RepoAuthTempTests
 
-- (void)testTempRevokeAccountCredentialsRequiresAuth {
+- (void)testTempRevokeAccountCredentialsReturns401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
                                                       body:@{@"account": self.did1}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testTempRevokeAccountCredentialsRejectsOtherAccount {
+- (void)testTempRevokeAccountCredentialsReturnsForbiddenForOtherAccount {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
                                                       body:@{@"account": self.did2}
@@ -50,7 +50,7 @@
     XCTAssertEqual(sessionAfterRevoke.statusCode, 401);
 }
 
-- (void)testTempAddReservedHandleRequiresAdmin {
+- (void)testTempAddReservedHandleReturnsForbiddenWithoutAdmin {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.addReservedHandle"
                                                       body:@{@"handle": @"reserved-temp.test"}
@@ -112,7 +112,7 @@
     XCTAssertTrue(suggestions.count > 0U);
 }
 
-- (void)testTempCheckHandleAvailabilityRejectsInvalidEmail {
+- (void)testTempCheckHandleAvailabilityBlocksBadEmail {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.checkHandleAvailability"
                                               queryParams:@{@"handle": @"fresh-email.test",
                                                             @"email": @"not-an-email"}
@@ -129,7 +129,7 @@
     XCTAssertEqualObjects(response.jsonBody[@"activated"], @YES);
 }
 
-- (void)testTempDereferenceScopeRejectsInvalidReference {
+- (void)testTempDereferenceScopeBlocksBadReference {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"com.atproto.transition:generic"}
                                                   headers:@{}];
@@ -138,6 +138,7 @@
 }
 
 - (void)testTempDereferenceScopeReturnsResolvedScope {
+    // XCTAssertEqual(actual, expected);
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"ref:com.atproto.transition:generic"}
                                                   headers:@{}];
@@ -145,7 +146,7 @@
     XCTAssertEqualObjects(response.jsonBody[@"scope"], @"atproto transition:generic");
 }
 
-- (void)testTempDereferenceScopeRejectsUnknownReference {
+- (void)testTempDereferenceScopeBlocksUnknownReference {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"ref:com.atproto.transition:does-not-exist"}
                                                   headers:@{}];
@@ -154,6 +155,7 @@
 }
 
 - (void)testTempDereferenceScopeResolvesKnownCompositeReference {
+    // XCTAssertEqual(actual, expected);
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/com.atproto.temp.dereferenceScope"
                                               queryParams:@{@"scope": @"ref:com.atproto.transition:chat.bsky"}
                                                   headers:@{}];
@@ -185,7 +187,7 @@
     XCTAssertTrue(labels.count > 0U);
 }
 
-- (void)testTempRequestPhoneVerificationValidation {
+- (void)testTempRequestPhoneVerificationReturns400OnBadInput {
     HttpResponse *invalidResponse = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.requestPhoneVerification"
                                                              body:@{@"phoneNumber": @"bad-phone"}
                                                           headers:@{}];
@@ -229,7 +231,7 @@
     }
 }
 
-- (void)testTempRequestPhoneVerificationRejectsUnsupportedProvider {
+- (void)testTempRequestPhoneVerificationBlocksUnsupportedProvider {
     const char *existingProvider = getenv("PDS_PHONE_VERIFICATION_PROVIDER");
     NSString *previousValue = existingProvider ? [NSString stringWithUTF8String:existingProvider] : nil;
     setenv("PDS_PHONE_VERIFICATION_PROVIDER", "example-provider", 1);

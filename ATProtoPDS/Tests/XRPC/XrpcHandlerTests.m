@@ -20,7 +20,7 @@
 }
 
 #ifndef GNUSTEP
-- (void)testMethodRegistrationAndDispatch {
+- (void)testMethodRegistrationAndDispatchReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"Method handler called"];
     
     [self.dispatcher registerMethod:@"test.method" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -96,7 +96,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testRegisterComAtprotoSyncSubscribeReposMapsToMethod {
+- (void)testRegisterComAtprotoSyncSubscribeReposMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"subscribeRepos handler called"];
 
     [self.dispatcher registerComAtprotoSyncSubscribeRepos:^(HttpRequest *request, HttpResponse *response) {
@@ -125,7 +125,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testRegisterComAtprotoServerDeleteSessionMapsToMethod {
+- (void)testRegisterComAtprotoServerDeleteSessionMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"deleteSession handler called"];
 
     [self.dispatcher registerComAtprotoServerDeleteSession:^(HttpRequest *request, HttpResponse *response) {
@@ -154,7 +154,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testRegisterComAtprotoSyncGetRecordMapsToMethod {
+- (void)testRegisterComAtprotoSyncGetRecordMapsToMethodAndReturnsSuccess {
     XCTestExpectation *expectation = [self expectationWithDescription:@"getRecord handler called"];
 
     [self.dispatcher registerComAtprotoSyncGetRecord:^(HttpRequest *request, HttpResponse *response) {

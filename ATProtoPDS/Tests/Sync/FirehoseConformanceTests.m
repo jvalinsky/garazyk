@@ -21,7 +21,7 @@
     
     // Valid dummy CID
     CID *dummyCID = [CID cidWithDigest:[@"dummy" dataUsingEncoding:NSUTF8StringEncoding] codec:0x71]; // simple constructor if available, or just mocking
-    // Actually cidWithDigest requires 32 bytes usually? Or just data.
+    // Actually cidWithDigest needs 32 bytes usually? Or just data.
     // Let's use a known valid string if cidFromString works, or ensure no invalid chars.
     // "bafyreidc5uu727733k3g34fd6k3d34d34d34d34d34d34d34d34d34" -> 1 is invalid.
     
@@ -48,7 +48,7 @@
     
     // Decode and verify payload
     // XRPC frame format: [Header (CBOR), Payload (CBOR)] concatenated
-    // We need to decode the first object (header) then the second (payload)
+    // We need to decode the initial object (header) then the second (payload)
     
     NSUInteger index = 0;
     // Helper method not exposed in header, so we rely on public decodeEventFromData if we can, 
@@ -72,7 +72,7 @@
     XCTAssertEqualObjects(decodedOp[@"action"], @"create");
 }
 
-- (void)testEventSizeConstraint {
+- (void)testEventSizeConstraintFailsEncoding {
     // Create a huge event
     NSMutableData *hugeData = [NSMutableData dataWithLength:1024 * 1024 + 100]; // > 1MB
     

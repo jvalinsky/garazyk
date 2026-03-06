@@ -52,7 +52,7 @@
     [huge appendString:@"a"]; // 254 chars total? No wait.
     
     NSString *tooLong = [@"" stringByPaddingToLength:254 withString:@"a" startingAtIndex:0];
-    // Need at least one dot to not fail on segment count first
+    // Need at least one dot to not fail on segment count immediately
     tooLong = [tooLong stringByReplacingCharactersInRange:NSMakeRange(100, 1) withString:@"."];
     
     NSError *error = nil;
@@ -75,7 +75,7 @@
     }
 }
 
-- (void)testSegmentCount {
+- (void)testSegmentCountOneIsInvalid {
     NSArray *invalid = @[
         @"alice",
         @"singleword",
@@ -104,7 +104,7 @@
     }
 }
 
-- (void)testLabelLength {
+- (void)testLabelLengthTooLongIsInvalid {
     NSString *tooLongLabel = [@"" stringByPaddingToLength:64 withString:@"a" startingAtIndex:0];
     NSString *handle = [NSString stringWithFormat:@"%@.com", tooLongLabel];
     
@@ -129,7 +129,7 @@
     }
 }
 
-- (void)testHyphenPlacement {
+- (void)testHyphenPlacementAtEndsIsInvalid {
     NSArray *invalid = @[
         @"-alice.bsky.social",
         @"alice-.bsky.social",
@@ -156,7 +156,7 @@
         XCTAssertEqual(error.code, 1008);
     }
     
-    // Alphanumeric TLD is okay? ATProto spec says "The last segment (TLD) must not be all numeric."
+    // Alphanumeric TLD is okay? ATProto spec says "The ending segment (TLD) must not be all numeric."
     // So "example.a123" should be okay if it's a valid DNS label.
     XCTAssertTrue([ATProtoHandleValidator validateHandle:@"example.a123" error:nil]);
 }

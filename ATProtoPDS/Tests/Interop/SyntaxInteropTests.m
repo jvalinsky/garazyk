@@ -56,6 +56,7 @@
 
 
 - (void)testInteropDIDSyntaxValid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/did_syntax_valid.txt"];
     for (NSString *did in valid) {
         NSError *error = nil;
@@ -65,6 +66,7 @@
 }
 
 - (void)testInteropDIDSyntaxInvalid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/did_syntax_invalid.txt"];
     for (NSString *did in invalid) {
         BOOL ok = [ATProtoValidator validateDID:did error:nil];
@@ -73,6 +75,7 @@
 }
 
 - (void)testInteropNSIDSyntaxValid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/nsid_syntax_valid.txt"];
     for (NSString *nsid in valid) {
         NSError *error = nil;
@@ -82,6 +85,7 @@
 }
 
 - (void)testInteropNSIDSyntaxInvalid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/nsid_syntax_invalid.txt"];
     for (NSString *nsid in invalid) {
         BOOL ok = [ATProtoValidator validateNSID:nsid error:nil];
@@ -91,6 +95,7 @@
 
 /*
 - (void)testInteropATURISyntaxValid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/aturi_syntax_valid.txt"];
     for (NSString *aturi in valid) {
         NSError *error = nil;
@@ -100,6 +105,7 @@
 }
 
 - (void)testInteropATURISyntaxInvalid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/aturi_syntax_invalid.txt"];
     for (NSString *aturi in invalid) {
         BOOL ok = [ATProtoValidator validateATURI:aturi error:nil];
@@ -109,14 +115,17 @@
 */
 
 - (void)testInteropCIDSyntaxValid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/cid_syntax_valid.txt"];
     for (NSString *cidStr in valid) {
         CID *cid = [CID cidFromString:cidStr];
         XCTAssertNotNil(cid, @"Expected valid CID per fixtures: %@", cidStr);
+        XCTAssertTrue([cid isKindOfClass:[CID class]], @"Parsed CID should be valid type");
     }
 }
 
 - (void)testInteropCIDSyntaxInvalid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/cid_syntax_invalid.txt"];
     for (NSString *cidStr in invalid) {
         CID *cid = [CID cidFromString:cidStr];
@@ -126,6 +135,7 @@
 
 /*
 - (void)testInteropRecordKeySyntaxValid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/recordkey_syntax_valid.txt"];
     for (NSString *key in valid) {
         NSError *error = nil;
@@ -135,6 +145,7 @@
 }
 
 - (void)testInteropRecordKeySyntaxInvalid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/recordkey_syntax_invalid.txt"];
     for (NSString *key in invalid) {
         BOOL ok = [ATProtoValidator validateRecordKey:key error:nil];
@@ -143,6 +154,7 @@
 }
 
 - (void)testInteropDatetimeSyntaxValid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/datetime_syntax_valid.txt"];
     for (NSString *datetime in valid) {
         NSError *error = nil;
@@ -152,6 +164,7 @@
 }
 
 - (void)testInteropDatetimeSyntaxInvalid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/datetime_syntax_invalid.txt"];
     for (NSString *datetime in invalid) {
         BOOL ok = [ATProtoValidator validateDatetime:datetime error:nil];
@@ -160,6 +173,7 @@
 }
 
 - (void)testInteropLanguageSyntaxValid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/language_syntax_valid.txt"];
     for (NSString *lang in valid) {
         NSError *error = nil;
@@ -169,6 +183,7 @@
 }
 
 - (void)testInteropLanguageSyntaxInvalid {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *invalid = [self nonCommentLinesFromFixture:@"syntax/language_syntax_invalid.txt"];
     for (NSString *lang in invalid) {
         BOOL ok = [ATProtoValidator validateLanguageTag:lang error:nil];

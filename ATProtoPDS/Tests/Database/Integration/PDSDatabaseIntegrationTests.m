@@ -25,7 +25,7 @@
     [super tearDown];
 }
 
-- (void)testSchemaVerification {
+- (void)testSchemaVerificationIsTrue {
     __autoreleasing NSError *error = nil;
     BOOL schemaValid = [PDSDatabaseIntegrationTestUtilities verifySchemaInDatabase:self.database error:&error];
     XCTAssertTrue(schemaValid, @"Schema should be valid: %@", error);

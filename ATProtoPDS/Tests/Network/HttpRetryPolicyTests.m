@@ -17,13 +17,13 @@
     [super tearDown];
 }
 
-- (void)testSucceedsOn200 {
+- (void)testSucceedsOn200MatchesDecisionSucceed {
     HttpRetryResult *result = [self.policy evaluateStatusCode:200 networkError:nil attemptNumber:0];
     XCTAssertEqual(result.decision, HttpRetryDecisionSucceed);
     XCTAssertEqual(result.retryDelay, 0.0);
 }
 
-- (void)testFailsImmediatelyOn404 {
+- (void)testFailsImmediatelyOn404MatchesDecisionFail {
     HttpRetryResult *result = [self.policy evaluateStatusCode:404 networkError:nil attemptNumber:0];
     XCTAssertEqual(result.decision, HttpRetryDecisionFail);
     XCTAssertEqual(result.retryDelay, 0.0);

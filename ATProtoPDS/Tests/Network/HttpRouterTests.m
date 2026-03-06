@@ -175,7 +175,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual(response.statusCode, 200);
 }
 
-- (void)testWildcardRouteWithMultiplePathSegments {
+- (void)testWildcardRouteWithMultiplePathSegmentsIsSuccessful {
     HttpRouter *router = [[HttpRouter alloc] init];
     __block BOOL called = NO;
 

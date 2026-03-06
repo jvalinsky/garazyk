@@ -125,6 +125,8 @@
                                                       did:self.testDID
                                                    error:&error];
     XCTAssertNil(result);
+    XCTAssertNotNil(error);
+
 }
 
 - (void)testGetBlobWrongDID {
@@ -177,7 +179,7 @@
     XCTAssertEqual(limitedBlobs.count, 2);
 }
 
-- (void)testDeleteBlob {
+- (void)testDeleteBlobSucceeds {
     NSError *error = nil;
     NSDictionary *uploadResult = [self.blobService uploadBlob:self.testData
                                                       forDid:self.testDID
@@ -210,9 +212,12 @@
                                                       forDid:self.testDID
                                                      mimeType:@"text/plain"
                                                        error:&error];
+    XCTAssertNotNil(uploadResult);
     NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
+    XCTAssertNotNil(cidString);
     
     [self.blobService deleteBlobWithCID:cidString did:self.testDID error:&error];
+    XCTAssertNil(error);
     
     NSDictionary *getResult = [self.blobService getBlobWithCID:cidString
                                                          did:self.testDID
@@ -220,7 +225,7 @@
     XCTAssertNil(getResult);
 }
 
-- (void)testMultipleBlobsSameDID {
+- (void)testMultipleBlobsSameDIDReturnsAllBlobs {
     NSError *error = nil;
     NSMutableArray *cidStrings = [NSMutableArray array];
     
@@ -276,6 +281,8 @@
     
     XCTAssertNotNil(result);
     XCTAssertNil(error);
+    XCTAssertNotNil(result[@"blob"]);
+    XCTAssertEqual([result[@"blob"][@"size"] integerValue], 1024 * 500);
 }
 
 @end

@@ -128,7 +128,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertFalse([self.validator containsXSSPattern:@"javascript:alert(1)"]);
 }
 
-- (void)testSanitizersRejectNilInputWithError {
+- (void)testSanitizersBlockNilInputWithError {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnonnull"
     NSError *sqlError = nil;

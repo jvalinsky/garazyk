@@ -159,7 +159,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertTrue(notFoundCalled);
 }
 
-- (void)testMissingRequiredParameter {
+- (void)testMissingRequiredParameterMatchesResponseStatusCodeBadRequest {
     __block BOOL paramErrorCalled = NO;
     [self.dispatcher registerMethod:@"test.requiredParams" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *required = request.queryParams[@"required"];

@@ -61,7 +61,7 @@
     XCTAssertNil(stored[domain]);
 }
 
-- (void)testAddPinnedKeyIgnoresNilInputs {
+- (void)testAddPinnedKeyIgnoresNilInputsMatchesCount {
     id nullObject = nil;
     [self.pinningManager addPinnedPublicKey:(NSData *)nullObject forDomain:@"example.com"];
     [self.pinningManager addPinnedPublicKey:[@"k" dataUsingEncoding:NSUTF8StringEncoding] forDomain:(NSString *)nullObject];
@@ -150,12 +150,12 @@
     [self waitForExpectations:@[expectation] timeout:1.0];
 }
 
-// Integration test that requires network access - disabled by default
-- (void)testSSLPinningWithRealRequest {
+// Integration test that needs network access - disabled by default
+- (void)testSSLPinningWithRealRequestHasNilError {
     // This test would make a real HTTPS request and verify pinning behavior
-    // Disabled by default as it requires network access and specific certificates
+    // Disabled by default as it needs network access and specific certificates
 
-    XCTSkip(@"Integration test disabled - requires network access and certificate setup");
+    XCTSkip(@"Integration test disabled - needs network access and certificate setup");
 
     // Example of how this could work:
     /*

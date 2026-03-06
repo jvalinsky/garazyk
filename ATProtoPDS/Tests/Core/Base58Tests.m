@@ -31,7 +31,7 @@
     XCTAssertNil([Base58 decode:@"O"]); // 'O' is not in alphabet
 }
 
-- (void)testLeadingZeros {
+- (void)testEncodeDecodeMatchExpectedValuesForLeadingZeros {
     // 0x00 0x00 0xff
     uint8_t bytes[] = {0x00, 0x00, 0xff};
     NSData *data = [NSData dataWithBytes:bytes length:3];
@@ -68,17 +68,15 @@
 
 - (void)testMaxValidInput {
     // Use a reasonable size that completes quickly (Base58 is O(n²) in worst case)
-    NSMutableData *maxData = [NSMutableData dataWithCapacity:1024];
-    uint8_t byte = 0x41;
-    for (NSUInteger i = 0; i < 1024; i++) {
-        [maxData appendBytes:&byte length:1];
-    }
+    NSMutableData *maxData = [NSMutableData dataWithLength:1024];
+    memset(maxData.mutableBytes, 0x41, 1024);
     NSString *encoded = [Base58 encode:maxData];
     XCTAssertNotNil(encoded, @"Should accept 1KB input");
     XCTAssertGreaterThan(encoded.length, (NSUInteger)0);
     
     NSData *decoded = [Base58 decode:encoded];
     XCTAssertNotNil(decoded, @"Should decode valid output");
+    XCTAssertEqualObjects(decoded, maxData, @"Decoded data should match original input");
 }
 
 @end

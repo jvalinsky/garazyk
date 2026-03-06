@@ -76,13 +76,13 @@
     XCTAssertEqualObjects(result, @"/var/pds/plc/ab/did:plc:abcdef1234");
 }
 
-- (void)testActorStorePathForNonStandardDidFallsBackToPrefixOnly {
+- (void)testActorStorePathEqualsResultForNonStandardDid {
     PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
     NSString *result = [paths actorStorePathForDid:@"abc"];
     XCTAssertEqualObjects(result, @"/var/pds/ab/abc");
 }
 
-- (void)testActorStorePathForEmptyDidUsesFallbackSafely {
+- (void)testActorStorePathEqualsResultForEmptyDid {
     PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
     NSString *result = [paths actorStorePathForDid:@""];
     XCTAssertEqualObjects(result, @"/var/pds");

@@ -2,6 +2,14 @@
 #import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
 
+// Test-only declarations for legacy/private API used by this integration suite.
+@interface PDSController (PDSIntegrationTestsCompatibility)
+- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (BOOL)validateRecord:(NSDictionary *)record
+         forCollection:(NSString *)collection
+                 error:(NSError **)error;
+@end
+
 @interface PDSIntegrationTests : XCTestCase
 
 @property (nonatomic, strong) PDSDatabase *database;

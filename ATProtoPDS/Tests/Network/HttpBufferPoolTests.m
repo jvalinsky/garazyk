@@ -114,7 +114,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertLessThanOrEqual([pool bufferCount], pool.maxPoolSize);
 }
 
-- (void)testDrainPools {
+- (void)testDrainPoolsEmptiesPool {
     HttpBufferPool *pool = [[HttpBufferPool alloc] init];
 
     for (int i = 0; i < 10; i++) {
@@ -129,7 +129,7 @@ NS_ASSUME_NONNULL_BEGIN
     XCTAssertEqual([pool bufferCount], 0);
 }
 
-- (void)testZeroSizeBuffer {
+- (void)testZeroSizeBufferReturnsEmptyData {
     HttpBufferPool *pool = [[HttpBufferPool alloc] init];
 
     NSMutableData *buffer = [pool acquireBufferOfSize:0];
@@ -144,6 +144,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSMutableData *largeBuffer = [pool acquireBufferOfSize:10000];
     XCTAssertNotNil(largeBuffer);
+    XCTAssertEqual(largeBuffer.length, 0U);
 
     [pool releaseBuffer:largeBuffer];
 }

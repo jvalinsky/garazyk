@@ -181,7 +181,7 @@
     XCTAssertFalse([DIDValidator isValidPlcIdentifier:nil], @"Nil should be invalid");
 }
 
-- (void)testPLCWrongPrefix {
+- (void)testPLCWrongPrefixIsInvalid {
     XCTAssertFalse([DIDValidator isValidPlcIdentifier:@"did:web:abc123"], @"did:web should be invalid for PLC");
 }
 
@@ -189,11 +189,11 @@
     XCTAssertFalse([DIDValidator isValidPlcIdentifier:@"abc12345678901234567890"], @"DID without prefix should be invalid");
 }
 
-- (void)testPLCTooShort {
+- (void)testPLCTooShortIsInvalid {
     XCTAssertFalse([DIDValidator isValidPlcIdentifier:@"did:plc:ewvi7nxzyoun6zhxrhs64oi"], @"23 character identifier should be invalid");
 }
 
-- (void)testPLCTooLong {
+- (void)testPLCTooLongIsInvalid {
     XCTAssertFalse([DIDValidator isValidPlcIdentifier:@"did:plc:ewvi7nxzyoun6zhxrhs64oiza"], @"25 character identifier should be invalid");
 }
 
@@ -251,7 +251,7 @@
     XCTAssertFalse([DIDValidator isValidWebIdentifier:nil], @"Nil should be invalid");
 }
 
-- (void)testWebWrongPrefix {
+- (void)testWebWrongPrefixIsInvalid {
     XCTAssertFalse([DIDValidator isValidWebIdentifier:@"did:plc:example.com"], @"did:plc should be invalid for web");
 }
 

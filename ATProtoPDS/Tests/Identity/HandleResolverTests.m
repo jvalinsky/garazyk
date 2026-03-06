@@ -148,16 +148,16 @@
 }
 
 - (void)testHandleValidationValid {
-    MockURLSession *mockSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:7HjwGtP5cLyq3vD5nDzDg"}
+    MockURLSession *testSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:7HjwGtP5cLyq3vD5nDzDg"}
                                                                      error:nil
                                                                      delay:0.1];
-    HandleResolver *mockResolver = [[HandleResolver alloc] init];
-    mockResolver.skipSSRFCheck = YES;
-    [mockResolver setValue:mockSession forKey:@"session"];
+    HandleResolver *testResolver = [[HandleResolver alloc] init];
+    testResolver.skipSSRFCheck = YES;
+    [testResolver setValue:testSession forKey:@"session"];
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Valid handle test"];
 
-    [mockResolver resolveHandle:@"test.example.com" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
+    [testResolver resolveHandle:@"test.example.com" completion:^(NSString * _Nullable did, NSError * _Nullable error) {
         XCTAssertNotNil(did, @"Valid handle should return DID");
         XCTAssertEqualObjects(did, @"did:plc:7HjwGtP5cLyq3vD5nDzDg", @"DID should match expected value");
         XCTAssertNil(error, @"No error should occur");
@@ -458,7 +458,7 @@
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
 
-- (void)testDNSResolutionFallback {
+- (void)testDNSResolutionFallbackYieldsNil {
     // This test verifies that if HTTPS resolution fails, it falls back to DNS TXT
     // Since we can't easily mock res_query without method swizzling or similar,
     // we'll at least test that the fallback is attempted.
@@ -495,15 +495,15 @@
     
     NSString *handle = @"backoff.test.example.com";
     
-    // First attempt: Fails with Network Error, count -> 1
-    XCTestExpectation *exp1 = [self expectationWithDescription:@"First failure"];
+    // Initial attempt: Fails with Network Error, count -> 1
+    XCTestExpectation *exp1 = [self expectationWithDescription:@"Initial failure"];
     [resolver resolveHandle:handle completion:^(NSString *did, NSError *error) {
         XCTAssertEqual(error.code, HandleErrorNetworkError);
         [exp1 fulfill];
     }];
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
     
-    // Second attempt: Should fail immediately due to backoff
+    // Subsequent attempt: Should fail immediately due to backoff
     // Backoff for count 1 is 2^1 = 2 seconds.
     XCTestExpectation *exp2 = [self expectationWithDescription:@"Backoff trigger"];
     [resolver resolveHandle:handle completion:^(NSString *did, NSError *error) {

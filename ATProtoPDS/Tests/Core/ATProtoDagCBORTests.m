@@ -120,7 +120,7 @@
 - (void)testCanonicalMapOrdering {
     NSError *error = nil;
     
-    // Keys should be sorted by encoded representation (length-first, then lexicographic)
+    // Keys should be sorted by encoded representation (length based and lexicographic)
     // "a" (0x61 0x61) < "aa" (0x62 0x61 0x61) < "b" (0x61 0x62) < "bb" (0x62 0x62 0x62)
     NSDictionary *dict = @{
         @"bb": @1,
@@ -141,23 +141,23 @@
     // Map header (should be 0xA4 for 4 items)
     XCTAssertEqual(bytes[index++], 0xA4);
     
-    // First key "a" (0x61 'a')
+    // Key "a" (0x61 'a')
     XCTAssertEqual(bytes[index++], 0x61); // text string length 1
     XCTAssertEqual(bytes[index++], 'a');
     XCTAssertEqual(bytes[index++], 0x02); // value 2
     
-    // Second key "b" (0x61 'b')
+    // Key "b" (0x61 'b')
     XCTAssertEqual(bytes[index++], 0x61);
     XCTAssertEqual(bytes[index++], 'b');
     XCTAssertEqual(bytes[index++], 0x04); // value 4
     
-    // Third key "aa" (0x62 'a' 'a')
+    // Key "aa" (0x62 'a' 'a')
     XCTAssertEqual(bytes[index++], 0x62);
     XCTAssertEqual(bytes[index++], 'a');
     XCTAssertEqual(bytes[index++], 'a');
     XCTAssertEqual(bytes[index++], 0x03); // value 3
     
-    // Fourth key "bb" (0x62 'b' 'b')
+    // Key "bb" (0x62 'b' 'b')
     XCTAssertEqual(bytes[index++], 0x62);
     XCTAssertEqual(bytes[index++], 'b');
     XCTAssertEqual(bytes[index++], 'b');
@@ -326,7 +326,7 @@
     XCTAssertEqual(error.code, ATProtoDagCBORErrorCodeInvalidCIDLink);
 }
 
-- (void)testInvalid$BytesBase64 {
+- (void)testEncodeJSONObjectReturnsErrorForInvalidBytesBase64 {
     NSError *error = nil;
     
     NSDictionary *jsonObject = @{@"$bytes": @"not!!!valid!!!base64"};
@@ -367,7 +367,7 @@
     XCTAssertNotNil(error);
 }
 
-- (void)testArrayLengthExceedsData {
+- (void)testArrayLengthExceedsDataReturnsNilWithError {
     NSError *error = nil;
     
     uint8_t data[] = {0x9a, 0x00, 0x00, 0x00, 0x10};
@@ -378,7 +378,7 @@
     XCTAssertNotNil(error);
 }
 
-- (void)testMapLengthExceedsData {
+- (void)testMapLengthExceedsDataReturnsNilWithError {
     NSError *error = nil;
     
     uint8_t data[] = {0xba, 0x00, 0x00, 0x00, 0x10};

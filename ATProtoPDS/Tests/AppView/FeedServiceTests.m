@@ -68,7 +68,7 @@
     [super tearDown];
 }
 
-- (void)testServiceInitialization {
+- (void)testServiceInitializationConfiguresDatabase {
     XCTAssertNotNil(self.service);
     XCTAssertEqual(self.service.database, self.database);
 }
@@ -97,7 +97,7 @@
     XCTAssertEqual([timeline[@"feed"] count], 0);
 }
 
-- (void)testGetTimelineWithPosts {
+- (void)testGetTimelineWithPostsReturnsTimeline {
     [self insertPost:@"did:plc:author" rkey:@"post1" text:@"Hello world"];
     [self insertPost:@"did:plc:author" rkey:@"post2" text:@"Second post"];
     
@@ -108,7 +108,7 @@
     XCTAssertEqual([timeline[@"feed"] count], 2);
 }
 
-- (void)testGetTimelineWithLimit {
+- (void)testGetTimelineWithLimitReturnsLimitedTimeline {
     for (int i = 0; i < 5; i++) {
         [self insertPost:@"did:plc:author" rkey:[NSString stringWithFormat:@"post%d", i] text:[NSString stringWithFormat:@"Post %d", i]];
     }
@@ -198,10 +198,11 @@
     
     XCTAssertNotNil(thread);
     XCTAssertNotNil(thread[@"replies"]);
+    XCTAssertGreaterThan([thread[@"replies"] count], 0U);
 }
 
 - (void)testGetPostThreadDepthLimit {
-    // First create the root post
+    // Initialize the root post
     [self insertPost:@"did:plc:author" rkey:@"root" text:@"Root post"];
     
     // Then create replies in a chain
@@ -216,6 +217,7 @@
     NSDictionary *thread = [self.service getPostThread:@"at://did:plc:author/app.bsky.feed.post/root" depth:1 error:&error];
     
     XCTAssertNotNil(thread);
+    XCTAssertEqualObjects(thread[@"post"][@"uri"], @"at://did:plc:author/app.bsky.feed.post/root");
 }
 
 - (void)testGetActorLikesMissingDID {
@@ -231,6 +233,7 @@
     
     XCTAssertNotNil(likes);
     XCTAssertNotNil(likes[@"feed"]);
+    XCTAssertEqual([(NSArray *)likes[@"feed"] count], 0U);
 }
 
 - (void)testGetFeedMissingURI {
@@ -245,9 +248,10 @@
     
     XCTAssertNotNil(feed);
     XCTAssertNotNil(feed[@"feed"]);
+    XCTAssertEqual([(NSArray *)feed[@"feed"] count], 0U);
 }
 
-- (void)testTimelineLimitEnforced {
+- (void)testTimelineLimitEnforcedReturnsExpectedCount {
     for (int i = 0; i < 50; i++) {
         [self insertPost:@"did:plc:author" rkey:[NSString stringWithFormat:@"p%d", i] text:[NSString stringWithFormat:@"Post %d", i]];
     }
@@ -281,6 +285,7 @@
     
     XCTAssertNotNil(thread);
     XCTAssertNotNil(thread[@"post"][@"replyCount"]);
+    XCTAssertTrue([thread[@"post"][@"replyCount"] isKindOfClass:[NSNumber class]]);
 }
 
 - (void)insertPost:(NSString *)did rkey:(NSString *)rkey text:(NSString *)text {

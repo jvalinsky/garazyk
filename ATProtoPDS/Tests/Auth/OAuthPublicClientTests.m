@@ -192,7 +192,7 @@
                 @"Should be HTML content");
 }
 
-- (void)testPublicClientWithoutPKCE {
+- (void)testPublicClientAuthRespStatusCode400WithoutPKCE {
   // 1. Authorize Request (WITHOUT PKCE)
   NSDictionary *authParams = @{
     @"client_id" : @"public-client",
@@ -211,7 +211,7 @@
   XCTAssertEqual(authResp.statusCode, 400);
 }
 
-- (void)testPublicClientWithDPoPButNoPKCE {
+- (void)testPublicClientAuthRespStatusCode400WithDPoPButNoPKCE {
   // 1. Authorize Request (WITHOUT PKCE)
   NSDictionary *authParams = @{
     @"client_id" : @"public-client",

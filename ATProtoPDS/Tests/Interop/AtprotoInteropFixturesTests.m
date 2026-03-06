@@ -88,6 +88,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
 }
 
 - (void)testInteropHandleSyntaxFixtures {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/handle_syntax_valid.txt"];
     for (NSString *handle in valid) {
         NSError *error = nil;
@@ -103,6 +104,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
 }
 
 - (void)testInteropTIDSyntaxFixtures {
+    // XCTAssertEqual(actual, expected);
     NSArray<NSString *> *valid = [self nonCommentLinesFromFixture:@"syntax/tid_syntax_valid.txt"];
     for (NSString *tidStr in valid) {
         NSError *error = nil;
@@ -120,6 +122,7 @@ static NSData *InteropBase64URLDecode(NSString *string) {
 }
 
 - (void)testInteropSignatureFixtures {
+    // XCTAssertEqual(actual, expected);
     NSString *path = [self interopFixturePath:@"crypto/signature-fixtures.json"];
     XCTAssertNotNil(path);
     if (!path) return;

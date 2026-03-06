@@ -18,12 +18,12 @@
     [super tearDown];
 }
 
-- (void)testInitialState {
+- (void)testInitialStatePendingDispatchCountIsZero {
     XCTAssertEqual(self.policy.pendingDispatchCount, 0);
     XCTAssertTrue([self.policy shouldReadMoreData]);
 }
 
-- (void)testRequestParsedUnderLimit {
+- (void)testRequestParsedUnderLimitMatchesDispatchAction {
     Http1PipelineAction action = [self.policy requestParsed];
     XCTAssertEqual(action, Http1PipelineActionDispatch);
 }
@@ -63,7 +63,7 @@
     XCTAssertEqual(self.policy.pendingDispatchCount, 0);
 }
 
-- (void)testCustomLimit {
+- (void)testCustomLimitFailsToReadMoreData {
     self.policy.maxPipelinedRequests = 2;
     
     [self.policy requestDispatched];

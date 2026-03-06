@@ -59,7 +59,7 @@
     [super tearDown];
 }
 
-- (void)testServiceInitialization {
+- (void)testServiceInitializationConfiguresDatabase {
     XCTAssertNotNil(self.service);
     XCTAssertEqual(self.service.database, self.database);
 }
@@ -205,6 +205,7 @@
 }
 
 - (void)testGetPreferencesForActorMissingDID {
+    // XCTAssertEqual(actual, expected);
     NSError *error = nil;
     NSDictionary *prefs = [self.service getPreferencesForActor:@"" error:&error];
     XCTAssertNil(prefs);
@@ -221,6 +222,7 @@
 }
 
 - (void)testPutPreferencesForActorMissingDID {
+    // XCTAssertEqual(actual, expected);
     NSError *error = nil;
     BOOL success = [self.service putPreferencesForActor:@"" preferences:@{@"key": @"value"} error:&error];
     XCTAssertFalse(success);
@@ -228,6 +230,7 @@
 }
 
 - (void)testPutPreferencesForActorNew {
+    // XCTAssertEqual(actual, expected);
     NSError *error = nil;
     NSArray *prefs = @[@{@"$type": @"app.bsky.actor.defs#savedFeedsPrefV2", @"items": @[]}];
     
@@ -243,6 +246,7 @@
 }
 
 - (void)testPutPreferencesForActorUpdate {
+    // XCTAssertEqual(actual, expected);
     NSError *error = nil;
     NSArray *initialPrefs = @[@{@"theme": @"light"}];
     XCTAssertTrue([self.service putPreferencesForActor:@"did:plc:updateuser" preferences:initialPrefs error:&error]);
@@ -260,6 +264,7 @@
 }
 
 - (void)testPutPreferencesInvalidJSON {
+    // XCTAssertEqual(actual, expected);
     NSError *error = nil;
     BOOL success = [self.service putPreferencesForActor:@"did:plc:jsonuser" preferences:(NSArray *)@{@"invalid": [NSDate date]} error:&error];
     XCTAssertFalse(success);
@@ -392,6 +397,7 @@
     formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
     NSDate *indexedDate = [formatter dateFromString:profile[@"indexedAt"]];
     XCTAssertNotNil(indexedDate);
+    XCTAssertGreaterThan(indexedDate.timeIntervalSince1970, 0);
 }
 
 @end

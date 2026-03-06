@@ -25,7 +25,7 @@
     XCTAssertFalse([self.handler canHandleRequest:req3]);
 }
 
-- (void)testHandleRequestIndex {
+- (void)testHandleRequestIndexReturns200HtmlContent {
     HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET methodString:@"GET" path:@"/mst-viewer" queryString:@"" queryParams:@{} version:@"HTTP/1.1" headers:@{} body:nil remoteAddress:nil];
     HttpResponse *res = [[HttpResponse alloc] init];
     
