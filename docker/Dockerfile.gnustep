@@ -2,8 +2,9 @@
 # Multi-stage Dockerfile for ATProtoPDS (GNUstep/Linux)
 # =============================================================================
 # Stage 1: Build GNUstep runtime from source (libobjc2 + gnustep-make + gnustep-base)
-# Stage 2: Build the PDS project
-# Stage 3: Minimal runtime image
+# Stage 2: Build Cappuccino UI (Objective-J via Node.js)
+# Stage 3: Build the PDS project
+# Stage 4: Minimal runtime image
 #
 # Prerequisites:
 #   git submodule update --init   (secp256k1 must be checked out)
@@ -96,7 +97,35 @@ RUN git clone --depth 1 https://github.com/gnustep/libs-base.git && \
     ldconfig
 
 # ---------------------------------------------------------------------------
-# Stage 2: Build ATProtoPDS
+# Stage 2: Build Cappuccino UI (Objective-J)
+# ---------------------------------------------------------------------------
+FROM node:18-slim AS builder-cappuccino-ui
+
+WORKDIR /src
+
+# Copy only the CappuccinoUI directory for better cache utilization
+COPY ATProtoPDS/Sources/App/CappuccinoUI/package.json \
+    ATProtoPDS/Sources/App/CappuccinoUI/package-lock.json \
+    ./ATProtoPDS/Sources/App/CappuccinoUI/
+
+RUN cd ATProtoPDS/Sources/App/CappuccinoUI && npm ci
+
+# Copy the rest of the CappuccinoUI source
+COPY ATProtoPDS/Sources/App/CappuccinoUI/ ./ATProtoPDS/Sources/App/CappuccinoUI/
+
+# Generate frameworks and build release (ignore known capp gen theme crash)
+RUN cd ATProtoPDS/Sources/App/CappuccinoUI && \
+    (npx capp gen --frameworks --force . || true) && \
+    npx jake release && \
+    mkdir -p /tmp/cappuccino-runtime && \
+    cp -R Frameworks /tmp/cappuccino-runtime/ && \
+    cp -R Build/Release/CappuccinoUI/Browser.environment /tmp/cappuccino-runtime/ && \
+    cp -R Build/Release/CappuccinoUI/CommonJS.environment /tmp/cappuccino-runtime/ && \
+    cp index.html Info.plist /tmp/cappuccino-runtime/ && \
+    cp Build/CappuccinoUI.build/Release/Browser.environment/Sources/*.j /tmp/cappuccino-runtime/
+
+# ---------------------------------------------------------------------------
+# Stage 3: Build ATProtoPDS
 # ---------------------------------------------------------------------------
 FROM ubuntu:22.04 AS builder
 
@@ -201,6 +230,12 @@ COPY --from=builder /src/ATProtoPDS/Sources/App/AdminUI/Assets /usr/share/atprot
 COPY --from=builder /src/ATProtoPDS/Sources/Auth/Assets /usr/share/atprotopds/assets/Auth
 COPY --from=builder /src/ATProtoPDS/Sources/PLC/Assets /usr/share/atprotopds/assets/PLC
 COPY --from=builder /src/ATProtoPDS/Resources/lexicons /usr/share/atprotopds/lexicons
+
+# Copy Cappuccino UI runtime assets.
+# Docker must include Objective-J source entrypoint files (main.j + app *.j),
+# otherwise Objective-J bootstrap fails in-browser when loading dependencies.
+COPY --from=builder-cappuccino-ui /tmp/cappuccino-runtime/ \
+    /usr/share/atprotopds/assets/CappuccinoUI/
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds
