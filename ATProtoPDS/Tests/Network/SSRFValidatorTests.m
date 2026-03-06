@@ -91,22 +91,22 @@
 
 #pragma mark - IPv4 Public Addresses
 
-- (void)testPublicIPv4_GoogleDNS {
+- (void)testPublicIPv4_GoogleDNSReturnsFalse {
     uint32_t ip = ntohl(inet_addr("8.8.8.8"));
     XCTAssertFalse([SSRFValidator isPrivateIPv4Address:ip]);
 }
 
-- (void)testPublicIPv4_Cloudflare {
+- (void)testPublicIPv4_CloudflareReturnsFalse {
     uint32_t ip = ntohl(inet_addr("1.1.1.1"));
     XCTAssertFalse([SSRFValidator isPrivateIPv4Address:ip]);
 }
 
-- (void)testPublicIPv4_OpenDNS {
+- (void)testPublicIPv4_OpenDNSReturnsFalse {
     uint32_t ip = ntohl(inet_addr("208.67.222.222"));
     XCTAssertFalse([SSRFValidator isPrivateIPv4Address:ip]);
 }
 
-- (void)testPublicIPv4_172_32 {
+- (void)testPublicIPv4_172_32ReturnsFalse {
     uint32_t ip = ntohl(inet_addr("172.32.0.1"));
     XCTAssertFalse([SSRFValidator isPrivateIPv4Address:ip]);
 }
@@ -152,7 +152,7 @@
     XCTAssertTrue([SSRFValidator isPrivateIPv6Address:ip6]);
 }
 
-- (void)testPublicIPv6_MappedPublicIPv4 {
+- (void)testPublicIPv6_MappedPublicIPv4ReturnsFalse {
     struct in6_addr ip6 = {};
     memset(ip6.s6_addr, 0, 10);
     ip6.s6_addr[10] = 0xFF;
@@ -165,7 +165,7 @@
     XCTAssertFalse([SSRFValidator isPrivateIPv6Address:ip6]);
 }
 
-- (void)testPublicIPv6_GlobalUnicast {
+- (void)testPublicIPv6_GlobalUnicastReturnsFalse {
     struct in6_addr ip6 = {};
     ip6.s6_addr[0] = 0x20;
     ip6.s6_addr[1] = 0x01;

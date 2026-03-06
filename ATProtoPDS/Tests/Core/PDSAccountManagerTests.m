@@ -53,7 +53,7 @@
     XCTAssertEqualObjects(retrieved.email, account.email);
 }
 
-- (void)testAccountByHandle {
+- (void)testRetrieveAccountByHandleReturnsExpectedDid {
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
     account.did = @"did:plc:test2";
     account.handle = @"test2.bsky.social";

@@ -42,7 +42,7 @@
     [super tearDown];
 }
 
-- (void)testServiceInitialization {
+- (void)testServiceInitializationConfiguresDatabasePool {
     XCTAssertNotNil(self.service);
     XCTAssertEqual(self.service.databasePool, self.pool);
 }
@@ -71,6 +71,10 @@
     
     XCTAssertTrue(success);
     XCTAssertNil(error);
+    
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/test-rkey-1", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
 }
 
 - (void)testPutRecordWithValidationOff {
@@ -139,6 +143,10 @@
                                    forDid:self.testDID
                                     error:&error];
     XCTAssertTrue(second);
+    
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/dup-test", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
 }
 
 - (void)testDeleteRecord {
@@ -175,10 +183,15 @@
                                       forDid:self.testDID
                                          error:&error];
     XCTAssertTrue(result);
+    XCTAssertNil(error);
+    
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/nonexistent-rkey", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNil(record);
 }
 
 
-- (void)testListRecordsEmpty {
+- (void)testListRecordsEmptyReturnsEmptyArray {
     NSError *error = nil;
     NSArray *records = [self.service listRecords:@"app.bsky.feed.post"
                                          forDid:self.testDID
@@ -190,7 +203,7 @@
     XCTAssertEqual(records.count, 0);
 }
 
-- (void)testListRecordsWithData {
+- (void)testListRecordsWithDataReturnsRecords {
     NSError *error = nil;
     for (int i = 0; i < 3; i++) {
         NSDictionary *value = @{
@@ -216,7 +229,7 @@
     XCTAssertEqual(records.count, 3);
 }
 
-- (void)testListRecordsWithLimit {
+- (void)testListRecordsWithLimitReturnsLimitedRecords {
     NSError *error = nil;
     for (int i = 0; i < 5; i++) {
         NSDictionary *value = @{
@@ -373,7 +386,7 @@
     XCTAssertNotNil(result);
     XCTAssertNil(error);
 
-    // Both records should exist
+    // Both records are present
     NSDictionary *r1 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/atomic-1", self.testDID]
                                         forDid:self.testDID error:nil];
     NSDictionary *r2 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/atomic-2", self.testDID]
@@ -474,7 +487,7 @@
 
 - (void)testApplyWritesAtomicRollbackOnFailure {
     // Make the transaction fail mid-flight by attempting to create two records with the same URI.
-    // The second insert should fail (UNIQUE constraint), and the first should be rolled back.
+    // The subsequent insert should fail (UNIQUE constraint), and the initial one should be rolled back.
     NSArray *writes = @[
         @{
             @"action": @"create",
@@ -507,14 +520,14 @@
     XCTAssertNil(result, @"Batch should fail due to a duplicate record URI");
     XCTAssertNotNil(error);
 
-    // Record #1 should NOT exist because the whole batch was rolled back
+    // The initial record should NOT exist because the whole batch was rolled back
     NSDictionary *r1 = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/rollback-dup", self.testDID]
                                         forDid:self.testDID error:nil];
-    XCTAssertNil(r1, @"Record #1 should have been rolled back");
+    XCTAssertNil(r1, @"The record should have been rolled back");
 }
 
 - (void)testApplyWritesWithMixedOps {
-    // First create a record to delete
+    // Initialize a record to delete
     [self.service putRecord:@"app.bsky.feed.post"
                        rkey:@"to-delete"
                       value:@{
@@ -599,6 +612,7 @@
     NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/follow-atomic", self.testDID]
                                             forDid:self.testDID error:nil];
     XCTAssertNotNil(record);
+    XCTAssertEqualObjects(record[@"value"][@"subject"], @"did:plc:target-user");
 }
 
 - (void)testApplyWritesCreateWithoutRkeyGeneratesKeyAndResult {
@@ -650,6 +664,8 @@
                                     forDid:self.testDID
                                      error:&error];
     XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertNotNil(error.domain);
 }
 
 - (void)testRecordDIDIsolation {
@@ -736,6 +752,10 @@
     
     XCTAssertTrue(success);
     XCTAssertNil(error);
+    
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/authorized-rkey", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
 }
 
 - (void)testPutRecordConvenienceMethodAuthorizes {
@@ -755,6 +775,10 @@
     
     XCTAssertTrue(success);
     XCTAssertNil(error);
+    
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/convenience-rkey", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
 }
 
 - (void)testDeleteRecordUnauthorized {
@@ -796,6 +820,10 @@
     
     XCTAssertTrue(success);
     XCTAssertNil(error);
+    
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/to-delete-rkey", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNil(record);
 }
 
 - (void)testApplyWritesUnauthorized {
@@ -848,6 +876,10 @@
     
     XCTAssertNotNil(result);
     XCTAssertNil(error);
+    
+    NSDictionary *record = [self.service getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/apply-writes-rkey", self.testDID]
+                                            forDid:self.testDID error:nil];
+    XCTAssertNotNil(record);
 }
 
 - (void)testAuthorizationWithNilActorDid {

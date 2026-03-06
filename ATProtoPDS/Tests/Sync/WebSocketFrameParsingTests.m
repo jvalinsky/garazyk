@@ -68,6 +68,7 @@
     self.delegate.expectation = [self expectationWithDescription:@"Receive 126 byte message"];
     
     [self.connection handleReceivedData:frame];
+    // The delegate will call [expectation fulfill]
     
     [self waitForExpectations:@[self.delegate.expectation] timeout:1.0];
     XCTAssertEqualObjects(self.delegate.lastMessage, payload);
@@ -95,6 +96,7 @@
     self.delegate.expectation = [self expectationWithDescription:@"Receive 64KB message"];
     
     [self.connection handleReceivedData:frame];
+    // The delegate will call [expectation fulfill]
     
     [self waitForExpectations:@[self.delegate.expectation] timeout:1.0];
     XCTAssertEqualObjects(self.delegate.lastMessage, payload);
@@ -102,7 +104,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testMaskedFrameParsing {
+- (void)testMaskedFrameParsingMatchesLastTextObject {
     // Hello World masked
     // Fin=1, Opcode=1 (Text) -> 0x81
     // Mask=1, Len=5 -> 0x85
@@ -123,6 +125,7 @@
     self.delegate.expectation = [self expectationWithDescription:@"Receive masked text"];
     
     [self.connection handleReceivedData:frame];
+    // The delegate will call [expectation fulfill]
     
     [self waitForExpectations:@[self.delegate.expectation] timeout:1.0];
     XCTAssertEqualObjects(self.delegate.lastText, @"Hello");

@@ -58,11 +58,13 @@
 
 - (void)testCreateAccountDuplicate {
     NSError *error = nil;
-    [self.service createAccountForEmail:@"dup@example.com"
-                               password:@"password123"
-                                 handle:@"dup.example.com"
-                                    did:nil
-                                  error:&error];
+    NSDictionary *firstResult = [self.service createAccountForEmail:@"dup@example.com"
+                                                           password:@"password123"
+                                                             handle:@"dup.example.com"
+                                                                did:nil
+                                                              error:&error];
+    XCTAssertNotNil(firstResult);
+    XCTAssertNil(error);
     
     error = nil;
     NSDictionary *dupResult = [self.service createAccountForEmail:@"dup@example.com"

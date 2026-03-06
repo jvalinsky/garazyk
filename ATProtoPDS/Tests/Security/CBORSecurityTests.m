@@ -6,7 +6,7 @@
 
 @implementation CBORSecurityTests
 
-- (void)testDeeplyNestedArrays {
+- (void)testDeeplyNestedArraysDoesNotCrash {
     // Generate a deeply nested array: [[[[...]]]]
     // This tests for stack overflow in recursive decoders
     NSMutableData *data = [NSMutableData data];
@@ -63,7 +63,7 @@
     }
 }
 
-- (void)testLargeArrayAllocation {
+- (void)testDecodeReturnsNilForLargeArrayAllocation {
     // Test for "zip bomb" / OOM attack
     // Array with 0xFFFFFFFF elements (approx 4 billion)
     // 0x9B is Array(8-byte length)
@@ -74,7 +74,7 @@
     [data appendBytes:&count length:8];
     
     // Payload is empty, so it should fail to read immediately,
-    // BUT if it tries to allocate memory for UINT32_MAX * pointer_size first, it will crash/OOM.
+    // BUT if it tries to allocate memory for UINT32_MAX * pointer_size initially, it will crash/OOM.
     
     NSDate *start = [NSDate date];
     CBORValue *decoded = [CBORDecoder decode:data];
@@ -84,7 +84,7 @@
     XCTAssertLessThan(duration, 1.0, @"Should fail fast and not hang allocating memory");
 }
 
-- (void)testLargeMapAllocation {
+- (void)testDecodeReturnsNilForLargeMapAllocation {
     // Similar to array, but for maps
     NSMutableData *data = [NSMutableData data];
     uint8_t header = 0xBB; // Map(8-byte length)
@@ -100,7 +100,7 @@
     XCTAssertLessThan(duration, 1.0, @"Should fail fast");
 }
 
-- (void)testBufferOverread {
+- (void)testDecodeReturnsNilOnBufferOverread {
     // Declare a string of length 100, provide only 1 byte
     NSMutableData *data = [NSMutableData data];
     uint8_t header = 0x78; // String(1-byte length follows)

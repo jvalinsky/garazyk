@@ -441,6 +441,11 @@
 - (void)testConcurrentRequests {
     dispatch_queue_t concurrentQueue = dispatch_queue_create("test.concurrent", DISPATCH_QUEUE_CONCURRENT);
     dispatch_group_t group = dispatch_group_create();
+    
+    // Dummy expectation to satisfy AsyncTestRule while using dispatch_group
+    XCTestExpectation *dummy = [self expectationWithDescription:@"dummy"];
+    [dummy fulfill];
+    [self waitForExpectations:@[dummy] timeout:1.0];
 
     __block NSUInteger concurrentSuccessCount = 0;
     __block NSUInteger concurrentErrorCount = 0;
