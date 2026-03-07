@@ -10,28 +10,11 @@ CAR (Content Addressable aRchive) v1 is a format for storing and transmitting IP
 
 ## CAR Structure
 
-```
-
-┌─────────────────────────────────────┐
-│ CAR Header                          │
-│ - Version (1)                       │
-│ - Root CID                          │
-│ - Block count                       │
-└─────────────────────────────────────┘
-        ↓
-┌─────────────────────────────────────┐
-│ Block 1                             │
-│ - CID (varint length + bytes)       │
-│ - Data (varint length + bytes)      │
-└─────────────────────────────────────┘
-        ↓
-┌─────────────────────────────────────┐
-│ Block 2                             │
-│ - CID                               │
-│ - Data                              │
-└─────────────────────────────────────┘
-        ↓
-        ... more blocks ...
+```mermaid
+flowchart TD
+    header["CAR header<br/>version + root CID"] --> block1["Block 1<br/>CID bytes + block bytes"]
+    block1 --> block2["Block 2<br/>CID bytes + block bytes"]
+    block2 --> more["Additional blocks"]
 ```
 
 ## CAR Classes

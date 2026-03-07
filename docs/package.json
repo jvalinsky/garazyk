@@ -39,6 +39,7 @@
     "fast-check": "^4.5.3",
     "glob": "^13.0.6",
     "markdown-it-container": "^4.0.0",
+    "mermaid": "^11.12.3",
     "puppeteer": "^24.37.5",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
