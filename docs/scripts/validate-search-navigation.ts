@@ -51,6 +51,13 @@ if (!fs.existsSync(configPath)) {
   } else {
     console.log('  ✓ Code indexing configured');
   }
+
+  if (!configContent.includes('storeFields:') || !configContent.includes("'titles'")) {
+    result.passed = false;
+    result.errors.push('Local search storeFields must include titles for VitePress search results');
+  } else {
+    console.log('  ✓ Search result titles stored');
+  }
   
   // Check search boost weights
   if (!configContent.includes('boost:')) {
@@ -144,6 +151,21 @@ if (!fs.existsSync(distPath)) {
     result.errors.push('index.html not found in build output');
   } else {
     console.log('  ✓ index.html generated');
+  }
+
+  const searchChunkDir = path.join(distPath, 'assets', 'chunks');
+  if (!fs.existsSync(searchChunkDir)) {
+    result.passed = false;
+    result.errors.push('Search chunk directory not found in build output');
+  } else {
+    const chunkNames = fs.readdirSync(searchChunkDir);
+    const localSearchChunk = chunkNames.find((name) => name.startsWith('@localSearchIndexroot.') && name.endsWith('.js'));
+    if (!localSearchChunk) {
+      result.passed = false;
+      result.errors.push('Local search index chunk was not generated');
+    } else {
+      console.log('  ✓ Local search index chunk generated');
+    }
   }
 }
 
