@@ -1,518 +1,412 @@
 ---
-title: Objective-C Coding Guidelines & Tips
+title: Objective-C Research Patterns & Techniques
+description: Repo-grounded guide to obscure Objective-C, Cocoa, runtime, and macOS research for September PDS contributors
+outline: deep
 ---
 
-# Objective-C Coding Guidelines & Tips
+# Objective-C Research Patterns & Techniques
 
-> **Status:** Draft
-> **Scope:** ATProtoPDS Project
+This guide is for contributors who already know everyday Objective-C and need a
+better way to research the parts that are hard to remember, poorly indexed, or
+hidden in older Cocoa writing.
 
-Guide for Objective-C development within `ATProtoPDS`, covering modern syntax, memory management, architectural patterns, and runtime features.
+If you want the shortest route from a bug to the right source, start with
+[Objective-C Research Map](../11-reference/objective-c-research-map). This page
+is the deeper compendium.
 
----
+## How to use this guide
 
-## Part 1: Modern Objective-C
+Start with Apple when you need semantics, contracts, availability, or lifecycle
+rules. Use the blog sources to build a mental model, recover niche techniques,
+or understand why a surprising behavior exists. When an article is old, re-check
+it against:
 
-Adopting "Modern" Objective-C features improves code safety, readability, and Swift interoperability.
+1. ARC vs manual retain/release
+2. 64-bit runtime behavior vs older 32-bit assumptions
+3. current APIs vs retired or historical Cocoa behavior
 
-### 1. Nullability Annotations
+Use these tags literally:
 
-Nullability annotations help the compiler enforce nil-safety and improve interoperability with Swift.
+- `current`: safe as a first stop for current APIs or observed behavior
+- `conceptually useful but dated`: still worth reading, but verify details
+- `historical only`: useful for context, debugging folklore, or old codebases
 
-*   `nonnull` (or `_Nonnull`): The value cannot be nil.
-*   `nullable` (or `_Nullable`): The value can be nil.
-*   `null_unspecified` (or `_Null_unspecified`): The compiler makes no assumptions (legacy behavior).
+## Runtime and messaging
 
-**Recommendation:** Wrap all new headers in `NS_ASSUME_NONNULL_BEGIN` and `NS_ASSUME_NONNULL_END`. This allows you to assume `nonnull` by default and only annotate `nullable` items.
+### Why it matters in September
 
-**Example (`HandleResolver.h`):**
-```objective-c
-NS_ASSUME_NONNULL_BEGIN
+September mostly prefers explicit routing, explicit service boundaries, and
+explicit protocol registration. That is a strength. But when request handling,
+selector dispatch, `NSInvocation`, message forwarding, or runtime inspection
+behaves unexpectedly, you need a reliable way to reason about the Objective-C
+object model instead of guessing from symptoms.
 
-@interface HandleResolver : NSObject
-// ... methods here are assumed to return nonnull and take nonnull arguments
-@end
+This matters most when you are debugging route-handler behavior, studying how a
+component exposes capabilities dynamically, or validating whether a runtime
+trick is justified at all.
 
-NS_ASSUME_NONNULL_END
+### High-signal patterns and techniques
+
+- Learn the forwarding chain before touching `NSInvocation`, `NSProxy`, or
+  runtime mutation. Most "mysterious selector" problems are really about method
+  resolution, forwarding, or the wrong receiver type.
+- Prefer read-only inspection first: `respondsToSelector:`,
+  `conformsToProtocol:`, `isKindOfClass:`, selector names, and type encodings.
+- Treat method swizzling and associated objects as last-resort adaptation tools.
+  In September, explicit hooks, delegation, or composition should usually win.
+- Use runtime knowledge to debug, not to hide architecture. If a design only
+  works because `isa` tricks or swizzles are invisible to the caller, it is
+  usually the wrong fit for this repository.
+
+### Annotated external sources
+
+- [Objective-C Runtime](https://developer.apple.com/documentation/objectivec/objective-c-runtime)
+  — `current`. Validate APIs, structures, and availability here first.
+- [Intro to the Objective-C Runtime](https://www.mikeash.com/pyblog/friday-qa-2009-03-13-intro-to-the-objective-c-runtime.html)
+  — `conceptually useful but dated`. Strong mental model for `isa`, classes,
+  methods, and IMP dispatch.
+- [Objective-C Message Forwarding](https://www.mikeash.com/pyblog/friday-qa-2009-03-27-objective-c-message-forwarding.html)
+  — `conceptually useful but dated`. Best single explanation of lazy resolution,
+  fast forwarding, and full forwarding.
+- [What is a meta-class in Objective-C?](https://www.cocoawithlove.com/2010/01/what-is-meta-class-in-objective-c.html)
+  — `conceptually useful but dated`. Useful when the class/metaclass split feels
+  too abstract from API docs alone.
+- [Type Encodings](https://nshipster.com/type-encodings/) —
+  `conceptually useful but dated`. Good quick-reference when `NSInvocation` or
+  signature parsing enters the picture.
+- [Method Swizzling](https://nshipster.com/method-swizzling/) —
+  `conceptually useful but dated`. Read it as a hazards guide, not an
+  endorsement.
+
+### Search recipes
+
+```text
+site:mikeash.com/pyblog/friday-qa "message forwarding" Objective-C
+site:mikeash.com/pyblog/friday-qa "Objective-C runtime" isa IMP
+site:cocoawithlove.com "meta-class" Objective-C
+site:nshipster.com "type encodings"
+site:nshipster.com "method swizzling"
+site:developer.apple.com "Objective-C runtime" method_getTypeEncoding
 ```
 
-### 2. Lightweight Generics
+## Memory and object lifetimes
 
-Generics provide compile-time type checking for collections.
+### Why it matters in September
 
-**Syntax:** `NSArray<NSString *> *`, `NSDictionary<NSString *, NSNumber *> *`
+This is the most immediately useful research cluster for September. Many real
+bugs in the repository sit at the seam between ARC-managed Objective-C objects
+and non-Objective-C resources such as dispatch queues, SQLite statements,
+CoreFoundation objects, sockets, and long-lived callbacks.
 
-**Example (`PDSDatabase.m`):**
-```objective-c
-- (NSArray<NSDictionary *> *)executeQuery:(NSString *)sql error:(NSError **)error;
+When a handler leaks, a queue disappears, a `SecKeyRef` is released at the wrong
+time, or teardown leaves dangling SQLite statements behind, the right fix starts
+with lifetime reasoning.
+
+### High-signal patterns and techniques
+
+- In callbacks, use weak/strong capture for `self`. Do not use
+  `__unsafe_unretained` in asynchronous blocks.
+- `dispatch_queue_t` storage should be owned strongly. In September code, keep
+  queue properties explicit and strongly retained, and prefer the existing
+  queue-property conventions over ad hoc storage.
+- When closing a SQLite handle, finalize any remaining prepared statements first.
+  In practice that means the `sqlite3_next_stmt` / `sqlite3_finalize` cleanup
+  pass should happen before `sqlite3_close`, especially in tests and restart
+  paths.
+- Make CF ownership explicit. If you create, copy, or retain a `CFTypeRef`, you
+  own it and must release it. If you keep a borrowed value, retain it first or
+  do not store it, and zero out released pointers on teardown.
+- Use `@autoreleasepool` in long-running loops, background work, or parsing
+  loops that may accumulate transient Foundation objects.
+- Before merging a lifetime-sensitive change, check this list:
+  - blocks that capture `self` use weak/strong
+  - delegate-style references are `weak`
+  - no `__unsafe_unretained` survives in async or deferred code
+  - SQLite statements are finalized before close
+  - CF ownership is documented by code shape, not by memory
+
+### Annotated external sources
+
+- [Advanced Memory Management Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt/Articles/MemoryMgmt.html)
+  — `conceptually useful but dated`. Still the best statement of Cocoa
+  ownership rules even in ARC-heavy code.
+- [Programming with Objective-C](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html)
+  — `conceptually useful but dated`. Good baseline when object lifetime and
+  dynamic behavior intersect.
+- [Archives and Serializations Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Archiving/Archiving.html)
+  — `conceptually useful but dated`. Useful when identity and object-graph
+  lifetime cross coding boundaries.
+- [Automatic Reference Counting](https://mikeash.com/pyblog/friday-qa-2011-09-30-automatic-reference-counting.html)
+  — `conceptually useful but dated`. Good explanation of what ARC automates and
+  what it leaves unchanged.
+- [Zeroing Weak References in Objective-C](https://www.mikeash.com/pyblog/friday-qa-2010-07-16-zeroing-weak-references-in-objective-c.html)
+  — `conceptually useful but dated`. Read this when weak references feel
+  magical or unreliable.
+- [How blocks are implemented (and the consequences)](https://www.cocoawithlove.com/2009/10/how-blocks-are-implemented-and.html)
+  — `conceptually useful but dated`. Still one of the clearest explanations of
+  why block capture and lifetime behave the way they do.
+- [Implementing Value Objects in Objective-C](https://chris.eidhof.nl/post/implementing-value-objects-in-objective-c/)
+  — `conceptually useful but dated`. Good for immutability, copying, equality,
+  and stable object boundaries.
+
+### Search recipes
+
+```text
+site:mikeash.com/pyblog/friday-qa ARC Objective-C weak blocks
+site:mikeash.com/pyblog/friday-qa "zeroing weak" Objective-C
+site:cocoawithlove.com blocks Objective-C retain cycle
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt weak autorelease pool
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Archiving NSCoder NSCoding
+site:chris.eidhof.nl "value objects" "objective c"
 ```
 
-### 3. Literals
+## Cocoa dynamism: KVC, KVO, bindings, and invocation
 
-Use concise syntax for creating immutable data structures.
+### Why it matters in September
 
-*   **Array:** `@[ obj1, obj2 ]` (vs `[NSArray arrayWithObjects:...]`)
-*   **Dictionary:** `@{ key : value }` (vs `[NSDictionary dictionaryWithObjects:...]`)
-*   **Number:** `@(123)`, `@(YES)`
+September does not revolve around KVO or Cocoa bindings, but contributors still
+run into these mechanics when debugging older macOS tooling, test harnesses,
+desktop helper code, or Foundation APIs that lean on conventions instead of
+explicit interfaces.
 
-### 4. Blocks and Typedefs
+This is also the right research cluster when `NSInvocation`, dynamic dispatch,
+associated objects, or string-based access patterns start to appear in a patch
+or in supporting tooling.
 
-Use `typedef` to define block signatures for readability.
+### High-signal patterns and techniques
 
-**Example (`XrpcHandler.h`):**
-```objective-c
-typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
+- For `KVC` and `KVO`, read the lookup and compliance rules before changing
+  accessors. Many observer bugs are really compliance bugs.
+- Prefer explicit APIs over KVC/KVO when you control the design. In September,
+  these mechanisms are usually research tools or compatibility surfaces, not the
+  preferred first implementation strategy.
+- Use `NSInvocation` only when explicit method calls or blocks are not enough.
+  It is powerful, but it increases debugging cost.
+- If a category needs state, associated objects may be acceptable, but document
+  the lifetime and ownership assumptions so the storage is not "invisible
+  architecture."
+- Be careful with observer registration lifetimes, especially across queues or
+  teardown.
+
+### Annotated external sources
+
+- [Key-Value Coding Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueCoding/index.html)
+  — `conceptually useful but dated`. Canonical accessor search rules, validation
+  hooks, and collection operators.
+- [Key-Value Observing Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueObserving/KeyValueObserving.html)
+  — `conceptually useful but dated`. Required when debugging observer behavior,
+  dependent keys, or collection change semantics.
+- [Cocoa Bindings Programming Topics](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaBindings/CocoaBindings.html)
+  — `conceptually useful but dated`. Useful if you touch older macOS UI code.
+- [Key-Value Coding and Observing](https://www.objc.io/issues/7-foundation/key-value-coding-and-observing)
+  — `conceptually useful but dated`. Strong practical deep dive.
+- [Cocoa Tutorial: Get The Most Out of Key Value Coding and Observing](https://www.cimgf.com/2008/04/15/cocoa-tutorial-get-the-most-out-of-key-value-coding-and-observing/)
+  — `conceptually useful but dated`. Good practical framing of KVC and KVO
+  behavior.
+- [Construct an NSInvocation for any message, just by sending](https://www.cocoawithlove.com/2008/03/construct-nsinvocation-for-any-message.html)
+  — `conceptually useful but dated`. Useful when debugging dynamic invocation or
+  undo-style behavior.
+- [Associated Objects](https://nshipster.com/associated-objects/) —
+  `conceptually useful but dated`. Helpful when categories need state and you
+  need to think through lifetime and ownership.
+
+### Search recipes
+
+```text
+site:objc.io/issues/7-foundation "Key-Value"
+site:cimgf.com KVO KVC Objective-C
+site:cocoawithlove.com NSInvocation forwarding Objective-C
+site:nshipster.com "associated objects"
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueCoding
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueObserving
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaBindings
 ```
 
-### 5. Grand Central Dispatch (GCD)
+## Concurrency and orchestration
 
-*   **Singletons:** Use `dispatch_once`.
-*   **Synchronization:** Use serial queues (`dispatch_queue_t`) to protect mutable state.
-*   **ARC Ownership:** Always use `strong` for queue properties. Using `assign` will lead to immediate deallocation and subsequent crashes when the framework attempts to use the queue.
+### Why it matters in September
 
-**Queue Property Standardization:**
-Use the `PDS_DISPATCH_QUEUE_STRONG` macro for consistent queue property declarations:
+September relies heavily on dispatch queues, asynchronous callbacks, request
+lifecycles, firehose delivery, and shutdown/teardown correctness. Bugs in this
+area often show up as flakiness, hangs, slow shutdown, reordered behavior, or
+tests that pass until load or timing changes.
 
-```objc
-// Standard queue property declaration
-@property (nonatomic, strong) dispatch_queue_t connectionQueue;
+When you are changing server lifecycle, queue ownership, callback ordering,
+background work, or async tests, this cluster is usually more useful than
+generic "thread safety" advice.
 
-// Or use the macro for consistency
-PDS_DISPATCH_QUEUE_STRONG dispatch_queue_t connectionQueue;
+### High-signal patterns and techniques
+
+- Prefer a clear owner for mutable state. If multiple queues can mutate the same
+  structure, document the contract or refactor the ownership boundary.
+- Queue lifetime is part of correctness. If a queue is stored weakly or not
+  retained, the failure mode looks random.
+- Separate "listener stopped" from "all async work drained." September teardown
+  paths should wait for both state transition and task completion.
+- Use incremental parsing for streamed input. `receive`-style APIs may deliver
+  arbitrarily fragmented data, so buffer until a complete protocol unit exists.
+- When debugging race-prone behavior, look for re-entry, callback ordering, and
+  test determinism before assuming a low-level scheduler bug.
+
+### Annotated external sources
+
+- [Threading Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/Introduction/Introduction.html)
+  — `conceptually useful but dated`. Still useful for Cocoa-specific threading
+  assumptions, run loops, and thread setup.
+- [Thread Management](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/CreatingThreads/CreatingThreads.html)
+  — `conceptually useful but dated`. Good reference for autorelease pools and
+  secondary-thread setup.
+- [Concurrent Programming: APIs and Challenges](https://www.objc.io/issues/2-concurrency/concurrency-apis-and-pitfalls/)
+  — `conceptually useful but dated`. Good survey of concurrency API tradeoffs.
+- [Low-Level Concurrency APIs](https://www.objc.io/issues/2-concurrency/low-level-concurrency-apis)
+  — `conceptually useful but dated`. Useful when you need to reason below
+  operation queues.
+- [Testing Concurrent Applications](https://www.objc.io/issues/2-concurrency/async-testing)
+  — `conceptually useful but dated`. High-value reading for flaky or misleading
+  async tests.
+- [NSOperation Example](https://www.cimgf.com/2008/02/23/nsoperation-example/)
+  — `historical only`. Useful as a contrast point for older subclass-based
+  `NSOperation` design.
+
+### Search recipes
+
+```text
+site:objc.io/issues/2-concurrency NSOperation GCD run loop
+site:objc.io/issues/2-concurrency async testing Objective-C
+site:cimgf.com NSOperation Objective-C
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading "run loop"
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading "autorelease pool"
 ```
 
-**Queue Naming Convention:**
-```objc
-// Use reverse domain notation for queue names
-dispatch_queue_create("com.atproto.pds.actorstore.transaction", DISPATCH_QUEUE_SERIAL);
-dispatch_queue_create("com.atproto.pds.network.events", DISPATCH_QUEUE_CONCURRENT);
+## Data and model layers
+
+### Why it matters in September
+
+September does not use Core Data as a primary storage layer, but contributors
+still benefit from the research around model boundaries, collection behavior,
+value semantics, predicates, serialization, and object-graph reasoning. This is
+the cluster to use when Foundation model objects or serialized state become
+subtle, not when you merely need another dictionary.
+
+It is especially useful when reviewing DTO-style objects, config shapes,
+archiving behavior, predicate-heavy logic, or places where "a bag of
+NSDictionary values" is turning into an implicit model layer.
+
+### High-signal patterns and techniques
+
+- Prefer explicit value-object boundaries for stable model data. Immutability,
+  copying, and equality rules make debugging and testing easier.
+- Use predicates when the problem is declarative filtering or matching, not when
+  a loop with explicit code would be clearer. Predicate research is most useful
+  when an Objective-C API already expects predicate semantics.
+- Be careful when archiving or serializing object graphs. Identity and lifecycle
+  rules can leak across encoding boundaries in surprising ways.
+- Core Data articles are still useful as reading about graph identity, faulting,
+  and fetch behavior even if September stores its data differently.
+
+### Annotated external sources
+
+- [Core Data Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreData/)
+  — `conceptually useful but dated`. Strong conceptual writing on graph
+  identity, validation, and persistence boundaries.
+- [Faulting and Uniquing](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreData/FaultingandUniquing.html)
+  — `conceptually useful but dated`. Useful when identity and lazy loading
+  concepts are the real lesson.
+- [Creating Predicates](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Predicates/Articles/pCreating.html)
+  — `conceptually useful but dated`. Helpful when NSPredicate syntax or programmatic
+  predicate construction enters the design.
+- [Issue 4: Core Data](https://www.objc.io/issues/4-core-data) —
+  `conceptually useful but dated`. Strong collection of model-layer thinking.
+- [Saving JSON to Core Data](https://www.cimgf.com/2011/06/02/saving-json-to-core-data/)
+  — `conceptually useful but dated`. Good for import and normalization patterns.
+- [Response: The Laws of Core Data](https://www.cimgf.com/2018/05/10/response-the-laws-of-core-data/)
+  — `conceptually useful but dated`. Useful for separating lore from practice.
+- [Accessing an API using Core Data's NSIncrementalStore](https://chris.eidhof.nl/post/accessing-an-api-using-coredatas-nsincrementalstore/)
+  — `conceptually useful but dated`. Niche, but useful when store abstraction
+  or remote-backed model layers are the real topic.
+
+### Search recipes
+
+```text
+site:objc.io/issues/4-core-data faulting migration fetch request
+site:cimgf.com "Core Data" JSON import predicate
+site:chris.eidhof.nl NSIncrementalStore "Core Data"
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreData faulting uniquing validation
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Predicates NSPredicate
 ```
 
----
+## macOS-specific internals: AppKit, XPC, logs, and system behavior
 
-## Part 2: Advanced Technical Patterns
+### Why it matters in September
 
-These patterns were established during the stabilization of the PDS server to resolve complex deallocation and synchronization issues.
+Even though September is primarily a server, contributors still debug it on
+macOS, use macOS-native tooling, and occasionally need to understand AppKit,
+`NSXPCConnection`, logging behavior, or current platform quirks. This cluster is
+for the problems that are not "Objective-C syntax" problems at all, but
+Objective-C-on-macOS systems problems.
 
-### 1. Synchronized Server Lifecycle
+Use it when the failure smells like AppKit, LLDB, Spotlight, system logs,
+metadata, XPC, or current macOS behavior rather than repository logic alone.
 
-When stopping a server, you must ensure that all asynchronous callbacks have finished and the underlying system handles are truly closed before allowing the controller to be deallocated.
+### High-signal patterns and techniques
 
-*   **Wait for State Changes**: Use a `dispatch_semaphore_t` to block the `stop` method until the Network listener signals it has reached the `cancelled` state.
-*   **Task Tracking**: Use a `dispatch_group_t` to wrap all active requests or broadcasts. `dispatch_group_enter` when a task starts, `dispatch_group_leave` when it completes. Wait on this group during teardown.
+- Separate framework contract from observed platform behavior. Apple docs tell
+  you what is supported; Eclectic Light often tells you what current macOS is
+  actually doing.
+- When debugging contributor tooling or desktop helpers, read AppKit material
+  for responder chain, view invalidation, bindings, and controller behavior.
+- Use LLDB and system logging as first-class research tools. For macOS-specific
+  failures, they often tell you more than source inspection alone.
+- For streamed or socket-like APIs on macOS, keep incremental parsing in mind.
+  Do not assume a single read or receive call contains a complete request.
+- When macOS and GNUstep behavior diverge, document the boundary instead of
+  letting platform-specific assumptions hide inside implementation details.
 
-```objective-c
-- (void)stop {
-    [self.listener cancel];
-    // Wait for nw_listener to signal 'cancelled' state
-    dispatch_semaphore_wait(self.stopSemaphore, DISPATCH_TIME_FOREVER);
-    // Wait for all active async tasks to drain
-    dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
-}
+### Annotated external sources
+
+- [View Programming Guide for Cocoa](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaViewsGuide/Introduction/Introduction.html)
+  — `conceptually useful but dated`. Still the best conceptual AppKit baseline.
+- [Cocoa Bindings Programming Topics](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaBindings/CocoaBindings.html)
+  — `conceptually useful but dated`. Relevant when controller-heavy AppKit code
+  or bindings behavior enters the discussion.
+- [Issue 14: Back to the Mac](https://www.objc.io/issues/14-mac) —
+  `conceptually useful but dated`. Good issue set for AppKit, scripting,
+  plug-ins, and XPC.
+- [XPC](https://www.objc.io/issues/14-mac/xpc/) —
+  `conceptually useful but dated`. Useful when cross-process boundaries matter.
+- [AppKit for UIKit Developers](https://www.objc.io/issues/14-mac/appkit-for-uikit-developers/)
+  — `conceptually useful but dated`. Good refresher on AppKit mental models.
+- [ICYMI: a selection of the best Mac articles of 2025 – 2](https://eclecticlight.co/2026/01/01/icymi-a-selection-of-the-best-mac-articles-of-2025-2/)
+  — `current`. High-signal entry point for current macOS behavior around logs,
+  Spotlight, security, and metadata.
+- [Dancing in the Debugger — A Waltz with LLDB](https://www.objc.io/issues/19-debugging/lldb-debugging/)
+  — `conceptually useful but dated`. Valuable for live debugging in Cocoa code.
+
+### Search recipes
+
+```text
+site:objc.io/issues/14-mac AppKit XPC scriptable plugins
+site:objc.io/issues/19-debugging lldb cocoa appkit
+site:eclecticlight.co logs Spotlight app extensions metadata macOS
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaViewsGuide NSView responder chain
+site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaBindings NSArrayController NSController
 ```
 
-### 2. SQLite Resource Management
-
-To prevent "Database Busy" errors or integrity warnings during teardown (especially in tests with frequent restarts), you must finalize ALL prepared statements.
-
-*   **Aggressive Finalization**: Use `sqlite3_next_stmt` to find any dangling statements and finalize them before closing the `sqlite3` handle.
-
-```objective-c
-- (void)close {
-    sqlite3_stmt *stmt;
-    while ((stmt = sqlite3_next_stmt(self.db, NULL)) != NULL) {
-        sqlite3_finalize(stmt);
-    }
-    sqlite3_close(self.db);
-    self.db = NULL;
-}
-```
-
-### 3. Incremental Network Parsing
-
-When using `Network.framework`, data may arrive in small fragments. Your server must buffer this data rather than assuming a single `receive` call contains a full request.
-
-*   **Buffer Accumulation**: Store incoming data in an `NSMutableData` property until a complete protocol message (e.g., HTTP headers + body) is recognized.
-
-### 4. Protocol Bridging
-
-When accepting new connections from an `nw_listener_t`, you should bridge the low-level connection to a high-level protocol handler immediately.
-
-*   **Handler Pattern**: The server side accepts the `nw_connection_t`, wraps it in a connection object (like `WebSocketConnection`), and calls `start` to initiate the protocol handshake and read loop.
-
----
-
-## Part 3: Memory Management & Safety
-
-The project uses Automatic Reference Counting (ARC).
-
-### 1. Retain Cycles: Blocks vs Delegates
-
-**Block Capture (Weak/Strong Dance):**
-When a block captures `self`, it creates a strong reference. If `self` owns the block, this creates a retain cycle.
-
-```objective-c
-__weak typeof(self) weakSelf = self;
-self.completionBlock = ^{
-    __strong typeof(weakSelf) strongSelf = weakSelf;
-    if (!strongSelf) return;
-    [strongSelf doSomething];
-};
-```
-
-**Delegates:**
-Delegates must **always** be `weak`.
-
-```objective-c
-@property (nonatomic, weak, nullable) id<MyDelegate> delegate;
-```
-
-### 2. Property Attributes
-
-| Attribute | Usage | Example |
-|-----------|-------|---------|
-| `assign` | Primitives (`NSInteger`, `BOOL`) | `NSInteger count` |
-| `copy` | Value objects (`NSString`, `NSArray`) | `NSString *name` |
-| `strong` | Owned objects | `NSMutableArray *items` |
-| `weak` | Non-owned references | `id<Delegate> delegate` |
-
-### 3. Autorelease Pools
-
-Use `@autoreleasepool` inside tight loops to keep memory footprint low.
-
-```objective-c
-while (serverRunning) {
-    @autoreleasepool {
-        [self handleNextRequest];
-    }
-}
-```
-
-### 4. Lifecycle (init/dealloc)
-
-*   **`dealloc`**: Use this to release resources like `sqlite3` handles, `CFTypeRef` objects (`CFRelease`), or to invalidate `NSTimer`s.
-*   **Do not** call `[super dealloc]`.
-
-#### Core Foundation Object Ownership
-
-When working with Core Foundation objects (SecKeyRef, CFStringRef, etc.), follow strict ownership rules:
-
-**Ownership Contract:**
-- If you create or copy a CF object, you own it and must `CFRelease` it
-- If you receive a CF object from a function with "Get" or "Copy" in the name, you own it
-- If you receive a CF object from a function with "Create" in the name, you own it
-- Use `CFRetain` to take ownership of objects you don't own but need to keep
-
-**Example (`KeyManager.m`):**
-```objc
-// KeyPair creation - we retain the SecKeyRefs
-CFRetain(privateKey);
-CFRetain(publicKey);
-
-// Dealloc - we release what we retained
-- (void)dealloc {
-    if (_privateKey) CFRelease(_privateKey);
-    if (_publicKey) CFRelease(_publicKey);
-}
-```
-
-**Example (`ActorStore.m`):**
-```objc
-// Property declaration - assign for CFTypeRef
-@property (nonatomic, assign) SecKeyRef signingKey;
-
-// Cleanup - release if we own it
-if (_signingKey) {
-    CFRelease(_signingKey);
-    _signingKey = NULL;
-}
-```
-
----
-
-## Part 3: Foundation Patterns
-
-### 1. Singleton Pattern
-
-Thread-safe implementation using `dispatch_once`.
-
-```objective-c
-+ (instancetype)sharedInstance {
-    static MyClass *shared = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        shared = [[MyClass alloc] init];
-    });
-    return shared;
-}
-```
-
-### 2. Error Handling (`NSError **`)
-
-Follow the standard Cocoa pattern:
-1.  Accept `NSError **` as the last argument.
-2.  Return `BOOL` or nullable object.
-3.  Check `if (error)` before dereferencing.
-
-```objective-c
-- (BOOL)performAction:(NSError **)error {
-    if (failureCondition) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"MyDomain" code:1 userInfo:nil];
-        }
-        return NO;
-    }
-    return YES;
-}
-```
-
-### 3. Class Extensions
-
-Use Class Extensions in the `.m` file to declare private properties and read-write overrides of public read-only properties.
-
-```objective-c
-// In .m file
-@interface MyClass ()
-@property (nonatomic, readwrite) NSString *status;
-@property (nonatomic, strong) NSMutableArray *internalQueue;
-@end
-```
-
----
-
-## Part 4: Security Best Practices
-
-### 1. Input Validation & Bounds Checking
-
-Always validate input data, especially when parsing binary formats or network data:
-
-**CBOR/Binary Parsing:**
-```objc
-// EventFormatter.m - Bounds checking for CBOR decoding
-if (*index >= length) {
-    if (error) {
-        *error = [NSError errorWithDomain:EventFormatterErrorDomain
-                                     code:EventFormatterErrorCodeDecodingFailed
-                                 userInfo:@{NSLocalizedDescriptionKey: @"Unexpected end of CBOR data"}];
-    }
-    return nil;
-}
-
-// Check for buffer overflow before reading
-if (*index + byteLength > length) return nil;
-```
-
-**WebAuthn Credential Validation:**
-```objc
-// WebAuthnVerifier.m - Validate credential data structure
-if (authData.length < 37) {
-    if (error) *error = [self errorWithCode:1007 message:@"authData too short"];
-    return nil;
-}
-
-// Check flags before accessing optional data
-uint8_t flags = ((const uint8_t *)authData.bytes)[32];
-BOOL hasAttestedCredentialData = (flags & 0x40) != 0;
-if (!hasAttestedCredentialData) {
-    if (error) *error = [self errorWithCode:1008 message:@"No attested credential data"];
-    return nil;
-}
-```
-
-### 2. Network Security Limits
-
-Implement size limits to prevent resource exhaustion attacks:
-
-**WebSocket Frame Size Limit:**
-```objc
-// WebSocketConnection.m - 16MB max frame size
-static const NSUInteger MAX_FRAME_SIZE = 16 * 1024 * 1024; // 16MB
-
-if (frameSize > MAX_FRAME_SIZE) {
-    // Close connection with policy violation
-    [self closeWithCode:1008 reason:@"Frame too large"];
-    return;
-}
-```
-
-### 3. Memory Safety Patterns
-
-**Prevent Buffer Overflows:**
-- Always check array bounds before access
-- Use bounded string operations (`strlcpy`, `strlcat`)
-- Validate input lengths before allocation
-
-**Prevent Use-After-Free:**
-- Set pointers to NULL after `CFRelease`
-- Use `weak` references for delegates to avoid retain cycles
-- Never access objects after `dealloc`
-
-### 4. Cryptographic Security
-
-**Key Management:**
-- Never store private keys in code or configuration files
-- Use the Keychain (`SecKeyRef`) for persistent key storage
-- Generate random values with `SecRandomCopyBytes`, not `rand()`
-
-**Constant-Time Comparisons:**
-```objc
-// For sensitive data comparison, use timing-safe approaches
-// Note: memcmp is generally sufficient on modern systems
-// For high-security contexts, consider custom constant-time implementations
-```
-
----
-
-## Part 5: Runtime Features
-
-While rarely needed for day-to-day coding, understanding the runtime is useful for debugging.
-
-### 1. Introspection
-
-Prefer high-level methods over runtime hacks:
-*   `isKindOfClass:`: Check class inheritance.
-*   `conformsToProtocol:`: Check capability.
-*   `respondsToSelector:`: Check if a method exists.
-
-### 2. Method Swizzling
-
-**Warning:** modifying global behavior is dangerous. If you must swizzle (e.g. for analytics), do it in `+load` using `dispatch_once`.
-
-### 3. Associated Objects
-
-Use `objc_setAssociatedObject` to attach data to categories when you cannot subclass.
-
-```objective-c
-objc_setAssociatedObject(self, &kKey, value, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-```
-
----
-
-## Part 6: Memory Debugging Session (Jan 2026)
-
-Issues discovered and fixed during a memory analysis session (Jan 2026).
-
-### 1. Retain Cycles in Route Handlers
-
-**Issue Found:** Route handler blocks in `OAuth2Handler.m` captured `self` strongly, creating retain cycles. The `HttpServer` stores handler blocks in a dictionary with strong references, and the blocks captured `self` strongly.
-
-**Files Affected:**
-- `ATProtoPDS/Sources/Auth/OAuth2Handler.m:137-157`
-
-**Before (Problematic):**
-```objective-c
-- (void)registerRoutesWithServer:(HttpServer *)httpServer {
-    [httpServer addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self handleAuthorizeRequest:request response:response];  // RETAIN CYCLE
-    }];
-    // ... other routes same pattern
-}
-```
-
-**After (Fixed):**
-```objective-c
-- (void)registerRoutesWithServer:(HttpServer *)httpServer {
-    __weak typeof(self) weakSelf = self;
-
-    [httpServer addRoute:@"GET" path:@"/oauth/authorize" handler:^(HttpRequest *request, HttpResponse *response) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf handleAuthorizeRequest:request response:response];
-    }];
-    // ... other routes same pattern
-}
-```
-
-**Impact:** 5 route handlers fixed (oauth/authorize, oauth/token, oauth/revoke, oauth-authorization-server, oauth-protected-resource).
-
-### 2. Unsafe Retain Pattern
-
-**Issue Found:** `PDSController.m` used `__unsafe_unretained` which can cause EXC_BAD_ACCESS crashes if `self` is deallocated before the block executes.
-
-**File:** `ATProtoPDS/Sources/App/PDSController.m:243`
-
-**Before (Problematic):**
-```objective-c
-__unsafe_unretained typeof(self) weakSelf = self;
-[_httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-    PDSController *strongSelf = weakSelf;  // CRASH if weakSelf is dangling
-    if (strongSelf) { ... }
-}];
-```
-
-**After (Fixed):**
-```objective-c
-__weak typeof(self) weakSelf = self;
-[_httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-    PDSController *strongSelf = weakSelf;  // nil if deallocated, safe
-    if (strongSelf) { ... }
-}];
-```
-
-### 3. Memory Analysis CI Workflow
-
-**Added:** `.github/workflows/memory-analysis.yml`
-
-This workflow runs weekly and on changes to `.m`/`.h` files to prevent future memory issues:
-
-**Triggers:**
-- Weekly (Sunday midnight)
-- Push to main/develop with `.m`/`.h` changes
-- Pull requests with Objective-C changes
-- Manual dispatch
-
-**Checks Performed:**
-1. Full project build with CMake/Ninja
-2. Test suite execution (360 tests)
-3. `leaks` command for memory detection
-4. Static analysis with clang-tidy
-5. Pattern checks for `__unsafe_unretained` usage
-
-### 4. Pattern Checklist for Code Review
-
-When adding route handlers or callbacks, verify:
-
-- [ ] Blocks capture `self` using `__weak typeof(self) weakSelf = self;`
-- [ ] Inside blocks, use `__strong typeof(weakSelf) strongSelf = weakSelf;`
-- [ ] Check `if (!strongSelf) return;` before accessing
-- [ ] Never use `__unsafe_unretained` - always prefer `__weak`
-- [ ] All delegate properties use `weak` attribute
-
-### 5. Verification Commands
-
-```bash
-# Run test suite
-./build/tests/AllTests
-
-# Check for __unsafe_unretained (should find 0 matches)
-grep -r "__unsafe_unretained" ATProtoPDS/Sources
-
-# Check route handlers use weak-strong dance
-grep -A5 "addRoute.*handler:" ATProtoPDS/Sources/**/*.m | grep -E "(weakSelf|__weak)"
-
-# Run memory analysis workflow locally
-ctest --test-dir build --output-on-failure
-```
-
-## 6. Session Summary
-
-| Category | Before | After | Status |
-|----------|--------|-------|--------|
-| OAuth2Handler retain cycles | 5 | 0 | Fixed |
-| __unsafe_unretained usage | 1 | 0 | Fixed |
-| Delegate properties (weak) | 6 | 6 | Verified safe |
-| WebSocket handlers | N/A | Safe | Verified |
-| Test suite | 360 tests | 360 tests | Passing |
-
----
-
-*Session documented: Jan 15, 2026*
-
-## Related Documentation
-
-- **[Developer Guide](./development/DEVELOPER_GUIDE)** - API extension procedures and project structure
-- **[Security Best Practices](../security/SECURITY_PLAN)** - Security validation strategy
-- **[Security Analysis Report](../security/SECURITY_ANALYSIS_REPORT)** - Static analysis findings
-- **[Architecture Analysis](../architecture/ARCHITECTURE_ANALYSIS)** - System design patterns
-- **[OAuth 2.0 Implementation](../oauth2/README)** - Authentication and session management
-- **[macOS Network Guide](macOS_Network_Server_Guide)** - Platform-specific APIs and frameworks
-- **[Testing Guide](../TESTING)** - Unit and integration test patterns
+## September-specific follow-through
+
+After you find the right external explanation, map it back into the repository
+instead of stopping at "now I understand the article."
+
+- Use [Codebase Map](../01-getting-started/codebase-map) to find the owning
+  subsystem.
+- Use [Troubleshooting](../11-reference/troubleshooting) to narrow the failing
+  surface before changing code.
+- Use [Testing Map](../11-reference/testing-map) and
+  [Test Selection Workflow](../11-reference/test-selection-workflow) to pick the
+  smallest useful verification path.
+- Use [macOS & Linux](../09-platform-compatibility/macos-linux) and
+  [Deep Dive: macOS vs GNUstep Boundary](../09-platform-compatibility/macos-vs-gnustep-boundary)
+  when a technique behaves differently across platforms.
+
+The useful habit is simple: external research should sharpen your repository
+reasoning, not replace it.
