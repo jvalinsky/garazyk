@@ -13,7 +13,7 @@
     "validate:tutorials": "tsx scripts/test-tutorial-structure.ts",
     "validate:code-enhancements": "tsx scripts/validate-code-enhancements.ts",
     "validate:search-navigation": "tsx scripts/validate-search-navigation.ts",
-    "validate:all": "tsx scripts/validate-docs.ts --all && tsx scripts/test-tutorial-structure.ts",
+    "validate:all": "tsx scripts/validate-docs.ts --all && tsx scripts/validate-search-navigation.ts && tsx scripts/test-tutorial-structure.ts",
     "test:properties": "tsx scripts/property-based-tests.ts",
     "test:links": "tsx scripts/comprehensive-link-validation.ts",
     "test:accessibility": "tsx scripts/accessibility-validation.ts",

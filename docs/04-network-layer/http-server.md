@@ -46,6 +46,15 @@ The main files worth knowing are:
 
 Read them together. The server owns connection behavior, while the builder owns which routes exist and in what order they are installed.
 
+## Advanced internals track
+
+If you want the transport and parser walkthrough instead of the short reference
+version of this page, continue to the tutorial subguide:
+
+- [Subguide: HTTP + WebSocket from Scratch](../10-tutorials/network-from-scratch/)
+- [Part 1: HTTP Transport and Parser](../10-tutorials/network-from-scratch/http-transport-and-parser)
+- [Part 2: Routing, Pipelining, and Responses](../10-tutorials/network-from-scratch/http-routing-pipelining-and-responses)
+
 ## Related Deep Dives
 
 - [HTTP Request and Route Pipeline](./http-request-and-route-pipeline)

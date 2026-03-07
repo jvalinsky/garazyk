@@ -24,11 +24,18 @@ Long code and shell material belongs in appendices so the main narrative can sta
 3. [Tutorial 3: Records](./tutorial-3-records)
 4. [Tutorial 4: Authentication](./tutorial-4-auth)
 5. [Tutorial 5: Firehose](./tutorial-5-firehose)
-6. [Tutorial 6: Deployment](./tutorial-6-deployment)
-7. [Tutorial 7: Objective-J UI](./tutorial-7-objective-j-ui)
-8. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow)
+6. [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/)
+7. [Tutorial 6: Deployment](./tutorial-6-deployment)
+8. [Tutorial 7: Objective-J UI](./tutorial-7-objective-j-ui)
+9. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow)
 
-The first six teach the production server from the inside out. Tutorial 7 covers contributor tooling in the browser. Tutorial 8 ties together the end-to-end workflow for adding or changing a feature.
+The first five tutorials plus the network subguide teach the production server from the inside out. Tutorial 6 then shifts to deployment. Tutorial 7 covers contributor tooling in the browser. Tutorial 8 ties together the end-to-end workflow for adding or changing a feature.
+
+If you want the network internals immediately after the firehose walkthrough, take the advanced track next:
+
+- [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/)
+
+That subguide sits between [Tutorial 5: Firehose](./tutorial-5-firehose) and [Tutorial 6: Deployment](./tutorial-6-deployment). It is the place to study how September actually accepts sockets, parses HTTP/1.1, upgrades to WebSocket, and hands the connection to `subscribeRepos`.
 
 ## What the Tutorials Optimize For
 
