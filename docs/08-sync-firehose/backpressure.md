@@ -17,107 +17,27 @@ Backpressure is the mechanism that prevents overwhelming slow clients with event
 
 ### Without Backpressure
 
-```
-
-Server broadcasts commit
-    ↓
-Send to all subscribers
-    ↓
-Fast client receives immediately
-    ↓
-Slow client's buffer fills
-    ↓
-Server keeps sending
-    ↓
-Buffer overflows
-    ↓
-Connection drops
-    ↓
-Data loss
-```
+Without backpressure, a single slow subscriber can accumulate queued frames until the connection drops, which turns transient slowness into data loss.
 
 ### With Backpressure
 
-```
+With backpressure enabled, the broadcaster classifies each subscriber by buffer pressure and either sends immediately, pauses and drains, or disconnects the subscriber before it can destabilize the rest of the fan-out.
 
-Server broadcasts commit
-    ↓
-Check subscriber buffer levels
-    ↓
-Fast client: send immediately
-    ↓
-Slow client: buffer full
-    ↓
-Pause sending to slow client
-    ↓
-Wait for buffer to drain
-    ↓
-Resume sending
-    ↓
-No data loss
-```
-
-**ASCII Diagram: Backpressure Flow Control**
-
-```
-
-┌─────────────────────────────────────────────────────────┐
-│  CommitBroadcaster.broadcastCommit                      │
-└────────────────────┬────────────────────────────────────┘
-                     │
-        ┌────────────▼────────────┐
-        │  Create firehose event  │
-        │  Format and encode JSON │
-        └────────────┬────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  For each subscription:         │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Check send buffer level        │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────┴────────────┬────────────────┐
-        │                         │                │
-   < 70%                      70-90%            > 90%
-        │                         │                │
-   ┌────▼────┐          ┌────────▼────────┐  ┌───▼────┐
-   │ Send    │          │ Apply           │  │ Close  │
-   │ event   │          │ backpressure    │  │ conn   │
-   │ now     │          └────────┬────────┘  └────────┘
-   └────┬────┘                   │
-        │                   ┌────▼────────────┐
-        │                   │ Queue message   │
-        │                   │ in buffer       │
-        │                   └────────┬────────┘
-        │                           │
-        │                   ┌────────▼────────┐
-        │                   │ Start drain     │
-        │                   │ timer (100ms)   │
-        │                   └────────┬────────┘
-        │                           │
-        │                   ┌────────▼────────┐
-        │                   │ Buffer drained? │
-        │                   └────────┬────────┘
-        │                           │
-        │                   ┌───────┴────────┐
-        │                   │                │
-        │                  No               Yes
-        │                   │                │
-        │                   └────────┬───────┘
-        │                           │
-        │                   ┌────────▼────────────┐
-        │                   │ Release backpressure│
-        │                   │ Resume sending      │
-        │                   └────────┬────────────┘
-        │                           │
-        └───────────────────────────┴──────────────┐
-                                                   │
-                                    ┌──────────────▼──────┐
-                                    │ Continue broadcast  │
-                                    │ to next subscription│
-                                    └─────────────────────┘
+```mermaid
+flowchart TD
+    broadcast["CommitBroadcaster.broadcastCommit"] --> event["Create firehose event"]
+    event --> fanout["Iterate subscriptions"]
+    fanout --> buffer{"Buffer usage"}
+    buffer -- "< 70%" --> send["Send event immediately"]
+    buffer -- "70% to 90%" --> queue["Queue event and pause subscriber"]
+    buffer -- "> 90%" --> close["Close connection"]
+    queue --> drain["Start drain timer"]
+    drain --> drained{"Buffer drained?"}
+    drained -- "No" --> queue
+    drained -- "Yes" --> resume["Resume sending"]
+    send --> next["Continue to next subscription"]
+    resume --> next
+    close --> next
 ```
 
 ## Buffer Management
@@ -626,4 +546,3 @@ static const NSUInteger MAX_STALL_COUNT = 12;                       // 60 second
 - **[Commit Broadcasting](commit-broadcasting)** — Broadcasting events
 - **[WebSocket Server](websocket-server)** — WebSocket implementation
 - **[Firehose Overview](firehose-overview)** — Architecture overview
-

@@ -14,26 +14,15 @@ The `XrpcMethodRegistry` orchestrates the registration of all ATProto XRPC metho
 
 ## Architecture
 
-```
-
-┌──────────────────────────────────────────┐
-│   XrpcMethodRegistry                     │
-│  (Orchestration Layer)                   │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┬────────┬────────┬────────┬────────┬────────┐
-        │                 │        │        │        │        │        │
-┌───────▼──────┐  ┌──────▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐
-│ XrpcServer   │  │ XrpcRepo│  │Sync │  │Ident│  │Admin│  │Label│  │AppBs│
-│ Methods      │  │ Methods │  │Meth.│  │Meth.│  │Meth.│  │Meth.│  │ky   │
-│              │  │         │  │     │  │     │  │     │  │     │  │Meth.│
-│ com.atproto  │  │ com.    │  │com. │  │com. │  │com. │  │com. │  │app. │
-│ .server.*    │  │atproto  │  │atpr │  │atpr │  │atpr │  │atpr │  │bsky │
-│              │  │.repo.*  │  │oto. │  │oto. │  │oto. │  │oto. │  │.*   │
-└──────────────┘  └─────────┘  │sync │  │iden │  │admi │  │labe │  └─────┘
-                                │.*  │  │tity │  │n.*  │  │l.*  │
-                                │    │  │.*   │  │     │  │     │
-                                └────┘  └─────┘  └─────┘  └─────┘
+```mermaid
+flowchart TD
+    registry["XrpcMethodRegistry"] --> server["XrpcServerMethods<br/>com.atproto.server.*"]
+    registry --> repo["XrpcRepoMethods<br/>com.atproto.repo.*"]
+    registry --> sync["XrpcSyncMethods<br/>com.atproto.sync.*"]
+    registry --> identity["XrpcIdentityMethods<br/>com.atproto.identity.*"]
+    registry --> admin["XrpcAdminMethods<br/>com.atproto.admin.*"]
+    registry --> label["XrpcLabelMethods<br/>com.atproto.label.*"]
+    registry --> appBsky["AppBsky methods<br/>app.bsky.*"]
 ```
 
 ## Responsibilities
