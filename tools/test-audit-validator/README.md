@@ -1,99 +1,219 @@
 # Test Audit Validator
 
-A static analysis tool that validates Objective-C XCTest test code to ensure tests actually test what they claim to test. Designed for the September PDS codebase (1017+ tests across 155+ test classes).
+`test-audit-validator` is a static analysis tool for Objective-C XCTest code.
+It checks whether tests actually validate the behavior they claim to cover.
 
-## Features
+The tool is designed for the September PDS codebase, but the architecture is
+general: Go handles orchestration, filtering, reporting, and parallelism, while
+libclang handles Objective-C parsing when you need real AST structure.
 
-- **Name-Assertion Alignment**: Detects tests whose assertions don't match what the test name claims to verify
-- **False Positive Detection**: Identifies tests that always pass regardless of code correctness
-- **Security Test Validation**: Verifies OAuth/DPoP/JWT/SSRF tests actually validate security properties
-- **Async Test Validation**: Ensures async tests properly create, fulfill, and wait for expectations
-- **Property-Based Test Detection**: Identifies and validates round-trip, invariant, and idempotence patterns
-- **Coverage Gap Analysis**: Detects missing error handling, state transition, and concurrency testing
-- **Mock/Stub Validation**: Flags over-mocking, under-mocking, and unverified mock interactions
-- **Integration Test Validation**: Checks multi-component setup, resource cleanup, and outcome assertions
-- **Interop Test Validation**: Verifies tests compare against reference implementation outputs
-- **Parser/Serializer Validation**: Detects missing round-trip and pretty-printer companion tests
-- **Test Dependency Analysis**: Identifies external dependencies, execution order coupling, and shared mutable state
-- **Test Organization**: Validates directory structure and base class usage
-- **Assertion Quality Analysis**: Evaluates assertion count and quality (value vs existence assertions)
-- **Characterization Test Validation**: Ensures characterization tests capture specific values for regression detection
-- **Test Documentation**: Flags complex tests lacking explanatory comments
-- **Test Fixture Validation**: Verifies fixture files exist and are used in assertions
-- **Incremental Analysis**: SQLite-based caching for fast re-analysis of changed files
-- **Multiple Report Formats**: Markdown, JSON, and interactive HTML reports
-- **CI Integration**: Configurable fail-on severity for quality gates
+## How the tool works at a glance
+
+The default execution path looks like this:
+
+```text
+CLI flags/config
+  -> test file discovery
+  -> parser selection (simple, auto, or clang)
+  -> per-file analysis
+  -> validation rules
+  -> report generation
+  -> optional CI failure based on severity
+```
+
+At a finer level:
+
+1. The CLI loads defaults, optional config file values, environment variables,
+   and explicit flags.
+2. It walks the target tree and collects `.m` files whose names look like test
+   files.
+3. It chooses a parser mode:
+   `simple` for regex-only parsing, `auto` for libclang with per-file fallback,
+   or `clang` for strict libclang.
+4. Each file becomes a `models.TestFile` with classes, methods, assertions,
+   comments, and method calls.
+5. Validation rules inspect those models and emit findings.
+6. The report package renders markdown, JSON, or HTML output.
+
+## Why the tool is written in Go
+
+Go is a good fit for the control plane of this tool:
+
+- It makes CLI construction straightforward with Cobra.
+- It makes configuration layering straightforward with Viper.
+- Goroutines and channels make the worker-pool runner simple and explicit.
+- JSON, HTML, and markdown generation are easy to keep deterministic.
+- The tool remains easy to run in CI and easy to package with a small binary.
+
+Go is not the parser because Objective-C syntax and Apple-specific build
+context are the hard part. That is why the tool still uses libclang for the
+AST-backed path.
+
+## Why the tool still needs libclang
+
+Regex is fast and resilient, but it cannot reliably answer questions like:
+
+- Which `@implementation` actually owns this test method?
+- Is this selector a real Objective-C message send?
+- Is this assertion inside a conditional or unreachable region?
+- Does this file use categories, blocks, or ARC-era syntax that changes shape?
+
+libclang gives the tool Objective-C-aware parsing, source locations,
+diagnostics, and cursor kinds. That enables more precise extraction of test
+classes, XCTest methods, assertion calls, message sends, and control-flow
+signals.
+
+See [docs/LIBCLANG_AST_PARSING.md](docs/LIBCLANG_AST_PARSING.md) for the full
+AST-focused explanation.
+
+## Parser selection and when to use each mode
+
+| Mode | Behavior | When to use it | Failure behavior |
+| --- | --- | --- | --- |
+| `simple` | Regex and source-text parsing only | Fast local scans, environments without libclang, baseline comparison | Never attempts libclang |
+| `auto` | Try libclang per file, then fall back to simple parser | Default local workflow | Per-file fallback with warning |
+| `clang` | Require libclang for every file | Parser quality gates, CI, libclang debugging | Any parse/setup failure fails the run |
+
+Examples:
+
+```bash
+# Default: libclang when possible, simple parser when needed
+./bin/test-audit-validator analyze --parser auto ../../ATProtoPDS/Tests
+
+# Strict parser gate
+./bin/test-audit-validator analyze --parser clang ../../ATProtoPDS/Tests
+
+# Fast regex-only scan
+./bin/test-audit-validator analyze --parser simple ../../ATProtoPDS/Tests
+```
+
+In strict clang mode with JSON output, parser failures are emitted in the
+top-level `errors` array and the process exits non-zero. JSON metadata also
+includes:
+
+- `metadata.parser_mode`
+- `metadata.clang_attempted_count`
+- `metadata.clang_success_count`
+- `metadata.clang_fallback_count`
+
+## How `compile_commands.json` changes parsing quality
+
+The libclang path is only as good as the compiler arguments it sees. Objective-C
+parsing depends on the same world view the real compiler had:
+
+- SDK path
+- framework search paths
+- preprocessor defines
+- include directories
+- module and resource configuration
+
+If `compile_commands.json` is present, the tool tries to reuse those arguments
+and then patches them into a parse-friendly form. That is usually the most
+accurate way to parse Objective-C tests.
+
+If it is missing, the tool falls back to repository-agnostic Objective-C parse
+arguments and some project-relative include guesses. That often works, but it
+is more likely to miss framework context or fail in strict clang mode.
+
+This is why the recommended clang-backed invocation points at an out-of-source
+build directory:
+
+```bash
+./bin/test-audit-validator analyze \
+  --parser auto \
+  --compile-commands-dir ../../build \
+  ../../ATProtoPDS/Tests
+```
+
+## How the runner, cache, and reports fit together
+
+The runtime responsibilities are deliberately split:
+
+- The runner owns concurrency, per-file timeouts, file-size limits, and
+  progress reporting.
+- The cache package stores findings keyed by file hash so unchanged files can
+  skip re-analysis.
+- The report package turns one set of findings into markdown, JSON, or HTML
+  without changing validation logic.
+
+That split keeps parsing logic out of the worker pool, keeps rendering logic
+out of the rules, and keeps CI output stable across parser modes.
 
 ## Installation
 
 ### Prerequisites
 
 - Go 1.23+
-- libclang 14+ (for AST parsing)
+- libclang 14+ for AST-backed parsing
 
 ### Installing libclang
 
-**macOS (Xcode — recommended):**
+**macOS (Xcode, recommended):**
+
 ```bash
-# libclang is included with Xcode Command Line Tools
 xcode-select --install
 
-# Set environment variables for Go
 export CGO_CFLAGS="-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"
 export CGO_LDFLAGS="-L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib -Wl,-rpath,/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib"
 ```
 
 **macOS (Homebrew):**
+
 ```bash
 brew install llvm@14
+
 export CGO_CFLAGS="-I$(brew --prefix llvm@14)/include"
 export CGO_LDFLAGS="-L$(brew --prefix llvm@14)/lib -Wl,-rpath,$(brew --prefix llvm@14)/lib"
 ```
 
 **Linux (Ubuntu/Debian):**
+
 ```bash
 sudo apt-get install libclang-14-dev clang-14
+
 export CGO_CFLAGS="-I/usr/lib/llvm-14/include"
-export CGO_LDFLAGS="-L/usr/lib/llvm-14/lib"
+export CGO_LDFLAGS="-L/usr/lib/llvm-14/lib -Wl,-rpath,/usr/lib/llvm-14/lib"
 ```
 
 **Linux (Fedora/RHEL):**
+
 ```bash
 sudo dnf install clang-devel clang
 ```
 
-See [LIBCLANG_SETUP.md](LIBCLANG_SETUP.md) for detailed setup instructions and troubleshooting.
+For setup rationale and failure modes, see
+[LIBCLANG_SETUP.md](LIBCLANG_SETUP.md).
 
 ### Building
 
 ```bash
 cd tools/test-audit-validator
 
-# Using Make (handles CGO flags automatically)
+# Recommended: repository Makefile wrapper
 make build
 
-# Or manually
+# Direct build
 go build -o bin/test-audit-validator ./cmd/test-audit-validator
 ```
 
 ## Usage
 
-### Basic Analysis
+### Basic analysis
 
 ```bash
 # Analyze tests in current directory
 ./bin/test-audit-validator analyze
 
-# Analyze tests in specific directory
+# Analyze a specific tree
 ./bin/test-audit-validator analyze ../../ATProtoPDS/Tests
 
-# Output to file
+# Write markdown output to a file
 ./bin/test-audit-validator analyze -o report.md ../../ATProtoPDS/Tests
 
-# JSON output for CI
+# JSON for CI or scripts
 ./bin/test-audit-validator analyze -f json -o report.json ../../ATProtoPDS/Tests
 
-# HTML report
+# Interactive HTML report
 ./bin/test-audit-validator analyze -f html -o report.html ../../ATProtoPDS/Tests
 ```
 
@@ -113,55 +233,54 @@ go build -o bin/test-audit-validator ./cmd/test-audit-validator
 ./bin/test-audit-validator analyze --test-type property ../../ATProtoPDS/Tests
 ```
 
-### Parser Modes
+### Incremental analysis
 
 ```bash
-# Auto (default): try libclang per file, fallback to simple parser on parse/setup errors
-./bin/test-audit-validator analyze --parser auto ../../ATProtoPDS/Tests
+# First run creates the cache
+./bin/test-audit-validator analyze --incremental --cache .test_audit_cache.db ../../ATProtoPDS/Tests
 
-# Strict clang: no fallback, exits non-zero on parse/setup errors
-./bin/test-audit-validator analyze --parser clang ../../ATProtoPDS/Tests
-
-# Force simple regex parser only
-./bin/test-audit-validator analyze --parser simple ../../ATProtoPDS/Tests
-
-# Prefer compile_commands.json from an out-of-source build directory
-./bin/test-audit-validator analyze --parser auto --compile-commands-dir ../../build ../../ATProtoPDS/Tests
+# Later runs only re-analyze changed files
+./bin/test-audit-validator analyze --incremental --cache .test_audit_cache.db ../../ATProtoPDS/Tests
 ```
 
-In strict clang mode with `-f json`, parse/setup failures are included in a machine-readable `errors` array and the process exits non-zero.
-JSON reports also include parser telemetry metadata:
-- `metadata.parser_mode`
-- `metadata.clang_attempted_count`
-- `metadata.clang_success_count`
-- `metadata.clang_fallback_count`
-
-### Planned Analysis Workflow (Make Targets)
-
-Use the Make targets to run the full local workflow consistently:
+### Parallel processing
 
 ```bash
-# Build tool
+./bin/test-audit-validator analyze --workers 8 ../../ATProtoPDS/Tests
+```
+
+### Quiet mode
+
+```bash
+./bin/test-audit-validator analyze -q -f json -o report.json ../../ATProtoPDS/Tests
+```
+
+## Planned analysis workflow via `make`
+
+Use the Make targets when you want reproducible local parser checks:
+
+```bash
+# Build the tool
 make build
 
-# Run parser matrix against ATProtoPDS/Tests
+# Produce simple/auto/clang JSON artifacts
 make audit-matrix-json
 
-# Enforce local parser gate in auto mode (no parser errors/fallbacks)
+# Enforce the auto-mode parser gate
 make audit-gate
 
-# Enforce strict clang gate (no parser errors/fallbacks)
+# Enforce strict clang
 make audit-clang-gate
 
-# Print one-line summary for simple/auto/clang outputs
+# Print one-line summaries for the generated artifacts
 make audit-summary
 ```
 
 Generated artifacts:
 
-- `tools/test-audit-validator/.artifacts/test-audit/audit-simple.json`
-- `tools/test-audit-validator/.artifacts/test-audit/audit-auto.json`
-- `tools/test-audit-validator/.artifacts/test-audit/audit-clang.json`
+- `.artifacts/test-audit/audit-simple.json`
+- `.artifacts/test-audit/audit-auto.json`
+- `.artifacts/test-audit/audit-clang.json`
 
 Useful overrides:
 
@@ -169,42 +288,8 @@ Useful overrides:
 # Analyze a different tests root
 make audit-matrix-json TEST_ROOT=../../ATProtoPDS/Tests/Auth
 
-# Point auto/clang modes at a specific compile_commands.json directory
+# Point clang-backed modes at a specific compile_commands.json directory
 make audit-matrix-json COMPILE_COMMANDS_DIR=../../build
-```
-
-### CI Integration
-
-```bash
-# Fail if critical findings exist (exit code 1)
-./bin/test-audit-validator analyze --fail-on critical -f json -o report.json ../../ATProtoPDS/Tests
-
-# Fail on high or above
-./bin/test-audit-validator analyze --fail-on high ../../ATProtoPDS/Tests
-```
-
-### Incremental Analysis
-
-```bash
-# First run: full analysis (cache is created)
-./bin/test-audit-validator analyze --incremental --cache .test_audit_cache.db ../../ATProtoPDS/Tests
-
-# Subsequent runs: only re-analyze changed files
-./bin/test-audit-validator analyze --incremental --cache .test_audit_cache.db ../../ATProtoPDS/Tests
-```
-
-### Parallel Processing
-
-```bash
-# Use 8 workers for analysis
-./bin/test-audit-validator analyze --workers 8 ../../ATProtoPDS/Tests
-```
-
-### Quiet Mode
-
-```bash
-# Suppress progress output (useful in scripts)
-./bin/test-audit-validator analyze -q -f json -o report.json ../../ATProtoPDS/Tests
 ```
 
 ## Configuration
@@ -213,167 +298,157 @@ Create a `.test_audit_config.json` file in your project root:
 
 ```json
 {
-    "root_directory": "ATProtoPDS/Tests",
-    "cache_path": ".test_audit_cache.db",
-    "parser": "auto",
-    "compile_commands_dir": "",
-    "clang_args": [],
-    "output_format": "markdown",
-    "output_file": "",
-    "quiet": false,
-    "incremental": true,
-    "fail_on": "critical",
-    "max_file_size": 1048576,
-    "file_timeout": 30,
-    "workers": 4,
-    "domains": [],
-    "severities": [],
-    "test_types": [],
-    "test_classes": []
+  "root_directory": "ATProtoPDS/Tests",
+  "cache_path": ".test_audit_cache.db",
+  "parser": "auto",
+  "compile_commands_dir": "",
+  "clang_args": [],
+  "output_format": "markdown",
+  "output_file": "",
+  "quiet": false,
+  "incremental": true,
+  "fail_on": "critical",
+  "max_file_size": 1048576,
+  "file_timeout": 30,
+  "workers": 4,
+  "domains": [],
+  "severities": [],
+  "test_types": [],
+  "test_classes": []
 }
 ```
 
-See [examples/.test_audit_config.json](examples/.test_audit_config.json) for a complete example.
+See [examples/.test_audit_config.json](examples/.test_audit_config.json) for a
+complete example.
 
-Configuration is loaded from (in order of precedence):
+Configuration precedence:
 
-1. **CLI flags** — highest priority
-2. **Environment variables** — prefix `TAV_` (e.g., `TAV_ROOT_DIRECTORY`, `TAV_OUTPUT_FORMAT`, `TAV_FAIL_ON`)
-3. **Config file** — `.test_audit_config.json` in the current directory, or specified with `--config`
-4. **Defaults** — sensible defaults for all values
+1. CLI flags
+2. `TAV_` environment variables
+3. `.test_audit_config.json`
+4. built-in defaults
 
-### Configuration Reference
+### Configuration reference
 
 | Field | Type | Default | Description |
-|-------|------|---------|-------------|
+| --- | --- | --- | --- |
 | `root_directory` | string | `"."` | Root directory containing test files |
 | `cache_path` | string | `".test_audit_cache.db"` | Path to SQLite cache database |
 | `parser` | string | `"auto"` | Parser mode: `auto`, `clang`, `simple` |
 | `compile_commands_dir` | string | `""` | Directory containing `compile_commands.json` |
-| `clang_args` | []string | `[]` | Extra clang arguments appended to resolved args |
+| `clang_args` | `[]string` | `[]` | Extra clang arguments appended after resolved args |
 | `output_format` | string | `"markdown"` | Output format: `markdown`, `json`, `html` |
-| `output_file` | string | `""` | Output file path (empty = stdout) |
+| `output_file` | string | `""` | Output file path (empty means stdout) |
 | `quiet` | bool | `false` | Suppress progress output |
 | `incremental` | bool | `false` | Only analyze files changed since last run |
 | `fail_on` | string | `""` | Exit with error if findings at this severity or above |
-| `max_file_size` | int | `1048576` | Maximum file size in bytes (1MB) |
+| `max_file_size` | int | `1048576` | Maximum file size in bytes |
 | `file_timeout` | int | `30` | Per-file analysis timeout in seconds |
-| `workers` | int | `NumCPU()` | Number of parallel analysis workers |
-| `domains` | []string | `[]` | Filter by domain (Auth, Core, Network, etc.) |
-| `severities` | []string | `[]` | Filter by severity (critical, high, medium, low) |
-| `test_types` | []string | `[]` | Filter by test type |
-| `test_classes` | []string | `[]` | Filter by test class name |
+| `workers` | int | `NumCPU()` | Number of parallel workers |
+| `domains` | `[]string` | `[]` | Filter by domain |
+| `severities` | `[]string` | `[]` | Filter by severity |
+| `test_types` | `[]string` | `[]` | Filter by test type |
+| `test_classes` | `[]string` | `[]` | Filter by test class name |
 
-## Validation Rules
+## Validation rules
 
-The tool includes 16 validation rules, each targeting a specific class of test quality issue:
+The tool includes 16 validation rules, each targeting a different class of test
+quality problem:
 
-| # | Rule | Default Severity | Description |
-|---|------|-----------------|-------------|
-| 1 | `NameAssertionAlignmentRule` | High | Detects tests whose assertions don't match what the test name claims to verify |
-| 2 | `FalsePositiveDetectionRule` | Critical | Identifies tests that pass without validating behavior (only non-null checks, trivial assertions, unreachable assertions, setup without verification) |
-| 3 | `SecurityTestRule` | Critical | Validates that OAuth/DPoP/JWT/SSRF/input-validation/rate-limit tests verify security properties |
-| 4 | `AsyncTestRule` | High | Ensures async tests create expectations, fulfill them, and wait with reasonable timeouts |
-| 5 | `MockStubRule` | Medium | Detects over-mocking (>3 mocks), under-mocking (unmocked external deps), and unverified mock interactions |
-| 6 | `PropertyBasedTestRule` | High | Validates that property-based tests check recognized correctness properties (round-trip, invariant, idempotence, metamorphic, model-based, confluence, error-condition) |
-| 7 | `CoverageGapRule` | Medium | Detects gaps: multiple claims with single validation, error handling without exceptions, state transitions without before/after checks, concurrency without race testing, performance without timing |
-| 8 | `IntegrationTestRule` | Medium | Validates integration tests exercise multiple components, use realistic environments, clean up resources, and assert on final outcomes |
-| 9 | `InteropTestRule` | High | Validates interop tests load fixtures and compare against reference implementation outputs |
-| 10 | `ParserSerializerRule` | Medium | Detects parser tests missing round-trip companions and serializer tests missing pretty-printer companions |
-| 11 | `AssertionQualityRule` | Medium | Analyzes assertion count (too few/too many) and quality (value vs existence assertions) |
-| 12 | `CharacterizationTestRule` | Medium | Ensures characterization tests assert specific values for regression detection, not just existence |
-| 13 | `TestDependencyRule` | High | Identifies external service dependencies, execution order coupling, shared mutable state, and isolation issues |
-| 14 | `TestDocumentationRule` | Low | Flags complex tests (>20 lines, >5 assertions) lacking explanatory comments |
-| 15 | `TestFixtureRule` | Medium | Validates fixture paths exist and fixture data is used in assertions |
-| 16 | `TestOrganizationRule` | Medium | Validates test files are in appropriate directories and use correct base classes |
+| # | Rule | Default severity | Purpose |
+| --- | --- | --- | --- |
+| 1 | `NameAssertionAlignmentRule` | High | Test name vs actual assertions |
+| 2 | `FalsePositiveDetectionRule` | Critical | Tests that pass without validating behavior |
+| 3 | `SecurityTestRule` | Critical | Security tests that do not verify rejection behavior |
+| 4 | `AsyncTestRule` | High | Async tests with weak expectation handling |
+| 5 | `MockStubRule` | Medium | Over-mocking, under-mocking, or unverified mocks |
+| 6 | `PropertyBasedTestRule` | High | Property-style tests missing real properties |
+| 7 | `CoverageGapRule` | Medium | Claimed behavior with incomplete validation |
+| 8 | `IntegrationTestRule` | Medium | Integration tests missing multi-component realism or cleanup |
+| 9 | `InteropTestRule` | High | Interop tests missing fixture/reference checks |
+| 10 | `ParserSerializerRule` | Medium | Parser or serializer tests missing companions |
+| 11 | `AssertionQualityRule` | Medium | Weak assertion mix or suspicious assertion counts |
+| 12 | `CharacterizationTestRule` | Medium | Characterization tests without specific-value checks |
+| 13 | `TestDependencyRule` | High | Order coupling, shared state, or external dependency issues |
+| 14 | `TestDocumentationRule` | Low | Complex tests lacking explanation |
+| 15 | `TestFixtureRule` | Medium | Fixture path and usage validation |
+| 16 | `TestOrganizationRule` | Medium | Structural organization and base-class checks |
 
-For detailed descriptions, examples, and remediation guidance for each rule, see [docs/FINDINGS_GUIDE.md](docs/FINDINGS_GUIDE.md).
+For detailed rule descriptions and remediation guidance, see
+[docs/FINDINGS_GUIDE.md](docs/FINDINGS_GUIDE.md).
 
-## Severity Levels
-
-| Level | Meaning | Action |
-|-------|---------|--------|
-| **Critical** | Test provides false confidence — it passes without validating correctness | Fix immediately |
-| **High** | Test likely doesn't test what it claims — significant gaps or mismatches | Review and fix |
-| **Medium** | Test has potential gaps — incomplete coverage or structural issues | Consider improving |
-| **Low** | Minor quality issues — documentation, organization, formatting | Improve when convenient |
-
-## Exit Codes
+## Exit codes
 
 | Code | Meaning |
-|------|---------|
-| 0 | Success (no findings at or above fail-on level) |
+| --- | --- |
+| 0 | Success, or no findings at or above the selected `--fail-on` level |
 | 1 | Critical findings found |
 | 2 | High findings found |
 | 3 | Medium findings found |
 | 4 | Low findings found |
 
-## Architecture
+## Architecture summary
 
-```
-cmd/test-audit-validator/    CLI entry point (cobra commands)
+```text
+cmd/test-audit-validator/
+  main.go             CLI, config overlay, parser choice, report emission
+  parser_selector.go  simple/auto/clang mode behavior
+  clang_parser.go     compile_commands + libclang-backed model building
+
 internal/
-  analysis/                  libclang-based AST parsing of Objective-C test files
-  cache/                     SQLite-based incremental analysis cache
-  config/                    Configuration loading (file, env, CLI flags via viper)
-  discovery/                 Test file/class/method discovery and registration validation
-  models/                    Data model types (TestFile, TestClass, TestMethod, Assertion)
-  report/                    Report generation (Markdown, JSON, HTML)
-  runner/                    Parallel test file processing orchestrator
-  validation/                Validation engine and 16 rule implementations
+  analysis/           Objective-C AST helpers built on libclang
+  cache/              SQLite-backed incremental cache
+  config/             config loading, validation, and finding filters
+  discovery/          richer discovery helpers and registration checks
+  models/             parsed test model types
+  report/             markdown, JSON, HTML renderers
+  runner/             worker-pool orchestration
+  validation/         finding rules and validation engine
 ```
 
-Data flow: **discovery → analysis → validation → reporting**
+Important current detail: the CLI currently performs its own filename-based
+file discovery in `main.go`. The `internal/discovery` package contains richer
+discovery and registration utilities, but it is not the default execution path
+yet.
 
-1. **Discovery**: Recursively find `.m` test files; parse `test_main.m` for registration
-2. **Analysis**: Parse each file with libclang to extract classes, methods, assertions, and method calls
-3. **Validation**: Run all enabled rules against each test method/class/file
-4. **Reporting**: Aggregate findings into a structured report with statistics
-
-For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For the full subsystem walkthrough, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Development
 
-### Running Tests
+### Running tests
 
 ```bash
-# Using Make (handles CGO flags)
+# Full test suite
 make test
 
-# With coverage
+# Coverage report
 make test-coverage
 
-# Specific package
+# Specific packages
 make test-analysis
 make test-discovery
 make test-models
-
-# Run audit against ATProtoPDS/Tests (fails on critical findings)
-make audit
-
-# Generate full markdown report
-make audit-report
-
-# Cross-compile for macOS/Linux
-make build-all
 ```
 
-### Current Performance
+### Adding a new validation rule
 
-Against the ATProtoPDS test suite (1,662 tests, 406 classes):
+1. Create `internal/validation/my_new_rule.go`.
+2. Implement the `ValidationRule` interface.
+3. Add the rule to `DefaultRules()` in `internal/validation/rules.go`.
+4. Add focused tests in `internal/validation/my_new_rule_test.go`.
+5. Run `go test ./internal/validation/...`.
 
-| Metric | Value |
-|--------|-------|
-| **Findings** | 1,796 |
-| **Pass rate** | 68.7% |
-| **Critical** | 288 |
-| **High** | 305 |
-| **Analysis time** | ~300ms |
+See [CONTRIBUTING.md](CONTRIBUTING.md) and
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the surrounding workflow.
 
-### Adding New Validation Rules
+## Where to read deeper
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for step-by-step instructions.
-
-## License
-
-Same as September PDS project.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): subsystem map and execution flow
+- [docs/GO_TOOLING_DEEP_DIVE.md](docs/GO_TOOLING_DEEP_DIVE.md): why the Go
+  packages are split the way they are
+- [docs/LIBCLANG_AST_PARSING.md](docs/LIBCLANG_AST_PARSING.md): how libclang
+  parses Objective-C and what the AST path enables
+- [LIBCLANG_SETUP.md](LIBCLANG_SETUP.md): environment setup and parse failure
+  troubleshooting
+- [internal/analysis/README.md](internal/analysis/README.md): analysis package
+  responsibilities and limits
