@@ -103,6 +103,7 @@ flow instead of long payload dumps.
 
 - [Codebase Map](../01-getting-started/codebase-map)
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
+- [IPLD and Multiformats Series](./ipld-foundations/)
 - [Protocol Flow Walkthrough](./protocol-flow-walkthrough)
 - [PLC Directory](./plc-directory)
 - [Cryptography](./cryptography)
