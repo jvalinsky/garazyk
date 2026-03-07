@@ -131,6 +131,10 @@ export default defineConfig({
       // Import and use the code enhancer plugin
       const { codeEnhancerPlugin } = require('./plugins/code-enhancer')
       md.use(codeEnhancerPlugin)
+
+      // Render Mermaid fences as interactive diagrams instead of code blocks
+      const { mermaidRendererPlugin } = require('./plugins/mermaid-renderer')
+      md.use(mermaidRendererPlugin)
       
       // Import and use the diagram loader plugin
       const { diagramLoaderPlugin } = require('./plugins/diagram-loader')

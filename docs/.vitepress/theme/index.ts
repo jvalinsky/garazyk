@@ -4,6 +4,7 @@ import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import './style.css'
 import DiagramZoom from './components/DiagramZoom.vue'
+import MermaidDiagram from './components/MermaidDiagram.vue'
 import { useDiagramZoom } from './composables/useDiagramZoom'
 
 export default {
@@ -23,6 +24,8 @@ export default {
     })
   },
   enhanceApp({ app }) {
+    app.component('MermaidDiagram', MermaidDiagram)
+
     // Setup diagram zoom handlers when app is mounted
     if (typeof window !== 'undefined') {
       const { setupZoomHandlers } = useDiagramZoom()

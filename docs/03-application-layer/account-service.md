@@ -30,35 +30,13 @@ The Account Service sits at the intersection of identity, security, and user man
 
 ## Architecture
 
-```
-
-┌─────────────────────────────────────────┐
-│   XRPC Account Endpoints                │
-│  (com.atproto.server.*)                 │
-└────────────────┬────────────────────────┘
-                 │
-┌────────────────▼────────────────────────┐
-│   PDSAccountService                     │
-│  - createAccount()                      │
-│  - login()                              │
-│  - refreshAccessToken()                 │
-│  - getAccount()                         │
-│  - deleteAccount()                      │
-└────────────────┬────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-┌───────▼──────┐  ┌──────▼────────┐
-│ JWTMinter    │  │ Account       │
-│ (tokens)     │  │ Repository    │
-└──────────────┘  └───────────────┘
-        │                 │
-        └────────┬────────┘
-                 │
-        ┌────────▼────────────┐
-        │ PDSDatabasePool     │
-        │ (Account Storage)   │
-        └─────────────────────┘
+```mermaid
+flowchart TD
+    endpoints["XRPC account endpoints<br/>com.atproto.server.*"] --> service["PDSAccountService"]
+    service --> minter["JWTMinter"]
+    service --> repository["Account repository"]
+    minter --> database["PDSDatabasePool<br/>account storage"]
+    repository --> database
 ```
 
 ## Key Methods

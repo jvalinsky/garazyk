@@ -16,17 +16,16 @@ title: PDSApplication Facade
 
 ### Service Composition
 
-```
-
-PDSApplication
-├── PDSAccountService
-├── PDSRecordService
-├── PDSBlobService
-├── PDSRepositoryService
-├── PDSAdminController
-├── PDSRelayService
-├── PDSServiceDatabases
-└── PDSDatabasePool
+```mermaid
+flowchart TD
+    app["PDSApplication"] --> account["PDSAccountService"]
+    app --> record["PDSRecordService"]
+    app --> blob["PDSBlobService"]
+    app --> repository["PDSRepositoryService"]
+    app --> admin["PDSAdminController"]
+    app --> relay["PDSRelayService"]
+    app --> serviceDb["PDSServiceDatabases"]
+    app --> userDb["PDSDatabasePool"]
 ```
 
 ### Initialization Flow
