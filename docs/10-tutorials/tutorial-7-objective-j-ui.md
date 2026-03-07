@@ -70,6 +70,160 @@ flowchart LR
 
 ## Objective-J And Cappuccino Crash Course
 
+Objective-J looks like Objective-C, but the execution model is much closer to JavaScript running in the browser. In this repo you work across three layers at once:
+
+| Layer | What it gives you | Example in this repo |
+| --- | --- | --- |
+| Objective-J syntax | Classes, ivars, selectors, message sends | `@implementation AppController : CPObject` |
+| Cappuccino framework | Cocoa-style UI and foundation classes | `CPWindow`, `CPView`, `CPTableView`, `CPTextField` |
+| JavaScript runtime | Arrays, objects, functions, browser APIs | `[]`, `{}`, `XMLHttpRequest`, `window.setInterval` |
+
+That mixed model is the first thing to internalize. A `.j` file is not "Objective-C compiled for macOS". It is Cappuccino code that uses Objective-C-style syntax on top of the browser runtime.
+
+### How Objective-J Code Is Structured
+
+Most files in the UI follow the same shape:
+
+1. import Cappuccino frameworks and local classes,
+2. declare a class with ivars,
+3. initialize state in `init`,
+4. build views,
+5. respond to user actions through selectors,
+6. call browser or HTTP APIs using normal JavaScript objects and functions.
+
+Here is a stripped-down version of the same pattern used by `AppController.j` and `ExplorerController.j`:
+
+```objectivec
+@import <Foundation/Foundation.j>
+@import <AppKit/AppKit.j>
+
+@implementation ExampleController : CPObject
+{
+    CPTextField _statusLabel;
+    CPString _currentHandle;
+    CPArray _accounts;
+}
+
+- (id)init
+{
+    self = [super init];
+    if (self)
+    {
+        _currentHandle = nil;
+        _accounts = [];
+    }
+    return self;
+}
+
+- (void)setStatusText:(CPString)text
+{
+    [_statusLabel setStringValue:text];
+}
+@end
+```
+
+What matters in that example:
+
+- `@implementation` defines the class body.
+- The braces after the class name declare ivars such as `_statusLabel`.
+- Methods still use selector syntax like `setStatusText:`.
+- `self = [super init];` is the normal initializer pattern.
+- `[]` is a JavaScript array literal, which Objective-J code uses freely.
+
+### Message Sends, Selectors, and Colons
+
+The most important syntax rule is that Objective-J still uses Objective-C message sends:
+
+```objectivec
+[_statusLabel setStringValue:@"Idle"];
+[lookupButton setTarget:self];
+[lookupButton setAction:@selector(handleLookup:)];
+```
+
+Read those as:
+
+- "send `setStringValue:` to `_statusLabel`"
+- "send `setTarget:` to `lookupButton`"
+- "register the selector `handleLookup:` as the click handler"
+
+The trailing colon in `handleLookup:` means the method accepts one argument. In this UI that argument is usually the sender:
+
+```objectivec
+- (void)handleLookup:(id)sender
+{
+    var query = [_lookupField stringValue];
+
+    if (!query || [query length] === 0)
+    {
+        [_statusLabel setStringValue:@"Enter a DID or handle first."];
+        return;
+    }
+
+    [_statusLabel setStringValue:@"Loading..."];
+}
+```
+
+This is the basic event-handling loop in Cappuccino: a widget targets a controller, then the controller method reads widget state, updates ivars, and refreshes views.
+
+### Objective-J Lives Beside JavaScript, Not Instead of It
+
+A large part of Objective-J fluency is knowing when you are using Cappuccino objects and when you are using raw JavaScript values. This repository does both in the same method.
+
+Example from the real UI patterns:
+
+```objectivec
+- (CPArray)normalizedArrayValue:(id)value
+{
+    if (value === nil || value === undefined)
+        return [];
+    if (value instanceof Array)
+        return value;
+    return [value];
+}
+```
+
+That method is a good illustration of the language boundary:
+
+- `nil` is the Objective-J "no object" value.
+- `undefined` comes from JavaScript and browser APIs.
+- `instanceof Array` is plain JavaScript type inspection.
+- `return [value];` uses a JavaScript array literal to normalize one item into a list.
+
+The same pattern shows up in async code. `UIAPIClient.j` uses browser networking directly, then hands the result back to controller code:
+
+```objectivec
+[_apiClient getJSONWithPath:@"/accounts"
+              endpointGroup:@"explore"
+                queryParams:nil
+                 completion:function(statusCode, payload, errorMessage)
+{
+    if (errorMessage)
+    {
+        [_statusLabel setStringValue:errorMessage];
+        return;
+    }
+
+    _accounts = payload.accounts || [];
+    [_accountsTable reloadData];
+}];
+```
+
+Important details here:
+
+- `completion:function(...) { ... }` is a JavaScript function literal, not an Objective-C block.
+- `payload.accounts || []` is standard JavaScript fallback logic.
+- `[_accountsTable reloadData]` switches back into Cappuccino message-send style.
+
+### A Quick Mental Model That Prevents Most Beginner Mistakes
+
+When reading or writing Objective-J in this repo, use this checklist:
+
+- If it starts with `CP`, it is probably a Cappuccino class and expects message sends.
+- If it uses `var`, `function`, `===`, `[]`, or `{}`, you are in JavaScript territory.
+- If a method name has colons, every colon corresponds to one argument.
+- If UI state changes, update ivars first and then call a refresh or reload method.
+- If data came from the network, guard for both `nil` and `undefined`.
+
 ### Syntax Quick Map
 
 | Objective-C concept | Objective-J equivalent |
