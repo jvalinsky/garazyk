@@ -420,6 +420,11 @@ dispatch_resume(timer);
 }
 ```
 
+## Related Deep Dives
+
+- [Shared vs Actor Database Boundary](./shared-vs-actor-database-boundary)
+- [Transactions, WAL, and Concurrency](./transactions-wal-and-concurrency)
+
 ## See Also
 
 - [Service Databases](service-databases)

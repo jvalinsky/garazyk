@@ -383,6 +383,10 @@ sudo apt-get install clang
 4. **Document platform differences** — Help developers understand
 5. **Monitor performance** — Track metrics on both platforms
 
+## Related Deep Dives
+
+- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
+
 ## Next Steps
 
 - **[Compatibility Layer](compatibility-layer)** — Compat shims

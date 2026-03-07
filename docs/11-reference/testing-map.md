@@ -96,6 +96,10 @@ Some surfaces are easier to trust after a manual spot check even when tests pass
 
 Use tests to protect invariants. Use manual checks to confirm the contributor tooling experience.
 
+## Related Deep Dives
+
+- [Test Selection Workflow](./test-selection-workflow)
+
 ## Related Reading
 
 - [Test Organization](./test-organization)

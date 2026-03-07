@@ -94,6 +94,11 @@ When blob behavior looks wrong, the failure is usually in one of four places:
 Starting with that model is much faster than searching for a nonexistent
 background maintenance system.
 
+## Related Deep Dives
+
+- [Blob Flow Walkthrough](./blob-flow-walkthrough)
+- [Record Write to Commit Walkthrough](./record-write-to-commit-walkthrough)
+
 ## Related Reading
 
 - [Blob Storage](./blob-storage)

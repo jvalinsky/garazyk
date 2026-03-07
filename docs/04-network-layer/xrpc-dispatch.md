@@ -321,6 +321,11 @@ Responses are buffered before transmission to allow setting headers:
    - Delegate to service layer
    - Use async operations for long-running tasks
 
+## Related Deep Dives
+
+- [HTTP Request and Route Pipeline](./http-request-and-route-pipeline)
+- [From NSID to Service Call](./from-nsid-to-service-call)
+
 ## See Also
 
 - [Method Registry](method-registry)
