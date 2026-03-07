@@ -80,6 +80,19 @@ Objective-J looks like Objective-C, but the execution model is much closer to Ja
 
 That mixed model is the first thing to internalize. A `.j` file is not "Objective-C compiled for macOS". It is Cappuccino code that uses Objective-C-style syntax on top of the browser runtime.
 
+### Where Objective-J Came From
+
+Objective-J and Cappuccino were created together as part of the original 280 North effort to bring Cocoa-style application development to the browser. The [Cappuccino FAQ](https://www.cappuccino.dev/support/faq.html) describes the project as initially created by 280 North, and the official [Learning Objective-J](https://www.cappuccino.dev/learn/objective-j.html) and [What is Cappuccino?](https://www.cappuccino.dev/learn/) pages explain the language and framework goals from that original design.
+
+Why Objective-J exists is just as important as who made it:
+
+- Cappuccino wanted Foundation/AppKit-style APIs in the browser, not just a pile of DOM helpers.
+- Plain JavaScript in 2008 was missing some of the language features that made Cocoa development productive for large UI codebases.
+- Objective-J added Objective-C-like structure on top of JavaScript so Cappuccino code could use classes, imports, selectors, and message sends without leaving the web runtime.
+- The design goal was not "hide JavaScript completely." It was "add the missing pieces while staying on top of JavaScript and avoiding a heavy compile cycle."
+
+That design intent still shows up in this repository. Controllers are written with Objective-C-style class structure, but they freely use browser features like `XMLHttpRequest`, JavaScript arrays, and `window.setInterval`.
+
 ### How Objective-J Code Is Structured
 
 Most files in the UI follow the same shape:
@@ -100,21 +113,15 @@ Here is a stripped-down version of the same pattern used by `AppController.j` an
 @implementation ExampleController : CPObject
 {
     CPTextField _statusLabel;
-    CPString _currentHandle;
     CPArray _accounts;
 }
-
 - (id)init
 {
     self = [super init];
     if (self)
-    {
-        _currentHandle = nil;
         _accounts = [];
-    }
     return self;
 }
-
 - (void)setStatusText:(CPString)text
 {
     [_statusLabel setStringValue:text];
@@ -233,6 +240,145 @@ When reading or writing Objective-J in this repo, use this checklist:
 | Cocoa/AppKit | Cappuccino `CP*` classes (`CPView`, `CPTableView`, `CPButton`) |
 | Target/action | `setTarget:` + `setAction:` |
 | `NSError **` flow | JS object payload + status/error callback patterns |
+
+### Cappuccino API Map For This Repo
+
+The official API index is large. For September's UI, start with the Foundation and AppKit classes that appear repeatedly in `ATProtoPDS/Sources/App/CappuccinoUI/`.
+
+| Area | Primary APIs | Why they matter here |
+| --- | --- | --- |
+| Object model | [`CPObject`](https://www.cappuccino.dev/learn/documentation/class_c_p_object.html) | Base class for controllers, session state, and API clients |
+| Window and layout | [`CPWindow`](https://www.cappuccino.dev/learn/documentation/interface_c_p_window.html), [`CPView`](https://www.cappuccino.dev/learn/documentation/class_c_p_view.html) | Main shell, subviews, sizing, and composition |
+| Form controls | [`CPTextField`](https://www.cappuccino.dev/learn/documentation/interface_c_p_text_field.html), [`CPButton`](https://www.cappuccino.dev/learn/documentation/interface_c_p_button.html), [`CPPopUpButton`](https://www.cappuccino.dev/learn/documentation/interface_c_p_pop_up_button.html) | Input, actions, and mode selection |
+| Navigation | [`CPTabView`](https://www.cappuccino.dev/learn/documentation/interface_c_p_tab_view.html) | Primary app tabs and detail tabs |
+| Structured data | [`CPTableView`](https://www.cappuccino.dev/learn/documentation/interface_c_p_table_view.html) | Account, record, DID, PLC, feed, and MST tables |
+| Text output | [`CPTextView`](https://www.cappuccino.dev/learn/documentation/interface_c_p_text_view.html) | JSON fallback panes and read-only debug output |
+
+If you want the full catalog, start from the [Cappuccino API documentation index](https://www.cappuccino.dev/learn/documentation/annotated.html), then drill into AppKit and Foundation classes from there.
+
+#### `CPObject`: The Base Class and Object Model
+
+Almost every local class in the UI inherits from `CPObject`:
+
+```objectivec
+@implementation SessionState : CPObject
+{
+    CPString _currentDID @accessors(property=currentDID);
+    CPString _currentHandle @accessors(property=currentHandle);
+}
+@end
+```
+
+Important API ideas to learn first:
+
+- `init` and `initWith...` establish the normal initializer pattern.
+- `@accessors(property=...)` generates Objective-C-style getters and setters.
+- Selector-oriented APIs such as `respondsToSelector:` and `performSelector:` show up across Cappuccino.
+
+In this repo, `CPObject` is the base for `AppController`, `ExplorerController`, `UIAPIClient`, and `SessionState`. If you understand that class model, most of the UI source stops looking unusual.
+
+#### `CPWindow` and `CPView`: The Shell and View Hierarchy
+
+The root window and nearly every layout container come from `CPWindow` and `CPView`.
+
+```objectivec
+_window = [[CPWindow alloc] initWithContentRect:CGRectMake(80.0, 80.0, 1120.0, 760.0)
+                                       styleMask:CPTitledWindowMask | CPClosableWindowMask | CPResizableWindowMask];
+
+var statusBar = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, statusBarHeight)];
+[statusBar setAutoresizingMask:CPViewWidthSizable | CPViewMinYMargin];
+[[_window contentView] addSubview:statusBar];
+```
+
+When reading the official APIs, focus on:
+
+- `initWithContentRect:styleMask:` for top-level windows,
+- `contentView`, `bounds`, and `frame` for geometry,
+- `addSubview:` and `setAutoresizingMask:` for composition and resizing.
+
+This is the Cappuccino equivalent of the browser's layout tree. Most UI work in September starts by composing `CPView` containers and then dropping controls into them.
+
+#### `CPTextField`, `CPButton`, and `CPPopUpButton`: Input and Actions
+
+The UI mostly uses Cappuccino controls through the target/action model:
+
+```objectivec
+_lookupField = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 72.0, 260.0, 28.0)];
+[_lookupField setPlaceholderString:@"Enter DID or handle"];
+
+var lookupButton = [[CPButton alloc] initWithFrame:CGRectMake(290.0, 72.0, 80.0, 28.0)];
+[lookupButton setTitle:@"Lookup"];
+[lookupButton setTarget:self];
+[lookupButton setAction:@selector(handleLookup:)];
+
+_didViewModePopup = [[CPPopUpButton alloc] initWithFrame:CGRectMake(52.0, 10.0, 120.0, 24.0)];
+[_didViewModePopup addItemsWithTitles:[@"Rendered,JSON" componentsSeparatedByString:@","]];
+```
+
+APIs worth learning early:
+
+- `CPTextField`: `setStringValue:`, `stringValue`, `setPlaceholderString:`
+- `CPButton`: `setTitle:`, `setTarget:`, `setAction:`
+- `CPPopUpButton`: `addItemsWithTitles:`, selection APIs for mode toggles
+
+If a September screen has a button, search field, or rendered-vs-JSON toggle, you are almost certainly in this part of AppKit.
+
+#### `CPTabView`: High-Level Navigation
+
+The top-level application shell and the detail panes both use `CPTabView`.
+
+```objectivec
+var item = [[CPTabViewItem alloc] initWithIdentifier:label];
+[item setLabel:label];
+[item setView:contentView];
+[tabView addTabViewItem:item];
+```
+
+The important thing about the API is conceptual: `CPTabView` is the main way this UI segments large feature areas without routing through separate browser pages. In September it holds:
+
+- the top-level `Explorer`, `Admin`, `MST`, and `OAuth Demo` tabs,
+- the nested DID / PLC / Records / Feed / Graph / Profile / MST detail panes.
+
+#### `CPTableView`: Structured Data Rendering
+
+`CPTableView` is the single most important AppKit class in this tutorial because the UI is table-first by design.
+
+```objectivec
+_accountsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 240.0, 530.0)];
+[_accountsTable setDelegate:self];
+[_accountsTable setDataSource:self];
+
+var accountColumn = [[CPTableColumn alloc] initWithIdentifier:@"account"];
+[[accountColumn headerView] setStringValue:@"Handle / DID"];
+[accountColumn setWidth:240.0];
+[_accountsTable addTableColumn:accountColumn];
+```
+
+Read the official `CPTableView` API with these repo patterns in mind:
+
+- a table needs a datasource and usually a delegate,
+- columns are explicit objects,
+- header labels are configured through `headerView`,
+- row changes do not repaint automatically, so `reloadData` is part of the normal update loop.
+
+Also note one practical detail from the Cappuccino docs and this codebase: the table itself is not the scroll container. September wraps tables in `CPScrollView` so large datasets remain usable.
+
+#### `CPTextView`: Raw Payload and Debug Surfaces
+
+Where a rendered table would be too limiting, September falls back to `CPTextView` for raw JSON or multi-line detail output.
+
+```objectivec
+var textView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, frame.size.width, frame.size.height)];
+[textView setEditable:NO];
+[textView setString:@""];
+```
+
+This is why many tabs in `ExplorerController`, `AdminController`, `MSTController`, and `OAuthDemoController` offer both:
+
+- a rendered mode for structured browsing,
+- and a text mode for inspection and debugging.
+
+If you are adding a new view and are unsure how to render a payload cleanly, `CPTextView` is the safe intermediate step before you commit to a table design.
 
 ### UI Building Blocks You Will Use Constantly
 
