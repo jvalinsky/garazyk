@@ -1,39 +1,23 @@
-# Static Analysis Engine
+# Static analysis engine
 
-The Static Analysis Engine provides Objective-C AST (Abstract Syntax Tree) parsing capabilities using libclang. It is the foundation for extracting assertions, variables, method calls, and control flow information from test code.
+## Role in the system
 
-## Overview
+`internal/analysis` is the AST-focused package behind the clang-backed parser.
+It does not own CLI behavior, parser-mode policy, or report generation. Its job
+is narrower:
 
-The engine uses the official Clang library (libclang) to parse Objective-C source files and provide access to their AST. This enables robust analysis of test code structure without relying on fragile regex-based parsing.
+- create and dispose libclang indexes and translation units
+- walk Objective-C AST cursors
+- extract assertions, variables, and method calls
+- apply simple reachability heuristics to assertions
 
-## Key Components
+That boundary matters because AST extraction is hard enough on its own. Keeping
+environment setup, parser fallback policy, and report logic outside this package
+makes the analysis code easier to reason about.
 
-### StaticAnalysisEngine
+## What the engine does
 
-The main engine struct that manages the clang index and provides parsing capabilities.
-
-```go
-engine := analysis.NewStaticAnalysisEngine()
-defer engine.Close()
-
-tu, err := engine.ParseFile("path/to/test.m")
-if err != nil {
-    // Handle error - note that TU may still be valid for partial analysis
-}
-defer tu.Dispose()
-```
-
-### Features
-
-1. **Objective-C with ARC Support**: Configured to parse modern Objective-C code with Automatic Reference Counting
-2. **Blocks Support**: Handles Objective-C blocks syntax
-3. **Graceful Error Handling**: Continues parsing even with syntax errors, enabling partial analysis
-4. **Fallback Strategies**: Multiple parsing strategies for maximum compatibility
-5. **Resource Management**: Proper cleanup of clang resources
-
-## Usage Examples
-
-### Basic Parsing
+The main entrypoint is `StaticAnalysisEngine`.
 
 ```go
 engine := analysis.NewStaticAnalysisEngine()
@@ -41,106 +25,109 @@ defer engine.Close()
 
 tu, err := engine.ParseFile("MyTests.m")
 if err != nil {
-    log.Printf("Parse error: %v", err)
-    // TU may still be usable for partial analysis
-}
-defer tu.Dispose()
-
-cursor := engine.GetCursor(tu)
-// Use cursor for AST traversal
-```
-
-### Visiting AST Nodes
-
-```go
-cursor := engine.GetCursor(tu)
-
-engine.VisitChildren(cursor, func(cursor, parent clang.Cursor) bool {
-    if cursor.Kind() == clang.Cursor_ObjCInterfaceDecl {
-        fmt.Printf("Found class: %s\n", cursor.Spelling())
-    }
-    return true // Continue visiting
-})
-```
-
-### Fallback Parsing
-
-```go
-// Try standard parsing first, fall back to lenient mode if needed
-tu, err := engine.ParseFileWithFallback("problematic.m")
-if err != nil {
-    log.Fatalf("Failed even with fallback: %v", err)
+    // A valid translation unit may still be returned for partial analysis.
 }
 defer tu.Dispose()
 ```
 
-## Clang Arguments
+Core responsibilities:
 
-The engine configures clang with the following arguments for Objective-C parsing:
+- configure clang for Objective-C parsing
+- create translation units with `KeepGoing` enabled
+- surface parse diagnostics
+- expose helper traversal APIs
+- extract test-relevant syntax from method bodies
 
-- `-x objective-c`: Treat input as Objective-C
-- `-fobjc-arc`: Enable Automatic Reference Counting
-- `-fblocks`: Enable blocks extension
-- `-fmodules`: Enable modules
-- `-isysroot <path>`: System root for headers (macOS)
-- `-Wno-everything`: Suppress warnings for cleaner output
+## Current extraction capabilities
 
-## Error Handling
+### Assertions
 
-The engine implements graceful error handling:
+`ExtractAssertions()` walks a method subtree looking for XCTest-style call
+expressions and records:
 
-1. **Validation Errors**: Empty paths and invalid extensions are caught early
-2. **Parse Errors**: Syntax errors are reported but don't prevent TU creation
-3. **Fallback Strategy**: If standard parsing fails, tries with more lenient options
-4. **Partial Analysis**: Even with errors, the TU may be usable for partial analysis
+- assertion type
+- arguments
+- line number
+- whether the assertion is nested under `if` or `switch`
 
-## Platform Support
+The engine then runs `AnalyzeControlFlow()` to mark assertions that appear in
+obviously unreachable regions, such as top-level code after `return`.
 
-### macOS
+### Variables
 
-Uses Xcode SDK for system headers. The engine automatically configures the SDK path.
+`ExtractVariables()` finds `VarDecl` cursors and records:
 
-### Linux
+- variable name
+- type spelling
+- initial value when a simple textual representation can be recovered
+- line number
 
-Uses system default headers. The SDK path is empty and clang uses standard system paths.
+### Method calls
 
-## Testing
+`ExtractMethodCalls()` walks `ObjCMessageExpr` cursors and records:
 
-The engine includes comprehensive unit tests covering:
+- receiver
+- selector
+- arguments
+- line number
 
-- Engine creation and cleanup
-- File path validation
-- Extension validation
-- Valid Objective-C parsing
-- Header file parsing
-- Syntax error handling
-- ARC code parsing
-- Blocks parsing
-- Fallback strategies
-- Cursor operations
-- AST traversal
+This is one of the main reasons the AST path exists. Objective-C message sends
+are much harder to recover reliably with regex alone.
 
-Run tests with:
+## Error handling model
 
-```bash
-go test ./internal/analysis
-```
+The engine is designed for best-effort analysis.
 
-## Future Enhancements
+- empty paths and invalid extensions fail early
+- parse failures are reported from diagnostics
+- a translation unit may still be returned even when diagnostics contain errors
+- callers decide whether a parse error should trigger fallback or process
+  failure
 
-The following features will be added in subsequent tasks:
+That is why strict/non-strict behavior is not implemented here. The engine
+reports parse reality. Higher layers decide policy.
 
-- **Assertion Extraction** (Task 3.2): Extract XCTest assertion calls
-- **Variable Extraction** (Task 3.3): Extract variable declarations and assignments
-- **Method Call Extraction** (Task 3.3): Extract method invocations
-- **Control Flow Analysis** (Task 3.4): Build control flow graphs
+## Platform behavior
 
-## Dependencies
+On macOS, the engine's default parse arguments assume Xcode SDK paths when they
+exist. On Linux, clang usually falls back to system include paths.
 
-- `github.com/go-clang/clang-v14/clang`: Official Go bindings for libclang
+For real repository analysis, the more important source of truth is usually
+`compile_commands.json`, which is resolved in the higher-level clang parser.
 
-## Related Documentation
+## Current limitations
 
-- [libclang Documentation](https://clang.llvm.org/doxygen/group__CINDEX.html)
-- [Clang AST Introduction](https://clang.llvm.org/docs/IntroductionToTheClangAST.html)
-- [Test Audit Validation Design](../../../.kiro/specs/test-audit-validation/design.md)
+The engine is useful, but it is intentionally not pretending to be a full
+semantic verifier.
+
+- parser quality still depends on correct compiler arguments
+- some literal/text recovery uses simplified placeholders
+- reachability analysis is heuristic, not full control-flow analysis
+- comments and exact source snippets are still better recovered from source text
+- cross-file reasoning is outside this package's scope
+
+## When to change this package
+
+Change `internal/analysis` when you need to improve AST extraction itself:
+
+- support a new cursor pattern
+- improve assertion or method-call extraction
+- improve reachability heuristics
+- add richer variable or selector recovery
+
+Do not change this package just to alter:
+
+- parser mode policy
+- compile-command resolution
+- configuration behavior
+- report formatting
+
+Those concerns live elsewhere.
+
+## Related documents
+
+- [../../README.md](../../README.md)
+- [../../docs/ARCHITECTURE.md](../../docs/ARCHITECTURE.md)
+- [../../docs/GO_TOOLING_DEEP_DIVE.md](../../docs/GO_TOOLING_DEEP_DIVE.md)
+- [../../docs/LIBCLANG_AST_PARSING.md](../../docs/LIBCLANG_AST_PARSING.md)
+- [../../LIBCLANG_SETUP.md](../../LIBCLANG_SETUP.md)
