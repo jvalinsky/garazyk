@@ -21,7 +21,7 @@ export default defineConfig({
       { text: 'Guide', link: '/01-getting-started/overview' },
       { text: 'Tutorials', link: '/10-tutorials/tutorial-1-hello-pds' },
       { text: 'Reference', link: '/11-reference/api-reference' },
-      { text: 'Glossary', link: '/glossary' },
+      { text: 'Glossary', link: '/GLOSSARY' },
       { text: 'GitHub', link: 'https://github.com/jvalinsky/garazyk' }
     ],
     
@@ -59,7 +59,7 @@ export default defineConfig({
         miniSearch: {
           options: {
             fields: ['title', 'text', 'headings', 'code'],
-            storeFields: ['title', 'text'],
+            storeFields: ['title', 'titles', 'text'],
             searchOptions: {
               boost: { title: 4, headings: 3, text: 2, code: 1 },
               fuzzy: 0.2,
