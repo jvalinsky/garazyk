@@ -255,6 +255,49 @@
   filter: brightness(0.95);
 }
 
+/* Mermaid diagrams */
+.vp-doc .mermaid-diagram {
+  margin: 32px 0;
+  padding: 20px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(95, 103, 238, 0.06), transparent 55%),
+    var(--vp-c-bg-soft);
+  overflow-x: auto;
+}
+
+.vp-doc .mermaid-diagram__canvas {
+  min-height: 48px;
+}
+
+.vp-doc .mermaid-diagram__canvas svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.vp-doc .mermaid-diagram__canvas--error {
+  white-space: pre-wrap;
+  font-family: var(--vp-font-family-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--vp-c-danger-1);
+}
+
+.vp-doc .mermaid-diagram__error {
+  margin-top: 12px;
+  color: var(--vp-c-danger-1);
+  font-size: 13px;
+}
+
+.dark .vp-doc .mermaid-diagram {
+  background:
+    linear-gradient(180deg, rgba(95, 103, 238, 0.12), transparent 55%),
+    rgba(255, 255, 255, 0.03);
+}
+
 /* Diagram caption */
 .vp-doc .diagram-container figcaption {
   margin-top: 12px;

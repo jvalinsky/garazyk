@@ -17,97 +17,29 @@ The WebSocket server handles real-time connections for the firehose (`subscribeR
 
 ### WebSocket Connection Lifecycle
 
-```
-
-Client initiates HTTP upgrade request
-    ↓
-HttpServer receives Upgrade header
-    ↓
-Verify WebSocket handshake
-    ↓
-Send 101 Switching Protocols response
-    ↓
-WebSocketConnection created
-    ↓
-SubscribeReposHandler registers connection
-    ↓
-Client receives events via frames
-    ↓
-Connection closed (client or server)
-    ↓
-SubscribeReposHandler unregisters connection
-```
-
-**ASCII Diagram: WebSocket Upgrade Flow**
-
-```
-
-┌─────────────────────────────────────────────────────────┐
-│  Client initiates HTTP upgrade                          │
-│  GET /xrpc/com.atproto.sync.subscribeRepos              │
-└────────────────────┬────────────────────────────────────┘
-                     │
-        ┌────────────▼────────────┐
-        │  HttpServer receives    │
-        │  Check Upgrade header   │
-        └────────────┬────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Verify WebSocket handshake     │
-        │  - Check required headers       │
-        │  - Validate version (13)        │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Calculate Sec-WebSocket-Accept │
-        │  SHA1(key + magic) → Base64     │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Send 101 Switching Protocols   │
-        │  Include Accept header          │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Create WebSocketConnection     │
-        │  Initialize buffers & handlers  │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Register with                  │
-        │  SubscribeReposHandler          │
-        └────────────┬─────────────────────┘
-                     │
-                ┌────┴────┐
-                │          │
-         ┌──────▼──────┐  ┌▼──────────────┐
-         │ Cursor?     │  │ Ready for     │
-         │ (optional)  │  │ events        │
-         └──────┬──────┘  └───────────────┘
-                │
-         ┌──────▼──────────────────┐
-         │ Send historical events  │
-         │ from cursor position    │
-         └─────────────────────────┘
+```mermaid
+flowchart TD
+    request["HTTP upgrade request<br/>com.atproto.sync.subscribeRepos"] --> server["HttpServer"]
+    server --> handshake["Validate WebSocket handshake"]
+    handshake --> accept["Send 101 Switching Protocols"]
+    accept --> connection["Create WebSocketConnection"]
+    connection --> register["Register with SubscribeReposHandler"]
+    register --> cursor{"Cursor provided?"}
+    cursor -- "Yes" --> replay["Replay buffered events"]
+    cursor -- "No" --> live["Ready for live events"]
+    replay --> live
 ```
 
 ### Frame Processing Pipeline
 
-```
-
-Raw socket data
-    ↓
-Parse WebSocket frame header
-    ↓
-Extract payload length
-    ↓
-Extract mask key (if masked)
-    ↓
-Unmask payload
-    ↓
-Route to handler (text/binary/control)
-    ↓
-Process message
+```mermaid
+flowchart TD
+    raw["Raw socket data"] --> header["Parse frame header"]
+    header --> length["Read payload length"]
+    length --> mask["Read mask key if present"]
+    mask --> unmask["Unmask payload"]
+    unmask --> route["Route by opcode"]
+    route --> process["Process message"]
 ```
 
 ## WebSocket Handshake
@@ -916,4 +848,3 @@ The WebSocketConnection handles the full lifecycle of a WebSocket connection:
 - **[Commit Broadcasting](commit-broadcasting)** — Broadcasting events
 - **[Backpressure](backpressure)** — Flow control
 - **[Firehose Overview](firehose-overview)** — Architecture overview
-
