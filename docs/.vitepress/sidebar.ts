@@ -22,6 +22,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Cryptography', link: '/02-core-concepts/cryptography' },
       { text: 'PLC Directory', link: '/02-core-concepts/plc-directory' },
       { text: 'DID Document Updates', link: '/02-core-concepts/did-document-updates' },
+      { text: 'Deep Dive: Repository Data Structures', link: '/02-core-concepts/repository-data-structures-walkthrough' },
       { text: 'Deep Dive: Protocol Flow', link: '/02-core-concepts/protocol-flow-walkthrough' },
       { text: 'Deep Dive: Cryptography', link: '/02-core-concepts/cryptography-in-practice' },
       { text: 'Deep Dive: PLC Operations', link: '/02-core-concepts/plc-operation-walkthrough' },
@@ -39,7 +40,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Blob Service', link: '/03-application-layer/blob-service' },
       { text: 'Repository Service', link: '/03-application-layer/repository-service' },
       { text: 'Relay Service', link: '/03-application-layer/relay-service' },
-      { text: 'Admin Service', link: '/03-application-layer/admin-service' }
+      { text: 'Admin Service', link: '/03-application-layer/admin-service' },
+      { text: 'Deep Dive: Runtime Flow', link: '/03-application-layer/runtime-flow-walkthrough' }
     ]
   },
   {
@@ -106,6 +108,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
     collapsed: false,
     items: [
       { text: 'Firehose Overview', link: '/08-sync-firehose/firehose-overview' },
+      { text: 'Deep Dive: Firehose Flow', link: '/08-sync-firehose/firehose-flow-walkthrough' },
       { text: 'WebSocket Server', link: '/08-sync-firehose/websocket-server' },
       { text: 'Commit Broadcasting', link: '/08-sync-firehose/commit-broadcasting' },
       { text: 'Backpressure', link: '/08-sync-firehose/backpressure' },
