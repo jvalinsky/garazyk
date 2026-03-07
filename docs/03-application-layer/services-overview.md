@@ -87,6 +87,7 @@ layer is to create meaningful seams, not more indirection.
 ## Related Reading
 
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
+- [Deep Dive: Runtime Flow](./runtime-flow-walkthrough)
 - [Blob Service](./blob-service)
 - [Repository Service](./repository-service)
 - [Relay Service](./relay-service)
