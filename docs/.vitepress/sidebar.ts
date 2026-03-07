@@ -189,6 +189,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Performance Monitoring', link: '/11-reference/performance-monitoring' },
       { text: 'Alerting', link: '/11-reference/alerting' },
       { text: 'Troubleshooting', link: '/11-reference/troubleshooting' },
+      { text: 'Objective-C Research Map', link: '/11-reference/objective-c-research-map' },
       { text: 'Deep Dive: Troubleshooting a Failing Endpoint', link: '/11-reference/troubleshooting-a-failing-endpoint' }
     ]
   },
