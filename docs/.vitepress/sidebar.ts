@@ -162,6 +162,16 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Tutorial 3: Records', link: '/10-tutorials/tutorial-3-records' },
       { text: 'Tutorial 4: Authentication', link: '/10-tutorials/tutorial-4-auth' },
       { text: 'Tutorial 5: Firehose', link: '/10-tutorials/tutorial-5-firehose' },
+      {
+        text: 'Subguide: HTTP + WebSocket from Scratch',
+        collapsed: false,
+        items: [
+          { text: 'Overview', link: '/10-tutorials/network-from-scratch/' },
+          { text: 'Part 1: HTTP Transport and Parser', link: '/10-tutorials/network-from-scratch/http-transport-and-parser' },
+          { text: 'Part 2: Routing, Pipelining, and Responses', link: '/10-tutorials/network-from-scratch/http-routing-pipelining-and-responses' },
+          { text: 'Part 3: WebSocket Upgrade, Codec, and Firehose', link: '/10-tutorials/network-from-scratch/websocket-upgrade-codec-and-firehose' }
+        ]
+      },
       { text: 'Tutorial 6: Deployment', link: '/10-tutorials/tutorial-6-deployment' },
       { text: 'Tutorial 7: Objective-J UI', link: '/10-tutorials/tutorial-7-objective-j-ui' },
       { text: 'Tutorial 8: Endpoint Workflow', link: '/10-tutorials/tutorial-8-endpoint-workflow' }
