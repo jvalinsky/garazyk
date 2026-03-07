@@ -103,6 +103,7 @@ interoperability regressions.
 ## Related Reading
 
 - [ATProto Basics](./atproto-basics)
+- [Cryptography In Practice](./cryptography-in-practice)
 - [PLC Directory](./plc-directory)
 - [DID Document Updates](./did-document-updates)
 - [Auth Helpers](../04-network-layer/auth-helpers)
