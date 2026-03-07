@@ -83,6 +83,10 @@ That order is usually faster than debugging the whole repository stack at once.
 
 ## Related Reading
 
+- [IPLD and Multiformats Series](./ipld-foundations/)
+- [CBOR and DAG-CBOR](./ipld-foundations/cbor-and-dag-cbor)
+- [CIDs and Multiformats](./ipld-foundations/cids-and-multiformats)
+- [CAR Files](./ipld-foundations/car-files)
 - [Merkle Search Trees](./mst-trees)
 - [Deep Dive: Repository Data Structures](./repository-data-structures-walkthrough)
 - [CID and Hashing](../07-repository-protocol/cid-and-hashing)

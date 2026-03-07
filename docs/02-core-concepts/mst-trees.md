@@ -80,6 +80,8 @@ If a bug touches repo correctness, there is a good chance it crosses all three.
 
 ## Related Reading
 
+- [IPLD and Multiformats Series](./ipld-foundations/)
+- [IPLD Data Model and Merkle DAGs](./ipld-foundations/ipld-data-model-and-merkle-dags)
 - [CBOR and CAR](./cbor-and-car)
 - [Deep Dive: Repository Data Structures](./repository-data-structures-walkthrough)
 - [Repository Service](../03-application-layer/repository-service)
