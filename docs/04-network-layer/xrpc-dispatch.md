@@ -10,53 +10,25 @@ XRPC (ATProto RPC) dispatch is the routing mechanism that directs incoming HTTP 
 
 ## Architecture
 
-```
-
-┌──────────────────────────────────────────┐
-│   HTTP Request                           │
-│  POST /xrpc/com.atproto.repo.createRecord
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   HttpServer                             │
-│  (Route matching)                        │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   XRPC Dispatcher                        │
-│  - Parse NSID from path                  │
-│  - Look up handler                       │
-│  - Verify authentication                 │
-│  - Call handler                          │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-┌───────▼──────────┐  ┌──▼──────────────┐
-│ Domain Handler   │  │ Auth Verification
-│ (e.g., Repo)     │  │ (JWT/DPoP)
-└──────────────────┘  └──────────────────┘
-        │
-        └────────┬────────┘
-                 │
-        ┌────────▼────────────┐
-        │ Service Layer       │
-        │ (Business Logic)    │
-        └─────────────────────┘
+```mermaid
+flowchart TD
+    request["HTTP request<br/>/xrpc/com.atproto.repo.createRecord"] --> server["HttpServer"]
+    server --> dispatcher["XRPC dispatcher"]
+    dispatcher --> auth["JWT / DPoP verification"]
+    dispatcher --> handler["Domain handler"]
+    auth --> handler
+    handler --> services["Service layer"]
 ```
 
 ## NSID Format
 
 NSIDs (Namespace Identifiers) follow a hierarchical format:
 
-```
-
-com.atproto.repo.createRecord
-│    │      │    │
-│    │      │    └─ Method name
-│    │      └─────── Namespace
-│    └────────────── Domain
-└─────────────────── Reverse domain
+```mermaid
+flowchart LR
+    reverse["Reverse domain<br/>com"] --> domain["Domain<br/>atproto"]
+    domain --> namespace["Namespace<br/>repo"]
+    namespace --> method["Method name<br/>createRecord"]
 ```
 
 Common NSID prefixes:
@@ -95,13 +67,7 @@ The HTTP server matches the path `/xrpc/*` and routes to the XRPC dispatcher.
 
 ### 3. NSID Extraction
 
-The dispatcher extracts the NSID from the path:
-
-```
-
-/xrpc/com.atproto.repo.createRecord
-      └─ NSID: com.atproto.repo.createRecord
-```
+The dispatcher extracts the NSID from the path. For `/xrpc/com.atproto.repo.createRecord`, the NSID is `com.atproto.repo.createRecord`.
 
 ### 4. Handler Lookup
 

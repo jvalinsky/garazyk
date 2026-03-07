@@ -31,36 +31,13 @@ Understanding the Record Service is essential for implementing any ATProto appli
 
 ## Architecture
 
-```
-
-┌──────────────────────────────────────────┐
-│   XRPC Record Endpoints                  │
-│  (com.atproto.repo.*)                    │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   PDSRecordService                       │
-│  - putRecord()                           │
-│  - deleteRecord()                        │
-│  - getRecord()                           │
-│  - listRecords()                         │
-│  - applyWrites()                         │
-│  - getRepoStats()                        │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-┌───────▼──────────┐  ┌──▼──────────────┐
-│ Lexicon         │  │ MST Updates      │
-│ Validator       │  │ (via Repository) │
-└──────────────────┘  └──────────────────┘
-        │                 │
-        └────────┬────────┘
-                 │
-        ┌────────▼────────────┐
-        │ PDSDatabasePool     │
-        │ (Record Storage)    │
-        └─────────────────────┘
+```mermaid
+flowchart TD
+    endpoints["XRPC record endpoints<br/>com.atproto.repo.*"] --> service["PDSRecordService"]
+    service --> validator["Lexicon validation"]
+    service --> repo["PDSRepositoryService"]
+    service --> database["PDSDatabasePool<br/>record storage"]
+    repo --> database
 ```
 
 ## Key Methods

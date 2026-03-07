@@ -14,21 +14,18 @@ A repository is a versioned data store for a user. It contains:
 
 ## Repository Structure
 
-```
-
-Repository (did:plc:user123)
-├── Records
-│   ├── app.bsky.feed.post/abc123
-│   ├── app.bsky.feed.post/def456
-│   ├── app.bsky.actor.profile/self
-│   └── app.bsky.feed.like/ghi789
-├── Blobs
-│   ├── bafyreiabc123...
-│   └── bafyredef456...
-└── Commits
-    ├── Commit 1 (root)
-    ├── Commit 2
-    └── Commit 3 (head)
+```mermaid
+flowchart TD
+    repo["Repository<br/>did:plc:user123"] --> records["Records"]
+    repo --> blobs["Blobs"]
+    repo --> commits["Commits"]
+    records --> postA["app.bsky.feed.post/abc123"]
+    records --> postB["app.bsky.feed.post/def456"]
+    records --> profile["app.bsky.actor.profile/self"]
+    blobs --> blobA["bafyreiabc123..."]
+    blobs --> blobB["bafyredef456..."]
+    commits --> root["Commit 1<br/>root"]
+    commits --> head["Commit 3<br/>head"]
 ```
 
 ## Records

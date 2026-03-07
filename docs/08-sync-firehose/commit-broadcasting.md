@@ -21,117 +21,29 @@ Commit broadcasting is the mechanism that sends repository commits to all connec
 
 ### Broadcasting Pipeline
 
-```
-
-Record operation (create/update/delete)
-    ↓
-PDSRecordService processes operation
-    ↓
-PDSRepositoryService creates commit
-    ↓
-CommitBroadcaster.broadcastCommit called
-    ↓
-Event formatted with metadata
-    ↓
-Sequencer assigns sequence number
-    ↓
-Event stored in sequencer database
-    ↓
-Event sent to all subscribed clients
-    ↓
-Clients receive commit event
-```
-
-**ASCII Diagram: Commit Broadcasting Flow**
-
-```
-
-┌─────────────────────────────────────────────────────────┐
-│  Record Operation                                       │
-│  (create/update/delete via XRPC endpoint)              │
-└────────────────────┬────────────────────────────────────┘
-                     │
-        ┌────────────▼────────────┐
-        │  PDSRecordService       │
-        │  - Validate record      │
-        │  - Check permissions    │
-        └────────────┬────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  PDSRepositoryService           │
-        │  - Update MST                   │
-        │  - Create commit                │
-        │  - Calculate root CID           │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Get next sequence number       │
-        │  From PDSServiceDatabases       │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Store commit in sequencer      │
-        │  seq, did, commit, rebase, etc  │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Format firehose event          │
-        │  {t: "#commit", commit, seq...} │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Encode as JSON                 │
-        │  NSJSONSerialization            │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  Get all subscriptions          │
-        │  From CommitBroadcaster         │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  For each subscription:         │
-        │  - Check filter match           │
-        │  - Send to client               │
-        │  - Handle backpressure          │
-        └─────────────────────────────────┘
+```mermaid
+flowchart TD
+    operation["Record create, update, or delete"] --> record["PDSRecordService"]
+    record --> repository["PDSRepositoryService"]
+    repository --> sequence["Allocate next sequence number"]
+    sequence --> store["Store sequencer row"]
+    store --> format["Format #commit event"]
+    format --> encode["Encode outbound payload"]
+    encode --> broadcaster["CommitBroadcaster"]
+    broadcaster --> clients["Subscribed WebSocket clients"]
 ```
 
 ### Event Flow
 
-```
-
-┌─────────────────────────────────────────────────────────┐
-│                  Record Operation                       │
-│  (create/update/delete via XRPC endpoint)              │
-└────────────────────┬────────────────────────────────────┘
-                     │
-        ┌────────────▼────────────┐
-        │  PDSRecordService       │
-        │  - Validate record      │
-        │  - Check permissions    │
-        └────────────┬────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  PDSRepositoryService           │
-        │  - Update MST                   │
-        │  - Create commit                │
-        │  - Calculate root CID           │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  CommitBroadcaster              │
-        │  - Format event                 │
-        │  - Assign sequence number       │
-        │  - Store in sequencer           │
-        └────────────┬─────────────────────┘
-                     │
-        ┌────────────▼────────────────────┐
-        │  WebSocket Connections          │
-        │  - Filter by repository         │
-        │  - Send to subscribers          │
-        │  - Handle backpressure          │
-        └─────────────────────────────────┘
+```mermaid
+flowchart TD
+    broadcaster["CommitBroadcaster"] --> subscription["Subscription"]
+    subscription --> filter{"Repository filter matches?"}
+    filter -- "Yes" --> send["Send event"]
+    filter -- "No" --> skip["Skip subscriber"]
+    send --> pressure["Apply backpressure policy"]
+    pressure --> next["Continue broadcast"]
+    skip --> next
 ```
 
 ## Commit Event Format
@@ -681,4 +593,3 @@ The SubscribeReposHandler broadcasts repository commits to all connected clients
 - **[Backpressure](backpressure)** — Flow control
 - **[WebSocket Server](websocket-server)** — WebSocket implementation
 - **[Firehose Overview](firehose-overview)** — Architecture overview
-
