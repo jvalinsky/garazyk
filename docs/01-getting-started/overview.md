@@ -345,6 +345,11 @@ This guide is organized into 12 progressive sections:
 
 Each section builds on previous knowledge and includes code examples from the actual codebase.
 
+## Go Deeper
+
+- [Startup and Boot Sequence](./startup-and-boot-sequence)
+- [Local Debug Workflow](./local-debug-workflow)
+
 ## Support
 
 - **Issues** — Report bugs on GitHub

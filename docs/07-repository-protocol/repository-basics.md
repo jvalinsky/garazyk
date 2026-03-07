@@ -355,6 +355,11 @@ A commit contains:
 5. **Handle conflicts** — Implement conflict resolution
 6. **Monitor performance** — Track repository size and access patterns
 
+## Related Deep Dives
+
+- [Record Write to Commit Walkthrough](./record-write-to-commit-walkthrough)
+- [Blob Flow Walkthrough](./blob-flow-walkthrough)
+
 ## Next Steps
 
 - **[CBOR Serialization](cbor-serialization)** — Data encoding

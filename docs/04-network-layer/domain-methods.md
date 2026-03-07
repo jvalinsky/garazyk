@@ -469,6 +469,11 @@ response.body = blobData;
 [response setHeaderValue:mimeType forName:@"Content-Type"];
 ```
 
+## Related Deep Dives
+
+- [HTTP Request and Route Pipeline](./http-request-and-route-pipeline)
+- [From NSID to Service Call](./from-nsid-to-service-call)
+
 ## See Also
 
 - [XRPC Dispatch](xrpc-dispatch)

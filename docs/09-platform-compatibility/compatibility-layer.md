@@ -1082,9 +1082,12 @@ Both macOS and GNUstep support ARC, but with different runtime implementations.
 5. **Memory management differences** — ARC works differently on GNUstep
 6. **Missing error handling** — Platform-specific code may fail differently
 
+## Related Deep Dives
+
+- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
+
 ## Next Steps
 
 - **[Network Transport](network-transport)** — Platform-specific network I/O
 - **[ARC Runtime](arc-runtime)** — ARC considerations
 - **[macOS/Linux](macos-linux)** — Platform overview
-
