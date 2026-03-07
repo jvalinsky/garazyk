@@ -21,7 +21,11 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Merkle Search Trees', link: '/02-core-concepts/mst-trees' },
       { text: 'Cryptography', link: '/02-core-concepts/cryptography' },
       { text: 'PLC Directory', link: '/02-core-concepts/plc-directory' },
-      { text: 'DID Document Updates', link: '/02-core-concepts/did-document-updates' }
+      { text: 'DID Document Updates', link: '/02-core-concepts/did-document-updates' },
+      { text: 'Deep Dive: Protocol Flow', link: '/02-core-concepts/protocol-flow-walkthrough' },
+      { text: 'Deep Dive: Cryptography', link: '/02-core-concepts/cryptography-in-practice' },
+      { text: 'Deep Dive: PLC Operations', link: '/02-core-concepts/plc-operation-walkthrough' },
+      { text: 'Deep Dive: DID Updates', link: '/02-core-concepts/did-update-walkthrough' }
     ]
   },
   {

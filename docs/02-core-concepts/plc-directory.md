@@ -75,5 +75,6 @@ verification, PLC is not optional background knowledge. It explains:
 ## Related Reading
 
 - [DID Document Updates](./did-document-updates)
+- [PLC Operation Walkthrough](./plc-operation-walkthrough)
 - [ATProto Basics](./atproto-basics)
 - [PLC Server Operations](../11-reference/plc-server-operations)
