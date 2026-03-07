@@ -162,6 +162,33 @@ Located at `docker/docs/nginx.conf`:
 - HTTPS configuration (for production)
 - Custom 404 page
 
+### Host nginx route for `/docs`
+
+The docs container only exposes the site on `localhost:8080`. Public
+`https://pds.garazyk.xyz/docs/` access also requires the host nginx reverse
+proxy to forward `/docs` to that container.
+
+Without this route, `/docs` falls through to the PDS backend and returns the
+API server's JSON `404` response instead of the docs site.
+
+Example host nginx snippet:
+
+```nginx
+location = /docs {
+    return 301 /docs/;
+}
+
+location /docs/ {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header Connection "";
+}
+```
+
 ## GitHub Actions CI/CD
 
 ### Workflow: build-docs.yml
@@ -227,6 +254,7 @@ Documentation container (port 80)
 - [ ] Pull latest changes
 - [ ] Build documentation
 - [ ] Deploy with Docker Compose
+- [ ] Verify host nginx forwards `/docs` to `127.0.0.1:8080`
 - [ ] Verify production deployment (`./docs/scripts/verify-deployment.sh https://pds.garazyk.xyz`)
 - [ ] Test critical pages manually
 - [ ] Monitor for errors (check Docker logs)
