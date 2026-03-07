@@ -16,6 +16,7 @@ Comprehensive guides for developing, deploying, and using the ATProto PDS server
 | [DEPLOYMENT.md](DEPLOYMENT) | Production deployment with reverse proxy, TLS, and environment configuration | DevOps, system administrators |
 | [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) | Visual Mermaid diagrams for build, test, and debugging workflows | All developers |
 | [objective_c_tips.md](objective_c_tips) | Research-driven Objective-C patterns, niche Cocoa/runtime techniques, and September-specific lookup guidance | Objective-C developers |
+| [objective-c-appendices/](objective-c-appendices/) | Appendix deep dives for forwarding, ARC edge cases, runtime mutation, observation traps, and macOS investigation | Objective-C developers |
 | [SCRIPT_DEVELOPMENT.md](SCRIPT_DEVELOPMENT) | Shell script standards, quality requirements, and script maintenance | DevOps, tooling developers |
 | [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) | Quick reference for XRPC methods, NSIDs, and data types | Protocol implementers |
 | [macOS_Network_Server_Guide.md](macOS_Network_Server_Guide) | Comprehensive macOS network programming with Network.framework and security APIs | macOS platform developers |
@@ -30,7 +31,8 @@ Comprehensive guides for developing, deploying, and using the ATProto PDS server
 ### Development
 1. [Developer Guide](./development/DEVELOPER_GUIDE) - Add new endpoints and features
 2. [Objective-C Research Patterns](objective_c_tips) - Runtime, memory, Cocoa, and macOS research guidance
-3. [Script Development](SCRIPT_DEVELOPMENT) - Shell script standards
+3. [Objective-C Research Appendices](objective-c-appendices/) - Deep dives for the niche topics you only need when something gets weird
+4. [Script Development](SCRIPT_DEVELOPMENT) - Shell script standards
 
 ### Reference
 1. [XRPC Protocol Reference](XRPC_PROTOCOL_REFERENCE) - Protocol quick reference

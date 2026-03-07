@@ -87,6 +87,9 @@ Use these pages together:
 
 - [Objective-C Research Patterns & Techniques](../guides/objective_c_tips) for
   the full research-driven compendium and annotated source list
+- [Objective-C Research Appendices](../guides/objective-c-appendices/) for
+  source-backed deep dives on forwarding, lifetime edges, runtime mutation,
+  observation boundaries, and macOS investigation
 - [Troubleshooting](./troubleshooting) when the problem is already showing up as
   a failing surface
 - [Testing Map](./testing-map) and
