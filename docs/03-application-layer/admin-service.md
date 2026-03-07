@@ -49,36 +49,13 @@ Understanding the Admin Service is crucial for implementing responsible moderati
 
 ## Architecture
 
-```
-
-┌──────────────────────────────────────────┐
-│   XRPC Admin Endpoints                   │
-│  (com.atproto.admin.*)                   │
-└────────────────┬─────────────────────────┘
-                 │
-┌────────────────▼─────────────────────────┐
-│   PDSAdminService                        │
-│  - suspendAccount()                      │
-│  - deleteAccount()                       │
-│  - takedownRecord()                      │
-│  - addLabel()                            │
-│  - removeLabel()                         │
-│  - getModeration()                       │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-┌───────▼──────────┐  ┌──▼──────────────┐
-│ Audit Logging    │  │ Moderation DB   │
-│ (Admin Actions)  │  │ (Labels/Status) │
-└──────────────────┘  └──────────────────┘
-        │
-        └────────┬────────┘
-                 │
-        ┌────────▼────────────┐
-        │ PDSServiceDatabases │
-        │ (Admin Data)        │
-        └─────────────────────┘
+```mermaid
+flowchart TD
+    endpoints["XRPC admin endpoints<br/>com.atproto.admin.*"] --> service["PDSAdminService"]
+    service --> audit["Audit logging"]
+    service --> moderation["Moderation data"]
+    audit --> databases["PDSServiceDatabases"]
+    moderation --> databases
 ```
 
 ## Key Operations

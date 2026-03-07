@@ -10,21 +10,10 @@ Domain methods are the concrete implementations of XRPC endpoints organized by d
 
 ## Architecture
 
-```
-
-┌──────────────────────────────────────────┐
-│   Domain Method Module                   │
-│  (e.g., XrpcRepoMethods)                 │
-└────────────────┬─────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-┌───────▼──────────┐  ┌──▼──────────────┐
-│ Request Handler  │  │ Service Layer   │
-│ - Parse params   │  │ - Business logic│
-│ - Validate       │  │ - Data access   │
-│ - Authorize      │  │ - Transactions  │
-└──────────────────┘  └──────────────────┘
+```mermaid
+flowchart TD
+    module["Domain method module<br/>for example XrpcRepoMethods"] --> handler["Request handler<br/>parse + validate + authorize"]
+    handler --> services["Service layer<br/>business logic + data access"]
 ```
 
 ## Domain Module Pattern
