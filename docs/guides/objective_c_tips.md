@@ -31,6 +31,17 @@ Use these tags literally:
 - `conceptually useful but dated`: still worth reading, but verify details
 - `historical only`: useful for context, debugging folklore, or old codebases
 
+## Research appendices
+
+Use these when you need a deeper dive than the cluster summaries on this page:
+
+- [Objective-C Research Appendices](./objective-c-appendices/)
+- [Appendix: Forwarding, NSInvocation, and Proxy Objects](./objective-c-appendices/forwarding-invocation-and-proxies)
+- [Appendix: ARC, Blocks, CF, and Autorelease Boundaries](./objective-c-appendices/arc-blocks-cf-and-autorelease-boundaries)
+- [Appendix: Runtime Mutation, Associated Objects, Swizzling, and Direct Methods](./objective-c-appendices/runtime-mutation-associated-objects-swizzling-and-direct-methods)
+- [Appendix: KVC, KVO, and Observation Boundaries](./objective-c-appendices/kvc-kvo-and-observation-boundaries)
+- [Appendix: XPC, Logs, Spotlight, and macOS Investigation](./objective-c-appendices/xpc-logs-spotlight-and-macos-investigation)
+
 ## Runtime and messaging
 
 ### Why it matters in September
