@@ -142,6 +142,10 @@ than starting from the network response alone.
 
 ## Related Reading
 
+- [IPLD and Multiformats Series](./ipld-foundations/)
+- [CBOR and DAG-CBOR](./ipld-foundations/cbor-and-dag-cbor)
+- [CIDs and Multiformats](./ipld-foundations/cids-and-multiformats)
+- [CAR Files](./ipld-foundations/car-files)
 - [CBOR and CAR](./cbor-and-car)
 - [Merkle Search Trees](./mst-trees)
 - [Repository Basics](../07-repository-protocol/repository-basics)
