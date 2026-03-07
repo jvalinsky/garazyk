@@ -84,5 +84,6 @@ database bug.
 ## Related Reading
 
 - [PLC Directory](./plc-directory)
+- [DID Update Walkthrough](./did-update-walkthrough)
 - [ATProto Basics](./atproto-basics)
 - [PLC Server Operations](../11-reference/plc-server-operations)
