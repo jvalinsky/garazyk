@@ -432,6 +432,11 @@ Claims validation ensures the token is still valid and meets requirements:
 6. **Rotation** — Rotate signing keys periodically
 7. **Validation** — Always validate tokens before use
 
+## Related Deep Dives
+
+- [Session and JWT Lifecycle](./session-and-jwt-lifecycle)
+- [OAuth + DPoP Request Walkthrough](./oauth-dpop-request-walkthrough)
+
 ## See Also
 
 **Basic Topics:**
