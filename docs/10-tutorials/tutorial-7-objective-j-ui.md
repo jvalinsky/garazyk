@@ -391,6 +391,230 @@ If you are adding a new view and are unsure how to render a payload cleanly, `CP
 | `CPPopUpButton` | Mode switches (`Rendered` vs `JSON`) |
 | `CPButton` | User actions (`Lookup`, `Load`, `Refresh`) |
 
+### `CPApplication` and Startup Lifecycle
+
+Cappuccino applications have a formal startup lifecycle, and September follows the standard path:
+
+1. `main.j` calls `CPApplicationMain(args, namedArgs)`.
+2. Cappuccino creates the shared application object.
+3. The app delegate receives `applicationDidFinishLaunching:`.
+4. The delegate builds the initial window and view hierarchy.
+
+The repo's startup path is intentionally minimal:
+
+```objectivec
+function main(args, namedArgs)
+{
+    CPApplicationMain(args, namedArgs);
+}
+```
+
+Then `AppController` takes over:
+
+```objectivec
+- (void)applicationDidFinishLaunching:(CPNotification)aNotification
+{
+    [self setUpControllers];
+    [self setUpWindow];
+}
+```
+
+This matters because Cappuccino's lifecycle is closer to Cocoa than to a typical browser SPA bootstrap. There is a central application object, a launch callback, and a view tree rooted in a `CPWindow`. The official [`CPApplication`](https://www.cappuccino.dev/learn/documentation/interface_c_p_application.html) docs are worth reading early because they explain the app delegate hooks and the `CPApplicationMain` boot path directly.
+
+### Foundation Collections and Strings: What Is Actually "Native" Here
+
+One source of confusion for new Objective-J contributors is that Foundation types are partly Cappuccino abstractions and partly thin wrappers over JavaScript runtime values.
+
+#### Arrays
+
+In this repo, arrays are usually plain `[]` literals:
+
+```objectivec
+_accounts = [];
+_collections = [];
+_plcOpRows = [];
+```
+
+That is normal Objective-J style. The Cappuccino docs describe `CPMutableArray` as mostly a source-compatibility alias because array behavior is backed by JavaScript arrays. In practice, September relies on that fact and uses JavaScript array literals freely.
+
+#### Dictionaries
+
+For keyed objects, the code uses both JavaScript objects and `CPDictionary`, depending on context. `UIAPIClient` keeps endpoint groups in a `CPDictionary`:
+
+```objectivec
+var endpointBases = [CPMutableDictionary dictionary];
+[endpointBases setObject:@"/api/pds" forKey:@"explore"];
+[endpointBases setObject:@"/xrpc" forKey:@"xrpc"];
+```
+
+This is useful when you want Cocoa-style key lookup with methods like:
+
+- `objectForKey:`
+- `setObject:forKey:`
+- `allKeys`
+
+The official [`CPDictionary`](https://www.cappuccino.dev/learn/documentation/interface_c_p_dictionary.html) docs make one especially important point: unlike Cocoa, Cappuccino does not keep a hard immutable/mutable split here. The regular `CPDictionary` is mutable.
+
+#### Strings
+
+`CPString` looks like Cocoa's `NSString`, but it interoperates closely with JavaScript strings. That is why code like this works naturally:
+
+```objectivec
+if (normalizedPath.length > 0 && ![normalizedPath hasPrefix:@"/"])
+    normalizedPath = [@"/" stringByAppendingString:normalizedPath];
+```
+
+The [`CPString`](https://www.cappuccino.dev/learn/documentation/interface_c_p_string.html) reference is useful because it documents both the familiar Cocoa methods and the fact that `CPString` is designed to work where JavaScript strings are expected.
+
+#### Practical Rule
+
+Use this rule of thumb in September's UI:
+
+- use Objective-C-style methods when the value is clearly a Cappuccino object,
+- use JavaScript syntax when the runtime shape is easier to express that way,
+- and do not force everything through one style just for purity.
+
+That mixed style is not a smell in Objective-J. It is the language model.
+
+### Delegates, Data Sources, and Table Contracts
+
+Cappuccino leans heavily on Cocoa's delegation model. September uses that directly rather than introducing a custom component abstraction layer.
+
+The most visible case is `CPTableView`:
+
+```objectivec
+_accountsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 240.0, 530.0)];
+[_accountsTable setDelegate:self];
+[_accountsTable setDataSource:self];
+```
+
+The official [`CPTableView`](https://www.cappuccino.dev/learn/documentation/interface_c_p_table_view.html) docs call out the two required datasource methods for basic operation:
+
+- `numberOfRowsInTableView:`
+- `tableView:objectValueForTableColumn:row:`
+
+That maps directly to the pattern used throughout `ExplorerController`, `AdminController`, and `MSTController`:
+
+1. fetch or derive row-model arrays,
+2. store them in ivars such as `_feedRows` or `_didSummaryRows`,
+3. implement datasource methods against those arrays,
+4. call `reloadData` after mutations,
+5. respond to selection changes in delegate callbacks when detail panes depend on the selected row.
+
+This is a core Cappuccino mental model: views do not own the truth. Controllers own the truth, and delegate/datasource methods project that truth into widgets.
+
+That is also why September's controllers keep so many parallel ivars:
+
+- raw payload ivars like `_currentPLCPayload`,
+- normalized row arrays like `_plcOpRows`,
+- widget references like `_plcOpsTable`.
+
+Those are not arbitrary layers. They correspond to different responsibilities in the delegate/data-source flow.
+
+### `CPScrollView` and Why Tables Never Stand Alone
+
+One easy mistake for people coming from raw HTML tables is to think the table widget handles scrolling itself. Cappuccino's table docs explicitly note that `CPTableView` does not contain its own scroll view. September follows that rule everywhere:
+
+```objectivec
+var accountsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 130.0, 260.0, 540.0)];
+[accountsScroll setHasVerticalScroller:YES];
+[accountsScroll setAutohidesScrollers:YES];
+[accountsScroll setDocumentView:_accountsTable];
+```
+
+The pattern repeats for:
+
+- accounts,
+- DID summaries,
+- PLC operation logs,
+- records,
+- feeds,
+- graph data,
+- MST stats and nodes.
+
+If a new contributor skips the `CPScrollView` wrapper, the UI will usually still render, but it will behave like a broken desktop app once content grows. In practice, "control + scroll wrapper" is one of the default composition moves in Cappuccino.
+
+### Networking: Cappuccino APIs vs Browser APIs
+
+Cappuccino includes Foundation-style request/connection APIs such as [`CPURLConnection`](https://www.cappuccino.dev/learn/documentation/interface_c_p_u_r_l_connection.html), and Cappuccino's own blog documentation explains the usual pairing of `CPURLRequest` with `CPURLConnection` for higher-level request handling.
+
+September uses a hybrid model instead:
+
+- `UIAPIClient` builds `CPURLRequest` objects in helper methods when a Foundation-style request object is convenient,
+- but the actual JSON fetch path uses `XMLHttpRequest` directly.
+
+That split is visible in `UIAPIClient.j`:
+
+```objectivec
+- (CPURLRequest)requestWithPath:(CPString)path endpointGroup:(CPString)group method:(CPString)method
+{
+    var urlString = [self URLStringForPath:path endpointGroup:group queryParams:nil];
+    var request = [CPURLRequest requestWithURL:[CPURL URLWithString:urlString]];
+    [request setHTTPMethod:(method || @"GET")];
+    return request;
+}
+```
+
+and then:
+
+```objectivec
+var httpMethod = method || @"GET",
+    urlString = [self URLStringForPath:path endpointGroup:group queryParams:queryParams],
+    xhr = new XMLHttpRequest(),
+    bodyJSON = nil;
+```
+
+Why do this?
+
+- raw `XMLHttpRequest` makes JSON parsing and browser error handling explicit,
+- it avoids adding another delegate protocol layer for simple request/response flows,
+- and it matches the rest of the UI's JavaScript-friendly style.
+
+This is an important guide-level point: Cappuccino gives you Cocoa-style network abstractions, but Objective-J does not require you to hide the browser. September uses the browser runtime directly when that is simpler.
+
+### Protocols, Categories, and Other Objective-J Features You Will See Elsewhere
+
+The official [Learning Objective-J](https://www.cappuccino.dev/learn/objective-j.html) guide covers more language surface area than September's current UI happens to use day to day.
+
+Two features worth knowing in advance:
+
+- protocols, which let classes declare conformance to a method contract,
+- categories, which let you add methods to an existing class without subclassing it.
+
+Those are standard Objective-C ideas, and Objective-J keeps them. They matter because many Cappuccino APIs are documented in a Cocoa-shaped way even when this repo does not lean on every feature directly.
+
+For example, Cappuccino networking and widget APIs often describe delegate contracts in protocol-style terms, even when you mostly discover the required methods from the class reference. Likewise, categories are part of why Cappuccino's API reference sometimes shows extra behavior as "Provided by category ...".
+
+In September specifically:
+
+- you will see selectors and informal delegate contracts constantly,
+- you will see `@accessors` frequently,
+- you will see very little custom protocol or category authoring in the UI layer today.
+
+That does not mean the features are irrelevant. It means the current codebase is using a deliberately narrow subset of Objective-J so the control flow stays easy to trace.
+
+### What September Uses From Cappuccino, and What It Deliberately Does Not
+
+Cappuccino can support more than what you see in this repo:
+
+- Cib-based interface construction,
+- bindings-driven table wiring,
+- richer responder-chain behavior,
+- broader Foundation APIs,
+- more Cocoa-like networking abstractions.
+
+September deliberately keeps the UI narrower:
+
+- views are built programmatically,
+- controller state lives in explicit ivars,
+- tables are fed by manual datasource methods,
+- JSON inspection remains available through text panes,
+- network flows are explicit instead of hidden behind bindings or generated adapters.
+
+That choice makes the code more verbose, but it also makes it easier to debug in a project where the backend protocol surface matters as much as the UI.
+
+If you are expanding the UI, keep that discipline. Prefer code you can trace from button click to request to payload normalization to `reloadData`, even if Cappuccino offers a more magical option.
+
 ## Step 1: Confirm UI Routing And Shell
 
 The UI is served at `/ui` and can be made the default `/` entrypoint. Verify route setup first, before touching view logic.
