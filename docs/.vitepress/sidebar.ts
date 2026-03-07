@@ -9,6 +9,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Architecture Overview', link: '/01-getting-started/architecture-overview' },
       { text: 'Codebase Map', link: '/01-getting-started/codebase-map' },
       { text: 'Request Lifecycle', link: '/01-getting-started/request-lifecycle' },
+      { text: 'Deep Dive: Startup and Boot Sequence', link: '/01-getting-started/startup-and-boot-sequence' },
+      { text: 'Deep Dive: Local Debug Workflow', link: '/01-getting-started/local-debug-workflow' },
       { text: 'Setup', link: '/01-getting-started/setup' }
     ]
   },
@@ -64,6 +66,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'XRPC Dispatch', link: '/04-network-layer/xrpc-dispatch' },
       { text: 'Method Registry', link: '/04-network-layer/method-registry' },
       { text: 'Domain Methods', link: '/04-network-layer/domain-methods' },
+      { text: 'Deep Dive: HTTP Request and Route Pipeline', link: '/04-network-layer/http-request-and-route-pipeline' },
+      { text: 'Deep Dive: From NSID to Service Call', link: '/04-network-layer/from-nsid-to-service-call' },
       { text: 'Auth Helpers', link: '/04-network-layer/auth-helpers' },
       { text: 'Error Handling', link: '/04-network-layer/error-handling' },
       { text: 'Rate Limiting', link: '/04-network-layer/rate-limiting' },
@@ -80,6 +84,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Actor Databases', link: '/05-database-layer/actor-databases' },
       { text: 'Service Databases', link: '/05-database-layer/service-databases' },
       { text: 'WAL Mode', link: '/05-database-layer/wal-mode' },
+      { text: 'Deep Dive: Shared vs Actor Database Boundary', link: '/05-database-layer/shared-vs-actor-database-boundary' },
+      { text: 'Deep Dive: Transactions, WAL, and Concurrency', link: '/05-database-layer/transactions-wal-and-concurrency' },
       { text: 'Migrations', link: '/05-database-layer/migrations' },
       { text: 'Migration Strategy', link: '/05-database-layer/migration-strategy' },
       { text: 'Migration Rollback', link: '/05-database-layer/migration-rollback' },
@@ -93,6 +99,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
     items: [
       { text: 'JWT Tokens', link: '/06-authentication/jwt-tokens' },
       { text: 'OAuth 2.0 with DPoP', link: '/06-authentication/oauth2-dpop' },
+      { text: 'Deep Dive: OAuth + DPoP Request Walkthrough', link: '/06-authentication/oauth-dpop-request-walkthrough' },
+      { text: 'Deep Dive: Session and JWT Lifecycle', link: '/06-authentication/session-and-jwt-lifecycle' },
       { text: 'Email & Verification', link: '/06-authentication/email-and-verification' },
       { text: 'TOTP & WebAuthn', link: '/06-authentication/totp-webauthn' },
       { text: 'Key Rotation', link: '/06-authentication/key-rotation' },
@@ -112,7 +120,9 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Blob Lifecycle', link: '/07-repository-protocol/blob-lifecycle' },
       { text: 'Blob Optimization', link: '/07-repository-protocol/blob-optimization' },
       { text: 'Blob Garbage Collection', link: '/07-repository-protocol/blob-garbage-collection' },
-      { text: 'Blob Quotas', link: '/07-repository-protocol/blob-quotas' }
+      { text: 'Blob Quotas', link: '/07-repository-protocol/blob-quotas' },
+      { text: 'Deep Dive: Record Write to Commit', link: '/07-repository-protocol/record-write-to-commit-walkthrough' },
+      { text: 'Deep Dive: Blob Flow', link: '/07-repository-protocol/blob-flow-walkthrough' }
     ]
   },
   {
@@ -137,6 +147,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
     items: [
       { text: 'macOS & Linux', link: '/09-platform-compatibility/macos-linux' },
       { text: 'Compatibility Layer', link: '/09-platform-compatibility/compatibility-layer' },
+      { text: 'Deep Dive: macOS vs GNUstep Boundary', link: '/09-platform-compatibility/macos-vs-gnustep-boundary' },
       { text: 'ARC Runtime', link: '/09-platform-compatibility/arc-runtime' },
       { text: 'Network Transport', link: '/09-platform-compatibility/network-transport' }
     ]
@@ -165,6 +176,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Config Reference', link: '/11-reference/config-reference' },
       { text: 'Explorer, OpenAPI & UI', link: '/11-reference/explorer-openapi-ui' },
       { text: 'Testing Map', link: '/11-reference/testing-map' },
+      { text: 'Deep Dive: Test Selection Workflow', link: '/11-reference/test-selection-workflow' },
       { text: 'Test Organization', link: '/11-reference/test-organization' },
       { text: 'Property-Based Testing', link: '/11-reference/property-based-testing' },
       { text: 'E2E Testing', link: '/11-reference/e2e-testing' },
@@ -176,7 +188,8 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Metrics Collection', link: '/11-reference/metrics-collection' },
       { text: 'Performance Monitoring', link: '/11-reference/performance-monitoring' },
       { text: 'Alerting', link: '/11-reference/alerting' },
-      { text: 'Troubleshooting', link: '/11-reference/troubleshooting' }
+      { text: 'Troubleshooting', link: '/11-reference/troubleshooting' },
+      { text: 'Deep Dive: Troubleshooting a Failing Endpoint', link: '/11-reference/troubleshooting-a-failing-endpoint' }
     ]
   },
   {

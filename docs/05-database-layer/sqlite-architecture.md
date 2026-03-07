@@ -537,6 +537,8 @@ sqlite3_bind_int(stmt, 2, (int)limit);
 
 ## Next Steps
 
+- **[Shared vs Actor Database Boundary](shared-vs-actor-database-boundary)** — Data ownership by store family
+- **[Transactions, WAL, and Concurrency](transactions-wal-and-concurrency)** — Ordering and durability seams
 - **[Service Databases](service-databases)** — Shared database details
 - **[Actor Databases](actor-databases)** — Per-user database details
 - **[Migrations](migrations)** — Schema versioning

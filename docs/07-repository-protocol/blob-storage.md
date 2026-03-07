@@ -112,6 +112,11 @@ Start here when you change storage behavior:
 Read the service layer together with the provider interface. Most storage bugs
 are really coordination bugs between those two layers.
 
+## Related Deep Dives
+
+- [Blob Flow Walkthrough](./blob-flow-walkthrough)
+- [Record Write to Commit Walkthrough](./record-write-to-commit-walkthrough)
+
 ## Related Reading
 
 - [Blob Lifecycle](./blob-lifecycle)

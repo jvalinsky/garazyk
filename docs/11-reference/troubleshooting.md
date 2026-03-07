@@ -110,6 +110,11 @@ Read tests early when:
 The repo has enough explicit tests that they are often the fastest way to
 separate a bug from a documented gap.
 
+## Related Deep Dives
+
+- [Troubleshooting a Failing Endpoint](./troubleshooting-a-failing-endpoint)
+- [Test Selection Workflow](./test-selection-workflow)
+
 ## Related Reading
 
 - [Performance Monitoring](./performance-monitoring)
