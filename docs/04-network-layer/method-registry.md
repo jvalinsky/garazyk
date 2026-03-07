@@ -337,6 +337,11 @@ If a method is registered twice:
    - Mock services for testing
    - Verify registration order
 
+## Related Deep Dives
+
+- [HTTP Request and Route Pipeline](./http-request-and-route-pipeline)
+- [From NSID to Service Call](./from-nsid-to-service-call)
+
 ## See Also
 
 - [XRPC Dispatch](xrpc-dispatch)

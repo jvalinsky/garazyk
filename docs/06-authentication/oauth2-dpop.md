@@ -594,6 +594,11 @@ NSData *data = [NSURLConnection sendSynchronousRequest:request
                                                  error:&error];
 ```
 
+## Related Deep Dives
+
+- [OAuth + DPoP Request Walkthrough](./oauth-dpop-request-walkthrough)
+- [Session and JWT Lifecycle](./session-and-jwt-lifecycle)
+
 ## See Also
 
 - [JWT Tokens](jwt-tokens)

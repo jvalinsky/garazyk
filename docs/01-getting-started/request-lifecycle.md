@@ -152,6 +152,13 @@ When a UI looks broken, always ask whether the failure is:
 | UI renders nothing | `/ui` asset path, `/api/pds/*` responses, then controller logic |
 | OpenAPI docs drift from behavior | Explorer handler descriptors and API docs page |
 
+## Go Deeper
+
+- [Startup and Boot Sequence](./startup-and-boot-sequence)
+- [Local Debug Workflow](./local-debug-workflow)
+- [HTTP Request and Route Pipeline](../04-network-layer/http-request-and-route-pipeline)
+- [From NSID to Service Call](../04-network-layer/from-nsid-to-service-call)
+
 ## Related Reading
 
 - [Codebase Map](./codebase-map)

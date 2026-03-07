@@ -80,6 +80,12 @@ When auth fails, start with these questions:
 
 Most auth debugging becomes straightforward once those questions are answered.
 
+## Related Deep Dives
+
+- [OAuth + DPoP Request Walkthrough](../06-authentication/oauth-dpop-request-walkthrough)
+- [Session and JWT Lifecycle](../06-authentication/session-and-jwt-lifecycle)
+- [From NSID to Service Call](./from-nsid-to-service-call)
+
 ## Related Reading
 
 - [Error Handling](./error-handling)

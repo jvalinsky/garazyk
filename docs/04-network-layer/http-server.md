@@ -403,6 +403,11 @@ response.headers[@"Cache-Control"] = @"public, max-age=3600";
 response.headers[@"ETag"] = [self calculateETag:response.body];
 ```
 
+## Related Deep Dives
+
+- [HTTP Request and Route Pipeline](./http-request-and-route-pipeline)
+- [From NSID to Service Call](./from-nsid-to-service-call)
+
 ## See Also
 
 **Basic Topics:**
