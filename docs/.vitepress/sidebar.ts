@@ -22,6 +22,18 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Cryptography', link: '/02-core-concepts/cryptography' },
       { text: 'PLC Directory', link: '/02-core-concepts/plc-directory' },
       { text: 'DID Document Updates', link: '/02-core-concepts/did-document-updates' },
+      {
+        text: 'Article Series: IPLD & Multiformats',
+        collapsed: false,
+        items: [
+          { text: 'Series Overview', link: '/02-core-concepts/ipld-foundations/' },
+          { text: 'IPLD Data Model & Merkle DAGs', link: '/02-core-concepts/ipld-foundations/ipld-data-model-and-merkle-dags' },
+          { text: 'CBOR & DAG-CBOR', link: '/02-core-concepts/ipld-foundations/cbor-and-dag-cbor' },
+          { text: 'CIDs & Multiformats', link: '/02-core-concepts/ipld-foundations/cids-and-multiformats' },
+          { text: 'CAR Files', link: '/02-core-concepts/ipld-foundations/car-files' },
+          { text: "ATProto's IPLD Profile", link: '/02-core-concepts/ipld-foundations/atproto-ipld-profile' }
+        ]
+      },
       { text: 'Deep Dive: Repository Data Structures', link: '/02-core-concepts/repository-data-structures-walkthrough' },
       { text: 'Deep Dive: Protocol Flow', link: '/02-core-concepts/protocol-flow-walkthrough' },
       { text: 'Deep Dive: Cryptography', link: '/02-core-concepts/cryptography-in-practice' },
