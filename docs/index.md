@@ -91,6 +91,7 @@ That is the right mental model for a production codebase.
 - [Architecture Overview](01-getting-started/architecture-overview)
 - [Tutorials Overview](10-tutorials/index)
 - [Objective-C Research Map](11-reference/objective-c-research-map)
+- [Objective-C Research Appendices](guides/objective-c-appendices/)
 - [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui)
 - [Testing Map](11-reference/testing-map)
 - [Troubleshooting](11-reference/troubleshooting)

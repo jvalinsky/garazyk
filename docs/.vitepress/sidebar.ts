@@ -200,6 +200,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Alerting', link: '/11-reference/alerting' },
       { text: 'Troubleshooting', link: '/11-reference/troubleshooting' },
       { text: 'Objective-C Research Map', link: '/11-reference/objective-c-research-map' },
+      { text: 'Objective-C Research Appendices', link: '/guides/objective-c-appendices/' },
       { text: 'Deep Dive: Troubleshooting a Failing Endpoint', link: '/11-reference/troubleshooting-a-failing-endpoint' }
     ]
   },
