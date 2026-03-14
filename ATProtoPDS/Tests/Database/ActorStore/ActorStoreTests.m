@@ -1,7 +1,14 @@
+#ifdef __APPLE__
 #import <XCTest/XCTest.h>
+#else
+#import "Compat/XCTest/XCTest.h"
+#endif
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Auth/CryptoUtils.h"
+#import "App/PDSConfiguration.h"
 #import <sqlite3.h>
+#import <CommonCrypto/CommonCrypto.h>
 
 @interface ActorStoreTests : XCTestCase
 
@@ -359,6 +366,102 @@
     // Verify blob is gone
     PDSDatabaseBlob *afterDelete = [self.store getBlobForCID:blob.cid error:&error];
     XCTAssertNil(afterDelete, @"Blob should not exist after deletion");
+}
+
+#pragma mark - Rotation Key CBC→GCM Migration Tests
+
+// Build a versioned CBC blob (0x01 || IV(16) || AES-CBC(plaintext))
+- (NSData *)makeCBCBlobForData:(NSData *)plaintext key:(NSData *)key {
+    uint8_t iv[16] = {
+        0xAA,0xBB,0xCC,0xDD,0xEE,0xFF,0x00,0x11,
+        0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99
+    };
+    size_t bufSize = plaintext.length + kCCBlockSizeAES128;
+    NSMutableData *ct = [NSMutableData dataWithLength:bufSize];
+    size_t moved = 0;
+    CCCryptorStatus st = CCCrypt(kCCEncrypt, kCCAlgorithmAES128, kCCOptionPKCS7Padding,
+                                 key.bytes, key.length, iv,
+                                 plaintext.bytes, plaintext.length,
+                                 ct.mutableBytes, bufSize, &moved);
+    if (st != kCCSuccess) return nil;
+    ct.length = moved;
+
+    NSMutableData *blob = [NSMutableData data];
+    uint8_t version = 0x01;
+    [blob appendBytes:&version length:1];
+    [blob appendBytes:iv length:16];
+    [blob appendData:ct];
+    return blob;
+}
+
+- (void)testRotationKeyMigratesCBCToGCM {
+    // Set up a master secret so rotationKeyDecryptedWithPassword: can find a key
+    NSString *testPassword = @"test-migration-secret-actor-store";
+    NSString *previousSecret = [PDSConfiguration sharedConfiguration].masterSecret;
+    [PDSConfiguration sharedConfiguration].masterSecret = testPassword;
+
+    // Generate a fake 32-byte private key
+    NSMutableData *fakePrivKey = [NSMutableData dataWithLength:32];
+    for (NSUInteger i = 0; i < 32; i++) {
+        uint8_t b = (uint8_t)(i + 1);
+        [fakePrivKey replaceBytesInRange:NSMakeRange(i, 1) withBytes:&b];
+    }
+
+    // Derive the encryption key exactly as the store does (PBKDF2 with a random salt)
+    NSData *salt = [CryptoUtils randomBytes:16];
+    NSData *encKey = [CryptoUtils deriveKeyFromPassword:testPassword salt:salt];
+    XCTAssertNotNil(encKey);
+
+    // Build a versioned CBC encrypted_private_key blob
+    NSData *cbcBlob = [self makeCBCBlobForData:fakePrivKey key:encKey];
+    XCTAssertNotNil(cbcBlob);
+
+    // Insert the CBC blob directly into the rotation_keys table via raw SQLite
+    sqlite3 *db;
+    NSString *dbPath = self.store.dbPath;
+    XCTAssertEqual(sqlite3_open(dbPath.UTF8String, &db), SQLITE_OK);
+
+    const char *insertSQL =
+        "INSERT OR REPLACE INTO rotation_keys "
+        "(did, encrypted_private_key, public_key_compressed, encryption_salt, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)";
+    sqlite3_stmt *stmt;
+    XCTAssertEqual(sqlite3_prepare_v2(db, insertSQL, -1, &stmt, NULL), SQLITE_OK);
+    sqlite3_bind_text(stmt, 1, self.testDID.UTF8String, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 2, cbcBlob.bytes, (int)cbcBlob.length, SQLITE_TRANSIENT);
+    NSData *fakePubKey = [NSData dataWithLength:33]; // compressed secp256k1 public key placeholder
+    sqlite3_bind_blob(stmt, 3, fakePubKey.bytes, (int)fakePubKey.length, SQLITE_TRANSIENT);
+    sqlite3_bind_blob(stmt, 4, salt.bytes, (int)salt.length, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 5, [[NSDate date] timeIntervalSince1970]);
+    sqlite3_bind_double(stmt, 6, [[NSDate date] timeIntervalSince1970]);
+    XCTAssertEqual(sqlite3_step(stmt), SQLITE_DONE);
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    // Now call rotationKeyDecryptedWithPassword: — it must decrypt and migrate to GCM
+    NSError *error = nil;
+    NSData *recovered = [self.store rotationKeyDecryptedWithPassword:testPassword error:&error];
+    XCTAssertNotNil(recovered, @"Rotation key must be decrypted: %@", error);
+    XCTAssertEqualObjects(recovered, fakePrivKey, @"Decrypted key must match original");
+
+    // Verify the stored blob has been updated to GCM (version byte 0x02)
+    sqlite3_open(dbPath.UTF8String, &db);
+    const char *selectSQL = "SELECT encrypted_private_key FROM rotation_keys WHERE did = ?";
+    sqlite3_prepare_v2(db, selectSQL, -1, &stmt, NULL);
+    sqlite3_bind_text(stmt, 1, self.testDID.UTF8String, -1, SQLITE_TRANSIENT);
+    XCTAssertEqual(sqlite3_step(stmt), SQLITE_ROW);
+    const void *updatedBytes = sqlite3_column_blob(stmt, 0);
+    int updatedLen = sqlite3_column_bytes(stmt, 0);
+    NSData *updatedBlob = [NSData dataWithBytes:updatedBytes length:updatedLen];
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    XCTAssertGreaterThan(updatedBlob.length, (NSUInteger)0);
+    const uint8_t *vp = (const uint8_t *)updatedBlob.bytes;
+    XCTAssertEqual(vp[0], (uint8_t)0x02,
+                   @"Migrated rotation key blob must start with GCM version byte 0x02");
+
+    [PDSConfiguration sharedConfiguration].masterSecret = previousSecret;
 }
 
 @end

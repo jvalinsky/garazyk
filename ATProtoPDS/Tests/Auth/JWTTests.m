@@ -342,4 +342,106 @@
     XCTAssertEqualObjects(decodedString, @"ab");
 }
 
+#pragma mark - Audience Validation (RFC 7519 §4.1.3) Tests
+
+- (void)testJWTVerificationRejectsMissingAudience {
+    // Token has no 'aud' claim; verifier expects an audience — must be rejected.
+    NSError *error = nil;
+    NSDictionary *payloadDict = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        // deliberately no 'aud'
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payloadDict error:&error];
+    XCTAssertNotNil(token);
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+
+    self.verifier.expectedAudience = @"test.audience";
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertFalse(verified, @"Missing aud must be rejected when expectedAudience is set");
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.domain, JWTErrorDomain);
+}
+
+- (void)testJWTVerificationAllowsMissingAudienceWhenNotRequired {
+    // Token has no 'aud' claim; verifier has no expectedAudience — must succeed.
+    NSError *error = nil;
+    NSDictionary *payloadDict = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"exp": @([[[NSDate date] dateByAddingTimeInterval:3600] timeIntervalSince1970]),
+        @"iat": @([[NSDate date] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payloadDict error:&error];
+    XCTAssertNotNil(token);
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    XCTAssertNotNil(jwt);
+
+    self.verifier.expectedAudience = nil;
+    BOOL verified = [self.verifier verifyJWT:jwt error:&error];
+    XCTAssertTrue(verified, @"Missing aud is acceptable when expectedAudience is nil");
+}
+
+- (void)testMintAccessTokenProducesThreePartJWT {
+    NSError *error = nil;
+    JWT *token = [self.minter mintAccessTokenForDID:@"did:plc:abc123"
+                                             handle:@"alice.test"
+                                             scopes:@[@"atproto"]
+                                               error:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+    NSString *encoded = [token encodedToken];
+    XCTAssertNotNil(encoded);
+    NSArray<NSString *> *parts = [encoded componentsSeparatedByString:@"."];
+    XCTAssertEqual(parts.count, (NSUInteger)3, @"JWT must have exactly 3 dot-separated parts");
+}
+
+- (void)testMintRefreshTokenProducesThreePartJWT {
+    NSError *error = nil;
+    JWT *token = [self.minter mintRefreshTokenForDID:@"did:plc:abc123"
+                                              handle:@"alice.test"
+                                              scopes:@[@"atproto"]
+                                                error:&error];
+    XCTAssertNotNil(token);
+    XCTAssertNil(error);
+    NSString *encoded = [token encodedToken];
+    NSArray<NSString *> *parts = [encoded componentsSeparatedByString:@"."];
+    XCTAssertEqual(parts.count, (NSUInteger)3);
+}
+
+- (void)testClockOffsetShiftsValidation {
+    // Mint a token that is "expired" in real time.
+    NSError *error = nil;
+    NSDictionary *payloadDict = @{
+        @"sub": @"test-user",
+        @"iss": @"test.issuer",
+        @"aud": @"test.audience",
+        // Expired 30 minutes ago
+        @"exp": @([[NSDate dateWithTimeIntervalSinceNow:-1800] timeIntervalSince1970]),
+        @"iat": @([[NSDate dateWithTimeIntervalSinceNow:-3600] timeIntervalSince1970])
+    };
+    NSString *token = [self.minter signPayload:payloadDict error:&error];
+    JWT *jwt = [JWT jwtWithToken:token error:nil];
+
+    // Without clockOffset, the token should be expired.
+    JWTVerifier *strictVerifier = [[JWTVerifier alloc] init];
+    strictVerifier.expectedIssuer   = @"test.issuer";
+    strictVerifier.expectedAudience = @"test.audience";
+    strictVerifier.publicKey = self.verifier.publicKey;
+    BOOL expiredResult = [strictVerifier verifyJWT:jwt error:nil];
+    XCTAssertFalse(expiredResult, @"Expired token must fail without clockOffset");
+
+    // With clockOffset set to 1 hour in the past, the token appears valid.
+    JWTVerifier *offsetVerifier = [[JWTVerifier alloc] init];
+    offsetVerifier.expectedIssuer   = @"test.issuer";
+    offsetVerifier.expectedAudience = @"test.audience";
+    offsetVerifier.publicKey = self.verifier.publicKey;
+    offsetVerifier.clockOffset = [NSDate dateWithTimeIntervalSinceNow:-3600];
+    BOOL offsetResult = [offsetVerifier verifyJWT:jwt error:nil];
+    XCTAssertTrue(offsetResult, @"Token should verify when clockOffset places 'now' before expiry");
+}
+
 @end

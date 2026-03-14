@@ -311,4 +311,42 @@
     [self.database executeParameterizedUpdate:insert params:@[uri, did, @"app.bsky.feed.post", rkey, cid, [[NSString alloc] initWithData:recordData encoding:NSUTF8StringEncoding]] error:&error];
 }
 
+#pragma mark - generateCIDForRecord: Tests
+
+- (void)testGenerateCIDForRecordProducesBafkreiPrefix {
+    NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": @"hello"};
+    NSString *cid = [self.service generateCIDForRecord:record];
+    XCTAssertNotNil(cid);
+    XCTAssertTrue([cid hasPrefix:@"bafkrei"], @"CID must start with 'bafkrei', got: %@", cid);
+}
+
+- (void)testGenerateCIDForRecordIsDeterministic {
+    NSDictionary *record = @{@"key": @"value", @"number": @42};
+    NSString *cid1 = [self.service generateCIDForRecord:record];
+    NSString *cid2 = [self.service generateCIDForRecord:record];
+    XCTAssertEqualObjects(cid1, cid2, @"Same input must produce same CID");
+}
+
+- (void)testGenerateCIDForRecordDifferentInputsDifferentCIDs {
+    NSDictionary *record1 = @{@"text": @"post one"};
+    NSDictionary *record2 = @{@"text": @"post two"};
+    NSString *cid1 = [self.service generateCIDForRecord:record1];
+    NSString *cid2 = [self.service generateCIDForRecord:record2];
+    XCTAssertNotEqualObjects(cid1, cid2, @"Different inputs must produce different CIDs");
+}
+
+- (void)testGenerateCIDForRecordHasExpectedLength {
+    // The implementation produces "bafkrei" (7 chars) + 52 chars from the hex hash = 59 chars
+    NSDictionary *record = @{@"$type": @"app.bsky.feed.post", @"text": @"length check"};
+    NSString *cid = [self.service generateCIDForRecord:record];
+    XCTAssertEqual(cid.length, (NSUInteger)59, @"CID must be 59 characters, got: %lu", (unsigned long)cid.length);
+}
+
+- (void)testGenerateCIDForEmptyRecordDoesNotCrash {
+    NSDictionary *emptyRecord = @{};
+    NSString *cid = [self.service generateCIDForRecord:emptyRecord];
+    XCTAssertNotNil(cid, @"generateCIDForRecord: must not crash on empty dict");
+    XCTAssertTrue([cid hasPrefix:@"bafkrei"]);
+}
+
 @end

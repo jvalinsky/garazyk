@@ -373,4 +373,54 @@
     XCTAssertEqualObjects(token.payload.handle, @"test.bsky.social");
 }
 
+#pragma mark - CID Extended Tests
+
+- (void)testCIDFromStringRoundTrip {
+    NSData *multihash = [CID sha256Digest:[@"round-trip test" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *original = [CID cidWithMultihash:multihash codec:0x71];
+    NSString *str = [original stringValue];
+    XCTAssertNotNil(str);
+
+    CID *parsed = [CID cidFromString:str];
+    XCTAssertNotNil(parsed, @"cidFromString: must parse a valid CID string");
+    XCTAssertEqualObjects(parsed.multihash, original.multihash,
+                          @"Round-trip must preserve multihash");
+    XCTAssertEqual(parsed.codec, original.codec);
+}
+
+- (void)testCIDFromInvalidStringReturnsNil {
+    XCTAssertNil([CID cidFromString:@"not-a-cid"]);
+    XCTAssertNil([CID cidFromString:@""]);
+}
+
+- (void)testCIDsForDifferentDataDiffer {
+    NSData *mh1 = [CID sha256Digest:[@"data one" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSData *mh2 = [CID sha256Digest:[@"data two" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *cid1 = [CID cidWithMultihash:mh1 codec:0x71];
+    CID *cid2 = [CID cidWithMultihash:mh2 codec:0x71];
+    XCTAssertNotEqualObjects([cid1 stringValue], [cid2 stringValue]);
+}
+
+#pragma mark - DID Extended Tests
+
+- (void)testDIDDocumentParsing {
+    NSDictionary *docDict = @{
+        @"id": @"did:plc:abc123",
+        @"alsoKnownAs": @[@"at://alice.test"],
+        @"service": @[@{
+            @"id": @"#atproto_pds",
+            @"type": @"AtprotoPersonalDataServer",
+            @"serviceEndpoint": @"https://pds.example.com"
+        }]
+    };
+    NSError *error = nil;
+    DIDDocument *doc = [DIDDocument documentWithJSON:docDict error:&error];
+    XCTAssertNotNil(doc, @"DIDDocument must parse from a valid dictionary: %@", error);
+    XCTAssertEqualObjects(doc.id, @"did:plc:abc123");
+}
+
+- (void)testDIDDocumentFromNilDictionaryReturnsNil {
+    XCTAssertNil([DIDDocument documentWithJSON:nil error:nil]);
+}
+
 @end
