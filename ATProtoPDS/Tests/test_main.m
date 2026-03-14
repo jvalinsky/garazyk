@@ -310,7 +310,9 @@ int main(int argc, char *argv[]) {
       @"PDSTOTPServiceTests",
       @"ATProtoBase32Tests",
       @"ATProtoValidatorTests",
-      @"PDSRepositoryFactoryTests"
+      @"PDSRepositoryFactoryTests",
+      @"XrpcAdminMethodsTests",
+      @"NSDataCompatTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

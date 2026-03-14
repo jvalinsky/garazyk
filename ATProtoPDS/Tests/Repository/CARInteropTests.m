@@ -285,4 +285,96 @@ static NSData *HexToNSData(NSString *hex) {
     }
 }
 
+// MARK: - Priority 4: Encode/decode tests
+
+- (void)testCAREncodeSingleBlock {
+    NSData *blockData = [@"hello car" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *blockCID = [CID sha256:blockData];
+    XCTAssertNotNil(blockCID);
+
+    CARWriter *writer = [CARWriter writerWithRootCID:blockCID];
+    CARBlock *block = [CARBlock blockWithCID:blockCID data:blockData];
+    [writer addBlock:block];
+    NSData *serialized = [writer serialize];
+    XCTAssertNotNil(serialized);
+    XCTAssertGreaterThan(serialized.length, 0U);
+
+    NSError *error = nil;
+    CARReader *reader = [CARReader readFromData:serialized error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(reader);
+    XCTAssertEqual(reader.blocks.count, 1U);
+    CARBlock *readBlock = [reader blockWithCID:blockCID];
+    XCTAssertNotNil(readBlock);
+    XCTAssertEqualObjects(readBlock.data, blockData);
+}
+
+- (void)testCAREncodeMultipleBlocks {
+    NSArray<NSData *> *payloads = @[
+        [@"block one" dataUsingEncoding:NSUTF8StringEncoding],
+        [@"block two" dataUsingEncoding:NSUTF8StringEncoding],
+        [@"block three" dataUsingEncoding:NSUTF8StringEncoding],
+    ];
+
+    CID *rootCID = [CID sha256:payloads[0]];
+    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    NSMutableArray<CID *> *cids = [NSMutableArray array];
+    for (NSData *data in payloads) {
+        CID *cid = [CID sha256:data];
+        [cids addObject:cid];
+        [writer addBlock:[CARBlock blockWithCID:cid data:data]];
+    }
+    NSData *serialized = [writer serialize];
+
+    NSError *error = nil;
+    CARReader *reader = [CARReader readFromData:serialized error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(reader);
+    XCTAssertEqual(reader.blocks.count, payloads.count);
+    for (NSUInteger i = 0; i < payloads.count; i++) {
+        CARBlock *b = [reader blockWithCID:cids[i]];
+        XCTAssertNotNil(b, @"Block %lu should be present", (unsigned long)i);
+        XCTAssertEqualObjects(b.data, payloads[i]);
+    }
+}
+
+- (void)testCARRootCIDPreserved {
+    NSData *rootData = [@"root block" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *rootCID = [CID sha256:rootData];
+    CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
+    [writer addBlock:[CARBlock blockWithCID:rootCID data:rootData]];
+    NSData *serialized = [writer serialize];
+
+    NSError *error = nil;
+    CARReader *reader = [CARReader readFromData:serialized error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(reader);
+    // Root CID round-trips: the block whose CID matches rootCID must be present.
+    CARBlock *rootBlock = [reader blockWithCID:rootCID];
+    XCTAssertNotNil(rootBlock, @"Root CID block must be present after round-trip");
+    XCTAssertEqualObjects(rootBlock.data, rootData);
+}
+
+- (void)testCARRejectsTruncated {
+    // Build a valid CAR then chop off the last few bytes.
+    NSData *blockData = [@"truncation test" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *cid = [CID sha256:blockData];
+    CARWriter *writer = [CARWriter writerWithRootCID:cid];
+    [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
+    NSData *full = [writer serialize];
+    XCTAssertGreaterThan(full.length, 8U);
+
+    NSData *truncated = [full subdataWithRange:NSMakeRange(0, full.length - 8)];
+    NSError *error = nil;
+    CARReader *reader = [CARReader readFromData:truncated error:&error];
+    // Either reading fails (reader nil with error) or produces no blocks.
+    if (reader != nil) {
+        // Graceful degradation: no complete blocks decoded from truncated data.
+        CARBlock *block = [reader blockWithCID:cid];
+        XCTAssertNil(block, @"Truncated CAR should not yield a complete block");
+    } else {
+        XCTAssertNotNil(error, @"Truncated CAR should produce an error");
+    }
+}
+
 @end

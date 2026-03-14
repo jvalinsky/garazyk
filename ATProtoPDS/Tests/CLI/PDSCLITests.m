@@ -94,4 +94,30 @@
     XCTAssertEqualObjects(dispatcher1, dispatcher2);
 }
 
+// MARK: - Priority 7: remaining command smoke tests
+
+- (void)testAdminCommandExists {
+    id cmd = [self.dispatcher commandForName:@"admin"];
+    XCTAssertNotNil(cmd, @"Admin command should be registered");
+    XCTAssertTrue([cmd conformsToProtocol:@protocol(PDSCLICommand)]);
+}
+
+- (void)testDaemonCommandExists {
+    id cmd = [self.dispatcher commandForName:@"daemon"];
+    XCTAssertNotNil(cmd, @"Daemon command should be registered");
+    XCTAssertTrue([cmd conformsToProtocol:@protocol(PDSCLICommand)]);
+}
+
+- (void)testInitCommandExists {
+    id cmd = [self.dispatcher commandForName:@"init"];
+    XCTAssertNotNil(cmd, @"Init command should be registered");
+    XCTAssertTrue([cmd conformsToProtocol:@protocol(PDSCLICommand)]);
+}
+
+- (void)testOAuthCommandExists {
+    id cmd = [self.dispatcher commandForName:@"oauth"];
+    XCTAssertNotNil(cmd, @"OAuth command should be registered");
+    XCTAssertTrue([cmd conformsToProtocol:@protocol(PDSCLICommand)]);
+}
+
 @end
