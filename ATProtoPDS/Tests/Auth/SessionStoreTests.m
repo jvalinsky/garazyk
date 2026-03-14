@@ -351,4 +351,50 @@
     [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
 }
 
+- (void)testSessionRoundTrip {
+    // Create a session, retrieve it by access token, verify identity fields.
+    NSError *error = nil;
+    Session *session = [self.store createSessionForDID:@"did:plc:roundtrip"
+                                                handle:@"roundtrip.test"
+                                                 scope:@"atproto"
+                                               dpopJWK:nil
+                                                 error:&error];
+    XCTAssertNotNil(session, @"createSession must succeed: %@", error);
+    XCTAssertNil(error);
+
+    Session *fetched = [self.store getSessionByAccessToken:session.accessToken error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(fetched, @"Session must be retrievable by access token");
+    XCTAssertEqualObjects(fetched.did, @"did:plc:roundtrip");
+    XCTAssertEqualObjects(fetched.handle, @"roundtrip.test");
+    XCTAssertEqualObjects(fetched.scope, @"atproto");
+}
+
+- (void)testExpiredSessionIsRejected {
+    // Configure a very short access token lifetime so it expires immediately.
+    self.store.accessTokenLifetime = -1.0; // expired in the past
+    NSError *error = nil;
+    Session *session = [self.store createSessionForDID:@"did:plc:expired"
+                                                handle:@"expired.test"
+                                                 scope:@"atproto"
+                                               dpopJWK:nil
+                                                 error:&error];
+    // Session creation itself may succeed (we just store it).
+    if (session == nil) {
+        // Some implementations refuse to create expired sessions — acceptable.
+        return;
+    }
+
+    // The session's access token should be expired.
+    XCTAssertTrue([session.accessToken length] > 0);
+    // Verify the token using the verifier with no clock skew — must be rejected.
+    JWT *jwt = [JWT jwtWithToken:session.accessToken error:nil];
+    if (jwt) {
+        BOOL valid = [self.verifier verifyToken:session.accessToken error:&error];
+        XCTAssertFalse(valid, @"An expired token must fail verification");
+    }
+    // Restore the lifetime for subsequent tests.
+    self.store.accessTokenLifetime = 3600;
+}
+
 @end
