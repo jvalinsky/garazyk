@@ -306,7 +306,11 @@ int main(int argc, char *argv[]) {
       @"PDSNonceManagerTests",
       @"PDSKeyManagerFactoryTests",
       @"AuthVerifierTests",
-      @"RecordLifecycleTests"
+      @"RecordLifecycleTests",
+      @"PDSTOTPServiceTests",
+      @"ATProtoBase32Tests",
+      @"ATProtoValidatorTests",
+      @"PDSRepositoryFactoryTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

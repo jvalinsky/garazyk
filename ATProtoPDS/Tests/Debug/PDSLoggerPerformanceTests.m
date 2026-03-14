@@ -82,4 +82,53 @@
 }
 #endif
 
+- (void)testLoggerDoesNotCrashOnNilMessageFormat {
+    // Logging a nil-safe format string must not crash.
+    PDSLogger *logger = [PDSLogger sharedLogger];
+    logger.printToStdout = NO;
+    XCTAssertNoThrow([logger logWithLevel:PDSLogLevelInfo
+                                     file:__FILE__
+                                     line:__LINE__
+                                   format:@"%@", nil]);
+}
+
+- (void)testLogLevelFilteringDropsBelowThreshold {
+    PDSLogger *logger = [PDSLogger sharedLogger];
+    logger.logLevel = PDSLogLevelError;
+    logger.printToStdout = NO;
+    logger.logFilePath = nil;
+
+    // These should be silently dropped — must not crash.
+    XCTAssertNoThrow([logger logWithLevel:PDSLogLevelDebug
+                                     file:__FILE__
+                                     line:__LINE__
+                                   format:@"debug: should be filtered"]);
+    XCTAssertNoThrow([logger logWithLevel:PDSLogLevelInfo
+                                     file:__FILE__
+                                     line:__LINE__
+                                   format:@"info: should be filtered"]);
+}
+
+- (void)testLogLevelFilteringAcceptsAtOrAboveThreshold {
+    PDSLogger *logger = [PDSLogger sharedLogger];
+    logger.logLevel = PDSLogLevelWarn;
+    logger.printToStdout = NO;
+    logger.logFilePath = nil;
+
+    XCTAssertNoThrow([logger logWithLevel:PDSLogLevelWarn
+                                     file:__FILE__
+                                     line:__LINE__
+                                   format:@"warn: should be logged"]);
+    XCTAssertNoThrow([logger logWithLevel:PDSLogLevelError
+                                     file:__FILE__
+                                     line:__LINE__
+                                   format:@"error: should be logged"]);
+}
+
+- (void)testSharedLoggerIsSingleton {
+    PDSLogger *a = [PDSLogger sharedLogger];
+    PDSLogger *b = [PDSLogger sharedLogger];
+    XCTAssertEqual(a, b, @"sharedLogger must return the same instance");
+}
+
 @end
