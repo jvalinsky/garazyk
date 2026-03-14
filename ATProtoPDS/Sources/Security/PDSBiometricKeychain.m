@@ -5,7 +5,7 @@
 
 NSString * const PDSBiometricKeychainErrorDomain = @"com.september.biometric.keychain";
 
-static NSString * const kKeyType = @"september.signing.key";
+static NSString * const kKeyLabel = @"september.signing.key";
 
 @interface PDSBiometricKeychain ()
 @property (nonatomic, copy, readwrite) NSString *serviceName;
@@ -50,28 +50,36 @@ static NSString * const kKeyType = @"september.signing.key";
         return NO;
     }
 
-    NSMutableDictionary *query = [self baseQueryForAccount:account];
-    query[(__bridge id)kSecValueData] = keyData;
-    query[(__bridge id)kSecAttrAccessible] = [self accessibilityValue];
+    NSMutableDictionary *addQuery = [self baseQueryForAccount:account];
+    addQuery[(__bridge id)kSecValueData] = keyData;
 
     if (self.useBiometrics) {
+        // kSecAttrAccessControl encodes the accessibility protection — do not
+        // also set kSecAttrAccessible, which would conflict.
         SecAccessControlRef accessControl = [self createAccessControlWithError:error];
         if (!accessControl) {
             return NO;
         }
-        query[(__bridge id)kSecAttrAccessControl] = (__bridge id)accessControl;
-        CFRelease(accessControl);
+        addQuery[(__bridge id)kSecAttrAccessControl] = (__bridge_transfer id)accessControl;
+    } else {
+        addQuery[(__bridge id)kSecAttrAccessible] = (__bridge id)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly;
     }
 
     if (self.accessGroup) {
-        query[(__bridge id)kSecAttrAccessGroup] = self.accessGroup;
+        addQuery[(__bridge id)kSecAttrAccessGroup] = self.accessGroup;
     }
 
-    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)addQuery, NULL);
 
     if (status == errSecDuplicateItem) {
-        SecItemDelete((__bridge CFDictionaryRef)query);
-        status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+        // Use SecItemUpdate (atomic) rather than delete + re-add (racy).
+        NSMutableDictionary *searchQuery = [self baseQueryForAccount:account];
+        if (self.accessGroup) {
+            searchQuery[(__bridge id)kSecAttrAccessGroup] = self.accessGroup;
+        }
+        NSDictionary *updateAttrs = @{ (__bridge id)kSecValueData: keyData };
+        status = SecItemUpdate((__bridge CFDictionaryRef)searchQuery,
+                               (__bridge CFDictionaryRef)updateAttrs);
     }
 
     if (status != errSecSuccess) {
@@ -133,6 +141,8 @@ static NSString * const kKeyType = @"september.signing.key";
 - (BOOL)keyExistsForAccount:(NSString *)account {
     NSMutableDictionary *query = [self baseQueryForAccount:account];
     query[(__bridge id)kSecReturnData] = @NO;
+    // Skip biometric UI — we only want to know if the item exists.
+    query[(__bridge id)kSecUseAuthenticationUI] = (__bridge id)kSecUseAuthenticationUISkip;
 
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, NULL);
     return status == errSecSuccess;
@@ -143,12 +153,15 @@ static NSString * const kKeyType = @"september.signing.key";
     context.localizedCancelTitle = @"Cancel";
     context.localizedFallbackTitle = @"Use Passcode";
 
-    if (@available(macOS 12.0, *)) {
-        if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil]) {
-            return context;
-        }
+    // LAPolicyDeviceOwnerAuthenticationWithBiometrics is available since macOS 10.12.
+    // The deployment target is macOS 14+, so no availability guard is needed.
+    NSError *evalError = nil;
+    if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                             error:&evalError]) {
+        return context;
     }
 
+    // Fall back to passcode if biometrics are unavailable.
     if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:nil]) {
         return context;
     }
@@ -173,6 +186,13 @@ static NSString * const kKeyType = @"september.signing.key";
 
         NSMutableDictionary *oldQuery = [self baseQueryForAccount:account];
         oldQuery[(__bridge id)kSecReturnData] = @YES;
+        if (self.useBiometrics) {
+            NSError *ctxError = nil;
+            LAContext *ctx = [self createAuthenticationContextWithError:&ctxError];
+            if (ctx) {
+                oldQuery[(__bridge id)kSecUseAuthenticationContext] = ctx;
+            }
+        }
 
         CFTypeRef result = NULL;
         OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)oldQuery, &result);
@@ -197,12 +217,8 @@ static NSString * const kKeyType = @"september.signing.key";
 - (BOOL)isBiometryAvailable {
     LAContext *context = [[LAContext alloc] init];
     NSError *error = nil;
-
-    if (@available(macOS 12.0, *)) {
-        return [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
-    }
-
-    return [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:&error];
+    return [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                                error:&error];
 }
 
 - (NSString *)biometryTypeString {
@@ -223,10 +239,12 @@ static NSString * const kKeyType = @"september.signing.key";
 
 - (NSMutableDictionary *)baseQueryForAccount:(NSString *)account {
     NSMutableDictionary *query = [NSMutableDictionary dictionary];
-    query[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
-    query[(__bridge id)kSecAttrService] = self.serviceName;
-    query[(__bridge id)kSecAttrAccount] = account;
-    query[(__bridge id)kSecAttrType] = kKeyType;
+    query[(__bridge id)kSecClass]        = (__bridge id)kSecClassGenericPassword;
+    query[(__bridge id)kSecAttrService]  = self.serviceName;
+    query[(__bridge id)kSecAttrAccount]  = account;
+    // kSecAttrLabel accepts an NSString and is used to tag / identify items.
+    // kSecAttrType expects a FourCharCode (CFNumberRef) and must not be an NSString.
+    query[(__bridge id)kSecAttrLabel]    = kKeyLabel;
     return query;
 }
 
@@ -238,19 +256,15 @@ static NSString * const kKeyType = @"september.signing.key";
 }
 
 - (SecAccessControlRef)createAccessControlWithError:(NSError **)error {
-    SecAccessControlCreateFlags flags;
-
-    if (@available(macOS 12.0, *)) {
-        flags = kSecAccessControlBiometryCurrentSet;
-    } else {
-        flags = kSecAccessControlBiometryAny;
-    }
-
+    // kSecAccessControlBiometryCurrentSet invalidates the key when enrolled
+    // biometrics change — available since macOS 10.13. The deployment target
+    // is macOS 14+, so no availability guard is needed.
     CFErrorRef cfError = NULL;
-    SecAccessControlRef accessControl = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
-                                                                         kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                                                                         flags,
-                                                                         &cfError);
+    SecAccessControlRef accessControl = SecAccessControlCreateWithFlags(
+        kCFAllocatorDefault,
+        kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        kSecAccessControlBiometryCurrentSet,
+        &cfError);
 
     if (cfError) {
         if (error) {

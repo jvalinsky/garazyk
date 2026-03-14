@@ -31,6 +31,12 @@
     self = [super init];
     if (self) {
         _connection = connection;
+        // Set a default queue before registering handlers so that state callbacks
+        // can fire immediately if the connection transitions before startWithQueue:
+        // is called by the owner.  startWithQueue: may reassign the queue; that is
+        // safe before nw_connection_start() is called.
+        nw_connection_set_queue(_connection,
+                                dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0));
         [self setupHandlers];
     }
     return self;

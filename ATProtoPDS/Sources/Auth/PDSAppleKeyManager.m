@@ -12,6 +12,7 @@
 
 #import "Auth/PDSAppleKeyManager.h"
 #import "Auth/JWT.h"
+#import "Auth/CryptoUtils.h"
 #import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
@@ -20,12 +21,6 @@
 
 NSString * const KeyManagerErrorDomain = @"com.atproto.pds.keymanager";
 
-static NSString *PDSBase64URLStringFromData(NSData *data) {
-    NSString *base64 = [data base64EncodedStringWithOptions:0];
-    NSString *base64url = [[base64 stringByReplacingOccurrencesOfString:@"+" withString:@"-"]
-        stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
-    return [base64url stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
-}
 
 @implementation PDSAppleKeyPair
 
@@ -59,45 +54,73 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     if (!publicKeyData) return nil;
 
     NSMutableDictionary *jwk = [NSMutableDictionary dictionary];
-    jwk[@"kty"] = @"RSA";
     jwk[@"kid"] = self.keyID;
-    jwk[@"alg"] = self.algorithm;
     jwk[@"use"] = @"sig";
+    jwk[@"alg"] = self.algorithm;
 
-    jwk[@"n"] = PDSBase64URLStringFromData(publicKeyData);
-    jwk[@"e"] = @"AQAB";
+    NSString *alg = self.algorithm ?: @"";
+    if ([alg hasPrefix:@"RS"]) {
+        // RSA: SecKeyCopyExternalRepresentation returns PKCS#1 DER (SEQUENCE { n INTEGER, e INTEGER }).
+        // The full modulus bytes form the JWK "n" parameter; exponent is almost always 65537 = AQAB.
+        jwk[@"kty"] = @"RSA";
+        jwk[@"n"]   = [CryptoUtils base64URLEncode:publicKeyData];
+        jwk[@"e"]   = @"AQAB";
+    } else {
+        // EC: SecKeyCopyExternalRepresentation returns an ANSI X9.63 uncompressed point:
+        // 0x04 || X (32 bytes) || Y (32 bytes) = 65 bytes total.
+        if (publicKeyData.length != 65 ||
+            ((const uint8_t *)publicKeyData.bytes)[0] != 0x04) {
+            return nil;
+        }
+        NSData *xData = [publicKeyData subdataWithRange:NSMakeRange(1,  32)];
+        NSData *yData = [publicKeyData subdataWithRange:NSMakeRange(33, 32)];
+        jwk[@"kty"] = @"EC";
+        jwk[@"crv"] = [alg isEqualToString:@"ES256K"] ? @"secp256k1" : @"P-256";
+        jwk[@"x"]   = [CryptoUtils base64URLEncode:xData];
+        jwk[@"y"]   = [CryptoUtils base64URLEncode:yData];
+    }
 
-    return jwk;
+    return [jwk copy];
 }
 
 - (nullable NSString *)publicKeyThumbprint {
-    NSDictionary *jwk = [self publicKeyJWK];
-    if (!jwk) return nil;
+    // RFC 7638: hash only the required members in lexicographic key order.
+    NSData *publicKeyData = [self exportPublicKeyData:self.publicKey];
+    if (!publicKeyData) return nil;
 
-    NSData *thumbprintData = [NSJSONSerialization dataWithJSONObject:jwk options:0 error:nil];
-    if (!thumbprintData) return nil;
+    NSString *canonical = nil;
+    NSString *alg = self.algorithm ?: @"";
 
-    NSData *hashData;
-    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(thumbprintData.bytes, (CC_LONG)thumbprintData.length, hash);
-    hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+    if ([alg hasPrefix:@"RS"]) {
+        // Required members for RSA (lex order): e, kty, n
+        NSString *nStr = [CryptoUtils base64URLEncode:publicKeyData];
+        canonical = [NSString stringWithFormat:@"{\"e\":\"AQAB\",\"kty\":\"RSA\",\"n\":\"%@\"}",
+                     nStr];
+    } else {
+        if (publicKeyData.length != 65 ||
+            ((const uint8_t *)publicKeyData.bytes)[0] != 0x04) {
+            return nil;
+        }
+        NSString *crv  = [alg isEqualToString:@"ES256K"] ? @"secp256k1" : @"P-256";
+        NSString *xStr = [CryptoUtils base64URLEncode:[publicKeyData subdataWithRange:NSMakeRange(1,  32)]];
+        NSString *yStr = [CryptoUtils base64URLEncode:[publicKeyData subdataWithRange:NSMakeRange(33, 32)]];
+        // Required members for EC (lex order): crv, kty, x, y
+        canonical = [NSString stringWithFormat:@"{\"crv\":\"%@\",\"kty\":\"EC\",\"x\":\"%@\",\"y\":\"%@\"}",
+                     crv, xStr, yStr];
+    }
 
-    return PDSBase64URLStringFromData(hashData);
+    NSData *canonicalData = [canonical dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *hash = [CryptoUtils sha256:canonicalData];
+    return [CryptoUtils base64URLEncode:hash];
 }
 
 - (nullable NSData *)exportPublicKeyData:(SecKeyRef)key {
-    NSDictionary *options = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic
-    };
-
-    CFErrorRef error = NULL;
-    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &error));
-    if (error) {
-        CFRelease(error);
+    CFErrorRef cfError = NULL;
+    NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &cfError));
+    if (cfError) {
+        CFRelease(cfError);
         return nil;
     }
-
     return keyData;
 }
 
@@ -234,13 +257,13 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     // Release cfError even on success path if populated (defensive)
     if (cfError) CFRelease(cfError);
 
-    CFErrorRef pubError = NULL;
     SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
-
-    if (pubError) {
+    if (!publicKey) {
         CFRelease(privateKey);
         if (error) {
-            *error = CFBridgingRelease(pubError);
+            *error = [NSError errorWithDomain:KeyManagerErrorDomain
+                                         code:KeyManagerErrorKeyGenerationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to derive public key from private key"}];
         }
         return nil;
     }
@@ -255,9 +278,8 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 
     dispatch_sync(self.accessQueue, ^{
         self.keyPairs[keyID] = keyPair;
+        self.currentKeyID = keyID;
     });
-
-    self.currentKeyID = keyID;
 
     // Save to database for persistence
     NSError *saveError = nil;
@@ -424,29 +446,21 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:error];
     if (!payloadData) return nil;
 
-    NSData *signatureData = [self signData:payloadData withKeyID:keyID error:error];
-    if (!signatureData) return nil;
-
-    NSMutableDictionary *header = [NSMutableDictionary dictionary];
-    header[@"alg"] = @"RS256";
-    header[@"typ"] = @"JWT";
-    header[@"kid"] = keyID;
-
-    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
+    NSDictionary *headerDict = @{ @"alg": @"RS256", @"typ": @"JWT", @"kid": keyID };
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:headerDict options:0 error:error];
     if (!headerData) return nil;
 
-    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
-    if (!headerEncoded) return nil;
+    NSString *headerB64  = [CryptoUtils base64URLEncode:headerData];
+    NSString *payloadB64 = [CryptoUtils base64URLEncode:payloadData];
+    // JWT signature covers base64url(header) || "." || base64url(payload)
+    NSString *signingInput = [NSString stringWithFormat:@"%@.%@", headerB64, payloadB64];
+    NSData *inputData = [signingInput dataUsingEncoding:NSUTF8StringEncoding];
 
-    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
-    if (!payloadEncoded) return nil;
+    NSData *signatureData = [self signData:inputData withKeyID:keyID error:error];
+    if (!signatureData) return nil;
 
-    NSString *signatureEncoded = [JWT base64URLEncodeData:signatureData error:error];
-    if (!signatureEncoded) return nil;
-
-    return @{
-        @"token": [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, signatureEncoded]
-    };
+    NSString *sigB64 = [CryptoUtils base64URLEncode:signatureData];
+    return @{ @"token": [NSString stringWithFormat:@"%@.%@", signingInput, sigB64] };
 }
 
 - (nullable NSString *)signString:(NSString *)string
@@ -540,10 +554,13 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
             }
             
             if (!privateKey && privateKeyData) {
-                // Import legacy RSA/EC key from data
+                // Import legacy key from data; use the stored algorithm to determine key type.
                 PDS_LOG_AUTH_WARN(@"Loading legacy private key from database for key ID: %@. Migration recommended.", keyID);
+                CFTypeRef privateKeyType = [algorithm hasPrefix:@"RS"]
+                    ? kSecAttrKeyTypeRSA
+                    : kSecAttrKeyTypeECSECPrimeRandom;
                 NSDictionary *privateKeyAttrs = @{
-                    (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA, // Default to RSA, but SecKeyCreateWithData handles it
+                    (__bridge id)kSecAttrKeyType:  (__bridge id)privateKeyType,
                     (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate
                 };
                 privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,

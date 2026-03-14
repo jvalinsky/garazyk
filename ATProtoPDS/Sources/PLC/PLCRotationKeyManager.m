@@ -90,6 +90,19 @@ static PLCRotationKeyManager *_sharedManager = nil;
                     }
                     return NO;
                 }
+                // Lazy CBC→GCM migration: if the stored blob is not GCM (version byte 0x02),
+                // re-encrypt with GCM and write back.
+                const uint8_t *versionPtr = (const uint8_t *)keyData.bytes;
+                if (keyData.length > 0 && versionPtr[0] != 0x02) {
+                    PDS_LOG_INFO(@"Migrating PLC rotation key from CBC to AES-256-GCM.");
+                    NSData *reencrypted = [CryptoUtils encryptData:privateKeyData withKey:encKey];
+                    if (reencrypted && [reencrypted writeToFile:keyPath atomically:YES]) {
+                        [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
+                        PDS_LOG_INFO(@"PLC rotation key migrated to AES-256-GCM.");
+                    } else {
+                        PDS_LOG_ERROR(@"Failed to write re-encrypted PLC rotation key.");
+                    }
+                }
             } else {
                 return NO; // Error already set by encryptionKeyWithError:
             }

@@ -13,21 +13,23 @@
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
     self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 480, 270) styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
-    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS starting up...");
-#else
-    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS starting up...");
 #endif
-    
+    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS starting up...");
+
     self.pdsController = [[PDSController alloc] init];
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
-#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
         PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
-#else
-        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
+#if TARGET_OS_OSX || defined(__APPLE__)
+        // Show a visible alert so the user knows the server did not start.
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText     = @"ATProto PDS Failed to Start";
+        alert.informativeText = error.localizedDescription ?: @"An unknown error occurred.";
+        alert.alertStyle      = NSAlertStyleCritical;
+        [alert runModal];
 #endif
     }
-    
+
 #if TARGET_OS_OSX || defined(__APPLE__)
     [self setupStatusBar];
 #endif
@@ -42,7 +44,9 @@
 - (void)setupStatusBar {
     self.statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSSquareStatusItemLength];
     self.statusItem.button.title = @"PDS";
-    self.statusItem.button.image = [NSImage imageNamed:NSImageNameNetwork];
+    // NSImageNameNetwork is deprecated since macOS 12; use SF Symbols instead.
+    self.statusItem.button.image = [NSImage imageWithSystemSymbolName:@"network"
+                                             accessibilityDescription:@"PDS Server"];
     
     NSMenu *menu = [[NSMenu alloc] init];
     [menu addItemWithTitle:@"Start Server" action:@selector(startServer:) keyEquivalent:@""];
@@ -57,11 +61,7 @@
 - (void)startServer:(id)sender {
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
-#if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
         PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
-#else
-        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
-#endif
     }
 }
 

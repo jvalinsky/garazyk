@@ -524,28 +524,28 @@
     NSError *error = nil;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:&error];
     if (jsonData) {
-        const unsigned char *hashBuffer = CC_SHA256(jsonData.bytes, (CC_LONG)jsonData.length, nil);
-        if (hashBuffer) {
-            NSMutableString *hashString = [NSMutableString stringWithCapacity:64];
-            for (int i = 0; i < 32; i++) {
-                [hashString appendFormat:@"%02x", hashBuffer[i]];
-            }
-            return [NSString stringWithFormat:@"bafkrei%@", [hashString substringToIndex:52]];
+        unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+        CC_SHA256(jsonData.bytes, (CC_LONG)jsonData.length, hash);
+        NSMutableString *hashString = [NSMutableString stringWithCapacity:64];
+        for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
+            [hashString appendFormat:@"%02x", hash[i]];
         }
+        return [NSString stringWithFormat:@"bafkrei%@", [hashString substringToIndex:52]];
     }
     return @"bafkreihodrdxxdzm63zmxy3xcfxqxgqn5jd4m";
 }
 
 - (NSString *)generateRkey {
-    const unsigned char *hashBuffer = CC_SHA256([[NSUUID UUID].UUIDString UTF8String], (CC_LONG)[[NSUUID UUID].UUIDString length], nil);
-    if (hashBuffer) {
-        NSMutableString *hashString = [NSMutableString stringWithCapacity:64];
-        for (int i = 0; i < 16; i++) {
-            [hashString appendFormat:@"%02x", hashBuffer[i]];
-        }
-        return hashString;
+    NSString *uuidStr = [NSUUID UUID].UUIDString;
+    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(uuidStr.UTF8String,
+              (CC_LONG)[uuidStr lengthOfBytesUsingEncoding:NSUTF8StringEncoding],
+              hash);
+    NSMutableString *hashString = [NSMutableString stringWithCapacity:32];
+    for (int i = 0; i < 16; i++) {
+        [hashString appendFormat:@"%02x", hash[i]];
     }
-    return [TID tid].stringValue;
+    return hashString;
 }
 
 @end

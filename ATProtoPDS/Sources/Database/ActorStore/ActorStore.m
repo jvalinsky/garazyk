@@ -1754,7 +1754,29 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         }
         return nil;
     }
-    
+
+    // Lazy CBC→GCM migration: if the stored blob is not GCM (version byte 0x02),
+    // re-encrypt with GCM and update the database row.
+    const uint8_t *versionPtr = (const uint8_t *)encryptedKey.bytes;
+    if (encryptedKey.length > 0 && versionPtr[0] != 0x02) {
+        PDS_LOG_DB_INFO(@"Migrating rotation key for %@ from CBC to AES-256-GCM.", self.did);
+        NSData *reencrypted = [self encryptData:privateKey withKey:decryptionKey];
+        if (reencrypted) {
+            NSString *updateSQL = @"UPDATE rotation_keys SET encrypted_private_key = ? WHERE did = ?";
+            NSError *updateError = nil;
+            PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *updateStmt = [self prepareStatement:updateSQL error:&updateError];
+            if (updateStmt) {
+                sqlite3_bind_blob(updateStmt, 1, reencrypted.bytes, (int)reencrypted.length, SQLITE_TRANSIENT);
+                sqlite3_bind_text(updateStmt, 2, self.did.UTF8String, -1, SQLITE_TRANSIENT);
+                if (sqlite3_step(updateStmt) == SQLITE_DONE) {
+                    PDS_LOG_DB_INFO(@"Rotation key for %@ migrated to AES-256-GCM.", self.did);
+                } else {
+                    PDS_LOG_DB_ERROR(@"Failed to update rotation key for %@ after GCM migration.", self.did);
+                }
+            }
+        }
+    }
+
     return privateKey;
 }
 
