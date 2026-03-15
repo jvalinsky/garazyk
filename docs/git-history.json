@@ -1,26 +1,18 @@
 [
   {
-    "hash": "dd8b7a0767503e1ae53743e0423b03fc88828192",
-    "short_hash": "dd8b7a0",
-    "author": "Security Bot",
-    "date": "2026-02-18T10:09:20-05:00",
-    "message": "feat(cli): better UX for september CLI — interactive prompts, init wizard, daemon command\n\n- PDSCLIInputHelper: TTY detection, masked password input (termios ECHO), confirmation and\n  choice prompts; non-TTY paths return defaults/early-exit cleanly for CI use\n\n- PDSCLIDaemonCommand: start/stop/restart/status with fork/setsid/execv, PID file, SIGTERM\n  with SIGKILL fallback, JSON status output; fix missing <unistd.h>/<fcntl.h> on macOS\n\n- PDSCLIInitCommand: interactive setup wizard that writes config.json; sequential step\n  counter in next-steps output (no duplicate step 2 when Resend is chosen)\n\n- PDSCLIAccountCommand: interactive prompts for email/handle/password when run in a TTY;\n  fix non-TTY branch accepting empty password when only --email/--handle are provided\n\n- PDSCLIInviteCommand: prompt for max-uses when flag omitted in interactive TTY\n- PDSCLINukeCommand: danger banner + confirmation prompt in TTY; usage-only in non-TTY\n- PDSCLIHealthCommand: add daemon PID check and HTTP reachability health checks\n- PDSCLIServeCommand: ensure --port CLI flag overrides value loaded from config file\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
-    "files_changed": 25
-  },
-  {
-    "hash": "f5f0fd5a305539e575cdd2403eaa784cdddc465b",
-    "short_hash": "f5f0fd5",
-    "author": "Security Bot",
-    "date": "2026-02-17T17:16:48-05:00",
-    "message": "feat(controller): integrate Resend email provider with secrets provider selection",
+    "hash": "0b4a91f3f5b0ab864fb77cbde522e842fcb3b1d8",
+    "short_hash": "0b4a91f",
+    "author": "Claude",
+    "date": "2026-03-15T06:09:05+00:00",
+    "message": "fix(auth): correct nullability annotation on refreshSession out-parameter\n\nThe `newSession` parameter is an out-parameter: callers pass the address\nof a Session pointer to receive the refreshed session. The pointer-to-\npointer itself must be non-null (you must pass a valid address), even\nthough the pointed-at value may be null on failure.\n\nChange annotation from `* _Nullable * _Nullable` to `* _Nullable * _Nonnull`\nto accurately reflect this contract and suppress erroneous static-analyzer\nwarnings when callers pass a stack-allocated pointer.\n\nCorresponds to security audit finding H-002.",
     "files_changed": 1
   },
   {
-    "hash": "61f44a675bd2ced0e3e365ed5165fdac9a3207b9",
-    "short_hash": "61f44a6",
-    "author": "Security Bot",
-    "date": "2026-01-17T23:41:35-05:00",
-    "message": "Fix DPoP proof generation with proper JWK and raw signature encoding\n\n- Extract public key coordinates (x, y) from EC private key for JWK header\n- Extract raw ECDSA signature (r||s) from DER-encoded signature before base64url encoding\n- Add extractRawSignatureFromDER: helper method for proper DER parsing\n- Remove debug logging added during investigation\n\nThis fixes OAuthIntegrationTests.testFullOAuthFlow which was failing with HTTP 400 due to invalid DPoP proof signatures.",
-    "files_changed": 2
+    "hash": "5d92240585fd7fe66b04f183912b16d070925adf",
+    "short_hash": "5d92240",
+    "author": "Claude",
+    "date": "2026-03-14T20:36:15+00:00",
+    "message": "test: add remaining Priority 3/4/6/7/8 coverage\n\nNew test files:\n- Network/XrpcAdminMethodsTests.m: XrpcAuthHelper nil/empty/malformed header\n  rejection, XrpcIdentityHelper nil-resolver graceful failure,\n  XrpcAdminMethods class availability\n- Compat/NSDataCompatTests.m: Base64 encode/decode round-trip, binary data,\n  empty data, constant-time comparison, dataWithContentsOfFile:options:error:\n\nExtended test files:\n- Repository/CARInteropTests.m: testCAREncodeSingleBlock, testCAREncodeMultipleBlocks,\n  testCARRootCIDPreserved, testCARRejectsTruncated (Priority 4)\n- Network/PDSNetworkTransportTests.m: testInitWithConnectionSetsDefaultQueue,\n  testConnectionStateChangeHandlerIsRegistered (Priority 3)\n- CLI/PDSCLITests.m: testAdminCommandExists, testDaemonCommandExists,\n  testInitCommandExists, testOAuthCommandExists (Priority 7)\n- CLI/PDSCLIServiceStubTests.m: PDSCLIInputHelper non-interactive mode,\n  default values, confirmation, choice; PDSCLIAccountManager path/host/endpoint\n  accessors (Priority 7)\n- Tests/test_main.m: register XrpcAdminMethodsTests, NSDataCompatTests\n\nhttps://claude.ai/code/session_01HtxoDupDwqPq97xJPrk7QY",
+    "files_changed": 7
   }
 ]
