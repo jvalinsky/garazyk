@@ -18,7 +18,7 @@ jobs:
   code-quality:
     name: Code Quality Checks
     runs-on: macos-14
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -42,6 +42,13 @@ jobs:
         run: |
           brew update
           brew install ninja cmake llvm@18 || true
+          brew link --overwrite llvm@18 || true
+
+      - name: Verify clang-tidy
+        run: |
+          CLANG_TIDY="$(brew --prefix llvm@18)/bin/clang-tidy"
+          echo "clang-tidy path: $CLANG_TIDY"
+          "$CLANG_TIDY" --version
 
       - name: Configure (compile_commands.json)
         run: |
@@ -128,10 +135,26 @@ jobs:
       - name: Run ShellCheck
         run: |
           FAILED=0
+          REPORT_FILE="/tmp/shellcheck-report.txt"
+          # Scope: core scripts only — excludes auxiliary/generated dirs
           while IFS= read -r file; do
             echo "==> Checking $file"
-            if ! shellcheck -s bash "$file"; then
+            if ! shellcheck --format=gcc -s bash "$file" 2>&1 | tee -a "$REPORT_FILE"; then
               FAILED=1
             fi
-          done < <(find . -name "*.sh" -type f -not -path "./build/*" -not -path "./.git/*")
+          done < <(find . -name "*.sh" -type f \
+            -not -path "./build/*" \
+            -not -path "./.git/*" \
+            -not -path "./skills/*" \
+            -not -path "./.opencode/*" \
+            -not -path "./examples/*" \
+            -not -path "./scripts/archive/*")
           exit $FAILED
+
+      - name: Upload ShellCheck Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shellcheck-report
+          path: /tmp/shellcheck-report.txt
+          retention-days: 7

@@ -112,7 +112,14 @@ jobs:
       - name: Install Build Dependencies
         run: |
           brew update
-          brew install ninja cmake clang-tools-extra
+          brew install ninja cmake llvm@18 || true
+          brew link --overwrite llvm@18 || true
+
+      - name: Verify clang-tidy
+        run: |
+          CLANG_TIDY="$(brew --prefix llvm@18)/bin/clang-tidy"
+          echo "clang-tidy path: $CLANG_TIDY"
+          "$CLANG_TIDY" --version
 
       - name: Configure (CMake)
         run: |
@@ -123,15 +130,12 @@ jobs:
 
       - name: Run Clang-Tidy
         run: |
+          CLANG_TIDY="$(brew --prefix llvm@18)/bin/clang-tidy"
           cd build
           cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
           cd ..
-          # Run clang-tidy on key files that were modified
-          if [ -n "${{ github.changes}}" ]; then
-            echo "Changed files detected"
-          fi
           # Run on all Objective-C sources
-          find ATProtoPDS/Sources -name "*.m" -exec clang-tidy -p build {} \; 2>&1 | tee clang-tidy-report.txt || true
+          find ATProtoPDS/Sources -name "*.m" -exec "$CLANG_TIDY" -p build {} \; 2>&1 | tee clang-tidy-report.txt || true
         continue-on-error: true
 
       - name: Upload Clang-Tidy Report
