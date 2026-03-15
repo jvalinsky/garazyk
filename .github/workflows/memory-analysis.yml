@@ -120,6 +120,7 @@ jobs:
           CLANG_TIDY="$(brew --prefix llvm@18)/bin/clang-tidy"
           echo "clang-tidy path: $CLANG_TIDY"
           "$CLANG_TIDY" --version
+        continue-on-error: true
 
       - name: Configure (CMake)
         run: |

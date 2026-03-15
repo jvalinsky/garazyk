@@ -72,30 +72,28 @@ for md_file in $MARKDOWN_FILES; do
     
     base_dir=$(dirname "$md_file")
     
-    # Extract markdown links: [text](url)
-    while IFS= read -r line; do
-        # Extract all markdown links from the line
-        echo "$line" | grep -oE '\[([^\]]+)\]\(([^)]+)\)' | while read -r match; do
-            # Extract URL from [text](url)
-            url=$(echo "$match" | sed -E 's/\[([^\]]+)\]\(([^)]+)\)/\2/')
-            
-            TOTAL_LINKS=$((TOTAL_LINKS + 1))
-            
-            # Skip external links
-            if is_external_link "$url"; then
-                EXTERNAL_LINKS=$((EXTERNAL_LINKS + 1))
-                continue
-            fi
-            
-            # Check if internal link exists
-            if ! resolve_path "$base_dir" "$url"; then
-                echo -e "${RED}✗ Broken link in $md_file${NC}"
-                echo "  Link: $url"
-                BROKEN_LINKS=$((BROKEN_LINKS + 1))
-                EXIT_CODE=1
-            fi
-        done
-    done < "$md_file"
+    # Extract all markdown links from the file using process substitution to
+    # keep variables in the current shell and avoid pipefail on grep no-match
+    while IFS= read -r match; do
+        # Extract URL from [text](url)
+        url=$(echo "$match" | sed -E 's/\[([^\]]+)\]\(([^)]+)\)/\2/')
+
+        TOTAL_LINKS=$((TOTAL_LINKS + 1))
+
+        # Skip external links
+        if is_external_link "$url"; then
+            EXTERNAL_LINKS=$((EXTERNAL_LINKS + 1))
+            continue
+        fi
+
+        # Check if internal link exists
+        if ! resolve_path "$base_dir" "$url"; then
+            echo -e "${RED}✗ Broken link in $md_file${NC}"
+            echo "  Link: $url"
+            BROKEN_LINKS=$((BROKEN_LINKS + 1))
+            EXIT_CODE=1
+        fi
+    done < <(grep -oE '\[([^\]]+)\]\(([^)]+)\)' "$md_file" || true)
 done
 
 # Summary
