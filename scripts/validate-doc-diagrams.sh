@@ -117,27 +117,27 @@ for md_file in $MARKDOWN_FILES; do
         continue
     fi
     
-    # Find SVG references
-    while IFS= read -r line; do
-        # Look for .svg references
-        echo "$line" | grep -oE '[^[:space:]()]+\.svg' | while read -r svg_ref; do
-            # Resolve path relative to markdown file
-            base_dir=$(dirname "$md_file")
-            svg_path="$base_dir/$svg_ref"
-            
-            # Check if file exists
+    # Find SVG references in this markdown file
+    # Use process substitution (not a pipe) so variable changes in the while body
+    # are visible in the parent shell, and `|| true` prevents grep exit-1 from
+    # aborting via pipefail when no .svg references exist in the file.
+    while IFS= read -r svg_ref; do
+        # Resolve path relative to markdown file
+        base_dir=$(dirname "$md_file")
+        svg_path="$base_dir/$svg_ref"
+
+        # Check if file exists
+        if [ ! -f "$svg_path" ]; then
+            # Try relative to docs root
+            svg_path="$DOCS_DIR/$svg_ref"
             if [ ! -f "$svg_path" ]; then
-                # Try relative to docs root
-                svg_path="$DOCS_DIR/$svg_ref"
-                if [ ! -f "$svg_path" ]; then
-                    echo -e "${RED}✗ Broken SVG reference in $md_file${NC}"
-                    echo "  Reference: $svg_ref"
-                    BROKEN_REFS=$((BROKEN_REFS + 1))
-                    EXIT_CODE=1
-                fi
+                echo -e "${RED}✗ Broken SVG reference in $md_file${NC}"
+                echo "  Reference: $svg_ref"
+                BROKEN_REFS=$((BROKEN_REFS + 1))
+                EXIT_CODE=1
             fi
-        done
-    done < "$md_file"
+        fi
+    done < <(grep -oE '[^[:space:]()]+\.svg' "$md_file" || true)
 done
 
 # Summary

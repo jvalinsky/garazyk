@@ -72,7 +72,7 @@
   <rect x="680" y="250" width="200" height="70" class="box" rx="5"/>
   <circle cx="695" cy="265" r="12" fill="#0066cc"/>
   <text x="695" y="270" text-anchor="middle" class="step-number">4</text>
-  <text x="780" y="280" text-anchor="middle" class="text">User Login &</text>
+  <text x="780" y="280" text-anchor="middle" class="text">User Login &amp;</text>
   <text x="780" y="300" text-anchor="middle" class="label">Grant Consent</text>
 
   <!-- ===== AUTHORIZATION CODE SECTION ===== -->
@@ -146,7 +146,7 @@
   <circle cx="355" cy="755" r="12" fill="#ff9900"/>
   <text x="355" y="760" text-anchor="middle" class="step-number">10</text>
   <text x="430" y="770" class="text">Verify Method</text>
-  <text x="430" y="790" class="label">& URI Match</text>
+  <text x="430" y="790" class="label">&amp; URI Match</text>
 
   <!-- Arrow -->
   <path d="M 520 775 L 580 775" class="arrow"/>
@@ -231,7 +231,7 @@
   <text x="790" y="1120" text-anchor="middle" class="label">Verifies DPoP</text>
 
   <!-- ===== FINAL VERIFICATION SECTION ===== -->
-  <text x="50" y="1210" class="title" font-size="14">8. Final Verification & Response</text>
+  <text x="50" y="1210" class="title" font-size="14">8. Final Verification &amp; Response</text>
 
   <!-- Verify Token Binding -->
   <rect x="100" y="1230" width="200" height="70" class="server-box" rx="5"/>

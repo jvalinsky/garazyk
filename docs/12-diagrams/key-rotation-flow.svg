@@ -221,7 +221,7 @@
   <text x="920" y="1075" text-anchor="middle" class="label">Immediate rotation</text>
 
   <!-- ===== MONITORING SECTION ===== -->
-  <text x="50" y="1160" class="title" font-size="14">7. Monitoring & Audit</text>
+  <text x="50" y="1160" class="title" font-size="14">7. Monitoring &amp; Audit</text>
 
   <!-- Audit Log -->
   <rect x="100" y="1180" width="350" height="100" class="box" rx="5"/>
