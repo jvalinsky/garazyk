@@ -44,10 +44,10 @@
   <text x="830" y="185" text-anchor="middle" class="small">IP filtering (optional)</text>
   <text x="830" y="200" text-anchor="middle" class="small">Port restrictions</text>
 
-  <!-- Layer 2: Authentication & Authorization -->
+  <!-- Layer 2: Authentication &amp; Authorization -->
   <rect x="50" y="250" width="900" height="140" class="layer2" rx="10"/>
   <rect x="50" y="250" width="900" height="35" class="header" rx="10"/>
-  <text x="500" y="273" text-anchor="middle" class="layer-title">Layer 2: Authentication & Authorization</text>
+  <text x="500" y="273" text-anchor="middle" class="layer-title">Layer 2: Authentication &amp; Authorization</text>
 
   <rect x="70" y="305" width="200" height="70" fill="#fff" stroke="#7b1fa2" stroke-width="2" rx="5"/>
   <text x="170" y="325" text-anchor="middle" class="label" font-weight="bold">JWT Verification</text>

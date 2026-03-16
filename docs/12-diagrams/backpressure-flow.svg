@@ -61,7 +61,7 @@
 
   <!-- Buffer OK path -->
   <path d="M 550 420 L 700 420" class="arrow"/>
-  <text x="620" y="415" class="label">< 70%</text>
+  <text x="620" y="415" class="label">&lt; 70%</text>
   <rect x="700" y="395" width="150" height="50" class="success" rx="5"/>
   <text x="775" y="420" class="text">Send event</text>
   <text x="775" y="435" class="label">immediately</text>

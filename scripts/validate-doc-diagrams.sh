@@ -117,27 +117,39 @@ for md_file in $MARKDOWN_FILES; do
         continue
     fi
     
-    # Find SVG references in this markdown file
-    # Use process substitution (not a pipe) so variable changes in the while body
-    # are visible in the parent shell, and `|| true` prevents grep exit-1 from
-    # aborting via pipefail when no .svg references exist in the file.
+    # Extract SVG paths from actual markdown image/link syntax only:
+    #   ![alt](path.svg)  and  <img src="path.svg">
+    # This intentionally skips code spans, code blocks, plain text, and URLs,
+    # which avoids false positives from documentation examples and badge images.
+    # Process substitution keeps variable changes in this shell; `|| true` prevents
+    # grep exit-1 (no matches) from aborting via pipefail.
     while IFS= read -r svg_ref; do
-        # Resolve path relative to markdown file
-        base_dir=$(dirname "$md_file")
-        svg_path="$base_dir/$svg_ref"
+        # Skip HTTP/HTTPS URLs (remote images are not local file references)
+        echo "$svg_ref" | grep -qE '^https?://' && continue
+        # Skip shell variables and glob patterns (appear only in code examples)
+        echo "$svg_ref" | grep -qE '[$*`\\]' && continue
 
-        # Check if file exists
-        if [ ! -f "$svg_path" ]; then
-            # Try relative to docs root
-            svg_path="$DOCS_DIR/$svg_ref"
-            if [ ! -f "$svg_path" ]; then
-                echo -e "${RED}✗ Broken SVG reference in $md_file${NC}"
-                echo "  Reference: $svg_ref"
-                BROKEN_REFS=$((BROKEN_REFS + 1))
-                EXIT_CODE=1
-            fi
+        # Resolve: relative to md file → docs root → diagrams dir → public diagrams
+        base_dir=$(dirname "$md_file")
+        if [ -f "$base_dir/$svg_ref" ] || \
+           [ -f "$DOCS_DIR/$svg_ref" ] || \
+           [ -f "$DIAGRAMS_DIR/$(basename "$svg_ref")" ] || \
+           [ -f "$DOCS_DIR/public/diagrams/$(basename "$svg_ref")" ]; then
+            continue
         fi
-    done < <(grep -oE '[^[:space:]()]+\.svg' "$md_file" || true)
+
+        echo -e "${RED}✗ Broken SVG reference in $md_file${NC}"
+        echo "  Reference: $svg_ref"
+        BROKEN_REFS=$((BROKEN_REFS + 1))
+        EXIT_CODE=1
+    done < <(
+        # Match markdown images: ![alt](path.svg) → extract path inside parens
+        grep -oE '!\[[^]]*\]\([^)]+\.svg[^)]*\)' "$md_file" \
+            | grep -oE '\([^)]+\.svg' | sed 's/^(//'
+        # Match HTML img src: src="path.svg" or src='path.svg'
+        grep -oE 'src=['"'"'"][^'"'"'"]+\.svg['"'"'"]' "$md_file" \
+            | grep -oE '['"'"'"][^'"'"'"]+\.svg' | sed "s/^['\"]//g"
+    ) 2>/dev/null || true
 done
 
 # Summary

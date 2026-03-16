@@ -170,7 +170,7 @@
   <rect x="100" y="890" width="200" height="70" class="box" rx="5"/>
   <text x="200" y="915" text-anchor="middle" class="text">Access Token</text>
   <text x="200" y="935" text-anchor="middle" class="label">Expired</text>
-  <text x="200" y="950" text-anchor="middle" class="label">(exp < now)</text>
+  <text x="200" y="950" text-anchor="middle" class="label">(exp &lt; now)</text>
 
   <!-- Arrow -->
   <path d="M 300 925 L 380 925" class="arrow"/>

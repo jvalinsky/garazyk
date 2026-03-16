@@ -35,7 +35,7 @@
   <rect x="350" y="90" width="250" height="100" class="source-box" rx="5"/>
   <text x="475" y="115" text-anchor="middle" class="title">DatabasePool</text>
   <text x="475" y="140" text-anchor="middle" class="label">Tracks:</text>
-  <text x="475" y="160" text-anchor="middle" class="label">• Pool size & capacity</text>
+  <text x="475" y="160" text-anchor="middle" class="label">• Pool size &amp; capacity</text>
   <text x="475" y="175" text-anchor="middle" class="label">• Open file handles</text>
 
   <!-- Services -->
@@ -43,7 +43,7 @@
   <text x="775" y="115" text-anchor="middle" class="title">Services Layer</text>
   <text x="775" y="140" text-anchor="middle" class="label">Tracks:</text>
   <text x="775" y="160" text-anchor="middle" class="label">• Repository count</text>
-  <text x="775" y="175" text-anchor="middle" class="label">• Blob count & storage</text>
+  <text x="775" y="175" text-anchor="middle" class="label">• Blob count &amp; storage</text>
 
   <!-- PDSController -->
   <rect x="950" y="90" width="200" height="100" class="source-box" rx="5"/>

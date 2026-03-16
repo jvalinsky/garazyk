@@ -209,7 +209,7 @@
   <path d="M 770 890 L 770 930" class="arrow"/>
 
   <!-- ===== SECTION 6: VALIDATION ===== -->
-  <text x="50" y="950" class="title" font-size="14">6. Validation & Feedback</text>
+  <text x="50" y="950" class="title" font-size="14">6. Validation &amp; Feedback</text>
 
   <!-- Load Testing -->
   <rect x="150" y="970" width="200" height="80" class="box" rx="5"/>

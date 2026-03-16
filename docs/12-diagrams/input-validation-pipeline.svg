@@ -49,11 +49,11 @@
   <path d="M 600 230 L 650 230" class="reject-arrow"/>
   <path d="M 450 280 L 450 310" class="success-arrow"/>
 
-  <!-- Layer 2: Size & Type Validation -->
-  <text x="50" y="330" class="label" font-weight="bold">Layer 2: Size & Type Validation</text>
+  <!-- Layer 2: Size &amp; Type Validation -->
+  <text x="50" y="330" class="label" font-weight="bold">Layer 2: Size &amp; Type Validation</text>
 
   <rect x="300" y="340" width="300" height="100" class="validate-box" rx="5"/>
-  <text x="450" y="365" text-anchor="middle" class="label" font-weight="bold">Request Size & Type Check</text>
+  <text x="450" y="365" text-anchor="middle" class="label" font-weight="bold">Request Size &amp; Type Check</text>
   <text x="450" y="385" text-anchor="middle" class="small">✓ Content-Length ≤ max (10 MB)</text>
   <text x="450" y="400" text-anchor="middle" class="small">✓ Content-Type valid</text>
   <text x="450" y="415" text-anchor="middle" class="small">✓ MIME type allowed</text>

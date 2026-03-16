@@ -83,7 +83,7 @@
 
   <!-- Success path -->
   <rect x="450" y="715" width="180" height="50" class="box cache" rx="5"/>
-  <text x="540" y="735" class="text">Parse & Cache</text>
+  <text x="540" y="735" class="text">Parse &amp; Cache</text>
   <text x="540" y="750" class="label">Return DID document</text>
   <path d="M 400 740 L 450 740" class="arrow"/>
   <text x="425" y="735" class="label">Yes</text>
@@ -99,7 +99,7 @@
   <!-- Decision: Retry? -->
   <path d="M 140 800 L 190 850 L 140 900 L 90 850 Z" class="box decision"/>
   <text x="140" y="845" class="text">Transient</text>
-  <text x="140" y="860" class="text">& N < 3?</text>
+  <text x="140" y="860" class="text">&amp; N &lt; 3?</text>
   <path d="M 140 770 L 140 800" class="arrow"/>
 
   <!-- Retry path (back to execute) -->

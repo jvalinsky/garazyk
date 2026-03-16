@@ -132,7 +132,7 @@
 
   <!-- Monitoring -->
   <rect x="350" y="790" width="700" height="100" class="protection-box" rx="5" fill="#ffffcc"/>
-  <text x="700" y="815" text-anchor="middle" class="title">Monitoring & Alerting</text>
+  <text x="700" y="815" text-anchor="middle" class="title">Monitoring &amp; Alerting</text>
   <text x="700" y="835" text-anchor="middle" class="label">• Rate limit violations logged • Queue size tracking • Connection metrics</text>
   <text x="700" y="855" text-anchor="middle" class="label">• Slow consumer detection • Response time percentiles • Error rate monitoring</text>
   <text x="700" y="875" text-anchor="middle" class="label">• Alert on sustained throttling • Track attack patterns • Performance dashboards</text>

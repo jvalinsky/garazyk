@@ -25,7 +25,7 @@
 
   <!-- JWT Token Flow Section -->
   <rect x="30" y="50" width="940" height="30" fill="#0066cc" rx="3"/>
-  <text x="50" y="70" class="section-header">JWT Token Generation & Verification</text>
+  <text x="50" y="70" class="section-header">JWT Token Generation &amp; Verification</text>
 
   <!-- JWT Generation -->
   <text x="50" y="110" class="subtitle">1. JWT Generation (Minting):</text>
@@ -118,14 +118,14 @@
   <text x="610" y="685" class="small-label">1. Verify DPoP JWT signature</text>
   <text x="610" y="705" class="small-label">2. Check HTTP method matches</text>
   <text x="610" y="725" class="small-label">3. Check URI matches</text>
-  <text x="610" y="745" class="small-label">4. Verify timestamp (< 60s old)</text>
+  <text x="610" y="745" class="small-label">4. Verify timestamp (&lt; 60s old)</text>
   <text x="610" y="765" class="small-label">5. Check JTI not used before</text>
 
   <text x="590" y="795" class="small-label">Result: Token bound to client</text>
 
   <!-- Commit Signing Section -->
   <rect x="30" y="840" width="940" height="30" fill="#6600cc" rx="3"/>
-  <text x="50" y="860" class="section-header">Commit Signing & Verification</text>
+  <text x="50" y="860" class="section-header">Commit Signing &amp; Verification</text>
 
   <!-- Commit Signing -->
   <text x="50" y="900" class="subtitle">4. Commit Signing:</text>
