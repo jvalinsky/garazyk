@@ -235,4 +235,4 @@ jobs:
         uses: trufflesecurity/trufflehog@v3.88.23
         with:
           path: ./
-          extra_args: --no-update --only-verified
+          extra_args: --only-verified
