@@ -19,7 +19,7 @@ jobs:
   macos-build-and-test:
     name: macOS Build & Test
     runs-on: macos-14
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -79,7 +79,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build --parallel 4 --target atprotopds-cli AllTests
+          cmake --build build --parallel "$(sysctl -n hw.ncpu)" --target atprotopds-cli AllTests
 
       - name: Run Tests
         run: |
@@ -143,12 +143,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: ATProtoPDS/Sources/App/CappuccinoUI/package-lock.json
 
       - name: Install Dependencies
         working-directory: ATProtoPDS/Sources/App/CappuccinoUI
-        run: npm ci
+        run: npm install
 
       - name: Generate Frameworks
         working-directory: ATProtoPDS/Sources/App/CappuccinoUI
@@ -300,7 +298,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build --parallel 4 --target atprotopds-cli AllTests
+          cmake --build build --parallel "$(sysctl -n hw.ncpu)" --target atprotopds-cli AllTests
 
       - name: Run PLC-specific tests
         run: |
