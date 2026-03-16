@@ -58,10 +58,11 @@ func (p *clangFileParser) analyze(filePath string) (*models.TestFile, error) {
 			tu, err = engine.ParseFileWithCommandLine(filePath, retryArgs, false)
 		}
 	}
-	if err != nil {
-		if tu.IsValid() {
-			tu.Dispose()
-		}
+	// Only fail when the translation unit itself is invalid (fatal parse failure).
+	// A valid TU with diagnostic errors (e.g. unresolved headers) can still yield
+	// accurate method/assertion structure, so we proceed with partial analysis
+	// rather than falling back to the simple regex parser.
+	if err != nil && !tu.IsValid() {
 		return nil, err
 	}
 	defer tu.Dispose()
