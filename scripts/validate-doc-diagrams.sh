@@ -143,11 +143,13 @@ for md_file in $MARKDOWN_FILES; do
         BROKEN_REFS=$((BROKEN_REFS + 1))
         EXIT_CODE=1
     done < <(
+        # Strip fenced code blocks first so examples inside ```...``` are not matched
+        stripped=$(perl -0pe 's/```[^\n]*\n.*?```\n?//gs' "$md_file" 2>/dev/null)
         # Match markdown images: ![alt](path.svg) → extract path inside parens
-        grep -oE '!\[[^]]*\]\([^)]+\.svg[^)]*\)' "$md_file" \
+        echo "$stripped" | grep -oE '!\[[^]]*\]\([^)]+\.svg[^)]*\)' \
             | grep -oE '\([^)]+\.svg' | sed 's/^(//'
         # Match HTML img src: src="path.svg" or src='path.svg'
-        grep -oE 'src=['"'"'"][^'"'"'"]+\.svg['"'"'"]' "$md_file" \
+        echo "$stripped" | grep -oE 'src=['"'"'"][^'"'"'"]+\.svg['"'"'"]' \
             | grep -oE '['"'"'"][^'"'"'"]+\.svg' | sed "s/^['\"]//g"
     ) 2>/dev/null || true
 done
