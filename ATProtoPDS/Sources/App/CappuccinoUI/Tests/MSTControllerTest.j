@@ -6,8 +6,9 @@
  * MSTController that do not require AppKit rendering or network access.
  */
 
-@import <OJTest/OJTest.j>
 @import <Foundation/Foundation.j>
+@import <AppKit/AppKit.j>
+@import <OJUnit/OJTestCase.j>
 @import "../MSTController.j"
 
 @implementation MSTControllerTest : OJTestCase

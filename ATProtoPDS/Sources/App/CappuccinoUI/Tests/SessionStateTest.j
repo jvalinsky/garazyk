@@ -3,8 +3,8 @@
  * CappuccinoUI Tests
  */
 
-@import <OJTest/OJTest.j>
 @import <Foundation/Foundation.j>
+@import <OJUnit/OJTestCase.j>
 @import "../SessionState.j"
 
 @implementation SessionStateTest : OJTestCase
