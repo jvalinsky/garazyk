@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "test": "ojtest Tests/",
     "frameworks": "capp gen --frameworks --force .",
     "build:debug": "jake debug",
     "build:release": "jake release",

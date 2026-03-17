@@ -148,6 +148,10 @@ jobs:
         working-directory: ATProtoPDS/Sources/App/CappuccinoUI
         run: npm install
 
+      - name: Run Tests
+        working-directory: ATProtoPDS/Sources/App/CappuccinoUI
+        run: npm test
+
       - name: Generate Frameworks
         working-directory: ATProtoPDS/Sources/App/CappuccinoUI
         run: npm run frameworks
