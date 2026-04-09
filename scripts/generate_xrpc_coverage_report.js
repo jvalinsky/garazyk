@@ -14,6 +14,7 @@ function parseArgs(argv) {
     scopeFile: null,
     registryPath: null,
     handlerPath: null,
+    networkDir: null,
     lexiconRoots: [],
     sourceOnly: false,
     failOnDuplicates: false,
@@ -37,6 +38,8 @@ function parseArgs(argv) {
       args.registryPath = argv[++index];
     } else if (arg === "--handler-path") {
       args.handlerPath = argv[++index];
+    } else if (arg === "--network-dir") {
+      args.networkDir = argv[++index];
     } else if (arg === "--lexicon-root") {
       args.lexiconRoots.push(argv[++index]);
     } else if (arg === "--source-only") {
@@ -58,6 +61,7 @@ function parseArgs(argv) {
   args.scopeFile = args.scopeFile || path.join(args.repoRoot, "scripts", "xrpc_coverage_scope.txt");
   args.registryPath = args.registryPath || path.join(args.repoRoot, "ATProtoPDS", "Sources", "Network", "XrpcMethodRegistry.m");
   args.handlerPath = args.handlerPath || path.join(args.repoRoot, "ATProtoPDS", "Sources", "Network", "XrpcHandler.m");
+  args.networkDir = args.networkDir || path.join(args.repoRoot, "ATProtoPDS", "Sources", "Network");
   if (args.lexiconRoots.length === 0) {
     args.lexiconRoots.push(path.join(args.repoRoot, "ATProtoPDS", "Resources", "lexicons"));
   }
@@ -79,6 +83,7 @@ function printUsageAndExit(code) {
     "  --scope-file <path>  Scope rules file (default: scripts/xrpc_coverage_scope.txt)",
     "  --registry-path <p>  XrpcMethodRegistry.m path",
     "  --handler-path <p>   XrpcHandler.m path",
+    "  --network-dir <path> Network source directory for modular registrars",
     "  --lexicon-root <p>   Lexicon root directory (repeatable)",
     "  --source-only        Ignore xrpcDir input files and parse from source",
     "  --fail-on-duplicates Exit non-zero when scoped duplicate registrations are found",
@@ -374,57 +379,36 @@ function computeCrossScopeDuplicateStats(scopeStats) {
   };
 }
 
-function extractRegistrationScopeStats(registrySource, methodMap) {
-  const scopePatterns = [
-    {
-      name: "static.registerTempUtilityMethods",
-      regex: /static void registerTempUtilityMethods\s*\(\s*XrpcDispatcher \*dispatcher[\s\S]*?\{/gm,
-    },
-    {
-      name: "static.registerAdminAccountMaintenanceMethods",
-      regex: /static void registerAdminAccountMaintenanceMethods\s*\(\s*XrpcDispatcher \*dispatcher[\s\S]*?\{/gm,
-    },
-    {
-      name: "static.registerPhase1IdentityAndAccountMethods",
-      regex: /static void registerPhase1IdentityAndAccountMethods\s*\(\s*XrpcDispatcher \*dispatcher[\s\S]*?\{/gm,
-    },
-    {
-      name: "class.registerMethodsWithDispatcher:controller",
-      regex: /\+\s*\(void\)\s*registerMethodsWithDispatcher:\(XrpcDispatcher \*\)dispatcher\s*controller:\(PDSController \*\)controller\s*\{/gm,
-    },
-    {
-      name: "class.registerMethodsWithDispatcher:application",
-      regex: /\+\s*\(void\)\s*registerMethodsWithDispatcher:\(XrpcDispatcher \*\)dispatcher\s*application:\(PDSApplication \*\)application\s*\{/gm,
-    },
-  ];
+function registrarModuleFilesFromRegistry(registrySource, networkDir) {
+  const moduleNames = new Set();
+  const moduleRegex = /\[(Xrpc[A-Za-z0-9_]+)\s+registerWithDispatcher:/g;
+  for (const match of registrySource.matchAll(moduleRegex)) {
+    moduleNames.add(match[1]);
+  }
 
+  return Array.from(moduleNames)
+    .sort()
+    .map((moduleName) => path.join(networkDir, `${moduleName}.m`))
+    .filter((candidatePath) => fs.existsSync(candidatePath));
+}
+
+function extractScopeStatsFromSources(sourceFiles, methodMap, rootDir) {
   const scopes = [];
+  const implementedRaw = [];
+  const unresolvedTyped = [];
 
-  for (const scopeDef of scopePatterns) {
-    const match = scopeDef.regex.exec(registrySource);
-    if (!match) {
-      continue;
-    }
-
-    const openBraceOffset = match[0].lastIndexOf("{");
-    if (openBraceOffset < 0) {
-      continue;
-    }
-    const openBraceIndex = match.index + openBraceOffset;
-    const closeBraceIndex = findMatchingBrace(registrySource, openBraceIndex);
-    if (closeBraceIndex < 0) {
-      continue;
-    }
-
-    const snippet = registrySource.slice(openBraceIndex, closeBraceIndex + 1);
-    const extracted = extractMethodIdsFromSourceSnippet(snippet, methodMap);
+  for (const sourcePath of sourceFiles) {
+    ensureFileExists(sourcePath);
+    const source = fs.readFileSync(sourcePath, "utf8");
+    const extracted = extractMethodIdsFromSourceSnippet(source, methodMap);
     const filteredMethods = extracted.methods.filter((methodId) => methodId !== "unknown");
     const uniqueMethods = uniqueSorted(filteredMethods);
     const duplicateMethods = duplicateMethodsForList(extracted.methods);
     const duplicateRegistrations = duplicateMethods.reduce((sum, entry) => sum + (entry.count - 1), 0);
+    const scopeName = path.relative(rootDir, sourcePath).replace(/\\/g, "/");
 
     scopes.push({
-      scope: scopeDef.name,
+      scope: scopeName,
       registrations_total: filteredMethods.length,
       registrations_unique: uniqueMethods.length,
       methods: uniqueMethods,
@@ -433,24 +417,33 @@ function extractRegistrationScopeStats(registrySource, methodMap) {
       duplicate_methods: duplicateMethods,
       unresolved_typed_registrations: extracted.unresolvedTyped,
     });
+
+    implementedRaw.push(...extracted.methods);
+    unresolvedTyped.push(...extracted.unresolvedTyped);
   }
 
-  return scopes;
+  return {
+    scopes,
+    implementedRaw,
+    unresolvedTyped: uniqueSorted(unresolvedTyped),
+  };
 }
 
-function extractImplementedMethodsFromSource(registryPath, handlerPath) {
+function extractImplementedMethodsFromSource(registryPath, handlerPath, networkDir) {
   ensureFileExists(registryPath);
-  const source = fs.readFileSync(registryPath, "utf8");
+  const registrySource = fs.readFileSync(registryPath, "utf8");
   const methodMap = parseDispatcherMethodMap(handlerPath);
-  const extracted = extractMethodIdsFromSourceSnippet(source, methodMap);
-  const scopeStats = extractRegistrationScopeStats(source, methodMap);
-  const scopedDuplicateRegistrations = scopeStats.reduce((sum, scope) => sum + scope.duplicate_registrations, 0);
-  const crossScopeDuplicateStats = computeCrossScopeDuplicateStats(scopeStats);
+  const moduleFiles = registrarModuleFilesFromRegistry(registrySource, networkDir);
+  const sourceFiles = [registryPath, ...moduleFiles];
+  const extracted = extractScopeStatsFromSources(sourceFiles, methodMap, path.dirname(registryPath));
+  const scopedDuplicateRegistrations = extracted.scopes.reduce((sum, scope) => sum + scope.duplicate_registrations, 0);
+  const crossScopeDuplicateStats = computeCrossScopeDuplicateStats(extracted.scopes);
 
   return {
-    implementedRaw: extracted.methods,
+    implementedRaw: extracted.implementedRaw,
     unresolvedTyped: extracted.unresolvedTyped,
-    registrationScopeStats: scopeStats,
+    registrationScopeStats: extracted.scopes,
+    parsedSourceFiles: sourceFiles,
     scopedDuplicateRegistrations,
     crossScopeDuplicateStats,
   };
@@ -616,6 +609,14 @@ function createMarkdown(report) {
   if (report.inputs.handler_source) {
     lines.push(`- \`${report.inputs.handler_source}\``);
   }
+  if (report.inputs.network_source_dir) {
+    lines.push(`- \`${report.inputs.network_source_dir}\``);
+  }
+  if (Array.isArray(report.inputs.parsed_source_files)) {
+    report.inputs.parsed_source_files.forEach((sourcePath) => {
+      lines.push(`- \`${sourcePath}\``);
+    });
+  }
   if (Array.isArray(report.inputs.lexicon_roots)) {
     report.inputs.lexicon_roots.forEach((root) => {
       lines.push(`- \`${root}\``);
@@ -682,6 +683,7 @@ function main() {
   let lexiconUniqueAll = [];
   let unresolvedTypedRegistrations = [];
   let registrationScopeStats = [];
+  let parsedSourceFiles = [];
   let scopedDuplicateRegistrations = null;
   let crossScopeDuplicateStats = null;
   const lexiconParseErrors = [];
@@ -705,10 +707,11 @@ function main() {
     lexiconsTsvUsed = null;
     diffJsonUsed = null;
 
-    const extracted = extractImplementedMethodsFromSource(args.registryPath, args.handlerPath);
+    const extracted = extractImplementedMethodsFromSource(args.registryPath, args.handlerPath, args.networkDir);
     implementedRaw = extracted.implementedRaw;
     unresolvedTypedRegistrations = extracted.unresolvedTyped;
     registrationScopeStats = extracted.registrationScopeStats;
+    parsedSourceFiles = extracted.parsedSourceFiles;
     scopedDuplicateRegistrations = extracted.scopedDuplicateRegistrations;
     crossScopeDuplicateStats = extracted.crossScopeDuplicateStats;
 
@@ -772,6 +775,8 @@ function main() {
       diff_json: diffJsonUsed,
       registry_source: inputMode === "source-parsed" ? args.registryPath : null,
       handler_source: inputMode === "source-parsed" ? args.handlerPath : null,
+      network_source_dir: inputMode === "source-parsed" ? args.networkDir : null,
+      parsed_source_files: inputMode === "source-parsed" ? parsedSourceFiles : null,
       lexicon_roots: inputMode === "source-parsed" ? args.lexiconRoots : null,
       unresolved_typed_registrations: unresolvedTypedRegistrations,
       registration_scopes: inputMode === "source-parsed" ? registrationScopeStats.map((entry) => entry.scope) : null,

@@ -79,6 +79,10 @@ static BOOL PDSConfigRunningUnderTests(void) {
          [processName containsString:@"xctest"];
 }
 
+@interface PDSConfiguration ()
+- (BOOL)dictionary:(NSDictionary *)dictionary hasValueForKey:(NSString *)key;
+@end
+
 @implementation PDSConfiguration {
   NSDictionary *_config;
   NSString *_phoneVerificationProvider;
@@ -400,29 +404,29 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
   NSDictionary *database = config[@"database"];
   if (database) {
-    if (database[@"user_pool_max_size"])
+    if ([self dictionary:database hasValueForKey:@"user_pool_max_size"])
       _userDatabasePoolMaxSize =
           [database[@"user_pool_max_size"] unsignedIntegerValue];
-    if (database[@"service_pool_max_size"])
+    if ([self dictionary:database hasValueForKey:@"service_pool_max_size"])
       _serviceDatabasePoolMaxSize =
           [database[@"service_pool_max_size"] unsignedIntegerValue];
-    if (database[@"did_cache_pool_max_size"])
+    if ([self dictionary:database hasValueForKey:@"did_cache_pool_max_size"])
       _didCachePoolMaxSize =
           [database[@"did_cache_pool_max_size"] unsignedIntegerValue];
-    if (database[@"sequencer_pool_max_size"])
+    if ([self dictionary:database hasValueForKey:@"sequencer_pool_max_size"])
       _sequencerPoolMaxSize =
           [database[@"sequencer_pool_max_size"] unsignedIntegerValue];
   }
 
   NSDictionary *session = config[@"session"];
   if (session) {
-    if (session[@"access_token_ttl_seconds"])
+    if ([self dictionary:session hasValueForKey:@"access_token_ttl_seconds"])
       _accessTokenTtlSeconds =
           [session[@"access_token_ttl_seconds"] unsignedIntegerValue];
-    if (session[@"refresh_token_ttl_seconds"])
+    if ([self dictionary:session hasValueForKey:@"refresh_token_ttl_seconds"])
       _refreshTokenTtlSeconds =
           [session[@"refresh_token_ttl_seconds"] unsignedIntegerValue];
-    if (session[@"invite_code_required"])
+    if ([self dictionary:session hasValueForKey:@"invite_code_required"])
       _inviteCodeRequired = [session[@"invite_code_required"] boolValue];
   }
 
@@ -451,7 +455,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
     if (email[@"smtp_host"])
       _emailSmtpHost = [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_HOST"
                                               default:email[@"smtp_host"]];
-    if (email[@"smtp_port"])
+    if ([self dictionary:email hasValueForKey:@"smtp_port"])
       _emailSmtpPort = [email[@"smtp_port"] unsignedIntegerValue];
     if (email[@"smtp_username"])
       _emailSmtpUsername =
@@ -461,7 +465,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
       _emailSmtpPassword =
           [self resolveEnvOverrideForKey:@"PDS_EMAIL_SMTP_PASSWORD"
                                  default:email[@"smtp_password"]];
-    if (email[@"smtp_use_tls"])
+    if ([self dictionary:email hasValueForKey:@"smtp_use_tls"])
       _emailSmtpUseTLS = [self boolFromEnv:@"PDS_EMAIL_SMTP_USE_TLS"
                                    default:[email[@"smtp_use_tls"] boolValue]];
 
@@ -531,25 +535,25 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
   NSDictionary *rateLimit = config[@"rate_limit"];
   if (rateLimit) {
-    if (rateLimit[@"enabled"])
+    if ([self dictionary:rateLimit hasValueForKey:@"enabled"])
       _rateLimitEnabled = [rateLimit[@"enabled"] boolValue];
-    if (rateLimit[@"requests_per_minute"])
+    if ([self dictionary:rateLimit hasValueForKey:@"requests_per_minute"])
       _rateLimitRequestsPerMinute =
           [rateLimit[@"requests_per_minute"] unsignedIntegerValue];
-    if (rateLimit[@"burst_size"])
+    if ([self dictionary:rateLimit hasValueForKey:@"burst_size"])
       _rateLimitBurstSize = [rateLimit[@"burst_size"] unsignedIntegerValue];
     // Load granular limits from config map if present, else fallback check
-    if (rateLimit[@"did_limit"])
+    if ([self dictionary:rateLimit hasValueForKey:@"did_limit"])
       _rateLimitDidLimit = [rateLimit[@"did_limit"] unsignedIntegerValue];
-    if (rateLimit[@"did_window"])
+    if ([self dictionary:rateLimit hasValueForKey:@"did_window"])
       _rateLimitDidWindowSeconds = [rateLimit[@"did_window"] doubleValue];
-    if (rateLimit[@"ip_limit"])
+    if ([self dictionary:rateLimit hasValueForKey:@"ip_limit"])
       _rateLimitIpLimit = [rateLimit[@"ip_limit"] unsignedIntegerValue];
-    if (rateLimit[@"ip_window"])
+    if ([self dictionary:rateLimit hasValueForKey:@"ip_window"])
       _rateLimitIpWindowSeconds = [rateLimit[@"ip_window"] doubleValue];
-    if (rateLimit[@"blob_limit"])
+    if ([self dictionary:rateLimit hasValueForKey:@"blob_limit"])
       _rateLimitBlobLimit = [rateLimit[@"blob_limit"] unsignedIntegerValue];
-    if (rateLimit[@"blob_window"])
+    if ([self dictionary:rateLimit hasValueForKey:@"blob_window"])
       _rateLimitBlobWindowSeconds = [rateLimit[@"blob_window"] doubleValue];
   }
 
@@ -590,7 +594,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
   NSDictionary *sslPinning = config[@"ssl_pinning"];
   if (sslPinning) {
-    if (sslPinning[@"enabled"])
+    if ([self dictionary:sslPinning hasValueForKey:@"enabled"])
       _sslPinningEnabled = [sslPinning[@"enabled"] boolValue];
   }
 
@@ -629,7 +633,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
       }
     }
 
-    if (logging[@"max_file_size_mb"]) {
+    if ([self dictionary:logging hasValueForKey:@"max_file_size_mb"]) {
       NSString *envValue =
           [[NSProcessInfo processInfo] environment][@"PDS_LOG_MAX_SIZE_MB"];
       NSUInteger sizeMB =
@@ -638,14 +642,14 @@ static BOOL PDSConfigRunningUnderTests(void) {
       _maxLogFileSize = sizeMB * 1024 * 1024; // Convert MB to bytes
     }
 
-    if (logging[@"max_files"]) {
+    if ([self dictionary:logging hasValueForKey:@"max_files"]) {
       NSString *envValue =
           [[NSProcessInfo processInfo] environment][@"PDS_LOG_MAX_FILES"];
       _maxLogFiles = envValue ? [envValue integerValue]
                               : [logging[@"max_files"] unsignedIntegerValue];
     }
 
-    if (logging[@"async"]) {
+    if ([self dictionary:logging hasValueForKey:@"async"]) {
       _asyncLogging = [self boolFromEnv:@"PDS_LOG_ASYNC"
                                 default:[logging[@"async"] boolValue]];
     }
@@ -663,7 +667,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
   NSDictionary *nodeinfo = config[@"nodeinfo"];
   if (nodeinfo) {
-    if (nodeinfo[@"enabled"])
+    if ([self dictionary:nodeinfo hasValueForKey:@"enabled"])
       _nodeinfoEnabled = [self boolFromEnv:@"PDS_NODEINFO_ENABLED"
                                    default:[nodeinfo[@"enabled"] boolValue]];
     if (nodeinfo[@"software_name"])
@@ -682,7 +686,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
       _nodeinfoHomepageURL =
           [self resolveEnvOverrideForKey:@"PDS_NODEINFO_HOMEPAGE_URL"
                                  default:nodeinfo[@"homepage_url"]];
-    if (nodeinfo[@"open_registrations"])
+    if ([self dictionary:nodeinfo hasValueForKey:@"open_registrations"])
       _nodeinfoOpenRegistrations =
           [self boolFromEnv:@"PDS_NODEINFO_OPEN_REGISTRATIONS"
                     default:[nodeinfo[@"open_registrations"] boolValue]];
@@ -788,6 +792,13 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
 - (BOOL)envVarExists:(NSString *)envKey {
   return [self resolveEnvOverrideForKey:envKey default:nil] != nil;
+}
+
+- (BOOL)dictionary:(NSDictionary *)dictionary hasValueForKey:(NSString *)key {
+  if (![dictionary isKindOfClass:[NSDictionary class]]) {
+    return NO;
+  }
+  return dictionary[key] != nil;
 }
 
 - (NSString *)resolveEnvOverrideForKey:(NSString *)envKey
