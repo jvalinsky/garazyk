@@ -64,11 +64,20 @@
                         error:(NSError **)error;
 - (NSDictionary *)getClientPublicKeys:(NSDictionary *)client
                                  error:(NSError **)error;
+- (nullable NSDictionary *)validatedClientForClientID:(NSString *)clientID
+                                                 error:(NSError **)error;
+- (BOOL)isClientValidationTimeoutError:(NSError *)error;
+- (void)setOAuthErrorResponse:(HttpResponse *)response
+                       status:(NSInteger)status
+                        error:(NSString *)errorCode
+             errorDescription:(NSString *)errorDescription;
 @end
 
 static NSMutableDictionary *sPendingConsents = nil;
 static const NSTimeInterval kPendingConsentTTLSeconds = 300.0;
 static const NSUInteger kMaxPendingConsents = 1024;
+static const NSTimeInterval kClientValidationTimeoutSeconds = 10.0;
+static NSInteger const kClientValidationTimeoutCode = 504;
 static NSCache *sClientMetadataCache = nil;
 static dispatch_once_t sClientCacheOnceToken;
 
@@ -254,6 +263,69 @@ static dispatch_once_t sClientCacheOnceToken;
                                   userInfo:@{
                                     NSLocalizedDescriptionKey : @"Invalid client"
                                   }]);
+}
+
+- (nullable NSDictionary *)validatedClientForClientID:(NSString *)clientID
+                                                 error:(NSError **)error {
+  __block NSDictionary *client = nil;
+  __block NSError *clientError = nil;
+  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
+
+  [self validateClient:clientID
+            completion:^(NSDictionary *_Nullable fetchedClient,
+                         NSError *_Nullable fetchedError) {
+              client = fetchedClient;
+              clientError = fetchedError;
+              dispatch_semaphore_signal(clientSem);
+            }];
+
+  dispatch_time_t timeout =
+      dispatch_time(DISPATCH_TIME_NOW,
+                    (int64_t)(kClientValidationTimeoutSeconds * NSEC_PER_SEC));
+  long waitResult = dispatch_semaphore_wait(clientSem, timeout);
+  if (waitResult != 0) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"OAuth2"
+                     code:kClientValidationTimeoutCode
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"Timed out while validating client credentials"
+                 }];
+    }
+    return nil;
+  }
+
+  if (!client) {
+    if (error) {
+      *error = clientError
+                   ?: [NSError errorWithDomain:@"OAuth2"
+                                          code:401
+                                      userInfo:@{
+                                        NSLocalizedDescriptionKey :
+                                            @"Invalid client"
+                                      }];
+    }
+    return nil;
+  }
+
+  return client;
+}
+
+- (BOOL)isClientValidationTimeoutError:(NSError *)error {
+  return [error.domain isEqualToString:@"OAuth2"] &&
+         error.code == kClientValidationTimeoutCode;
+}
+
+- (void)setOAuthErrorResponse:(HttpResponse *)response
+                       status:(NSInteger)status
+                        error:(NSString *)errorCode
+             errorDescription:(NSString *)errorDescription {
+  response.statusCode = (HttpStatusCode)status;
+  [response setJsonBody:@{
+    @"error" : errorCode ?: @"server_error",
+    @"error_description" : errorDescription ?: @"Unknown OAuth error"
+  }];
 }
 
 - (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
@@ -1586,29 +1658,24 @@ static dispatch_once_t sClientCacheOnceToken;
     return;
   }
 
-  __block NSDictionary *client = nil;
-  __block NSError *clientError = nil;
-  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
-  
-  [self validateClient:clientID
-            completion:^(NSDictionary *_Nullable fetchedClient,
-                         NSError *_Nullable error) {
-              client = fetchedClient;
-              clientError = error;
-              dispatch_semaphore_signal(clientSem);
-            }];
-  
-  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
-  
+  NSError *clientError = nil;
+  NSDictionary *client = [self validatedClientForClientID:clientID
+                                                     error:&clientError];
   if (!client) {
     PDS_LOG_AUTH_WARN(@"Invalid client_id: %@, error: %@", clientID,
                       clientError.localizedDescription);
-    response.statusCode = 400;
-    [response setJsonBody:@{
-      @"error" : @"unauthorized_client",
-      @"error_description" : clientError.localizedDescription
-          ?: @"Invalid client"
-    }];
+    if ([self isClientValidationTimeoutError:clientError]) {
+      [self setOAuthErrorResponse:response
+                           status:503
+                            error:@"server_error"
+                 errorDescription:@"Timed out while validating client"];
+    } else {
+      [self setOAuthErrorResponse:response
+                           status:400
+                            error:@"unauthorized_client"
+                 errorDescription:clientError.localizedDescription
+                                      ?: @"Invalid client"];
+    }
     return;
   }
 
@@ -1772,19 +1839,16 @@ static dispatch_once_t sClientCacheOnceToken;
     }
     NSString *redirectUri = params[@"redirect_uri"];
     if (redirectUri.length > 0) {
-      __block NSDictionary *client = nil;
-      __block NSError *clientError = nil;
-      dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
-      
-      [self validateClient:clientID
-                completion:^(NSDictionary *_Nullable fetchedClient,
-                             NSError *_Nullable error) {
-                  client = fetchedClient;
-                  clientError = error;
-                  dispatch_semaphore_signal(clientSem);
-                }];
-      
-      dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
+      NSError *clientError = nil;
+      NSDictionary *client = [self validatedClientForClientID:clientID
+                                                         error:&clientError];
+      if (!client && [self isClientValidationTimeoutError:clientError]) {
+        [self setOAuthErrorResponse:response
+                             status:503
+                              error:@"server_error"
+                   errorDescription:@"Timed out while validating client"];
+        return;
+      }
       
       NSError *redirectError = nil;
       if (!client || ![self validateRedirectURI:redirectUri
@@ -1876,26 +1940,21 @@ static dispatch_once_t sClientCacheOnceToken;
     [sPendingConsents removeObjectForKey:sessionToken];
   }
 
-  __block NSDictionary *client = nil;
-  __block NSError *clientError = nil;
-  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
-  
-  [self validateClient:clientID
-            completion:^(NSDictionary *_Nullable fetchedClient,
-                         NSError *_Nullable error) {
-              client = fetchedClient;
-              clientError = error;
-              dispatch_semaphore_signal(clientSem);
-            }];
-  
-  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
-  
+  NSError *clientError = nil;
+  NSDictionary *client = [self validatedClientForClientID:clientID
+                                                     error:&clientError];
   if (!client) {
-    response.statusCode = 400;
-    [response setJsonBody:@{
-      @"error" : @"invalid_client",
-      @"error_description" : clientError.localizedDescription ?: @"Invalid client"
-    }];
+    if ([self isClientValidationTimeoutError:clientError]) {
+      [self setOAuthErrorResponse:response
+                           status:503
+                            error:@"server_error"
+                 errorDescription:@"Timed out while validating client"];
+    } else {
+      [self setOAuthErrorResponse:response
+                           status:400
+                            error:@"invalid_client"
+                 errorDescription:clientError.localizedDescription ?: @"Invalid client"];
+    }
     return;
   }
 
@@ -2074,27 +2133,21 @@ static dispatch_once_t sClientCacheOnceToken;
   PDS_LOG_AUTH_INFO(@"Token request received (grant_type=%@, client_id=%@)",
                     grantType ?: @"", clientID ?: @"");
 
-  __block NSDictionary *client = nil;
-  __block NSError *clientError = nil;
-  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
-
-  [self validateClient:clientID
-            completion:^(NSDictionary *_Nullable fetchedClient,
-                         NSError *_Nullable error) {
-              client = fetchedClient;
-              clientError = error;
-              dispatch_semaphore_signal(clientSem);
-            }];
-
-  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
-
+  NSError *clientError = nil;
+  NSDictionary *client = [self validatedClientForClientID:clientID
+                                                     error:&clientError];
   if (!client) {
-    response.statusCode = 401;
-    [response setJsonBody:@{
-      @"error" : @"invalid_client",
-      @"error_description" : clientError.localizedDescription
-          ?: @"Invalid client"
-    }];
+    if ([self isClientValidationTimeoutError:clientError]) {
+      [self setOAuthErrorResponse:response
+                           status:503
+                            error:@"server_error"
+                 errorDescription:@"Timed out while validating client"];
+    } else {
+      [self setOAuthErrorResponse:response
+                           status:401
+                            error:@"invalid_client"
+                 errorDescription:clientError.localizedDescription ?: @"Invalid client"];
+    }
     return;
   }
   PDS_LOG_AUTH_DEBUG(@"Token request client validation passed (client_id=%@)",
@@ -2296,27 +2349,21 @@ static dispatch_once_t sClientCacheOnceToken;
   NSString *clientID = params[@"client_id"];
   NSString *token = params[@"token"];
 
-  __block NSDictionary *client = nil;
-  __block NSError *clientError = nil;
-  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
-
-  [self validateClient:clientID
-            completion:^(NSDictionary *_Nullable fetchedClient,
-                         NSError *_Nullable error) {
-              client = fetchedClient;
-              clientError = error;
-              dispatch_semaphore_signal(clientSem);
-            }];
-
-  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
-
+  NSError *clientError = nil;
+  NSDictionary *client = [self validatedClientForClientID:clientID
+                                                     error:&clientError];
   if (!client) {
-    response.statusCode = 401;
-    [response setJsonBody:@{
-      @"error" : @"invalid_client",
-      @"error_description" : clientError.localizedDescription
-          ?: @"Invalid client"
-    }];
+    if ([self isClientValidationTimeoutError:clientError]) {
+      [self setOAuthErrorResponse:response
+                           status:503
+                            error:@"server_error"
+                 errorDescription:@"Timed out while validating client"];
+    } else {
+      [self setOAuthErrorResponse:response
+                           status:401
+                            error:@"invalid_client"
+                 errorDescription:clientError.localizedDescription ?: @"Invalid client"];
+    }
     return;
   }
 
@@ -2397,27 +2444,21 @@ static dispatch_once_t sClientCacheOnceToken;
     return;
   }
 
-  __block NSDictionary *client = nil;
-  __block NSError *clientError = nil;
-  dispatch_semaphore_t clientSem = dispatch_semaphore_create(0);
-
-  [self validateClient:clientID
-            completion:^(NSDictionary *_Nullable fetchedClient,
-                         NSError *_Nullable error) {
-              client = fetchedClient;
-              clientError = error;
-              dispatch_semaphore_signal(clientSem);
-            }];
-
-  dispatch_semaphore_wait(clientSem, DISPATCH_TIME_FOREVER);
-
+  NSError *clientError = nil;
+  NSDictionary *client = [self validatedClientForClientID:clientID
+                                                     error:&clientError];
   if (!client) {
-    response.statusCode = 401;
-    [response setJsonBody:@{
-      @"error" : @"invalid_client",
-      @"error_description" : clientError.localizedDescription
-          ?: @"Invalid client"
-    }];
+    if ([self isClientValidationTimeoutError:clientError]) {
+      [self setOAuthErrorResponse:response
+                           status:503
+                            error:@"server_error"
+                 errorDescription:@"Timed out while validating client"];
+    } else {
+      [self setOAuthErrorResponse:response
+                           status:401
+                            error:@"invalid_client"
+                 errorDescription:clientError.localizedDescription ?: @"Invalid client"];
+    }
     return;
   }
 
