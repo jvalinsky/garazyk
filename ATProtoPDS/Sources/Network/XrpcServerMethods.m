@@ -11,6 +11,7 @@
 #import "Network/XrpcIdentityHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/XrpcServiceAuthHelper.h"
 #import "App/PDSConfiguration.h"
 #import "App/Services/PDSAccountService.h"
 #import "App/Services/PDSRepositoryService.h"
@@ -36,8 +37,6 @@ static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.creat
 #endif
 
 // Forward declarations for helper functions
-static NSString *didWebIdentifierFromIssuer(NSString *issuer, NSString *fallbackHost);
-static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *config);
 static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                                         HttpResponse *response,
                                                         NSString *did,
@@ -64,42 +63,6 @@ static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error);
 @end
 
 #pragma mark - Helper Functions
-
-static NSString *didWebIdentifierFromIssuer(NSString *issuer, NSString *fallbackHost) {
-    NSURLComponents *components = [NSURLComponents componentsWithString:issuer];
-    NSString *scheme = [components.scheme.lowercaseString copy];
-    NSString *host = [components.host.lowercaseString copy];
-    if (host.length == 0) {
-        host = [fallbackHost.lowercaseString copy];
-    }
-    if (host.length == 0) {
-        host = @"localhost";
-    }
-
-    NSUInteger port = components.port != nil ? (NSUInteger)MAX((NSInteger)0, components.port.integerValue) : 0;
-    BOOL includePort = NO;
-    if (port > 0) {
-        BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
-                           ([scheme isEqualToString:@"http"] && port == 80);
-        includePort = !defaultPort;
-    }
-
-    if (includePort) {
-        return [NSString stringWithFormat:@"did:web:%@%%3A%lu", host, (unsigned long)port];
-    }
-    return [NSString stringWithFormat:@"did:web:%@", host];
-}
-
-static NSArray<NSString *> *serviceAuthExpectedAudiences(PDSConfiguration *config) {
-    NSString *issuer = [config canonicalIssuerWithPortHint:0];
-    NSString *canonicalHost = [config canonicalHostname];
-    NSMutableOrderedSet<NSString *> *audiences = [NSMutableOrderedSet orderedSet];
-    [audiences addObject:didWebIdentifierFromIssuer(issuer, canonicalHost)];
-    if (canonicalHost.length > 0) {
-        [audiences addObject:[NSString stringWithFormat:@"did:web:%@", canonicalHost]];
-    }
-    return audiences.array;
-}
 
 static NSString *inviteAlphabet(void) {
     return @"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -318,7 +281,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     }
 
     NSString *aud = jwt.payload.aud;
-    NSArray<NSString *> *expectedAudiences = serviceAuthExpectedAudiences(effectiveConfig);
+    NSArray<NSString *> *expectedAudiences = XrpcServiceAuthExpectedAudiences(effectiveConfig);
     NSString *audBase = aud;
     NSRange audHash = [aud rangeOfString:@"#"];
     if (audHash.location != NSNotFound) {
@@ -369,7 +332,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
         NSString *issuer = [config canonicalIssuerWithPortHint:0];
         NSString *hostname = [config canonicalHostname];
-        NSString *serverDid = didWebIdentifierFromIssuer(issuer, hostname);
+        NSString *serverDid = XrpcDidWebIdentifierFromIssuer(issuer, hostname);
         NSArray *availableUserDomains = config.availableUserDomains ?: (hostname.length > 0 ? @[hostname] : @[]);
 
         NSDictionary *result = @{
