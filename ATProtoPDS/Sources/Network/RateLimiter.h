@@ -147,6 +147,17 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 - (instancetype)initWithDatabasePath:(nullable NSString *)path;
 
 /**
+ * @brief Reconfigure SQLite database path and reopen lazily on next use
+ *
+ * Closes any active SQLite handle, updates the configured path, and defers
+ * reopening until the next rate-limit check. Pass nil to restore default path
+ * resolution behavior.
+ *
+ * @param path Absolute or relative database file path, or nil
+ */
+- (void)reconfigureDatabasePath:(nullable NSString *)path;
+
+/**
  * @brief Check rate limit for a DID
  *
  * Records the request timestamp and checks against didLimit/didWindowSeconds.

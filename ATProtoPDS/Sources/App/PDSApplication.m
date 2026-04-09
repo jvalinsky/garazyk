@@ -219,6 +219,9 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     if (!_configuration) return;
     
     RateLimiter *limiter = [RateLimiter sharedLimiter];
+    NSString *rateLimitPath = [[_dataDirectory stringByAppendingPathComponent:@"service"]
+                               stringByAppendingPathComponent:@"ratelimits.db"];
+    [limiter reconfigureDatabasePath:rateLimitPath];
     limiter.enabled = _configuration.rateLimitEnabled;
     limiter.didLimit = _configuration.rateLimitDidLimit;
     limiter.didWindowSeconds = _configuration.rateLimitDidWindowSeconds;
