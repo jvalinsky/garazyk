@@ -19,6 +19,8 @@
 #import "Auth/JWT.h"
 #import "App/PDSConfiguration.h"
 #import "Repository/CAR.h"
+#import "Repository/CBOR.h"
+#import "Repository/RepoCommit.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Database/Pool/DatabasePool.h"
@@ -27,6 +29,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
+static CID *cidFromTaggedCBORValue(CBORValue *value);
 
 static PDSValidationMode validationModeFromValidateParameter(id validateParam) {
     if (!validateParam || validateParam == (id)[NSNull null]) {
@@ -92,112 +95,114 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
 
 @implementation XrpcRepoMethods
 
-static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CARReader *reader, PDSActorStore *store, PDSRecordService *recordService, NSString *rev);
+static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CARReader *reader, NSString *rev);
+
+static CID *cidFromTaggedCBORValue(CBORValue *value) {
+    if (!value) {
+        return nil;
+    }
+
+    if (value.type == CBORTypeSimpleOrFloat &&
+        value.simpleValue &&
+        value.simpleValue.unsignedIntegerValue == 22) {
+        return nil;
+    }
+
+    if (value.type != CBORTypeTag || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
+        return nil;
+    }
+
+    NSData *bytes = value.tagValue.byteString;
+    if (!bytes || bytes.length <= 1) {
+        return nil;
+    }
+
+    NSData *cidBytes = [bytes subdataWithRange:NSMakeRange(1, bytes.length - 1)];
+    return [CID cidFromBytes:cidBytes];
+}
 
 static void walkMST(CID *nodeCID, NSString *prevKey, NSString *did, CARReader *reader, NSMutableArray<PDSDatabaseRecord *> *recordList, NSString *rev) {
     if (!nodeCID) return;
     CARBlock *block = [reader blockWithCID:nodeCID];
     if (!block) return;
-    
-    NSDictionary *node = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
-    if (![node isKindOfClass:[NSDictionary class]]) return;
-    
-    // ATProto MST node structure: { "e": [ ... ], "l": <cid_link> }
-    
-    // Recurse left
-    id leftLink = node[@"l"];
-    if ([leftLink isKindOfClass:[NSDictionary class]]) {
-        NSData *leftCIDBytes = leftLink[@"/"];
-        if ([leftCIDBytes isKindOfClass:[NSData class]]) {
-            walkMST([CID cidFromBytes:leftCIDBytes], prevKey, did, reader, recordList, rev);
-        }
+
+    CBORValue *nodeValue = [CBORValue decode:block.data];
+    if (!nodeValue || nodeValue.type != CBORTypeMap) return;
+
+    // Recurse left subtree first to preserve in-order traversal.
+    CBORValue *leftTag = nodeValue.map[[CBORValue textString:@"l"]];
+    CID *leftCID = cidFromTaggedCBORValue(leftTag);
+    if (leftCID) {
+        walkMST(leftCID, prevKey, did, reader, recordList, rev);
     }
-    
-    // Iterate entries
-    NSArray *entries = node[@"e"];
-    if (![entries isKindOfClass:[NSArray class]]) return;
-    
-    NSString *currentPrevKey = prevKey;
-    for (NSDictionary *entry in entries) {
-        if (![entry isKindOfClass:[NSDictionary class]]) continue;
-        
-        // entry: { "k": <bytes_suffix>, "p": <prefix_len>, "t": <tree_cid_link>, "v": <value_cid_link> }
-        NSUInteger p = [entry[@"p"] unsignedIntegerValue];
-        NSData *kSuffix = entry[@"k"];
-        if (![kSuffix isKindOfClass:[NSData class]]) continue;
-        
-        NSString *suffixStr = [[NSString alloc] initWithData:kSuffix encoding:NSUTF8StringEncoding];
-        if (!suffixStr) continue;
-        
-        NSString *fullKey = [currentPrevKey substringToIndex:MIN(p, currentPrevKey.length)];
-        fullKey = [fullKey stringByAppendingString:suffixStr];
-        
-        // Extract record
-        id vLink = entry[@"v"];
-        if ([vLink isKindOfClass:[NSDictionary class]]) {
-            NSData *vCIDBytes = vLink[@"/"];
-            if ([vCIDBytes isKindOfClass:[NSData class]]) {
-                CID *vCID = [CID cidFromBytes:vCIDBytes];
-                if (vCID) {
-                    PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
-                    record.did = did;
-                    record.cid = vCID.stringValue;
-                    record.rev = rev;
-                    record.createdAt = [NSDate date];
-                    
-                    // Split key into collection/rkey
-                    NSRange slashRange = [fullKey rangeOfString:@"/"];
-                    if (slashRange.location != NSNotFound) {
-                        record.collection = [fullKey substringToIndex:slashRange.location];
-                        record.rkey = [fullKey substringFromIndex:slashRange.location + 1];
-                    } else {
-                        record.collection = @"unknown";
-                        record.rkey = fullKey;
+
+    CBORValue *entriesValue = nodeValue.map[[CBORValue textString:@"e"]];
+    NSArray<CBORValue *> *entriesArray = (entriesValue && entriesValue.type == CBORTypeArray)
+                                             ? entriesValue.array
+                                             : @[];
+
+    NSString *currentPrevKey = prevKey ?: @"";
+    for (CBORValue *entryMap in entriesArray) {
+        if (entryMap.type != CBORTypeMap) continue;
+
+        NSData *suffixData = entryMap.map[[CBORValue textString:@"k"]].byteString ?: [NSData data];
+        CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
+        NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
+        NSUInteger safePrefixLen = MIN(prefixLen, currentPrevKey.length);
+        NSString *prefix = [currentPrevKey substringToIndex:safePrefixLen];
+        NSString *suffix = [[NSString alloc] initWithData:suffixData encoding:NSUTF8StringEncoding] ?: @"";
+        NSString *fullKey = [prefix stringByAppendingString:suffix];
+
+        CBORValue *valueTag = entryMap.map[[CBORValue textString:@"v"]];
+        CID *valueCID = cidFromTaggedCBORValue(valueTag);
+        if (valueCID) {
+            PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+            record.did = did;
+            record.cid = valueCID.stringValue;
+            record.rev = rev;
+            record.createdAt = [NSDate date];
+
+            NSRange slashRange = [fullKey rangeOfString:@"/"];
+            if (slashRange.location != NSNotFound) {
+                record.collection = [fullKey substringToIndex:slashRange.location];
+                record.rkey = [fullKey substringFromIndex:slashRange.location + 1];
+            } else {
+                record.collection = @"unknown";
+                record.rkey = fullKey;
+            }
+            record.uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, record.collection, record.rkey];
+
+            CARBlock *valueBlock = [reader blockWithCID:valueCID];
+            if (valueBlock) {
+                id jsonObj = [ATProtoCBORSerialization JSONObjectWithData:valueBlock.data error:nil];
+                if (jsonObj) {
+                    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonObj options:0 error:nil];
+                    if (jsonData) {
+                        record.value = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
                     }
-                    record.uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, record.collection, record.rkey];
-                    
-                    // Decode value to JSON string
-                    CARBlock *vBlock = [reader blockWithCID:vCID];
-                    if (vBlock) {
-                        id jsonObj = [ATProtoCBORSerialization JSONObjectWithData:vBlock.data error:nil];
-                        if (jsonObj) {
-                            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonObj options:0 error:nil];
-                            if (jsonData) {
-                                record.value = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-                            }
-                        }
-                    }
-                    
-                    [recordList addObject:record];
                 }
             }
+            [recordList addObject:record];
         }
-        
-        // Recurse subtree (right)
-        id tLink = entry[@"t"];
-        if ([tLink isKindOfClass:[NSDictionary class]]) {
-            NSData *tCIDBytes = tLink[@"/"];
-            if ([tCIDBytes isKindOfClass:[NSData class]]) {
-                walkMST([CID cidFromBytes:tCIDBytes], fullKey, did, reader, recordList, rev);
-            }
+
+        CBORValue *treeTag = entryMap.map[[CBORValue textString:@"t"]];
+        CID *treeCID = cidFromTaggedCBORValue(treeTag);
+        if (treeCID) {
+            walkMST(treeCID, fullKey, did, reader, recordList, rev);
         }
-        
+
         currentPrevKey = fullKey;
     }
 }
 
-static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CARReader *reader, PDSActorStore *store, PDSRecordService *recordService, NSString *rev) {
+static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CARReader *reader, NSString *rev) {
     NSMutableArray<PDSDatabaseRecord *> *recordList = [NSMutableArray array];
     CID *rootCID = [CID cidFromBytes:mstRootCIDBytes];
-    if (!rootCID) return;
+    if (!rootCID) return @[];
     
     walkMST(rootCID, @"", did, reader, recordList, rev);
-    
-    if (recordList.count > 0) {
-        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **error) {
-            [transactor putRecords:recordList forDid:did error:error];
-        } error:nil];
-    }
+
+    return [recordList copy];
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -455,51 +460,6 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
         [response setJsonBody:resBody];
     }];
 
-    // com.atproto.repo.deleteRecord
-    [dispatcher registerComAtprotoRepoDeleteRecord:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:jwtMinter
-                                                 adminController:adminController
-                                                         request:request
-                                                        response:response];
-        if (!did) {
-            if (response.statusCode == HttpStatusOK) {
-                response.statusCode = HttpStatusUnauthorized;
-                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            }
-            return;
-        }
-
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *collection = body[@"collection"];
-        NSString *rkey = body[@"rkey"];
-        NSString *repo = body[@"repo"];
-
-        if (repo && ![repo isEqualToString:did]) {
-            response.statusCode = HttpStatusForbidden;
-            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot delete record for another user"}];
-            return;
-        }
-
-        if (!collection || !rkey) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection or rkey"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [recordService deleteRecord:collection rkey:rkey forDid:did error:&error];
-        if (!success) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"RecordDeletionFailed", @"message": error.localizedDescription ?: @"Failed to delete record"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"uri": [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey]}];
-    }];
-
     // com.atproto.repo.uploadBlob
     [dispatcher registerComAtprotoRepoUploadBlob:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -637,16 +597,126 @@ static void importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CAR
             return;
         }
 
+        NSData *carData = request.body;
+        if (!carData || carData.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing CAR body"}];
+            return;
+        }
+
         if (![request headerForKey:@"Content-Length"]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing Content-Length header"}];
             return;
         }
 
-        response.statusCode = 501;
+        NSString *contentType = [[request headerForKey:@"Content-Type"] lowercaseString];
+        if (contentType.length > 0 && ![contentType hasPrefix:@"application/vnd.ipld.car"]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Content-Type must be application/vnd.ipld.car"}];
+            return;
+        }
+
+        NSError *carError = nil;
+        CARReader *reader = [CARReader readFromData:carData error:&carError];
+        if (!reader || !reader.rootCID) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": carError.localizedDescription ?: @"Invalid CAR payload"
+            }];
+            return;
+        }
+
+        NSError *commitError = nil;
+        RepoCommit *commit = [RepoCommit fromCARData:carData error:&commitError];
+        if (!commit) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": commitError.localizedDescription ?: @"CAR root is not a valid repo commit"
+            }];
+            return;
+        }
+
+        if (![commit.did isKindOfClass:[NSString class]] || ![commit.did isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{
+                @"error": @"Forbidden",
+                @"message": @"Imported repository DID must match the authenticated account"
+            }];
+            return;
+        }
+        if (!commit.dataCID || commit.dataCID.bytes.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": @"Commit is missing a data CID"
+            }];
+            return;
+        }
+
+        NSMutableArray<PDSDatabaseBlock *> *blocks = [NSMutableArray arrayWithCapacity:reader.blocks.count];
+        for (CARBlock *block in reader.blocks) {
+            if (!block.cid || block.data.length == 0) {
+                continue;
+            }
+            PDSDatabaseBlock *dbBlock = [[PDSDatabaseBlock alloc] init];
+            dbBlock.cid = block.cid.bytes;
+            dbBlock.blockData = block.data;
+            dbBlock.size = (NSInteger)block.data.length;
+            dbBlock.rev = commit.rev ?: @"";
+            [blocks addObject:dbBlock];
+        }
+
+        NSArray<PDSDatabaseRecord *> *records = importRepoExtractRecords(commit.dataCID.bytes, did, reader, commit.rev ?: @"");
+        PDSDatabasePool *databasePool = recordService.databasePool;
+        if (!databasePool) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalError", @"message": @"Record database pool is unavailable"}];
+            return;
+        }
+
+        NSError *storeError = nil;
+        PDSActorStore *store = [databasePool storeForDid:did error:&storeError];
+        if (!store) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{
+                @"error": @"StoreUnavailable",
+                @"message": storeError.localizedDescription ?: @"Failed to open actor store"
+            }];
+            return;
+        }
+
+        __block BOOL committed = NO;
+        NSError *writeError = nil;
+        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **error) {
+            if (blocks.count > 0 && ![transactor putBlocks:blocks forDid:did error:error]) {
+                return;
+            }
+            if (records.count > 0 && ![transactor putRecords:records forDid:did error:error]) {
+                return;
+            }
+            if (![transactor updateRepoRoot:did rootCid:reader.rootCID.bytes rev:(commit.rev ?: @"") error:error]) {
+                return;
+            }
+            committed = YES;
+        } error:&writeError];
+
+        if (!committed) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{
+                @"error": @"ImportFailed",
+                @"message": writeError.localizedDescription ?: @"Failed to import repository"
+            }];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
-            @"error": @"NotImplemented",
-            @"message": @"repo.importRepo is not yet supported"
+            @"rootCid": reader.rootCID.stringValue ?: @"",
+            @"rev": commit.rev ?: @"",
+            @"recordCount": @(records.count)
         }];
     }];
 

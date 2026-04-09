@@ -1,5 +1,6 @@
 #import "RepoAuthXrpcTestBase.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "App/Services/PDSRepositoryService.h"
 
 @interface RepoAuthRepoTests : RepoAuthXrpcTestBase
 @end
@@ -115,7 +116,7 @@
     XCTAssertEqual(response.statusCode, 400);
 }
 
-- (void)testRepoImportRepoReturnsNotImplemented {
+- (void)testRepoImportRepoReturnsBadRequestForInvalidCAR {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
     NSData *carData = [@"fakecar" dataUsingEncoding:NSUTF8StringEncoding];
     HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
@@ -125,9 +126,46 @@
                                                           @"content-type": @"application/vnd.ipld.car",
                                                           @"content-length": [NSString stringWithFormat:@"%lu", (unsigned long)carData.length]
                                                       }];
-    XCTAssertEqual(response.statusCode, 501);
+    XCTAssertEqual(response.statusCode, 400);
     NSDictionary *body = (NSDictionary *)response.jsonBody;
-    XCTAssertEqualObjects(body[@"error"], @"NotImplemented");
+    XCTAssertEqualObjects(body[@"error"], @"InvalidRequest");
+}
+
+- (void)testRepoImportRepoSucceedsForValidExportedCAR {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"import repo test",
+        @"createdAt": [self iso8601String]
+    };
+    NSError *createError = nil;
+    NSDictionary *created = [self.controller createRecordForDid:self.did1
+                                                     collection:@"app.bsky.feed.post"
+                                                        record:record
+                                                validationMode:PDSValidationModeRequired
+                                                         error:&createError];
+    XCTAssertNotNil(created);
+    XCTAssertNil(createError);
+
+    NSError *exportError = nil;
+    NSData *carData = [self.controller.repositoryService getRepoContents:self.did1
+                                                                   since:nil
+                                                                   error:&exportError];
+    XCTAssertNotNil(carData);
+    XCTAssertNil(exportError);
+
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
+    HttpResponse *response = [self sendRawPostRequestWithPath:@"/xrpc/com.atproto.repo.importRepo"
+                                                     bodyData:carData
+                                                      headers:@{
+                                                          @"authorization": authHeader,
+                                                          @"content-type": @"application/vnd.ipld.car",
+                                                          @"content-length": [NSString stringWithFormat:@"%lu", (unsigned long)carData.length]
+                                                      }];
+    XCTAssertEqual(response.statusCode, 200);
+    NSDictionary *body = (NSDictionary *)response.jsonBody;
+    XCTAssertNotNil(body[@"rootCid"]);
+    XCTAssertNotNil(body[@"rev"]);
+    XCTAssertTrue([body[@"recordCount"] integerValue] >= 1);
 }
 
 @end
