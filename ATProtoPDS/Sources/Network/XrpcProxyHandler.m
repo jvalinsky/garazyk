@@ -79,8 +79,15 @@
     [proxyRequest setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
 
     // 4. Execute request synchronously (for now, as XrpcDispatcher is synchronous)
+    static const NSTimeInterval kProxyTimeoutSeconds = 30.0;
+    proxyRequest.timeoutInterval = kProxyTimeoutSeconds;
+
+    __block BOOL timedOut = NO;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:proxyRequest completionHandler:^(NSData *data, NSURLResponse *urlResponse, NSError *error) {
+        if (timedOut) {
+            return;
+        }
         if (error) {
             PDS_LOG_ERROR(@"Proxy request failed: %@", error);
             response.statusCode = HttpStatusServiceUnavailable;
@@ -108,7 +115,14 @@
     }];
     
     [task resume];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kProxyTimeoutSeconds * NSEC_PER_SEC)));
+    if (waitResult != 0) {
+        timedOut = YES;
+        [task cancel];
+        PDS_LOG_ERROR(@"Proxy request timed out after %.0f seconds: %@", kProxyTimeoutSeconds, request.path);
+        response.statusCode = 504;
+        [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
+    }
 }
 
 @end
