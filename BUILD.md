@@ -1,46 +1,58 @@
-# Building ATProtoPDS
+# Build Guide
 
-This project uses CMake for its build system. To keep the source tree clean, please use out-of-source builds.
+This file is the short build reference for contributors. The canonical onboarding path still starts in [`docs/index.md`](docs/index.md) and [`docs/01-getting-started/setup.md`](docs/01-getting-started/setup.md).
 
-## Prerequisites
+## Build Rules
 
-- CMake 3.21+
-- Xcode (on macOS) or GNUstep (on Linux)
-- secp256k1 (included as a submodule)
-- SQLite3
-- OpenSSL
+- Always use out-of-source builds.
+- On macOS, run `xcodegen generate` before building.
+- Treat `docker/pds/` as the only supported Compose root for deployment-style runs.
 
-## Standard Build Process
+## macOS
 
 ```bash
-# 1. Create and enter a build directory
-mkdir -p build && cd build
-
-# 2. Configure the project
-cmake ..
-
-# 3. Build the primary components
-make -j$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
-```
-
-## Build Targets
-
-- `kaszlak` (formerly `september`): The main PDS CLI tool.
-- `campagnola` (formerly `atproto-plc`): The standalone PLC server.
-- `AllTests`: The unit test suite.
-
-## Running Tests
-
-After building:
-```bash
+xcodegen generate
+xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme AllTests build
 ./build/tests/AllTests
 ```
 
-## Cleanup
+Primary outputs:
 
-To clean the build, simply remove the `build/` directory:
+- `./build/bin/kaszlak`
+- `./build/bin/campagnola`
+- `./build/tests/AllTests`
+
+## Linux and GNUstep
+
+Choose an explicit build directory and keep using it consistently.
+
 ```bash
-rm -rf build/
+cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-linux -j
+./build-linux/tests/AllTests
 ```
 
-Avoid running `cmake` directly in the root directory to prevent cluttering the source tree with generated files.
+Primary outputs:
+
+- `./build-linux/bin/kaszlak`
+- `./build-linux/bin/campagnola`
+- `./build-linux/tests/AllTests`
+
+The output location follows the build directory you pass to CMake. Do not mix `build-linux` configuration with `./build/...` runtime paths.
+
+## Quality Gates
+
+Before pushing work that changes code or build-sensitive behavior, verify:
+
+1. `xcodegen generate`
+2. `xcodebuild -scheme AllTests build`
+3. `./build/tests/AllTests`
+4. `xcodebuild -scheme ATProtoPDS-CLI build`
+5. fuzzer builds if you modified fuzzing-related code
+
+## Related Docs
+
+- [Setup Guide](docs/01-getting-started/setup.md)
+- [Testing Map](docs/11-reference/testing-map.md)
+- [Contributing Guide](CONTRIBUTING.md)
