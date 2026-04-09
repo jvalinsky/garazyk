@@ -18,6 +18,7 @@ function parseArgs(argv) {
     lexiconRoots: [],
     sourceOnly: false,
     failOnDuplicates: false,
+    failOnMissing: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -46,6 +47,8 @@ function parseArgs(argv) {
       args.sourceOnly = true;
     } else if (arg === "--fail-on-duplicates") {
       args.failOnDuplicates = true;
+    } else if (arg === "--fail-on-missing") {
+      args.failOnMissing = true;
     } else if (arg === "--help" || arg === "-h") {
       printUsageAndExit(0);
     } else {
@@ -824,6 +827,14 @@ function main() {
   if (args.failOnDuplicates && duplicateRegistrations > 0) {
     console.error(`Scoped duplicate XRPC registrations found: ${duplicateRegistrations}`);
     process.exitCode = 2;
+  }
+
+  if (args.failOnMissing && missingInCode.length > 0) {
+    console.error(`Missing XRPC methods in scope: ${missingInCode.length}`);
+    for (const methodId of missingInCode) {
+      console.error(`  - ${methodId}`);
+    }
+    process.exitCode = 3;
   }
 }
 
