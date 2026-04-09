@@ -2,6 +2,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Network/XrpcProxyHandler.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -261,6 +262,20 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
 }
 
 #pragma mark - XrpcAppBskyMethods Implementation
+
+@interface XrpcAppBskyMethods ()
++ (void)registerAppBskyAgeAssuranceBeginWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyAgeAssuranceGetConfigWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyAgeAssuranceGetStateWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactDismissMatchWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactGetMatchesWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactGetSyncStatusWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactImportContactsWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactRemoveDataWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactSendNotificationWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactStartPhoneVerificationWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyContactVerifyPhoneWithDispatcher:(XrpcDispatcher *)dispatcher;
+@end
 
 @implementation XrpcAppBskyMethods
 
@@ -2304,6 +2319,116 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
     [dispatcher registerMethod:@"app.bsky.unspecced.getTrendingTopics" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"topics": @[], @"suggested": @[]}];
+    }];
+
+    // ====================================================================
+    // Age Assurance & Contact: proxy-or-501 policy
+    // Registered unconditionally — age assurance and contact are PDS-level
+    // capabilities that may be fulfilled by an upstream AppView when
+    // localAppViewEnabled is false.
+    // ====================================================================
+
+    [self registerAppBskyAgeAssuranceBeginWithDispatcher:dispatcher];
+    [self registerAppBskyAgeAssuranceGetConfigWithDispatcher:dispatcher];
+    [self registerAppBskyAgeAssuranceGetStateWithDispatcher:dispatcher];
+
+    [self registerAppBskyContactDismissMatchWithDispatcher:dispatcher];
+    [self registerAppBskyContactGetMatchesWithDispatcher:dispatcher];
+    [self registerAppBskyContactGetSyncStatusWithDispatcher:dispatcher];
+    [self registerAppBskyContactImportContactsWithDispatcher:dispatcher];
+    [self registerAppBskyContactRemoveDataWithDispatcher:dispatcher];
+    [self registerAppBskyContactSendNotificationWithDispatcher:dispatcher];
+    [self registerAppBskyContactStartPhoneVerificationWithDispatcher:dispatcher];
+    [self registerAppBskyContactVerifyPhoneWithDispatcher:dispatcher];
+}
+
++ (void)setUnsupportedError:(HttpResponse *)response methodId:(NSString *)methodId {
+    response.statusCode = 501;
+    [response setJsonBody:@{
+        @"error": @"NotSupported",
+        @"message": [NSString stringWithFormat:@"Method '%@' is not supported by this PDS", methodId]
+    }];
+}
+
++ (void)proxyOrNotSupported:(HttpRequest *)request
+                    response:(HttpResponse *)response
+                    methodId:(NSString *)methodId
+                 dispatcher:(XrpcDispatcher *)dispatcher {
+    if (dispatcher.proxyURL) {
+        PDS_LOG_INFO(@"Proxying XRPC method '%@' to %@", methodId, dispatcher.proxyURL);
+        XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:dispatcher.proxyURL
+                                                                 upstreamDID:dispatcher.upstreamDID
+                                                                      minter:dispatcher.jwtMinter];
+        [proxy handleRequest:request response:response];
+    } else {
+        PDS_LOG_INFO(@"Method '%@' not supported locally and no upstream AppView configured", methodId);
+        [self setUnsupportedError:response methodId:methodId];
+    }
+}
+
++ (void)registerAppBskyAgeAssuranceBeginWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.ageassurance.begin" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.ageassurance.begin" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyAgeAssuranceGetConfigWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.ageassurance.getConfig" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.ageassurance.getConfig" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyAgeAssuranceGetStateWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.ageassurance.getState" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.ageassurance.getState" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactDismissMatchWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.dismissMatch" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.dismissMatch" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactGetMatchesWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.getMatches" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.getMatches" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactGetSyncStatusWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.getSyncStatus" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.getSyncStatus" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactImportContactsWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.importContacts" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.importContacts" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactRemoveDataWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.removeData" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.removeData" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactSendNotificationWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.sendNotification" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.sendNotification" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactStartPhoneVerificationWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.startPhoneVerification" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.startPhoneVerification" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyContactVerifyPhoneWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.contact.verifyPhone" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.verifyPhone" dispatcher:dispatcher];
     }];
 }
 

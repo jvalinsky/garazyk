@@ -6,3 +6,5 @@
 # Default policy for this repo: track core PDS surface first.
 
 +com.atproto.*
++app.bsky.*
+-app.bsky.unspecced.*
