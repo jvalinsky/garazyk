@@ -13,10 +13,9 @@
  * - com.atproto.label.queryLabels: Query labels with filtering
  * - com.atproto.label.createLabel: Create moderation labels (admin only)
  * - com.atproto.label.getLabels: Get labels by URI patterns (admin only)
+ * - com.atproto.label.subscribeLabels: WebSocket label subscription (upgrade-required handler)
  * - com.atproto.temp.fetchLabels: Deprecated label fetching (includes sunset headers)
  * - com.atproto.temp.requestPhoneVerification: Phone verification requests
- *
- * Note: com.atproto.label.subscribeLabels (WebSocket) is not yet implemented.
  */
 @interface XrpcLabelMethods : NSObject
 
