@@ -60,9 +60,9 @@ jobs:
           brew update
           brew install ninja cmake || true
 
-      - name: Check XRPC Registry Duplicates
+      - name: Check XRPC Registry Coverage
         run: |
-          node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates
+          node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates --fail-on-missing
 
       - name: Configure (CMake)
         run: |
