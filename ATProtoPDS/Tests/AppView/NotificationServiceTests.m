@@ -229,8 +229,160 @@
     NSString *insert = @"INSERT INTO notifications (did, author_did, reason, reason_subject, subject_uri, is_read) VALUES (?, ?, ?, ?, ?, ?)";
     NSError *error = nil;
     [self.database executeParameterizedUpdate:insert
-                                       params:@[did, @"did:plc:test-author", reason, [NSNull null], subjectURI, isRead ? @1 : @0]
+                                   params:@[did, @"did:plc:test-author", reason, [NSNull null], subjectURI, isRead ? @1 : @0]
+                                     error:&error];
+}
+
+#pragma mark - Token-scoped Unregister Tests
+
+- (void)testUnregisterPushTokenSuccess {
+    NSError *error = nil;
+    [self.service registerPushForActor:@"did:plc:tokuser1"
+                       deviceToken:@"tok-aaa"
+                     platformToken:@"ios"
+                     serviceEndpoint:@"https://push.example.com"
+                                error:&error];
+    XCTAssertNil(error);
+
+    error = nil;
+    BOOL success = [self.service unregisterPushToken:@"tok-aaa" forActor:@"did:plc:tokuser1" error:&error];
+    XCTAssertTrue(success);
+    XCTAssertNil(error);
+
+    error = nil;
+    NSArray *rows = [self.database executeParameterizedQuery:@"SELECT id FROM actor_push_tokens WHERE did = ? AND device_token = ?"
+                                                    params:@[@"did:plc:tokuser1", @"tok-aaa"]
+                                                     error:&error];
+    XCTAssertEqual(rows.count, 0);
+}
+
+- (void)testUnregisterPushTokenMissingDID {
+    NSError *error = nil;
+    BOOL success = [self.service unregisterPushToken:@"tok-bbb" forActor:@"" error:&error];
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+    XCTAssertEqualObjects(error.domain, @"NotificationService");
+    XCTAssertTrue([error.localizedDescription rangeOfString:@"actor DID" options:NSCaseInsensitiveSearch].location != NSNotFound);
+}
+
+- (void)testUnregisterPushTokenMissingToken {
+    NSError *error = nil;
+    BOOL success = [self.service unregisterPushToken:@"" forActor:@"did:plc:tokuser2" error:&error];
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+    XCTAssertEqualObjects(error.domain, @"NotificationService");
+    XCTAssertTrue([error.localizedDescription rangeOfString:@"device token" options:NSCaseInsensitiveSearch].location != NSNotFound);
+}
+
+#pragma mark - Activity Subscription Tests
+
+- (void)testPutActivitySubscriptionUpsert {
+    NSError *error = nil;
+
+    BOOL inserted = [self.service putActivitySubscriptionForActor:@"did:plc:subowner1"
+                                                         subject:@"did:plc:subtarget1"
+                                                    postEnabled:YES
+                                                    replyEnabled:NO
+                                                          error:&error];
+    XCTAssertTrue(inserted);
+    XCTAssertNil(error);
+
+    BOOL updated = [self.service putActivitySubscriptionForActor:@"did:plc:subowner1"
+                                                        subject:@"did:plc:subtarget1"
+                                                   postEnabled:NO
+                                                   replyEnabled:YES
+                                                         error:&error];
+    XCTAssertTrue(updated);
+    XCTAssertNil(error);
+
+    NSArray *rows = [self.database executeParameterizedQuery:
+        @"SELECT post_enabled, reply_enabled FROM actor_activity_subscriptions WHERE owner_did = ? AND subject_did = ?"
+                                                   params:@[@"did:plc:subowner1", @"did:plc:subtarget1"]
+                                                     error:&error];
+    XCTAssertEqual(rows.count, 1);
+    XCTAssertEqual([rows.firstObject[@"post_enabled"] integerValue], 0);
+    XCTAssertEqual([rows.firstObject[@"reply_enabled"] integerValue], 1);
+}
+
+- (void)testPutActivitySubscriptionMissingActor {
+    NSError *error = nil;
+    BOOL success = [self.service putActivitySubscriptionForActor:@""
+                                                        subject:@"did:plc:x"
+                                                   postEnabled:YES
+                                                   replyEnabled:YES
+                                                         error:&error];
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+}
+
+- (void)testPutActivitySubscriptionMissingSubject {
+    NSError *error = nil;
+    BOOL success = [self.service putActivitySubscriptionForActor:@"did:plc:y"
+                                                        subject:@""
+                                                   postEnabled:YES
+                                                   replyEnabled:YES
+                                                         error:&error];
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
+}
+
+- (void)testGetActivitySubscriptionsPagination {
+    NSError *error = nil;
+
+    [self.service putActivitySubscriptionForActor:@"did:plc:pageowner"
+                                        subject:@"did:plc:sub1"
+                                   postEnabled:YES
+                                   replyEnabled:NO
                                          error:&error];
+    XCTAssertNil(error);
+
+    error = nil;
+    [self.service putActivitySubscriptionForActor:@"did:plc:pageowner"
+                                        subject:@"did:plc:sub2"
+                                   postEnabled:YES
+                                   replyEnabled:YES
+                                         error:&error];
+    XCTAssertNil(error);
+
+    error = nil;
+    [self.service putActivitySubscriptionForActor:@"did:plc:pageowner"
+                                        subject:@"did:plc:sub3"
+                                   postEnabled:NO
+                                   replyEnabled:YES
+                                         error:&error];
+    XCTAssertNil(error);
+
+    error = nil;
+    NSDictionary *page1 = [self.service getActivitySubscriptionsForActor:@"did:plc:pageowner" limit:2 cursor:nil error:&error];
+    XCTAssertNotNil(page1);
+    XCTAssertEqual([page1[@"subscriptions"] count], 2);
+    XCTAssertNotNil(page1[@"cursor"]);
+
+    NSString *cursor = page1[@"cursor"];
+    XCTAssertNotNil(cursor);
+
+    error = nil;
+    NSDictionary *page2 = [self.service getActivitySubscriptionsForActor:@"did:plc:pageowner" limit:2 cursor:cursor error:&error];
+    XCTAssertNotNil(page2);
+    XCTAssertEqual([page2[@"subscriptions"] count], 1);
+    XCTAssertNil(page2[@"cursor"]);
+
+    for (id sub in page1[@"subscriptions"]) {
+        XCTAssertTrue([sub isKindOfClass:[NSDictionary class]]);
+        XCTAssertNotNil(sub[@"did"]);
+    }
+}
+
+- (void)testGetActivitySubscriptionsMissingDID {
+    NSError *error = nil;
+    NSDictionary *result = [self.service getActivitySubscriptionsForActor:@"" limit:50 cursor:nil error:&error];
+    XCTAssertNil(result);
+    XCTAssertNotNil(error);
+    XCTAssertEqual(error.code, 400);
 }
 
 @end
