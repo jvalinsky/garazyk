@@ -1,27 +1,24 @@
 # Product Overview
 
-September is a standards-compliant AT Protocol Personal Data Server (PDS) implementation written in Objective-C for macOS and Linux/GNUstep.
+September PDS is an Objective-C implementation of an AT Protocol Personal Data Server for macOS and Linux/GNUstep.
 
 ## Core Purpose
 
-Provides a self-hosted personal data server that implements the AT Protocol specifications, enabling users to control their own social data and identity in the decentralized AT Protocol network.
+Provide a self-hosted PDS that exposes AT Protocol endpoints, maintains per-account repository state, and includes contributor tooling for inspecting and operating the runtime.
 
-## Key Features
+## Primary Runtime Surfaces
 
-- Full AT Protocol compliance (DAG-CBOR, CAR v1, MST, Firehose)
-- OAuth 2.0 with DPoP authentication
-- Biometric security with hardware-backed key storage
-- Interactive web-based explorer UI
-- Auto-generated OpenAPI documentation
-- Comprehensive test coverage (1017 tests)
+- `/xrpc/*` for protocol-facing XRPC methods
+- `/api/pds/*` for contributor and operator inspection endpoints
+- `/ui` for the Cappuccino-based browser UI
+- `/metrics` for observability
 
-## Executables
+## Primary Executables
 
-- `kaszlak` - PDS CLI tool (main server binary)
-- `campagnola` - Standalone PLC directory server
+- `kaszlak` - main PDS CLI and server binary
+- `campagnola` - standalone PLC server
+- `AllTests` - shared Objective-C test runner
 
-## Default Configuration
+## Contributor Docs
 
-- Server port: 2583
-- Data directory: `./data/`
-- Config file: `config.json`
+The canonical contributor docs live under `docs/` and are published as a VitePress site. New contributors should start with `docs/index.md`, `docs/01-getting-started/setup.md`, and `docs/01-getting-started/codebase-map.md`.

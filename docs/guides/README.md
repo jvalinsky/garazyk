@@ -4,45 +4,39 @@ title: Developer Guides
 
 # Developer Guides
 
-Comprehensive guides for developing, deploying, and using the ATProto PDS server.
+This directory is specialized reference material. If you are new to the repository, start with the numbered contributor docs first:
 
-## Available Guides
+- [Contributor Guide](../index)
+- [Setup](../01-getting-started/setup)
+- [Codebase Map](../01-getting-started/codebase-map)
+- [Tutorials Overview](../10-tutorials/index)
 
-| File | Description | Audience |
-|------|-------------|----------|
-| [SETUP_GUIDE.md](# Setup guide) | Installation, build configuration, and server startup | New developers, operators |
-| [DEVELOPER_GUIDE.md](./development/DEVELOPER_GUIDE) | API extension procedures, project structure, and contribution guidelines | Contributors, API developers |
-| [USER_GUIDE.md](USER_GUIDE) | Web explorer interface and CLI commands for PDS data exploration | End users, operators |
-| [DEPLOYMENT.md](DEPLOYMENT) | Production deployment with reverse proxy, TLS, and environment configuration | DevOps, system administrators |
-| [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) | Visual Mermaid diagrams for build, test, and debugging workflows | All developers |
-| [objective_c_tips.md](objective_c_tips) | Research-driven Objective-C patterns, niche Cocoa/runtime techniques, and September-specific lookup guidance | Objective-C developers |
-| [objective-c-appendices/](objective-c-appendices/) | Appendix deep dives for forwarding, ARC edge cases, runtime mutation, observation traps, and macOS investigation | Objective-C developers |
-| [SCRIPT_DEVELOPMENT.md](SCRIPT_DEVELOPMENT) | Shell script standards, quality requirements, and script maintenance | DevOps, tooling developers |
-| [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) | Quick reference for XRPC methods, NSIDs, and data types | Protocol implementers |
-| [macOS_Network_Server_Guide.md](macOS_Network_Server_Guide) | Comprehensive macOS network programming with Network.framework and security APIs | macOS platform developers |
+Use `docs/guides/` when you need an older how-to, a longer operational write-up, or a focused reference that would be too dense for the main contributor path.
 
-## Quick Navigation
+## Guide Index
 
-### Getting Started
-1. [Setup and Installation](# Setup guide) - Build and run the server
-2. [User Guide](USER_GUIDE) - Explore data via web UI and CLI
-3. [Deployment](DEPLOYMENT) - Production configuration
+| File | Focus |
+| --- | --- |
+| [SETUP_GUIDE.md](SETUP_GUIDE) | older setup and local run guidance |
+| [development/DEVELOPER_GUIDE.md](development/DEVELOPER_GUIDE) | older contributor workflow and extension notes |
+| [USER_GUIDE.md](USER_GUIDE) | browser tooling and operator usage notes |
+| [DEPLOYMENT.md](DEPLOYMENT) | deployment-oriented guidance |
+| [DEVELOPMENT_WORKFLOWS.md](DEVELOPMENT_WORKFLOWS) | workflow diagrams |
+| [objective_c_tips.md](objective_c_tips) | Objective-C and Cocoa reference notes |
+| [objective-c-appendices/](objective-c-appendices/) | deeper Objective-C appendix material |
+| [SCRIPT_DEVELOPMENT.md](SCRIPT_DEVELOPMENT) | shell script standards |
+| [XRPC_PROTOCOL_REFERENCE.md](XRPC_PROTOCOL_REFERENCE) | older protocol quick reference |
+| [macOS_Network_Server_Guide.md](macOS_Network_Server_Guide) | platform-specific networking notes |
 
-### Development
-1. [Developer Guide](./development/DEVELOPER_GUIDE) - Add new endpoints and features
-2. [Objective-C Research Patterns](objective_c_tips) - Runtime, memory, Cocoa, and macOS research guidance
-3. [Objective-C Research Appendices](objective-c-appendices/) - Deep dives for the niche topics you only need when something gets weird
-4. [Script Development](SCRIPT_DEVELOPMENT) - Shell script standards
+## How To Use This Directory
 
-### Reference
-1. [XRPC Protocol Reference](XRPC_PROTOCOL_REFERENCE) - Protocol quick reference
-2. [Development Workflows](DEVELOPMENT_WORKFLOWS) - Visual process diagrams
-3. [macOS Network Guide](macOS_Network_Server_Guide) - Platform-specific networking
+- Prefer the numbered docs for current onboarding and contributor workflow.
+- Use these guides when you need extra depth or historical context.
+- Verify commands and route names against current runtime docs if a guide looks older than the main contributor pages.
 
-## Related Documentation
+## Related Collections
 
-- **Architecture**: <!-- Link placeholder: ../architecture/ --> - System design and diagrams
-- **OAuth2**: <!-- Link placeholder: ../oauth2/ --> - OAuth 2.0 and DPoP implementation
-- **Security**: <!-- Link placeholder: ../security/ --> - Security policies and audit guides
-- **Testing**: [../TESTING.md](../TESTING) - Test suite documentation
-- **Skills**: <!-- Link placeholder: ../skills/ --> - Development skills and audit checklists
+- [Architecture Notes](../architecture/README)
+- [Security Reference](../security/README)
+- [Test Catalog](../tests/README)
+- [Skills Reference](../skills/README)
