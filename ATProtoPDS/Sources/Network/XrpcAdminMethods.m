@@ -687,6 +687,49 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
         }];
     }];
 
+    // Register com.atproto.admin.getAccountTakedown
+    [dispatcher registerComAtprotoAdminGetAccountTakedown:^(HttpRequest *request, HttpResponse *response) {
+        if (![XrpcAuthHelper authorizeAdminRequest:request
+                                           response:response
+                                   serviceDatabases:serviceDatabases
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController]) {
+            return;
+        }
+        if (request.method != HttpMethodPOST) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"POST" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
+            return;
+        }
+
+        NSDictionary *body = [request.jsonBody isKindOfClass:[NSDictionary class]] ? request.jsonBody : nil;
+        NSString *did = body[@"did"];
+        if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
+            return;
+        }
+
+        NSError *didError = nil;
+        if (![ATProtoValidator validateDID:did error:&didError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
+            return;
+        }
+
+        NSError *queryError = nil;
+        BOOL applied = [adminController isAccountTakedownActive:did error:&queryError];
+        if (queryError) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"QueryFailed", @"message": queryError.localizedDescription ?: @"Failed to check takedown status"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"did": did, @"applied": @(applied)}];
+    }];
+
     // Register com.atproto.admin.deleteAccount
     [dispatcher registerComAtprotoAdminDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
         if (![XrpcAuthHelper authorizeAdminRequest:request

@@ -35,6 +35,17 @@ static BOOL parseStrictIntegerString(NSString *value, NSInteger *outValue) {
     return YES;
 }
 
+static void setSubscribeLabelsUpgradeRequired(HttpResponse *response) {
+    response.statusCode = 426;
+    [response setHeader:@"websocket" forKey:@"Upgrade"];
+    [response setHeader:@"Upgrade" forKey:@"Connection"];
+    [response setJsonBody:@{
+        @"error": @"UpgradeRequired",
+        @"message": @"WebSocket upgrade required for subscribeLabels"
+    }];
+    response.keepAlive = NO;
+}
+
 static BOOL isLikelyPhoneNumber(NSString *phoneNumber) {
     if (![phoneNumber isKindOfClass:[NSString class]]) {
         return NO;
@@ -247,6 +258,33 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
+    }];
+
+    // com.atproto.label.subscribeLabels - WebSocket subscription endpoint
+    [dispatcher registerComAtprotoLabelSubscribeLabels:^(HttpRequest *request, HttpResponse *response) {
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *cursorParam = [request queryParamForKey:@"cursor"];
+        if (cursorParam.length > 0) {
+            NSInteger cursor = 0;
+            if (!parseStrictIntegerString(cursorParam, &cursor) || cursor < 0) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"cursor must be a non-negative integer"}];
+                return;
+            }
+            if (cursor > 0) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"FutureCursor", @"message": @"Requested cursor is ahead of available label events"}];
+                return;
+            }
+        }
+
+        setSubscribeLabelsUpgradeRequired(response);
     }];
     
     // com.atproto.temp.fetchLabels - Deprecated label fetching
