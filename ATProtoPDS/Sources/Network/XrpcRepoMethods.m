@@ -581,6 +581,71 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         [response setJsonBody:result];
     }];
 
+    // com.atproto.repo.getBlob (legacy compatibility wrapper)
+    [dispatcher registerComAtprotoRepoGetBlob:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                       jwtMinter:jwtMinter
+                                                 adminController:adminController
+                                                         request:request
+                                                        response:response];
+        if (!did) {
+            if (response.statusCode == HttpStatusOK) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            }
+            return;
+        }
+
+        NSString *cid = [request queryParamForKey:@"cid"];
+        if (cid.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing cid"}];
+            return;
+        }
+
+        NSString *didParam = [request queryParamForKey:@"did"];
+        NSString *blobDid = didParam.length > 0 ? didParam : did;
+        if (![blobDid isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot fetch blob for another user"}];
+            return;
+        }
+
+        NSError *blobError = nil;
+        NSDictionary *result = [blobService getBlobStreamWithCID:cid did:blobDid error:&blobError];
+        if (!result && !blobError) {
+            result = [blobService getBlobWithCID:cid did:blobDid error:&blobError];
+        }
+        if (!result) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"BlobRetrievalFailed",
+                                    @"message": blobError.localizedDescription ?: @"Blob not found"}];
+            return;
+        }
+
+        NSString *mimeType = [result[@"mimeType"] isKindOfClass:[NSString class]] && [result[@"mimeType"] length] > 0
+                                 ? result[@"mimeType"]
+                                 : @"application/octet-stream";
+        response.contentType = mimeType;
+        response.statusCode = HttpStatusOK;
+
+        NSString *filePath = [result[@"filePath"] isKindOfClass:[NSString class]] ? result[@"filePath"] : nil;
+        if (filePath.length > 0) {
+            [response setBodyFileAtPath:filePath deleteAfterSend:NO];
+            return;
+        }
+
+        NSData *blobData = [result[@"blob"] isKindOfClass:[NSData class]] ? result[@"blob"] : nil;
+        if (!blobData) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"BlobReadFailed", @"message": @"Blob payload unavailable"}];
+            return;
+        }
+
+        [response setBodyData:blobData];
+    }];
+
     // com.atproto.repo.importRepo
     [dispatcher registerComAtprotoRepoImportRepo:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -844,6 +909,82 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         NSArray *resultsArray = result[@"results"];
         NSDictionary *firstResult = resultsArray.count > 0 ? resultsArray.firstObject : nil;
         
+        NSMutableDictionary *resBody = [NSMutableDictionary dictionary];
+        if (firstResult[@"uri"]) resBody[@"uri"] = firstResult[@"uri"];
+        if (firstResult[@"cid"]) resBody[@"cid"] = firstResult[@"cid"];
+        if (result[@"commit"]) resBody[@"commit"] = result[@"commit"];
+        resBody[@"validationStatus"] = firstResult[@"validationStatus"] ?: @"valid";
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:resBody];
+    }];
+
+    // com.atproto.repo.updateRecord (legacy compatibility wrapper)
+    [dispatcher registerComAtprotoRepoUpdateRecord:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                       jwtMinter:jwtMinter
+                                                 adminController:adminController
+                                                         request:request
+                                                        response:response];
+        if (!did) {
+            if (response.statusCode == HttpStatusOK) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            }
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *collection = body[@"collection"];
+        NSString *rkey = body[@"rkey"];
+        id record = body[@"record"];
+        NSString *repo = body[@"repo"];
+        NSString *swapCommit = body[@"swapCommit"];
+        PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
+
+        if (repo && ![repo isEqualToString:did]) {
+            response.statusCode = HttpStatusForbidden;
+            [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot update record for another user"}];
+            return;
+        }
+
+        if (collection.length == 0 || rkey.length == 0 || !record) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing collection, rkey, or record"}];
+            return;
+        }
+
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        NSDictionary *existing = [recordService getRecord:uri forDid:did error:nil];
+        if (!existing) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record does not exist"}];
+            return;
+        }
+
+        NSDictionary *write = @{
+            @"action": @"update",
+            @"collection": collection,
+            @"rkey": rkey,
+            @"value": record
+        };
+
+        NSError *error = nil;
+        NSDictionary *result = [recordService applyWrites:@[write]
+                                                   forDid:did
+                                           validationMode:mode
+                                               swapCommit:swapCommit
+                                                    error:&error];
+        if (!result) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"RecordUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update record"}];
+            return;
+        }
+
+        NSArray *resultsArray = result[@"results"];
+        NSDictionary *firstResult = resultsArray.count > 0 ? resultsArray.firstObject : nil;
+
         NSMutableDictionary *resBody = [NSMutableDictionary dictionary];
         if (firstResult[@"uri"]) resBody[@"uri"] = firstResult[@"uri"];
         if (firstResult[@"cid"]) resBody[@"cid"] = firstResult[@"cid"];
