@@ -21,7 +21,12 @@
 }
 
 + (nullable NSData *)decode:(NSString *)string {
-    if (!string) return nil;
+    if (!string || string.length == 0) return nil;
+
+    if ([string hasSuffix:@"="]) {
+        return nil;
+    }
+
     NSMutableString *base64 = [string mutableCopy];
     NSUInteger remainder = base64.length % 4;
     if (remainder > 0) {
