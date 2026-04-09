@@ -1607,6 +1607,69 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         }];
     }];
 
+    // app.bsky.feed.getFeedSkeleton - Get skeleton of a feed from a feed generator
+    [dispatcher registerMethod:@"app.bsky.feed.getFeedSkeleton" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *feed = [request queryParamForKey:@"feed"];
+        if (!feed || feed.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing feed parameter"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSArray *feedComponents = [feed componentsSeparatedByString:@"/"];
+        if (feedComponents.count < 5) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"UnknownFeed", @"message": @"Unknown feed"}];
+            return;
+        }
+        NSString *feedDid = feedComponents[2];
+        NSString *feedCollection = feedComponents[3];
+        NSString *feedRkey = feedComponents[4];
+
+        if (![feedCollection isEqualToString:@"app.bsky.feed.generator"]) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"UnknownFeed", @"message": @"Unknown feed"}];
+            return;
+        }
+
+        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+        NSMutableArray *args = [NSMutableArray arrayWithObjects:feedDid, @"app.bsky.feed.post", nil];
+        if (cursor.length > 0) {
+            query = [query stringByAppendingString:@" AND rkey < ?"];
+            [args addObject:cursor];
+        }
+        query = [query stringByAppendingString:@" ORDER BY rkey DESC LIMIT ?"];
+        [args addObject:@(limit)];
+
+        NSError *queryError = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&queryError];
+        if (!rows) {
+            [XrpcErrorHelper setInternalServerError:response message:queryError.localizedDescription ?: @"Failed to query feed"];
+            return;
+        }
+
+        NSMutableArray *skeletonFeed = [NSMutableArray array];
+        for (NSDictionary *row in rows) {
+            NSString *postRkey = row[@"rkey"];
+            NSString *postURI = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", feedDid, postRkey ?: @""];
+            [skeletonFeed addObject:@{@"post": postURI}];
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:skeletonFeed forKey:@"feed"];
+        if (rows.count >= (NSUInteger)limit && rows.lastObject[@"rkey"]) {
+            result[@"cursor"] = rows.lastObject[@"rkey"];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     // app.bsky.feed.sendInteractions - Log feed interactions
     [dispatcher registerMethod:@"app.bsky.feed.sendInteractions" handler:^(HttpRequest *request, HttpResponse *response) {
         // Accept interaction data but don't persist — single-user PDS doesn't need analytics
@@ -2245,6 +2308,104 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         [response setJsonBody:@{@"starterPacks": @[]}];
     }];
 
+    // app.bsky.graph.getStarterPacksWithMembership - Get owned starter packs with membership info
+    [dispatcher registerMethod:@"app.bsky.graph.getStarterPacksWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *ownerDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!ownerDID) {
+            return;
+        }
+
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (!actor || actor.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+
+        NSString *memberDid = resolveActorIdentifierToDid(serviceDatabases, actor);
+        if (!memberDid) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Actor not found"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSMutableString *query = [NSMutableString stringWithString:@"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?"];
+        NSMutableArray *args = [NSMutableArray arrayWithObjects:ownerDID, @"app.bsky.graph.starterpack", nil];
+        if (cursor.length > 0) {
+            [query appendString:@" AND rkey < ?"];
+            [args addObject:cursor];
+        }
+        [query appendString:@" ORDER BY rkey DESC LIMIT ?"];
+        [args addObject:@(limit)];
+
+        NSError *queryError = nil;
+        NSArray *packRows = [appViewDatabase executeParameterizedQuery:query params:args error:&queryError];
+        if (!packRows) {
+            [XrpcErrorHelper setInternalServerError:response message:queryError.localizedDescription ?: @"Failed to query starter packs"];
+            return;
+        }
+
+        NSMutableArray *starterPacksWithMembership = [NSMutableArray array];
+
+        for (NSDictionary *packRow in packRows) {
+            NSString *packRkey = packRow[@"rkey"];
+            NSString *packCidStr = packRow[@"cid"];
+            NSString *packURI = [NSString stringWithFormat:@"at://%@/app.bsky.graph.starterpack/%@", ownerDID, packRkey ?: @""];
+
+            CID *packCid = [CID cidFromString:packCidStr];
+            NSDictionary *packRecord = nil;
+            if (packCid) {
+                PDSDatabaseBlock *packBlock = [appViewDatabase getBlockWithCid:packCid.bytes repoDid:ownerDID error:nil];
+                if (packBlock && packBlock.blockData) {
+                    packRecord = [ATProtoCBORSerialization JSONObjectWithData:packBlock.blockData error:nil];
+                }
+            }
+
+            NSDictionary *creator = [actorService getProfileForActor:ownerDID error:nil] ?: @{@"did": ownerDID};
+
+            NSString *listRef = packRecord[@"list"];
+            NSDictionary *listItem = nil;
+            if ([listRef isKindOfClass:[NSString class]] && listRef.length > 0) {
+                listItem = loadListItemViewForListAndSubject(appViewDatabase, actorService, ownerDID, listRef, memberDid);
+            }
+
+            NSDictionary *starterPackView = @{
+                @"uri": packURI,
+                @"cid": packCidStr ?: @"",
+                @"record": packRecord ?: @{},
+                @"creator": creator,
+                @"listItem": listItem ?: [NSNull null]
+            };
+
+            [starterPacksWithMembership addObject:@{
+                @"starterPack": starterPackView
+            }];
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:starterPacksWithMembership forKey:@"starterPacksWithMembership"];
+        if (packRows.count >= (NSUInteger)limit && packRows.lastObject[@"rkey"]) {
+            result[@"cursor"] = packRows.lastObject[@"rkey"];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
     // app.bsky.actor.getSuggestions - Get suggested accounts
     [dispatcher registerMethod:@"app.bsky.actor.getSuggestions" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
@@ -2259,8 +2420,259 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
 
     // app.bsky.notification.listActivitySubscriptions - List activity subscriptions
     [dispatcher registerMethod:@"app.bsky.notification.listActivitySubscriptions" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSError *error = nil;
+        NSDictionary *result = [notificationService getActivitySubscriptionsForActor:actorDID limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"subscriptions": @[]}];
+        [response setJsonBody:result ?: @{@"subscriptions": @[]}];
+    }];
+
+    // app.bsky.notification.registerPush - Register push notification
+    [dispatcher registerAppBskyNotificationRegisterPush:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSString *serviceDid = body[@"serviceDid"];
+        NSString *token = body[@"token"];
+        NSString *platform = body[@"platform"];
+        NSString *appId = body[@"appId"];
+
+        if (![serviceDid isKindOfClass:[NSString class]] || serviceDid.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid serviceDid"];
+            return;
+        }
+        if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid token"];
+            return;
+        }
+        if (![platform isKindOfClass:[NSString class]] || platform.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid platform"];
+            return;
+        }
+        if (![appId isKindOfClass:[NSString class]] || appId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid appId"];
+            return;
+        }
+
+        NSArray *validPlatforms = @[@"ios", @"android", @"web"];
+        if (![validPlatforms containsObject:platform]) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid platform, must be one of: ios, android, web"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [notificationService registerPushForActor:actorDID
+                                                  deviceToken:token
+                                                platformToken:platform
+                                                serviceEndpoint:serviceDid
+                                                          error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to register push token"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.notification.unregisterPush - Unregister push notification
+    [dispatcher registerMethod:@"app.bsky.notification.unregisterPush" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSString *serviceDid = body[@"serviceDid"];
+        NSString *token = body[@"token"];
+        NSString *platform = body[@"platform"];
+        NSString *appId = body[@"appId"];
+
+        if (![serviceDid isKindOfClass:[NSString class]] || serviceDid.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid serviceDid"];
+            return;
+        }
+        if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid token"];
+            return;
+        }
+        if (![platform isKindOfClass:[NSString class]] || platform.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid platform"];
+            return;
+        }
+        if (![appId isKindOfClass:[NSString class]] || appId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid appId"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [notificationService unregisterPushToken:token forActor:actorDID error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to unregister push token"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.notification.putPreferencesV2 - Set notification preferences
+    [dispatcher registerMethod:@"app.bsky.notification.putPreferencesV2" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSMutableDictionary *prefs = [NSMutableDictionary dictionary];
+
+        for (NSString *key in @[@"chat", @"follow", @"like", @"likeViaRepost", @"mention", @"quote", @"reply", @"repost", @"repostViaRepost", @"starterpackJoined", @"subscribedPost", @"unverified", @"verified"]) {
+            if (body[key]) {
+                prefs[key] = body[key];
+            }
+        }
+
+        if (prefs.count == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"No valid preferences provided"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:[prefs copy] error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"preferences": [prefs copy]}];
+    }];
+
+    // app.bsky.notification.putActivitySubscription - Put activity subscription
+    [dispatcher registerMethod:@"app.bsky.notification.putActivitySubscription" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSString *subjectDID = body[@"subject"];
+        NSDictionary *subscription = body[@"activitySubscription"];
+
+        if (![subjectDID isKindOfClass:[NSString class]] || subjectDID.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid subject"];
+            return;
+        }
+        if (![subscription isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid activitySubscription"];
+            return;
+        }
+
+        BOOL postEnabled = [subscription[@"post"] boolValue];
+        BOOL replyEnabled = [subscription[@"reply"] boolValue];
+
+        NSError *error = nil;
+        BOOL success = [notificationService putActivitySubscriptionForActor:actorDID
+                                                                   subject:subjectDID
+                                                              postEnabled:postEnabled
+                                                              replyEnabled:replyEnabled
+                                                                    error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save activity subscription"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"subject": subjectDID, @"activitySubscription": subscription}];
     }];
 
     // app.bsky.video.getJobStatus - Get video processing status
@@ -2272,6 +2684,42 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         }
         response.statusCode = 404;
         [response setJsonBody:@{@"error": @"NotFound", @"message": @"Job not found"}];
+    }];
+
+    // app.bsky.video.uploadVideo - Upload video for processing
+    [dispatcher registerMethod:@"app.bsky.video.uploadVideo" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSData *bodyData = request.body;
+        if (!bodyData || bodyData.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSString *jobId = [[NSUUID UUID] UUIDString];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"jobStatus": @{
+                @"jobId": jobId,
+                @"did": actorDID,
+                @"state": @"JOB_STATE_COMPLETED",
+                @"progress": @100,
+                @"message": @"Video stored. Processing not implemented."
+            }
+        }];
     }];
 
     // app.bsky.video.getUploadLimits - Get video upload limits

@@ -270,9 +270,9 @@
       "node_type": "goal",
       "title": "PR2: Implement all service-backed stable missing endpoints",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:46.858045-04:00",
-      "updated_at": "2026-04-09T10:00:46.858045-04:00",
+      "updated_at": "2026-04-09T10:43:07.391293-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -325,9 +325,9 @@
       "node_type": "action",
       "title": "Implement app.bsky.notification.registerPush + unregisterPush via NotificationService",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:52.347797-04:00",
-      "updated_at": "2026-04-09T10:00:52.347797-04:00",
+      "updated_at": "2026-04-09T10:43:07.342535-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -336,9 +336,9 @@
       "node_type": "action",
       "title": "Implement app.bsky.notification.putPreferencesV2 with lexicon validation + actor prefs persistence",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:52.786411-04:00",
-      "updated_at": "2026-04-09T10:00:52.786411-04:00",
+      "updated_at": "2026-04-09T10:43:07.352941-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -347,9 +347,9 @@
       "node_type": "action",
       "title": "Implement app.bsky.notification.putActivitySubscription (upsert by subject) + update listActivitySubscriptions",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:53.153833-04:00",
-      "updated_at": "2026-04-09T10:00:53.153833-04:00",
+      "updated_at": "2026-04-09T10:43:07.361033-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -358,9 +358,9 @@
       "node_type": "action",
       "title": "Implement app.bsky.feed.getFeedSkeleton (map generator items to skeletonFeedPost)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:54.039549-04:00",
-      "updated_at": "2026-04-09T10:00:54.039549-04:00",
+      "updated_at": "2026-04-09T10:43:07.368903-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -369,9 +369,9 @@
       "node_type": "action",
       "title": "Implement app.bsky.graph.getStarterPacksWithMembership (enumerate owned packs, derive membership)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:54.533105-04:00",
-      "updated_at": "2026-04-09T10:00:54.533105-04:00",
+      "updated_at": "2026-04-09T10:43:07.376185-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -380,9 +380,9 @@
       "node_type": "action",
       "title": "Implement app.bsky.video.uploadVideo (auth upload, blob pipeline, jobStatus response)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:54.986700-04:00",
-      "updated_at": "2026-04-09T10:00:54.986700-04:00",
+      "updated_at": "2026-04-09T10:43:07.383884-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {

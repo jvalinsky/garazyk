@@ -43,8 +43,13 @@ NS_ASSUME_NONNULL_BEGIN
                serviceEndpoint:(NSString *)serviceEndpoint
                        error:(NSError **)error;
 
-/*! Unregister push notifications for actor. */
+/*! Unregister push notifications for actor (actor-wide). */
 - (BOOL)unregisterPushForActor:(NSString *)actorDID error:(NSError **)error;
+
+/*! Unregister a specific push token for actor (token-scoped). */
+- (BOOL)unregisterPushToken:(NSString *)deviceToken
+                   forActor:(NSString *)actorDID
+                      error:(NSError **)error;
 
 /*! Get notification feed with pagination. */
 - (nullable NSArray<NSDictionary *> *)getNotificationsForActor:(NSString *)actorDID
@@ -71,6 +76,19 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Delete notifications matching a subject URI (used when a record is deleted). */
 - (BOOL)deleteNotificationsForSubjectURI:(NSString *)subjectURI error:(NSError **)error;
+
+/*! Put (upsert) an activity subscription entry keyed by subject DID. */
+- (BOOL)putActivitySubscriptionForActor:(NSString *)actorDID
+                               subject:(NSString *)subjectDID
+                          postEnabled:(BOOL)postEnabled
+                          replyEnabled:(BOOL)replyEnabled
+                                error:(NSError **)error;
+
+/*! List activity subscriptions for actor with pagination. */
+- (nullable NSDictionary *)getActivitySubscriptionsForActor:(NSString *)actorDID
+                                                      limit:(NSInteger)limit
+                                                    cursor:(nullable NSString *)cursor
+                                                      error:(NSError **)error;
 
 @end
 
