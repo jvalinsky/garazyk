@@ -54,6 +54,17 @@
 
     // Migration: add author_did column if it doesn't exist
     [self.database executeRawSQL:@"ALTER TABLE notifications ADD COLUMN author_did TEXT NOT NULL DEFAULT ''" error:nil];
+
+    NSString *createActivitySubscriptionsSQL = @"CREATE TABLE IF NOT EXISTS actor_activity_subscriptions ("
+                                              @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                              @"owner_did TEXT NOT NULL, "
+                                              @"subject_did TEXT NOT NULL, "
+                                              @"post_enabled INTEGER DEFAULT 1, "
+                                              @"reply_enabled INTEGER DEFAULT 1, "
+                                              @"created_at TEXT DEFAULT (datetime('now')), "
+                                              @"updated_at TEXT DEFAULT (datetime('now')), "
+                                              @"UNIQUE(owner_did, subject_did))";
+    [self.database executeRawSQL:createActivitySubscriptionsSQL error:nil];
 }
 
 - (BOOL)registerPushForActor:(NSString *)actorDID
@@ -280,6 +291,93 @@
 
     NSString *sql = @"DELETE FROM notifications WHERE subject_uri = ?";
     return [self.database executeParameterizedUpdate:sql params:@[subjectURI] error:error];
+}
+
+- (BOOL)unregisterPushToken:(NSString *)deviceToken
+                   forActor:(NSString *)actorDID
+                      error:(NSError **)error {
+    if (!actorDID || actorDID.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"NotificationService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID"}];
+        }
+        return NO;
+    }
+    if (!deviceToken || deviceToken.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"NotificationService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing device token"}];
+        }
+        return NO;
+    }
+
+    NSString *query = @"DELETE FROM actor_push_tokens WHERE did = ? AND device_token = ?";
+    return [self.database executeParameterizedUpdate:query params:@[actorDID, deviceToken] error:error];
+}
+
+- (BOOL)putActivitySubscriptionForActor:(NSString *)actorDID
+                               subject:(NSString *)subjectDID
+                          postEnabled:(BOOL)postEnabled
+                          replyEnabled:(BOOL)replyEnabled
+                                error:(NSError **)error {
+    if (!actorDID || actorDID.length == 0 || !subjectDID || subjectDID.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"NotificationService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing required parameter"}];
+        }
+        return NO;
+    }
+
+    NSString *query = @"INSERT INTO actor_activity_subscriptions (owner_did, subject_did, post_enabled, reply_enabled) VALUES (?, ?, ?, ?) "
+                      @"ON CONFLICT(owner_did, subject_did) DO UPDATE SET post_enabled = excluded.post_enabled, reply_enabled = excluded.reply_enabled, updated_at = datetime('now')";
+    return [self.database executeParameterizedUpdate:query params:@[actorDID, subjectDID, @(postEnabled ? 1 : 0), @(replyEnabled ? 1 : 0)] error:error];
+}
+
+- (nullable NSDictionary *)getActivitySubscriptionsForActor:(NSString *)actorDID
+                                                      limit:(NSInteger)limit
+                                                    cursor:(nullable NSString *)cursor
+                                                      error:(NSError **)error {
+    if (!actorDID || actorDID.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"NotificationService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID"}];
+        }
+        return nil;
+    }
+
+    limit = MIN(limit > 0 ? limit : 50, 100);
+
+    NSMutableString *query = [NSMutableString stringWithString:@"SELECT id, subject_did FROM actor_activity_subscriptions WHERE owner_did = ?"];
+    if (cursor) {
+        [query appendString:@" AND id > ?"];
+    }
+    [query appendString:@" ORDER BY id ASC LIMIT ?"];
+
+    NSMutableArray *args = [NSMutableArray arrayWithObject:actorDID];
+    if (cursor) {
+        [args addObject:@([cursor integerValue])];
+    }
+    [args addObject:@(limit)];
+
+    NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
+    NSMutableArray *subscriptions = [NSMutableArray array];
+
+    for (NSDictionary *row in rows) {
+        NSString *subjectDID = row[@"subject_did"];
+        if (!subjectDID || subjectDID.length == 0) continue;
+
+        NSDictionary *profile = nil;
+        if (self.actorService) {
+            profile = [self.actorService getProfileForActor:subjectDID error:nil];
+        }
+        if (!profile) {
+            profile = @{@"did": subjectDID, @"handle": @"handle.invalid"};
+        }
+        [subscriptions addObject:profile];
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:subscriptions forKey:@"subscriptions"];
+    if (rows.count >= (NSUInteger)limit) {
+        NSDictionary *lastRow = rows.lastObject;
+        result[@"cursor"] = [NSString stringWithFormat:@"%@", lastRow[@"id"]];
+    }
+    return [result copy];
 }
 
 @end
