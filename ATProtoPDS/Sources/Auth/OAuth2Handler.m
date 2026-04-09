@@ -57,8 +57,9 @@
 - (NSString *)escapeHtml:(NSString *)input;
 - (void)serveAuthorizePage:(HttpResponse *)response
                     params:(NSDictionary *)params;
-- (NSDictionary *)fetchClientMetadataFromURL:(NSString *)url
-                                       error:(NSError **)error;
+- (void)fetchClientMetadataFromURL:(NSString *)url
+                        completion:(void (^)(NSDictionary *_Nullable metadata,
+                                             NSError *_Nullable error))completion;
 - (BOOL)validateJWTAssertion:(NSString *)assertion
                    withClient:(NSDictionary *)client
                         error:(NSError **)error;
