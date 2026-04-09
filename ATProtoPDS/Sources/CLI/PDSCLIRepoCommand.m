@@ -5,6 +5,7 @@
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/TID.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Repository/MST.h"
 #import "Repository/RepoCommit.h"
 #import "Debug/PDSLogger.h"
@@ -91,15 +92,6 @@
     if ([rkey isKindOfClass:[NSString class]]) {
         rkey = [rkey stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     }
-    
-    if (rkey.length == 0) {
-        if ([collection isEqualToString:@"app.bsky.feed.post"]) {
-            rkey = [TID tid].stringValue;
-        } else {
-            [context printError:@"rkey is required for non-post collections. For app.bsky.feed.post, omit rkey to auto-generate a TID."];
-            return;
-        }
-    }
 
     PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:context.dataDir maxSize:10];
     PDSRecordService *recordService = [[PDSRecordService alloc] initWithDatabasePool:pool];
@@ -111,6 +103,17 @@
     if (!value) {
         [context printError:[NSString stringWithFormat:@"Invalid JSON value: %@", jsonError.localizedDescription]];
         return;
+    }
+
+    if (rkey.length == 0) {
+        if ([collection isEqualToString:@"app.bsky.feed.post"]) {
+            NSString *createdAtString = [value[@"createdAt"] isKindOfClass:[NSString class]] ? value[@"createdAt"] : nil;
+            NSDate *createdAt = [NSDateFormatter atproto_dateFromString:createdAtString];
+            rkey = createdAt ? [TID tidWithDate:createdAt].stringValue : [TID tid].stringValue;
+        } else {
+            [context printError:@"rkey is required for non-post collections. For app.bsky.feed.post, omit rkey to auto-generate a TID."];
+            return;
+        }
     }
 
     NSError *error = nil;
