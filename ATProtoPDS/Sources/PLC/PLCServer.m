@@ -187,6 +187,14 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         }
         return NO;
     }
+    if (rotationKeys.count < 1) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                         code:13
+                                     userInfo:@{NSLocalizedDescriptionKey: @"rotationKeys must contain at least 1 key"}];
+        }
+        return NO;
+    }
     if (rotationKeys.count > kPLCMaxRotationKeyEntries) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
@@ -200,12 +208,21 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             return NO;
         }
     }
+    NSSet *uniqueRotationKeys = [NSSet setWithArray:rotationKeys];
+    if (uniqueRotationKeys.count != rotationKeys.count) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                         code:15
+                                     userInfo:@{NSLocalizedDescriptionKey: @"rotationKeys must not contain duplicates"}];
+        }
+        return NO;
+    }
 
     NSDictionary *services = op[@"services"];
     if (![services isKindOfClass:[NSDictionary class]]) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                         code:15
+                                         code:16
                                      userInfo:@{NSLocalizedDescriptionKey: @"services must be object"}];
         }
         return NO;
@@ -213,7 +230,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     if (services.count > kPLCMaxServiceEntries) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                         code:16
+                                         code:17
                                      userInfo:@{NSLocalizedDescriptionKey: @"Too many service entries"}];
         }
         return NO;
@@ -222,7 +239,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         if (serviceId.length > kPLCMaxIdentifierLength) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:17
+                                             code:18
                                          userInfo:@{NSLocalizedDescriptionKey: @"Service id too long"}];
             }
             return NO;
@@ -231,7 +248,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         if (![service isKindOfClass:[NSDictionary class]]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:18
+                                             code:19
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid service entry"}];
             }
             return NO;
@@ -242,7 +259,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             ![endpoint isKindOfClass:[NSString class]] || endpoint.length > kPLCMaxServiceEndpointLength) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:19
+                                             code:20
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid service entry"}];
             }
             return NO;
@@ -253,7 +270,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     if (![verificationMethods isKindOfClass:[NSDictionary class]]) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                         code:20
+                                         code:21
                                      userInfo:@{NSLocalizedDescriptionKey: @"verificationMethods must be object"}];
         }
         return NO;
@@ -261,7 +278,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     if (verificationMethods.count > kPLCMaxVerificationMethodEntries) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                         code:21
+                                         code:22
                                      userInfo:@{NSLocalizedDescriptionKey: @"Too many verificationMethods entries"}];
         }
         return NO;
@@ -270,8 +287,8 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         if (methodId.length > kPLCMaxIdentifierLength) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:22
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Verification method id too long"}];
+                                             code:23
+                                         userInfo:@{NSLocalizedDescriptionKey: @"verificationMethod id too long"}];
             }
             return NO;
         }
@@ -279,24 +296,11 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         if (![key isKindOfClass:[NSString class]] || key.length > kPLCMaxDidKeyLength) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:23
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid verification method key"}];
+                                             code:24
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid verificationMethod key"}];
             }
             return NO;
         }
-        if (!PLCValidateDidKey(key, error)) {
-            return NO;
-        }
-    }
-
-    id prevValue = op[@"prev"];
-    if (!(prevValue == [NSNull null] || [prevValue isKindOfClass:[NSString class]])) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                         code:24
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid prev value"}];
-        }
-        return NO;
     }
 
     return YES;
