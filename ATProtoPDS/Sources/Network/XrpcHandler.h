@@ -452,6 +452,9 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Registers handler for app.bsky.notification.registerPush. */
 - (void)registerAppBskyNotificationRegisterPush:(XrpcMethodHandler)handler;
 
+/*! Registers handler for app.bsky.notification.unregisterPush. */
+- (void)registerAppBskyNotificationUnregisterPush:(XrpcMethodHandler)handler;
+
 // MARK: - App Bsky Bookmark Methods
 
 /*! Registers handler for app.bsky.bookmark.getBookmarks. */
