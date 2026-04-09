@@ -2598,28 +2598,47 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             return;
         }
 
-        NSMutableDictionary *prefs = [NSMutableDictionary dictionary];
+        NSMutableArray *prefsToStore = [NSMutableArray array];
 
-        for (NSString *key in @[@"chat", @"follow", @"like", @"likeViaRepost", @"mention", @"quote", @"reply", @"repost", @"repostViaRepost", @"starterpackJoined", @"subscribedPost", @"unverified", @"verified"]) {
-            if (body[key]) {
-                prefs[key] = body[key];
+        NSDictionary *typeMap = @{
+            @"chat": @"app.bsky.notification.defs#chatPreference",
+            @"follow": @"app.bsky.notification.defs#filterablePreference",
+            @"like": @"app.bsky.notification.defs#filterablePreference",
+            @"likeViaRepost": @"app.bsky.notification.defs#filterablePreference",
+            @"mention": @"app.bsky.notification.defs#filterablePreference",
+            @"quote": @"app.bsky.notification.defs#filterablePreference",
+            @"reply": @"app.bsky.notification.defs#filterablePreference",
+            @"repost": @"app.bsky.notification.defs#filterablePreference",
+            @"repostViaRepost": @"app.bsky.notification.defs#filterablePreference",
+            @"starterpackJoined": @"app.bsky.notification.defs#preference",
+            @"subscribedPost": @"app.bsky.notification.defs#preference",
+            @"unverified": @"app.bsky.notification.defs#preference",
+            @"verified": @"app.bsky.notification.defs#preference"
+        };
+
+        for (NSString *key in typeMap) {
+            id value = body[key];
+            if (value && [value isKindOfClass:[NSDictionary class]]) {
+                NSMutableDictionary *pref = [value mutableCopy];
+                pref[@"$type"] = typeMap[key];
+                [prefsToStore addObject:[pref copy]];
             }
         }
 
-        if (prefs.count == 0) {
+        if (prefsToStore.count == 0) {
             [XrpcErrorHelper setValidationError:response message:@"No valid preferences provided"];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [actorService putPreferencesForActor:actorDID preferences:[prefs copy] error:&error];
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:[prefsToStore copy] error:&error];
         if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
             return;
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"preferences": [prefs copy]}];
+        [response setJsonBody:@{@"preferences": body}];
     }];
 
     // app.bsky.notification.putActivitySubscription - Put activity subscription
@@ -2700,6 +2719,7 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
                                                              request:request
                                                             response:response];
         if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Invalid or expired token"];
             return;
         }
 
