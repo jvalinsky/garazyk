@@ -1,96 +1,54 @@
 # Technology Stack
 
-## Languages & Runtime
+## Languages and Runtime
 
-- Objective-C with ARC (Automatic Reference Counting)
-- Targets: macOS (Xcode/clang) and Linux (GNUstep 2.2 runtime)
-- C for performance-critical components
+- Objective-C with ARC
+- C for low-level and performance-sensitive components
+- Targets: macOS and Linux/GNUstep
 
 ## Build System
 
-- CMake 3.21+ (primary build system)
-- XcodeGen (macOS project generation)
-- Out-of-source builds required
+- CMake is the underlying build system
+- XcodeGen is the canonical macOS project-generation path
+- Out-of-source builds are required
 
 ## Core Dependencies
 
-- SQLite (data persistence)
-- OpenSSL (cryptographic operations)
-- libsecp256k1 (AT Protocol signing)
-- Foundation framework
-- Security framework (macOS)
+- SQLite
+- OpenSSL
+- libsecp256k1
+- Foundation
+- Security framework on macOS
 
-## Common Build Commands
+## Canonical Build Commands
 
 ### macOS
 
 ```bash
-# Generate Xcode project
 xcodegen generate
-
-# Build CLI
 xcodebuild -scheme ATProtoPDS-CLI build
-# Output: ./build/bin/kaszlak
-
-# Build and run tests
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-
-# Clean rebuild
-./scripts/wipe_and_rebuild.sh
 ```
 
-### Linux (GNUstep)
+### Linux and GNUstep
 
 ```bash
-# Out-of-source build
-mkdir build-linux && cd build-linux
-cmake .. -DCMAKE_BUILD_TYPE=Debug
-make -j$(nproc)
+cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-linux -j
+./build-linux/tests/AllTests
 ```
 
-## Testing
+Outputs follow the build directory you choose with CMake.
 
-```bash
-# Run all tests (~1017 tests)
-./build/tests/AllTests
-
-# Run specific test class
-./build/tests/AllTests -XCTest MSTInteropTests
-
-# Run multiple test classes
-./build/tests/AllTests -XCTest MSTInteropTests,CARInteropTests
-```
-
-## Static Analysis & Quality
-
-```bash
-# clang-tidy (requires compilation database)
-cd build && cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cd ..
-clang-tidy -p build ATProtoPDS/Sources/Repository/CBOR.m
-
-# Build fuzzers
-mkdir -p build && cd build
-cmake .. -DBUILD_FUZZERS=ON
-make -j$(sysctl -n hw.ncpu)
-
-# Run fuzzer
-./build/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/xrpc_valid_create.txt
-
-# ShellCheck
-shellcheck scripts/*.sh
-```
-
-## Quality Gates (Pre-Push)
+## Quality Gates
 
 1. `xcodegen generate` succeeds
 2. `xcodebuild -scheme AllTests build` succeeds
-3. `./build/tests/AllTests` passes (0 failures)
+3. `./build/tests/AllTests` passes
 4. `xcodebuild -scheme ATProtoPDS-CLI build` succeeds
-5. Fuzzers build successfully
+5. fuzzers build if modified
 
-## Platform Compatibility
+## Docs System
 
-- Use `#if TARGET_OS_LINUX` / `#if __APPLE__` for platform-specific code
-- Platform-specific implementations in `ATProtoPDS/Sources/Compat/`
-- Network transport: `PDSNetworkTransportMac.m` / `PDSNetworkTransportLinux.m`
+The canonical contributor docs live in `docs/` and are organized as a VitePress site. Older collections under `docs/guides/`, `docs/architecture/`, `docs/security/`, and `docs/tests/` are deep reference rather than the main onboarding path.
