@@ -44,7 +44,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 
 @interface RateLimiter ()
 
-@property (nonatomic, copy) NSString *databasePath;
+@property (nonatomic, copy, nullable) NSString *databasePath;
 @property (nonatomic, assign) sqlite3 *db;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
 
@@ -91,6 +91,17 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     return self;
 }
 
+- (void)reconfigureDatabasePath:(nullable NSString *)path {
+    NSString *normalizedPath = path.length > 0 ? [path copy] : nil;
+    dispatch_sync(self.dbQueue, ^{
+        if (_db) {
+            sqlite3_close(_db);
+            _db = NULL;
+        }
+        _databasePath = normalizedPath;
+    });
+}
+
 - (BOOL)ensureDatabaseOpened {
     if (_db) return YES;
     
@@ -100,6 +111,14 @@ BOOL RateLimiterIsDisabledGlobally(void) {
                                    : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].serviceDirectory;
         [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
         _databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
+    }
+
+    NSString *dbDirectory = [_databasePath stringByDeletingLastPathComponent];
+    if (dbDirectory.length > 0) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:dbDirectory
+                                  withIntermediateDirectories:YES
+                                                   attributes:nil
+                                                        error:nil];
     }
     
     [self initializeDatabase];
