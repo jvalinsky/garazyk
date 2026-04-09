@@ -40,8 +40,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController;
+                      jwtMinter:(JWTMinter *)jwtMinter
+                adminController:(id<PDSAdminController>)adminController;
 
 @end
 

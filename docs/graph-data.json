@@ -259,9 +259,9 @@
       "node_type": "goal",
       "title": "PR1: Policy + reliability foundation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:46.453869-04:00",
-      "updated_at": "2026-04-09T10:00:46.453869-04:00",
+      "updated_at": "2026-04-09T10:35:40.569181-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -292,9 +292,9 @@
       "node_type": "action",
       "title": "Add stable-scope coverage config (app.bsky.* except unspecced, keep com.atproto.*)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:50.326846-04:00",
-      "updated_at": "2026-04-09T10:00:50.326846-04:00",
+      "updated_at": "2026-04-09T10:05:08.795529-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -303,9 +303,9 @@
       "node_type": "action",
       "title": "Register app.bsky.ageassurance.* and app.bsky.contact.* with proxy-or-501 policy",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:50.798368-04:00",
-      "updated_at": "2026-04-09T10:00:50.798368-04:00",
+      "updated_at": "2026-04-09T10:09:23.805336-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -314,9 +314,9 @@
       "node_type": "action",
       "title": "Replace DISPATCH_TIME_FOREVER with bounded timeout + 504 error mapping in XrpcProxyHandler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:51.954565-04:00",
-      "updated_at": "2026-04-09T10:00:51.954565-04:00",
+      "updated_at": "2026-04-09T10:35:37.073880-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
