@@ -207,6 +207,24 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 }
 
 + (nullable NSData *)base64URLDecode:(NSString *)string error:(NSError **)error {
+    if (!string || string.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorDecodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Empty Base64URL string"}];
+        }
+        return nil;
+    }
+
+    if ([string hasSuffix:@"="]) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorDecodingFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Base64URL must not contain padding characters ('=')"}];
+        }
+        return nil;
+    }
+
     NSMutableString *base64 = [string mutableCopy];
     NSUInteger remainder = base64.length % 4;
     if (remainder > 0) {
