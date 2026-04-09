@@ -175,9 +175,6 @@
   if ([ext isEqualToString:@"txt"]) {
     return @"text/plain; charset=utf-8";
   }
-  if ([ext isEqualToString:@"plist"]) {
-    return @"text/plain; charset=utf-8";
-  }
   if ([ext isEqualToString:@"sj"] || [ext isEqualToString:@"j"]) {
     return @"application/javascript; charset=utf-8";
   }

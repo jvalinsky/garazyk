@@ -18,6 +18,7 @@
 #import "App/PDSConfiguration.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/PDSLogger.h"
+#import "Identity/ATProtoHandleValidator.h"
 
 #pragma mark - Helper Functions
 
@@ -34,6 +35,229 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
     }
     if (outValue) *outValue = parsed;
     return YES;
+}
+
+static BOOL parseAtURI(NSString *uri, NSString **outDid, NSString **outCollection, NSString **outRkey) {
+    if (![uri isKindOfClass:[NSString class]] || uri.length == 0) {
+        return NO;
+    }
+
+    NSArray<NSString *> *components = [uri componentsSeparatedByString:@"/"];
+    if (components.count < 5 || ![components[0] isEqualToString:@"at:"]) {
+        return NO;
+    }
+
+    NSString *did = components[2];
+    NSString *collection = components[3];
+    NSString *rkey = components[4];
+    if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
+        return NO;
+    }
+
+    if (outDid) *outDid = did;
+    if (outCollection) *outCollection = collection;
+    if (outRkey) *outRkey = rkey;
+    return YES;
+}
+
+static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsky.graph.muteState";
+
+static NSMutableArray<NSDictionary *> *mutablePreferenceEntries(NSDictionary *preferencesEnvelope) {
+    id rawPreferences = [preferencesEnvelope isKindOfClass:[NSDictionary class]] ? preferencesEnvelope[@"preferences"] : nil;
+    NSArray *source = [rawPreferences isKindOfClass:[NSArray class]] ? rawPreferences : @[];
+    NSMutableArray<NSDictionary *> *entries = [NSMutableArray arrayWithCapacity:source.count];
+    for (id entry in source) {
+        if ([entry isKindOfClass:[NSDictionary class]]) {
+            [entries addObject:[(NSDictionary *)entry mutableCopy]];
+        }
+    }
+    return entries;
+}
+
+static NSMutableArray<NSString *> *normalizedUniqueStringArray(id rawValue) {
+    NSMutableArray<NSString *> *values = [NSMutableArray array];
+    NSMutableSet<NSString *> *seen = [NSMutableSet set];
+    if (![rawValue isKindOfClass:[NSArray class]]) {
+        return values;
+    }
+
+    for (id item in (NSArray *)rawValue) {
+        if (![item isKindOfClass:[NSString class]]) {
+            continue;
+        }
+        NSString *value = (NSString *)item;
+        if (value.length == 0 || [seen containsObject:value]) {
+            continue;
+        }
+        [seen addObject:value];
+        [values addObject:value];
+    }
+
+    return values;
+}
+
+static NSMutableDictionary *graphMuteStateFromPreferences(NSArray<NSDictionary *> *preferences,
+                                                          NSUInteger *outIndex) {
+    NSUInteger foundIndex = NSNotFound;
+    NSMutableDictionary *state = [@{@"mutedLists": @[], @"mutedThreads": @[]} mutableCopy];
+
+    for (NSUInteger index = 0; index < preferences.count; index++) {
+        NSDictionary *entry = preferences[index];
+        if (![entry[@"$type"] isEqualToString:kGraphMuteStatePreferenceType]) {
+            continue;
+        }
+        foundIndex = index;
+        state[@"mutedLists"] = normalizedUniqueStringArray(entry[@"mutedLists"]);
+        state[@"mutedThreads"] = normalizedUniqueStringArray(entry[@"mutedThreads"]);
+        break;
+    }
+
+    if (outIndex) {
+        *outIndex = foundIndex;
+    }
+    return state;
+}
+
+static BOOL persistGraphMuteState(ActorService *actorService,
+                                  NSString *actorDID,
+                                  NSMutableArray<NSDictionary *> *preferences,
+                                  NSMutableDictionary *state,
+                                  NSUInteger existingIndex,
+                                  NSError **error) {
+    NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+    entry[@"$type"] = kGraphMuteStatePreferenceType;
+    entry[@"mutedLists"] = normalizedUniqueStringArray(state[@"mutedLists"]);
+    entry[@"mutedThreads"] = normalizedUniqueStringArray(state[@"mutedThreads"]);
+
+    if (existingIndex != NSNotFound && existingIndex < preferences.count) {
+        preferences[existingIndex] = entry;
+    } else {
+        [preferences addObject:entry];
+    }
+
+    return [actorService putPreferencesForActor:actorDID preferences:preferences error:error];
+}
+
+static NSString *normalizeListPurpose(NSString *purpose) {
+    if (![purpose isKindOfClass:[NSString class]] || purpose.length == 0) {
+        return nil;
+    }
+    if ([purpose isEqualToString:@"modlist"]) {
+        return @"app.bsky.graph.defs#modlist";
+    }
+    if ([purpose isEqualToString:@"curatelist"]) {
+        return @"app.bsky.graph.defs#curatelist";
+    }
+    if ([purpose isEqualToString:@"app.bsky.graph.defs#modlist"] ||
+        [purpose isEqualToString:@"app.bsky.graph.defs#curatelist"]) {
+        return purpose;
+    }
+    return nil;
+}
+
+static NSString *resolveActorIdentifierToDid(PDSServiceDatabases *serviceDatabases, NSString *actorIdentifier) {
+    if (![actorIdentifier isKindOfClass:[NSString class]] || actorIdentifier.length == 0) {
+        return nil;
+    }
+    if ([actorIdentifier hasPrefix:@"did:"]) {
+        return actorIdentifier;
+    }
+
+    NSError *lookupError = nil;
+    PDSDatabaseAccount *account = [serviceDatabases getAccountByHandle:actorIdentifier error:&lookupError];
+    if (account.did.length > 0) {
+        return account.did;
+    }
+
+    NSString *normalized = [ATProtoHandleValidator normalizeHandle:actorIdentifier];
+    if (normalized.length > 0 && ![normalized isEqualToString:actorIdentifier]) {
+        lookupError = nil;
+        account = [serviceDatabases getAccountByHandle:normalized error:&lookupError];
+        if (account.did.length > 0) {
+            return account.did;
+        }
+    }
+
+    return nil;
+}
+
+static NSDictionary *loadListItemViewForListAndSubject(PDSDatabase *appViewDatabase,
+                                                        ActorService *actorService,
+                                                        NSString *creatorDid,
+                                                        NSString *listURI,
+                                                        NSString *subjectDid) {
+    NSError *queryError = nil;
+    NSArray<NSDictionary *> *itemRows = [appViewDatabase executeParameterizedQuery:
+                                         @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT 500"
+                                                                                params:@[creatorDid, @"app.bsky.graph.listitem"]
+                                                                                 error:&queryError];
+    if (!itemRows) {
+        return nil;
+    }
+
+    NSDictionary *subjectProfile = [actorService getProfileForActor:subjectDid error:nil] ?: @{@"did": subjectDid};
+    for (NSDictionary *itemRow in itemRows) {
+        NSString *cidStr = itemRow[@"cid"];
+        CID *cid = [CID cidFromString:cidStr];
+        if (!cid) continue;
+
+        PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:creatorDid error:nil];
+        if (!block.blockData) continue;
+
+        NSDictionary *itemRecord = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+        if (![itemRecord isKindOfClass:[NSDictionary class]]) continue;
+        if (![itemRecord[@"list"] isEqualToString:listURI]) continue;
+        if (![itemRecord[@"subject"] isEqualToString:subjectDid]) continue;
+
+        NSString *rkey = itemRow[@"rkey"];
+        NSString *itemURI = [NSString stringWithFormat:@"at://%@/app.bsky.graph.listitem/%@", creatorDid, rkey ?: @""];
+        return @{
+            @"uri": itemURI,
+            @"subject": subjectProfile
+        };
+    }
+
+    return nil;
+}
+
+static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorService *actorService, NSString *listURI) {
+    NSString *did = nil;
+    NSString *collection = nil;
+    NSString *rkey = nil;
+    if (!parseAtURI(listURI, &did, &collection, &rkey) ||
+        ![collection isEqualToString:@"app.bsky.graph.list"]) {
+        return nil;
+    }
+
+    NSError *error = nil;
+    NSArray *rows = [appViewDatabase executeParameterizedQuery:@"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1"
+                                                        params:@[did, collection, rkey]
+                                                         error:&error];
+    if (rows.count == 0) {
+        return nil;
+    }
+
+    NSString *cidStr = rows.firstObject[@"cid"];
+    CID *cid = [CID cidFromString:cidStr];
+    NSDictionary *record = nil;
+    if (cid) {
+        PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
+        if (block.blockData) {
+            record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+        }
+    }
+
+    return @{
+        @"uri": listURI,
+        @"cid": cidStr ?: @"",
+        @"creator": [actorService getProfileForActor:did error:nil] ?: @{@"did": did},
+        @"name": record[@"name"] ?: @"",
+        @"purpose": record[@"purpose"] ?: @"app.bsky.graph.defs#modlist",
+        @"description": record[@"description"] ?: @"",
+        @"indexedAt": record[@"createdAt"] ?: @"",
+        @"viewer": @{@"muted": @NO},
+        @"labels": @[]
+    };
 }
 
 #pragma mark - XrpcAppBskyMethods Implementation
@@ -535,9 +759,64 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
 
     // app.bsky.feed.getFeedGenerators - Get multiple feed generators by URI
     [dispatcher registerAppBskyFeedGetFeedGenerators:^(HttpRequest *request, HttpResponse *response) {
-        // TODO: Query app.bsky.feed.generator records by URI. For now return empty.
+        id feedsParam = request.queryParams[@"feeds"];
+        NSArray<NSString *> *feedURIs = nil;
+        if ([feedsParam isKindOfClass:[NSArray class]]) {
+            feedURIs = (NSArray<NSString *> *)feedsParam;
+        } else if ([feedsParam isKindOfClass:[NSString class]]) {
+            feedURIs = @[ (NSString *)feedsParam ];
+        } else {
+            [XrpcErrorHelper setValidationError:response message:@"Missing feeds parameter"];
+            return;
+        }
+
+        if (feedURIs.count > 100) {
+            [XrpcErrorHelper setValidationError:response message:@"feeds must contain at most 100 URIs"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *feeds = [NSMutableArray arrayWithCapacity:feedURIs.count];
+        for (NSString *feedURI in feedURIs) {
+            NSString *did = nil;
+            NSString *collection = nil;
+            NSString *rkey = nil;
+            if (!parseAtURI(feedURI, &did, &collection, &rkey) ||
+                ![collection isEqualToString:@"app.bsky.feed.generator"]) {
+                [XrpcErrorHelper setValidationError:response message:@"feeds must contain valid app.bsky.feed.generator URIs"];
+                return;
+            }
+
+            NSArray *rows = [appViewDatabase executeParameterizedQuery:@"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1"
+                                                                params:@[did, collection, rkey]
+                                                                 error:nil];
+            if (rows.count == 0) {
+                continue;
+            }
+
+            NSString *cidStr = rows.firstObject[@"cid"];
+            CID *cid = [CID cidFromString:cidStr];
+            NSDictionary *record = nil;
+            if (cid) {
+                PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
+                if (block.blockData) {
+                    record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+                }
+            }
+
+            [feeds addObject:@{
+                @"uri": feedURI,
+                @"cid": cidStr ?: @"",
+                @"did": did,
+                @"creator": [actorService getProfileForActor:did error:nil] ?: @{@"did": did},
+                @"displayName": record[@"displayName"] ?: @"",
+                @"description": record[@"description"] ?: @"",
+                @"avatar": record[@"avatar"] ?: [NSNull null],
+                @"indexedAt": record[@"createdAt"] ?: @""
+            }];
+        }
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"feeds": @[]}];
+        [response setJsonBody:@{@"feeds": feeds}];
     }];
 
     // app.bsky.feed.getSuggestedFeeds - Get suggested feeds
@@ -616,6 +895,10 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
         
         NSError *error = nil;
         NSDictionary *result = [graphService getMutesForActor:actorDID limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load mutes"];
+            return;
+        }
         
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result ?: @{@"mutes": @[]}];
@@ -1475,20 +1758,255 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
 
     // app.bsky.graph.getListMutes - Get lists the viewer has muted
     [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                             jwtMinter:jwtMinter
+                                                       adminController:adminController
+                                                               request:request
+                                                              response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSInteger offset = 0;
+        if (cursor.length > 0 && !parseIntegerParam(cursor, &offset, 0)) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid cursor"];
+            return;
+        }
+        if (offset < 0) {
+            offset = 0;
+        }
+
+        NSError *prefsError = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
+        if (prefsError) {
+            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *prefsList = mutablePreferenceEntries(currentPrefs);
+        NSMutableDictionary *muteState = graphMuteStateFromPreferences(prefsList, NULL);
+        NSArray<NSString *> *mutedListURIs = normalizedUniqueStringArray(muteState[@"mutedLists"]);
+
+        NSUInteger startIndex = (NSUInteger)MIN((NSInteger)mutedListURIs.count, offset);
+        NSUInteger endIndex = MIN(startIndex + (NSUInteger)limit, mutedListURIs.count);
+
+        NSMutableArray<NSDictionary *> *lists = [NSMutableArray array];
+        for (NSUInteger index = startIndex; index < endIndex; index++) {
+            NSString *listURI = mutedListURIs[index];
+            NSDictionary *listView = loadListViewForURI(appViewDatabase, actorService, listURI);
+            if (listView) {
+                [lists addObject:listView];
+            }
+        }
+
+        NSMutableDictionary *result = [@{@"lists": lists} mutableCopy];
+        if (endIndex < mutedListURIs.count) {
+            result[@"cursor"] = [NSString stringWithFormat:@"%lu", (unsigned long)endIndex];
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"lists": @[]}];
+        [response setJsonBody:result];
     }];
 
     // app.bsky.graph.getListBlocks - Get lists the viewer has blocked
     [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                             jwtMinter:jwtMinter
+                                                       adminController:adminController
+                                                               request:request
+                                                              response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+        NSMutableArray *params = [NSMutableArray arrayWithObjects:actorDID, @"app.bsky.graph.listblock", nil];
+        if (cursor.length > 0) {
+            query = [query stringByAppendingString:@" AND rkey < ?"];
+            [params addObject:cursor];
+        }
+        query = [query stringByAppendingString:@" ORDER BY rkey DESC LIMIT ?"];
+        [params addObject:@(limit)];
+
+        NSError *queryError = nil;
+        NSArray<NSDictionary *> *rows = [appViewDatabase executeParameterizedQuery:query
+                                                                             params:params
+                                                                              error:&queryError];
+        if (!rows) {
+            [XrpcErrorHelper setInternalServerError:response message:queryError.localizedDescription ?: @"Failed to query list blocks"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *lists = [NSMutableArray array];
+        for (NSDictionary *row in rows) {
+            NSString *cidStr = row[@"cid"];
+            CID *cid = [CID cidFromString:cidStr];
+            if (!cid) continue;
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:actorDID error:nil];
+            if (!block.blockData) continue;
+
+            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            NSString *listURI = [record[@"list"] isKindOfClass:[NSString class]] ? record[@"list"] : nil;
+            NSDictionary *listView = loadListViewForURI(appViewDatabase, actorService, listURI);
+            if (listView) {
+                [lists addObject:listView];
+            }
+        }
+
+        NSMutableDictionary *result = [@{@"lists": lists} mutableCopy];
+        if (rows.count == (NSUInteger)limit && rows.lastObject[@"rkey"]) {
+            result[@"cursor"] = rows.lastObject[@"rkey"];
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"lists": @[]}];
+        [response setJsonBody:result];
     }];
 
     // app.bsky.graph.getListsWithMembership - Get lists with membership status
     [dispatcher registerMethod:@"app.bsky.graph.getListsWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *viewerDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                              jwtMinter:jwtMinter
+                                                        adminController:adminController
+                                                                request:request
+                                                               response:response];
+        if (!viewerDid) {
+            return;
+        }
+
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (actor.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+
+        NSString *subjectDid = resolveActorIdentifierToDid(serviceDatabases, actor);
+        if (!subjectDid) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Actor not found"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (![self parseLimit:request.queryParams[@"limit"] outValue:&limit min:1 max:100 response:response]) {
+            return;
+        }
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSMutableSet<NSString *> *allowedPurposes = [NSMutableSet set];
+        id rawPurposes = request.queryParams[@"purposes"];
+        if ([rawPurposes isKindOfClass:[NSString class]]) {
+            NSString *normalizedPurpose = normalizeListPurpose((NSString *)rawPurposes);
+            if (!normalizedPurpose) {
+                [XrpcErrorHelper setValidationError:response message:@"Invalid purposes value"];
+                return;
+            }
+            [allowedPurposes addObject:normalizedPurpose];
+        } else if ([rawPurposes isKindOfClass:[NSArray class]]) {
+            for (id purpose in (NSArray *)rawPurposes) {
+                NSString *normalizedPurpose = normalizeListPurpose(purpose);
+                if (!normalizedPurpose) {
+                    [XrpcErrorHelper setValidationError:response message:@"Invalid purposes value"];
+                    return;
+                }
+                [allowedPurposes addObject:normalizedPurpose];
+            }
+        } else if (rawPurposes != nil) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid purposes parameter"];
+            return;
+        }
+
+        NSMutableString *query = [NSMutableString stringWithString:
+                                  @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?"];
+        NSMutableArray *params = [NSMutableArray arrayWithObjects:viewerDid, @"app.bsky.graph.list", nil];
+        if (cursor.length > 0) {
+            [query appendString:@" AND rkey < ?"];
+            [params addObject:cursor];
+        }
+        [query appendString:@" ORDER BY rkey DESC LIMIT ?"];
+        NSInteger scanLimit = MAX(limit * 4, limit);
+        [params addObject:@(scanLimit)];
+
+        NSError *queryError = nil;
+        NSArray<NSDictionary *> *rows = [appViewDatabase executeParameterizedQuery:query params:params error:&queryError];
+        if (!rows) {
+            [XrpcErrorHelper setInternalServerError:response message:queryError.localizedDescription ?: @"Failed to query lists"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *listsWithMembership = [NSMutableArray array];
+        NSString *nextCursor = nil;
+        for (NSDictionary *row in rows) {
+            if ((NSInteger)listsWithMembership.count >= limit) {
+                nextCursor = row[@"rkey"];
+                break;
+            }
+
+            NSString *cidStr = row[@"cid"];
+            CID *cid = [CID cidFromString:cidStr];
+            if (!cid) continue;
+            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:viewerDid error:nil];
+            if (!block.blockData) continue;
+
+            NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
+            if (![record isKindOfClass:[NSDictionary class]]) continue;
+
+            NSString *purpose = normalizeListPurpose(record[@"purpose"]) ?: @"app.bsky.graph.defs#modlist";
+            if (allowedPurposes.count > 0 && ![allowedPurposes containsObject:purpose]) {
+                continue;
+            }
+
+            NSString *rkey = row[@"rkey"];
+            NSString *listURI = [NSString stringWithFormat:@"at://%@/app.bsky.graph.list/%@", viewerDid, rkey ?: @""];
+            NSDictionary *listView = @{
+                @"uri": listURI,
+                @"cid": cidStr ?: @"",
+                @"creator": [actorService getProfileForActor:viewerDid error:nil] ?: @{@"did": viewerDid},
+                @"name": record[@"name"] ?: @"",
+                @"purpose": purpose,
+                @"description": record[@"description"] ?: @"",
+                @"indexedAt": record[@"createdAt"] ?: @"",
+                @"viewer": @{@"muted": @NO},
+                @"labels": @[]
+            };
+
+            NSMutableDictionary *entry = [NSMutableDictionary dictionaryWithObject:listView forKey:@"list"];
+            NSDictionary *listItemView = loadListItemViewForListAndSubject(appViewDatabase,
+                                                                            actorService,
+                                                                            viewerDid,
+                                                                            listURI,
+                                                                            subjectDid);
+            if (listItemView) {
+                entry[@"listItem"] = listItemView;
+            }
+            [listsWithMembership addObject:entry];
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:listsWithMembership
+                                                                          forKey:@"listsWithMembership"];
+        if (nextCursor.length > 0) {
+            result[@"cursor"] = nextCursor;
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"lists": @[]}];
+        [response setJsonBody:result];
     }];
 
     // app.bsky.graph.getKnownFollowers - Get followers known to the viewer
@@ -1512,24 +2030,196 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
 
     // app.bsky.graph.muteActorList - Mute a list
     [dispatcher registerMethod:@"app.bsky.graph.muteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                             jwtMinter:jwtMinter
+                                                       adminController:adminController
+                                                               request:request
+                                                              response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        NSString *listURI = [body[@"list"] isKindOfClass:[NSString class]] ? body[@"list"] : nil;
+        NSString *did = nil;
+        NSString *collection = nil;
+        NSString *rkey = nil;
+        if (listURI.length == 0 ||
+            !parseAtURI(listURI, &did, &collection, &rkey) ||
+            ![collection isEqualToString:@"app.bsky.graph.list"]) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
+            return;
+        }
+
+        NSError *prefsError = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
+        if (prefsError) {
+            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *prefsList = mutablePreferenceEntries(currentPrefs);
+        NSUInteger existingIndex = NSNotFound;
+        NSMutableDictionary *muteState = graphMuteStateFromPreferences(prefsList, &existingIndex);
+        NSMutableArray<NSString *> *mutedLists = normalizedUniqueStringArray(muteState[@"mutedLists"]);
+        if (![mutedLists containsObject:listURI]) {
+            [mutedLists addObject:listURI];
+        }
+        muteState[@"mutedLists"] = mutedLists;
+
+        NSError *saveError = nil;
+        if (!persistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
+            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist list mute"];
+            return;
+        }
+
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
 
     // app.bsky.graph.unmuteActorList - Unmute a list
     [dispatcher registerMethod:@"app.bsky.graph.unmuteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                             jwtMinter:jwtMinter
+                                                       adminController:adminController
+                                                               request:request
+                                                              response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        NSString *listURI = [body[@"list"] isKindOfClass:[NSString class]] ? body[@"list"] : nil;
+        NSString *did = nil;
+        NSString *collection = nil;
+        NSString *rkey = nil;
+        if (listURI.length == 0 ||
+            !parseAtURI(listURI, &did, &collection, &rkey) ||
+            ![collection isEqualToString:@"app.bsky.graph.list"]) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid list URI"];
+            return;
+        }
+
+        NSError *prefsError = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
+        if (prefsError) {
+            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *prefsList = mutablePreferenceEntries(currentPrefs);
+        NSUInteger existingIndex = NSNotFound;
+        NSMutableDictionary *muteState = graphMuteStateFromPreferences(prefsList, &existingIndex);
+        NSMutableArray<NSString *> *mutedLists = normalizedUniqueStringArray(muteState[@"mutedLists"]);
+        [mutedLists removeObject:listURI];
+        muteState[@"mutedLists"] = mutedLists;
+
+        NSError *saveError = nil;
+        if (!persistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
+            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist list mute"];
+            return;
+        }
+
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
 
     // app.bsky.graph.muteThread - Mute a thread
     [dispatcher registerMethod:@"app.bsky.graph.muteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                             jwtMinter:jwtMinter
+                                                       adminController:adminController
+                                                               request:request
+                                                              response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        NSString *rootURI = [body[@"root"] isKindOfClass:[NSString class]] ? body[@"root"] : nil;
+        NSString *did = nil;
+        NSString *collection = nil;
+        NSString *rkey = nil;
+        if (rootURI.length == 0 || !parseAtURI(rootURI, &did, &collection, &rkey)) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid root URI"];
+            return;
+        }
+
+        NSError *prefsError = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
+        if (prefsError) {
+            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *prefsList = mutablePreferenceEntries(currentPrefs);
+        NSUInteger existingIndex = NSNotFound;
+        NSMutableDictionary *muteState = graphMuteStateFromPreferences(prefsList, &existingIndex);
+        NSMutableArray<NSString *> *mutedThreads = normalizedUniqueStringArray(muteState[@"mutedThreads"]);
+        if (![mutedThreads containsObject:rootURI]) {
+            [mutedThreads addObject:rootURI];
+        }
+        muteState[@"mutedThreads"] = mutedThreads;
+
+        NSError *saveError = nil;
+        if (!persistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
+            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist thread mute"];
+            return;
+        }
+
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
 
     // app.bsky.graph.unmuteThread - Unmute a thread
     [dispatcher registerMethod:@"app.bsky.graph.unmuteThread" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                             jwtMinter:jwtMinter
+                                                       adminController:adminController
+                                                               request:request
+                                                              response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        NSString *rootURI = [body[@"root"] isKindOfClass:[NSString class]] ? body[@"root"] : nil;
+        NSString *did = nil;
+        NSString *collection = nil;
+        NSString *rkey = nil;
+        if (rootURI.length == 0 || !parseAtURI(rootURI, &did, &collection, &rkey)) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid root URI"];
+            return;
+        }
+
+        NSError *prefsError = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&prefsError];
+        if (prefsError) {
+            [XrpcErrorHelper setInternalServerError:response message:prefsError.localizedDescription ?: @"Failed to load preferences"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *prefsList = mutablePreferenceEntries(currentPrefs);
+        NSUInteger existingIndex = NSNotFound;
+        NSMutableDictionary *muteState = graphMuteStateFromPreferences(prefsList, &existingIndex);
+        NSMutableArray<NSString *> *mutedThreads = normalizedUniqueStringArray(muteState[@"mutedThreads"]);
+        [mutedThreads removeObject:rootURI];
+        muteState[@"mutedThreads"] = mutedThreads;
+
+        NSError *saveError = nil;
+        if (!persistGraphMuteState(actorService, actorDID, prefsList, muteState, existingIndex, &saveError)) {
+            [XrpcErrorHelper setInternalServerError:response message:saveError.localizedDescription ?: @"Failed to persist thread mute"];
+            return;
+        }
+
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
@@ -1550,18 +2240,6 @@ static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger de
     [dispatcher registerMethod:@"app.bsky.labeler.getServices" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"views": @[]}];
-    }];
-
-    // app.bsky.notification.getPreferences - Get notification preferences
-    [dispatcher registerMethod:@"app.bsky.notification.getPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"preferences": @{}}];
-    }];
-
-    // app.bsky.notification.putPreferences - Update notification preferences
-    [dispatcher registerMethod:@"app.bsky.notification.putPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
     }];
 
     // app.bsky.notification.listActivitySubscriptions - List activity subscriptions
