@@ -159,6 +159,7 @@ int main(int argc, char *argv[]) {
       @"RepoAuthRepoTests",
       @"RepoAuthServerTests",
       @"RepoAuthIdentityTests",
+      @"RepoAuthAppBskyTests",
       @"RepoAuthTempTests",
       @"PDSCLITests",
       @"PDSCLIServiceStubTests",
