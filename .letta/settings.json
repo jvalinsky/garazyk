@@ -73,7 +73,8 @@
       "Bash(sed -n '25,30p' /Users/jack/Software/garazyk/CMakeLists.txt | head -40)",
       "Bash(sed -n '35,40p' /Users/jack/Software/garazyk/CMakeLists.txt)",
       "Bash(sed -n '26,27p' /Users/jack/Software/garazyk/CMakeLists.txt | wc -l)",
-      "Bash(cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang\" -DCMAKE_CXX_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++\" -DCMAKE_OBJC_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang\" . && make -j8 2>&1 | tail -50)"
+      "Bash(cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang\" -DCMAKE_CXX_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++\" -DCMAKE_OBJC_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang\" . && make -j8 2>&1 | tail -50)",
+      "Bash(deciduous nodes --branch main | grep -E \"pending|action.*in_progress|outcome.*in_progress\" | head -30)"
     ]
   }
 }
