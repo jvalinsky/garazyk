@@ -93,7 +93,9 @@
       "Bash(df -h /)",
       "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && ./scripts/e2e_tildefriends.sh 2>&1 | head -100)",
       "Bash(ps aux | grep 'ssb-client\\|sbot' | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null; echo \"Killed any remaining ssb processes\")",
-      "Bash(ps aux | grep -E 'ssb-client|sbot|bridge' | grep -v grep)"
+      "Bash(ps aux | grep -E 'ssb-client|sbot|bridge' | grep -v grep)",
+      "Bash(netstat -an | grep -E '\\.8008|\\.9876|\\.9898' | grep LISTEN || echo \"No listeners on these ports\")",
+      "Bash(ps aux | grep -E 'ssb|sbot|bridge|8008|9876' | grep -v grep | head -5)"
     ]
   }
 }
