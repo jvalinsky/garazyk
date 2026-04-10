@@ -38,6 +38,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! The underlying HTTP server instance. */
 @property (nonatomic, readonly) HttpServer *httpServer;
 
+/*! The PLC store for operations. */
+@property (nonatomic, readonly) id<PLCStore> store;
+
 /*!
  @method initWithStore:auditor:port:
 
