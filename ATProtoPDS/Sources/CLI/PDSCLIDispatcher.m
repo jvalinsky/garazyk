@@ -1,6 +1,7 @@
 #import "CLI/PDSCLIDispatcher.h"
 #import "CLI/PDSCLIDefinitions.h"
 #import "Admin/PDSInstallerCommand.h"
+#import "CLI/PDSCLIReplCommand.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 #import "App/PDSConfiguration.h"
@@ -247,6 +248,7 @@
     [self addCommand:[PDSCLIHelpCommand command]];
     [self addCommand:[PDSCLIVersionCommand command]];
     [self addCommand:[PDSInstallerCommand command]];
+    [self addCommand:[PDSCLIReplCommand command]];
 }
 
 - (void)addCommand:(id<PDSCLICommand>)command {
