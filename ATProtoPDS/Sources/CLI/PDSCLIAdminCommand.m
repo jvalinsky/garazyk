@@ -27,16 +27,25 @@
 
 - (NSString *)helpText {
     return @"Manage PDS administrators.\n\n"
+           @"Usage: pds admin <subcommand> [options]\n\n"
            @"Subcommands:\n"
            @"  list                   List all administrator DIDs\n"
            @"  add <did|handle>       Grant administrator privileges to an account\n"
            @"  remove <did>           Revoke administrator privileges from an account\n"
            @"  create --email <e> --handle <h> [--password <p>]  Create a new admin account\n\n"
-           @"Note: Administrative privileges allow access to the PDS dashboard and admin XRPC endpoints.";
+           @"Note: Administrative privileges allow access to the PDS dashboard and admin XRPC endpoints.\n\n"
+           @"Examples:\n"
+           @"  pds admin list                         # List all admins\n"
+           @"  pds admin add did:plc:abc123           # Grant admin to account\n"
+           @"  pds admin create --email admin@test.com --handle admin.mypds.xyz --password secret";
 }
 
 - (NSArray<NSString *> *)subcommands {
     return @[@"list", @"add", @"remove", @"create"];
+}
+
+- (NSArray<NSString *> *)aliases {
+    return @[ @"admin" ];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
