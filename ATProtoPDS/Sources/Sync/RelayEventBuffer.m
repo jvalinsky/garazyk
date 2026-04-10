@@ -35,6 +35,10 @@
     return self;
 }
 
++ (instancetype)bufferWithDefaultRetention {
+    return [[RelayEventBuffer alloc] initWithRetentionHours:72 maxEvents:100000];
+}
+
 - (void)appendEvent:(id)event seq:(int64_t)seq {
     [self appendEvent:event seq:seq timestamp:[NSDate date]];
 }
