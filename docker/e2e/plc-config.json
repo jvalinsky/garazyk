@@ -1,0 +1,19 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 2580
+  },
+  "logging": {
+    "format": "text",
+    "level": "info"
+  },
+  "plc": {
+    "operation_ttl_seconds": 86400,
+    "rotation_key_count": 2
+  },
+  "replica": {
+    "enabled": true,
+    "read_only": true,
+    "audit_enabled": true
+  }
+}
