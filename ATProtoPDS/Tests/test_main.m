@@ -223,6 +223,7 @@ int main(int argc, char *argv[]) {
       @"RelayEventBufferTests",
       @"RelayRepoStateManagerTests",
       @"RelayXRPCMethodsTests",
+      @"RelayIntegrationTests",
       @"SessionStoreTests",
       @"ExploreCacheTests",
       @"ExploreHandlerTests",
