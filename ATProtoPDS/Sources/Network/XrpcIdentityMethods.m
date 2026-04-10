@@ -852,8 +852,6 @@
 
         // 5. Firehose / Sequencer Broadcast (Always run, even if handle was already owned)
         PDS_LOG_INFO(@"updateHandle: Broadcasting identity change for did=%@, handler exists=%d", did, subscribeReposHandler != nil);
-        fprintf(stderr, "DEBUG: About to call broadcastIdentityChange for did=%s handle=%s\n", [did UTF8String], [normalizedHandle UTF8String]);
-        fflush(stderr);
         if (subscribeReposHandler) {
             [subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
         }
