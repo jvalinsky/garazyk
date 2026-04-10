@@ -24,9 +24,17 @@
 
 - (NSString *)helpText {
     return @"Interactive setup wizard to create your PDS configuration file.\n\n"
+           @"Usage: pds init [--output <path>] [--force]\n\n"
            @"Options:\n"
            @"  --output <path>    Path to write config file (default: ./config.json)\n"
-           @"  --force            Overwrite existing config without prompting";
+           @"  --force            Overwrite existing config without prompting\n\n"
+           @"Examples:\n"
+           @"  pds init                        # Interactive setup wizard\n"
+           @"  pds init --output /etc/pds.json # Write config to custom path\n"
+           @"  pds init --force                # Overwrite existing config\n\n"
+           @"Shell completions available in:\n"
+           @"  scripts/completions/kaszlak.bash (bash)\n"
+           @"  scripts/completions/kaszlak.zsh (zsh)";
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
