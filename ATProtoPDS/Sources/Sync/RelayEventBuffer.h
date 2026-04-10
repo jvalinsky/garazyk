@@ -24,7 +24,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign, readonly) NSUInteger maxEvents;
 
 - (instancetype)initWithRetentionHours:(NSUInteger)hours maxEvents:(NSUInteger)maxEvents NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithRetentionHours:(NSUInteger)hours NS_UNAVAILABLE;
 - (instancetype)init NS_UNAVAILABLE;
+
++ (instancetype)bufferWithDefaultRetention;
 
 - (void)appendEvent:(id)event seq:(int64_t)seq;
 - (void)appendEvent:(id)event seq:(int64_t)seq timestamp:(NSDate *)timestamp;
