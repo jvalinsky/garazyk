@@ -1,5 +1,13 @@
 [
   {
+    "hash": "a85523edb3854822854fad6a23aa83be85b9ed45",
+    "short_hash": "a85523e",
+    "author": "Security Bot",
+    "date": "2026-04-09T20:29:27-04:00",
+    "message": "feat(kaszlak-cli): add shell completion scripts\n\n- scripts/completions/kaszlak.bash - bash completion\n- scripts/completions/kaszlak.zsh - zsh completion\n- Added completion reference to pds init --help output\n\nInstall bash: source scripts/completions/kaszlak.bash\nInstall zsh: source scripts/completions/kaszlak.zsh or copy to ~/.zsh/",
+    "files_changed": 4
+  },
+  {
     "hash": "dd8b7a0767503e1ae53743e0423b03fc88828192",
     "short_hash": "dd8b7a0",
     "author": "Security Bot",
