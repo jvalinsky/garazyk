@@ -81,7 +81,17 @@
       "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go build ./internal/ssb/...)",
       "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge/internal/ssb && GOFLAGS=-mod=mod go build ./secretstream/boxstream)",
       "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go test ./internal/ssb/secretstream/boxstream -run=^$ -count=1 2>&1 | head -20)",
-      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go test ./internal/ssb/message/legacy -v -count=1 2>&1 | head -50)"
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go test ./internal/ssb/message/legacy -v -count=1 2>&1 | head -50)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge/internal/ssb && GOFLAGS=-mod=mod go test ./message/legacy -v -count=1 -run TestCanonicalJSONOrdering 2>&1 | head -30)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go test ./internal/firehose -count=1 2>&1 | head -20)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge/internal/ssb && GOFLAGS=-mod=mod go test ./secretstream/boxstream -v -count=1 2>&1 | tail -20)",
+      "Bash(git status:*)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go test ./internal/firehose ./internal/ssb/message/legacy ./internal/ssb/secretstream/boxstream -count=1)",
+      "Bash(git diff:*)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && ./scripts/smoke_bridge.sh)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && ./scripts/local_bridge_e2e.sh 2>&1)",
+      "Bash(df -h /)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && ./scripts/e2e_tildefriends.sh 2>&1 | head -100)"
     ]
   }
 }
