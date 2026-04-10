@@ -145,6 +145,9 @@ if(APPLE)
     find_library(COREGRAPHICS CoreGraphics REQUIRED)
     find_library(LOCALAUTH LocalAuthentication REQUIRED)
 
+    # Find readline for REPL
+    find_library(READLINE_LIBRARY NAMES readline libedit REQUIRED)
+
     # Find SQLite3
     find_library(SQLite3_LIBRARY sqlite3 REQUIRED)
 
@@ -205,6 +208,7 @@ else()
         xml2
         xslt
         z
+        readline
     )
 endif()
 
@@ -314,6 +318,7 @@ target_include_directories(september PRIVATE
 target_link_libraries(september PRIVATE
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
+  ${READLINE_LIBRARY}
 )
 
 target_compile_definitions(september PRIVATE
