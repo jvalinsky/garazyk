@@ -31,7 +31,13 @@
   "plc": {
     "url": "https://plc.directory",
     "retry_count": 5,
-    "retry_delay_ms": 2000
+    "retry_delay_ms": 2000,
+    "replica": {
+      "enabled": false,
+      "upstream_url": "https://plc.directory",
+      "bind_address": ":2582",
+      "data_dir": "./plc-replica-data"
+    }
   },
   "cors": {
     "allowed_origins": [

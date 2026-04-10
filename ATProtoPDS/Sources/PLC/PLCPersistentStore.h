@@ -70,6 +70,12 @@ typedef NS_ENUM(NSInteger, PLCPersistentStoreError) {
 /*! Deletes all operations for a DID (for tombstoning). */
 - (BOOL)deleteOperationsForDid:(NSString *)did error:(NSError **)error;
 
+/*! Transaction queue for thread-safe operations (internal). */
+@property (nonatomic, strong, readonly) dispatch_queue_t transactionQueue;
+
+/*! Prepare a statement (internal). */
+- (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
