@@ -74,7 +74,14 @@
       "Bash(sed -n '35,40p' /Users/jack/Software/garazyk/CMakeLists.txt)",
       "Bash(sed -n '26,27p' /Users/jack/Software/garazyk/CMakeLists.txt | wc -l)",
       "Bash(cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang\" -DCMAKE_CXX_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++\" -DCMAKE_OBJC_COMPILER=\"/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang\" . && make -j8 2>&1 | tail -50)",
-      "Bash(deciduous nodes --branch main | grep -E \"pending|action.*in_progress|outcome.*in_progress\" | head -30)"
+      "Bash(deciduous nodes --branch main | grep -E \"pending|action.*in_progress|outcome.*in_progress\" | head -30)",
+      "Edit(//Users/jack/.letta/plans/**)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go build ./internal/firehose)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go build ./internal/ssb/secretstream/boxstream)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go build ./internal/ssb/...)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge/internal/ssb && GOFLAGS=-mod=mod go build ./secretstream/boxstream)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go test ./internal/ssb/secretstream/boxstream -run=^$ -count=1 2>&1 | head -20)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && GOFLAGS=-mod=mod go test ./internal/ssb/message/legacy -v -count=1 2>&1 | head -50)"
     ]
   }
 }
