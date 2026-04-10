@@ -344,6 +344,7 @@ target_include_directories(atproto-plc PRIVATE
 target_link_libraries(atproto-plc PRIVATE
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
+  ${READLINE_LIBRARY}
 )
 
 set_target_properties(atproto-plc PROPERTIES
