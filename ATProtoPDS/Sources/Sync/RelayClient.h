@@ -52,7 +52,7 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 @interface RelayClient : NSObject
 
 /*! Delegate for events. */
-@property (nonatomic, weak, nullable, readonly) id<RelayClientDelegate> delegate;
+@property (nonatomic, weak, nullable) id<RelayClientDelegate> delegate;
 
 /*! URL of the relay server. */
 @property (nonatomic, readonly) NSURL *serverURL;
