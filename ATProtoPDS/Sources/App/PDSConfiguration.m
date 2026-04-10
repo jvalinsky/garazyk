@@ -81,6 +81,10 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
 @interface PDSConfiguration ()
 - (BOOL)dictionary:(NSDictionary *)dictionary hasValueForKey:(NSString *)key;
+@property (nonatomic, assign) BOOL plcReplicaEnabled;
+@property (nonatomic, copy, nullable) NSString *plcReplicaUpstreamURL;
+@property (nonatomic, copy, nullable) NSString *plcReplicaBindAddress;
+@property (nonatomic, copy, nullable) NSString *plcReplicaDataDir;
 @end
 
 @implementation PDSConfiguration {
@@ -135,6 +139,10 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _plcURL = @"mock";
     _plcRetryCount = 3;
     _plcRetryDelayMs = 1000;
+    _plcReplicaEnabled = NO;
+    _plcReplicaUpstreamURL = nil;
+    _plcReplicaBindAddress = nil;
+    _plcReplicaDataDir = nil;
 
     _debugSkipPlcOperations = YES;
     _debugVerboseLogging = YES;
@@ -360,6 +368,14 @@ static BOOL PDSConfigRunningUnderTests(void) {
       _plcRetryCount = [plc[@"retry_count"] unsignedIntegerValue];
     if (plc[@"retry_delay_ms"])
       _plcRetryDelayMs = [plc[@"retry_delay_ms"] unsignedIntegerValue];
+    
+    NSDictionary *replica = plc[@"replica"];
+    if (replica) {
+      _plcReplicaEnabled = [self boolFromEnv:@"PDS_PLC_REPLICA_ENABLED" default:[replica[@"enabled"] boolValue]];
+      _plcReplicaUpstreamURL = [self resolveEnvOverrideForKey:@"PDS_PLC_REPLICA_UPSTREAM_URL" default:replica[@"upstream_url"]];
+      _plcReplicaBindAddress = [self resolveEnvOverrideForKey:@"PDS_PLC_REPLICA_BIND" default:replica[@"bind_address"]];
+      _plcReplicaDataDir = [self resolveEnvOverrideForKey:@"PDS_PLC_REPLICA_DATA_DIR" default:replica[@"data_dir"]];
+    }
   }
 
   // Allow env overrides even when plc section is missing.
