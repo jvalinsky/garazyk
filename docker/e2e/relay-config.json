@@ -1,0 +1,15 @@
+{
+  "relay": {
+    "upstream_pds": [
+      "http://e2e-pds:2583"
+    ],
+    "downstream_port": 2584,
+    "retention_hours": 72,
+    "validation_mode": "lenient",
+    "max_connections": 1000
+  },
+  "logging": {
+    "format": "text",
+    "level": "debug"
+  }
+}
