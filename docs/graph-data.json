@@ -842,9 +842,9 @@
       "node_type": "goal",
       "title": "Implement ATProto Relay (BGS) in Objective-C",
       "description": null,
-      "status": "pending",
+      "status": "active",
       "created_at": "2026-04-09T21:16:33.107181-04:00",
-      "updated_at": "2026-04-09T21:16:33.107181-04:00",
+      "updated_at": "2026-04-10T00:51:36.320729-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -853,9 +853,9 @@
       "node_type": "action",
       "title": "Research existing relay components - RelayClient, Firehose, WebSocketServer, EventFormatter",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:16:37.938749-04:00",
-      "updated_at": "2026-04-09T21:16:37.938749-04:00",
+      "updated_at": "2026-04-10T00:51:33.961679-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -864,9 +864,9 @@
       "node_type": "action",
       "title": "Phase 1: Core Infrastructure - Extend RelayClient for multi-upstream, BGSConfiguration, RelayEventValidator, BGSMetrics",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:16:43.239687-04:00",
-      "updated_at": "2026-04-09T21:16:43.239687-04:00",
+      "updated_at": "2026-04-10T00:51:33.969338-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -875,9 +875,9 @@
       "node_type": "action",
       "title": "Phase 2: Event Processing - EventFilter, EventBuffer (retention), RepoStateManager, CrawlRequestHandler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:16:51.136845-04:00",
-      "updated_at": "2026-04-09T21:16:51.136845-04:00",
+      "updated_at": "2026-04-10T00:51:33.977596-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -886,9 +886,9 @@
       "node_type": "action",
       "title": "Phase 3: XRPC Endpoints - getHead, getRepo, requestCrawl, listHosts",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:16:51.313720-04:00",
-      "updated_at": "2026-04-09T21:16:51.313720-04:00",
+      "updated_at": "2026-04-10T00:51:33.985366-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -897,9 +897,9 @@
       "node_type": "action",
       "title": "Phase 4: CLI/REPL - serve, repl, upstream-add, upstream-remove, status commands",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:16:51.390306-04:00",
-      "updated_at": "2026-04-09T21:16:51.390306-04:00",
+      "updated_at": "2026-04-10T01:15:03.230124-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -908,10 +908,65 @@
       "node_type": "action",
       "title": "Phase 5: Testing & Validation - Unit tests, integration with bsky.network, interop with goat CLI",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:16:51.469832-04:00",
-      "updated_at": "2026-04-09T21:16:51.469832-04:00",
+      "updated_at": "2026-04-10T01:32:15.596347-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 84,
+      "change_id": "ee9aacb6-21c1-497f-b4d6-b512d45b9ab4",
+      "node_type": "outcome",
+      "title": "Phase 1 complete: RelayConfiguration, RelayMetrics, RelayUpstreamManager, RelayEventValidator",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-10T00:51:44.516287-04:00",
+      "updated_at": "2026-04-10T00:51:44.516287-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 85,
+      "change_id": "e5a2c1f8-3d8c-4aa5-b5b7-54c46b53638a",
+      "node_type": "outcome",
+      "title": "Phase 2 complete",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T00:52:15.398923-04:00",
+      "updated_at": "2026-04-10T00:52:15.406146-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 86,
+      "change_id": "11603c8a-3493-4707-b388-9c49195ef360",
+      "node_type": "outcome",
+      "title": "Phase 3 complete: RelayXRPCMethods",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T00:52:38.751853-04:00",
+      "updated_at": "2026-04-10T00:52:38.759076-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 87,
+      "change_id": "8cc7bdca-9b43-4975-8dcf-445d98a8d965",
+      "node_type": "outcome",
+      "title": "Phase 4 complete: PDSCLIRelayCommand CLI",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:15:03.267526-04:00",
+      "updated_at": "2026-04-10T01:15:03.274949-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 88,
+      "change_id": "06a25a59-775d-4ec1-8453-68282937c506",
+      "node_type": "outcome",
+      "title": "Phase 5 complete: Integration tests",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:32:15.637048-04:00",
+      "updated_at": "2026-04-10T01:32:15.643928-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
     }
   ],
   "edges": [
@@ -1893,6 +1948,50 @@
       "weight": 1.0,
       "rationale": "Testing & validation",
       "created_at": "2026-04-09T21:16:57.322844-04:00"
+    },
+    {
+      "id": 90,
+      "from_node_id": 78,
+      "to_node_id": 84,
+      "from_change_id": "70b21e3c-c90c-4451-b52f-a1e94353c1e4",
+      "to_change_id": "ee9aacb6-21c1-497f-b4d6-b512d45b9ab4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T00:51:46.878292-04:00"
+    },
+    {
+      "id": 91,
+      "from_node_id": 84,
+      "to_node_id": 79,
+      "from_change_id": "ee9aacb6-21c1-497f-b4d6-b512d45b9ab4",
+      "to_change_id": "328e1160-900d-49af-95bd-e112eb9b540d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T00:51:46.885571-04:00"
+    },
+    {
+      "id": 92,
+      "from_node_id": 86,
+      "to_node_id": 87,
+      "from_change_id": "11603c8a-3493-4707-b388-9c49195ef360",
+      "to_change_id": "8cc7bdca-9b43-4975-8dcf-445d98a8d965",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T01:15:07.091788-04:00"
+    },
+    {
+      "id": 93,
+      "from_node_id": 87,
+      "to_node_id": 88,
+      "from_change_id": "8cc7bdca-9b43-4975-8dcf-445d98a8d965",
+      "to_change_id": "06a25a59-775d-4ec1-8453-68282937c506",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T01:32:15.651961-04:00"
     }
   ]
 }
