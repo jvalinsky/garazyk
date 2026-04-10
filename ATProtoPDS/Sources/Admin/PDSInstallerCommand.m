@@ -145,7 +145,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         return NO;
     }
 
-    NSString *executablePath = @"/usr/local/bin/september";
+    NSString *executablePath = @"/usr/local/bin/kaszlak";
     NSMutableArray *args = [plist[@"ProgramArguments"] mutableCopy];
     if (args.count > 0) {
         args[0] = executablePath;
@@ -365,7 +365,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     }
 
     if (purge) {
-        NSString *dataDir = context.dataDir ?: @"~/.config/september";
+        NSString *dataDir = context.dataDir ?: @"~/.config/kaszlak";
         dataDir = [dataDir stringByExpandingTildeInPath];
 
         if ([fm fileExistsAtPath:dataDir]) {
@@ -443,10 +443,10 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     NSString *logPath = nil;
 
     if ([action isEqualToString:@"logs"]) {
-        logPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/september/agent.log"];
+        logPath = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/kaszlak/agent.log"];
         NSFileManager *fm = [NSFileManager defaultManager];
         if (![fm fileExistsAtPath:logPath]) {
-            logPath = @"/var/db/september/log/daemon.log";
+            logPath = @"/var/db/kaszlak/log/daemon.log";
         }
 
         if ([fm fileExistsAtPath:logPath]) {
@@ -566,7 +566,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     status[@"agentLoaded"] = @([self isServiceLoaded:@"com.atproto.pds.user"]);
     status[@"daemonLoaded"] = @([self isServiceLoaded:@"com.atproto.pds"]);
 
-    status[@"dataDirectory"] = context.dataDir ?: @"~/.config/september";
+    status[@"dataDirectory"] = context.dataDir ?: @"~/.config/kaszlak";
     status[@"configPath"] = context.configPath ?: @"./config.json";
 
     if ([fm fileExistsAtPath:[status[@"dataDirectory"] stringByExpandingTildeInPath]]) {

@@ -3,9 +3,9 @@
 #import <Security/SecAccessControl.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 
-NSString * const PDSBiometricKeychainErrorDomain = @"com.september.biometric.keychain";
+NSString * const PDSBiometricKeychainErrorDomain = @"com.kaszlak.biometric.keychain";
 
-static NSString * const kKeyType = @"september.signing.key";
+static NSString * const kKeyType = @"kaszlak.signing.key";
 
 @interface PDSBiometricKeychain ()
 @property (nonatomic, copy, readwrite) NSString *serviceName;
@@ -19,7 +19,7 @@ static NSString * const kKeyType = @"september.signing.key";
     static PDSBiometricKeychain *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[PDSBiometricKeychain alloc] initWithServiceName:@"com.september.pds"
+        shared = [[PDSBiometricKeychain alloc] initWithServiceName:@"com.kaszlak.pds"
                                                        accessGroup:nil
                                                      useBiometrics:YES];
     });
