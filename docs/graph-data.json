@@ -813,6 +813,28 @@
       "created_at": "2026-04-09T20:57:15.596279-04:00",
       "updated_at": "2026-04-09T20:57:15.596279-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 75,
+      "change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
+      "node_type": "action",
+      "title": "PLC Read Replica implemented - PLCReplicaServer, PLCReplicaStore, PLCSyncClient, PLCSyncEngine, PLCMetrics all exist; config in PDSConfiguration; Docker config documented",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T21:03:36.810698-04:00",
+      "updated_at": "2026-04-09T21:03:36.810698-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 76,
+      "change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "node_type": "action",
+      "title": "Phase 2 and 3 PLC replica work completed - config and Docker integration done",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T21:04:44.816545-04:00",
+      "updated_at": "2026-04-09T21:04:44.816545-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -1519,6 +1541,215 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T20:57:19.681245-04:00"
+    },
+    {
+      "id": 65,
+      "from_node_id": 50,
+      "to_node_id": 75,
+      "from_change_id": "98aee062-2087-492f-8184-a60654d391b0",
+      "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:03:43.536980-04:00"
+    },
+    {
+      "id": 66,
+      "from_node_id": 51,
+      "to_node_id": 75,
+      "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
+      "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:03:43.549490-04:00"
+    },
+    {
+      "id": 67,
+      "from_node_id": 57,
+      "to_node_id": 75,
+      "from_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
+      "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:03:43.559848-04:00"
+    },
+    {
+      "id": 68,
+      "from_node_id": 58,
+      "to_node_id": 75,
+      "from_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
+      "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:03:43.568817-04:00"
+    },
+    {
+      "id": 69,
+      "from_node_id": 56,
+      "to_node_id": 76,
+      "from_change_id": "111620d8-95ad-477b-9918-cfc526a6d116",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:51.974878-04:00"
+    },
+    {
+      "id": 70,
+      "from_node_id": 57,
+      "to_node_id": 76,
+      "from_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:51.984454-04:00"
+    },
+    {
+      "id": 71,
+      "from_node_id": 58,
+      "to_node_id": 76,
+      "from_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:51.994587-04:00"
+    },
+    {
+      "id": 72,
+      "from_node_id": 59,
+      "to_node_id": 76,
+      "from_change_id": "42a214aa-5edf-433c-9f33-26303040dd00",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.002820-04:00"
+    },
+    {
+      "id": 73,
+      "from_node_id": 60,
+      "to_node_id": 76,
+      "from_change_id": "4b8da783-02bf-46ff-bb40-8b93295d7e2b",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.012054-04:00"
+    },
+    {
+      "id": 74,
+      "from_node_id": 61,
+      "to_node_id": 76,
+      "from_change_id": "dda0a24e-4eb2-4d81-95f6-376a848e9b65",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.020993-04:00"
+    },
+    {
+      "id": 75,
+      "from_node_id": 62,
+      "to_node_id": 76,
+      "from_change_id": "63cdc6f1-1a6c-4b82-969b-a950fd06868c",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.029811-04:00"
+    },
+    {
+      "id": 76,
+      "from_node_id": 63,
+      "to_node_id": 76,
+      "from_change_id": "1bf644ff-fb1c-49a6-9404-df9994a2aece",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.038332-04:00"
+    },
+    {
+      "id": 77,
+      "from_node_id": 64,
+      "to_node_id": 76,
+      "from_change_id": "9dc0f90d-46a7-43c9-a88f-f42e6b4055e5",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.046150-04:00"
+    },
+    {
+      "id": 78,
+      "from_node_id": 66,
+      "to_node_id": 76,
+      "from_change_id": "6e6f36ec-7988-411b-b4d8-ef575a8c90a0",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.054132-04:00"
+    },
+    {
+      "id": 79,
+      "from_node_id": 67,
+      "to_node_id": 76,
+      "from_change_id": "4fbc8a34-7aaa-4b8f-82a1-9c584c65964a",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.062583-04:00"
+    },
+    {
+      "id": 80,
+      "from_node_id": 68,
+      "to_node_id": 76,
+      "from_change_id": "b35f0172-4b96-40b2-a58a-1cd7aa1f64fe",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.072221-04:00"
+    },
+    {
+      "id": 81,
+      "from_node_id": 69,
+      "to_node_id": 76,
+      "from_change_id": "1bc47922-6ad3-4e47-99be-cac81e5e2d4e",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.080635-04:00"
+    },
+    {
+      "id": 82,
+      "from_node_id": 70,
+      "to_node_id": 76,
+      "from_change_id": "9e391446-d2ae-4d62-a7b8-26952797be91",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.088185-04:00"
+    },
+    {
+      "id": 83,
+      "from_node_id": 71,
+      "to_node_id": 76,
+      "from_change_id": "682b3252-336e-44cd-a427-ccef52ff4ef5",
+      "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T21:04:52.095790-04:00"
     }
   ]
 }
