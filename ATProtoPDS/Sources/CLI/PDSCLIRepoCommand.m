@@ -31,17 +31,26 @@
 
 - (NSString *)helpText {
     return @"Inspect user repositories.\n\n"
+           @"Usage: pds repo <subcommand> [options]\n\n"
            @"Subcommands:\n"
            @"  list <did>             List all records in the user's repository\n"
            @"  get <did> <uri>        Fetch a specific record\n"
            @"  root <did>             Return the current root CID of the repository\n"
            @"  create-record <did> <col> [rkey] <json>  Create a new record\n"
            @"  delete-record <did> <col> <rkey>         Delete a record\n"
-           @"  repair <did>           Force reinitialize a corrupted repository";
+           @"  repair <did>           Force reinitialize a corrupted repository\n\n"
+           @"Examples:\n"
+           @"  pds repo list did:plc:abc123           # List all records for user\n"
+           @"  pds repo get did:plc:abc123 at://did:plc:abc123/app.bsky.feed.post/abc\n"
+           @"  pds repo root did:plc:abc123           # Get current repo root";
 }
 
 - (NSArray<NSString *> *)subcommands {
     return @[@"list", @"get", @"root", @"create-record", @"delete-record", @"repair"];
+}
+
+- (NSArray<NSString *> *)aliases {
+    return @[ @"r", @"repo" ];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
