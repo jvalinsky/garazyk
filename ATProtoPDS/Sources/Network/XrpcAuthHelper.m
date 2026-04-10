@@ -218,7 +218,6 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                         @"error": @"use_dpop_nonce",
                         @"message": @"DPoP nonce required"
                     }];
-                    NSLog(@"DEBUG: DPoP challenge generated with nonce: %@", nonce);
                 }
                 return nil;
             }
