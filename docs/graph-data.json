@@ -780,6 +780,39 @@
       "created_at": "2026-04-09T20:41:44.425769-04:00",
       "updated_at": "2026-04-09T20:41:44.425769-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":75}"
+    },
+    {
+      "id": 72,
+      "change_id": "635761bf-9f28-4e1f-b0df-fa5c3e88a235",
+      "node_type": "action",
+      "title": "Phase 5 completed: Interactive REPL mode with readline, command history, and .help/.history/.clear commands",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:56:51.500822-04:00",
+      "updated_at": "2026-04-09T20:56:51.500822-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 73,
+      "change_id": "cd150981-ddfd-4e4c-9d2d-6ecd3100801c",
+      "node_type": "action",
+      "title": "PLC spec compliance fully implemented - min 1 rotation key check, duplicate validation, P-256 key support, verificationMethods any did:key",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:57:08.316178-04:00",
+      "updated_at": "2026-04-09T20:57:08.316178-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 74,
+      "change_id": "fac36238-2e22-4acd-91e9-c1aa9af94d15",
+      "node_type": "action",
+      "title": "Production readiness fixes verified - Base64URL padding, admin auth, password KDF, issuer/URL, backup script, WebSocket backpressure all checked",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:57:15.596279-04:00",
+      "updated_at": "2026-04-09T20:57:15.596279-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -1420,6 +1453,72 @@
       "weight": 1.0,
       "rationale": "PLCSyncClient completed",
       "created_at": "2026-04-09T20:41:37.767126-04:00"
+    },
+    {
+      "id": 59,
+      "from_node_id": 21,
+      "to_node_id": 72,
+      "from_change_id": "b9ac482c-e256-44e1-b857-490a674dcf96",
+      "to_change_id": "635761bf-9f28-4e1f-b0df-fa5c3e88a235",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "All 5 phases of CLI UX plan completed",
+      "created_at": "2026-04-09T20:56:55.990746-04:00"
+    },
+    {
+      "id": 60,
+      "from_node_id": 1,
+      "to_node_id": 73,
+      "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
+      "to_change_id": "cd150981-ddfd-4e4c-9d2d-6ecd3100801c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "PLC spec compliance completed",
+      "created_at": "2026-04-09T20:57:11.470833-04:00"
+    },
+    {
+      "id": 61,
+      "from_node_id": 2,
+      "to_node_id": 73,
+      "from_change_id": "58888d8a-5416-4939-8ee7-d46e1014274a",
+      "to_change_id": "cd150981-ddfd-4e4c-9d2d-6ecd3100801c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T20:57:11.485868-04:00"
+    },
+    {
+      "id": 62,
+      "from_node_id": 3,
+      "to_node_id": 73,
+      "from_change_id": "511bf237-95e0-4fa2-88e2-193c7cda1ec7",
+      "to_change_id": "cd150981-ddfd-4e4c-9d2d-6ecd3100801c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T20:57:11.498089-04:00"
+    },
+    {
+      "id": 63,
+      "from_node_id": 14,
+      "to_node_id": 74,
+      "from_change_id": "ce302e89-0c06-4942-977c-4ef8df3f3164",
+      "to_change_id": "fac36238-2e22-4acd-91e9-c1aa9af94d15",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T20:57:19.674702-04:00"
+    },
+    {
+      "id": 64,
+      "from_node_id": 15,
+      "to_node_id": 74,
+      "from_change_id": "a02a4c8c-429e-43e0-b9be-c3b8207c6524",
+      "to_change_id": "fac36238-2e22-4acd-91e9-c1aa9af94d15",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-09T20:57:19.681245-04:00"
     }
   ]
 }
