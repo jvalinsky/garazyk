@@ -714,6 +714,72 @@
       "created_at": "2026-04-09T18:32:47.736750-04:00",
       "updated_at": "2026-04-09T18:32:47.736750-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 66,
+      "change_id": "6e6f36ec-7988-411b-b4d8-ef575a8c90a0",
+      "node_type": "action",
+      "title": "Create PLCSyncClient",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:41:33.564409-04:00",
+      "updated_at": "2026-04-09T20:41:33.564409-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":85}"
+    },
+    {
+      "id": 67,
+      "change_id": "4fbc8a34-7aaa-4b8f-82a1-9c584c65964a",
+      "node_type": "action",
+      "title": "Create PLCReplicaStore with sync state",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:41:40.924759-04:00",
+      "updated_at": "2026-04-09T20:41:40.924759-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":85}"
+    },
+    {
+      "id": 68,
+      "change_id": "b35f0172-4b96-40b2-a58a-1cd7aa1f64fe",
+      "node_type": "action",
+      "title": "Create PLCSyncEngine",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:41:40.995320-04:00",
+      "updated_at": "2026-04-09T20:41:40.995320-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":90}"
+    },
+    {
+      "id": 69,
+      "change_id": "1bc47922-6ad3-4e47-99be-cac81e5e2d4e",
+      "node_type": "action",
+      "title": "Create PLCReplicaServer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:41:41.068253-04:00",
+      "updated_at": "2026-04-09T20:41:41.068253-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":85}"
+    },
+    {
+      "id": 70,
+      "change_id": "9e391446-d2ae-4d62-a7b8-26952797be91",
+      "node_type": "action",
+      "title": "Add replica config options",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:41:44.352400-04:00",
+      "updated_at": "2026-04-09T20:41:44.352400-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":80}"
+    },
+    {
+      "id": 71,
+      "change_id": "682b3252-336e-44cd-a427-ccef52ff4ef5",
+      "node_type": "action",
+      "title": "Add replica metrics",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-09T20:41:44.425769-04:00",
+      "updated_at": "2026-04-09T20:41:44.425769-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":75}"
     }
   ],
   "edges": [
@@ -1343,6 +1409,17 @@
       "weight": 1.0,
       "rationale": "CLI UX plan created, rename to kaszlak completed",
       "created_at": "2026-04-09T20:16:03.549939-04:00"
+    },
+    {
+      "id": 58,
+      "from_node_id": 51,
+      "to_node_id": 66,
+      "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
+      "to_change_id": "6e6f36ec-7988-411b-b4d8-ef575a8c90a0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "PLCSyncClient completed",
+      "created_at": "2026-04-09T20:41:37.767126-04:00"
     }
   ]
 }
