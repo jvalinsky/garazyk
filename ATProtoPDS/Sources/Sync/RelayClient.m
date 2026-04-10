@@ -12,7 +12,6 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 @property (nonatomic, strong, readwrite) NSURL *serverURL;
 @property (nonatomic, copy, readwrite, nullable) NSString *accessToken;
 @property (nonatomic, assign, readwrite) BOOL isConnected;
-@property (nonatomic, weak, readwrite, nullable) id<RelayClientDelegate> delegate;
 @property (nonatomic, assign, readwrite) NSTimeInterval reconnectInterval;
 @property (nonatomic, assign, readwrite) NSInteger maxReconnectAttempts;
 @property (nonatomic, assign, readwrite) NSInteger reconnectAttempts;
