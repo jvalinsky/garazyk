@@ -277,6 +277,7 @@ int main(int argc, char *argv[]) {
       @"CappuccinoUIRouteRegressionTests",
       @"CommitChainTests",
       @"FirehoseIntegrationTests",
+      @"E2EDockerTests",
       @"PDSReplayCacheTests",
       @"StarterPackMembershipTests",
       @"PDSEmailHTTPClientTests",

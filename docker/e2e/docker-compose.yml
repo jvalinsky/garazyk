@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  plc-replica:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.gnustep
+      target: runtime
+    image: nspds:local
+    container_name: e2e-plc
+    ports:
+      - "2580:2580"
+    environment:
+      - TZ=UTC
+    volumes:
+      - plc_data:/var/lib/plc
+    command: ["plc", "replica", "--port", "2580"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2580/xrpc/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - e2e_network
+
+  pds:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.gnustep
+      target: runtime
+    image: nspds:local
+    container_name: e2e-pds
+    ports:
+      - "2583:2583"
+    volumes:
+      - pds_data:/var/lib/atprotopds
+      - ./pds-config.json:/var/lib/atprotopds/config.json:ro
+    environment:
+      - TZ=UTC
+      - PDS_PORT=2583
+      - PDS_HOST=0.0.0.0
+      - PDS_ISSUER=https://pds.garazyk.xyz
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - HOME=/var/lib/atprotopds
+      - PDS_DATA_DIR=/var/lib/atprotopds
+      - PDS_TRUST_PROXY_HEADERS=1
+    command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"]
+    depends_on:
+      plc-replica:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2583/xrpc/com.atproto.server.describeServer"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - e2e_network
+
+  relay:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.gnustep
+      target: runtime
+    image: nspds:local
+    container_name: e2e-relay
+    ports:
+      - "2584:2584"
+    volumes:
+      - relay_data:/var/lib/relay
+      - ./relay-config.json:/var/lib/relay/config.json:ro
+    environment:
+      - TZ=UTC
+    command: ["relay", "serve", "--config", "/var/lib/relay/config.json"]
+    depends_on:
+      pds:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2584/xrpc/com.atproto.sync.getHead?repo=did:plc:test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - e2e_network
+
+networks:
+  e2e_network:
+    driver: bridge
+
+volumes:
+  plc_data:
+    name: e2e_plc_data
+  pds_data:
+    name: e2e_pds_data
+  relay_data:
+    name: e2e_relay_data
