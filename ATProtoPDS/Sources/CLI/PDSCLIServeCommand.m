@@ -30,6 +30,7 @@
 
 - (NSString *)helpText {
   return @"Start the PDS HTTP server.\n\n"
+         @"Usage: pds serve [options]\n\n"
          @"Options:\n"
          @"  --port <port>         Port to listen on (default: 2583)\n"
          @"  --data-dir <path>     Data directory\n"
@@ -39,11 +40,16 @@
          @"  --log-components <c>  Comma-separated list of components to "
          @"enable\n"
          @"  --foreground          Run in foreground (don't daemonize)\n"
-         @"  --help                Show this help";
+         @"  --help                Show this help\n\n"
+         @"Examples:\n"
+         @"  pds serve                           # Start server on default port\n"
+         @"  pds serve --port 3000              # Start on port 3000\n"
+         @"  pds serve --data-dir /var/lib/pds   # Use custom data directory\n"
+         @"  pds serve --foreground              # Run in foreground (no daemon)";
 }
 
 - (NSArray<NSString *> *)aliases {
-  return @[ @"start", @"run", @"server" ];
+  return @[ @"start", @"run", @"server", @"s" ];
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args

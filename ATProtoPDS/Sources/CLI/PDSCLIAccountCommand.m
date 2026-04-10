@@ -32,6 +32,7 @@
 
 - (NSString *)helpText {
     return @"Manage PDS accounts.\n\n"
+           @"Usage: pds account <subcommand> [options]\n\n"
            @"Subcommands:\n"
            @"  list                   List all accounts\n"
            @"  info <did|handle>      Show account details\n"
@@ -44,11 +45,16 @@
            @"  update-plc-endpoint <did> <endpoint>  Update the account PLC service endpoint\n\n"
            @"Options for 'list':\n"
            @"  --limit, -l <n>        Limit results (default: 100)\n"
-           @"  --filter, -f <text>    Filter by handle, email, or DID";
+           @"  --filter, -f <text>    Filter by handle, email, or DID\n\n"
+           @"Examples:\n"
+           @"  pds account list                      # List all accounts\n"
+           @"  pds account list --limit 10           # List first 10 accounts\n"
+           @"  pds account create --email a@b.com --handle test.mypds.xyz --password secret\n"
+           @"  pds account info did:plc:abc123       # Show account details";
 }
 
 - (NSArray<NSString *> *)aliases {
-    return @[];
+    return @[ @"a", @"account" ];
 }
 
 - (NSArray<NSString *> *)subcommands {

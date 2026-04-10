@@ -178,12 +178,22 @@
     return @"pds invite <subcommand> [options]";
 }
 
+- (NSArray<NSString *> *)aliases {
+    return @[ @"i", @"invite" ];
+}
+
 - (NSString *)helpText {
     return @"Manage invite codes for account registration.\n\n"
+           @"Usage: pds invite <subcommand> [options]\n\n"
            @"Subcommands:\n"
            @"  list                   List all invite codes\n"
            @"  create                 Create a new invite code\n"
-           @"  revoke <code>          Revoke an invite code";
+           @"  revoke <code>          Revoke an invite code\n\n"
+           @"Examples:\n"
+           @"  pds invite list                        # List all invite codes\n"
+           @"  pds invite create                     # Create new invite (uses default 1 max use)\n"
+           @"  pds invite create --max-uses 5         # Create invite with 5 max uses\n"
+           @"  pds invite revoke ABC123              # Revoke a specific invite code";
 }
 
 - (NSArray<NSString *> *)subcommands {
