@@ -72,6 +72,18 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Delay between PLC retries in milliseconds. */
 @property (nonatomic, assign) NSUInteger plcRetryDelayMs;
 
+/*! Whether to run as a PLC replica. */
+@property (nonatomic, readonly) BOOL plcReplicaEnabled;
+
+/*! PLC replica upstream URL. */
+@property (nonatomic, readonly, nullable) NSString *plcReplicaUpstreamURL;
+
+/*! PLC replica bind address. */
+@property (nonatomic, readonly, nullable) NSString *plcReplicaBindAddress;
+
+/*! PLC replica data directory path. */
+@property (nonatomic, readonly, nullable) NSString *plcReplicaDataDir;
+
 /*! Skip PLC operations (debug mode). */
 @property (nonatomic, assign) BOOL debugSkipPlcOperations;
 
