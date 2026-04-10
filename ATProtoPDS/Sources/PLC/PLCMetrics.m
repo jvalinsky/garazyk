@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) int64_t totalErrors;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *operationCounts;
 @property (nonatomic, strong) NSMutableArray<NSNumber *> *latencySamples;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *customGauges;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *customCounters;
 @end
 
 @implementation PLCMetrics
@@ -41,6 +43,8 @@ NS_ASSUME_NONNULL_BEGIN
         _totalErrors = 0;
         _operationCounts = [NSMutableDictionary dictionary];
         _latencySamples = [NSMutableArray array];
+        _customGauges = [NSMutableDictionary dictionary];
+        _customCounters = [NSMutableDictionary dictionary];
     }
     return self;
 }
@@ -96,11 +100,23 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordResolutionLatency:(NSTimeInterval)latencyMs {
     @synchronized(self.latencySamples) {
         [self.latencySamples addObject:@(latencyMs)];
-    if (self.latencySamples.count > 1000) {
-        [self.latencySamples removeObjectAtIndex:0];
+        if (self.latencySamples.count > 1000) {
+            [self.latencySamples removeObjectAtIndex:0];
+        }
     }
+}
+
+- (void)setGauge:(NSString *)name value:(int64_t)value {
+    @synchronized(self.customGauges) {
+        self.customGauges[name] = @(value);
     }
-    PDS_LOG_CORE_DEBUG(@"PLC resolution latency: %.2fms", latencyMs);
+}
+
+- (void)incrementCounter:(NSString *)name by:(int64_t)delta {
+    @synchronized(self.customCounters) {
+        NSNumber *current = self.customCounters[name] ?: @0;
+        self.customCounters[name] = @(current.longLongValue + delta);
+    }
 }
 
 - (int64_t)cacheHits {
@@ -191,7 +207,25 @@ NS_ASSUME_NONNULL_BEGIN
     }
     [output appendString:@"# HELP plc_resolution_latency_milliseconds Average resolution latency in milliseconds\n"];
     [output appendString:@"# TYPE plc_resolution_latency_milliseconds gauge\n"];
-    [output appendString:[NSString stringWithFormat:@"plc_resolution_latency_milliseconds %.2f\n", avgLatency]];
+    [output appendString:[NSString stringWithFormat:@"plc_resolution_latency_milliseconds %.2f\n\n", avgLatency]];
+    
+    @synchronized(self.customGauges) {
+        [self.customGauges enumerateKeysAndObjectsUsingBlock:^(NSString *name, NSNumber *value, BOOL *stop) {
+            NSString *sanitized = [name stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+            [output appendString:[NSString stringWithFormat:@"# HELP %@ gauge\n", sanitized]];
+            [output appendString:[NSString stringWithFormat:@"# TYPE %@ gauge\n", sanitized]];
+            [output appendString:[NSString stringWithFormat:@"%@ %lld\n\n", sanitized, (long long)value.longLongValue]];
+        }];
+    }
+    
+    @synchronized(self.customCounters) {
+        [self.customCounters enumerateKeysAndObjectsUsingBlock:^(NSString *name, NSNumber *value, BOOL *stop) {
+            NSString *sanitized = [name stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+            [output appendString:[NSString stringWithFormat:@"# HELP %@ Total\n", sanitized]];
+            [output appendString:[NSString stringWithFormat:@"# TYPE %@ counter\n", sanitized]];
+            [output appendString:[NSString stringWithFormat:@"%@ %lld\n\n", sanitized, (long long)value.longLongValue]];
+        }];
+    }
     
     return [output copy];
 }

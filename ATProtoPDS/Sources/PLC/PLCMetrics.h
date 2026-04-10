@@ -45,6 +45,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)recordResolutionLatency:(NSTimeInterval)latencyMs;
 
+- (void)setGauge:(NSString *)name value:(int64_t)value;
+- (void)incrementCounter:(NSString *)name by:(int64_t)delta;
+
 - (NSString *)renderMetrics;
 
 @property (nonatomic, readonly) int64_t cacheHits;
