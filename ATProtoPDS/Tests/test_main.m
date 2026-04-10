@@ -184,6 +184,8 @@ int main(int argc, char *argv[]) {
       @"IdentifierTests",
       @"TOTPTests",
       @"CryptoTests",
+      @"Secp256k1Tests",
+      @"PDSNonceManagerTests",
       @"YubiKeyOATHTests",
       @"WebAuthnVerifierTests",
       @"WebAuthnDomainTests",
