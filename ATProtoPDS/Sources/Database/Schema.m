@@ -345,3 +345,39 @@ NSString * const kPDSIndexBookmarksDidSQL =
 
 NSString * const kPDSIndexStarterPacksDidSQL =
     @"CREATE INDEX IF NOT EXISTS idx_starter_packs_did ON starter_packs(did)";
+
+#pragma mark - Video Jobs
+
+NSString * const kPDSVideoJobsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS video_jobs ("
+    @"job_id TEXT PRIMARY KEY,"
+    @"did TEXT NOT NULL,"
+    @"blob_cid TEXT NOT NULL,"
+    @"original_filename TEXT,"
+    @"mime_type TEXT,"
+    @"file_size INTEGER,"
+    @"duration_seconds INTEGER,"
+    @"width INTEGER,"
+    @"height INTEGER,"
+    @"state TEXT NOT NULL DEFAULT 'PENDING',"
+    @"progress INTEGER DEFAULT 0,"
+    @"message TEXT,"
+    @"error_code TEXT,"
+    @"error_message TEXT,"
+    @"thumbnail_blob_cid TEXT,"
+    @"processed_blob_cid TEXT,"
+    @"created_at TEXT NOT NULL,"
+    @"updated_at TEXT NOT NULL,"
+    @"completed_at TEXT,"
+    @"expires_at TEXT,"
+    @"retry_count INTEGER DEFAULT 0"
+    @")";
+
+NSString * const kPDSVideoJobsIndexDidSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_video_jobs_did ON video_jobs(did)";
+
+NSString * const kPDSVideoJobsIndexStateSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_video_jobs_state ON video_jobs(state)";
+
+NSString * const kPDSVideoJobsIndexCreatedSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_video_jobs_created ON video_jobs(created_at)";
