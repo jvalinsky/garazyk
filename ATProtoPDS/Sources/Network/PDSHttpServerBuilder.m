@@ -217,7 +217,7 @@
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: OAuth routes registered");
 
   PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-  WebAuthnRegistrationHandler *webauthnHandler = [[WebAuthnRegistrationHandler alloc] initWithDatabase:db serverOrigin:config.serverURL];
+  WebAuthnRegistrationHandler *webauthnHandler = [[WebAuthnRegistrationHandler alloc] initWithDatabase:db serverOrigin:config.issuer];
   [webauthnHandler registerRoutesWithServer:server];
 
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: WebAuthn routes registered");
