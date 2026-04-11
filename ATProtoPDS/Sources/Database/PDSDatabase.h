@@ -936,6 +936,8 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                  forDid:(NSString *)did
                  error:(NSError **)error;
 
++ (void)parseLimit:(nullable NSString *)limit outLimit:(NSUInteger *)outLimit;
+
 #pragma mark - WebAuthn Credentials
 
 - (BOOL)storeWebAuthnCredential:(NSDictionary *)credential
