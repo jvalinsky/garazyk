@@ -83,5 +83,9 @@ extern NSString * const kPDSIndexLabelsSourceSQL;
 extern NSString * const kPDSIndexReservedHandlesHandleSQL;
 extern NSString * const kPDSIndexBookmarksDidSQL;
 extern NSString * const kPDSIndexStarterPacksDidSQL;
+extern NSString * const kPDSVideoJobsTableCreateSQL;
+extern NSString * const kPDSVideoJobsIndexDidSQL;
+extern NSString * const kPDSVideoJobsIndexStateSQL;
+extern NSString * const kPDSVideoJobsIndexCreatedSQL;
 
 NS_ASSUME_NONNULL_END
