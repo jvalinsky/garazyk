@@ -7,7 +7,7 @@
 #import "Network/HttpResponse.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
-#import "Database/PDSDatabasePool.h"
+#import "Database/Pool/DatabasePool.h"
 #import "Admin/PDSAdminController.h"
 #import "AppView/ActorService.h"
 #import "AppView/FeedService.h"
@@ -2706,9 +2706,8 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
 
     // MARK: - app.bsky.draft.* (Draft management - stored as private records)
 
-    // Get user's database pool for draft storage
-    NSError *dbError = nil;
-    PDSDatabasePool *userDatabasePool = [serviceDatabases userDatabasePoolWithError:&dbError];
+    // Use service pool for draft storage (simpler than per-user)
+    PDSDatabasePool *userDatabasePool = serviceDatabases.servicePool;
     PDSRecordService *recordService = [[PDSRecordService alloc] initWithDatabasePool:userDatabasePool];
 
     // app.bsky.draft.createDraft - Create a new draft
@@ -2750,7 +2749,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
 
         // Generate TID-formatted draft ID
         NSString *draftId = [[NSUUID UUID] UUIDString];
-        NSString *now = [NSDateFormatter iso8601StringFromDate:[NSDate date]];
+        NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+    fmt.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+    NSString *now = [fmt stringFromDate:[NSDate date]];
 
         // Store draft object as-is with metadata
         NSMutableDictionary *draftRecord = [draft mutableCopy];
@@ -2827,7 +2828,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             return;
         }
 
-        NSString *now = [NSDateFormatter iso8601StringFromDate:[NSDate date]];
+        NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+    fmt.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+    NSString *now = [fmt stringFromDate:[NSDate date]];
         NSString *createdAt = existingDraft[@"createdAt"] ?: now;
 
         NSMutableDictionary *updatedRecord = [draft mutableCopy];
@@ -2869,10 +2872,10 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             return;
         }
 
-        NSUInteger limit = 50;  // Default per spec
+        NSUInteger limit = 50;
         NSString *limitParam = [request queryParamForKey:@"limit"];
-        if (limitParam && ![self parseLimit:limitParam outLimit:&limit]) {
-            limit = 50;
+        if (limitParam) {
+            [PDSDatabase parseLimit:limitParam outLimit:&limit];
         }
         if (limit > 100) limit = 100;
         if (limit < 1) limit = 1;

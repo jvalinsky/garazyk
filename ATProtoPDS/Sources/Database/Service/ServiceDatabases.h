@@ -60,6 +60,9 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 /*! Pool for repository event sequencer. */
 @property (nonatomic, strong, readonly) PDSDatabasePool *sequencerPool;
 
+/*! Pool for user-level databases. */
+@property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
+
 /*!
  @method sharedInstance
 
