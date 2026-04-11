@@ -68,6 +68,19 @@
            @")";
 }
 
+- (NSString *)serviceWebAuthnCredentialsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS webauthn_credentials ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    account_did TEXT NOT NULL,"
+           @"    credential_id BLOB NOT NULL,"
+           @"    public_key_cose BLOB NOT NULL,"
+           @"    sign_count INTEGER DEFAULT 0,"
+           @"    aaguid BLOB,"
+           @"    created_at REAL NOT NULL,"
+           @"    UNIQUE(account_did, credential_id)"
+           @")";
+}
+
 - (NSString *)serviceJWTSigningKeysTableSchema {
     return @"CREATE TABLE IF NOT EXISTS jwt_signing_keys ("
            @"    key_id TEXT PRIMARY KEY,"
@@ -141,6 +154,8 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceRefreshTokensTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self serviceWebAuthnCredentialsTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self serviceJWTSigningKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceEventsTableSchema]];
@@ -158,6 +173,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_app_passwords_account ON app_passwords(account_did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_webauthn_credentials_account ON webauthn_credentials(account_did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_events_seq ON events(seq);"];
     [sql appendString:@";\n"];
