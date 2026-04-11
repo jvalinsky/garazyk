@@ -592,6 +592,12 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                               resolveError.localizedDescription ?: @"unknown error");
         }
     }
+    if (request.webauthn) {
+        NSData *webauthnChallenge = [CryptoUtils randomBytes:32];
+        if (webauthnChallenge) {
+            codeData[@"webauthn_challenge"] = webauthnChallenge;
+        }
+    }
     codeData[@"created_at"] = @([[NSDate date] timeIntervalSince1970]);
 
     [self storeAuthorizationCode:code data:codeData];
@@ -755,10 +761,74 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         }
     }
 
-    // MARK: WebAuthn integration (requires OAuth2 session challenge storage)
-    // TODO: Implement WebAuthn assertion verification at token endpoint
-    // This requires storing the challenge in the OAuth session and retrieving it here
-    // See webauthn_credentials table and WebAuthnVerifier for credential verification
+    // MARK: WebAuthn integration
+    if (account && account.webauthnEnabled && !request.tfaCode) {
+        if (!request.webauthnAssertion) {
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                          code:OAuth2ErrorInteractionRequired
+                                      userInfo:@{NSLocalizedDescriptionKey: @"WebAuthn authentication required",
+                                                 @"error": @"webauthn_required"}];
+            completion(nil, error);
+            return;
+        }
+
+        NSData *webauthnChallenge = codeData[@"webauthn_challenge"];
+        if (!webauthnChallenge) {
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                          code:OAuth2ErrorInvalidGrant
+                                      userInfo:@{NSLocalizedDescriptionKey: @"No WebAuthn challenge found for session"}];
+            completion(nil, error);
+            return;
+        }
+
+        NSError *webauthnError = nil;
+        NSArray<NSDictionary *> *credentials = [self.database getWebAuthnCredentialsForDid:did error:&webauthnError];
+        if (credentials.count == 0) {
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                          code:OAuth2ErrorInvalidGrant
+                                      userInfo:@{NSLocalizedDescriptionKey: @"No WebAuthn credentials found"}];
+            completion(nil, error);
+            return;
+        }
+
+        NSString *origin = [PDSConfiguration sharedConfiguration].issuer;
+        BOOL verified = NO;
+        uint32_t newSignCount = 0;
+        NSDictionary *matchedCredential = nil;
+
+        for (NSDictionary *cred in credentials) {
+            uint32_t storedSignCount = [cred[@"signCount"] unsignedIntValue];
+            uint32_t newCount = 0;
+
+            verified = [WebAuthnVerifier verifyAssertionResponse:request.webauthnAssertion
+                                               challenge:webauthnChallenge
+                                                  origin:origin
+                                               publicKey:cred[@"publicKey"]
+                                               signCount:storedSignCount
+                                            newSignCount:&newCount
+                                                   error:&webauthnError];
+            if (verified) {
+                matchedCredential = cred;
+                newSignCount = newCount;
+                break;
+            }
+        }
+
+        if (!verified) {
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                          code:OAuth2ErrorInvalidGrant
+                                      userInfo:@{NSLocalizedDescriptionKey: @"WebAuthn verification failed"}];
+            completion(nil, error);
+            return;
+        }
+
+        if (matchedCredential && newSignCount > 0) {
+            [self.database updateWebAuthnCredentialSignCount:matchedCredential[@"credentialId"]
+                                                  forDid:did
+                                               signCount:newSignCount
+                                                   error:nil];
+        }
+    }
 
     NSString *handle = account.handle ?: @"handle.placeholder";
     NSString *scope = codeData[@"scope"] ?: OAuth2ScopeAtproto;

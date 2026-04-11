@@ -99,6 +99,15 @@ typedef NS_ENUM(NSInteger, OAuthError) {
 /*! Whether user has authenticated. */
 @property (nonatomic, assign) BOOL authenticated;
 
+/*! WebAuthn challenge issued for this session. */
+@property (nonatomic, copy, nullable) NSData *webauthnChallenge;
+
+/*! WebAuthn challenge expiration. */
+@property (nonatomic, strong, nullable) NSDate *webauthnChallengeExpiresAt;
+
+/*! Whether WebAuthn authentication is required. */
+@property (nonatomic, assign) BOOL webauthnRequired;
+
 /*! Create session with ID. */
 + (instancetype)sessionWithId:(NSString *)sessionId;
 

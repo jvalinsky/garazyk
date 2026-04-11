@@ -12,6 +12,9 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
     session.sessionId = sessionId;
     session.createdAt = [NSDate date];
     session.authenticated = NO;
+    session.webauthnChallenge = nil;
+    session.webauthnChallengeExpiresAt = nil;
+    session.webauthnRequired = NO;
     return session;
 }
 
@@ -251,6 +254,14 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
     });
 
     return authCode;
+}
+
+- (nullable OAuthSession *)sessionForAuthCode:(NSString *)authCode {
+    __block OAuthSession *session = nil;
+    dispatch_sync(self.sessionQueue, ^{
+        session = self.authCodes[authCode];
+    });
+    return session;
 }
 
 @end
