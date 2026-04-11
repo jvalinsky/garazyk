@@ -14,13 +14,14 @@
 @property (nonatomic, assign, readwrite) NSUInteger retentionSeconds;
 @property (nonatomic, assign, readwrite) NSUInteger maxEvents;
 @property (nonatomic, strong) NSMutableArray<BufferedEvent *> *buffer;
-dispatch_queue_t _bufferQueue;
 @property (nonatomic, assign) int64_t oldestSeq;
 @property (nonatomic, assign) int64_t newestSeq;
 
 @end
 
-@implementation RelayEventBuffer
+@implementation RelayEventBuffer {
+    dispatch_queue_t _bufferQueue;
+}
 
 - (instancetype)initWithRetentionHours:(NSUInteger)hours maxEvents:(NSUInteger)maxEvents {
     self = [super init];

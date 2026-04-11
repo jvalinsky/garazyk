@@ -1313,13 +1313,15 @@ static NSDateFormatter * iso8601Formatter(void) {
     
     account.inviteEnabled = (sqlite3_column_int(stmt, 12) != 0);
 
-    // Age assurance (columns 13, 14)
-    const char *ageAssuranceText = (const char *)sqlite3_column_text(stmt, 13);
+    account.webauthnEnabled = (sqlite3_column_int(stmt, 13) != 0);
+
+    // Age assurance (columns 14, 15)
+    const char *ageAssuranceText = (const char *)sqlite3_column_text(stmt, 14);
     if (ageAssuranceText) {
         account.ageAssurance = @(ageAssuranceText);
     }
 
-    const char *ageVerifiedAtText = (const char *)sqlite3_column_text(stmt, 14);
+    const char *ageVerifiedAtText = (const char *)sqlite3_column_text(stmt, 15);
     if (ageVerifiedAtText) {
         account.ageVerifiedAt = @(ageVerifiedAtText);
     }
@@ -1868,6 +1870,16 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
     return [iso8601Formatter() stringFromDate:date];
+}
+
++ (void)parseLimit:(NSString *)limit outLimit:(NSUInteger *)outLimit {
+    if (outLimit == nil) return;
+    if (limit) {
+        NSUInteger parsed = [[NSString stringWithFormat:@"%@", limit] integerValue];
+        *outLimit = parsed > 0 ? MIN(parsed, 100) : 50;
+    } else {
+        *outLimit = 50;
+    }
 }
 
 - (NSDate *)dateFromISO8601String:(NSString *)string {
