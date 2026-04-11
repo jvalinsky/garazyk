@@ -30,7 +30,7 @@
 @interface RelayEventValidator ()
 
 @property (nonatomic, assign, readwrite) RelayValidationMode validationMode;
-@property (nonatomic, strong) dispatch_queue_t validationQueue;
+dispatch_queue_t _validationQueue;
 
 @end
 

@@ -6,12 +6,28 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 #import <CommonCrypto/CommonCrypto.h>
 
 NSString * const BlobStorageErrorDomain = @"com.atproto.blobstorage";
 
 static const NSInteger kMaxBlobSize = 5 * 1024 * 1024; // 5MB
 static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec)
+
+#pragma mark - Range Header Parsing Helpers
+
+static NSString *trimmedNonEmptyString(NSString *value);
+static BOOL parseUnsignedLongLongString(NSString *value,
+                                        unsigned long long *result);
+static BOOL parseByteRangeHeader(NSString *rangeHeader,
+                                 unsigned long long totalLength, BOOL *hasRange,
+                                 BOOL *satisfiable, unsigned long long *start,
+                                 unsigned long long *end,
+                                 NSString **failureReason);
+static HttpResponseBodyChunkProducer
+blobFileChunkProducer(NSString *path, unsigned long long startOffset,
+                      unsigned long long endOffset, NSError **error);
 
 @interface BlobStorage ()
 
@@ -355,4 +371,330 @@ static const uint64_t kRawCodec = 0x55; // raw codec for blobs (per ATProto spec
     return [formatter stringFromDate:date];
 }
 
+#pragma mark - Range Response Helpers
+
+- (BOOL)respondWithBlobData:(nullable NSData *)blobData
+                   filePath:(nullable NSString *)filePath
+                totalLength:(unsigned long long)totalLength
+                 forRequest:(HttpRequest *)request
+                   response:(HttpResponse *)response
+                      error:(NSError **)outError {
+    [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
+
+    BOOL hasRange = NO;
+    BOOL satisfiable = YES;
+    unsigned long long start = 0;
+    unsigned long long end = totalLength > 0 ? (totalLength - 1) : 0;
+    NSString *rangeFailureReason = nil;
+    BOOL validRange = parseByteRangeHeader([request headerForKey:@"Range"],
+                                           totalLength, &hasRange, &satisfiable,
+                                           &start, &end, &rangeFailureReason);
+    if (!validRange) {
+      response.statusCode = 400;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRange",
+        @"message" : rangeFailureReason ?: @"Range header is invalid"
+      }];
+      return NO;
+    }
+
+    if (hasRange && !satisfiable) {
+      response.statusCode = 416;
+      response.statusMessage = @"Range Not Satisfiable";
+      [response
+          setHeader:[NSString stringWithFormat:@"bytes */%llu", totalLength]
+             forKey:@"Content-Range"];
+      return YES;
+    }
+
+    if (hasRange) {
+      response.statusCode = 206;
+      response.statusMessage = @"Partial Content";
+      [response setHeader:[NSString stringWithFormat:@"bytes %llu-%llu/%llu",
+                                                     start, end, totalLength]
+                   forKey:@"Content-Range"];
+    } else {
+      response.statusCode = 200;
+    }
+
+    if ([filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
+      NSError *streamError = nil;
+      HttpResponseBodyChunkProducer producer =
+          blobFileChunkProducer(filePath, start, end, &streamError);
+      if (!producer) {
+        response.statusCode = 500;
+        [response setJsonBody:@{
+          @"error" : @"BlobReadFailed",
+          @"message" : streamError.localizedDescription
+              ?: @"Failed to stream blob"
+        }];
+        return NO;
+      }
+      [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+      return YES;
+    }
+
+    if (![blobData isKindOfClass:[NSData class]]) {
+      response.statusCode = 500;
+      [response setJsonBody:@{
+        @"error" : @"BlobReadFailed",
+        @"message" : @"Blob payload unavailable"
+      }];
+      return NO;
+    }
+
+    if (hasRange) {
+      NSUInteger offset = (NSUInteger)start;
+      NSUInteger length = (NSUInteger)(end - start + 1);
+      [response
+          setBodyData:[blobData subdataWithRange:NSMakeRange(offset, length)]];
+      return YES;
+    }
+
+    [response setBodyData:blobData];
+    return YES;
+}
+
 @end
+
+#pragma mark - Range Parsing Implementation
+
+static NSString *trimmedNonEmptyString(NSString *value) {
+  if (![value isKindOfClass:[NSString class]]) {
+    return nil;
+  }
+  NSString *trimmed = [value
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]];
+  return trimmed.length > 0 ? trimmed : nil;
+}
+
+static BOOL parseUnsignedLongLongString(NSString *value,
+                                        unsigned long long *result) {
+  NSString *trimmed = trimmedNonEmptyString(value);
+  if (trimmed.length == 0) {
+    return NO;
+  }
+
+  errno = 0;
+  char *end = NULL;
+  unsigned long long parsed = strtoull(trimmed.UTF8String, &end, 10);
+  if (errno != 0 || !end || end == trimmed.UTF8String || *end != '\0') {
+    return NO;
+  }
+
+  if (result) {
+    *result = parsed;
+  }
+  return YES;
+}
+
+static BOOL parseByteRangeHeader(NSString *rangeHeader,
+                                 unsigned long long totalLength, BOOL *hasRange,
+                                 BOOL *satisfiable, unsigned long long *start,
+                                 unsigned long long *end,
+                                 NSString **failureReason) {
+  if (hasRange) {
+    *hasRange = NO;
+  }
+  if (satisfiable) {
+    *satisfiable = YES;
+  }
+  if (start) {
+    *start = 0;
+  }
+  if (end) {
+    *end = totalLength > 0 ? (totalLength - 1) : 0;
+  }
+  if (failureReason) {
+    *failureReason = nil;
+  }
+
+  NSString *trimmedRange = trimmedNonEmptyString(rangeHeader);
+  if (trimmedRange.length == 0) {
+    return YES;
+  }
+
+  if (hasRange) {
+    *hasRange = YES;
+  }
+
+  if (![trimmedRange.lowercaseString hasPrefix:@"bytes="]) {
+    if (failureReason) {
+      *failureReason = @"Range header must use bytes units";
+    }
+    return NO;
+  }
+
+  NSString *spec = [trimmedRange substringFromIndex:6];
+  if ([spec containsString:@","]) {
+    if (failureReason) {
+      *failureReason = @"Multiple ranges are not supported";
+    }
+    return NO;
+  }
+
+  NSRange dashRange = [spec rangeOfString:@"-"];
+  if (dashRange.location == NSNotFound) {
+    if (failureReason) {
+      *failureReason = @"Range header is malformed";
+    }
+    return NO;
+  }
+
+  NSString *startPart = [spec substringToIndex:dashRange.location];
+  NSString *endPart = [spec substringFromIndex:dashRange.location + 1];
+  if (startPart.length == 0 && endPart.length == 0) {
+    if (failureReason) {
+      *failureReason = @"Range header is malformed";
+    }
+    return NO;
+  }
+
+  if (totalLength == 0) {
+    if (satisfiable) {
+      *satisfiable = NO;
+    }
+    return YES;
+  }
+
+  if (startPart.length > 0) {
+    unsigned long long parsedStart = 0;
+    if (!parseUnsignedLongLongString(startPart, &parsedStart)) {
+      if (failureReason) {
+        *failureReason = @"Range start is invalid";
+      }
+      return NO;
+    }
+
+    unsigned long long parsedEnd = totalLength - 1;
+    if (endPart.length > 0) {
+      if (!parseUnsignedLongLongString(endPart, &parsedEnd)) {
+        if (failureReason) {
+          *failureReason = @"Range end is invalid";
+        }
+        return NO;
+      }
+    }
+
+    if (parsedStart >= totalLength) {
+      if (satisfiable) {
+        *satisfiable = NO;
+      }
+      return YES;
+    }
+    if (parsedEnd < parsedStart) {
+      if (satisfiable) {
+        *satisfiable = NO;
+      }
+      return YES;
+    }
+    if (parsedEnd >= totalLength) {
+      parsedEnd = totalLength - 1;
+    }
+
+    if (start) {
+      *start = parsedStart;
+    }
+    if (end) {
+      *end = parsedEnd;
+    }
+    return YES;
+  }
+
+  unsigned long long suffixLength = 0;
+  if (!parseUnsignedLongLongString(endPart, &suffixLength) ||
+      suffixLength == 0) {
+    if (satisfiable) {
+      *satisfiable = NO;
+    }
+    return YES;
+  }
+
+  unsigned long long parsedStart =
+      (suffixLength >= totalLength) ? 0 : (totalLength - suffixLength);
+  if (start) {
+    *start = parsedStart;
+  }
+  if (end) {
+    *end = totalLength - 1;
+  }
+  return YES;
+}
+
+static HttpResponseBodyChunkProducer
+blobFileChunkProducer(NSString *path, unsigned long long startOffset,
+                      unsigned long long endOffset, NSError **error) {
+  NSFileHandle *fileHandle = [NSFileHandle fileHandleForReadingAtPath:path];
+  if (!fileHandle) {
+    if (error) {
+      *error = [NSError errorWithDomain:@"BlobStorage"
+                                   code:1
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Failed to open blob file for streaming"
+                               }];
+    }
+    return nil;
+  }
+
+  @try {
+    [fileHandle seekToFileOffset:startOffset];
+  } @catch (NSException *exception) {
+    @try {
+      [fileHandle closeFile];
+    } @catch (__unused NSException *closeException) {
+    }
+    if (error) {
+      *error = [NSError errorWithDomain:@"BlobStorage"
+                                   code:2
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey : exception.reason
+                                     ?: @"Failed to seek blob file"
+                               }];
+    }
+    return nil;
+  }
+
+  __block NSFileHandle *capturedHandle = fileHandle;
+  __block unsigned long long bytesRemaining =
+      (endOffset >= startOffset) ? (endOffset - startOffset + 1) : 0;
+  static const NSUInteger kBlobChunkSize = 64 * 1024;
+
+  return ^NSData *_Nullable(NSError **producerError) {
+    if (!capturedHandle || bytesRemaining == 0) {
+      if (capturedHandle) {
+        @try {
+          [capturedHandle closeFile];
+        } @catch (__unused NSException *closeException) {
+        }
+        capturedHandle = nil;
+      }
+      return nil;
+    }
+
+    NSUInteger readLength =
+        (NSUInteger)MIN((unsigned long long)kBlobChunkSize, bytesRemaining);
+    NSData *chunk = [capturedHandle readDataOfLength:readLength];
+    if (chunk.length == 0) {
+      @try {
+        [capturedHandle closeFile];
+      } @catch (__unused NSException *closeException) {
+      }
+      capturedHandle = nil;
+      if (producerError && bytesRemaining > 0) {
+        *producerError =
+            [NSError errorWithDomain:@"BlobStorage"
+                                code:3
+                            userInfo:@{
+                              NSLocalizedDescriptionKey :
+                                  @"Unexpected end-of-file while streaming blob"
+                            }];
+      }
+      return nil;
+    }
+
+    bytesRemaining -= chunk.length;
+    return chunk;
+  };
+}
