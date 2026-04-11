@@ -26,6 +26,9 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSInteger const kPDSDatabaseSchemaVersion;
 
 extern NSString * const kPDSAccountTableName;
+extern NSString * const kPDSAgeAssuranceNoVerification;
+extern NSString * const kPDSAgeAssuranceVerifiedByAdult;
+extern NSString * const kPDSAgeAssuranceVerifiedByMethod;
 extern NSString * const kPDSRepoTableName;
 extern NSString * const kPDSRecordTableName;
 extern NSString * const kPDSBlockTableName;

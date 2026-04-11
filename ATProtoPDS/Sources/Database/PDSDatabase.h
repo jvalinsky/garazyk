@@ -281,6 +281,12 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 /*! JSON array of hashed recovery codes. */
 @property (nonatomic, copy, nullable) NSData *recoveryCodes;
 
+/*! Age assurance level. */
+@property (nonatomic, copy, nullable) NSString *ageAssurance;
+
+/*! Timestamp when age was verified. */
+@property (nonatomic, copy, nullable) NSString *ageVerifiedAt;
+
 @end
 
 /*!
@@ -921,6 +927,11 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                     progress:(NSNumber *)progress
                      message:(nullable NSString *)message
                        error:(NSError **)error;
+
+- (BOOL)setAgeAssurance:(nullable NSString *)assurance
+             verifiedAt:(nullable NSString *)verifiedAt
+                forDid:(NSString *)did
+                error:(NSError **)error;
 
 @end
 
