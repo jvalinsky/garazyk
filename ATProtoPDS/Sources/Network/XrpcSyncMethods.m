@@ -939,12 +939,12 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     // Use shared blob response handler with Range support (Phase 1.2)
     NSError *responseError = nil;
-    if (![blobStorage respondWithBlobData:blobData
-                                filePath:filePath
-                             totalLength:totalLength
-                              forRequest:request
-                                response:response
-                                   error:&responseError]) {
+    if (![blobService.blobStorage respondWithBlobData:blobData
+                                             filePath:filePath
+                                          totalLength:totalLength
+                                           forRequest:request
+                                             response:response
+                                                error:&responseError]) {
       if (response.statusCode == HttpStatusOK) {
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error" : @"BlobReadFailed",
