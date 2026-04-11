@@ -144,6 +144,16 @@
             return;
         }
 
+        // Fallback to proxying for tools.ozone.* methods if an upstream Ozone service is configured
+        if (self.ozoneURL && [methodId hasPrefix:@"tools.ozone."]) {
+            PDS_LOG_INFO(@"Proxying XRPC method '%@' to Ozone %@", methodId, self.ozoneURL);
+            XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.ozoneURL
+                                                                     upstreamDID:self.ozoneDID
+                                                                          minter:self.jwtMinter];
+            [proxy handleRequest:request response:response];
+            return;
+        }
+
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
             @"error": @"MethodNotFound",
