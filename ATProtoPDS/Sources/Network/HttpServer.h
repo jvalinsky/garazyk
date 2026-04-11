@@ -57,10 +57,10 @@ typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *resp
 @property (nonatomic, readonly, nullable) NSString *host;
 
 /*! The port the server is listening on. */
-@property (nonatomic, readonly) NSUInteger port;
+@property (atomic, readonly) NSUInteger port;
 
 /*! YES if the server is currently running. */
-@property (nonatomic, readonly, getter=isRunning) BOOL running;
+@property (atomic, readonly, getter=isRunning) BOOL running;
 
 /*! Optional callback invoked for every request received. */
 @property (nonatomic, copy, nullable) void (^didReceiveRequest)(HttpRequest *request, HttpResponse *response);

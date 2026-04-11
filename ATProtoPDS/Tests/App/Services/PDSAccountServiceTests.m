@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "App/Services/PDSAccountService.h"
 #import "Auth/JWT.h"
+#import "Auth/PDSKeyManagerFactory.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
@@ -24,13 +25,16 @@
 
     JWTMinter *minter = [[JWTMinter alloc] init];
     minter.issuer = @"http://localhost:8080";
-    minter.signingAlgorithm = @"ES256";
-    self.service.minter = minter;
-
+    minter.signingAlgorithm = @"RS256";
+    
     self.service.serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:self.testDirectory
-                                                                   serviceMaxSize:1024*1024
-                                                                 didCacheMaxSize:1000
-                                                               sequencerMaxSize:100];
+                                                                    serviceMaxSize:1024*1024
+                                                                  didCacheMaxSize:1000
+                                                                sequencerMaxSize:100];
+    
+    id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[self.service.serviceDatabases serviceDatabaseWithError:nil]];
+    minter.keyManager = keyManager;
+    self.service.minter = minter;
 }
 
 - (void)tearDown {

@@ -24,6 +24,9 @@ typedef NS_ENUM(NSInteger, PDSRecordServiceError) {
 /*! Posted when a record is written (put or delete). userInfo keys: did, collection, rkey, action ("create"/"delete"). */
 extern NSNotificationName const PDSRecordDidChangeNotification;
 
+@class MST;
+@class CID;
+@protocol PDSRecordRepository;
 @class PDSDatabasePool;
 @class ATProtoLexiconValidator;
 
@@ -40,6 +43,9 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
  @abstract Service for record management operations.
  */
 @interface PDSRecordService : NSObject
+
+/*! Record repository. */
+@property (nonatomic, strong) id<PDSRecordRepository> recordRepository;
 
 /*! Database pool - owner (PDSController) must outlive this service. */
 @property (nonatomic, strong) PDSDatabasePool *databasePool;

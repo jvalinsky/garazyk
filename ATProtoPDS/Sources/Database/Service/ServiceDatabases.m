@@ -12,6 +12,7 @@
 #import <CommonCrypto/CommonCrypto.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <CommonCrypto/CommonDigest.h>
+#import "Debug/PDSLogger.h"
 #import <sqlite3.h>
 
 NSString * const PDSServiceDatabasesErrorDomain = @"com.atproto.pds.service.databases";
@@ -172,23 +173,24 @@ static NSString *appPasswordGenerateSecret(void) {
 
 #pragma mark - Account Operations
 
-- (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
+- (BOOL)saveAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
+    PDSDatabaseAccount *existing = [self accountForDid:account.did error:nil];
+    if (existing) {
+        return [self updateAccount:account error:error];
+    }
+    
     __block BOOL success = NO;
-    __block NSError *blockError = nil;
-    NSError *txnError = nil;
-
+    __block NSError *localError = nil;
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         success = [store createAccount:account error:innerError];
-    } error:&txnError];
-
-    NSError *finalError = blockError ?: txnError;
-
-    if (!success && finalError) {
-        if (error) *error = finalError;
-    }
-
+    } error:&localError];
+    if (error) *error = localError;
     return success;
+}
+
+- (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
+    return [self saveAccount:account error:error];
 }
 
 - (BOOL)createAccounts:(NSArray<PDSDatabaseAccount *> *)accounts error:(NSError **)error {
@@ -212,6 +214,10 @@ static NSString *appPasswordGenerateSecret(void) {
     }
 
     return success;
+}
+
+- (nullable PDSDatabaseAccount *)accountForDid:(NSString *)did error:(NSError **)error {
+    return [self getAccountByDid:did error:error];
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
@@ -239,11 +245,19 @@ static NSString *appPasswordGenerateSecret(void) {
     return account;
 }
 
+- (nullable PDSDatabaseAccount *)accountForHandle:(NSString *)handle error:(NSError **)error {
+    return [self getAccountByHandle:handle error:error];
+}
+
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return nil;
     
     return [store getAccountByHandle:handle error:error];
+}
+
+- (nullable PDSDatabaseAccount *)accountForEmail:(NSString *)email error:(NSError **)error {
+    return [self getAccountByEmail:email error:error];
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
@@ -281,8 +295,16 @@ static NSString *appPasswordGenerateSecret(void) {
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         account = [store accountFromStatement:stmt];
+        PDS_LOG_AUTH_DEBUG(@"Found account %@ for refresh token %@", account.did, refreshToken);
+    } else {
+        PDS_LOG_AUTH_DEBUG(@"No account found for refresh token %@", refreshToken);
     }
     return account;
+}
+
+- (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
+    PDSDatabaseAccount *account = [self getAccountByRefreshToken:refreshToken error:error];
+    return account.did;
 }
 
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
@@ -324,6 +346,10 @@ static NSString *appPasswordGenerateSecret(void) {
     return [store getAllAccountsWithError:error] ?: @[];
 }
 
+- (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    return [self getAccountsWithLimit:limit cursor:cursor error:error];
+}
+
 - (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return @[];
@@ -352,6 +378,10 @@ static NSString *appPasswordGenerateSecret(void) {
 
 #pragma mark - Refresh Token Operations
 
+- (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid error:(NSError **)error {
+    return [self storeRefreshToken:token forAccount:accountDid error:error];
+}
+
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
@@ -370,7 +400,13 @@ static NSString *appPasswordGenerateSecret(void) {
         NSUInteger refreshTokenTtl = config.refreshTokenTtlSeconds > 0 ? config.refreshTokenTtlSeconds : (30 * 24 * 60 * 60);
         sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:refreshTokenTtl] timeIntervalSince1970]);
 
-        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        BOOL result = (sqlite3_step(stmt) == SQLITE_DONE);
+        if (!result) {
+            PDS_LOG_AUTH_ERROR(@"Failed to insert refresh token: %s", sqlite3_errmsg(store.db));
+        } else {
+            PDS_LOG_AUTH_DEBUG(@"Successfully stored refresh token for DID %@", accountDid);
+        }
+        success = result;
     } error:&localError];
 
     if (!success && localError) {
@@ -378,6 +414,10 @@ static NSString *appPasswordGenerateSecret(void) {
     }
 
     return success;
+}
+
+- (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error {
+    return [self deleteRefreshToken:token error:error];
 }
 
 - (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error {
@@ -400,6 +440,10 @@ static NSString *appPasswordGenerateSecret(void) {
     }
 
     return success;
+}
+
+- (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)accountDid error:(NSError **)error {
+    return [self deleteRefreshTokensForAccount:accountDid error:error];
 }
 
 - (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error {
@@ -843,7 +887,11 @@ static NSString *appPasswordGenerateSecret(void) {
         sqlite3_bind_blob(stmt, 3, data.bytes, (int)data.length, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 4, [[NSDate date] timeIntervalSince1970]);
         
+        PDS_LOG_DEBUG(@"Persisting event seq:%lld type:%@ data_len:%lu", seq, type, (unsigned long)data.length);
         success = (sqlite3_step(stmt) == SQLITE_DONE);
+        if (!success) {
+            PDS_LOG_ERROR(@"Failed to persist event seq:%lld: %s", seq, sqlite3_errmsg(store.db));
+        }
     } error:&localError];
     
     if (!success && localError) {

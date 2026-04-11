@@ -15,6 +15,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
+@protocol PDSBlobRepository;
 
 /*!
  @class PDSBlobService
@@ -25,6 +26,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Database pool for user stores. */
 @property (nonatomic, strong) PDSDatabasePool *databasePool;
+
+/*! Blob repository. */
+@property (nonatomic, strong) id<PDSBlobRepository> blobRepository;
 
 /*! Underlying storage mechanism. */
 @property (nonatomic, strong) BlobStorage *blobStorage;
