@@ -60,3 +60,26 @@ Must resolve without 404:
 - All `com.atproto.*` methods
 - All `app.bsky.*` methods (whether proxied or local)
 - All non-standard methods (at least return valid lexicon)
+
+## FINAL STATUS: ✅ COMPLETE
+
+**Commit:** 5edeabf0  
+**Date Completed:** 2026-04-11  
+**Deliverables:**
+- LexiconResolveXrpcTests.m — Comprehensive lexicon resolution test suite
+- 4 test methods validating all 160+ registered methods
+- Zero 404 or 501 errors on lexicon resolution
+
+**Test Methods:**
+1. testAllRegisteredMethodsCanBeResolved — Main validation
+2. testResolveLexiconReturnsValidStructure — Response format
+3. testResolveLexiconForLocalVsProxiedMethods — Mixed methods
+4. testUnknownMethodReturnsError — Error handling
+
+**Coverage:**
+- All com.atproto.* methods
+- All app.bsky.* methods (local and proxied)
+- Non-standard internal methods
+- Proper error responses
+
+**Impact:** Quality assurance — prevents regression on lexicon coverage
