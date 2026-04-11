@@ -7,12 +7,14 @@
 #import "Network/HttpResponse.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSDatabasePool.h"
 #import "Admin/PDSAdminController.h"
 #import "AppView/ActorService.h"
 #import "AppView/FeedService.h"
 #import "AppView/NotificationService.h"
 #import "AppView/GraphService.h"
 #import "AppView/BookmarkService.h"
+#import "App/Services/PDSRecordService.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "AppView/RecordLifecycleHandler.h"
@@ -2702,6 +2704,265 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         [response setJsonBody:@{@"subject": subjectDID, @"activitySubscription": subscription}];
     }];
 
+    // MARK: - app.bsky.draft.* (Draft management - stored as private records)
+
+    // Get user's database pool for draft storage
+    NSError *dbError = nil;
+    PDSDatabasePool *userDatabasePool = [serviceDatabases userDatabasePoolWithError:&dbError];
+    PDSRecordService *recordService = [[PDSRecordService alloc] initWithDatabasePool:userDatabasePool];
+
+    // app.bsky.draft.createDraft - Create a new draft
+    [dispatcher registerMethod:@"app.bsky.draft.createDraft" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSString *text = body[@"text"];
+        if (![text isKindOfClass:[NSString class]] || text.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid text"];
+            return;
+        }
+
+        // Generate unique draft ID (use UUID as rkey)
+        NSString *draftId = [[NSUUID UUID] UUIDString];
+        NSString *now = [NSDateFormatter iso8601StringFromDate:[NSDate date]];
+
+        NSDictionary *draftRecord = @{
+            @"$type": @"app.bsky.draft.post",
+            @"text": text,
+            @"createdAt": now,
+            @"updatedAt": now
+        };
+
+        NSError *error = nil;
+        BOOL success = [recordService putRecord:@"app.bsky.draft.post"
+                                          rkey:draftId
+                                         value:draftRecord
+                                       forDid:actorDID
+                                        error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to create draft"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"id": draftId,
+            @"text": text,
+            @"createdAt": now,
+            @"updatedAt": now
+        }];
+    }];
+
+    // app.bsky.draft.updateDraft - Update an existing draft
+    [dispatcher registerMethod:@"app.bsky.draft.updateDraft" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSString *draftId = body[@"id"];
+        NSString *text = body[@"text"];
+        if (![draftId isKindOfClass:[NSString class]] || draftId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid id"];
+            return;
+        }
+        if (![text isKindOfClass:[NSString class]] || text.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid text"];
+            return;
+        }
+
+        // Get existing draft to preserve createdAt
+        NSError *getError = nil;
+        NSDictionary *existingDraft = [recordService getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.draft.post/%@", actorDID, draftId]
+                                                       forDid:actorDID
+                                                       error:&getError];
+        if (!existingDraft) {
+            response.statusCode = HttpStatusNotFound;
+            [XrpcErrorHelper setNotFoundError:response message:@"Draft not found"];
+            return;
+        }
+
+        NSString *now = [NSDateFormatter iso8601StringFromDate:[NSDate date]];
+        NSString *createdAt = existingDraft[@"createdAt"] ?: now;
+
+        NSDictionary *updatedRecord = @{
+            @"$type": @"app.bsky.draft.post",
+            @"text": text,
+            @"createdAt": createdAt,
+            @"updatedAt": now
+        };
+
+        NSError *error = nil;
+        BOOL success = [recordService putRecord:@"app.bsky.draft.post"
+                                          rkey:draftId
+                                         value:updatedRecord
+                                       forDid:actorDID
+                                        error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update draft"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"id": draftId,
+            @"text": text,
+            @"createdAt": createdAt,
+            @"updatedAt": now
+        }];
+    }];
+
+    // app.bsky.draft.getDrafts - List actor's drafts with pagination
+    [dispatcher registerMethod:@"app.bsky.draft.getDrafts" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSUInteger limit = 100;
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        if (limitParam && ![self parseLimit:limitParam outLimit:&limit]) {
+            limit = 100;
+        }
+        if (limit > 100) limit = 100;
+        if (limit < 1) limit = 1;
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSError *error = nil;
+        NSArray *draftRecords = [recordService listRecords:@"app.bsky.draft.post"
+                                                 forDid:actorDID
+                                                  limit:limit + 1  // Fetch one extra to determine if there are more
+                                                 cursor:cursor
+                                                 error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to list drafts"];
+            return;
+        }
+
+        if (!draftRecords) {
+            draftRecords = @[];
+        }
+
+        NSMutableArray *drafts = [NSMutableArray array];
+        NSString *nextCursor = nil;
+
+        for (NSUInteger i = 0; i < draftRecords.count && i < limit; i++) {
+            NSDictionary *recordInfo = draftRecords[i];
+            NSString *rkey = recordInfo[@"rkey"];
+            if (!rkey) continue;
+
+            // Try to reconstruct draft from record data if available
+            // For now, return minimal data with just the ID
+            [drafts addObject:@{
+                @"id": rkey,
+                @"text": recordInfo[@"text"] ?: @"",
+                @"createdAt": recordInfo[@"createdAt"] ?: @"",
+                @"updatedAt": recordInfo[@"updatedAt"] ?: @""
+            }];
+        }
+
+        // Check if there are more results
+        if (draftRecords.count > limit) {
+            NSDictionary *lastRecord = draftRecords[limit];
+            nextCursor = lastRecord[@"rkey"];
+        }
+
+        response.statusCode = HttpStatusOK;
+        NSMutableDictionary *result = [@{@"drafts": [drafts copy]} mutableCopy];
+        if (nextCursor) {
+            result[@"cursor"] = nextCursor;
+        }
+        [response setJsonBody:[result copy]];
+    }];
+
+    // app.bsky.draft.deleteDraft - Delete a draft
+    [dispatcher registerMethod:@"app.bsky.draft.deleteDraft" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        NSString *draftId = body[@"id"];
+        if (![draftId isKindOfClass:[NSString class]] || draftId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid id"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [recordService deleteRecord:@"app.bsky.draft.post"
+                                              rkey:draftId
+                                            forDid:actorDID
+                                             error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to delete draft"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"id": draftId}];
+    }];
+
     // app.bsky.video.getJobStatus - Get video processing status
     [dispatcher registerMethod:@"app.bsky.video.getJobStatus" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *jobId = [request queryParamForKey:@"jobId"];
@@ -2967,27 +3228,19 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
 // MARK: - app.bsky.draft.* (Draft management endpoints)
 
 + (void)registerAppBskyDraftCreateDraftWithDispatcher:(XrpcDispatcher *)dispatcher {
-    [dispatcher registerMethod:@"app.bsky.draft.createDraft" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.createDraft" dispatcher:dispatcher];
-    }];
+    // Implemented inline - see registerWithDispatcher
 }
 
 + (void)registerAppBskyDraftDeleteDraftWithDispatcher:(XrpcDispatcher *)dispatcher {
-    [dispatcher registerMethod:@"app.bsky.draft.deleteDraft" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.deleteDraft" dispatcher:dispatcher];
-    }];
+    // Implemented inline - see registerWithDispatcher
 }
 
 + (void)registerAppBskyDraftGetDraftsWithDispatcher:(XrpcDispatcher *)dispatcher {
-    [dispatcher registerMethod:@"app.bsky.draft.getDrafts" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.getDrafts" dispatcher:dispatcher];
-    }];
+    // Implemented inline - see registerWithDispatcher
 }
 
 + (void)registerAppBskyDraftUpdateDraftWithDispatcher:(XrpcDispatcher *)dispatcher {
-    [dispatcher registerMethod:@"app.bsky.draft.updateDraft" handler:^(HttpRequest *request, HttpResponse *response) {
-        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.updateDraft" dispatcher:dispatcher];
-    }];
+    // Implemented inline - see registerWithDispatcher
 }
 
 // MARK: - app.bsky.graph.verification.* (Graph verification endpoints)
