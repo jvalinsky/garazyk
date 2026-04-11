@@ -311,9 +311,6 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 
 #pragma mark - Debug Settings
 
-/*! @abstract Skip PLC operations (debug mode). */
-@property (nonatomic, assign) BOOL debugSkipPlcOperations;
-
 /*! @abstract Enable verbose logging. */
 @property (nonatomic, readonly) BOOL debugVerboseLogging;
 

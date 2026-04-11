@@ -929,9 +929,26 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                        error:(NSError **)error;
 
 - (BOOL)setAgeAssurance:(nullable NSString *)assurance
-             verifiedAt:(nullable NSString *)verifiedAt
-                forDid:(NSString *)did
-                error:(NSError **)error;
+              verifiedAt:(nullable NSString *)verifiedAt
+                 forDid:(NSString *)did
+                 error:(NSError **)error;
+
+#pragma mark - WebAuthn Credentials
+
+- (BOOL)storeWebAuthnCredential:(NSDictionary *)credential
+                       forDid:(NSString *)did
+                        error:(NSError **)error;
+
+- (NSArray<NSDictionary *> *)getWebAuthnCredentialsForDid:(NSString *)did error:(NSError **)error;
+
+- (BOOL)deleteWebAuthnCredential:(NSData *)credentialId
+                      forDid:(NSString *)did
+                       error:(NSError **)error;
+
+- (BOOL)updateWebAuthnCredentialSignCount:(NSData *)credentialId
+                             forDid:(NSString *)did
+                          signCount:(uint32_t)signCount
+                             error:(NSError **)error;
 
 @end
 
