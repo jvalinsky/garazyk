@@ -7,7 +7,7 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 
 @property (nonatomic, copy) NSString *upstreamURL;
 @property (nonatomic, strong) NSURLSession *session;
-dispatch_queue_t _syncQueue;
+@property (nonatomic) dispatch_queue_t syncQueue;
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 
 @end

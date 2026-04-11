@@ -17,7 +17,11 @@
       "Skill(work)",
       "Bash(cat)",
       "Read(//tmp/**)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git status:*)",
+      "Bash(deciduous add:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

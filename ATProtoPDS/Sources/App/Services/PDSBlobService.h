@@ -10,11 +10,11 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Blob/BlobStorage.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
-@class BlobStorage;
 
 /*!
  @class PDSBlobService

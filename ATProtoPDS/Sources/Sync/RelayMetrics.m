@@ -16,7 +16,7 @@
 @property (nonatomic, assign, readwrite) int64_t currentSequence;
 @property (nonatomic, assign, readwrite) int64_t reconnectionCount;
 
-dispatch_queue_t _metricsQueue;
+@property (nonatomic) dispatch_queue_t metricsQueue;
 
 @end
 
@@ -34,7 +34,7 @@ dispatch_queue_t _metricsQueue;
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _metricsQueue = dispatch_queue_create("com.atproto.relay.metrics", DISPATCH_QUEUE_SERIAL);
+        self.metricsQueue = dispatch_queue_create("com.atproto.relay.metrics", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -42,13 +42,13 @@ dispatch_queue_t _metricsQueue;
 #pragma mark - Connection Metrics
 
 - (void)recordUpstreamConnected {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.upstreamConnections++;
     });
 }
 
 - (void)recordUpstreamDisconnected {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         if (self.upstreamConnections > 0) {
             self.upstreamConnections--;
         }
@@ -56,13 +56,13 @@ dispatch_queue_t _metricsQueue;
 }
 
 - (void)recordDownstreamConnected {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.downstreamConnections++;
     });
 }
 
 - (void)recordDownstreamDisconnected {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         if (self.downstreamConnections > 0) {
             self.downstreamConnections--;
         }
@@ -72,31 +72,31 @@ dispatch_queue_t _metricsQueue;
 #pragma mark - Event Metrics
 
 - (void)recordEventReceived {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.eventsReceived++;
     });
 }
 
 - (void)recordEventValidated {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.eventsValidated++;
     });
 }
 
 - (void)recordEventInvalidated:(NSString *)reason {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.eventsInvalidated++;
     });
 }
 
 - (void)recordEventForwarded {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.eventsForwarded++;
     });
 }
 
 - (void)recordEventDropped {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.eventsDropped++;
     });
 }
@@ -104,25 +104,25 @@ dispatch_queue_t _metricsQueue;
 #pragma mark - Validation Metrics
 
 - (void)recordMSTValidationSuccess {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.mstValidationSuccess++;
     });
 }
 
 - (void)recordMSTValidationFailure {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.mstValidationFailure++;
     });
 }
 
 - (void)recordSignatureValidationSuccess {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.signatureValidationSuccess++;
     });
 }
 
 - (void)recordSignatureValidationFailure {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.signatureValidationFailure++;
     });
 }
@@ -130,7 +130,7 @@ dispatch_queue_t _metricsQueue;
 #pragma mark - Sequence
 
 - (void)recordSequence:(int64_t)seq {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         if (seq > self.currentSequence) {
             self.currentSequence = seq;
         }
@@ -138,7 +138,7 @@ dispatch_queue_t _metricsQueue;
 }
 
 - (void)setCurrentSequence:(int64_t)seq {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.currentSequence = seq;
     });
 }
@@ -150,7 +150,7 @@ dispatch_queue_t _metricsQueue;
 }
 
 - (void)recordReconnectionCount {
-    dispatch_async(_metricsQueue, ^{
+    dispatch_async(self.metricsQueue, ^{
         self.reconnectionCount++;
     });
 }
@@ -159,7 +159,7 @@ dispatch_queue_t _metricsQueue;
 
 - (NSString *)renderPrometheusMetrics {
     __block NSString *output;
-    dispatch_sync(_metricsQueue, ^{
+    dispatch_sync(self.metricsQueue, ^{
         NSMutableString *metrics = [NSMutableString string];
         
         [metrics appendString:@"# HELP relay_upstream_connections Number of upstream PDS connections\n"];
