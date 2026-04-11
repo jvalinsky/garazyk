@@ -271,6 +271,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! The 2FA code (TOTP or backup code) if required. */
 @property (nonatomic, copy, nullable) NSString *tfaCode;
 
+/*! WebAuthn assertion response for WebAuthn authentication. */
+@property (nonatomic, copy, nullable) NSDictionary *webauthnAssertion;
+
 /*!
  @method toFormData
  

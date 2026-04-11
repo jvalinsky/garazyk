@@ -14,6 +14,7 @@
 #import "Auth/JWT.h"
 #import "Auth/Session.h"
 #import "Auth/TOTPService.h"
+#import "Auth/WebAuthnVerifier.h"
 #import "Auth/Base32Utils.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"
@@ -753,6 +754,11 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
             return;
         }
     }
+
+    // MARK: WebAuthn integration (requires OAuth2 session challenge storage)
+    // TODO: Implement WebAuthn assertion verification at token endpoint
+    // This requires storing the challenge in the OAuth session and retrieving it here
+    // See webauthn_credentials table and WebAuthnVerifier for credential verification
 
     NSString *handle = account.handle ?: @"handle.placeholder";
     NSString *scope = codeData[@"scope"] ?: OAuth2ScopeAtproto;
