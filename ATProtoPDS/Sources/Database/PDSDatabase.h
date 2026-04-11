@@ -275,6 +275,9 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 /*! Whether 2FA (TOTP/Passkey) is enabled. */
 @property (nonatomic, assign) BOOL tfaEnabled;
 
+/*! Whether WebAuthn is enabled for this account. */
+@property (nonatomic, assign) BOOL webauthnEnabled;
+
 /*! Encrypted TOTP secret or other 2FA secret data. */
 @property (nonatomic, copy, nullable) NSData *tfaSecret;
 
