@@ -188,6 +188,7 @@ int main(int argc, char *argv[]) {
       @"PDSNonceManagerTests",
       @"YubiKeyOATHTests",
       @"WebAuthnVerifierTests",
+      @"WebAuthnOAuth2IntegrationTests",
       @"WebAuthnDomainTests",
       @"PDSOpenSSLKeyManagerTests",
       @"OAuth2HandlerTests",
