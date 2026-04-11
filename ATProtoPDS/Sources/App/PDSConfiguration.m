@@ -171,6 +171,9 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _appViewDID = nil;
     _localAppViewEnabled = YES;
 
+    _ozoneURL = nil;
+    _ozoneDID = nil;
+
     _resendAPIKeySource = @"env";
     _resendAPIKeyEnvVar = @"RESEND_API_KEY";
     _resendKeychainService = @"com.atproto.pds";
@@ -824,6 +827,28 @@ static BOOL PDSConfigRunningUnderTests(void) {
   if ([self envVarExists:@"PDS_LOCAL_APPVIEW"]) {
     _localAppViewEnabled =
         [self boolFromEnv:@"PDS_LOCAL_APPVIEW" default:_localAppViewEnabled];
+  }
+
+  // Ozone moderation service configuration
+  NSDictionary *ozone = config[@"ozone"];
+  if (ozone) {
+    _ozoneURL = [self resolveEnvOverrideForKey:@"PDS_OZONE_URL"
+                                       default:ozone[@"url"]];
+    _ozoneDID = [self resolveEnvOverrideForKey:@"PDS_OZONE_DID"
+                                       default:ozone[@"did"]];
+  }
+
+  // Environment variables override everything for Ozone as well
+  NSString *envOzoneURL =
+      [self resolveEnvOverrideForKey:@"PDS_OZONE_URL" default:nil];
+  if (envOzoneURL.length > 0) {
+    _ozoneURL = envOzoneURL;
+  }
+
+  NSString *envOzoneDID =
+      [self resolveEnvOverrideForKey:@"PDS_OZONE_DID" default:nil];
+  if (envOzoneDID.length > 0) {
+    _ozoneDID = envOzoneDID;
   }
 
   // Blob storage configuration
