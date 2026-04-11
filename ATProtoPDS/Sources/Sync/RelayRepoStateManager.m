@@ -6,7 +6,7 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *repoRevs;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *repoSeqs;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *repoStatuses;
-@property (nonatomic, strong) dispatch_queue_t stateQueue;
+dispatch_queue_t _stateQueue;
 
 @end
 
@@ -28,7 +28,7 @@
                          root:(NSString *)rootCID
                            rev:(NSString *)rev
                            seq:(int64_t)seq {
-    dispatch_async(self.stateQueue, ^{
+    dispatch_async(_stateQueue, ^{
         self.repoRoots[repoDID] = rootCID;
         self.repoRevs[repoDID] = rev;
         self.repoSeqs[repoDID] = @(seq);
@@ -37,19 +37,19 @@
 }
 
 - (void)handleIdentityEventForRepo:(NSString *)repoDID {
-    dispatch_async(self.stateQueue, ^{
+    dispatch_async(_stateQueue, ^{
         self.repoStatuses[repoDID] = @(RelayRepoStatusDesynchronized);
     });
 }
 
 - (void)handleAccountEventForRepo:(NSString *)repoDID status:(RelayRepoStatus)status {
-    dispatch_async(self.stateQueue, ^{
+    dispatch_async(_stateQueue, ^{
         self.repoStatuses[repoDID] = @(status);
     });
 }
 
 - (void)handleTombstoneForRepo:(NSString *)repoDID {
-    dispatch_async(self.stateQueue, ^{
+    dispatch_async(_stateQueue, ^{
         [self.repoRoots removeObjectForKey:repoDID];
         [self.repoRevs removeObjectForKey:repoDID];
         [self.repoSeqs removeObjectForKey:repoDID];
@@ -59,7 +59,7 @@
 
 - (nullable NSString *)rootCIDForRepo:(NSString *)repoDID {
     __block NSString *root;
-    dispatch_sync(self.stateQueue, ^{
+    dispatch_sync(_stateQueue, ^{
         root = self.repoRoots[repoDID];
     });
     return root;
@@ -67,7 +67,7 @@
 
 - (nullable NSString *)revForRepo:(NSString *)repoDID {
     __block NSString *rev;
-    dispatch_sync(self.stateQueue, ^{
+    dispatch_sync(_stateQueue, ^{
         rev = self.repoRevs[repoDID];
     });
     return rev;
@@ -75,7 +75,7 @@
 
 - (int64_t)cursorForRepo:(NSString *)repoDID {
     __block int64_t cursor = -1;
-    dispatch_sync(self.stateQueue, ^{
+    dispatch_sync(_stateQueue, ^{
         NSNumber *seq = self.repoSeqs[repoDID];
         if (seq) {
             cursor = seq.longLongValue;
@@ -86,7 +86,7 @@
 
 - (RelayRepoStatus)statusForRepo:(NSString *)repoDID {
     __block RelayRepoStatus status = RelayRepoStatusDesynchronized;
-    dispatch_sync(self.stateQueue, ^{
+    dispatch_sync(_stateQueue, ^{
         NSNumber *s = self.repoStatuses[repoDID];
         if (s) {
             status = s.integerValue;
@@ -97,7 +97,7 @@
 
 - (NSArray<NSString *> *)allRepos {
     __block NSArray *repos;
-    dispatch_sync(self.stateQueue, ^{
+    dispatch_sync(_stateQueue, ^{
         repos = [self.repoRoots allKeys];
     });
     return repos;
@@ -105,7 +105,7 @@
 
 - (NSUInteger)repoCount {
     __block NSUInteger count;
-    dispatch_sync(self.stateQueue, ^{
+    dispatch_sync(_stateQueue, ^{
         count = self.repoRoots.count;
     });
     return count;

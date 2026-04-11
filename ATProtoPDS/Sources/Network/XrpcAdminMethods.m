@@ -688,46 +688,13 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.getAccountTakedown
+    // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
     [dispatcher registerComAtprotoAdminGetAccountTakedown:^(HttpRequest *request, HttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
-                                           response:response
-                                   serviceDatabases:serviceDatabases
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController]) {
-            return;
-        }
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = [request.jsonBody isKindOfClass:[NSDictionary class]] ? request.jsonBody : nil;
-        NSString *did = body[@"did"];
-        if (![did isKindOfClass:[NSString class]] || did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
-
-        NSError *didError = nil;
-        if (![ATProtoValidator validateDID:did error:&didError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
-            return;
-        }
-
-        NSError *queryError = nil;
-        BOOL applied = [adminController isAccountTakedownActive:did error:&queryError];
-        if (queryError) {
-            response.statusCode = HttpStatusInternalServerError;
-            [response setJsonBody:@{@"error": @"QueryFailed", @"message": queryError.localizedDescription ?: @"Failed to check takedown status"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"did": did, @"applied": @(applied)}];
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"MethodNotSupported",
+            @"message": @"This method was removed. Moderation has moved to tools.ozone.* - please contact your moderation service administrator."
+        }];
     }];
 
     // Register com.atproto.admin.deleteAccount
@@ -876,115 +843,54 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.moderateAccount
+    // Register com.atproto.admin.moderateAccount
+    // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
-                                           response:response
-                                   serviceDatabases:serviceDatabases
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController]) {
-            return;
-        }
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = [request.jsonBody isKindOfClass:[NSDictionary class]] ? request.jsonBody : nil;
-        if (!body) {
-            body = @{};
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [adminController moderateAccount:body error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ModerationFailed", @"message": error.localizedDescription ?: @"Moderation failed"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"MethodNotSupported",
+            @"message": @"This method was removed. Moderation has moved to tools.ozone.* - please contact your moderation service administrator."
+        }];
     }];
 
     // Register com.atproto.admin.moderateRecord
+    // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
     [dispatcher registerComAtprotoAdminModerateRecord:^(HttpRequest *request, HttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
-                                           response:response
-                                   serviceDatabases:serviceDatabases
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController]) {
-            return;
-        }
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
-
-        NSDictionary *body = [request.jsonBody isKindOfClass:[NSDictionary class]] ? request.jsonBody : nil;
-        if (!body) {
-            body = @{};
-        }
-
-        NSError *error = nil;
-        NSDictionary *result = [adminController moderateRecord:body error:&error];
-
-        if (error) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"ModerationFailed", @"message": error.localizedDescription ?: @"Moderation failed"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"MethodNotSupported",
+            @"message": @"This method was removed. Moderation has moved to tools.ozone.* - please contact your moderation service administrator."
+        }];
     }];
 
     // Register com.atproto.admin.takeDownAccount
+    // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
     [dispatcher registerMethod:@"com.atproto.admin.takeDownAccount" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![XrpcAuthHelper authorizeAdminRequest:request
-                                           response:response
-                                   serviceDatabases:serviceDatabases
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController]) {
-            return;
-        }
-        if (request.method != HttpMethodPOST) {
-            response.statusCode = HttpStatusMethodNotAllowed;
-            [response setHeader:@"POST" forKey:@"Allow"];
-            [response setJsonBody:@{@"error": @"MethodNotAllowed", @"message": @"Expected POST"}];
-            return;
-        }
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"MethodNotSupported",
+            @"message": @"This method was removed. Moderation has moved to tools.ozone.* - please contact your moderation service administrator."
+        }];
+    }];
 
-        NSDictionary *body = request.jsonBody ?: @{};
-        NSString *did = body[@"did"];
-        NSString *reason = body[@"reason"];
-        if (![did isKindOfClass:[NSString class]] || did.length == 0) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing did"}];
-            return;
-        }
+    // Register com.atproto.admin.getModerationReports
+    // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
+    [dispatcher registerComAtprotoAdminGetModerationReports:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"MethodNotSupported",
+            @"message": @"This method was removed. Moderation has moved to tools.ozone.* - please contact your moderation service administrator."
+        }];
+    }];
 
-        NSError *didError = nil;
-        if (![ATProtoValidator validateDID:did error:&didError]) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidDid", @"message": didError.localizedDescription ?: @"Invalid DID"}];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [adminController takeDownAccount:did reason:[reason isKindOfClass:[NSString class]] ? reason : @"User deactivation" error:&error];
-        if (!success) {
-            response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"TakedownFailed", @"message": error.localizedDescription ?: @"Failed to take down account"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
+    // Register com.atproto.admin.resolveReport
+    // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
+    [dispatcher registerComAtprotoAdminResolveReport:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = HttpStatusGone;
+        [response setJsonBody:@{
+            @"error": @"MethodNotSupported",
+            @"message": @"This method was removed. Moderation has moved to tools.ozone.* - please contact your moderation service administrator."
+        }];
     }];
 }
 

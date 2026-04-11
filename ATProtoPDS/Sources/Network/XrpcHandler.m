@@ -594,10 +594,6 @@
     [self registerMethod:@"app.bsky.notification.unregisterPush" handler:handler];
 }
 
-- (void)registerAppBskyUserGetUserStats:(XrpcMethodHandler)handler {
-    [self registerMethod:@"app.bsky.user.getUserStats" handler:handler];
-}
-
 - (void)registerAppBskyBookmarkGetBookmarks:(XrpcMethodHandler)handler {
     [self registerMethod:@"app.bsky.bookmark.getBookmarks" handler:handler];
 }

@@ -186,4 +186,50 @@
     XCTAssertEqual(rows.count, 1);
 }
 
+- (void)testIntrospectToken {
+    // Setup client
+    [self.database createClient:@{
+        @"client_id": @"test_client",
+        @"client_secret": @"secret",
+        @"redirect_uris": @[@"https://client.example.com/cb"]
+    } error:nil];
+
+    // Create a mock token for testing
+    NSString *testToken = @"test_access_token_12345";
+
+    // Prepare introspection request body
+    NSMutableString *body = [NSMutableString string];
+    [body appendFormat:@"client_id=%@", @"test_client"];
+    [body appendFormat:@"&client_secret=%@", @"secret"];
+    [body appendFormat:@"&token=%@", testToken];
+    NSData *bodyData = [body dataUsingEncoding:NSUTF8StringEncoding];
+
+    // Create introspection request
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/introspect"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{
+        @"Content-Type": @"application/x-www-form-urlencoded"
+    }
+                                                          body:bodyData
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    // Call handleIntrospectRequest
+    [self.handler performSelector:@selector(handleIntrospectRequest:response:)
+                       withObject:request
+                       withObject:response];
+
+    // Verify response - should return {active: false} for unknown token
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.body);
+
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil];
+    XCTAssertNotNil(json[@"active"]);
+    XCTAssertEqualObjects(json[@"active"], @NO);
+}
+
 @end
