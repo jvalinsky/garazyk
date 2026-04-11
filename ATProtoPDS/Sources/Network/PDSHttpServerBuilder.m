@@ -18,6 +18,7 @@
 #import "../App/PDSController.h"
 #import "../Auth/JWT.h"
 #import "../Auth/OAuth2Handler.h"
+#import "../Auth/WebAuthnRegistrationHandler.h"
 #import "../Database/PDSDatabase.h"
 #import "../Database/Service/ServiceDatabases.h"
 #import "../Debug/PDSLogger.h"
@@ -214,6 +215,12 @@
   [oauthHandler registerRoutesWithServer:server];
 
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: OAuth routes registered");
+
+  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  WebAuthnRegistrationHandler *webauthnHandler = [[WebAuthnRegistrationHandler alloc] initWithDatabase:db serverOrigin:config.serverURL];
+  [webauthnHandler registerRoutesWithServer:server];
+
+  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: WebAuthn routes registered");
 }
 
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
