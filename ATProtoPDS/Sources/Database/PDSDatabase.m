@@ -1193,6 +1193,17 @@ static NSDateFormatter * iso8601Formatter(void) {
     }
     
     account.inviteEnabled = (sqlite3_column_int(stmt, 12) != 0);
+
+    // Age assurance (columns 13, 14)
+    const char *ageAssuranceText = (const char *)sqlite3_column_text(stmt, 13);
+    if (ageAssuranceText) {
+        account.ageAssurance = @(ageAssuranceText);
+    }
+
+    const char *ageVerifiedAtText = (const char *)sqlite3_column_text(stmt, 14);
+    if (ageVerifiedAtText) {
+        account.ageVerifiedAt = @(ageVerifiedAtText);
+    }
     
     return account;
 }
@@ -2378,6 +2389,21 @@ static NSDateFormatter * iso8601Formatter(void) {
         jobId ?: [NSNull null]
     ];
     
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (BOOL)setAgeAssurance:(NSString *)assurance
+             verifiedAt:(NSString *)verifiedAt
+                forDid:(NSString *)did
+                error:(NSError **)error {
+    NSString *sql = @"UPDATE accounts SET age_assurance = ?, age_verified_at = ?, updated_at = ? WHERE did = ?";
+    NSString *now = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSArray *params = @[
+        assurance ?: [NSNull null],
+        verifiedAt ?: [NSNull null],
+        now,
+        did ?: [NSNull null]
+    ];
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
