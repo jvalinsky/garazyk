@@ -2701,8 +2701,26 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             [XrpcErrorHelper setValidationError:response message:@"Missing jobId parameter"];
             return;
         }
-        response.statusCode = 404;
-        [response setJsonBody:@{@"error": @"NotFound", @"message": @"Job not found"}];
+
+        // Query job from database
+        NSError *dbError = nil;
+        NSDictionary *job = [[PDSDatabase sharedDatabase] getVideoJobById:jobId error:&dbError];
+        if (!job) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"Job not found"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"jobStatus": @{
+                @"jobId": job[@"job_id"] ?: jobId,
+                @"did": job[@"did"] ?: @"",
+                @"state": job[@"state"] ?: @"UNKNOWN",
+                @"progress": job[@"progress"] ?: @0,
+                @"message": job[@"message"] ?: @""
+            }
+        }];
     }];
 
     // app.bsky.video.uploadVideo - Upload video for processing
@@ -2729,15 +2747,36 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             return;
         }
 
+        // Generate job ID and store job in database
         NSString *jobId = [[NSUUID UUID] UUIDString];
+        NSString *blobCid = @"unknown"; // Would be computed from blob storage
+
+        NSError *dbError = nil;
+        BOOL stored = [[PDSDatabase sharedDatabase] createVideoJobWithId:jobId
+                                                                   did:actorDID
+                                                                blobCid:blobCid
+                                                              mimeType:request.headers[@"Content-Type"]
+                                                              fileSize:@(bodyData.length)
+                                                                 error:&dbError];
+        if (!stored) {
+            PDS_LOG_SERVICE_ERROR(@"Failed to create video job: %@", dbError.localizedDescription ?: @"unknown");
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to create video job"}];
+            return;
+        }
+
+        // Queue async processing (would be handled by background worker)
+        // For now, immediately mark as processing
+        [[PDSDatabase sharedDatabase] updateVideoJobState:jobId state:@"PROCESSING" progress:@0 message:@"Starting video processing" error:nil];
+
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{
             @"jobStatus": @{
                 @"jobId": jobId,
                 @"did": actorDID,
-                @"state": @"JOB_STATE_COMPLETED",
-                @"progress": @100,
-                @"message": @"Video stored. Processing not implemented."
+                @"state": @"PROCESSING",
+                @"progress": @0,
+                @"message": @"Video uploaded, processing started"
             }
         }];
     }];

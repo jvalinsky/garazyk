@@ -601,6 +601,38 @@ static NSDateFormatter * iso8601Formatter(void) {
         return NO;
     }
 
+    rc = sqlite3_exec(_db, [kPDSVideoJobsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSVideoJobsIndexDidSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSVideoJobsIndexStateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSVideoJobsIndexCreatedSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
     // Migrations for accounts table
     const char *accountMigrations[] = {
         "ALTER TABLE accounts ADD COLUMN password_salt BLOB",
@@ -2284,6 +2316,100 @@ static NSDateFormatter * iso8601Formatter(void) {
     NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
     NSString *sql = @"INSERT OR REPLACE INTO admin_config (key, value, updated_at) VALUES (?, ?, ?)";
     return [self executeParameterizedUpdate:sql params:@[key, value, dateStr] error:error];
+}
+
+#pragma mark - VideoJobs
+
+- (NSDictionary *)getVideoJobById:(NSString *)jobId error:(NSError **)error {
+    NSString *sql = @"SELECT * FROM video_jobs WHERE job_id = ?";
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        return nil;
+    }
+
+    sqlite3_bind_text(stmt, 1, jobId.UTF8String, -1, SQLITE_STATIC);
+
+    NSDictionary *job = nil;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        job = [self dictionaryFromVideoJobsStatement:stmt];
+    }
+
+    sqlite3_finalize(stmt);
+    return job;
+}
+
+- (BOOL)createVideoJobWithId:(NSString *)jobId
+                         did:(NSString *)did
+                      blobCid:(NSString *)blobCid
+                    mimeType:(NSString *)mimeType
+                    fileSize:(NSNumber *)fileSize
+                        error:(NSError **)error {
+    NSString *now = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *sql = @"INSERT INTO video_jobs (job_id, did, blob_cid, mime_type, file_size, state, progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)";
+    
+    NSArray *params = @[
+        jobId ?: [NSNull null],
+        did ?: [NSNull null],
+        blobCid ?: [NSNull null],
+        mimeType ?: [NSNull null],
+        fileSize ?: [NSNull null],
+        now,
+        now
+    ];
+    
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (BOOL)updateVideoJobState:(NSString *)jobId
+                       state:(NSString *)state
+                    progress:(NSNumber *)progress
+                     message:(NSString *)message
+                       error:(NSError **)error {
+    NSString *now = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *sql = @"UPDATE video_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
+    
+    NSArray *params = @[
+        state ?: [NSNull null],
+        progress ?: @0,
+        message ?: [NSNull null],
+        now,
+        jobId ?: [NSNull null]
+    ];
+    
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (NSDictionary *)dictionaryFromVideoJobsStatement:(sqlite3_stmt *)stmt {
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    
+    for (int i = 0; i < sqlite3_column_count(stmt); i++) {
+        const char *name = sqlite3_column_name(stmt, i);
+        if (!name) continue;
+        
+        NSString *key = @(name);
+        int type = sqlite3_column_type(stmt, i);
+        
+        switch (type) {
+            case SQLITE_INTEGER:
+                dict[key] = @(sqlite3_column_int64(stmt, i));
+                break;
+            case SQLITE_FLOAT:
+                dict[key] = @(sqlite3_column_double(stmt, i));
+                break;
+            case SQLITE_TEXT: {
+                const char *text = (const char *)sqlite3_column_text(stmt, i);
+                if (text) dict[key] = @(text);
+                break;
+            }
+            case SQLITE_NULL:
+            default:
+                break;
+        }
+    }
+    
+    return dict;
 }
 
 @end
