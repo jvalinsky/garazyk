@@ -14,7 +14,10 @@
       "Bash(wc:*)",
       "WebFetch(domain:resend.com)",
       "Bash(deciduous nodes:*)",
-      "Skill(work)"
+      "Skill(work)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(git add:*)"
     ]
   }
 }

@@ -1202,29 +1202,6 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                  jwtMinter:(JWTMinter *)jwtMinter
                            adminController:(id<PDSAdminController>)adminController
                             accountService:(id<PDSAccountService>)accountService {
-    [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
-
-        if (!did) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *account = [accountService getAccountForDid:did error:&error];
-
-        if (error || !account) {
-            response.statusCode = HttpStatusUnauthorized;
-            [response setJsonBody:@{@"error": @"AccountNotFound", @"message": @"Account not found"}];
-            return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:account];
-    }];
-
     [dispatcher registerComAtprotoServerDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *did = body[@"did"];

@@ -14,7 +14,7 @@
 @property (nonatomic, assign, readwrite) NSUInteger retentionSeconds;
 @property (nonatomic, assign, readwrite) NSUInteger maxEvents;
 @property (nonatomic, strong) NSMutableArray<BufferedEvent *> *buffer;
-@property (nonatomic, strong) dispatch_queue_t bufferQueue;
+dispatch_queue_t _bufferQueue;
 @property (nonatomic, assign) int64_t oldestSeq;
 @property (nonatomic, assign) int64_t newestSeq;
 
@@ -44,7 +44,7 @@
 }
 
 - (void)appendEvent:(id)event seq:(int64_t)seq timestamp:(NSDate *)timestamp {
-    dispatch_async(self.bufferQueue, ^{
+    dispatch_async(_bufferQueue, ^{
         BufferedEvent *e = [[BufferedEvent alloc] init];
         e.event = event;
         e.seq = seq;
@@ -71,7 +71,7 @@
 
 - (nullable NSArray *)eventsAfterCursor:(int64_t)cursor count:(NSUInteger)count {
     __block NSMutableArray *result = [NSMutableArray array];
-    dispatch_sync(self.bufferQueue, ^{
+    dispatch_sync(_bufferQueue, ^{
         for (BufferedEvent *e in self.buffer) {
             if (e.seq > cursor) {
                 [result addObject:e.event];
@@ -86,7 +86,7 @@
 
 - (nullable NSArray *)eventsInTimeRange:(NSDate *)start end:(NSDate *)end {
     __block NSMutableArray *result = [NSMutableArray array];
-    dispatch_sync(self.bufferQueue, ^{
+    dispatch_sync(_bufferQueue, ^{
         for (BufferedEvent *e in self.buffer) {
             if ([e.timestamp compare:start] != NSOrderedAscending &&
                 [e.timestamp compare:end] != NSOrderedDescending) {
@@ -99,7 +99,7 @@
 
 - (int64_t)oldestSequence {
     __block int64_t result;
-    dispatch_sync(self.bufferQueue, ^{
+    dispatch_sync(_bufferQueue, ^{
         result = self.oldestSeq;
     });
     return result;
@@ -107,7 +107,7 @@
 
 - (int64_t)newestSequence {
     __block int64_t result;
-    dispatch_sync(self.bufferQueue, ^{
+    dispatch_sync(_bufferQueue, ^{
         result = self.newestSeq;
     });
     return result;
@@ -115,14 +115,14 @@
 
 - (NSUInteger)eventCount {
     __block NSUInteger count;
-    dispatch_sync(self.bufferQueue, ^{
+    dispatch_sync(_bufferQueue, ^{
         count = self.buffer.count;
     });
     return count;
 }
 
 - (void)pruneExpired {
-    dispatch_async(self.bufferQueue, ^{
+    dispatch_async(_bufferQueue, ^{
         NSDate *cutoff = [NSDate dateWithTimeIntervalSinceNow:-self.retentionSeconds];
         
         NSMutableArray *toRemove = [NSMutableArray array];
@@ -144,7 +144,7 @@
 }
 
 - (void)clear {
-    dispatch_async(self.bufferQueue, ^{
+    dispatch_async(_bufferQueue, ^{
         [self.buffer removeAllObjects];
         self.oldestSeq = -1;
         self.newestSeq = -1;

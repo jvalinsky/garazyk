@@ -187,6 +187,15 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _rateLimitBlobLimit = 50;
     _rateLimitBlobWindowSeconds = 3600;
 
+    _blobStorageType = @"disk"; // Default to disk storage
+    _s3Bucket = nil;
+    _s3Region = nil;
+    _s3Endpoint = nil;
+    _s3KeyPrefix = nil;
+    _s3AccessKeyId = nil;
+    _s3SecretAccessKey = nil;
+    _cdnURL = nil;
+
     _sslPinningEnabled = YES;
 
     // Logging defaults
@@ -804,6 +813,69 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _localAppViewEnabled =
         [self boolFromEnv:@"PDS_LOCAL_APPVIEW" default:_localAppViewEnabled];
   }
+
+  // Blob storage configuration
+  NSDictionary *blobStorage = config[@"blob_storage"];
+  if (blobStorage) {
+    if (blobStorage[@"storage_type"])
+      _blobStorageType = [self resolveEnvOverrideForKey:@"PDS_BLOB_STORAGE_TYPE"
+                                                default:blobStorage[@"storage_type"]];
+
+    if (blobStorage[@"s3_bucket"])
+      _s3Bucket = [self resolveEnvOverrideForKey:@"PDS_S3_BUCKET"
+                                         default:blobStorage[@"s3_bucket"]];
+    if (blobStorage[@"s3_region"])
+      _s3Region = [self resolveEnvOverrideForKey:@"PDS_S3_REGION"
+                                         default:blobStorage[@"s3_region"]];
+    if (blobStorage[@"s3_endpoint"])
+      _s3Endpoint = [self resolveEnvOverrideForKey:@"PDS_S3_ENDPOINT"
+                                           default:blobStorage[@"s3_endpoint"]];
+    if (blobStorage[@"s3_key_prefix"])
+      _s3KeyPrefix = [self resolveEnvOverrideForKey:@"PDS_S3_KEY_PREFIX"
+                                            default:blobStorage[@"s3_key_prefix"]];
+    if (blobStorage[@"s3_access_key_id"])
+      _s3AccessKeyId = [self resolveEnvOverrideForKey:@"PDS_S3_ACCESS_KEY_ID"
+                                              default:blobStorage[@"s3_access_key_id"]];
+    if (blobStorage[@"s3_secret_access_key"])
+      _s3SecretAccessKey = [self resolveEnvOverrideForKey:@"PDS_S3_SECRET_ACCESS_KEY"
+                                                  default:blobStorage[@"s3_secret_access_key"]];
+    if (blobStorage[@"cdn_url"])
+      _cdnURL = [self resolveEnvOverrideForKey:@"PDS_CDN_URL"
+                                      default:blobStorage[@"cdn_url"]];
+  }
+
+  // Environment variable overrides
+  NSString *envBlobStorageType = [self resolveEnvOverrideForKey:@"PDS_BLOB_STORAGE_TYPE" default:nil];
+  if (envBlobStorageType.length > 0)
+    _blobStorageType = envBlobStorageType;
+
+  NSString *envS3Bucket = [self resolveEnvOverrideForKey:@"PDS_S3_BUCKET" default:nil];
+  if (envS3Bucket.length > 0)
+    _s3Bucket = envS3Bucket;
+
+  NSString *envS3Region = [self resolveEnvOverrideForKey:@"PDS_S3_REGION" default:nil];
+  if (envS3Region.length > 0)
+    _s3Region = envS3Region;
+
+  NSString *envS3Endpoint = [self resolveEnvOverrideForKey:@"PDS_S3_ENDPOINT" default:nil];
+  if (envS3Endpoint.length > 0)
+    _s3Endpoint = envS3Endpoint;
+
+  NSString *envS3KeyPrefix = [self resolveEnvOverrideForKey:@"PDS_S3_KEY_PREFIX" default:nil];
+  if (envS3KeyPrefix.length > 0)
+    _s3KeyPrefix = envS3KeyPrefix;
+
+  NSString *envS3AccessKeyId = [self resolveEnvOverrideForKey:@"PDS_S3_ACCESS_KEY_ID" default:nil];
+  if (envS3AccessKeyId.length > 0)
+    _s3AccessKeyId = envS3AccessKeyId;
+
+  NSString *envS3SecretAccessKey = [self resolveEnvOverrideForKey:@"PDS_S3_SECRET_ACCESS_KEY" default:nil];
+  if (envS3SecretAccessKey.length > 0)
+    _s3SecretAccessKey = envS3SecretAccessKey;
+
+  NSString *envCdnURL = [self resolveEnvOverrideForKey:@"PDS_CDN_URL" default:nil];
+  if (envCdnURL.length > 0)
+    _cdnURL = envCdnURL;
 }
 
 - (BOOL)envVarExists:(NSString *)envKey {
