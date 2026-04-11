@@ -3,6 +3,9 @@
 NSInteger const kPDSDatabaseSchemaVersion = 1;
 
 NSString * const kPDSAccountTableName = @"accounts";
+NSString * const kPDSAgeAssuranceNoVerification = @"no_verification";
+NSString * const kPDSAgeAssuranceVerifiedByAdult = @"verified_by_adult";
+NSString * const kPDSAgeAssuranceVerifiedByMethod = @"verified_by_method";
 NSString * const kPDSRepoTableName = @"repos";
 NSString * const kPDSRecordTableName = @"records";
 NSString * const kPDSBlockTableName = @"blocks";
@@ -40,7 +43,9 @@ NSString * const kPDSAccountTableCreateSQL =
     @"tfa_enabled INTEGER DEFAULT 0,"
     @"tfa_secret BLOB,"
     @"recovery_codes BLOB,"
-    @"invite_enabled INTEGER DEFAULT 0"
+    @"invite_enabled INTEGER DEFAULT 0,"
+    @"age_assurance TEXT,"
+    @"age_verified_at TEXT"
     @")";
 
 NSString * const kPDSRepoTableCreateSQL =
