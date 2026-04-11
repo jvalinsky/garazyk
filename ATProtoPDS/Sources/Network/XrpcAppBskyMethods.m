@@ -2847,6 +2847,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
     [self registerAppBskyContactSendNotificationWithDispatcher:dispatcher];
     [self registerAppBskyContactStartPhoneVerificationWithDispatcher:dispatcher];
     [self registerAppBskyContactVerifyPhoneWithDispatcher:dispatcher];
+
+    // Register chat.bsky.convo (DM) endpoints
+    [self registerChatConvoWithDispatcher:dispatcher adminController:adminController jwtMinter:jwtMinter];
 }
 
 + (void)setUnsupportedError:(HttpResponse *)response methodId:(NSString *)methodId {
@@ -2964,6 +2967,160 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
     
     if (outValue) *outValue = limit;
     return YES;
+}
+
+#pragma mark - Chat Convo (DM) Endpoints
+
++ (void)registerChatConvoWithDispatcher:(XrpcDispatcher *)dispatcher
+                       adminController:(id<PDSAdminController>)adminController
+                              jwtMinter:(JWTMinter *)jwtMinter {
+    // chat.bsky.convo.getConvo
+    [dispatcher registerMethod:@"chat.bsky.convo.getConvo" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                               jwtMinter:jwtMinter
+                                                         adminController:adminController
+                                                                 request:request
+                                                                response:response];
+        if (!actorDID) return;
+
+        NSString *convoId = [request queryParamForKey:@"convoId"];
+        if (!convoId) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            return;
+        }
+
+        // Stub response - DM not yet implemented
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"convo": @{
+                @"id": convoId,
+                @"rev": [[NSUUID UUID] UUIDString],
+                @"actor": @{@"did": actorDID},
+                @"peer": @{@"did": @"did:plc:stub"},
+                @"lastMessage": [NSNull null],
+                @"lastMessageAt": [NSNull null],
+                @"unreadCount": @0,
+                @"muted": @NO,
+                @"archived": @NO,
+                @"likes": [NSNull null],
+                @"acceptRules": [NSNull null],
+                @"createdAt": [NSDateFormatter atproto_stringFromDate:[NSDate date]],
+                @"updatedAt": [NSDateFormatter atproto_stringFromDate:[NSDate date]]
+            }
+        }];
+    }];
+
+    // chat.bsky.convo.getMessages
+    [dispatcher registerMethod:@"chat.bsky.convo.getMessages" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                               jwtMinter:jwtMinter
+                                                         adminController:adminController
+                                                                 request:request
+                                                                response:response];
+        if (!actorDID) return;
+
+        // Stub response
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"messages": @[],
+            @"cursor": [NSNull null]
+        }];
+    }];
+
+    // chat.bsky.convo.sendMessage
+    [dispatcher registerMethod:@"chat.bsky.convo.sendMessage" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                               jwtMinter:jwtMinter
+                                                         adminController:adminController
+                                                                 request:request
+                                                                response:response];
+        if (!actorDID) return;
+
+        // Stub - DMs not yet implemented
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Chat/DM not yet implemented"}];
+    }];
+
+    // chat.bsky.convo.listConvos
+    [dispatcher registerMethod:@"chat.bsky.convo.listConvos" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                               jwtMinter:jwtMinter
+                                                         adminController:adminController
+                                                                 request:request
+                                                                response:response];
+        if (!actorDID) return;
+
+        // Stub response
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"convos": @[],
+            @"cursor": [NSNull null]
+        }];
+    }];
+
+    // chat.bsky.convo.leaveConvo
+    [dispatcher registerMethod:@"chat.bsky.convo.leaveConvo" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                               jwtMinter:jwtMinter
+                                                         adminController:adminController
+                                                                 request:request
+                                                                response:response];
+        if (!actorDID) return;
+
+        // Stub - DMs not yet implemented
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Chat/DM not yet implemented"}];
+    }];
+
+    // chat.bsky.convo.updateRead
+    [dispatcher registerMethod:@"chat.bsky.convo.updateRead" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                               jwtMinter:jwtMinter
+                                                         adminController:adminController
+                                                                 request:request
+                                                                response:response];
+        if (!actorDID) return;
+
+        // Stub - DMs not yet implemented
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Chat/DM not yet implemented"}];
+    }];
 }
 
 @end
