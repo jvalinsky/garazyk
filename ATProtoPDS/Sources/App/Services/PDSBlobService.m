@@ -3,6 +3,11 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Core/Repositories/PDSBlobRepository.h"
+#import "Core/Repositories/PDSRepoRepository.h"
+#import "Core/Repositories/PDSRecordRepository.h"
+#import "Core/Repositories/PDSBlockRepository.h"
+#import "Core/Repositories/PDSSessionRepository.h"
 #import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -15,8 +20,8 @@
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool storage:(BlobStorage *)storage {
     if (self = [super init]) {
-        _databasePool = databasePool;
-        _blobStorage = storage;
+        self.databasePool = databasePool;
+        self.blobStorage = storage;
     }
     return self;
 }
@@ -72,7 +77,7 @@
     NSData *blobData = [self.blobStorage getBlobWithCID:cid did:did error:error];
     if (!blobData) return nil;
 
-    PDSDatabaseBlob *metadata = [self.blobStorage getBlobMetadataWithCID:cid.stringValue did:did error:nil];
+    PDSDatabaseBlob *metadata = [self.blobRepository blobWithCid:cid.bytes did:did error:nil];
     NSString *mimeType = metadata.mimeType ?: @"application/octet-stream";
     NSNumber *blobSize = metadata ? @(metadata.size) : nil;
 
@@ -96,7 +101,7 @@
         return nil;
     }
 
-    PDSDatabaseBlob *metadata = [self.blobStorage getBlobMetadataWithCID:cid.stringValue did:did error:error];
+    PDSDatabaseBlob *metadata = [self.blobRepository blobWithCid:cid.bytes did:did error:error];
     if (!metadata) {
         return nil;
     }
@@ -118,7 +123,7 @@
                                cursor:(nullable NSString *)cursor
                                 error:(NSError **)error {
 
-    NSArray<PDSDatabaseBlob *> *blobs = [self.blobStorage listBlobsForDID:did limit:limit cursor:cursor error:error];
+    NSArray<PDSDatabaseBlob *> *blobs = [self.blobRepository blobsForDid:did limit:limit offset:0 error:error];
     if (!blobs) return @[];
 
     NSMutableArray *result = [NSMutableArray array];
@@ -143,7 +148,11 @@
         return NO;
     }
 
-    return [self.blobStorage deleteBlobWithCID:cid did:did error:error];
+    BOOL deleted = [self.blobStorage deleteBlobWithCID:cid did:did error:error];
+    if (deleted) {
+        [self.blobRepository deleteBlob:cid.bytes did:did error:nil];
+    }
+    return deleted;
 }
 
 #pragma mark - Private Helpers

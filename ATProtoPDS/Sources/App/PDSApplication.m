@@ -16,6 +16,7 @@
 #import "Services/PDSRepositoryService.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
+#import "Database/PDSRepositoryFactory.h"
 #import "Services/PDSRelayService.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
@@ -122,76 +123,35 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 #pragma mark - Initialization
 
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
-    self = [super init];
-    if (self) {
-        _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
-        _dataDirectory = _configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory];
-        _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
-        _running = NO;
-
-        // M2: Catch unhandled ObjC exceptions before they silently crash the process
-        NSSetUncaughtExceptionHandler(&PDSApplicationUncaughtExceptionHandler);
-
-        // Configure logging from configuration
-        [self configureLogging];
-        
-        // Configure rate limiter
-        [self configureRateLimiter];
-        
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"PDSApplication initializing with data directory: %@", _dataDirectory);
-        
-        // Initialize infrastructure
-        [self initializeInfrastructure];
-        
-        // Initialize services
-        [self initializeServices];
-        
-        // Load lexicons
-        [self loadLexicons];
-        
-        _legacyController = [[PDSController alloc] initWithApplication:self];
-        [PDSAdminAuth sharedAuth].controller = _legacyController;
-        
-        PDS_LOG_CORE_INFO(@"PDSApplication initialized successfully");
-    }
-    return self;
+    return [self initWithConfiguration:configuration dataDirectory:nil];
 }
 
 - (instancetype)initWithDataDirectory:(NSString *)dataDirectory {
-    // We need to set the data directory BEFORE calling initWithConfiguration
-    // because it creates the legacy controller which needs the correct directory.
-    // So we do manual initialization here instead of calling the designated initializer.
+    return [self initWithConfiguration:nil dataDirectory:dataDirectory];
+}
+
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory {
     self = [super init];
     if (self) {
-        _configuration = [PDSConfiguration sharedConfiguration];
-        _dataDirectory = [dataDirectory copy];
+        _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
+        _dataDirectory = dataDirectory ?: (_configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory]);
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
         _running = NO;
-        
-        // Ensure default ports are set
-        if (_httpPort == 0) _httpPort = 2583;
-        
-        // Configure logging from configuration
+
+        // M2: Catch unhandled ObjC exceptions
+        NSSetUncaughtExceptionHandler(&PDSApplicationUncaughtExceptionHandler);
+
         [self configureLogging];
-        
-        // Configure rate limiter
         [self configureRateLimiter];
         
         PDS_LOG_INFO_C(PDSLogComponentCore, @"PDSApplication initializing with data directory: %@", _dataDirectory);
         
-        // Initialize infrastructure
         [self initializeInfrastructure];
-        
-        // Initialize services
         [self initializeServices];
-        
-        // Load lexicons
         [self loadLexicons];
         
         _legacyController = [[PDSController alloc] initWithApplication:self];
         [PDSAdminAuth sharedAuth].controller = _legacyController;
-        
-        PDS_LOG_CORE_INFO(@"PDSApplication initialized successfully");
     }
     return self;
 }
@@ -237,10 +197,13 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // Create data directory if needed
     NSFileManager *fm = [NSFileManager defaultManager];
     if (![fm fileExistsAtPath:_dataDirectory]) {
-        [fm createDirectoryAtPath:_dataDirectory 
-      withIntermediateDirectories:YES 
-                       attributes:nil 
-                            error:nil];
+        NSError *dirError = nil;
+        if (![fm createDirectoryAtPath:_dataDirectory
+           withIntermediateDirectories:YES
+                            attributes:nil
+                                 error:&dirError]) {
+            PDS_LOG_ERROR(@"Core", @"Failed to create data directory %@: %@", _dataDirectory, dirError);
+        }
     }
     
     // Initialize database pools
@@ -374,18 +337,22 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         [container registerInstance:emailProvider forProtocol:@protocol(PDSEmailProvider)];
     }
 
-    PDSAccountService *accountService = [[PDSAccountService alloc] initWithAccountRepository:nil
-                                                                            sessionRepository:nil
-                                                                                       minter:nil
-                                                                                emailProvider:emailProvider];
+    id<PDSAccountRepository> accountRepo = [PDSRepositoryFactory accountRepositoryWithServiceDatabases:_serviceDatabases];
+    id<PDSSessionRepository> sessionRepo = [PDSRepositoryFactory sessionRepositoryWithServiceDatabases:_serviceDatabases];
+
+    PDSAccountService *accountService = [[PDSAccountService alloc] initWithAccountRepository:accountRepo
+                                                                            sessionRepository:sessionRepo
+                                                                                        minter:_jwtMinter
+                                                                                 emailProvider:emailProvider];
     accountService.databasePool = _userDatabasePool;
     accountService.serviceDatabases = _serviceDatabases;
-    accountService.minter = _jwtMinter;
     [container registerInstance:accountService forProtocol:@protocol(PDSAccountService)];
     _accountService = accountService;
     
     // Initialize Record Service
+    id<PDSRecordRepository> recordRepo = [PDSRepositoryFactory recordRepositoryWithDatabasePool:_userDatabasePool];
     _recordService = [[PDSRecordService alloc] initWithDatabasePool:_userDatabasePool];
+    _recordService.recordRepository = recordRepo;
     
     // Initialize Blob Storage and Service
     NSString *blobDir = [_dataDirectory stringByAppendingPathComponent:@"blobs"];
@@ -397,10 +364,17 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     NSURL *blobURL = [NSURL fileURLWithPath:blobDir];
     PDSDiskBlobProvider *blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
     BlobStorage *blobStorage = [[BlobStorage alloc] initWithDatabasePool:_userDatabasePool provider:blobProvider];
+    
+    id<PDSBlobRepository> blobRepo = [PDSRepositoryFactory blobRepositoryWithDatabasePool:_userDatabasePool];
     _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
+    _blobService.blobRepository = blobRepo;
     
     // Initialize Repository Service
+    id<PDSBlockRepository> blockRepo = [PDSRepositoryFactory blockRepositoryWithDatabasePool:_userDatabasePool];
+    id<PDSRepoRepository> repoRepo = [PDSRepositoryFactory repoRepositoryWithServiceDatabases:_serviceDatabases];
     _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
+    _repositoryService.blockRepository = blockRepo;
+    _repositoryService.repoRepository = repoRepo;
     
     // Initialize Admin Controller
     _adminController = [[PDSAdminController alloc] initWithServiceDatabases:_serviceDatabases

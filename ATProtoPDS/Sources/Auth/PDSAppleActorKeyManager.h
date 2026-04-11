@@ -15,6 +15,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PDSAppleActorKeyManager;
+
+@protocol PDSAppleActorKeyManagerDelegate <NSObject>
+@optional
+- (BOOL)appleActorKeyManager:(PDSAppleActorKeyManager *)manager
+             storeSigningKey:(NSData *)privateKey
+                   publicKey:(NSData *)publicKey
+                       error:(NSError **)error;
+
+- (nullable NSData *)appleActorKeyManagerLoadSigningKey:(PDSAppleActorKeyManager *)manager
+                                                 error:(NSError **)error;
+@end
+
+
 /*!
  @class PDSAppleActorKeyManager
 
@@ -37,6 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! The DID this key manager is responsible for. */
 @property (nonatomic, copy, readonly) NSString *did;
+@property (nonatomic, weak, nullable) id<PDSAppleActorKeyManagerDelegate> delegate;
 
 /*!
  @method initWithDid:

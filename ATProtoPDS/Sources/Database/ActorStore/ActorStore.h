@@ -207,6 +207,15 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Exports the raw private key bytes to be used in migration operations */
 - (nullable NSData *)exportSigningKeyWithError:(NSError **)error;
 
+/*! Persists the signing key to the database (used when Keychain is disabled). */
+- (BOOL)storeSigningKey:(NSData *)privateKey
+              publicKey:(NSData *)publicKey
+                  error:(NSError **)error;
+
+/*! Loads the signing key from the database (used when Keychain is disabled). */
+- (nullable NSData *)loadSigningKeyWithError:(NSError **)error;
+
+
 #pragma mark - Rotation Key Management
 
 /*! Stores the rotation key encrypted with the given password. */

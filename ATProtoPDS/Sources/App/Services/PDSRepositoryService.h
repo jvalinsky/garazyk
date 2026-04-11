@@ -20,6 +20,9 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 
 @class MST;
 @class CID;
+@protocol PDSBlockRepository;
+@protocol PDSRepoRepository;
+@protocol PDSRecordRepository;
 
 /*!
  @class PDSRepositoryService
@@ -40,6 +43,12 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  Thread-safety: Methods are thread-safe through database pool serialization.
  */
 @interface PDSRepositoryService : NSObject
+
+/*! Block repository. */
+@property (nonatomic, strong) id<PDSBlockRepository> blockRepository;
+
+/*! Repo metadata repository. */
+@property (nonatomic, strong) id<PDSRepoRepository> repoRepository;
 
 /*! Database pool - owner (PDSController) must outlive this service. */
 @property (nonatomic, strong) PDSDatabasePool *databasePool;

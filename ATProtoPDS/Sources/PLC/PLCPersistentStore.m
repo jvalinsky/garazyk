@@ -6,6 +6,18 @@
 
 NSString * const PLCPersistentStoreErrorDomain = @"com.atproto.pds.plc.persistentstore";
 
+static NSDateFormatter *PLCStoreDBDateFormatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+        formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss";
+    });
+    return formatter;
+}
+
 static NSString * const kCreateOperationsTableSQL =
     @"CREATE TABLE IF NOT EXISTS plc_operations ("
     @"  id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -540,11 +552,7 @@ static NSString * const kSelectAllDIDsSQL =
     if (createdText) {
         NSString *createdString = [NSString stringWithUTF8String:(const char *)createdText];
         if (createdString.length > 0) {
-            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-            formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-            formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-            formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss";
-            op.createdAt = [formatter dateFromString:createdString];
+            op.createdAt = [PLCStoreDBDateFormatter() dateFromString:createdString];
         }
     }
     
@@ -685,11 +693,7 @@ static NSString * const kSelectAllDIDsSQL =
 
         NSString *dateString = @"1970-01-01 00:00:00";
         if (after) {
-            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-            formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-            formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-            formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss";
-            dateString = [formatter stringFromDate:after];
+            dateString = [PLCStoreDBDateFormatter() stringFromDate:after];
         }
 
         sqlite3_bind_text(stmt, 1, dateString.UTF8String, -1, SQLITE_TRANSIENT);
