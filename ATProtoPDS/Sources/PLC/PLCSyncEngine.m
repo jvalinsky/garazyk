@@ -19,9 +19,6 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 @property (nonatomic, assign, readwrite) NSUInteger totalOperationsFailed;
 @property (nonatomic, strong, readwrite, nullable) NSDate *lastSyncDate;
 @property (nonatomic, assign, readwrite) NSInteger currentCursor;
-
-dispatch_queue_t _syncQueue;
-dispatch_queue_t _validationQueue;
 @property (nonatomic, strong) dispatch_source_t pollTimer;
 @property (nonatomic, assign) BOOL shouldStop;
 @property (nonatomic, assign) BOOL isPaused;
@@ -29,7 +26,10 @@ dispatch_queue_t _validationQueue;
 
 @end
 
-@implementation PLCSyncEngine
+@implementation PLCSyncEngine {
+    dispatch_queue_t _syncQueue;
+    dispatch_queue_t _validationQueue;
+}
 
 - (instancetype)initWithStore:(PLCReplicaStore *)store
                        client:(PLCSyncClient *)client
