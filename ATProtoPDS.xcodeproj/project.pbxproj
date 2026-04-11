@@ -141,6 +141,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		0B7FA4514D7DD7A1982BB1F5 /* Build Fuzzers with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -159,6 +160,7 @@
 		};
 		2B198A56150AAB61D5D9F5DD /* Build Tests with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -177,6 +179,7 @@
 		};
 		6515BC5414536A367A6BB6DC /* Build PLC with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -195,6 +198,7 @@
 		};
 		EABC4FE21AF478FF825078E3 /* Build with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
