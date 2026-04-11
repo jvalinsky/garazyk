@@ -167,6 +167,52 @@
     XCTAssertNotNil(error);
 }
 
+#pragma mark - URL Construction Tests
+
+- (void)testS3URLConstructionForAWSWithoutEndpoint {
+    PDSCloudStorageBlobProvider *provider = [[PDSCloudStorageBlobProvider alloc]
+        initWithBucket:@"my-bucket"
+               region:@"us-west-2"
+             endpoint:nil
+            keyPrefix:nil
+        accessKeyId:@"AKIAIOSFODNN7EXAMPLE"
+     secretAccessKey:@"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"];
+
+    XCTAssertNotNil(provider);
+
+    // Test AWS virtual-hosted style (used when endpoint is nil)
+    // Should be: https://bucket.s3.region.amazonaws.com/key
+    NSURL *url = [provider s3URLForKey:@"blobs/test.bin"];
+    XCTAssertNotNil(url);
+    NSString *expectedHost = @"my-bucket.s3.us-west-2.amazonaws.com";
+    XCTAssertEqualObjects(url.host, expectedHost,
+        @"AWS URL should use virtual-hosted style with host: %@, got %@", expectedHost, url.host);
+    XCTAssertTrue([url.path containsString:@"blobs/test.bin"],
+        @"AWS URL should contain encoded key in path");
+}
+
+- (void)testS3URLConstructionForS3CompatibleEndpoint {
+    PDSCloudStorageBlobProvider *provider = [[PDSCloudStorageBlobProvider alloc]
+        initWithBucket:@"my-bucket"
+               region:@"us-east-1"
+             endpoint:@"https://minio.example.com"
+            keyPrefix:nil
+        accessKeyId:@"AKIAIOSFODNN7EXAMPLE"
+     secretAccessKey:@"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"];
+
+    XCTAssertNotNil(provider);
+
+    // Test S3-compatible path-style (used when endpoint is set)
+    // Should be: https://endpoint.com/bucket/key
+    NSURL *url = [provider s3URLForKey:@"blobs/test.bin"];
+    XCTAssertNotNil(url);
+    XCTAssertEqualObjects(url.host, @"minio.example.com");
+    XCTAssertTrue([url.path containsString:@"my-bucket"],
+        @"S3-compatible URL should contain bucket in path");
+    XCTAssertTrue([url.path containsString:@"blobs/test.bin"],
+        @"S3-compatible URL should contain key in path");
+}
+
 #pragma mark - Protocol Conformance Tests
 
 - (void)testConformsToProtocol {
