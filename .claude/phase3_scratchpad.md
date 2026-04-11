@@ -71,3 +71,35 @@ Message: "This method was removed. Moderation has moved to tools.ozone.* - pleas
 - Status: [x] Handler added with 410 Gone response
 
 All deprecated handlers return standardized error response with `error: "MethodNotSupported"`
+
+## FINAL STATUS: ✅ COMPLETE
+
+**Commit:** 135c5802  
+**Date Completed:** 2026-04-11  
+**Deliverables:**
+- Removed 6 non-standard methods
+- Kept and refactored repo.getBlob to delegate to sync.getBlob
+- Documented label methods as non-standard internal extensions
+
+**Files Modified:** 4
+- XrpcServerMethods.m (removed getAccount)
+- XrpcRepoMethods.m (removed updateRecord, deleteBlob; refactored getBlob)
+- XrpcAppBskyMethods.m (removed getUserStats)
+- XrpcLabelMethods.m (documented non-standard)
+
+All deprecated methods deleted. Spec hygiene improved.
+
+### Phase 4 Status: ✅ COMPLETE
+
+**Commit:** 135c5802 (same commit as Phase 3)  
+**Date Completed:** 2026-04-11  
+**Deliverables:**
+- Deprecated 6 pre-Ozone moderation methods to HTTP 410 Gone
+- Added HttpStatusGone constant to HttpResponse.h
+- Clear error message directs clients to tools.ozone.*
+
+**Files Modified:** 2
+- HttpResponse.h (added 410 constant)
+- XrpcAdminMethods.m (6 handlers → 410 responses)
+
+**Impact:** Clients get meaningful deprecation instead of stale handlers
