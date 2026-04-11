@@ -327,4 +327,60 @@
         @"Timeout response should have a non-empty message");
 }
 
+- (void)testUnknownToolsOzoneMethodFallsBackToConfiguredOzoneProxy {
+    NSError *startError = nil;
+    if (![self startUpstreamServerWithError:&startError]) {
+        XCTSkip(@"Upstream listener unavailable in this environment: %@",
+                startError.localizedDescription ?: @"unknown error");
+        return;
+    }
+
+    NSString *ozoneBase = [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)self.upstreamServer.port];
+    self.dispatcher.ozoneURL = [NSURL URLWithString:ozoneBase];
+    self.dispatcher.ozoneDID = @"did:web:ozone.example.com";
+
+    NSString *methodId = @"tools.ozone.moderation.getRepo";
+    NSString *query = @"did=did:plc:example";
+    NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
+    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+                                             methodString:@"GET"
+                                                     path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
+                                              queryString:query
+                                              queryParams:@{ @"did": @"did:plc:example" }
+                                                  headers:@{ @"authorization": authValue }
+                                                     body:nil];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.body);
+
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil];
+    XCTAssertEqualObjects(json[@"proxied"], @YES);
+    NSString *expectedPath = [NSString stringWithFormat:@"/xrpc/%@", methodId];
+    XCTAssertEqualObjects(json[@"path"], expectedPath);
+    XCTAssertEqualObjects(json[@"query"], query);
+}
+
+- (void)testUnknownOzoneMethodReturnsNotFoundWhenNoOzoneProxyConfigured {
+    NSString *methodId = @"tools.ozone.moderation.queryEvents";
+    NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
+
+    // Ensure ozoneURL is not set
+    self.dispatcher.ozoneURL = nil;
+    self.dispatcher.ozoneDID = nil;
+
+    HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
+                                             methodString:@"GET"
+                                                     path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
+                                              queryString:@""
+                                              queryParams:@{}
+                                                  headers:@{ @"authorization": authValue }
+                                                     body:nil];
+
+    XCTAssertEqual(response.statusCode, 404);
+    XCTAssertNotNil(response.body);
+
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil];
+    XCTAssertEqualObjects(json[@"error"], @"MethodNotFound");
+}
+
 @end
