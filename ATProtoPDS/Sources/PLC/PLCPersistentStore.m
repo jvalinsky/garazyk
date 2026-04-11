@@ -62,11 +62,12 @@ static NSString * const kSelectAllDIDsSQL =
 @property (nonatomic, assign, readwrite) sqlite3 *db;
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSValue *> *stmtCache;
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
 
 @end
 
-@implementation PLCPersistentStore
+@implementation PLCPersistentStore {
+    dispatch_queue_t _transactionQueue;
+}
 
 + (nullable instancetype)storeWithPath:(NSString *)dbPath error:(NSError **)error {
     PLCPersistentStore *store = [[PLCPersistentStore alloc] initWithPath:dbPath];
@@ -347,7 +348,7 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
     
-    dispatch_sync(self.transactionQueue, ^{
+    dispatch_sync(_transactionQueue, ^{
         NSString *query = includeNullified ? kSelectHistoryIncludingNullifiedSQL : kSelectHistorySQL;
         sqlite3_stmt *stmt = [self prepareStatement:query error:&blockError];
         if (!stmt) {
@@ -404,7 +405,7 @@ static NSString * const kSelectAllDIDsSQL =
     __block BOOL success = NO;
     __block NSError *blockError = nil;
     
-    dispatch_sync(self.transactionQueue, ^{
+    dispatch_sync(_transactionQueue, ^{
         sqlite3_stmt *stmt = [self prepareStatement:kInsertOperationSQL error:&blockError];
         if (!stmt) {
             return;
@@ -563,7 +564,7 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSInteger count = -1;
     __block NSError *blockError = nil;
     
-    dispatch_sync(self.transactionQueue, ^{
+    dispatch_sync(_transactionQueue, ^{
         sqlite3_stmt *stmt = [self prepareStatement:kCountOperationsSQL error:&blockError];
         if (!stmt) {
             return;
@@ -598,7 +599,7 @@ static NSString * const kSelectAllDIDsSQL =
     __block BOOL success = NO;
     __block NSError *blockError = nil;
     
-    dispatch_sync(self.transactionQueue, ^{
+    dispatch_sync(_transactionQueue, ^{
         sqlite3_stmt *stmt = [self prepareStatement:kDeleteOperationsSQL error:&blockError];
         if (!stmt) {
             return;
@@ -639,7 +640,7 @@ static NSString * const kSelectAllDIDsSQL =
     __block PLCOperation *operation = nil;
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    dispatch_sync(_transactionQueue, ^{
         sqlite3_stmt *stmt = [self prepareStatement:kSelectLatestOperationSQL error:&blockError];
         if (!stmt) {
             return;
@@ -676,7 +677,7 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSMutableArray<PLCOperation *> *operations = [NSMutableArray array];
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    dispatch_sync(_transactionQueue, ^{
         sqlite3_stmt *stmt = [self prepareStatement:kSelectExportOperationsSQL error:&blockError];
         if (!stmt) {
             return;
@@ -724,7 +725,7 @@ static NSString * const kSelectAllDIDsSQL =
     __block NSMutableArray<NSString *> *dids = [NSMutableArray array];
     __block NSError *blockError = nil;
 
-    dispatch_sync(self.transactionQueue, ^{
+    dispatch_sync(_transactionQueue, ^{
         sqlite3_stmt *stmt = [self prepareStatement:kSelectAllDIDsSQL error:&blockError];
         if (!stmt) {
             return;
