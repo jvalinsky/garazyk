@@ -242,50 +242,60 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     NSTimeInterval windowStart = now - windowSeconds;
     
     NSString *selectSQL = @"SELECT request_count, window_start FROM rate_limits WHERE identifier = ? AND type = ? AND window_start > ?";
-    
+
+    // Begin immediate transaction to prevent concurrent SELECT/INSERT race condition
+    int txResult = sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION", NULL, NULL, NULL);
+    if (txResult != SQLITE_OK) {
+        // Transaction failed, default to allow
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
+    }
+
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
     int result = sqlite3_prepare_v2(_db, selectSQL.UTF8String, -1, &stmt, NULL);
     if (result != SQLITE_OK) {
+        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
         return [RateLimitResult resultAllowed:YES limit:limit remaining:limit resetSeconds:0 retryAfter:0];
     }
-    
+
     sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 2, type);
     sqlite3_bind_double(stmt, 3, windowStart);
-    
+
     NSInteger requestCount = 0;
     NSTimeInterval existingWindowStart = 0;
-    
+
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         requestCount = sqlite3_column_int(stmt, 0);
         existingWindowStart = sqlite3_column_double(stmt, 1);
     }
-    
+
     if (requestCount >= limit) {
         NSTimeInterval resetSeconds = (existingWindowStart + windowSeconds) - now;
+        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
         [[PDSMetrics sharedMetrics] incrementRateLimitRejection:
             (type == RateLimitTypeDID ? @"did" :
              type == RateLimitTypeIP ? @"ip" : @"custom")];
         return [RateLimitResult resultAllowed:NO limit:limit remaining:0 resetSeconds:resetSeconds retryAfter:resetSeconds];
     }
-    
+
     NSString *upsertSQL = @"INSERT INTO rate_limits (identifier, type, request_count, window_start) "
                           @"VALUES (?, ?, ?, ?) "
                           @"ON CONFLICT(identifier, type) DO UPDATE SET "
                           @"request_count = CASE WHEN window_start > ? THEN request_count + 1 ELSE 1 END, "
                           @"window_start = CASE WHEN window_start > ? THEN window_start ELSE ? END";
-    
+
     // We need a new statement variable since the previous one is autoreleased only at scope exit
     // However, declaring another PDS_SQLITE_AUTORELEASE_STMT in the same scope with same name is tricky.
     // It's better to wrap this in a block or use a different name.
     // Let's use a different name "upsertStmt".
-    
+
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *upsertStmt;
     result = sqlite3_prepare_v2(_db, upsertSQL.UTF8String, -1, &upsertStmt, NULL);
     if (result != SQLITE_OK) {
+        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
         return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - requestCount - 1) resetSeconds:0 retryAfter:0];
     }
-    
+
     sqlite3_bind_text(upsertStmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(upsertStmt, 2, type);
     sqlite3_bind_int(upsertStmt, 3, 1);
@@ -293,14 +303,17 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     sqlite3_bind_double(upsertStmt, 5, windowStart);
     sqlite3_bind_double(upsertStmt, 6, windowStart);
     sqlite3_bind_double(upsertStmt, 7, now);
-    
+
     result = sqlite3_step(upsertStmt);
 
     if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
         PDS_LOG_DB_ERROR(@"Failed to update rate limit: %s (SQLite code: %d)",
                          sqlite3_errmsg(_db), result);
+        sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
+        return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - requestCount - 1) resetSeconds:0 retryAfter:0];
     }
 
+    sqlite3_exec(_db, "COMMIT TRANSACTION", NULL, NULL, NULL);
     return [RateLimitResult resultAllowed:YES
                                     limit:limit
                                 remaining:(limit - requestCount - 1)
