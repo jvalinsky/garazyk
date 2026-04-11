@@ -51,4 +51,4 @@ Both Phase 1 tasks completed successfully:
 - Blob Range support extracted to shared helper and applied to both sync.getBlob and repo.getBlob
 - Full test coverage added for new functionality
 
-Ready for commit.
+**Commit:** c431dbeb (feat: Phase 1 - Wire up existing OAuth/Blob internals)
