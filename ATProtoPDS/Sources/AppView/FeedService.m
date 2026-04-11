@@ -13,6 +13,17 @@
 
 @implementation FeedService
 
+static NSDateFormatter *FeedServiceISO8601Formatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    });
+    return formatter;
+}
+
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
@@ -62,10 +73,6 @@
             }
         }
     }
-
-    NSDateFormatter *isoFormatter = [[NSDateFormatter alloc] init];
-    isoFormatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    isoFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
 
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"feed"] = feedItems;
@@ -465,10 +472,6 @@
 
     NSDictionary *author = [self getAuthorInfoForDID:post[@"repo"] error:nil] ?: @{@"did": post[@"repo"] ?: @""};
 
-    NSDateFormatter *isoFormatter = [[NSDateFormatter alloc] init];
-    isoFormatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    isoFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-
     return @{
         @"uri": uri,
         @"cid": cid,
@@ -477,7 +480,7 @@
         @"replyCount": @([self getReplyCountForURI:uri]),
         @"repostCount": @([self getRepostCountForURI:uri]),
         @"likeCount": @([self getLikeCountForURI:uri]),
-        @"indexedAt": [self getIndexedAtForURI:uri] ?: [isoFormatter stringFromDate:[NSDate date]],
+        @"indexedAt": [self getIndexedAtForURI:uri] ?: [FeedServiceISO8601Formatter() stringFromDate:[NSDate date]],
         @"viewer": @{},
         @"labels": @[]
     };

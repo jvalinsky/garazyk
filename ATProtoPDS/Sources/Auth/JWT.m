@@ -11,9 +11,7 @@
  */
 
 #import "Auth/JWT.h"
-#import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
-#import "PDSKeyManagerProtocol.h"
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSActorKeyManagerProtocol.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -566,8 +564,23 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     header.alg = self.signingAlgorithm;
     header.typ = @"at+jwt";
 
-    NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error];
+    if (!headerData) return nil;
+
+    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+    if (!headerEncoded) return nil;
+
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error];
+    if (!payloadData) return nil;
+
+    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+    if (!payloadEncoded) return nil;
+
+    NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", headerEncoded, payloadEncoded] error:error];
+    if (!signatureData) return nil;
+
     NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
+    if (!signature) return nil;
 
     return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
 }
@@ -598,8 +611,23 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     header.alg = self.signingAlgorithm;
     header.typ = @"refresh+jwt";
 
-    NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error] error:error] ?: @"", [JWT base64URLEncodeData:[NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error] error:error] ?: @""] error:error];
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:[header toDictionary] options:0 error:error];
+    if (!headerData) return nil;
+
+    NSString *headerEncoded = [JWT base64URLEncodeData:headerData error:error];
+    if (!headerEncoded) return nil;
+
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:[payload toDictionary] options:0 error:error];
+    if (!payloadData) return nil;
+
+    NSString *payloadEncoded = [JWT base64URLEncodeData:payloadData error:error];
+    if (!payloadEncoded) return nil;
+
+    NSData *signatureData = [self signData:[NSString stringWithFormat:@"%@.%@", headerEncoded, payloadEncoded] error:error];
+    if (!signatureData) return nil;
+
     NSString *signature = [JWT base64URLEncodeData:signatureData error:error];
+    if (!signature) return nil;
 
     return [JWT jwtWithHeader:header payload:payload signature:signature error:error];
 }
