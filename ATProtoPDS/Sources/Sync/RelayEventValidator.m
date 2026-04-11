@@ -30,7 +30,7 @@
 @interface RelayEventValidator ()
 
 @property (nonatomic, assign, readwrite) RelayValidationMode validationMode;
-dispatch_queue_t _validationQueue;
+@property (nonatomic) dispatch_queue_t validationQueue;
 
 @end
 
@@ -40,7 +40,7 @@ dispatch_queue_t _validationQueue;
     self = [super init];
     if (self) {
         _validationMode = mode;
-        _validationQueue = dispatch_queue_create("com.atproto.relay.validator", DISPATCH_QUEUE_CONCURRENT);
+        self.validationQueue = dispatch_queue_create("com.atproto.relay.validator", DISPATCH_QUEUE_CONCURRENT);
     }
     return self;
 }
