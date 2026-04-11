@@ -12,10 +12,11 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
 
 @interface WebAuthnRegistrationHandler ()
 @property (nonatomic, strong) NSMutableDictionary *pendingChallenges;
-@property (nonatomic, strong) dispatch_queue_t challengeQueue;
 @end
 
-@implementation WebAuthnRegistrationHandler
+@implementation WebAuthnRegistrationHandler {
+    dispatch_queue_t _challengeQueue;
+}
 
 - (instancetype)initWithDatabase:(PDSDatabase *)database serverOrigin:(NSString *)serverOrigin {
     self = [super init];
@@ -71,7 +72,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
     NSString *challengeB64 = [self base64URLEncode:challenge];
     NSString *sessionId = [[NSUUID UUID] UUIDString];
 
-    dispatch_sync(self.challengeQueue, ^{
+    dispatch_sync(_challengeQueue, ^{
         self.pendingChallenges[sessionId] = @{
             @"challenge": challenge,
             @"did": did,
@@ -219,7 +220,7 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
 
 - (NSDictionary *)popChallenge:(NSString *)sessionId {
     __block NSDictionary *info = nil;
-    dispatch_sync(self.challengeQueue, ^{
+    dispatch_sync(_challengeQueue, ^{
         info = self.pendingChallenges[sessionId];
         if (info) {
             NSTimeInterval expiresAt = [info[@"expiresAt"] doubleValue];
