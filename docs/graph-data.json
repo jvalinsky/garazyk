@@ -6,9 +6,9 @@
       "node_type": "goal",
       "title": "100% PLC spec compliance",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:23:42.376904-05:00",
-      "updated_at": "2026-01-17T00:23:46.708912-05:00",
+      "updated_at": "2026-04-10T01:53:06.453349-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"I want a 100% spec compliant plc for at protocol\"}"
     },
     {
@@ -17,9 +17,9 @@
       "node_type": "action",
       "title": "Review did-method-plc constraints for PLC compliance gaps",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:23:51.799426-05:00",
-      "updated_at": "2026-01-17T00:23:51.799426-05:00",
+      "updated_at": "2026-04-10T01:53:06.461939-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -28,9 +28,9 @@
       "node_type": "action",
       "title": "Implement P-256 DID key support and PLC endpoint parity",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:34:47.380993-05:00",
-      "updated_at": "2026-01-17T00:34:47.380993-05:00",
+      "updated_at": "2026-04-10T01:53:06.469439-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -41,7 +41,7 @@
       "description": null,
       "status": "completed",
       "created_at": "2026-01-17T23:46:53.729767-05:00",
-      "updated_at": "2026-02-18T10:58:27.344211-05:00",
+      "updated_at": "2026-04-10T01:52:57.827348-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"OAuthIntegrationTests.testFullOAuthFlow test was returning HTTP 400 on token exchange instead of 200. Debug logging revealed DPoP verification failing with \\\"Invalid JWK component length\\\" then \\\"DPoP signature verification failed\\\". Root cause: DPoP tokens created with empty x/y values in JWK header, and DER-encoded signature was being base64url encoded directly instead of extracting raw r||s components first.\"}"
     },
     {
@@ -50,9 +50,9 @@
       "node_type": "action",
       "title": "Investigating DPoP verification failure with debug logging",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:47:09.923287-05:00",
-      "updated_at": "2026-01-17T23:47:09.923287-05:00",
+      "updated_at": "2026-04-10T01:53:10.431914-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"ATProtoPDS/Sources/Auth/OAuth2Handler.m\",\"ATProtoPDS/Sources/Auth/DPoPUtil.m\"]}"
     },
     {
@@ -61,9 +61,9 @@
       "node_type": "observation",
       "title": "DPoP JWK header had empty x and y values (empty strings)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:47:15.102827-05:00",
-      "updated_at": "2026-01-17T23:47:15.102827-05:00",
+      "updated_at": "2026-04-10T01:53:10.441219-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -72,9 +72,9 @@
       "node_type": "observation",
       "title": "SecKeyCreateSignature returns DER-encoded signature but verification expects raw r||s format",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:47:21.342645-05:00",
-      "updated_at": "2026-01-17T23:47:21.342645-05:00",
+      "updated_at": "2026-04-10T01:53:10.449470-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -83,9 +83,9 @@
       "node_type": "action",
       "title": "Modifying signDPoPToken to extract public key coordinates and add extractRawSignatureFromDER helper",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:47:26.627242-05:00",
-      "updated_at": "2026-01-17T23:47:26.627242-05:00",
+      "updated_at": "2026-04-10T01:53:10.457380-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"ATProtoPDS/Sources/Auth/DPoPUtil.m\"]}"
     },
     {
@@ -94,9 +94,9 @@
       "node_type": "outcome",
       "title": "Fixed DPoP proof generation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:47:45.193322-05:00",
-      "updated_at": "2026-01-17T23:47:45.193322-05:00",
+      "updated_at": "2026-04-10T01:53:12.980671-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"61f44a6\",\"confidence\":95}"
     },
     {
@@ -105,9 +105,9 @@
       "node_type": "decision",
       "title": "How to encode ECDSA signature for DPoP",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:48:04.792983-05:00",
-      "updated_at": "2026-01-17T23:48:04.792983-05:00",
+      "updated_at": "2026-04-10T01:53:12.989751-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -116,9 +116,9 @@
       "node_type": "option",
       "title": "Use raw (r||s) signature format, converting from DER",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:48:10.524170-05:00",
-      "updated_at": "2026-01-17T23:48:10.524170-05:00",
+      "updated_at": "2026-04-10T01:53:12.997995-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -127,9 +127,9 @@
       "node_type": "option",
       "title": "Use DER-encoded signature directly",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:48:16.663266-05:00",
-      "updated_at": "2026-01-17T23:48:16.663266-05:00",
+      "updated_at": "2026-04-10T01:53:15.322749-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":50}"
     },
     {
@@ -138,9 +138,9 @@
       "node_type": "goal",
       "title": "Phase 12.1: Refactor XrpcMethodRegistry DI cleanup",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-17T01:51:06.378460-05:00",
-      "updated_at": "2026-02-17T01:51:06.378460-05:00",
+      "updated_at": "2026-04-10T01:53:15.330256-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"# Detailed Next Steps Plan\\n\\n## Phase 12: Architecture Refinement (Priority: High)\\n\\n### 12.1. Dependency Injection Cleanup (`XrpcMethodRegistry`)\\nThe `XrpcMethodRegistry` currently accepts `PDSApplication` but still extracts `legacyController` to pass to helper functions. This enforces a dependency on the legacy controller.\\n\\n- [ ] **Refactor `registerServerAccountAndSessionMethods`**\\n  - Change signature to accept `PDSAccountService` and `PDSConfiguration` directly instead of `PDSController`.\\n  - Update implementations to use extraction logic from services.\\n- [ ] **Refactor `extractDIDFromAuthHeader`**\\n  - Currently takes `PDSController` to access `serverHost` or `jwtMinter`.\\n  - Update to accept `PDSConfiguration` or `JWTMinter` directly.\\n- [ ] **Remove `application.legacyController` usage**\\n  - Identify all call sites in `registerMethodsWithDispatcher:application:`.\\n  - Replace with specific service properties from `PDSApplication` (e.g., `adminController`, `repoService`).\\n\\ngo\"}"
     },
     {
@@ -149,9 +149,9 @@
       "node_type": "goal",
       "title": "Production readiness: fix C1-C3, H1-H5, M1-M3 for small self-hoster",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-17T18:13:31.838354-05:00",
-      "updated_at": "2026-02-17T18:13:31.838354-05:00",
+      "updated_at": "2026-04-10T01:53:18.870931-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Implement the following plan:\\n\\n# Production Readiness Review — ATProtoPDS (Small Self-Hoster)\\n\\n## Context\\n\\nProduction readiness assessment and remediation plan for self-hosting the Objective-C ATProtoPDS implementation. The codebase is substantially complete (96/96 core AT Protocol methods, OAuth/DPoP, SQLite persistence, logging) but has several gaps. Scope: **single-machine small self-hoster**, not distributed deployment.\\n\\n[Full plan omitted for brevity — see conversation transcript]\\n\\nFixes implemented:\\nC1: Wire Resend email provider into PDSApplication.m\\nC2: Enforce JWT issuer at startup (exit(1) if production + pds.local)\\nC3: Reverse proxy / HTTPS deployment documentation\\nH1: Content-Type header (was already present)\\nH2: Parse Resend error JSON body (name/message fields)\\nH3: Persist token invalidation to file (survives restarts)\\nH4: Warn on plain-text admin password at startup\\nH5: Warn on X-Admin-Token in production at startup\\nM1: Add 409 to retryable HTTP status codes\\nM2: Register NSUncaughtExceptionHandler (C function, not block)\\nM3: Apply WAL + performance PRAGMAs to service DB pools\"}"
     },
     {
@@ -160,9 +160,9 @@
       "node_type": "action",
       "title": "Implement all production readiness fixes (C1-C3, H1-H5, M1-M3)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-17T18:13:38.050714-05:00",
-      "updated_at": "2026-02-17T18:13:38.050714-05:00",
+      "updated_at": "2026-04-10T01:53:18.879146-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5f0fd5\",\"confidence\":95}"
     },
     {
@@ -193,9 +193,9 @@
       "node_type": "action",
       "title": "Add MST node block enumeration to buildCARBlocksForCommit",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-17T18:22:44.252962-05:00",
-      "updated_at": "2026-02-17T18:22:44.252962-05:00",
+      "updated_at": "2026-04-10T01:53:18.887286-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"ATProtoPDS/Sources/Sync/SubscribeReposHandler.m\"]}"
     },
     {
@@ -204,9 +204,9 @@
       "node_type": "outcome",
       "title": "MST node blocks now enumerated and added to firehose CAR via BFS from commit.dataCID",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-17T18:23:56.283509-05:00",
-      "updated_at": "2026-02-17T18:23:56.283509-05:00",
+      "updated_at": "2026-04-10T01:53:18.895408-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5f0fd5\",\"confidence\":95}"
     },
     {
@@ -215,9 +215,9 @@
       "node_type": "outcome",
       "title": "CLI UX improvements shipped",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-18T10:09:24.832307-05:00",
-      "updated_at": "2026-02-18T10:09:24.832307-05:00",
+      "updated_at": "2026-04-10T01:53:22.090463-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"dd8b7a0\",\"confidence\":95}"
     },
     {
@@ -226,9 +226,9 @@
       "node_type": "goal",
       "title": "Better CLI UX for september (PDS CLI)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-18T10:09:33.792638-05:00",
-      "updated_at": "2026-02-18T10:09:33.792638-05:00",
+      "updated_at": "2026-04-10T01:53:22.098687-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Implement the following plan: # Plan: Better CLI UX for `september` (PDS CLI)\"}"
     },
     {
@@ -237,9 +237,9 @@
       "node_type": "outcome",
       "title": "All production readiness fixes verified in codebase (C1-C3, H1-H5, M1-M3)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-18T10:13:45.762553-05:00",
-      "updated_at": "2026-02-18T10:13:45.762553-05:00",
+      "updated_at": "2026-04-10T01:53:22.107023-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5f0fd5\",\"confidence\":98}"
     },
     {
@@ -248,9 +248,9 @@
       "node_type": "action",
       "title": "Implement P-256 sig verification (PLCAuditor), requestPlcOperationSignature token/email, close done goals",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-02-18T10:30:24.676255-05:00",
-      "updated_at": "2026-02-18T10:30:24.676255-05:00",
+      "updated_at": "2026-04-10T01:53:22.114903-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":88}"
     },
     {
@@ -424,9 +424,9 @@
       "node_type": "action",
       "title": "Extend NotificationService.h with token-scoped unregister API",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:58.022827-04:00",
-      "updated_at": "2026-04-09T10:00:58.022827-04:00",
+      "updated_at": "2026-04-10T01:53:25.023860-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -435,9 +435,9 @@
       "node_type": "action",
       "title": "Add internal preference payload types for V2 and activity subscriptions",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:00:58.332398-04:00",
-      "updated_at": "2026-04-09T10:00:58.332398-04:00",
+      "updated_at": "2026-04-10T01:53:25.033303-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -457,9 +457,9 @@
       "node_type": "observation",
       "title": "Test coverage required for registerPush, unregisterPush, putPreferencesV2, putActivitySubscription, listActivitySubscriptions, getFeedSkeleton, getStarterPacksWithMembership, uploadVideo",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:01:10.991995-04:00",
-      "updated_at": "2026-04-09T10:01:10.991995-04:00",
+      "updated_at": "2026-04-10T01:53:25.041236-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -468,9 +468,9 @@
       "node_type": "observation",
       "title": "Proxy/policy tests: ageassurance/contact proxy→501 when no upstream; timeout→504 within bounded window",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T10:01:11.738363-04:00",
-      "updated_at": "2026-04-09T10:01:11.738363-04:00",
+      "updated_at": "2026-04-10T01:53:25.051273-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -479,9 +479,9 @@
       "node_type": "action",
       "title": "Completed PLC spec compliance - added min 1 rotation key check and duplicate validation per v0.3.0 spec",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:11:31.701469-04:00",
-      "updated_at": "2026-04-09T18:11:31.701469-04:00",
+      "updated_at": "2026-04-10T01:53:28.168758-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -490,9 +490,9 @@
       "node_type": "action",
       "title": "Production readiness fixes completed - Base64URL padding validation added per spec",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:19:58.126776-04:00",
-      "updated_at": "2026-04-09T18:19:58.126776-04:00",
+      "updated_at": "2026-04-10T01:53:28.176290-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -501,9 +501,9 @@
       "node_type": "action",
       "title": "XrpcMethodRegistry DI already properly implemented - services passed via explicit parameters",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:22:52.467403-04:00",
-      "updated_at": "2026-04-09T18:22:52.467403-04:00",
+      "updated_at": "2026-04-10T01:53:28.184891-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -512,9 +512,9 @@
       "node_type": "action",
       "title": "Test coverage verified for 8 endpoints - registerPush, unregisterPush, putPreferencesV2, putActivitySubscription, listActivitySubscriptions, getFeedSkeleton, getStarterPacksWithMembership, uploadVideo all have tests",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:25:18.052404-04:00",
-      "updated_at": "2026-04-09T18:25:18.052404-04:00",
+      "updated_at": "2026-04-10T01:53:28.192170-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -523,9 +523,9 @@
       "node_type": "action",
       "title": "Proxy/policy tests verified - ageassurance/contact return 501 without upstream, timeout returns 504",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:25:18.092944-04:00",
-      "updated_at": "2026-04-09T18:25:18.092944-04:00",
+      "updated_at": "2026-04-10T01:53:28.199641-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -534,9 +534,9 @@
       "node_type": "action",
       "title": "NotificationService already has token-scoped unregister - unregisterPushToken:forActor: API exists in header and implementation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:27:09.239355-04:00",
-      "updated_at": "2026-04-09T18:27:09.239355-04:00",
+      "updated_at": "2026-04-10T01:53:28.206801-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -545,9 +545,9 @@
       "node_type": "goal",
       "title": "Implement PLC Read Replica",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:10.059855-04:00",
-      "updated_at": "2026-04-09T18:29:10.561915-04:00",
+      "updated_at": "2026-04-10T01:53:31.004778-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"User requested: review docs for https://atproto.com/blog/plc-replicas and review our plc implementation and see if we can implement replica spec, make a detailed plan. Plan document: .opencode/plans/plc-replica-plan.md\"}"
     },
     {
@@ -556,9 +556,9 @@
       "node_type": "goal",
       "title": "Phase 1: Core Infrastructure",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:13.468444-04:00",
-      "updated_at": "2026-04-09T18:28:13.468444-04:00",
+      "updated_at": "2026-04-10T01:53:31.013080-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Creating core PLC replica components: PLCSyncClient, PLCReplicaStore, PLCSyncEngine, PLCReplicaServer\"}"
     },
     {
@@ -567,9 +567,9 @@
       "node_type": "action",
       "title": "Internal preference payload types already implemented - V2 preferences stored in actor_preferences table as JSON, activity subscriptions in actor_activity_subscriptions table",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:17.700697-04:00",
-      "updated_at": "2026-04-09T18:28:17.700697-04:00",
+      "updated_at": "2026-04-10T01:53:31.021001-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -578,9 +578,9 @@
       "node_type": "action",
       "title": "Create PLCReplicaServer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:18.225610-04:00",
-      "updated_at": "2026-04-09T18:28:18.225610-04:00",
+      "updated_at": "2026-04-10T01:53:31.029300-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -589,9 +589,9 @@
       "node_type": "action",
       "title": "Create PLCReplicaStore with sync state",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:18.227217-04:00",
-      "updated_at": "2026-04-09T18:28:18.227217-04:00",
+      "updated_at": "2026-04-10T01:53:31.037224-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -600,9 +600,9 @@
       "node_type": "action",
       "title": "Create PLCSyncClient",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:21.171905-04:00",
-      "updated_at": "2026-04-09T18:29:13.908360-04:00",
+      "updated_at": "2026-04-10T01:53:31.046425-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Create PLCSyncClient.h/.m for HTTP and WebSocket communication with upstream PLC directory. Based on go-didplc reference: https://github.com/did-method-plc/go-didplc/tree/main/cmd/plc-replica\"}"
     },
     {
@@ -611,9 +611,9 @@
       "node_type": "action",
       "title": "Create PLCSyncEngine",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:24.315558-04:00",
-      "updated_at": "2026-04-09T18:28:24.315558-04:00",
+      "updated_at": "2026-04-10T01:53:33.378553-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -622,9 +622,9 @@
       "node_type": "goal",
       "title": "Phase 2: Configuration & Integration",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:26.996394-04:00",
-      "updated_at": "2026-04-09T18:28:26.996394-04:00",
+      "updated_at": "2026-04-10T01:53:33.386883-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Adding configuration options, metrics, and Docker integration for PLC replica\"}"
     },
     {
@@ -633,9 +633,9 @@
       "node_type": "goal",
       "title": "Phase 3: Testing & Documentation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:38.574257-04:00",
-      "updated_at": "2026-04-09T18:28:38.574257-04:00",
+      "updated_at": "2026-04-10T01:53:33.394249-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Writing unit and integration tests, documenting architecture and deployment\"}"
     },
     {
@@ -644,9 +644,9 @@
       "node_type": "action",
       "title": "Add replica config options",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:50.370174-04:00",
-      "updated_at": "2026-04-09T18:28:50.370174-04:00",
+      "updated_at": "2026-04-10T01:53:36.456254-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -655,9 +655,9 @@
       "node_type": "action",
       "title": "Add replica metrics",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:50.411537-04:00",
-      "updated_at": "2026-04-09T18:28:50.411537-04:00",
+      "updated_at": "2026-04-10T01:53:36.465974-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -666,9 +666,9 @@
       "node_type": "action",
       "title": "Add Docker integration",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:50.449903-04:00",
-      "updated_at": "2026-04-09T18:28:50.449903-04:00",
+      "updated_at": "2026-04-10T01:53:36.476756-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -677,9 +677,9 @@
       "node_type": "action",
       "title": "Write unit tests",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:57.239716-04:00",
-      "updated_at": "2026-04-09T18:28:57.239716-04:00",
+      "updated_at": "2026-04-10T01:53:36.485278-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -688,9 +688,9 @@
       "node_type": "action",
       "title": "Write integration tests",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:57.286845-04:00",
-      "updated_at": "2026-04-09T18:28:57.286845-04:00",
+      "updated_at": "2026-04-10T01:53:36.495257-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -699,9 +699,9 @@
       "node_type": "action",
       "title": "Write documentation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:28:57.324955-04:00",
-      "updated_at": "2026-04-09T18:28:57.324955-04:00",
+      "updated_at": "2026-04-10T01:53:36.502059-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -710,9 +710,9 @@
       "node_type": "action",
       "title": "Created detailed CLI UX plan for kaszlak - includes rename plan + Phase 1-5 improvements",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T18:32:47.736750-04:00",
-      "updated_at": "2026-04-09T18:32:47.736750-04:00",
+      "updated_at": "2026-04-10T01:53:39.406631-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -721,9 +721,9 @@
       "node_type": "action",
       "title": "Create PLCSyncClient",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:41:33.564409-04:00",
-      "updated_at": "2026-04-09T20:41:33.564409-04:00",
+      "updated_at": "2026-04-10T01:53:39.418540-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":85}"
     },
     {
@@ -732,9 +732,9 @@
       "node_type": "action",
       "title": "Create PLCReplicaStore with sync state",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:41:40.924759-04:00",
-      "updated_at": "2026-04-09T20:41:40.924759-04:00",
+      "updated_at": "2026-04-10T01:53:39.428636-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":85}"
     },
     {
@@ -743,9 +743,9 @@
       "node_type": "action",
       "title": "Create PLCSyncEngine",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:41:40.995320-04:00",
-      "updated_at": "2026-04-09T20:41:40.995320-04:00",
+      "updated_at": "2026-04-10T01:53:39.438325-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":90}"
     },
     {
@@ -754,9 +754,9 @@
       "node_type": "action",
       "title": "Create PLCReplicaServer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:41:41.068253-04:00",
-      "updated_at": "2026-04-09T20:41:41.068253-04:00",
+      "updated_at": "2026-04-10T01:53:39.446759-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":85}"
     },
     {
@@ -765,9 +765,9 @@
       "node_type": "action",
       "title": "Add replica config options",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:41:44.352400-04:00",
-      "updated_at": "2026-04-09T20:41:44.352400-04:00",
+      "updated_at": "2026-04-10T01:53:39.455360-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":80}"
     },
     {
@@ -776,9 +776,9 @@
       "node_type": "action",
       "title": "Add replica metrics",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:41:44.425769-04:00",
-      "updated_at": "2026-04-09T20:41:44.425769-04:00",
+      "updated_at": "2026-04-10T01:53:39.463241-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a85523ed\",\"confidence\":75}"
     },
     {
@@ -787,9 +787,9 @@
       "node_type": "action",
       "title": "Phase 5 completed: Interactive REPL mode with readline, command history, and .help/.history/.clear commands",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:56:51.500822-04:00",
-      "updated_at": "2026-04-09T20:56:51.500822-04:00",
+      "updated_at": "2026-04-10T01:53:39.470866-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -798,9 +798,9 @@
       "node_type": "action",
       "title": "PLC spec compliance fully implemented - min 1 rotation key check, duplicate validation, P-256 key support, verificationMethods any did:key",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:57:08.316178-04:00",
-      "updated_at": "2026-04-09T20:57:08.316178-04:00",
+      "updated_at": "2026-04-10T01:53:39.478610-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -809,9 +809,9 @@
       "node_type": "action",
       "title": "Production readiness fixes verified - Base64URL padding, admin auth, password KDF, issuer/URL, backup script, WebSocket backpressure all checked",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T20:57:15.596279-04:00",
-      "updated_at": "2026-04-09T20:57:15.596279-04:00",
+      "updated_at": "2026-04-10T01:53:39.486352-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -820,9 +820,9 @@
       "node_type": "action",
       "title": "PLC Read Replica implemented - PLCReplicaServer, PLCReplicaStore, PLCSyncClient, PLCSyncEngine, PLCMetrics all exist; config in PDSConfiguration; Docker config documented",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:03:36.810698-04:00",
-      "updated_at": "2026-04-09T21:03:36.810698-04:00",
+      "updated_at": "2026-04-10T01:53:39.494037-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -831,9 +831,9 @@
       "node_type": "action",
       "title": "Phase 2 and 3 PLC replica work completed - config and Docker integration done",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-09T21:04:44.816545-04:00",
-      "updated_at": "2026-04-09T21:04:44.816545-04:00",
+      "updated_at": "2026-04-10T01:53:39.501051-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -842,9 +842,9 @@
       "node_type": "goal",
       "title": "Implement ATProto Relay (BGS) in Objective-C",
       "description": null,
-      "status": "active",
+      "status": "completed",
       "created_at": "2026-04-09T21:16:33.107181-04:00",
-      "updated_at": "2026-04-10T00:51:36.320729-04:00",
+      "updated_at": "2026-04-10T01:32:18.862846-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -919,9 +919,9 @@
       "node_type": "outcome",
       "title": "Phase 1 complete: RelayConfiguration, RelayMetrics, RelayUpstreamManager, RelayEventValidator",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-10T00:51:44.516287-04:00",
-      "updated_at": "2026-04-10T00:51:44.516287-04:00",
+      "updated_at": "2026-04-10T01:53:42.472516-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -966,6 +966,72 @@
       "status": "completed",
       "created_at": "2026-04-10T01:32:15.637048-04:00",
       "updated_at": "2026-04-10T01:32:15.643928-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 89,
+      "change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
+      "node_type": "goal",
+      "title": "Docker E2E test suite",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:50:38.309587-04:00",
+      "updated_at": "2026-04-10T01:57:49.079390-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 90,
+      "change_id": "16e13b96-1e26-4b48-9b53-a6f1862798cd",
+      "node_type": "action",
+      "title": "Create Docker compose and service configs",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:50:41.666065-04:00",
+      "updated_at": "2026-04-10T01:53:03.150799-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 91,
+      "change_id": "d8b4a33c-05f5-4c69-b0f9-d66793393cb6",
+      "node_type": "action",
+      "title": "Build Docker images for PLC, PDS, Relay",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:50:41.770223-04:00",
+      "updated_at": "2026-04-10T01:55:13.621490-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 92,
+      "change_id": "ee2cb17e-ad40-4cd2-b9d4-924243e5e92f",
+      "node_type": "action",
+      "title": "Create test orchestration script",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:50:41.809686-04:00",
+      "updated_at": "2026-04-10T01:55:25.484582-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 93,
+      "change_id": "d72173ae-a6a1-49f9-9785-1db7c4155559",
+      "node_type": "action",
+      "title": "Write integration tests",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:50:41.849990-04:00",
+      "updated_at": "2026-04-10T01:57:46.174545-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 94,
+      "change_id": "eb8c2e25-4436-4740-983c-d35acdb2ca6d",
+      "node_type": "action",
+      "title": "Verify idempotency",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-10T01:50:41.887580-04:00",
+      "updated_at": "2026-04-10T01:57:46.184202-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     }
   ],
@@ -1992,6 +2058,95 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:32:15.651961-04:00"
+    },
+    {
+      "id": 94,
+      "from_node_id": 89,
+      "to_node_id": 90,
+      "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
+      "to_change_id": "16e13b96-1e26-4b48-9b53-a6f1862798cd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T01:50:51.166686-04:00"
+    },
+    {
+      "id": 95,
+      "from_node_id": 89,
+      "to_node_id": 91,
+      "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
+      "to_change_id": "d8b4a33c-05f5-4c69-b0f9-d66793393cb6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T01:50:51.182793-04:00"
+    },
+    {
+      "id": 96,
+      "from_node_id": 89,
+      "to_node_id": 92,
+      "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
+      "to_change_id": "ee2cb17e-ad40-4cd2-b9d4-924243e5e92f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T01:50:51.195067-04:00"
+    },
+    {
+      "id": 97,
+      "from_node_id": 89,
+      "to_node_id": 93,
+      "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
+      "to_change_id": "d72173ae-a6a1-49f9-9785-1db7c4155559",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T01:50:51.203845-04:00"
+    },
+    {
+      "id": 98,
+      "from_node_id": 89,
+      "to_node_id": 94,
+      "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
+      "to_change_id": "eb8c2e25-4436-4740-983c-d35acdb2ca6d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-10T01:50:51.212032-04:00"
+    }
+  ],
+  "documents": [
+    {
+      "id": 2,
+      "change_id": "9d330713-098d-46c4-a921-2682f3cd5979",
+      "node_id": 91,
+      "node_change_id": "d8b4a33c-05f5-4c69-b0f9-d66793393cb6",
+      "content_hash": "1e201fd06df4c4bf9a1d96886ada67351aa1e896a7f2b4f7b496ce26587d458a",
+      "original_filename": "e2e-docker-build.md",
+      "storage_filename": "e2e-docker-build.md.1e201fd0",
+      "mime_type": "text/markdown",
+      "file_size": 541,
+      "description": "Docker build scratchpad",
+      "description_source": "manual",
+      "attached_at": "2026-04-10T01:52:52.508016-04:00",
+      "attached_by": null,
+      "detached_at": null
+    },
+    {
+      "id": 1,
+      "change_id": "4f016afb-999e-4a6b-abca-8fa6d06c0f3f",
+      "node_id": 90,
+      "node_change_id": "16e13b96-1e26-4b48-9b53-a6f1862798cd",
+      "content_hash": "72d8155c5577bdeac053ed87d727511a6e9c730b5b310f9ce8bdb2eae98198fa",
+      "original_filename": "e2e-docker-compose.md",
+      "storage_filename": "e2e-docker-compose.md.72d8155c",
+      "mime_type": "text/markdown",
+      "file_size": 446,
+      "description": "Docker compose and config scratchpad",
+      "description_source": "manual",
+      "attached_at": "2026-04-10T01:51:17.778618-04:00",
+      "attached_by": null,
+      "detached_at": null
     }
   ]
 }
