@@ -278,8 +278,18 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     NSString *encodedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:
         [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"]];
 
-    NSString *endpointString = self.endpoint ?: [NSString stringWithFormat:@"https://s3.%@.amazonaws.com", self.region];
-    return [NSURL URLWithString:[NSString stringWithFormat:@"%@/%@/%@", endpointString, self.bucket, encodedKey]];
+    NSString *urlString;
+    if (self.endpoint) {
+        // S3-compatible endpoint (MinIO, R2, B2, etc): use path-style
+        // https://endpoint.example.com/bucket/key
+        urlString = [NSString stringWithFormat:@"%@/%@/%@", self.endpoint, self.bucket, encodedKey];
+    } else {
+        // AWS S3: use virtual-hosted style
+        // https://bucket.s3.region.amazonaws.com/key
+        urlString = [NSString stringWithFormat:@"https://%@.s3.%@.amazonaws.com/%@",
+                     self.bucket, self.region, encodedKey];
+    }
+    return [NSURL URLWithString:urlString];
 }
 
 #pragma mark - AWS Signature V4
