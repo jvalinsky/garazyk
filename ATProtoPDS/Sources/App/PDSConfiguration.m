@@ -326,8 +326,10 @@ static BOOL PDSConfigRunningUnderTests(void) {
     if (server[@"port"])
       _serverPort = [server[@"port"] unsignedIntegerValue];
     if (server[@"data_dir"])
-      _dataDirectory = [self resolveEnvOverrideForKey:@"PDS_DATA_DIR"
-                                              default:server[@"data_dir"]];
+      _dataDirectory = server[@"data_dir"];
+    
+    _dataDirectory = [self resolveEnvOverrideForKey:@"PDS_DATA_DIR"
+                                            default:_dataDirectory];
     if (server[@"issuer"])
       _issuer = [self resolveEnvOverrideForKey:@"PDS_ISSUER"
                                        default:server[@"issuer"]];
@@ -360,10 +362,20 @@ static BOOL PDSConfigRunningUnderTests(void) {
   NSString *envMasterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
   if (envMasterSecret.length > 0) {
     _masterSecret = envMasterSecret;
+    PDS_LOG_AUTH_DEBUG(@"Master secret resolved from environment (length: %lu)", (unsigned long)_masterSecret.length);
   }
 
   if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
     _useSecureEnclave = [self boolFromEnv:@"PDS_USE_SECURE_ENCLAVE" default:NO];
+  }
+
+  if ([self envVarExists:@"PDS_USE_KEYCHAIN"]) {
+    _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN" default:YES];
+  }
+
+  if ([self envVarExists:@"PDS_USE_BIOMETRIC_PROTECTION"]) {
+    _useBiometricProtection =
+        [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION" default:YES];
   }
 
   _requireDPoPNonce = [self boolFromEnv:@"PDS_REQUIRE_DPOP_NONCE" default:NO];

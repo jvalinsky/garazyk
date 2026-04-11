@@ -17,8 +17,6 @@
 #import <Foundation/Foundation.h>
 #import "Compat/PDSTypes.h"
 
-#import <Foundation/Foundation.h>
-
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSConfiguration;
@@ -99,7 +97,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param configuration The configuration to use. If nil, uses default configuration.
  @return An initialized PDSApplication instance.
  */
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration;
+
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory NS_DESIGNATED_INITIALIZER;
 
 /*!
  @method initWithDataDirectory:
@@ -109,7 +109,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param dataDirectory Path to the data directory for databases and blobs.
  @return An initialized PDSApplication instance.
  */
-- (instancetype)initWithDataDirectory:(NSString *)dataDirectory NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDataDirectory:(NSString *)dataDirectory;
 
 - (instancetype)init NS_UNAVAILABLE;
 
@@ -222,16 +222,16 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly, nullable) HttpServer *httpServer;
 
 /*!
- * @property relayService
- *
- * @abstract Service for notifying external relays of updates.
+ @property relayService
+
+ @abstract Service for notifying external relays of updates.
  */
 @property (nonatomic, strong, readonly) PDSRelayService *relayService;
 
 /*!
- * @property subscribeReposHandler
- *
- * @abstract Handler for the subscribeRepos firehose.
+ @property subscribeReposHandler
+
+ @abstract Handler for the subscribeRepos firehose.
  */
 @property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
 

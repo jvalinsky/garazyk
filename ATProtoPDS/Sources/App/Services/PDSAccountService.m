@@ -156,8 +156,13 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     // Generate tokens
     NSString *accessToken = nil;
     if (self.minter) {
-        JWT *jwt = [self.minter mintAccessTokenForDID:resolvedDid handle:handle scopes:@[@"atproto"] error:nil];
-        accessToken = [jwt encodedToken];
+        NSError *mintError = nil;
+        JWT *jwt = [self.minter mintAccessTokenForDID:resolvedDid handle:handle scopes:@[@"atproto"] error:&mintError];
+        if (jwt) {
+            accessToken = [jwt encodedToken];
+        } else {
+            PDS_LOG_ERROR(@"Failed to mint access token for DID %@: %@", resolvedDid, mintError);
+        }
     }
     if (!accessToken) {
         if (error) *error = [NSError errorWithDomain:@"com.atproto.server" code:1

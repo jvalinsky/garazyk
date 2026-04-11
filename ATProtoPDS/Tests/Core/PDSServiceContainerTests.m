@@ -11,11 +11,26 @@
 - (NSString *)testMethod;
 @end
 
+@protocol RecursiveProtocol <NSObject>
+- (NSString *)recursiveMethod;
+@end
+
 @interface TestImplementation : NSObject <TestProtocol>
 @end
 
 @implementation TestImplementation
 - (NSString *)testMethod { return @"success"; }
+@end
+
+@interface RecursiveImplementation : NSObject <RecursiveProtocol>
+@end
+
+@implementation RecursiveImplementation
+- (NSString *)recursiveMethod {
+    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    id<TestProtocol> test = [container resolveProtocol:@protocol(TestProtocol)];
+    return [test testMethod];
+}
 @end
 
 @interface PDSServiceContainerTests : XCTestCase
@@ -67,6 +82,21 @@
     [container reset];
     
     XCTAssertNil([container resolveProtocol:@protocol(TestProtocol)]);
+}
+
+- (void)testRecursiveResolution {
+    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    
+    [container registerInstance:[[TestImplementation alloc] init] forProtocol:@protocol(TestProtocol)];
+    
+    [container registerFactory:^id _Nonnull(PDSServiceContainer * _Nonnull c) {
+        return [[RecursiveImplementation alloc] init];
+    } forProtocol:@protocol(RecursiveProtocol)];
+    
+    // This would deadlock if _lock was a serial queue instead of NSRecursiveLock
+    id<RecursiveProtocol> resolved = [container resolveProtocol:@protocol(RecursiveProtocol)];
+    XCTAssertNotNil(resolved);
+    XCTAssertEqualObjects([resolved recursiveMethod], @"success");
 }
 
 @end
