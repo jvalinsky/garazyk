@@ -8,14 +8,15 @@
 NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 
 @interface PDSVideoWorker ()
-@property (nonatomic, strong) dispatch_queue_t workerQueue;
-@property (nonatomic, strong) dispatch_source_t pollTimer;
 @property (nonatomic, strong) id<PDSBlobProvider> blobProvider;
 @property (nonatomic, assign) BOOL isRunning;
 @property (nonatomic, strong) NSMutableSet<NSString *> *processingJobIds;
 @end
 
-@implementation PDSVideoWorker
+@implementation PDSVideoWorker {
+    dispatch_queue_t _workerQueue;
+    dispatch_source_t _pollTimer;
+}
 
 + (instancetype)sharedWorker {
     static PDSVideoWorker *sharedInstance = nil;
@@ -62,9 +63,9 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 
     self.enabled = NO;
 
-    if (self.pollTimer) {
-        dispatch_source_cancel(self.pollTimer);
-        self.pollTimer = nil;
+    if (_pollTimer) {
+        dispatch_source_cancel(_pollTimer);
+        _pollTimer = nil;
     }
 
     [[PDSVideoTranscoder sharedTranscoder] cancelAllExports];
@@ -73,24 +74,24 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 }
 
 - (void)startPollTimer {
-    if (self.pollTimer) {
-        dispatch_source_cancel(self.pollTimer);
+    if (_pollTimer) {
+        dispatch_source_cancel(_pollTimer);
     }
 
-    self.pollTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,
-                                          0, 0, self.workerQueue);
+    _pollTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,
+                                          0, 0, _workerQueue);
 
-    dispatch_source_set_timer(self.pollTimer,
+    dispatch_source_set_timer(_pollTimer,
                            dispatch_time(DISPATCH_TIME_NOW, 0),
                            (uint64_t)(self.pollInterval * NSEC_PER_SEC),
                            (1ull * NSEC_PER_SEC));
 
     __weak typeof(self) weakSelf = self;
-    dispatch_source_set_event_handler(self.pollTimer, ^{
+    dispatch_source_set_event_handler(_pollTimer, ^{
         [weakSelf processPendingJobs];
     });
 
-    dispatch_resume(self.pollTimer);
+    dispatch_resume(_pollTimer);
     self.isRunning = YES;
 }
 
@@ -140,7 +141,7 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 }
 
 - (void)processJob:(NSString *)jobId {
-    dispatch_async(self.workerQueue, ^{
+    dispatch_async(_workerQueue, ^{
         PDS_LOG_INFO(@"Processing video job: %@", jobId);
 
         [self updateJobProgress:jobId progress:0 message:@"Starting processing"];
