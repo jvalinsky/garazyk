@@ -20,8 +20,8 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 @property (nonatomic, strong, readwrite, nullable) NSDate *lastSyncDate;
 @property (nonatomic, assign, readwrite) NSInteger currentCursor;
 
-@property (nonatomic, strong) dispatch_queue_t syncQueue;
-@property (nonatomic, strong) dispatch_queue_t validationQueue;
+dispatch_queue_t _syncQueue;
+dispatch_queue_t _validationQueue;
 @property (nonatomic, strong) dispatch_source_t pollTimer;
 @property (nonatomic, assign) BOOL shouldStop;
 @property (nonatomic, assign) BOOL isPaused;
@@ -65,7 +65,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 #pragma mark - Public Methods
 
 - (void)start {
-    dispatch_async(self.syncQueue, ^{
+    dispatch_async(_syncQueue, ^{
         if (self.state == PLCSyncStateBackfilling || self.state == PLCSyncStateLiveSyncing) {
             return;
         }
@@ -84,7 +84,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 }
 
 - (void)stop {
-    dispatch_sync(self.syncQueue, ^{
+    dispatch_sync(_syncQueue, ^{
         self.shouldStop = YES;
         
         if (self.pollTimer) {
@@ -97,14 +97,14 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 }
 
 - (void)pause {
-    dispatch_async(self.syncQueue, ^{
+    dispatch_async(_syncQueue, ^{
         self.isPaused = YES;
         [self updateState:PLCSyncStatePaused];
     });
 }
 
 - (void)resume {
-    dispatch_async(self.syncQueue, ^{
+    dispatch_async(_syncQueue, ^{
         if (self.state != PLCSyncStatePaused) {
             return;
         }
@@ -125,7 +125,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     __block BOOL success = NO;
     __block NSError *syncError = nil;
     
-    dispatch_sync(self.syncQueue, ^{
+    dispatch_sync(_syncQueue, ^{
         success = [self syncBatchWithError:&syncError];
     });
     
@@ -234,7 +234,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         dispatch_source_cancel(self.pollTimer);
     }
     
-    self.pollTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, self.syncQueue);
+    self.pollTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _syncQueue);
     
     dispatch_source_set_timer(self.pollTimer,
                               dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.pollInterval * NSEC_PER_SEC)),
@@ -317,7 +317,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     NSLock *validatedOpsLock = [[NSLock alloc] init];
     
     for (PLCOperation *op in operations) {
-        dispatch_group_async(validationGroup, self.validationQueue, ^{
+        dispatch_group_async(validationGroup, _validationQueue, ^{
             NSError *validationError = nil;
             BOOL valid = [self.auditor verifyOperation:op error:&validationError];
             
@@ -367,7 +367,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         
         self.currentRetryCount = 0;
         
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), self.syncQueue, ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), _syncQueue, ^{
             if (!self.shouldStop && self.state == PLCSyncStateError) {
                 [self resume];
             }
@@ -382,7 +382,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
                      delay,
                      error.localizedDescription);
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), self.syncQueue, ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), _syncQueue, ^{
         if (!self.shouldStop && !self.isPaused) {
             [self pollForNewOperations];
         }

@@ -19,6 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class PDSDatabaseBlob;
 @class CID;
+@class HttpRequest;
+@class HttpResponse;
 @protocol PDSBlobProvider;
 
 extern NSString * const BlobStorageErrorDomain;
@@ -107,6 +109,21 @@ typedef NS_ENUM(NSInteger, BlobStorageError) {
 /// @param error Error pointer for validation failure details
 /// @return YES if the blob is valid
 - (BOOL)validateBlob:(NSData *)data mimeType:(NSString *)mimeType error:(NSError **)error;
+
+/// Respond to a blob request with Range header support (RFC 7233)
+/// @param blobData The blob data to send (may be nil if filePath is provided)
+/// @param filePath The file path to stream from (takes precedence over blobData)
+/// @param totalLength The total length of the blob
+/// @param request The HTTP request (may contain Range header)
+/// @param response The HTTP response object (status code and headers set by this method)
+/// @param outError Error pointer for response generation failures
+/// @return YES if response was successfully configured, NO on error
+- (BOOL)respondWithBlobData:(nullable NSData *)blobData
+                   filePath:(nullable NSString *)filePath
+                totalLength:(unsigned long long)totalLength
+                 forRequest:(HttpRequest *)request
+                   response:(HttpResponse *)response
+                      error:(NSError **)outError;
 
 @end
 

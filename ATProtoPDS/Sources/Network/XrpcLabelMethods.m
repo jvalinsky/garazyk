@@ -159,6 +159,10 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
                adminController:(id<PDSAdminController>)adminController
                  configuration:(PDSConfiguration *)configuration {
     
+    // Non-standard internal extensions for admin label management
+    // com.atproto.label.createLabel and com.atproto.label.getLabels are internal admin-only methods
+    // not part of the public AT Protocol lexicon. Use tools.ozone.* for production moderation.
+
     // com.atproto.label.queryLabels - Public label query endpoint
     [dispatcher registerComAtprotoLabelQueryLabels:^(HttpRequest *request, HttpResponse *response) {
         NSString *paramError = nil;

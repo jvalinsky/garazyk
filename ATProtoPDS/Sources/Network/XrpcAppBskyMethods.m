@@ -275,6 +275,14 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
 + (void)registerAppBskyContactSendNotificationWithDispatcher:(XrpcDispatcher *)dispatcher;
 + (void)registerAppBskyContactStartPhoneVerificationWithDispatcher:(XrpcDispatcher *)dispatcher;
 + (void)registerAppBskyContactVerifyPhoneWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyDraftCreateDraftWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyDraftDeleteDraftWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyDraftGetDraftsWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyDraftUpdateDraftWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyGraphVerificationCreateVerificationWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyGraphVerificationDeleteVerificationWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyUnspeccedGetAgeAssuranceStateWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerAppBskyUnspeccedInitAgeAssuranceWithDispatcher:(XrpcDispatcher *)dispatcher;
 @end
 
 @implementation XrpcAppBskyMethods
@@ -2848,6 +2856,20 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
     [self registerAppBskyContactStartPhoneVerificationWithDispatcher:dispatcher];
     [self registerAppBskyContactVerifyPhoneWithDispatcher:dispatcher];
 
+    // Register draft management endpoints
+    [self registerAppBskyDraftCreateDraftWithDispatcher:dispatcher];
+    [self registerAppBskyDraftDeleteDraftWithDispatcher:dispatcher];
+    [self registerAppBskyDraftGetDraftsWithDispatcher:dispatcher];
+    [self registerAppBskyDraftUpdateDraftWithDispatcher:dispatcher];
+
+    // Register graph verification endpoints
+    [self registerAppBskyGraphVerificationCreateVerificationWithDispatcher:dispatcher];
+    [self registerAppBskyGraphVerificationDeleteVerificationWithDispatcher:dispatcher];
+
+    // Register unspecced age assurance endpoints
+    [self registerAppBskyUnspeccedGetAgeAssuranceStateWithDispatcher:dispatcher];
+    [self registerAppBskyUnspeccedInitAgeAssuranceWithDispatcher:dispatcher];
+
     // Register chat.bsky.convo (DM) endpoints
     [self registerChatConvoWithDispatcher:dispatcher adminController:adminController jwtMinter:jwtMinter];
 }
@@ -2939,6 +2961,60 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
 + (void)registerAppBskyContactVerifyPhoneWithDispatcher:(XrpcDispatcher *)dispatcher {
     [dispatcher registerMethod:@"app.bsky.contact.verifyPhone" handler:^(HttpRequest *request, HttpResponse *response) {
         [self proxyOrNotSupported:request response:response methodId:@"app.bsky.contact.verifyPhone" dispatcher:dispatcher];
+    }];
+}
+
+// MARK: - app.bsky.draft.* (Draft management endpoints)
+
++ (void)registerAppBskyDraftCreateDraftWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.draft.createDraft" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.createDraft" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyDraftDeleteDraftWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.draft.deleteDraft" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.deleteDraft" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyDraftGetDraftsWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.draft.getDrafts" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.getDrafts" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyDraftUpdateDraftWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.draft.updateDraft" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.draft.updateDraft" dispatcher:dispatcher];
+    }];
+}
+
+// MARK: - app.bsky.graph.verification.* (Graph verification endpoints)
+
++ (void)registerAppBskyGraphVerificationCreateVerificationWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.graph.verification.createVerification" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.graph.verification.createVerification" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyGraphVerificationDeleteVerificationWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.graph.verification.deleteVerification" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.graph.verification.deleteVerification" dispatcher:dispatcher];
+    }];
+}
+
+// MARK: - app.bsky.unspecced.* Age Assurance endpoints
+
++ (void)registerAppBskyUnspeccedGetAgeAssuranceStateWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.unspecced.getAgeAssuranceState" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.unspecced.getAgeAssuranceState" dispatcher:dispatcher];
+    }];
+}
+
++ (void)registerAppBskyUnspeccedInitAgeAssuranceWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"app.bsky.unspecced.initAgeAssurance" handler:^(HttpRequest *request, HttpResponse *response) {
+        [self proxyOrNotSupported:request response:response methodId:@"app.bsky.unspecced.initAgeAssurance" dispatcher:dispatcher];
     }];
 }
 
