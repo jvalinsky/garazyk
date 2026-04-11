@@ -6,10 +6,11 @@ NSString * const PDSVideoTranscoderErrorDomain = @"com.atproto.pds.video.transco
 
 @interface PDSVideoTranscoder ()
 @property (nonatomic, strong) NSMutableSet *activeExports;
-@property (nonatomic, strong) dispatch_queue_t exportQueue;
 @end
 
-@implementation PDSVideoTranscoder
+@implementation PDSVideoTranscoder {
+    dispatch_queue_t _exportQueue;
+}
 
 + (instancetype)sharedTranscoder {
     static PDSVideoTranscoder *sharedInstance = nil;
