@@ -902,4 +902,26 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 @end
 
+/*!
+ @category PDSDatabase (VideoJobs)
+ 
+ @abstract Video processing job methods.
+ */
+@interface PDSDatabase (VideoJobs)
+
+- (nullable NSDictionary *)getVideoJobById:(NSString *)jobId error:(NSError **)error;
+- (BOOL)createVideoJobWithId:(NSString *)jobId
+                         did:(NSString *)did
+                      blobCid:(NSString *)blobCid
+                    mimeType:(nullable NSString *)mimeType
+                     fileSize:(NSNumber *)fileSize
+                        error:(NSError **)error;
+- (BOOL)updateVideoJobState:(NSString *)jobId
+                       state:(NSString *)state
+                    progress:(NSNumber *)progress
+                     message:(nullable NSString *)message
+                       error:(NSError **)error;
+
+@end
+
 NS_ASSUME_NONNULL_END

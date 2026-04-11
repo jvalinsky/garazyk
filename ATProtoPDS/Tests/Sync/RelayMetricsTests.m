@@ -3,9 +3,15 @@
 
 @interface RelayMetricsTests : XCTestCase
 
+- (void)waitForMetricsQueue;
+
 @end
 
 @implementation RelayMetricsTests
+
+- (void)waitForMetricsQueue {
+    usleep(50000);
+}
 
 - (void)testSingletonExists {
     RelayMetrics *metrics = [RelayMetrics sharedMetrics];
@@ -55,14 +61,18 @@
 - (void)testSequenceTracking {
     RelayMetrics *metrics = [RelayMetrics sharedMetrics];
     
+    // Record initial sequence
     [metrics recordSequence:1000];
+    [self waitForMetricsQueue];
     XCTAssertEqual(metrics.currentSequence, 1000);
     
     [metrics recordSequence:2000];
+    [self waitForMetricsQueue];
     XCTAssertEqual(metrics.currentSequence, 2000);
     
     // Lower sequence should not update
     [metrics recordSequence:1500];
+    [self waitForMetricsQueue];
     XCTAssertEqual(metrics.currentSequence, 2000);
 }
 
@@ -86,6 +96,7 @@
     int64_t initial = metrics.eventsDropped;
     
     [metrics recordEventDropped];
+    [self waitForMetricsQueue];
     XCTAssertEqual(metrics.eventsDropped, initial + 1);
 }
 
@@ -94,6 +105,7 @@
     int64_t initial = metrics.eventsInvalidated;
     
     [metrics recordEventInvalidated:@"MST proof invalid"];
+    [self waitForMetricsQueue];
     XCTAssertEqual(metrics.eventsInvalidated, initial + 1);
 }
 

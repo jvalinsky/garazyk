@@ -168,6 +168,8 @@ if(APPLE)
         ${IMAGEIO} 
         ${COREGRAPHICS}
         ${SQLite3_LIBRARY}
+        ${READLINE_LIBRARY}
+        ${HISTORY_LIBRARY}
         resolv
     )
     if(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
