@@ -5,7 +5,7 @@
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RelayClient *> *upstreamClients;
 @property (nonatomic, strong) NSMutableSet<NSString *> *connectedUpstreams;
-dispatch_queue_t _managerQueue;
+@property (nonatomic) dispatch_queue_t managerQueue;
 @property (nonatomic, assign, readwrite) NSUInteger maxReconnectAttempts;
 @property (nonatomic, assign, readwrite) NSTimeInterval baseReconnectInterval;
 @property (nonatomic, assign, readwrite) BOOL autoReconnectEnabled;
@@ -22,7 +22,7 @@ dispatch_queue_t _managerQueue;
     if (self) {
         _upstreamClients = [NSMutableDictionary dictionary];
         _connectedUpstreams = [NSMutableSet set];
-        _managerQueue = dispatch_queue_create("com.atproto.relay.upstream", DISPATCH_QUEUE_SERIAL);
+        self.managerQueue = dispatch_queue_create("com.atproto.relay.upstream", DISPATCH_QUEUE_SERIAL);
         _maxReconnectAttempts = 10;
         _baseReconnectInterval = 5.0;
         _autoReconnectEnabled = YES;
@@ -49,7 +49,7 @@ dispatch_queue_t _managerQueue;
 #pragma mark - Public Methods
 
 - (void)addUpstream:(NSString *)url {
-    dispatch_async(_managerQueue, ^{
+    dispatch_async(self.managerQueue, ^{
         if (!self.upstreamClients[url]) {
             [self createClientForUpstream:url];
             if (!self.isPaused) {
@@ -60,7 +60,7 @@ dispatch_queue_t _managerQueue;
 }
 
 - (void)removeUpstream:(NSString *)url {
-    dispatch_async(_managerQueue, ^{
+    dispatch_async(self.managerQueue, ^{
         RelayClient *client = self.upstreamClients[url];
         if (client) {
             [client disconnect];
@@ -73,7 +73,7 @@ dispatch_queue_t _managerQueue;
 }
 
 - (void)removeAllUpstreams {
-    dispatch_async(_managerQueue, ^{
+    dispatch_async(self.managerQueue, ^{
         for (RelayClient *client in self.upstreamClients.allValues) {
             [client disconnect];
         }
@@ -86,7 +86,7 @@ dispatch_queue_t _managerQueue;
 
 - (NSArray<NSString *> *)activeUpstreams {
     __block NSArray *result;
-    dispatch_sync(_managerQueue, ^{
+    dispatch_sync(self.managerQueue, ^{
         result = [self.connectedUpstreams allObjects];
     });
     return result;
@@ -94,14 +94,14 @@ dispatch_queue_t _managerQueue;
 
 - (NSArray<NSString *> *)allUpstreams {
     __block NSArray *result;
-    dispatch_sync(_managerQueue, ^{
+    dispatch_sync(self.managerQueue, ^{
         result = self.upstreamClients.allKeys;
     });
     return result;
 }
 
 - (void)connectAll {
-    dispatch_async(_managerQueue, ^{
+    dispatch_async(self.managerQueue, ^{
         if (self.isPaused) return;
         for (NSString *url in self.upstreamClients) {
             [self connectToUpstream:url];
@@ -110,7 +110,7 @@ dispatch_queue_t _managerQueue;
 }
 
 - (void)disconnectAll {
-    dispatch_async(_managerQueue, ^{
+    dispatch_async(self.managerQueue, ^{
         for (RelayClient *client in self.upstreamClients.allValues) {
             [client disconnect];
         }
@@ -134,7 +134,7 @@ dispatch_queue_t _managerQueue;
 }
 
 - (void)pause {
-    dispatch_async(_managerQueue, ^{
+    dispatch_async(self.managerQueue, ^{
         self.isPaused = YES;
         for (RelayClient *client in self.upstreamClients.allValues) {
             [client disconnect];
@@ -143,7 +143,7 @@ dispatch_queue_t _managerQueue;
 }
 
 - (void)resume {
-    dispatch_async(_managerQueue, ^{
+    dispatch_async(self.managerQueue, ^{
         self.isPaused = NO;
         for (NSString *url in self.upstreamClients) {
             [self connectToUpstream:url];
@@ -157,7 +157,7 @@ dispatch_queue_t _managerQueue;
 
 - (BOOL)isConnectedToUpstream:(NSString *)url {
     __block BOOL connected;
-    dispatch_sync(_managerQueue, ^{
+    dispatch_sync(self.managerQueue, ^{
         connected = [self.connectedUpstreams containsObject:url];
     });
     return connected;
@@ -189,7 +189,7 @@ dispatch_queue_t _managerQueue;
 - (void)relayClientDidConnect:(RelayClient *)client {
     NSString *url = [self urlForClient:client];
     if (url) {
-        dispatch_async(_managerQueue, ^{
+        dispatch_async(self.managerQueue, ^{
             [self.connectedUpstreams addObject:url];
             self.reconnectAttempts[url] = @0;
             self.reconnectDelays[url] = @(self.baseReconnectInterval);
@@ -202,7 +202,7 @@ dispatch_queue_t _managerQueue;
 - (void)relayClient:(RelayClient *)client didDisconnectWithError:(NSError *)error {
     NSString *url = [self urlForClient:client];
     if (url) {
-        dispatch_async(_managerQueue, ^{
+        dispatch_async(self.managerQueue, ^{
             [self.connectedUpstreams removeObject:url];
         });
         [[RelayMetrics sharedMetrics] recordUpstreamDisconnected];
@@ -234,7 +234,7 @@ dispatch_queue_t _managerQueue;
     [[RelayMetrics sharedMetrics] recordReconnectionCount];
     
     NSTimeInterval delay = self.reconnectDelays[url].doubleValue;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), _managerQueue, ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), self.managerQueue, ^{
         if (!self.isPaused && ![self.connectedUpstreams containsObject:url]) {
             [self connectToUpstream:url];
         }
