@@ -140,6 +140,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgnutls28-dev \
     libicu-dev \
     libqrencode-dev \
+    libreadline-dev \
     libsqlite3-dev \
     libssl-dev \
     libxml2-dev \
