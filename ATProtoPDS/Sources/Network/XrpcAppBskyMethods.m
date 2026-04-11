@@ -3065,31 +3065,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
                                                                 response:response];
         if (!actorDID) return;
 
-        NSString *convoId = [request queryParamForKey:@"convoId"];
-        if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
-            return;
-        }
-
-        // Stub response - DM not yet implemented
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"convo": @{
-                @"id": convoId,
-                @"rev": [[NSUUID UUID] UUIDString],
-                @"actor": @{@"did": actorDID},
-                @"peer": @{@"did": @"did:plc:stub"},
-                @"lastMessage": [NSNull null],
-                @"lastMessageAt": [NSNull null],
-                @"unreadCount": @0,
-                @"muted": @NO,
-                @"archived": @NO,
-                @"likes": [NSNull null],
-                @"acceptRules": [NSNull null],
-                @"createdAt": [NSDateFormatter atproto_stringFromDate:[NSDate date]],
-                @"updatedAt": [NSDateFormatter atproto_stringFromDate:[NSDate date]]
-            }
-        }];
+        // Stub - Direct messages not yet implemented
+        response.statusCode = HttpStatusNotImplemented;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Direct messages are not yet supported by this PDS."}];
     }];
 
     // chat.bsky.convo.getMessages
@@ -3107,12 +3085,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
                                                                 response:response];
         if (!actorDID) return;
 
-        // Stub response
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"messages": @[],
-            @"cursor": [NSNull null]
-        }];
+        // Stub - Direct messages not yet implemented
+        response.statusCode = HttpStatusNotImplemented;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Direct messages are not yet supported by this PDS."}];
     }];
 
     // chat.bsky.convo.sendMessage
@@ -3130,9 +3105,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
                                                                 response:response];
         if (!actorDID) return;
 
-        // Stub - DMs not yet implemented
-        response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Chat/DM not yet implemented"}];
+        // Stub - Direct messages not yet implemented
+        response.statusCode = HttpStatusNotImplemented;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Direct messages are not yet supported by this PDS."}];
     }];
 
     // chat.bsky.convo.listConvos
@@ -3150,12 +3125,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
                                                                 response:response];
         if (!actorDID) return;
 
-        // Stub response
-        response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"convos": @[],
-            @"cursor": [NSNull null]
-        }];
+        // Stub - Direct messages not yet implemented
+        response.statusCode = HttpStatusNotImplemented;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Direct messages are not yet supported by this PDS."}];
     }];
 
     // chat.bsky.convo.leaveConvo
@@ -3173,9 +3145,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
                                                                 response:response];
         if (!actorDID) return;
 
-        // Stub - DMs not yet implemented
-        response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Chat/DM not yet implemented"}];
+        // Stub - Direct messages not yet implemented
+        response.statusCode = HttpStatusNotImplemented;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Direct messages are not yet supported by this PDS."}];
     }];
 
     // chat.bsky.convo.updateRead
@@ -3193,9 +3165,9 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
                                                                 response:response];
         if (!actorDID) return;
 
-        // Stub - DMs not yet implemented
-        response.statusCode = HttpStatusNotFound;
-        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Chat/DM not yet implemented"}];
+        // Stub - Direct messages not yet implemented
+        response.statusCode = HttpStatusNotImplemented;
+        [response setJsonBody:@{@"error": @"NotImplemented", @"message": @"Direct messages are not yet supported by this PDS."}];
     }];
 }
 
