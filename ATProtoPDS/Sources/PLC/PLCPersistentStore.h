@@ -10,6 +10,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 #import "PLCStore.h"
 #import "PLCOperation.h"
@@ -71,7 +72,7 @@ typedef NS_ENUM(NSInteger, PLCPersistentStoreError) {
 - (BOOL)deleteOperationsForDid:(NSString *)did error:(NSError **)error;
 
 /*! Transaction queue for thread-safe operations (internal). */
-@property (nonatomic, strong, readonly) dispatch_queue_t transactionQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t transactionQueue;
 
 /*! Prepare a statement (internal). */
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
