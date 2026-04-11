@@ -21,7 +21,10 @@
       "Bash(git checkout:*)",
       "Bash(git status:*)",
       "Bash(deciduous add:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git update-index:*)",
+      "Bash(git rm:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }
