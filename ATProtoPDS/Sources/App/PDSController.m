@@ -502,6 +502,12 @@ static void PDSControllerLogEphemeralJWTKeyModeOnce(void) {
       _xrpcDispatcher.jwtMinter = _jwtMinter;
   }
 
+  if (config.ozoneURL.length > 0) {
+      _xrpcDispatcher.ozoneURL = [NSURL URLWithString:config.ozoneURL];
+      _xrpcDispatcher.ozoneDID = config.ozoneDID;
+      _xrpcDispatcher.jwtMinter = _jwtMinter;
+  }
+
   if (!_subscribeReposHandler) {
     _subscribeReposHandler = [[SubscribeReposHandler alloc]
         initWithServiceDatabases:_serviceDatabases];

@@ -78,6 +78,12 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Minter for service-to-service auth tokens. */
 @property (nonatomic, strong, nullable) JWTMinter *jwtMinter;
 
+/*! Upstream Ozone moderation service URL for proxying unregistered tools.ozone.* methods. */
+@property (nonatomic, copy, nullable) NSURL *ozoneURL;
+
+/*! Upstream Ozone moderation service DID for service-to-service auth. */
+@property (nonatomic, copy, nullable) NSString *ozoneDID;
+
 /*!
  @method sharedDispatcher
  
