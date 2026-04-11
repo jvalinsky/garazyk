@@ -28,6 +28,12 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #pragma clang diagnostic ignored "-Wincomplete-implementation"
 #pragma clang diagnostic ignored "-Wprotocol"
 
+@interface PDSActorStore () <PDSAppleActorKeyManagerDelegate>
+
+- (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type;
+
+@end
+
 @implementation PDSActorStore
 
 #if defined(GNUSTEP)
@@ -66,6 +72,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         _keyManager = [[PDSOpenSSLKeyManager alloc] initWithDid:did keystorePath:keystorePath];
 #else
         _keyManager = [[PDSAppleActorKeyManager alloc] initWithDid:did];
+        if ([_keyManager isKindOfClass:[PDSAppleActorKeyManager class]]) {
+            ((PDSAppleActorKeyManager *)_keyManager).delegate = self;
+        }
 #endif
         _db = NULL;
         _open = NO;
@@ -164,7 +173,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
     if (result != SQLITE_OK) {
         NSString *schemaError = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Failed to apply schema";
-        BOOL recoverableRevMigrationError = [schemaError rangeOfString:@"no such column: rev"].location != NSNotFound;
+        BOOL recoverableRevMigrationError = [schemaError rangeOfString:@"no such column: rev"].location != NSNotFound ||
+                                           [schemaError rangeOfString:@"no such column: subject_did"].location != NSNotFound ||
+                                           [schemaError rangeOfString:@"no such column: keychain_tag"].location != NSNotFound;
         if (!recoverableRevMigrationError) {
             if (error) {
                 *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
@@ -184,6 +195,27 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     if (errMsg) {
         sqlite3_free(errMsg);
     }
+
+    // Phase 4 Migrations: Add missing columns to existing tables
+    // Actor and service tables share some common columns
+    [self addColumnIfNeeded:@"accounts" column:@"password_salt" type:@"BLOB"];
+    [self addColumnIfNeeded:@"accounts" column:@"tfa_enabled" type:@"INTEGER DEFAULT 0"];
+    [self addColumnIfNeeded:@"accounts" column:@"tfa_secret" type:@"BLOB"];
+    [self addColumnIfNeeded:@"accounts" column:@"recovery_codes" type:@"BLOB"];
+    [self addColumnIfNeeded:@"accounts" column:@"invite_enabled" type:@"INTEGER DEFAULT 0"];
+
+    [self addColumnIfNeeded:@"records" column:@"value" type:@"BLOB"];
+    [self addColumnIfNeeded:@"records" column:@"subject_did" type:@"TEXT"];
+    [self addColumnIfNeeded:@"records" column:@"rev" type:@"TEXT"];
+
+    [self addColumnIfNeeded:@"ipld_blocks" column:@"rev" type:@"TEXT"];
+    
+    // For service DB
+    [self addColumnIfNeeded:@"jwt_signing_keys" column:@"keychain_tag" type:@"TEXT"];
+
+    // Ensure indices for migrated columns
+    sqlite3_exec(_db, "CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did)", NULL, NULL, NULL);
+    sqlite3_exec(_db, "CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection)", NULL, NULL, NULL);
 
     // Backward-compatible schema evolution for repo revision tracking.
     NSString *tableInfoSQL = @"PRAGMA table_info(repo_root)";
@@ -1595,7 +1627,73 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return [self.keyManager didKeyStringWithError:error];
 }
 
+- (BOOL)storeSigningKey:(NSData *)privateKey
+              publicKey:(NSData *)publicKey
+                  error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
 
+    [self transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *sql = @"INSERT OR REPLACE INTO signing_keys (did, private_key, public_key_compressed, created_at, updated_at) "
+                         "VALUES (?, ?, ?, ?, ?)";
+        sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) { success = NO; return; }
+
+        sqlite3_bind_text(stmt, 1, store.did.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 2, privateKey.bytes, (int)privateKey.length, SQLITE_TRANSIENT);
+        sqlite3_bind_blob(stmt, 3, publicKey.bytes, (int)publicKey.length, SQLITE_TRANSIENT);
+        double now = [[NSDate date] timeIntervalSince1970];
+        sqlite3_bind_double(stmt, 4, now);
+        sqlite3_bind_double(stmt, 5, now);
+
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        [store finalizeStatement:stmt];
+    } error:&localError];
+
+    if (!success && error) *error = localError;
+    return success;
+}
+
+- (nullable NSData *)loadSigningKeyWithError:(NSError **)error {
+    __block NSData *keyData = nil;
+    __block NSError *localError = nil;
+
+    [self readWithBlock:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSString *sql = @"SELECT private_key FROM signing_keys WHERE did = ?";
+        sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+
+        sqlite3_bind_text(stmt, 1, store.did.UTF8String, -1, SQLITE_TRANSIENT);
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            const void *blob = sqlite3_column_blob(stmt, 0);
+            int bytes = sqlite3_column_bytes(stmt, 0);
+            keyData = [NSData dataWithBytes:blob length:bytes];
+        }
+        [store finalizeStatement:stmt];
+    } error:&localError];
+
+    if (!keyData && error) *error = localError;
+    return keyData;
+}
+
+
+
+#pragma mark - PDSAppleActorKeyManagerDelegate
+
+- (BOOL)appleActorKeyManager:(PDSAppleActorKeyManager *)manager
+             storeSigningKey:(NSData *)privateKey
+                   publicKey:(NSData *)publicKey
+                       error:(NSError **)error {
+    return [self storeSigningKey:privateKey publicKey:publicKey error:error];
+}
+
+- (nullable NSData *)appleActorKeyManagerLoadSigningKey:(PDSAppleActorKeyManager *)manager
+                                                 error:(NSError **)error {
+    return [self loadSigningKeyWithError:error];
+}
 
 #pragma mark - Blob Operations (Moved to PDSActorStore+Blob)
 
@@ -1693,6 +1791,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NSString *masterSecret = config.masterSecret;
     if (masterSecret.length == 0) {
+        PDS_LOG_AUTH_ERROR(@"Master secret is empty in ActorStore!");
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
                                          code:-1
@@ -1831,6 +1930,50 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key {
     return [CryptoUtils decryptData:data withKey:key];
+}
+
+- (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type {
+    // First, check if the table exists
+    NSString *tableCheckSql = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type='table' AND name='%@'", tableName];
+    sqlite3_stmt *tableStmt;
+    BOOL tableExists = NO;
+    if (sqlite3_prepare_v2(_db, tableCheckSql.UTF8String, -1, &tableStmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(tableStmt) == SQLITE_ROW) {
+            tableExists = YES;
+        }
+        sqlite3_finalize(tableStmt);
+    }
+    
+    if (!tableExists) {
+        // Table doesn't exist, so column doesn't need to be added (it's likely a service table in an actor store or vice versa)
+        return YES;
+    }
+
+    NSString *checkSql = [NSString stringWithFormat:@"PRAGMA table_info(%@)", tableName];
+    sqlite3_stmt *stmt;
+    BOOL exists = NO;
+    if (sqlite3_prepare_v2(_db, checkSql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *name = (const char *)sqlite3_column_text(stmt, 1);
+            if (name && strcmp(name, columnName.UTF8String) == 0) {
+                exists = YES;
+                break;
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+    
+    if (!exists) {
+        NSString *alterSql = [NSString stringWithFormat:@"ALTER TABLE %@ ADD COLUMN %@ %@", tableName, columnName, type];
+        char *errMsg = NULL;
+        if (sqlite3_exec(_db, alterSql.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            PDS_LOG_DB_ERROR(@"Failed to add column %@ to table %@: %s", columnName, tableName, errMsg);
+            sqlite3_free(errMsg);
+            return NO;
+        }
+        PDS_LOG_DB_INFO(@"Added column %@ to table %@", columnName, tableName);
+    }
+    return YES;
 }
 
 @end

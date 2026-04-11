@@ -18,6 +18,30 @@ static const NSUInteger kPLCMaxVerificationMethodEntries = 10;
 static const NSUInteger kPLCMaxIdentifierLength = 32;
 static const NSUInteger kPLCMaxDidKeyLength = 256;
 
+static NSDateFormatter *PLCServerISO8601Formatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+    });
+    return formatter;
+}
+
+static NSDateFormatter *PLCServerISO8601MsFormatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    });
+    return formatter;
+}
+
 static BOOL PLCValidateDidKey(NSString *key, NSError **error) {
     if (![key isKindOfClass:[NSString class]] || ![key hasPrefix:@"did:key:"]) {
         if (error) {
@@ -495,11 +519,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             if (op.cid) entry[@"cid"] = op.cid;
             entry[@"nullified"] = @(op.nullified);
             if (op.createdAt) {
-                NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-                formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-                formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-                formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-                entry[@"createdAt"] = [formatter stringFromDate:op.createdAt];
+                entry[@"createdAt"] = [PLCServerISO8601Formatter() stringFromDate:op.createdAt];
             }
             [historyDicts addObject:entry];
         } else {
@@ -647,14 +667,9 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     NSString *afterStr = req.queryParams[@"after"];
     NSDate *afterDate = nil;
     if (afterStr) {
-        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"; // Try ms precision first
-        afterDate = [formatter dateFromString:afterStr];
+        afterDate = [PLCServerISO8601MsFormatter() dateFromString:afterStr];
         if (!afterDate) {
-            formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'"; // Try seconds precision
-            afterDate = [formatter dateFromString:afterStr];
+            afterDate = [PLCServerISO8601Formatter() dateFromString:afterStr];
         }
     }
     
@@ -668,10 +683,6 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     }
     
     NSMutableString *jsonLines = [NSMutableString string];
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-    formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     
     for (PLCOperation *op in ops) {
         NSMutableDictionary *entry = [NSMutableDictionary dictionary];
@@ -679,7 +690,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         entry[@"operation"] = [op toDictionary];
         entry[@"cid"] = op.cid;
         entry[@"nullified"] = @(op.nullified);
-        entry[@"createdAt"] = [formatter stringFromDate:op.createdAt ?: [NSDate date]];
+        entry[@"createdAt"] = [PLCServerISO8601MsFormatter() stringFromDate:op.createdAt ?: [NSDate date]];
         
         NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
         if (jsonData) {

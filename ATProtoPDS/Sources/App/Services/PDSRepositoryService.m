@@ -12,6 +12,8 @@
 #import "Core/TID.h"
 #import "Auth/CryptoUtils.h"
 #import "Debug/PDSLogger.h"
+#import "Core/Repositories/PDSBlockRepository.h"
+#import "Core/Repositories/PDSRepoRepository.h"
 
 @interface PDSRepositoryService ()
 
@@ -55,7 +57,7 @@
 
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
     if (self = [super init]) {
-        _databasePool = databasePool;
+        self.databasePool = databasePool;
     }
     return self;
 }
@@ -63,7 +65,7 @@
 #pragma mark - Repo Operations
 
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return nil;
 
     NSArray<PDSDatabaseRecord *> *records = [self loadAllRecordsForStore:store did:did error:error];
@@ -93,16 +95,13 @@
         return NO;
     }
     
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return NO;
     
     __block BOOL success = NO;
-    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        success = [transactor updateRepoRoot:did
-                                     rootCid:[repoRoot bytes]
-                                         rev:[TID tid].stringValue
-                                       error:blockError];
-    } error:error];
+    success = [self.repoRepository updateRepoRoot:did
+                                         rootCid:[repoRoot bytes]
+                                           error:error];
     
     return success;
 }
@@ -110,28 +109,26 @@
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
     PDS_LOG_DB_DEBUG(@"Looking up repo root for DID: %@", did);
 
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
         PDS_LOG_DB_DEBUG(@"storeForDid returned nil for: %@", did);
         return nil;
     }
     
-    __block NSData *rootData = nil;
-    [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
-        NSData *rootCidBytes = [reader getRepoRootForDid:did error:blockError];
-        if (rootCidBytes) {
-            NSData *blockData = [reader getBlockForCID:rootCidBytes forDid:did error:blockError];
-            if (blockData) {
-                rootData = blockData;
-            }
+    NSData *rootData = nil;
+    PDSDatabaseRepo *repo = [self.repoRepository repoForDid:did error:error];
+    if (repo && repo.rootCid) {
+        PDSDatabaseBlock *block = [self.blockRepository blockWithCid:repo.rootCid repoDid:did error:error];
+        if (block) {
+            rootData = block.blockData;
         }
-    } error:error];
+    }
 
     return rootData;
 }
 
 - (nullable NSData *)getBlocksForDid:(NSString *)did cids:(NSArray<NSString *> *)cids error:(NSError **)error {
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return nil;
     
     // Use first CID as root, or nil if none. CARWriter requires a root.
@@ -144,24 +141,22 @@
     
     __block BOOL success = YES;
     
-    [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
-        for (NSString *cidStr in cids) {
-            CID *cid = [CID cidFromString:cidStr];
-            if (!cid) continue;
-            
-            NSData *blockData = [reader getBlockForCID:cid.bytes forDid:did error:nil];
-            if (blockData) {
-                [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
-            }
+    for (NSString *cidStr in cids) {
+        CID *cid = [CID cidFromString:cidStr];
+        if (!cid) continue;
+        
+        PDSDatabaseBlock *block = [self.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
+        if (block && block.blockData) {
+            [writer addBlock:[CARBlock blockWithCID:cid data:block.blockData]];
         }
-    } error:error];
+    }
     
     if (!success) return nil;
     return [writer serialize];
 }
 
 - (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
         if (error && !*error) {
             *error = [NSError errorWithDomain:@"com.atproto.sync"
@@ -330,7 +325,8 @@
             // Check materialized blocks first, then fall back to database
             NSData *data = materializedBlocks[cidString];
             if (!data) {
-                data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+                PDSDatabaseBlock *block = [self.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
+                data = block.blockData;
             }
             if (!data) {
                 PDSDatabaseRecord *record = recordByCID[cidString];
@@ -506,7 +502,8 @@
                 // Check materialized blocks first, then fall back to database
                 NSData *data = capturedMaterializedBlocks[cidString];
                 if (!data) {
-                    data = [store getBlockForCID:cid.bytes forDid:did error:nil];
+                    PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
+                    data = block.blockData;
                 }
                 if (!data) {
                     PDSDatabaseRecord *record = capturedRecordByCID[cidString];
@@ -538,7 +535,7 @@
                      recordByCID:(NSDictionary<NSString *, PDSDatabaseRecord *> * _Nullable * _Nonnull)recordByCIDOut
              materializedBlocks:(NSDictionary<NSString *, NSData *> * _Nullable * _Nonnull)materializedBlocksOut
                           error:(NSError **)error {
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return NO;
 
     NSArray<PDSDatabaseRecord *> *records = [self loadAllRecordsForStore:store did:did error:error];
@@ -657,7 +654,8 @@
             continue;
         }
 
-        NSData *blockData = [store getBlockForCID:recordCID.bytes forDid:did error:nil];
+        PDSDatabaseBlock *existingBlock = [self.blockRepository blockWithCid:recordCID.bytes repoDid:did error:nil];
+        NSData *blockData = existingBlock.blockData;
         if (!blockData) {
             blockData = [self recordBlockDataForRecord:record];
             if (blockData) {
@@ -1198,7 +1196,7 @@
         return YES;
     }
 
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
         if (error && !*error) {
             *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1
@@ -1274,7 +1272,7 @@
         return NO;
     }
 
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
         if (error && !*error) {
             *error = [NSError errorWithDomain:@"PDSRepositoryService" code:-1

@@ -29,6 +29,17 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 
 @implementation PDSAdminHandler
 
+static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss'Z'"];
+        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    });
+    return formatter;
+}
+
 + (instancetype)sharedHandler {
     static PDSAdminHandler *shared = nil;
     static dispatch_once_t onceToken;
@@ -170,10 +181,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 
         if (account.createdAt > 0) {
             NSDate *date = [NSDate dateWithTimeIntervalSince1970:account.createdAt];
-            NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-            [fmt setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss'Z'"];
-            [fmt setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-            user[@"created_at"] = [fmt stringFromDate:date];
+            user[@"created_at"] = [AdminHandlerISO8601Formatter() stringFromDate:date];
         } else {
             user[@"created_at"] = @"";
         }
@@ -249,10 +257,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             NSTimeInterval ts = [createdAtVal doubleValue];
             if (ts > 0) {
                 NSDate *date = [NSDate dateWithTimeIntervalSince1970:ts];
-                NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-                [fmt setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss'Z'"];
-                [fmt setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-                invite[@"created_at"] = [fmt stringFromDate:date];
+                invite[@"created_at"] = [AdminHandlerISO8601Formatter() stringFromDate:date];
             } else {
                 invite[@"created_at"] = @"";
             }

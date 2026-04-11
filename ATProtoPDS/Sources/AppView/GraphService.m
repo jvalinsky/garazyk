@@ -19,6 +19,17 @@
 
 @implementation GraphService
 
+static NSDateFormatter *GraphServiceISO8601MsFormatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    });
+    return formatter;
+}
+
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
@@ -211,10 +222,7 @@
 
 - (BOOL)muteActor:(NSString *)targetDID forActor:(NSString *)actorDID error:(NSError **)error {
     NSString *sql = @"INSERT OR IGNORE INTO actor_mutes (did, muted_did, created_at) VALUES (?, ?, ?)";
-    NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-    fmt.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    NSString *now = [fmt stringFromDate:[NSDate date]];
+    NSString *now = [GraphServiceISO8601MsFormatter() stringFromDate:[NSDate date]];
 
     return [self.database executeParameterizedUpdate:sql params:@[actorDID, targetDID, now] error:error];
 }

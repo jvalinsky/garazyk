@@ -6,9 +6,14 @@
 
 #import "PDSRepositoryFactory.h"
 #import "App/PDSConfiguration.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Core/Repositories/PDSLegacyAccountRepository.h"
-#import "Core/Repositories/PDSLegacySessionRepository.h"
 #import "Core/Repositories/PDSSQLiteAccountRepository.h"
+#import "Core/Repositories/PDSSQLiteSessionRepository.h"
+#import "Core/Repositories/PDSSQLiteRepoRepository.h"
+#import "Core/Repositories/PDSSQLiteRecordRepository.h"
+#import "Core/Repositories/PDSSQLiteBlockRepository.h"
+#import "Core/Repositories/PDSSQLiteBlobRepository.h"
 #import "Database/Service/ServiceDatabases.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -26,8 +31,23 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 + (id<PDSSessionRepository>)sessionRepositoryWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases {
-    // For now, always return legacy.
-    return [[PDSLegacySessionRepository alloc] initWithServiceDatabases:serviceDatabases];
+    return [[PDSSQLiteSessionRepository alloc] initWithServicePool:serviceDatabases.servicePool];
+}
+
++ (id<PDSRepoRepository>)repoRepositoryWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases {
+    return [[PDSSQLiteRepoRepository alloc] initWithServicePool:serviceDatabases.servicePool];
+}
+
++ (id<PDSRecordRepository>)recordRepositoryWithDatabasePool:(PDSDatabasePool *)databasePool {
+    return [[PDSSQLiteRecordRepository alloc] initWithDatabasePool:databasePool];
+}
+
++ (id<PDSBlockRepository>)blockRepositoryWithDatabasePool:(PDSDatabasePool *)databasePool {
+    return [[PDSSQLiteBlockRepository alloc] initWithDatabasePool:databasePool];
+}
+
++ (id<PDSBlobRepository>)blobRepositoryWithDatabasePool:(PDSDatabasePool *)databasePool {
+    return [[PDSSQLiteBlobRepository alloc] initWithDatabasePool:databasePool];
 }
 
 @end
