@@ -2712,6 +2712,8 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
     PDSRecordService *recordService = [[PDSRecordService alloc] initWithDatabasePool:userDatabasePool];
 
     // app.bsky.draft.createDraft - Create a new draft
+    // Request: {draft: {posts: [{text, ...}], ...}}
+    // Response: {id: string (tid)}
     [dispatcher registerMethod:@"app.bsky.draft.createDraft" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -2734,27 +2736,32 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             return;
         }
 
-        NSString *text = body[@"text"];
-        if (![text isKindOfClass:[NSString class]] || text.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid text"];
+        NSDictionary *draft = body[@"draft"];
+        if (![draft isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid draft"];
             return;
         }
 
-        // Generate unique draft ID (use UUID as rkey)
+        id posts = draft[@"posts"];
+        if (![posts isKindOfClass:[NSArray class]] || [(NSArray *)posts count] == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Draft must contain at least one post"];
+            return;
+        }
+
+        // Generate TID-formatted draft ID
         NSString *draftId = [[NSUUID UUID] UUIDString];
         NSString *now = [NSDateFormatter iso8601StringFromDate:[NSDate date]];
 
-        NSDictionary *draftRecord = @{
-            @"$type": @"app.bsky.draft.post",
-            @"text": text,
-            @"createdAt": now,
-            @"updatedAt": now
-        };
+        // Store draft object as-is with metadata
+        NSMutableDictionary *draftRecord = [draft mutableCopy];
+        draftRecord[@"$type"] = @"app.bsky.draft.defs#draft";
+        draftRecord[@"createdAt"] = now;
+        draftRecord[@"updatedAt"] = now;
 
         NSError *error = nil;
-        BOOL success = [recordService putRecord:@"app.bsky.draft.post"
+        BOOL success = [recordService putRecord:@"app.bsky.draft.defs#draft"
                                           rkey:draftId
-                                         value:draftRecord
+                                         value:[draftRecord copy]
                                        forDid:actorDID
                                         error:&error];
         if (!success) {
@@ -2763,15 +2770,12 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"id": draftId,
-            @"text": text,
-            @"createdAt": now,
-            @"updatedAt": now
-        }];
+        [response setJsonBody:@{@"id": draftId}];
     }];
 
     // app.bsky.draft.updateDraft - Update an existing draft
+    // Request: {draft: {id: string, posts: [{text, ...}], ...}}
+    // Response: {} (empty on success)
     [dispatcher registerMethod:@"app.bsky.draft.updateDraft" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -2794,20 +2798,27 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             return;
         }
 
-        NSString *draftId = body[@"id"];
-        NSString *text = body[@"text"];
-        if (![draftId isKindOfClass:[NSString class]] || draftId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid id"];
+        NSDictionary *draft = body[@"draft"];
+        if (![draft isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid draft"];
             return;
         }
-        if (![text isKindOfClass:[NSString class]] || text.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid text"];
+
+        NSString *draftId = draft[@"id"];
+        if (![draftId isKindOfClass:[NSString class]] || draftId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid draft id"];
+            return;
+        }
+
+        id posts = draft[@"posts"];
+        if (![posts isKindOfClass:[NSArray class]] || [(NSArray *)posts count] == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Draft must contain at least one post"];
             return;
         }
 
         // Get existing draft to preserve createdAt
         NSError *getError = nil;
-        NSDictionary *existingDraft = [recordService getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.draft.post/%@", actorDID, draftId]
+        NSDictionary *existingDraft = [recordService getRecord:[NSString stringWithFormat:@"at://%@/app.bsky.draft.defs#draft/%@", actorDID, draftId]
                                                        forDid:actorDID
                                                        error:&getError];
         if (!existingDraft) {
@@ -2819,17 +2830,15 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         NSString *now = [NSDateFormatter iso8601StringFromDate:[NSDate date]];
         NSString *createdAt = existingDraft[@"createdAt"] ?: now;
 
-        NSDictionary *updatedRecord = @{
-            @"$type": @"app.bsky.draft.post",
-            @"text": text,
-            @"createdAt": createdAt,
-            @"updatedAt": now
-        };
+        NSMutableDictionary *updatedRecord = [draft mutableCopy];
+        updatedRecord[@"$type"] = @"app.bsky.draft.defs#draft";
+        updatedRecord[@"createdAt"] = createdAt;
+        updatedRecord[@"updatedAt"] = now;
 
         NSError *error = nil;
-        BOOL success = [recordService putRecord:@"app.bsky.draft.post"
+        BOOL success = [recordService putRecord:@"app.bsky.draft.defs#draft"
                                           rkey:draftId
-                                         value:updatedRecord
+                                         value:[updatedRecord copy]
                                        forDid:actorDID
                                         error:&error];
         if (!success) {
@@ -2838,15 +2847,12 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"id": draftId,
-            @"text": text,
-            @"createdAt": createdAt,
-            @"updatedAt": now
-        }];
+        [response setJsonBody:@{}];
     }];
 
     // app.bsky.draft.getDrafts - List actor's drafts with pagination
+    // Query params: limit (1-100, default 50), cursor
+    // Response: {drafts: [...], cursor?: string}
     [dispatcher registerMethod:@"app.bsky.draft.getDrafts" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -2863,10 +2869,10 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             return;
         }
 
-        NSUInteger limit = 100;
+        NSUInteger limit = 50;  // Default per spec
         NSString *limitParam = [request queryParamForKey:@"limit"];
         if (limitParam && ![self parseLimit:limitParam outLimit:&limit]) {
-            limit = 100;
+            limit = 50;
         }
         if (limit > 100) limit = 100;
         if (limit < 1) limit = 1;
@@ -2874,7 +2880,7 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
         NSError *error = nil;
-        NSArray *draftRecords = [recordService listRecords:@"app.bsky.draft.post"
+        NSArray *draftRecords = [recordService listRecords:@"app.bsky.draft.defs#draft"
                                                  forDid:actorDID
                                                   limit:limit + 1  // Fetch one extra to determine if there are more
                                                  cursor:cursor
@@ -2896,14 +2902,15 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
             NSString *rkey = recordInfo[@"rkey"];
             if (!rkey) continue;
 
-            // Try to reconstruct draft from record data if available
-            // For now, return minimal data with just the ID
-            [drafts addObject:@{
-                @"id": rkey,
-                @"text": recordInfo[@"text"] ?: @"",
-                @"createdAt": recordInfo[@"createdAt"] ?: @"",
-                @"updatedAt": recordInfo[@"updatedAt"] ?: @""
-            }];
+            // Return draft view with id and posts
+            NSMutableDictionary *draftView = [@{@"id": rkey} mutableCopy];
+            if (recordInfo[@"posts"]) {
+                draftView[@"posts"] = recordInfo[@"posts"];
+            }
+            if (recordInfo[@"createdAt"]) {
+                draftView[@"createdAt"] = recordInfo[@"createdAt"];
+            }
+            [drafts addObject:[draftView copy]];
         }
 
         // Check if there are more results
@@ -2921,6 +2928,8 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
     }];
 
     // app.bsky.draft.deleteDraft - Delete a draft
+    // Request: {id: string (tid)}
+    // Response: {} (empty on success)
     [dispatcher registerMethod:@"app.bsky.draft.deleteDraft" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -2950,7 +2959,7 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         }
 
         NSError *error = nil;
-        BOOL success = [recordService deleteRecord:@"app.bsky.draft.post"
+        BOOL success = [recordService deleteRecord:@"app.bsky.draft.defs#draft"
                                               rkey:draftId
                                             forDid:actorDID
                                              error:&error];
@@ -2960,7 +2969,7 @@ static NSDictionary *loadListViewForURI(PDSDatabase *appViewDatabase, ActorServi
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"id": draftId}];
+        [response setJsonBody:@{}];
     }];
 
     // app.bsky.video.getJobStatus - Get video processing status
