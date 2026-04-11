@@ -7,7 +7,7 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 
 @property (nonatomic, copy) NSString *upstreamURL;
 @property (nonatomic, strong) NSURLSession *session;
-@property (nonatomic, strong) dispatch_queue_t syncQueue;
+dispatch_queue_t _syncQueue;
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 
 @end
@@ -48,7 +48,7 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 - (void)fetchOperationsAfterCursor:(NSInteger)cursor
                              count:(NSUInteger)count
                          completion:(void (^)(NSArray<PLCOperation *> * _Nullable, NSInteger, NSError * _Nullable))completion {
-    dispatch_async(self.syncQueue, ^{
+    dispatch_async(_syncQueue, ^{
         NSError *error = nil;
         NSArray<PLCOperation *> *ops = [self fetchOperationsAfterCursorSync:cursor count:count error:&error];
         
@@ -69,7 +69,7 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 - (void)fetchOperationsAfterDate:(nullable NSDate *)afterDate
                            count:(NSUInteger)count
                        completion:(void (^)(NSArray<PLCOperation *> * _Nullable, NSDate * _Nullable, NSError * _Nullable))completion {
-    dispatch_async(self.syncQueue, ^{
+    dispatch_async(_syncQueue, ^{
         NSError *error = nil;
         
         NSString *urlString = [NSString stringWithFormat:@"%@/export", self.upstreamURL];

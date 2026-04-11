@@ -165,6 +165,29 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! Whether rate limiting is enabled. */
 @property (nonatomic, readonly) BOOL rateLimitEnabled;
 
+/*! Blob storage type ("disk" or "s3"). Defaults to "disk". */
+@property (nonatomic, readonly) NSString *blobStorageType;
+
+/*! S3 bucket name for blob storage. */
+@property (nonatomic, readonly, nullable) NSString *s3Bucket;
+
+/*! S3 region (e.g. "us-east-1"). */
+@property (nonatomic, readonly, nullable) NSString *s3Region;
+
+/*! S3 endpoint URL for S3-compatible services (MinIO, R2, B2, etc). */
+@property (nonatomic, readonly, nullable) NSString *s3Endpoint;
+
+/*! Optional prefix for all S3 object keys (e.g. "blobs/"). */
+@property (nonatomic, readonly, nullable) NSString *s3KeyPrefix;
+
+/*! S3 access key ID. May also be read from S3_ACCESS_KEY_ID environment variable. */
+@property (nonatomic, readonly, nullable) NSString *s3AccessKeyId;
+
+/*! S3 secret access key. May also be read from S3_SECRET_ACCESS_KEY environment variable. */
+@property (nonatomic, readonly, nullable) NSString *s3SecretAccessKey;
+
+/*! Optional CDN URL for 302 redirects in blob endpoints. If set, blob requests return a redirect to {cdnURL}/{cid}. */
+@property (nonatomic, readonly, nullable) NSString *cdnURL;
 
 /*! Requests per minute limit. */
 @property (nonatomic, readonly) NSUInteger rateLimitRequestsPerMinute;
