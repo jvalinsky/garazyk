@@ -229,6 +229,14 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! @abstract Whether the local AppView implementation is enabled. Defaults to YES. */
 @property (nonatomic, readonly) BOOL localAppViewEnabled;
 
+#pragma mark - Ozone
+
+/*! @abstract URL of the remote Ozone moderation service for proxying tools.ozone.* requests. */
+@property (nonatomic, readonly, nullable) NSString *ozoneURL;
+
+/*! @abstract DID of the remote Ozone service for service-to-service auth. */
+@property (nonatomic, readonly, nullable) NSString *ozoneDID;
+
 #pragma mark - Logging & Monitoring
 
 /*! @abstract Path to write log file, or nil to disable file logging. */
