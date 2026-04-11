@@ -95,7 +95,8 @@
       "Bash(ps aux | grep 'ssb-client\\|sbot' | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null; echo \"Killed any remaining ssb processes\")",
       "Bash(ps aux | grep -E 'ssb-client|sbot|bridge' | grep -v grep)",
       "Bash(netstat -an | grep -E '\\.8008|\\.9876|\\.9898' | grep LISTEN || echo \"No listeners on these ports\")",
-      "Bash(ps aux | grep -E 'ssb|sbot|bridge|8008|9876' | grep -v grep | head -5)"
+      "Bash(ps aux | grep -E 'ssb|sbot|bridge|8008|9876' | grep -v grep | head -5)",
+      "Bash(# Check bridge logs and relay status\necho \"=== Relay events sent ===\"\ndocker logs local-atproto-relay-1 2>&1 | grep -iE 'events_sent|consumer_disconnected' | tail -5\necho \"\"\necho \"=== Account status ===\"\ndocker exec local-atproto-relay_pg-1 psql -U relay -d relay -c \"SELECT did, status FROM account WHERE did LIKE '%pprb%' OR did LIKE '%ark%';\"\necho \"\"\necho \"=== Recent relay logs ===\"\ndocker logs local-atproto-relay-1 2>&1 | tail -10)"
     ]
   }
 }
