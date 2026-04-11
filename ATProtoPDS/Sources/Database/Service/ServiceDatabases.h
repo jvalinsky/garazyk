@@ -11,6 +11,8 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Core/Repositories/PDSAccountRepository.h"
+#import "Core/Repositories/PDSSessionRepository.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -47,7 +49,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  PDSDatabaseAccount *account = [dbs getAccountByDid:@"did:plc:..." error:nil];
  @endcode
  */
-@interface PDSServiceDatabases : NSObject
+@interface PDSServiceDatabases : NSObject <PDSAccountRepository, PDSSessionRepository>
 
 /*! Pool for service database (accounts, tokens, invite codes). */
 @property (nonatomic, strong, readonly) PDSDatabasePool *servicePool;
@@ -107,106 +109,21 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param error Error pointer for creation failures.
  @return YES if created successfully, NO on failure.
  */
+- (BOOL)saveAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
-
-/*!
- @method createAccounts:error:
-
- @abstract Bulk create accounts in service database.
-
- @param accounts Array of account objects to create.
- @param error Error pointer for creation failures.
- @return YES if all created successfully, NO on failure.
- */
 - (BOOL)createAccounts:(NSArray<PDSDatabaseAccount *> *)accounts error:(NSError **)error;
-
-/*!
- @method getAccountByDid:error:
-
- @abstract Retrieve account by DID.
-
- @param did Decentralized identifier.
- @param error Error pointer for retrieval failures.
- @return Account object or nil if not found.
- */
-- (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error;
-
-/*!
- @method getAccountByHandle:error:
-
- @abstract Retrieve account by handle.
-
- @param handle User handle (e.g., "alice.example.com").
- @param error Error pointer for retrieval failures.
- @return Account object or nil if not found.
- */
-- (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error;
-
-/*!
- @method getAccountByEmail:error:
-
- @abstract Retrieve account by email address.
-
- @param email User email address.
- @param error Error pointer for retrieval failures.
- @return Account object or nil if not found.
- */
-- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error;
-
-/*!
- @method getAccountByRefreshToken:error:
-
- @abstract Retrieve account associated with a refresh token.
-
- @param refreshToken Refresh token string.
- @param error Error pointer for retrieval failures.
- @return Account object or nil if token invalid or expired.
- */
-- (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
-
-/*!
- @method updateAccount:error:
-
- @abstract Update an existing account.
-
- @param account Account object with updated fields.
- @param error Error pointer for update failures.
- @return YES if updated successfully, NO on failure.
- */
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
-
-/*!
- @method deleteAccount:error:
-
- @abstract Delete an account by DID.
-
- @param did Decentralized identifier of account to delete.
- @param error Error pointer for deletion failures.
- @return YES if deleted successfully, NO on failure.
- */
+- (nullable PDSDatabaseAccount *)accountForDid:(NSString *)did error:(NSError **)error;
+- (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error;
+- (nullable PDSDatabaseAccount *)accountForHandle:(NSString *)handle error:(NSError **)error;
+- (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error;
+- (nullable PDSDatabaseAccount *)accountForEmail:(NSString *)email error:(NSError **)error;
+- (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error;
+- (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
-
-/*!
- @method getAllAccountsWithError:
-
- @abstract Retrieve all accounts from service database.
-
- @param error Error pointer for retrieval failures.
- @return Array of account objects (may be empty).
- */
-- (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
-
-/*!
- @method getAccountsWithLimit:cursor:error:
-
- @abstract Retrieve a page of accounts ordered by creation date descending.
-
- @param limit Maximum number of accounts to return.
- @param cursor Opaque pagination cursor from a previous call, or nil for the first page.
- @param error Error pointer for retrieval failures.
- @return Array of account objects for this page (may be empty).
- */
-- (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
+- (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
+- (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
+- (nullable NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
 
 #pragma mark - Refresh Tokens
 
@@ -220,28 +137,12 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param error Error pointer for storage failures.
  @return YES if stored successfully, NO on failure.
  */
+- (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid error:(NSError **)error;
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error;
-
-/*!
- @method deleteRefreshToken:error:
-
- @abstract Delete a single refresh token by value.
-
- @param token Refresh token string to revoke.
- @param error Error pointer for deletion failures.
- @return YES if deleted successfully, NO on failure.
- */
+- (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error;
+- (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error;
 - (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error;
-
-/*!
- @method deleteRefreshTokensForAccount:error:
-
- @abstract Delete all refresh tokens for an account.
-
- @param accountDid DID of account whose tokens should be deleted.
- @param error Error pointer for deletion failures.
- @return YES if deleted successfully, NO on failure.
- */
+- (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)accountDid error:(NSError **)error;
 - (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error;
 
 #pragma mark - Invite Codes

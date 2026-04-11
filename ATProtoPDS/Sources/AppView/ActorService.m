@@ -10,6 +10,17 @@
 
 @implementation ActorService
 
+static NSDateFormatter *ActorServiceISO8601Formatter(void) {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    });
+    return formatter;
+}
+
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
     if (self) {
@@ -60,10 +71,7 @@
     NSInteger postsCount = [self getPostsCountForDID:actorDID error:error];
     profile[@"postsCount"] = @(postsCount);
 
-    NSDateFormatter *isoFormatter = [[NSDateFormatter alloc] init];
-    isoFormatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    isoFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    profile[@"indexedAt"] = [isoFormatter stringFromDate:[NSDate date]];
+    profile[@"indexedAt"] = [ActorServiceISO8601Formatter() stringFromDate:[NSDate date]];
 
     return [profile copy];
 }

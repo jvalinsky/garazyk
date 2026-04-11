@@ -31,8 +31,8 @@
 @interface HttpServer ()
 
 @property(nonatomic, readwrite, nullable) NSString *host;
-@property(nonatomic, readwrite) NSUInteger port;
-@property(nonatomic, readwrite, getter=isRunning) BOOL running;
+@property(atomic, readwrite) NSUInteger port;
+@property(atomic, readwrite, getter=isRunning) BOOL running;
 @property(nonatomic, strong) id<PDSNetworkListener> listener;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t serverQueue;
 @property(nonatomic, strong)
@@ -46,8 +46,8 @@
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_semaphore_t stopSemaphore;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_group_t taskGroup;
-@property(nonatomic, assign) BOOL listenerReady;
-@property(nonatomic, assign) BOOL startupFinished;
+@property(atomic, assign) BOOL listenerReady;
+@property(atomic, assign) BOOL startupFinished;
 @property(nonatomic, strong, nullable) NSError *startupError;
 @property(nonatomic, strong)
     NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
@@ -1027,31 +1027,9 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   NSString *path = request.path;
 
   NSDictionary<NSString *, NSString *> *pathParameters = nil;
-
-  // First try exact path match
-  RequestHandler handler = self.pathHandlers[path];
-  PDS_LOG_HTTP_INFO(@"Path %@, pathHandlers: %@, exact handler: %@", path,
-                    self.pathHandlers.allKeys, handler ? @"found" : @"nil");
-
-  // Then try prefix matching for pathHandlers (e.g., /explore matches
-  // /explore/css/style.css)
-  if (!handler) {
-    for (NSString *registeredPath in self.pathHandlers) {
-      if ([path hasPrefix:registeredPath] &&
-          (path.length == registeredPath.length ||
-           [path characterAtIndex:registeredPath.length] == '/')) {
-        handler = self.pathHandlers[registeredPath];
-        break;
-      }
-    }
-  }
-
-  // Finally try route trie
-  if (!handler) {
-    handler = [self handlerForRoute:path
-                             method:methodString
-                         parameters:&pathParameters];
-  }
+  RequestHandler handler = [self handlerForRoute:path
+                                          method:methodString
+                                      parameters:&pathParameters];
 
   request.pathParameters = pathParameters;
 
@@ -1157,7 +1135,16 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)addHandlerForPath:(NSString *)path handler:(RequestHandler)handler {
-  self.pathHandlers[path] = [handler copy];
+  if (!path || !handler) {
+    return;
+  }
+  // Register for all methods via the trie
+  [self addRoute:@"*" path:path handler:handler];
+
+  // Also register as a prefix route to support legacy prefix-matching behavior
+  NSString *prefixPath = [path hasSuffix:@"/"] ? [path stringByAppendingString:@"*"]
+                                               : [path stringByAppendingString:@"/*"];
+  [self addRoute:@"*" path:prefixPath handler:handler];
 }
 
 - (void)addWebSocketRoute:(NSString *)path

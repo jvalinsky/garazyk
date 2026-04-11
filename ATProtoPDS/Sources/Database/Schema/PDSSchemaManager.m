@@ -231,6 +231,16 @@
            @")";
 }
 
+- (NSString *)actorStoreSigningKeysTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS signing_keys ("
+           @"    did TEXT PRIMARY KEY,"
+           @"    private_key BLOB NOT NULL,"
+           @"    public_key_compressed BLOB NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    updated_at REAL NOT NULL"
+           @")";
+}
+
 - (NSString *)actorStoreSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self actorStoreRepoRootTableSchema]];
@@ -248,6 +258,8 @@
     [sql appendString:[self actorStoreBlobsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreRotationKeysTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self actorStoreSigningKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_collection_rkey ON records(collection, rkey);"];
     [sql appendString:@";\n"];

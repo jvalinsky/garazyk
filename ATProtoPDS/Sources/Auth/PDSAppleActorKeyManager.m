@@ -63,6 +63,10 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
 
     if (!self.useKeychain) {
         self.memoryKeyData = [privateKey copy];
+        if ([self.delegate respondsToSelector:@selector(appleActorKeyManager:storeSigningKey:publicKey:error:)]) {
+            Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:privateKey error:nil];
+            [self.delegate appleActorKeyManager:self storeSigningKey:privateKey publicKey:kp.compressedPublicKey error:nil];
+        }
         return YES;
     }
 
@@ -160,6 +164,15 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
     }
 
     if (!self.useKeychain) {
+        if (self.memoryKeyData.length == 32) {
+            return self.memoryKeyData;
+        }
+        if ([self.delegate respondsToSelector:@selector(appleActorKeyManagerLoadSigningKey:error:)]) {
+            self.memoryKeyData = [self.delegate appleActorKeyManagerLoadSigningKey:self error:nil];
+            if (self.memoryKeyData.length == 32) {
+                return self.memoryKeyData;
+            }
+        }
         if (error) {
             *error = [NSError errorWithDomain:PDSAppleActorKeyManagerErrorDomain
                                          code:-1
