@@ -39,3 +39,17 @@ All 8 stub registrations added to XrpcAppBskyMethods.m:
 - Method implementations added (lines 2969-3019)
 
 All methods use the `proxyOrNotSupported:` pattern consistently with existing stubs.
+
+## FINAL STATUS: ✅ COMPLETE
+
+**Date Completed:** 2026-04-11  
+**Deliverables:**
+- 4 x app.bsky.draft.* methods registered
+- 2 x app.bsky.graph.verification.* methods registered
+- 2 x app.bsky.unspecced age assurance methods registered
+- All 8 use proxyOrNotSupported: pattern
+
+**File Modified:** 1
+- XrpcAppBskyMethods.m (8 new registrations)
+
+**Impact:** Clients now receive 501 Not Implemented instead of 404 Not Found
