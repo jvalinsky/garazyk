@@ -96,7 +96,12 @@
       "Bash(ps aux | grep -E 'ssb-client|sbot|bridge' | grep -v grep)",
       "Bash(netstat -an | grep -E '\\.8008|\\.9876|\\.9898' | grep LISTEN || echo \"No listeners on these ports\")",
       "Bash(ps aux | grep -E 'ssb|sbot|bridge|8008|9876' | grep -v grep | head -5)",
-      "Bash(# Check bridge logs and relay status\necho \"=== Relay events sent ===\"\ndocker logs local-atproto-relay-1 2>&1 | grep -iE 'events_sent|consumer_disconnected' | tail -5\necho \"\"\necho \"=== Account status ===\"\ndocker exec local-atproto-relay_pg-1 psql -U relay -d relay -c \"SELECT did, status FROM account WHERE did LIKE '%pprb%' OR did LIKE '%ark%';\"\necho \"\"\necho \"=== Recent relay logs ===\"\ndocker logs local-atproto-relay-1 2>&1 | tail -10)"
+      "Bash(# Check bridge logs and relay status\necho \"=== Relay events sent ===\"\ndocker logs local-atproto-relay-1 2>&1 | grep -iE 'events_sent|consumer_disconnected' | tail -5\necho \"\"\necho \"=== Account status ===\"\ndocker exec local-atproto-relay_pg-1 psql -U relay -d relay -c \"SELECT did, status FROM account WHERE did LIKE '%pprb%' OR did LIKE '%ark%';\"\necho \"\"\necho \"=== Recent relay logs ===\"\ndocker logs local-atproto-relay-1 2>&1 | tail -10)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && \\\ngo test ./internal/livee2e -run TestBridgeLiveInterop -count=1 2>&1 | tail -5)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && \\\n./scripts/e2e_tildefriends.sh 2>&1 | tail -40)",
+      "Bash(cd /Users/jack/Software/mr_valinskys_adequate_bridge && \\\ngo build ./internal/ssb/... 2>&1 | head -20)",
+      "Bash(sleep 60 && ssh atproto@snek.cc \"tail -30 /tmp/nixos-rebuild.log 2>/dev/null || echo 'Log not found yet'\")",
+      "Bash(sleep 120 && ssh atproto@snek.cc \"tail -40 /tmp/nixos-rebuild.log 2>/dev/null\")"
     ]
   }
 }
