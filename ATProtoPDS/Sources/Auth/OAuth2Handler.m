@@ -1479,6 +1479,14 @@ static dispatch_once_t sClientCacheOnceToken;
                  [self handleRevokeRequest:request response:response];
                }];
 
+  // Phase 1: Add /oauth/introspect endpoint for token introspection (RFC 7662)
+  [httpServer addRoute:@"POST"
+                  path:@"/oauth/introspect"
+               handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self setCorsHeaders:response forRequest:request];
+                 [self handleIntrospectRequest:request response:response];
+               }];
+
   [httpServer
       addRoute:@"GET"
           path:@"/.well-known/oauth-authorization-server"
@@ -1529,6 +1537,9 @@ static dispatch_once_t sClientCacheOnceToken;
                handler:corsPreflightHandler];
   [httpServer addRoute:@"OPTIONS"
                   path:@"/oauth/revoke"
+               handler:corsPreflightHandler];
+  [httpServer addRoute:@"OPTIONS"
+                  path:@"/oauth/introspect"
                handler:corsPreflightHandler];
 }
 
@@ -2397,6 +2408,61 @@ static dispatch_once_t sClientCacheOnceToken;
 
   response.statusCode = 200;
   [response setJsonBody:@{}];
+}
+
+- (void)handleIntrospectRequest:(HttpRequest *)request
+                       response:(HttpResponse *)response {
+  NSString *body = [[NSString alloc] initWithData:request.body
+                                         encoding:NSUTF8StringEncoding];
+  if (!body) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"error" : @"invalid_request",
+      @"error_description" : @"Missing request body"
+    }];
+    return;
+  }
+
+  NSDictionary *params = [self parseFormUrlEncodedString:body];
+
+  // Validate client from database
+  NSString *clientID = params[@"client_id"];
+  NSString *token = params[@"token"];
+
+  NSError *clientError = nil;
+  NSDictionary *client = [self validatedClientForClientID:clientID
+                                                     error:&clientError];
+  if (!client) {
+    if ([self isClientValidationTimeoutError:clientError]) {
+      [self setOAuthErrorResponse:response
+                           status:503
+                            error:@"server_error"
+                 errorDescription:@"Timed out while validating client"];
+    } else {
+      [self setOAuthErrorResponse:response
+                           status:401
+                            error:@"invalid_client"
+                 errorDescription:clientError.localizedDescription ?: @"Invalid client"];
+    }
+    return;
+  }
+
+  if (!token) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"error" : @"invalid_request",
+      @"error_description" : @"Missing token parameter"
+    }];
+    return;
+  }
+
+  // TODO: Implement OAuth token introspection (Phase 1)
+  // For now, return 501 Not Implemented
+  response.statusCode = 501;
+  [response setJsonBody:@{
+    @"error" : @"server_error",
+    @"error_description" : @"Token introspection not yet implemented"
+  }];
 }
 
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response {

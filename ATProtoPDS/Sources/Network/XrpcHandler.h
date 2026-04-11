@@ -415,9 +415,6 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Registers handler for app.bsky.actor.searchActorsTypeahead. */
 - (void)registerAppBskyActorSearchActorsTypeahead:(XrpcMethodHandler)handler;
 
-/*! Registers handler for app.bsky.user.getUserStats. */
-- (void)registerAppBskyUserGetUserStats:(XrpcMethodHandler)handler;
-
 // MARK: - App Bsky Feed Methods
 
 /*! Registers handler for app.bsky.feed.getTimeline. */

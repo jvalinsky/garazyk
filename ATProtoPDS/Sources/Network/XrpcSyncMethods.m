@@ -21,6 +21,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
+#import "Blob/BlobStorage.h"
 
 static NSString *trimmedNonEmptyString(NSString *value);
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
@@ -889,6 +890,20 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
+    // Check if CDN redirect is enabled (Phase 5)
+    NSString *cdnURL = config.cdnURL;
+    if (cdnURL && cdnURL.length > 0) {
+      // Return 302 Found redirect to CDN URL
+      NSString *cdnBlobURL = [NSString stringWithFormat:@"%@/%@", cdnURL, cid];
+      response.statusCode = 302; // Found (temporary redirect)
+      [response setHeader:cdnBlobURL forKey:@"Location"];
+      [response setJsonBody:@{
+        @"message" : @"Blob available at CDN",
+        @"location" : cdnBlobURL
+      }];
+      return;
+    }
+
     NSError *blobError = nil;
     NSDictionary *result =
         [blobService getBlobStreamWithCID:cid did:did error:&blobError];
@@ -921,79 +936,21 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     }
 
     response.contentType = mimeType;
-    [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
 
-    BOOL hasRange = NO;
-    BOOL satisfiable = YES;
-    unsigned long long start = 0;
-    unsigned long long end = totalLength > 0 ? (totalLength - 1) : 0;
-    NSString *rangeFailureReason = nil;
-    BOOL validRange = parseByteRangeHeader([request headerForKey:@"Range"],
-                                           totalLength, &hasRange, &satisfiable,
-                                           &start, &end, &rangeFailureReason);
-    if (!validRange) {
-      response.statusCode = HttpStatusBadRequest;
-      [response setJsonBody:@{
-        @"error" : @"InvalidRange",
-        @"message" : rangeFailureReason ?: @"Range header is invalid"
-      }];
-      return;
-    }
-
-    if (hasRange && !satisfiable) {
-      response.statusCode = 416;
-      response.statusMessage = @"Range Not Satisfiable";
-      [response
-          setHeader:[NSString stringWithFormat:@"bytes */%llu", totalLength]
-             forKey:@"Content-Range"];
-      return;
-    }
-
-    if (hasRange) {
-      response.statusCode = 206;
-      response.statusMessage = @"Partial Content";
-      [response setHeader:[NSString stringWithFormat:@"bytes %llu-%llu/%llu",
-                                                     start, end, totalLength]
-                   forKey:@"Content-Range"];
-    } else {
-      response.statusCode = HttpStatusOK;
-    }
-
-    if ([filePath isKindOfClass:[NSString class]] && filePath.length > 0) {
-      NSError *streamError = nil;
-      HttpResponseBodyChunkProducer producer =
-          blobFileChunkProducer(filePath, start, end, &streamError);
-      if (!producer) {
+    // Use shared blob response handler with Range support (Phase 1.2)
+    NSError *responseError = nil;
+    if (![blobStorage respondWithBlobData:blobData
+                                filePath:filePath
+                             totalLength:totalLength
+                              forRequest:request
+                                response:response
+                                   error:&responseError]) {
+      if (response.statusCode == HttpStatusOK) {
         response.statusCode = HttpStatusInternalServerError;
-        [response setJsonBody:@{
-          @"error" : @"BlobReadFailed",
-          @"message" : streamError.localizedDescription
-              ?: @"Failed to stream blob"
-        }];
-        return;
+        [response setJsonBody:@{@"error" : @"BlobReadFailed",
+                                @"message" : @"Failed to send blob"}];
       }
-      [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
-      return;
     }
-
-    if (![blobData isKindOfClass:[NSData class]]) {
-      response.statusCode = HttpStatusInternalServerError;
-      [response setJsonBody:@{
-        @"error" : @"BlobReadFailed",
-        @"message" : @"Blob payload unavailable"
-      }];
-      return;
-    }
-
-    if (hasRange) {
-      NSUInteger offset = (NSUInteger)start;
-      NSUInteger length = (NSUInteger)(end - start + 1);
-      [response
-          setBodyData:[blobData subdataWithRange:NSMakeRange(offset, length)]];
-      return;
-    }
-
-    [response setBodyData:blobData];
   }];
 
   // com.atproto.sync.subscribeRepos

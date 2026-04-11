@@ -310,4 +310,84 @@
                           expectedContentRange);
 }
 
+- (void)testRepoGetBlobRangeReturnsPartialContent {
+    NSError *error = nil;
+    NSData *blobData = [@"RepoRangeBlobPayload" dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *cid = [self uploadBlobAndReturnCIDForData:blobData mimeType:@"text/plain" error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(cid);
+    if (!cid) {
+        return;
+    }
+
+    NSDictionary *session = [self.controller loginWithHandle:@"blobtest.bsky.social"
+                                                    password:@"password"
+                                                       error:&error];
+    XCTAssertNil(error);
+    NSString *accessJwt = session[@"accessJwt"];
+
+    // Test Range request on repo.getBlob
+    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                     methodString:@"GET"
+                                                             path:@"/xrpc/com.atproto.repo.getBlob"
+                                                      queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
+                                                      queryParams:@{@"did": self.did, @"cid": cid}
+                                                          version:@"1.1"
+                                                          headers:@{
+        @"range": @"bytes=0-3",
+        @"authorization": [NSString stringWithFormat:@"Bearer %@", accessJwt]
+    }
+                                                             body:[NSData data]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:getRequest response:getResponse];
+
+    XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)206);
+    XCTAssertEqualObjects([getResponse headerForKey:@"Accept-Ranges"], @"bytes");
+    NSString *expectedContentRange = [NSString stringWithFormat:@"bytes 0-3/%lu",
+                                      (unsigned long)blobData.length];
+    XCTAssertEqualObjects([getResponse headerForKey:@"Content-Range"],
+                          expectedContentRange);
+    XCTAssertEqualObjects(getResponse.body, [blobData subdataWithRange:NSMakeRange(0, 4)]);
+}
+
+- (void)testRepoGetBlobRangeUnsatisfiableReturns416 {
+    NSError *error = nil;
+    NSData *blobData = [@"Tiny" dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *cid = [self uploadBlobAndReturnCIDForData:blobData mimeType:@"text/plain" error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(cid);
+    if (!cid) {
+        return;
+    }
+
+    NSDictionary *session = [self.controller loginWithHandle:@"blobtest.bsky.social"
+                                                    password:@"password"
+                                                       error:&error];
+    XCTAssertNil(error);
+    NSString *accessJwt = session[@"accessJwt"];
+
+    // Test unsatisfiable Range request on repo.getBlob
+    HttpRequest *getRequest = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                                     methodString:@"GET"
+                                                             path:@"/xrpc/com.atproto.repo.getBlob"
+                                                      queryString:[NSString stringWithFormat:@"did=%@&cid=%@", self.did, cid]
+                                                      queryParams:@{@"did": self.did, @"cid": cid}
+                                                          version:@"1.1"
+                                                          headers:@{
+        @"range": @"bytes=999-1000",
+        @"authorization": [NSString stringWithFormat:@"Bearer %@", accessJwt]
+    }
+                                                             body:[NSData data]
+                                                       remoteAddress:@"127.0.0.1"];
+    HttpResponse *getResponse = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:getRequest response:getResponse];
+
+    XCTAssertEqual(getResponse.statusCode, (HttpStatusCode)416);
+    NSString *expectedContentRange = [NSString stringWithFormat:@"bytes */%lu",
+                                      (unsigned long)blobData.length];
+    XCTAssertEqualObjects([getResponse headerForKey:@"Content-Range"],
+                          expectedContentRange);
+}
+
 @end
