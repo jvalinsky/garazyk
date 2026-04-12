@@ -17,6 +17,10 @@
 @import "RelayDashboardController.j"
 @import "RelayUpstreamsController.j"
 @import "RelayEventsController.j"
+@import "PLCDirectoryController.j"
+@import "PLCDetailController.j"
+@import "PLCTimelineController.j"
+@import "PLCMetricsController.j"
 
 @implementation AppController : CPObject
 {
@@ -37,12 +41,20 @@
     RelayUpstreamsController _relayUpstreamsController;
     RelayEventsController _relayEventsController;
 
+    // PLC Controllers
+    PLCDirectoryController _plcDirectoryController;
+    PLCDetailController _plcDetailController;
+    PLCTimelineController _plcTimelineController;
+    PLCMetricsController _plcMetricsController;
+
     // Service tab views
     CPTabView _serviceTabView;
     CPView _pdsTabContentView;
     CPView _relayTabContentView;
+    CPView _plcTabContentView;
     CPTabView _pdsSubTabView;
     CPTabView _relaySubTabView;
+    CPTabView _plcSubTabView;
 }
 
 - (void)applicationDidFinishLaunching:(CPNotification)aNotification
@@ -73,13 +85,26 @@
                                                                               apiClient:_apiClient];
     _relayEventsController = [[RelayEventsController alloc] initWithSessionState:_sessionState
                                                                           apiClient:_apiClient];
+
+    // PLC controllers
+    _plcDirectoryController = [[PLCDirectoryController alloc] initWithSessionState:_sessionState
+                                                                           apiClient:_apiClient];
+    _plcDetailController = [[PLCDetailController alloc] initWithSessionState:_sessionState
+                                                                     apiClient:_apiClient];
+    _plcTimelineController = [[PLCTimelineController alloc] initWithSessionState:_sessionState
+                                                                       apiClient:_apiClient];
+    _plcMetricsController = [[PLCMetricsController alloc] initWithSessionState:_sessionState
+                                                                       apiClient:_apiClient];
+
+    // Wire directory -> detail/timeline
+    [_plcDirectoryController setDelegate:self];
 }
 
 - (void)setUpWindow
 {
     _window = [[CPWindow alloc] initWithContentRect:CGRectMake(80.0, 80.0, 1200.0, 800.0)
                                            styleMask:CPTitledWindowMask | CPClosableWindowMask | CPResizableWindowMask];
-    [_window setTitle:@"September UI (Objective-J)"];
+    [_window setTitle:@"Kaszlak UI (Cappuccino)"];
 
     var contentBounds = [[_window contentView] bounds],
         statusBarHeight = 26.0,
@@ -128,6 +153,21 @@
     [_relayTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_relayTabContentView addSubview:_relaySubTabView];
 
+    // PLC sub-tabs
+    _plcSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+    [_plcSubTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [_plcSubTabView setTabViewType:CPTopTabsBezelBorder];
+
+    [self addTabToView:_plcSubTabView label:@"Directory" contentView:[_plcDirectoryController rootView]];
+    [self addTabToView:_plcSubTabView label:@"Detail" contentView:[_plcDetailController rootView]];
+    [self addTabToView:_plcSubTabView label:@"Timeline" contentView:[_plcTimelineController rootView]];
+    [self addTabToView:_plcSubTabView label:@"Metrics" contentView:[_plcMetricsController rootView]];
+
+    // PLC content view
+    _plcTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+    [_plcTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [_plcTabContentView addSubview:_plcSubTabView];
+
     // Service-level tab view (no tabs visible - uses segmented control instead)
     _serviceTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, serviceTabHeight, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
     [_serviceTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
@@ -135,12 +175,14 @@
 
     [self addTabToView:_serviceTabView label:@"PDS" contentView:_pdsTabContentView];
     [self addTabToView:_serviceTabView label:@"Relay" contentView:_relayTabContentView];
+    [self addTabToView:_serviceTabView label:@"PLC" contentView:_plcTabContentView];
 
     // Service selector segmented control
-    var segmentedControl = [[CPSegmentedControl alloc] initWithFrame:CGRectMake(20.0, 4.0, 180.0, 24.0)];
-    [segmentedControl setSegmentCount:2];
+    var segmentedControl = [[CPSegmentedControl alloc] initWithFrame:CGRectMake(20.0, 4.0, 260.0, 24.0)];
+    [segmentedControl setSegmentCount:3];
     [segmentedControl setLabel:@"PDS" forSegment:0];
     [segmentedControl setLabel:@"Relay" forSegment:1];
+    [segmentedControl setLabel:@"PLC" forSegment:2];
     [segmentedControl setSelectedSegment:0];
     [segmentedControl setTarget:self];
     [segmentedControl setAction:@selector(handleServiceSelected:)];
@@ -171,14 +213,17 @@
 - (void)handleServiceSelected:(id)sender
 {
     var selected = [sender selectedSegment];
-    if (selected === 0)
-    {
-        [_serviceTabView selectTabViewItemAtIndex:0];
-    }
-    else if (selected === 1)
-    {
-        [_serviceTabView selectTabViewItemAtIndex:1];
-    }
+    [_serviceTabView selectTabViewItemAtIndex:selected];
+}
+
+// PLCDirectoryController delegate
+- (void)plcDirectoryController:(PLCDirectoryController)controller didSelectDID:(CPString)did
+{
+    [_plcDetailController loadDID:did];
+    [_plcTimelineController loadDID:did];
+
+    // Switch to PLC detail view
+    [_plcSubTabView selectTabViewItemAtIndex:1];
 }
 
 - (void)updateClockLabel
