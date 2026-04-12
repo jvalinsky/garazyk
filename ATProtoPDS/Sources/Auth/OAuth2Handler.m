@@ -2456,13 +2456,115 @@ static dispatch_once_t sClientCacheOnceToken;
     return;
   }
 
-  // TODO: Implement OAuth token introspection (Phase 1)
-  // For now, return 501 Not Implemented
-  response.statusCode = 501;
-  [response setJsonBody:@{
-    @"error" : @"server_error",
-    @"error_description" : @"Token introspection not yet implemented"
-  }];
+  // OAuth Token Introspection (RFC 7662)
+  // The token parameter is already validated above
+
+  // Try to parse as JWT access token first
+  NSError *jwtError = nil;
+  JWT *jwt = [JWT jwtWithToken:token error:&jwtError];
+
+  if (jwt) {
+    // Verify JWT signature
+    JWTVerifier *verifier = [[JWTVerifier alloc] init];
+    if ([verifier verifyJWT:jwt error:&jwtError]) {
+      JWTPayload *payload = jwt.payload;
+
+      // Check if token is expired
+      NSDate *now = [NSDate date];
+      if (payload.exp && [payload.exp compare:now] == NSOrderedAscending) {
+        // Token expired
+        [response setJsonBody:@{ @"active" : @NO }];
+        response.statusCode = 200;
+        return;
+      }
+
+      // Not yet valid check
+      if (payload.nbf && [payload.nbf compare:now] == NSOrderedDescending) {
+        [response setJsonBody:@{ @"active" : @NO }];
+        response.statusCode = 200;
+        return;
+      }
+
+      // Build introspection response for valid access token
+      NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
+      introspection[@"active"] = @YES;
+      introspection[@"token_type"] = @"bearer";
+
+      if (payload.iss)
+        introspection[@"iss"] = payload.iss;
+      if (payload.sub)
+        introspection[@"sub"] = payload.sub;
+      if (payload.aud)
+        introspection[@"aud"] = payload.aud;
+      introspection[@"client_id"] = clientID;
+      if (payload.scope)
+        introspection[@"scope"] = payload.scope;
+      if (payload.iat)
+        introspection[@"iat"] = @((long long)[payload.iat timeIntervalSince1970]);
+      if (payload.exp)
+        introspection[@"exp"] = @((long long)[payload.exp timeIntervalSince1970]);
+      if (payload.nbf)
+        introspection[@"nbf"] = @((long long)[payload.nbf timeIntervalSince1970]);
+      if (payload.jti)
+        introspection[@"jti"] = payload.jti;
+      if (payload.did)
+        introspection[@"did"] = payload.did;
+      if (payload.handle)
+        introspection[@"username"] = payload.handle;
+
+      [response setJsonBody:introspection];
+      response.statusCode = 200;
+      return;
+    }
+  }
+
+  // Not a valid JWT - check if it's a refresh token in active sessions
+  for (NSString *sessionId in self.oauthServer.activeSessions) {
+    Session *session = self.oauthServer.activeSessions[sessionId];
+    if ([CryptoUtils constantTimeCompare:session.refreshToken to:token]) {
+      // Found refresh token in active sessions
+      NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
+      introspection[@"active"] = @YES;
+      introspection[@"token_type"] = @"refresh_token";
+      introspection[@"client_id"] = clientID;
+      if (session.did)
+        introspection[@"sub"] = session.did;
+      if (session.handle)
+        introspection[@"username"] = session.handle;
+      if (session.scope)
+        introspection[@"scope"] = session.scope;
+
+      [response setJsonBody:introspection];
+      response.statusCode = 200;
+      return;
+    }
+  }
+
+  // Also check for access token match in sessions (non-JWT tokens)
+  for (NSString *sessionId in self.oauthServer.activeSessions) {
+    Session *session = self.oauthServer.activeSessions[sessionId];
+    if ([CryptoUtils constantTimeCompare:session.accessToken to:token]) {
+      NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
+      introspection[@"active"] = @YES;
+      introspection[@"token_type"] = @"bearer";
+      introspection[@"client_id"] = clientID;
+      if (session.did)
+        introspection[@"sub"] = session.did;
+      if (session.handle)
+        introspection[@"username"] = session.handle;
+      if (session.scope)
+        introspection[@"scope"] = session.scope;
+
+      [response setJsonBody:introspection];
+      response.statusCode = 200;
+      return;
+    }
+  }
+
+  // Token not found or invalid - return inactive
+  // Always return 200 to prevent token enumeration (RFC 7662)
+  [response setJsonBody:@{ @"active" : @NO }];
+  response.statusCode = 200;
 }
 
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response {
