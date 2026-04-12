@@ -11,6 +11,71 @@
 
 @implementation XrpcAppBskyNotificationPack
 
++ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                              appViewDatabase:(PDSDatabase *)appViewDatabase
+                                    jwtMinter:(JWTMinter *)jwtMinter
+                              adminController:(id<PDSAdminController>)adminController {
+    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
+
+    [dispatcher registerMethod:@"app.bsky.notification.putNotificationPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = request.jsonBody;
+        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        BOOL priority = [body[@"priority"] boolValue];
+
+        NSError *error = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
+
+        NSMutableArray *prefsList = [NSMutableArray array];
+        if (currentPrefs && currentPrefs[@"preferences"] && [currentPrefs[@"preferences"] isKindOfClass:[NSArray class]]) {
+            prefsList = [currentPrefs[@"preferences"] mutableCopy];
+        }
+
+        BOOL found = NO;
+        for (NSUInteger i = 0; i < prefsList.count; i++) {
+            NSMutableDictionary *pref = [prefsList[i] mutableCopy];
+            if ([pref[@"$type"] isEqualToString:@"app.bsky.notification.defs#notificationPref"]) {
+                pref[@"priority"] = @(priority);
+                prefsList[i] = pref;
+                found = YES;
+                break;
+            }
+        }
+
+        if (!found) {
+            [prefsList addObject:@{
+                @"$type": @"app.bsky.notification.defs#notificationPref",
+                @"priority": @(priority)
+            }];
+        }
+
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:prefsList error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+}
+
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  appViewDatabase:(PDSDatabase *)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
