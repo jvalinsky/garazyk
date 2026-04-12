@@ -1,5 +1,21 @@
 [
   {
+    "hash": "180e6afbc067d28361a76c4ac25bd6f63c090de7",
+    "short_hash": "180e6af",
+    "author": "Security Bot",
+    "date": "2026-04-12T15:54:16-04:00",
+    "message": "chore(letta): expand allowed shell permissions for build and relay tooling\n\nAdd cmake/make build targets (kaszlak, campagnola, zuk, AllTests),\ndeciduous graph management commands, and binary rename script\ninvocations to the approved Bash command list.\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "de8cfb9b2c070dcd84254550c55051423d5219e1",
+    "short_hash": "de8cfb9",
+    "author": "Security Bot",
+    "date": "2026-04-12T15:33:51-04:00",
+    "message": "chore(graph): sync decision graph for syrena AppView implementation\n\n167 nodes, 158 edges — goal 154 (Standalone AppView Server) fully linked\nwith actions 155, 159 and outcomes 160-167 across 6 implementation commits.\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
     "hash": "ab30f944a509df17973f8920c56a8c1fe1ab3942",
     "short_hash": "ab30f94",
     "author": "Security Bot",
