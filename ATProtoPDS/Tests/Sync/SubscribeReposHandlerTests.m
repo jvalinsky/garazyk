@@ -87,9 +87,10 @@
 - (void)tearDown {
     [self.handler stop];
     [self.controller stopServer];
-    [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     self.handler = nil;
     self.controller = nil;
+    @autoreleasepool { }  // Drain to ensure deallocs before file deletion
+    [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     [super tearDown];
 }
 

@@ -7,31 +7,31 @@
  */
 
 #import "PDSHttpServerBuilder.h"
-#import "../Admin/PDSAdminHandler.h"
-#import "../App/CappuccinoUI/CappuccinoUIHandler.h"
-#import "../App/Explore/ExploreHandler.h"
-#import "../App/MSTViewer/MSTViewerHandler.h"
-#import "../App/NodeInfo/NodeInfoHandler.h"
-#import "../App/OAuthDemo/OAuthDemoHandler.h"
-#import "../App/PDSApplication.h"
-#import "../App/PDSConfiguration.h"
-#import "../App/PDSController.h"
-#import "../Auth/JWT.h"
-#import "../Auth/OAuth2Handler.h"
-#import "../Auth/WebAuthnRegistrationHandler.h"
-#import "../Database/PDSDatabase.h"
-#import "../Database/Service/ServiceDatabases.h"
-#import "../Debug/PDSLogger.h"
-#import "../Metrics/PDSMetrics.h"
-#import "../Identity/ATProtoHandleValidator.h"
-#import "../Sync/SubscribeReposHandler.h"
-#import "../Sync/RelayAPIHandler.h"
+#import "App/CappuccinoUI/CappuccinoUIHandler.h"
+#import "App/Explore/ExploreHandler.h"
+#import "App/MSTViewer/MSTViewerHandler.h"
+#import "App/NodeInfo/NodeInfoHandler.h"
+#import "App/OAuthDemo/OAuthDemoHandler.h"
+#import "App/PDSApplication.h"
+#import "App/PDSConfiguration.h"
+#import "App/PDSController.h"
+#import "Auth/JWT.h"
+#import "Auth/OAuth2Handler.h"
+#import "Auth/WebAuthnRegistrationHandler.h"
+#import "Database/PDSDatabase.h"
+#import "Database/Service/ServiceDatabases.h"
+#import "Debug/PDSLogger.h"
+#import "Metrics/PDSMetrics.h"
+#import "Network/PDSHttpAdminRoutePack.h"
+#import "Network/PDSHttpWellKnownRoutePack.h"
+#import "Network/PDSHttpXrpcRoutePack.h"
+#import "Sync/RelayAPIHandler.h"
+#import "Sync/SubscribeReposHandler.h"
 #import "HttpRequest.h"
 #import "HttpResponse.h"
 #import "HttpServer.h"
 #import "PDSNetworkTransport.h"
 #import "XrpcHandler.h"
-#import "XrpcMethodRegistry.h"
 
 @interface PDSHttpServerBuilder ()
 @property(nonatomic, strong, nullable) PDSConfiguration *configuration;
@@ -228,7 +228,6 @@
 }
 
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
   NSArray<NSString *> *allowedOrigins = [self getCorsAllowedOrigins];
   NSString *origin = [request headerForKey:@"Origin"];
 
@@ -249,91 +248,17 @@
 }
 
 - (void)registerXrpcRoutesWithServer:(HttpServer *)server {
-  XrpcDispatcher *dispatcher = self.xrpcDispatcher;
-  if (!dispatcher) {
-    dispatcher = [[XrpcDispatcher alloc] init];
-  }
-
-  if (self.application) {
-    [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
-                                          application:self.application];
-  } else if (self.controller) {
-    [XrpcMethodRegistry registerMethodsWithDispatcher:dispatcher
-                                           controller:self.controller];
-  } else {
-    PDS_LOG_ERROR(@"No application provided to PDSHttpServerBuilder for XRPC "
-                  @"registration");
-  }
-
-  __weak XrpcDispatcher *weakDispatcher = dispatcher;
-  __weak SubscribeReposHandler *weakSubscribeReposHandler =
-      self.subscribeReposHandler;
-
-  // OPTIONS preflight for XRPC prefix
-  [server addRoute:@"OPTIONS"
-              path:@"/xrpc"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             [self setCorsHeaders:response forRequest:request];
-             response.statusCode = HttpStatusOK;
-           }];
-
-  // Handler for /xrpc (prefix match for all XRPC methods)
-  [server
-      addHandlerForPath:@"/xrpc"
-                handler:^(HttpRequest *request, HttpResponse *response) {
-                  if ([request.methodString isEqualToString:@"OPTIONS"]) {
-                    [self setCorsHeaders:response forRequest:request];
-                    response.statusCode = HttpStatusOK;
-                    return;
-                  }
-                  PDS_LOG_HTTP_INFO(
-                      @"About to call dispatcher handleRequest for %@",
-                      request.path);
-                  [dispatcher handleRequest:request response:response];
-                  PDS_LOG_HTTP_INFO(@"dispatcher handleRequest returned for %@",
-                                    request.path);
-                }];
-
-  // OPTIONS preflight for XRPC methods
-  [server addRoute:@"OPTIONS"
-              path:@"/xrpc/:method"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             [self setCorsHeaders:response forRequest:request];
-             response.statusCode = HttpStatusOK;
-           }];
-
-  // Handler for /xrpc/:method
-  [server addRoute:@"*"
-              path:@"/xrpc/:method"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             [dispatcher handleRequest:request response:response];
-           }];
-
-  if (self.subscribeReposHandler) {
-    // OPTIONS preflight for WebSocket upgrade
-    [server addRoute:@"OPTIONS"
-                path:@"/xrpc/com.atproto.sync.subscribeRepos"
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               [self setCorsHeaders:response forRequest:request];
-               response.statusCode = HttpStatusOK;
-             }];
-
-    [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
-                      handler:^(HttpRequest *request, HttpResponse *response,
-                                id<PDSNetworkConnection> connection) {
-                        SubscribeReposHandler *strongSubscribeReposHandler =
-                            weakSubscribeReposHandler;
-                        if (!strongSubscribeReposHandler) {
-                          [connection cancel];
-                          return;
-                        }
-                        [strongSubscribeReposHandler
-                            acceptUpgradedConnection:connection
-                                             request:request];
-                      }];
-  }
-
-  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: XRPC routes registered");
+  [PDSHttpXrpcRoutePack registerRoutesWithServer:server
+                                      dispatcher:self.xrpcDispatcher
+                                     application:self.application
+                                      controller:self.controller
+                           subscribeReposHandler:self.subscribeReposHandler
+                                  setCorsHeaders:^(
+                                      HttpResponse *response,
+                                      HttpRequest *request) {
+                                    [self setCorsHeaders:response
+                                              forRequest:request];
+                                  }];
 }
 
 - (ExploreHandler *)registerExploreRoutesWithServer:(HttpServer *)server {
@@ -504,170 +429,16 @@
 }
 
 - (void)registerWellKnownRoutesWithServer:(HttpServer *)server {
-  __weak PDSServiceDatabases *weakServiceDatabases = self.serviceDatabases;
-  __weak PDSController *weakController = self.controller;
-  __weak PDSConfiguration *weakConfiguration = self.configuration;
-
-  NSString *_Nullable (^normalizedHostFromHostHeader)(NSString *_Nullable) =
-      ^NSString *_Nullable(NSString *_Nullable hostHeader) {
-    if (![hostHeader isKindOfClass:[NSString class]]) {
-      return nil;
-    }
-
-    NSString *host = [hostHeader
-        stringByTrimmingCharactersInSet:[NSCharacterSet
-                                            whitespaceAndNewlineCharacterSet]];
-    if (host.length == 0) {
-      return nil;
-    }
-
-    // Remove any trailing dot(s).
-    while ([host hasSuffix:@"."] && host.length > 1) {
-      host = [host substringToIndex:host.length - 1];
-    }
-
-    // Strip port if present (e.g., "example.com:443" -> "example.com").
-    // Keep IPv6 literal support ("[::1]:2583" -> "::1") even though handles are
-    // domains.
-    if ([host hasPrefix:@"["]) {
-      NSRange closingBracket = [host rangeOfString:@"]"];
-      if (closingBracket.location != NSNotFound &&
-          closingBracket.location > 1) {
-        host = [host
-            substringWithRange:NSMakeRange(1, closingBracket.location - 1)];
-      }
-    } else {
-      NSRange lastColon = [host rangeOfString:@":" options:NSBackwardsSearch];
-      if (lastColon.location != NSNotFound) {
-        // Only treat as host:port if there's a single colon.
-        if ([host rangeOfString:@":"
-                        options:0
-                          range:NSMakeRange(0, lastColon.location)]
-                .location == NSNotFound) {
-          host = [host substringToIndex:lastColon.location];
-        }
-      }
-    }
-
-    host = [ATProtoHandleValidator normalizeHandle:host];
-    return host.length > 0 ? host : nil;
-  };
-
-  BOOL (^hostMatchesAllowedDomains)(NSString *host,
-                                    NSArray<NSString *> *allowedDomains) =
-      ^BOOL(NSString *host, NSArray<NSString *> *allowedDomains) {
-        if (allowedDomains.count == 0) {
-          return YES;
-        }
-
-        for (NSString *domain in allowedDomains) {
-          NSString *normalizedDomain =
-              [normalizedHostFromHostHeader(domain) ?: @"" copy];
-          if (normalizedDomain.length == 0) {
-            continue;
-          }
-          if ([host isEqualToString:normalizedDomain]) {
-            return YES;
-          }
-          NSString *suffix = [@"." stringByAppendingString:normalizedDomain];
-          if ([host hasSuffix:suffix]) {
-            return YES;
-          }
-        }
-        return NO;
-      };
-
-  void (^handleWellKnownAtprotoDid)(HttpRequest *request,
-                                    HttpResponse *response, BOOL includeBody) =
-      ^(HttpRequest *request, HttpResponse *response, BOOL includeBody) {
-        // Per ATProto spec: The handle is determined by the Host header in the
-        // HTTP request.
-        NSString *hostHeader = [request headerForKey:@"Host"];
-        NSString *handle = normalizedHostFromHostHeader(hostHeader);
-
-        if (handle.length == 0) {
-          response.statusCode = HttpStatusBadRequest;
-          response.contentType = @"text/plain; charset=utf-8";
-          if (includeBody) {
-            [response setBodyString:@"missing host header\n"];
-          }
-          return;
-        }
-
-        // Optionally scope to configured available user domains.
-        PDSConfiguration *config = weakConfiguration;
-        NSArray<NSString *> *allowedDomains =
-            config.availableUserDomains ?: @[];
-        if (!hostMatchesAllowedDomains(handle, allowedDomains)) {
-          response.statusCode = HttpStatusNotFound;
-          response.contentType = @"text/plain; charset=utf-8";
-          if (includeBody) {
-            [response setBodyString:@"not found\n"];
-          }
-          return;
-        }
-
-        // Look up the DID for this handle in the database.
-        PDSServiceDatabases *strongServiceDatabases = weakServiceDatabases;
-        if (!strongServiceDatabases) {
-          PDSController *strongController = weakController;
-          strongServiceDatabases = strongController.serviceDatabases;
-        }
-
-        if (!strongServiceDatabases) {
-          response.statusCode = HttpStatusInternalServerError;
-          response.contentType = @"text/plain; charset=utf-8";
-          if (includeBody) {
-            [response setBodyString:@"internal error\n"];
-          }
-          return;
-        }
-
-        NSError *dbError = nil;
-        PDSDatabaseAccount *account =
-            [strongServiceDatabases getAccountByHandle:handle error:&dbError];
-        if (dbError) {
-          PDS_LOG_ERROR(@"Database error looking up handle %@: %@", handle,
-                        dbError.localizedDescription ?: @"unknown error");
-          response.statusCode = HttpStatusInternalServerError;
-          response.contentType = @"text/plain; charset=utf-8";
-          if (includeBody) {
-            [response setBodyString:@"internal error\n"];
-          }
-          return;
-        }
-
-        if (!account || account.did.length == 0) {
-          response.statusCode = HttpStatusNotFound;
-          response.contentType = @"text/plain; charset=utf-8";
-          if (includeBody) {
-            [response setBodyString:@"not found\n"];
-          }
-          return;
-        }
-
-        response.statusCode = HttpStatusOK;
-        response.contentType = @"text/plain; charset=utf-8";
-        [response setHeader:@"Host" forKey:@"Vary"];
-        [response setHeader:@"max-age=300" forKey:@"Cache-Control"];
-        if (includeBody) {
-          [response setBodyString:[account.did stringByAppendingString:@"\n"]];
-        }
-      };
-
-  [server addHandlerForPath:@"/.well-known/atproto-did"
-                    handler:^(HttpRequest *request, HttpResponse *response) {
-                      [self setCorsHeaders:response forRequest:request];
-                      NSString *method = request.methodString.uppercaseString;
-                      if ([method isEqualToString:@"OPTIONS"]) {
-                        response.statusCode = HttpStatusOK;
-                      } else {
-                        handleWellKnownAtprotoDid(request, response,
-                                                  [method isEqualToString:@"GET"]);
-                      }
-                    }];
-
-  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: .well-known routes registered");
+  [PDSHttpWellKnownRoutePack registerRoutesWithServer:server
+                                      serviceDatabases:self.serviceDatabases
+                                            controller:self.controller
+                                         configuration:self.configuration
+                                        setCorsHeaders:^(
+                                            HttpResponse *response,
+                                            HttpRequest *request) {
+                                          [self setCorsHeaders:response
+                                                    forRequest:request];
+                                        }];
 }
 
 - (void)registerMetricsEndpointWithServer:(HttpServer *)server {
@@ -684,124 +455,11 @@
 }
 
 - (void)registerAdminRoutesWithServer:(HttpServer *)server {
-  PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
-
-  NSArray *adminPaths = @[
-    @"/admin", @"/admin/login", @"/admin/logout", @"/admin/users",
-    @"/admin/invites", @"/admin/invites/disable", @"/admin/blobs",
-    @"/admin/metrics", @"/admin/health", @"/admin/stats", @"/admin/audit-log"
-  ];
-
-  for (NSString *path in adminPaths) {
-    [server addRoute:@"GET"
-                path:path
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               NSString *result =
-                   [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
-                                                    path:path
-                                                 headers:request.headers
-                                                    body:request.body];
-               if (result) {
-                 response.statusCode = 200;
-                 [response setBodyString:result];
-               } else {
-                 response.statusCode = 404;
-                 [response setJsonBody:@{@"error" : @"Not Found"}];
-               }
-             }];
-
-    [server addRoute:@"POST"
-                path:path
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               NSString *result =
-                   [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
-                                                    path:path
-                                                 headers:request.headers
-                                                    body:request.body];
-               if (result) {
-                 response.statusCode = 200;
-                 [response setBodyString:result];
-               } else {
-                 response.statusCode = 404;
-                 [response setJsonBody:@{@"error" : @"Not Found"}];
-               }
-             }];
-  }
-
-  [self registerAdminUIRoutesWithServer:server];
-
-  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Admin routes registered");
+  [PDSHttpAdminRoutePack registerAdminRoutesWithServer:server];
 }
 
 - (void)registerAdminUIRoutesWithServer:(HttpServer *)server {
-  NSFileManager *fm = [NSFileManager defaultManager];
-  NSString *assetsPath = nil;
-
-  // Try multiple locations for AdminUI/Assets
-  NSArray *candidates = @[
-    [[[NSBundle mainBundle] resourcePath]
-        stringByAppendingPathComponent:@"AdminUI/Assets"],
-    [[NSBundle bundleForClass:[self class]].resourcePath
-        stringByAppendingPathComponent:@"AdminUI/Assets"],
-    [[fm currentDirectoryPath] stringByAppendingPathComponent:
-                                   @"ATProtoPDS/Sources/App/AdminUI/Assets"],
-    [[[fm currentDirectoryPath]
-        stringByAppendingPathComponent:
-            @"../ATProtoPDS/Sources/App/AdminUI/Assets"]
-        stringByStandardizingPath],
-    @"/usr/share/atprotopds/assets/AdminUI",
-    @"/usr/local/share/atprotopds/assets/AdminUI",
-    @"/Users/jack/Software/objpds/ATProtoPDS/Sources/App/AdminUI/Assets"
-  ];
-
-  for (NSString *candidate in candidates) {
-    if ([fm fileExistsAtPath:candidate]) {
-      assetsPath = candidate;
-      break;
-    }
-  }
-
-  if (!assetsPath) {
-    PDS_LOG_WARN(@"PDSHttpServerBuilder: Admin UI assets not found in any "
-                 @"candidate path");
-    return;
-  }
-  PDS_LOG_INFO(@"PDSHttpServerBuilder: Admin UI assets found at %@",
-               assetsPath);
-
-  [server addRoute:@"GET"
-              path:@"/admin-ui/*"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             NSString *filePath = [request.path
-                 stringByReplacingOccurrencesOfString:@"/admin-ui/"
-                                           withString:@""];
-             if ([filePath containsString:@".."]) {
-               response.statusCode = 403;
-               [response setJsonBody:@{@"error" : @"Forbidden"}];
-               return;
-             }
-
-             NSString *fullPath =
-                 [assetsPath stringByAppendingPathComponent:filePath];
-             NSData *data = [NSData dataWithContentsOfFile:fullPath];
-             if (data) {
-               response.statusCode = 200;
-               if ([filePath hasSuffix:@".js"]) {
-                 [response setHeader:@"application/javascript"
-                              forKey:@"Content-Type"];
-               } else if ([filePath hasSuffix:@".css"]) {
-                 [response setHeader:@"text/css" forKey:@"Content-Type"];
-               } else if ([filePath hasSuffix:@".html"]) {
-                 [response setHeader:@"text/html" forKey:@"Content-Type"];
-               }
-               [response setBodyData:data];
-             } else {
-               response.statusCode = 404;
-               [response setJsonBody:@{@"error" : @"Not Found"}];
-             }
-           }];
-
-  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Admin UI routes registered");
+  [PDSHttpAdminRoutePack registerAdminUIRoutesWithServer:server];
 }
 
 @end
