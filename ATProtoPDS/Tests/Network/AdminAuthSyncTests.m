@@ -358,12 +358,13 @@
   NSString *uri = created[@"uri"];
   NSString *rkey = uri.pathComponents.lastObject;
   XCTAssertTrue(rkey.length > 0);
+  NSError *deleteError = nil;
   BOOL deleted = [self.application.legacyController
       deleteRecordForDid:self.userDid
               collection:@"app.bsky.feed.post"
                     rkey:rkey
-                   error:nil];
-  XCTAssertTrue(deleted);
+                   error:&deleteError];
+  XCTAssertTrue(deleted, @"Delete should succeed: %@", deleteError.localizedDescription ?: @"no error");
 
   NSString *deltaQuery = [NSString
       stringWithFormat:@"did=%@&since=%@", self.userDid, beforeDeleteRev];
