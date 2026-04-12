@@ -34,44 +34,36 @@
     XCTAssertEqualObjects(response.jsonBody[@"subject"][@"did"], self.userDid);
 }
 
+// MARK: - Deprecated Endpoints (410 Gone - migrated to tools.ozone.*)
+
 - (void)testApplicationGetAccountTakedownRequiresAuth {
+    // DEPRECATED: com.atproto.admin.getAccountTakedown -> tools.ozone.moderation.getRepo
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{}];
-    XCTAssertEqual(response.statusCode, 401);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
+    XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testApplicationGetAccountTakedownNonAdminForbidden {
+    // DEPRECATED: com.atproto.admin.getAccountTakedown -> tools.ozone.moderation.getRepo
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(response.statusCode, 403);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"Forbidden");
+    XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testApplicationGetAccountTakedownAdminSuccess {
+    // DEPRECATED: com.atproto.admin.getAccountTakedown -> tools.ozone.moderation.getRepo
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
 
-    HttpResponse *before = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
                                                     body:@{@"did": self.userDid}
                                                  headers:@{@"authorization": adminAuthHeader}];
-    XCTAssertEqual(before.statusCode, 200);
-    XCTAssertEqualObjects(before.jsonBody[@"did"], self.userDid);
-    XCTAssertEqualObjects(before.jsonBody[@"applied"], @NO);
-
-    HttpResponse *update = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.updateSubjectStatus"
-                                                    body:@{@"subject": @{@"did": self.userDid}, @"reason": @"integration-test"}
-                                                 headers:@{@"authorization": adminAuthHeader}];
-    XCTAssertEqual(update.statusCode, 200);
-
-    HttpResponse *after = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.getAccountTakedown"
-                                                   body:@{@"did": self.userDid}
-                                                headers:@{@"authorization": adminAuthHeader}];
-    XCTAssertEqual(after.statusCode, 200);
-    XCTAssertEqualObjects(after.jsonBody[@"did"], self.userDid);
-    XCTAssertEqualObjects(after.jsonBody[@"applied"], @YES);
+    XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testApplicationUpdateSubjectStatusRequiresAuth {
@@ -86,25 +78,27 @@
 }
 
 - (void)testApplicationModerateAccountRequiresAuth {
+    // DEPRECATED: com.atproto.admin.moderateAccount -> tools.ozone.moderation.emitEvent
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateAccount"
                                                       body:@{
                                                           @"did": self.userDid,
                                                           @"reason": @"test"
                                                       }
                                                    headers:@{}];
-    XCTAssertEqual(response.statusCode, 401);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
+    XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testApplicationModerateRecordRequiresAuth {
+    // DEPRECATED: com.atproto.admin.moderateRecord -> tools.ozone.moderation.emitEvent
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
-                                                      body:@{
+                                                      body=@{
                                                           @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
                                                           @"reason": @"test"
                                                       }
                                                    headers:@{}];
-    XCTAssertEqual(response.statusCode, 401);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
+    XCTAssertEqual(response.statusCode, 410);  // HttpStatusGone - endpoint deprecated
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testApplicationCreateLabelRequiresAuth {
