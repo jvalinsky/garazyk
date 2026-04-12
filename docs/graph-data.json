@@ -1836,6 +1836,61 @@
       "created_at": "2026-04-12T15:33:40.787133-04:00",
       "updated_at": "2026-04-12T15:33:40.787133-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ab30f944\",\"confidence\":95}"
+    },
+    {
+      "id": 168,
+      "change_id": "129be44e-0862-46fc-90e4-e63319f3f39a",
+      "node_type": "outcome",
+      "title": "Synced and committed decision graph",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-12T15:33:55.764605-04:00",
+      "updated_at": "2026-04-12T15:33:55.764605-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"de8cfb9b\",\"confidence\":95}"
+    },
+    {
+      "id": 169,
+      "change_id": "ecaac352-0817-408d-a9aa-bc4a342268f2",
+      "node_type": "goal",
+      "title": "Full local ATProto network Docker Compose (PLC+PDS+Relay+AppView)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-12T15:53:50.734236-04:00",
+      "updated_at": "2026-04-12T15:53:50.734236-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"make a full local network docker compose environment for pds, plc, relay, and appview/backfill demo\"}"
+    },
+    {
+      "id": 170,
+      "change_id": "4f500522-7c56-42ad-86ea-eca9d145adf3",
+      "node_type": "action",
+      "title": "Add zuk and syrena to Dockerfile runtime stage",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-12T15:53:54.415587-04:00",
+      "updated_at": "2026-04-12T15:53:54.415587-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"files\":[\"docker/Dockerfile.gnustep\"]}"
+    },
+    {
+      "id": 171,
+      "change_id": "369ec892-beec-49bf-b123-d1380acd2c94",
+      "node_type": "action",
+      "title": "Create docker/local-network compose: campagnola, kaszlak, zuk, syrena on local_net",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-12T15:53:54.464297-04:00",
+      "updated_at": "2026-04-12T15:53:54.464297-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"files\":[\"docker/local-network/docker-compose.yml\",\"docker/local-network/pds-config.json\"]}"
+    },
+    {
+      "id": 172,
+      "change_id": "32aded75-37af-4267-8b6e-6bc24c991bb5",
+      "node_type": "outcome",
+      "title": "Committed: Dockerfile + local-network compose (campagnola/kaszlak/zuk/syrena)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-12T15:54:25.798533-04:00",
+      "updated_at": "2026-04-12T15:54:25.798533-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"180e6afb\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3576,6 +3631,50 @@
       "weight": 1.0,
       "rationale": "Tests committed",
       "created_at": "2026-04-12T15:33:40.796371-04:00"
+    },
+    {
+      "id": 159,
+      "from_node_id": 160,
+      "to_node_id": 168,
+      "from_change_id": "008d7abf-df13-4726-a9b6-10990c6a0d75",
+      "to_change_id": "129be44e-0862-46fc-90e4-e63319f3f39a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Graph synced",
+      "created_at": "2026-04-12T15:33:55.773615-04:00"
+    },
+    {
+      "id": 160,
+      "from_node_id": 169,
+      "to_node_id": 170,
+      "from_change_id": "ecaac352-0817-408d-a9aa-bc4a342268f2",
+      "to_change_id": "4f500522-7c56-42ad-86ea-eca9d145adf3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Dockerfile must ship all four binaries",
+      "created_at": "2026-04-12T15:53:57.976940-04:00"
+    },
+    {
+      "id": 161,
+      "from_node_id": 169,
+      "to_node_id": 171,
+      "from_change_id": "ecaac352-0817-408d-a9aa-bc4a342268f2",
+      "to_change_id": "369ec892-beec-49bf-b123-d1380acd2c94",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Compose wires campagnola/kaszlak/zuk/syrena together",
+      "created_at": "2026-04-12T15:53:57.985951-04:00"
+    },
+    {
+      "id": 162,
+      "from_node_id": 171,
+      "to_node_id": 172,
+      "from_change_id": "369ec892-beec-49bf-b123-d1380acd2c94",
+      "to_change_id": "32aded75-37af-4267-8b6e-6bc24c991bb5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation committed",
+      "created_at": "2026-04-12T15:54:25.808036-04:00"
     }
   ],
   "documents": [
