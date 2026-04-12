@@ -8,11 +8,12 @@
  and replay detection are injected via protocols to avoid coupling to
  specific storage implementations.
 
+ Cross-platform: Works on both macOS and GNUstep.
+
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <Foundation/Foundation.h>
-#import <Security/Security.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
