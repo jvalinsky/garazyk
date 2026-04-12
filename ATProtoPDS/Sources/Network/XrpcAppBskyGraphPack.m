@@ -188,14 +188,25 @@
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
-        NSError *error = nil;
-        NSArray *relationships = [graphService getRelationships:actor withActors:others error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
+
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *viewerDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+
+        NSMutableArray *relationships = [NSMutableArray array];
+        for (NSString *otherDID in others) {
+            NSError *error = nil;
+            NSDictionary *rel = [graphService getRelationship:viewerDID ?: actor withActor:otherDID error:&error];
+            if (rel) {
+                [relationships addObject:rel];
+            }
         }
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"relationships": relationships ?: @[]}];
+        [response setJsonBody:@{@"actor": actor, @"relationships": relationships}];
     }];
 
     // app.bsky.graph.getLists - Get lists created by an actor
