@@ -31,14 +31,25 @@
 #pragma mark - Helper Functions
 
 static BOOL parseIntegerParam(NSString *value, NSInteger *outValue, NSInteger defaultValue) {
-    return XrpcParseLimit(value, outValue, 0, INT_MAX, nil) || (outValue && (*outValue = defaultValue, YES));
+    if (!value || value.length == 0) {
+        if (outValue) *outValue = defaultValue;
+        return YES;
+    }
+    // Use without response parameter - just validate range
+    NSInteger parsed = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:value];
+    if (![scanner scanInteger:&parsed] || !scanner.isAtEnd) {
+        return NO;
+    }
+    if (outValue) *outValue = parsed;
+    return YES;
 }
 
 static BOOL parseAtURI(NSString *uri, NSString **outDid, NSString **outCollection, NSString **outRkey) {
     return XrpcParseAtURI(uri, outDid, outCollection, outRkey);
 }
 
-static NSString *const kGraphMuteStatePreferenceType = kXrpcGraphMuteStatePreferenceType;
+// Use kXrpcGraphMuteStatePreferenceType from XrpcAppBskyGraphHelpers.h directly
 
 static NSMutableArray<NSDictionary *> *mutablePreferenceEntries(NSDictionary *preferencesEnvelope) {
     return XrpcMutablePreferenceEntries(preferencesEnvelope);

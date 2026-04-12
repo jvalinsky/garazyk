@@ -66,7 +66,6 @@ static NSString *appPasswordGenerateSecret(void) {
 @property (nonatomic, copy) NSString *serviceDbPath;
 @property (nonatomic, copy) NSString *didCacheDbPath;
 @property (nonatomic, copy) NSString *sequencerDbPath;
-@property (nonatomic, assign) NSUInteger refreshTokenTTLSeconds;
 
 @end
 
