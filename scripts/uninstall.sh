@@ -45,14 +45,14 @@ remove_launchd() {
 remove_binary() {
     log_info "Removing binary..."
 
-    rm -f /usr/local/bin/september && log_info "Removed binary" || log_warn "Binary not found at /usr/local/bin/september"
+    rm -f /usr/local/bin/kaszlak && log_info "Removed binary" || log_warn "Binary not found at /usr/local/bin/kaszlak"
 }
 
 remove_data() {
     log_info "Removing data directory..."
 
     if [[ "${REMOVE_DATA:-false}" == "true" ]]; then
-        rm -rf /var/db/september && log_info "Removed data directory" || log_warn "Data directory not found"
+        rm -rf /var/db/kaszlak && log_info "Removed data directory" || log_warn "Data directory not found"
     else
         log_info "Skipped data removal (use --purge to remove)"
     fi
@@ -62,7 +62,7 @@ remove_config() {
     log_info "Removing configuration..."
 
     if [[ "${REMOVE_CONFIG:-false}" == "true" ]]; then
-        rm -rf /usr/local/etc/september && log_info "Removed configuration" || log_warn "Config directory not found"
+        rm -rf /usr/local/etc/kaszlak && log_info "Removed configuration" || log_warn "Config directory not found"
     else
         log_info "Skipped config removal (use --purge to remove)")
     fi
@@ -96,11 +96,11 @@ print_summary() {
     if [[ "${REMOVE_DATA:-false}" == "true" ]]; then
         echo "  - Data directory removed"
     else
-        echo "  - Data directory preserved (${DATA_DIR:-/var/db/september})"
+        echo "  - Data directory preserved (${DATA_DIR:-/var/db/kaszlak})"
     fi
     echo ""
     echo "To complete removal:"
-    echo "  rm -rf ${DATA_DIR:-/var/db/september}  # Remove data directory"
+    echo "  rm -rf ${DATA_DIR:-/var/db/kaszlak}  # Remove data directory"
     echo "============================================"
 }
 

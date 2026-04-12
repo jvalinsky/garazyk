@@ -15,16 +15,16 @@ settings:
 
 targets:
   # Main CLI Tool - wrapper around CMake build
-  ATProtoPDS-CLI:
+  kaszlak:
     type: tool
     platform: macOS
-    sources: [] 
+    sources: []
     settings:
       base:
-        PRODUCT_NAME: september
+        PRODUCT_NAME: kaszlak
         INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/september"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/kaszlak"
     prebuildScripts:
         - name: "Build with CMake"
           basedOnDependencyAnalysis: false
@@ -52,19 +52,19 @@ targets:
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=OFF \
               -DBUILD_FUZZERS=OFF
-            cmake --build . --target september --parallel $(sysctl -n hw.ncpu)
+            cmake --build . --target kaszlak --parallel $(sysctl -n hw.ncpu)
 
   # Standalone PLC Server
-  atproto-plc:
+  campagnola:
     type: tool
     platform: macOS
     sources: []
     settings:
       base:
-        PRODUCT_NAME: atproto-plc
+        PRODUCT_NAME: campagnola
         INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/atproto-plc"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/campagnola"
     prebuildScripts:
         - name: "Build PLC with CMake"
           basedOnDependencyAnalysis: false
@@ -90,7 +90,45 @@ targets:
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=OFF \
               -DBUILD_FUZZERS=OFF
-            cmake --build . --target atproto-plc --parallel $(sysctl -n hw.ncpu)
+            cmake --build . --target campagnola --parallel $(sysctl -n hw.ncpu)
+
+  # Standalone Relay Server
+  zuk:
+    type: tool
+    platform: macOS
+    sources: []
+    settings:
+      base:
+        PRODUCT_NAME: zuk
+        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/zuk"
+    prebuildScripts:
+        - name: "Build Zuk with CMake"
+          basedOnDependencyAnalysis: false
+          script: |
+            #!/bin/bash
+            set -e
+            mkdir -p "${PROJECT_DIR}/build"
+            cd "${PROJECT_DIR}/build"
+            XCODE_CLANG="$(xcrun -find clang)"
+            XCODE_CLANGXX="$(xcrun -find clang++)"
+            if [ -f CMakeCache.txt ] && grep -q "/\\.swiftly/bin/cc" CMakeCache.txt; then
+              rm -f CMakeCache.txt
+              rm -rf CMakeFiles
+            fi
+            # Configure and build
+            cmake .. \
+              -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+              -DCMAKE_C_COMPILER="${XCODE_CLANG}" \
+              -DCMAKE_CXX_COMPILER="${XCODE_CLANGXX}" \
+              -DCMAKE_OBJC_COMPILER="${XCODE_CLANG}" \
+              -DCMAKE_OBJCXX_COMPILER="${XCODE_CLANGXX}" \
+              -DBUILD_SECP256K1=ON \
+              -DBUILD_TESTS=OFF \
+              -DBUILD_FUZZERS=OFF
+            cmake --build . --target zuk --parallel $(sysctl -n hw.ncpu)
 
   # Test Runner - wrapper around CMake build
   AllTests:

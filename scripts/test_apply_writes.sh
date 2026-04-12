@@ -24,14 +24,14 @@ cleanup() {
         kill "$SERVER_PID" 2>/dev/null || true
         wait "$SERVER_PID" 2>/dev/null || true
     fi
-    pkill -f "september.*$PORT" 2>/dev/null || true
+    pkill -f "kaszlak.*$PORT" 2>/dev/null || true
     rm -f "$DB_PATH" 2>/dev/null || true
 }
 
 trap cleanup EXIT
 
 # Kill any existing server and clean up
-pkill -f "september.*$PORT" 2>/dev/null || true
+pkill -f "kaszlak.*$PORT" 2>/dev/null || true
 sleep 1
 rm -f "$DB_PATH" 2>/dev/null || true
 

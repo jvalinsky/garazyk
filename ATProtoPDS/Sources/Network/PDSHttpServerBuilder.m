@@ -25,6 +25,7 @@
 #import "../Metrics/PDSMetrics.h"
 #import "../Identity/ATProtoHandleValidator.h"
 #import "../Sync/SubscribeReposHandler.h"
+#import "../Sync/RelayAPIHandler.h"
 #import "HttpRequest.h"
 #import "HttpResponse.h"
 #import "HttpServer.h"
@@ -155,6 +156,9 @@
   if (self.enableNodeInfo) {
     [self registerNodeInfoRoutesWithServer:server];
   }
+
+  // Register Relay API routes
+  [self registerRelayAPIRoutesWithServer:server];
 
   // Register .well-known routes (handle resolution)
   [self registerWellKnownRoutesWithServer:server];
@@ -445,6 +449,33 @@
                 }];
 
   PDS_LOG_DEBUG(@"PDSHttpServerBuilder: MST Viewer routes registered");
+}
+
+- (void)registerRelayAPIRoutesWithServer:(HttpServer *)server {
+  RelayAPIHandler *relayAPIHandler = [RelayAPIHandler sharedHandler];
+
+  // Relay metrics endpoint
+  [server addRoute:@"GET"
+              path:@"/api/relay/metrics"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [relayAPIHandler handleRequest:request response:response];
+           }];
+
+  // Relay upstreams endpoint
+  [server addRoute:@"GET"
+              path:@"/api/relay/upstreams"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [relayAPIHandler handleRequest:request response:response];
+           }];
+
+  // Relay health endpoint
+  [server addRoute:@"GET"
+              path:@"/api/relay/health"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [relayAPIHandler handleRequest:request response:response];
+           }];
+
+  PDS_LOG_DEBUG(@"PDSHttpServerBuilder: Relay API routes registered");
 }
 
 - (void)registerNodeInfoRoutesWithServer:(HttpServer *)server {

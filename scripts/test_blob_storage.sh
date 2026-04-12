@@ -27,7 +27,7 @@ cleanup() {
         kill "$SERVER_PID" 2>/dev/null || true
         wait "$SERVER_PID" 2>/dev/null || true
     fi
-    pkill -f "september.*$PORT" 2>/dev/null || true
+    pkill -f "kaszlak.*$PORT" 2>/dev/null || true
     rm -f "$PID_FILE"
     rm -f "$TEST_DB"
     rm -f "$HOME/Library/Application Support/ATProtoPDS/ratelimits.db"
@@ -60,7 +60,7 @@ if [ ! -f "build/bin/kaszlak" ]; then
 fi
 
 # Kill any existing server on our port
-pkill -f "september.*$PORT" 2>/dev/null || true
+pkill -f "kaszlak.*$PORT" 2>/dev/null || true
 sleep 1
 
 # Clean up any existing test files

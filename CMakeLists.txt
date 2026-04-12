@@ -306,51 +306,74 @@ set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES} ${COMP
 # Main Executables
 #=============================
 
-# CLI Tool (september → kaszlak)
-add_executable(september
+# CLI Tool (kaszlak - PDS binary)
+add_executable(kaszlak
   ${ATProtoPDS_SOURCES}
   ATProtoPDS/Sources/CLI/main.m
 )
 
-target_include_directories(september PRIVATE
+target_include_directories(kaszlak PRIVATE
   ATProtoPDS/Sources
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(september PRIVATE
+target_link_libraries(kaszlak PRIVATE
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
 )
 
-target_compile_definitions(september PRIVATE
+target_compile_definitions(kaszlak PRIVATE
   SQLITE_THREADSAFE=2
 )
 
-set_target_properties(september PROPERTIES
-  OUTPUT_NAME "kaszlak"
+set_target_properties(kaszlak PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-# PLC Server (atproto-plc)
-add_executable(atproto-plc
+# PLC Server (campagnola - PLC directory binary)
+add_executable(campagnola
   ${ATProtoPDS_SOURCES}
   ATProtoPDS/Sources/PLC/main.m
 )
 
-target_include_directories(atproto-plc PRIVATE
+target_include_directories(campagnola PRIVATE
   ATProtoPDS/Sources
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(atproto-plc PRIVATE
+target_link_libraries(campagnola PRIVATE
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
 )
 
-set_target_properties(atproto-plc PROPERTIES
-  OUTPUT_NAME "campagnola"
+set_target_properties(campagnola PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+# Relay Server (zuk - AT Protocol relay)
+add_executable(zuk
+  ${ATProtoPDS_SOURCES}
+  ATProtoPDS/Sources/Relay/main.m
+)
+
+target_include_directories(zuk PRIVATE
+  ATProtoPDS/Sources
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(zuk PRIVATE
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+  ${READLINE_LIBRARY}
+)
+
+target_compile_definitions(zuk PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(zuk PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
@@ -536,7 +559,7 @@ endif()
 #=============================
 # Installation
 #=============================
-install(TARGETS september
+install(TARGETS kaszlak
   RUNTIME DESTINATION bin
 )
 
@@ -712,8 +735,9 @@ message(STATUS "ATProtoPDS Build System")
 message(STATUS "===========================================")
 message(STATUS "")
 message(STATUS "Build Targets:")
-message(STATUS "  september         - PDS CLI tool")
-message(STATUS "  atproto-plc       - Standalone PLC server")
+message(STATUS "  kaszlak           - PDS CLI tool")
+message(STATUS "  campagnola        - PLC directory server")
+message(STATUS "  zuk               - Relay server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
 message(STATUS "  fuzz_cbor         - CBOR/CAR fuzzer")
