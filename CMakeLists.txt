@@ -569,6 +569,63 @@ set_target_properties(zuk PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
+# AppView server source library
+file(GLOB_RECURSE ATPROTO_APPVIEW_SERVER_SOURCES
+  "ATProtoPDS/Sources/AppViewServer/*.m"
+  "ATProtoPDS/Sources/AppViewServer/*.c"
+)
+# Exclude binary entrypoint from the library
+list(FILTER ATPROTO_APPVIEW_SERVER_SOURCES EXCLUDE REGEX ".*/AppViewServer/Binary/.*\\.m$")
+
+add_library(ATProtoAppViewServer STATIC ${ATPROTO_APPVIEW_SERVER_SOURCES})
+
+target_include_directories(ATProtoAppViewServer PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(ATProtoAppViewServer PRIVATE
+  ATProtoStorage
+  ATProtoServices
+  ATProtoSync
+  ATProtoTransport
+  ATProtoCore
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+)
+
+# AppView Server binary (syrena)
+add_executable(syrena
+  ATProtoPDS/Sources/AppViewServer/Binary/main.m
+)
+
+target_include_directories(syrena PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(syrena PRIVATE
+  ATProtoAppViewServer
+  ATProtoStorage
+  ATProtoServices
+  ATProtoSync
+  ATProtoTransport
+  ATProtoCore
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+  ${READLINE_LIBRARY}
+)
+
+target_compile_definitions(syrena PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(syrena PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
 # Tutorial 1: Hello PDS Example
 add_executable(hello-pds
   examples/tutorial-1-hello-pds/src/main.m
@@ -739,6 +796,7 @@ if(BUILD_TESTS)
     ATProtoStorage
     ATProtoCore
     ATProtoPLC
+    ATProtoAppViewServer
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
   )
@@ -963,6 +1021,7 @@ message(STATUS "Build Targets:")
 message(STATUS "  kaszlak           - PDS CLI tool")
 message(STATUS "  campagnola        - PLC directory server")
 message(STATUS "  zuk               - Relay server")
+message(STATUS "  syrena          - Standalone AppView server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
 message(STATUS "  fuzz_cbor         - CBOR/CAR fuzzer")
