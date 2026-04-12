@@ -105,37 +105,50 @@
 
     _passwordField = [[CPTextField alloc] initWithFrame:CGRectMake(86.0, 68.0, 210.0, 26.0)];
     [_passwordField setPlaceholderString:@"Admin password"];
+    [_passwordField setAccessibilityLabel:@"Admin password input"];
+    [_passwordField setAccessibilityHint:@"Enter the admin secret to authenticate"];
 
     var loginButton = [[CPButton alloc] initWithFrame:CGRectMake(304.0, 68.0, 72.0, 28.0)];
     [loginButton setTitle:@"Login"];
     [loginButton setTarget:self];
     [loginButton setAction:@selector(handleLogin:)];
+    [loginButton setAccessibilityLabel:@"Login"];
+    [loginButton setAccessibilityHint:@"Authenticate with the admin password"];
 
     var logoutButton = [[CPButton alloc] initWithFrame:CGRectMake(382.0, 68.0, 78.0, 28.0)];
     [logoutButton setTitle:@"Logout"];
     [logoutButton setTarget:self];
     [logoutButton setAction:@selector(handleLogout:)];
+    [logoutButton setAccessibilityLabel:@"Logout"];
+    [logoutButton setAccessibilityHint:@"End the admin session"];
 
     _authStateLabel = [[CPTextField alloc] initWithFrame:CGRectMake(470.0, 72.0, 170.0, 18.0)];
     [_authStateLabel setEditable:NO];
     [_authStateLabel setBezeled:NO];
     [_authStateLabel setDrawsBackground:NO];
     [_authStateLabel setStringValue:@"Auth: Signed out"];
+    [_authStateLabel setAccessibilityLabel:@"Authentication state"];
 
     var openOverviewButton = [[CPButton alloc] initWithFrame:CGRectMake(660.0, 68.0, 114.0, 28.0)];
     [openOverviewButton setTitle:@"Open Overview"];
     [openOverviewButton setTarget:self];
     [openOverviewButton setAction:@selector(handleOpenOverviewPanel:)];
+    [openOverviewButton setAccessibilityLabel:@"Open overview panel"];
+    [openOverviewButton setAccessibilityHint:@"Open the server overview in a new window"];
 
     var openInvitesButton = [[CPButton alloc] initWithFrame:CGRectMake(782.0, 68.0, 106.0, 28.0)];
     [openInvitesButton setTitle:@"Invite Codes"];
     [openInvitesButton setTarget:self];
     [openInvitesButton setAction:@selector(handleOpenInvitesPanel:)];
+    [openInvitesButton setAccessibilityLabel:@"Open invite codes panel"];
+    [openInvitesButton setAccessibilityHint:@"Manage invite codes in a new window"];
 
     var openModerationButton = [[CPButton alloc] initWithFrame:CGRectMake(896.0, 68.0, 132.0, 28.0)];
     [openModerationButton setTitle:@"Moderation"];
     [openModerationButton setTarget:self];
     [openModerationButton setAction:@selector(handleOpenModerationPanel:)];
+    [openModerationButton setAccessibilityLabel:@"Open moderation panel"];
+    [openModerationButton setAccessibilityHint:@"View moderation tools in a new window"];
 
     _tabView = [[CPTabView alloc] initWithFrame:CGRectMake(20.0, 104.0, 1040.0, 576.0)];
     [_tabView setDelegate:self];
