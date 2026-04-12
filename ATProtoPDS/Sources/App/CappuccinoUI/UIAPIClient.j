@@ -20,6 +20,7 @@
     [endpointBases setObject:@"/oauth" forKey:@"oauth"];
     [endpointBases setObject:@"/oauth-demo" forKey:@"oauthDemo"];
     [endpointBases setObject:@"/api/relay" forKey:@"relay"];
+    [endpointBases setObject:@"" forKey:@"plc"]; // PLC endpoints at root
     return [self initWithEndpointBases:endpointBases];
 }
 
@@ -203,6 +204,55 @@
 - (void)getJSONWithPath:(CPString)path queryParams:(id)queryParams completion:(Function)completion
 {
     [self getJSONWithPath:path endpointGroup:@"explore" queryParams:queryParams completion:completion];
+}
+
+// Convenience method for simple fetch
+- (void)fetch:(CPString)method path:(CPString)path params:(id)params completion:(Function)completion
+{
+    var group = @"explore";
+    // Auto-detect group based on path
+    if ([path hasPrefix:@"/_"] || [path hasPrefix:@"/did:"]) {
+        group = @"plc";
+    } else if ([path hasPrefix:@"/api/relay"]) {
+        group = @"relay";
+    }
+
+    [self getJSONWithPath:path endpointGroup:group queryParams:params completion:completion];
+}
+
+// Fetch raw text (for Prometheus metrics)
+- (void)fetchRaw:(CPString)method path:(CPString)path params:(id)params completion:(Function)completion
+{
+    var group = @"plc";
+    if ([path hasPrefix:@"/api/relay"]) {
+        group = @"relay";
+    }
+
+    var urlString = [self URLStringForPath:path endpointGroup:group queryParams:params],
+        xhr = new XMLHttpRequest();
+
+    xhr.open(String(method), String(urlString), YES);
+    xhr.setRequestHeader("Accept", "*/*");
+
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState !== 4)
+            return;
+
+        var statusCode = xhr.status || 0,
+            responseText = xhr.responseText || "";
+
+        if (completion)
+            completion(responseText, statusCode >= 400 ? {localizedDescription: "HTTP " + statusCode} : nil);
+    };
+
+    xhr.onerror = function()
+    {
+        if (completion)
+            completion(nil, {localizedDescription: "Network error"});
+    };
+
+    xhr.send();
 }
 
 @end
