@@ -39,6 +39,7 @@
 
 - (void)tearDown {
     [self.pool closeAll];
+    [self.service.serviceDatabases closeAll];
     self.pool = nil;
     self.service = nil;
     [[NSFileManager defaultManager] removeItemAtPath:self.testDirectory error:nil];

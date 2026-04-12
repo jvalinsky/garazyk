@@ -8,7 +8,6 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/PDSDataPaths.h"
 #import "Identity/ATProtoHandleValidator.h"
-#import "App/PDSConfiguration.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -67,6 +66,7 @@ static NSString *appPasswordGenerateSecret(void) {
 @property (nonatomic, copy) NSString *serviceDbPath;
 @property (nonatomic, copy) NSString *didCacheDbPath;
 @property (nonatomic, copy) NSString *sequencerDbPath;
+@property (nonatomic, assign) NSUInteger refreshTokenTTLSeconds;
 
 @end
 
@@ -108,6 +108,7 @@ static NSString *appPasswordGenerateSecret(void) {
         _servicePool = [[PDSDatabasePool alloc] initWithDbDirectory:_serviceDbPath maxSize:serviceMaxSize];
         _didCachePool = [[PDSDatabasePool alloc] initWithDbDirectory:_didCacheDbPath maxSize:didCacheMaxSize];
         _sequencerPool = [[PDSDatabasePool alloc] initWithDbDirectory:_sequencerDbPath maxSize:sequencerMaxSize];
+        _refreshTokenTTLSeconds = 30 * 24 * 60 * 60;
         
         [self applyPerformancePragmasOnPool:_servicePool];
         [self applyPerformancePragmasOnPool:_didCachePool];
@@ -396,8 +397,9 @@ static NSString *appPasswordGenerateSecret(void) {
         sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 3, [[NSDate date] timeIntervalSince1970]);
         
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-        NSUInteger refreshTokenTtl = config.refreshTokenTtlSeconds > 0 ? config.refreshTokenTtlSeconds : (30 * 24 * 60 * 60);
+        NSUInteger refreshTokenTtl = self.refreshTokenTTLSeconds > 0
+                                         ? self.refreshTokenTTLSeconds
+                                         : (30 * 24 * 60 * 60);
         sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:refreshTokenTtl] timeIntervalSince1970]);
 
         BOOL result = (sqlite3_step(stmt) == SQLITE_DONE);

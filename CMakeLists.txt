@@ -158,18 +158,17 @@ if(APPLE)
         set(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE ON)
     endif()
 
-    set(PLATFORM_LIBRARIES 
-        ${FOUNDATION} 
-        ${NETWORK} 
-        ${SECURITY} 
+    set(PLATFORM_LIBRARIES
+        ${FOUNDATION}
+        ${NETWORK}
+        ${SECURITY}
         ${LOCALAUTH}
-        ${COREIMAGE} 
-        ${APPKIT} 
-        ${IMAGEIO} 
+        ${COREIMAGE}
+        ${APPKIT}
+        ${IMAGEIO}
         ${COREGRAPHICS}
         ${SQLite3_LIBRARY}
         ${READLINE_LIBRARY}
-        ${HISTORY_LIBRARY}
         resolv
     )
     if(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
@@ -237,71 +236,210 @@ if(BUILD_SECP256K1)
 endif()
 
 #=============================
-# Source Files
+# Source Files & Module Targets
 #=============================
 
-# Collect all Objective-C source files
-file(GLOB_RECURSE ATProtoPDS_OBJC_SOURCES "ATProtoPDS/Sources/**/*.m")
-file(GLOB_RECURSE ATProtoPDS_C_SOURCES "ATProtoPDS/Sources/**/*.c")
+function(pds_filter_common_sources source_var)
+  list(FILTER ${source_var} EXCLUDE REGEX ".*server_main\\.m$")
+  list(FILTER ${source_var} EXCLUDE REGEX ".*/App/main\\.m$")
+  list(FILTER ${source_var} EXCLUDE REGEX ".*/CLI/main\\.m$")
+  list(FILTER ${source_var} EXCLUDE REGEX ".*/PLC/main\\.m$")
+  list(FILTER ${source_var} EXCLUDE REGEX ".*/Relay/main\\.m$")
+  list(FILTER ${source_var} EXCLUDE REGEX ".*/tests/.*")
+  list(FILTER ${source_var} EXCLUDE REGEX ".*/Tests/.*")
+  list(REMOVE_DUPLICATES ${source_var})
+  set(${source_var} "${${source_var}}" PARENT_SCOPE)
+endfunction()
 
-# Exclude main entry points and test files
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*server_main\.m$")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/App/main\\.m$")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/main\\.m$")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/PLC/main\\.m$")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Relay/main\\.m$")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/tests/.*")
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Tests/.*")
+file(GLOB_RECURSE ATPROTO_CORE_SOURCES
+  "ATProtoPDS/Sources/Core/*.m"
+  "ATProtoPDS/Sources/Core/*.c"
+  "ATProtoPDS/Sources/Compat/*.m"
+  "ATProtoPDS/Sources/Compat/*.c"
+  "ATProtoPDS/Sources/Debug/*.m"
+  "ATProtoPDS/Sources/Debug/*.c"
+  "ATProtoPDS/Sources/Metrics/*.m"
+  "ATProtoPDS/Sources/Metrics/*.c"
+  "ATProtoPDS/Sources/AuthCrypto/*.m"
+  "ATProtoPDS/Sources/AuthCrypto/*.c"
+  "ATProtoPDS/Sources/AuthVerifier/*.m"
+  "ATProtoPDS/Sources/AuthVerifier/*.c"
+  "ATProtoPDS/Sources/Security/*.m"
+  "ATProtoPDS/Sources/Security/*.c"
+  "ATProtoPDS/Sources/Lexicon/*.m"
+  "ATProtoPDS/Sources/Lexicon/*.c"
+  "ATProtoPDS/Sources/App/PDSConfiguration.m"
+)
+list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.m$")
+list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.c$")
 
-# Handle platform-specific network transport implementations
-list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\.m$")
-list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m")
+file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
+  "ATProtoPDS/Sources/Database/*.m"
+  "ATProtoPDS/Sources/Database/*.c"
+  "ATProtoPDS/Sources/Repository/*.m"
+  "ATProtoPDS/Sources/Repository/*.c"
+  "ATProtoPDS/Sources/Core/Repositories/*.m"
+  "ATProtoPDS/Sources/Core/Repositories/*.c"
+)
+
+file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
+  "ATProtoPDS/Sources/Auth/*.m"
+  "ATProtoPDS/Sources/Auth/*.c"
+  "ATProtoPDS/Sources/Blob/*.m"
+  "ATProtoPDS/Sources/Blob/*.c"
+  "ATProtoPDS/Sources/Email/*.m"
+  "ATProtoPDS/Sources/Email/*.c"
+  "ATProtoPDS/Sources/Identity/*.m"
+  "ATProtoPDS/Sources/Identity/*.c"
+  "ATProtoPDS/Sources/OAuthProvider/*.m"
+  "ATProtoPDS/Sources/OAuthProvider/*.c"
+  "ATProtoPDS/Sources/App/Services/*.m"
+  "ATProtoPDS/Sources/App/Services/*.c"
+  "ATProtoPDS/Sources/Services/*.m"
+  "ATProtoPDS/Sources/Services/*.c"
+  "ATProtoPDS/Sources/Admin/*.m"
+  "ATProtoPDS/Sources/Admin/*.c"
+  "ATProtoPDS/Sources/AppView/*.m"
+  "ATProtoPDS/Sources/AppView/*.c"
+  "ATProtoPDS/Sources/Media/*.m"
+  "ATProtoPDS/Sources/Media/*.c"
+  "ATProtoPDS/Sources/Federation/*.m"
+  "ATProtoPDS/Sources/Federation/*.c"
+)
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/PDSAuth/.*")
+
+file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
+  "ATProtoPDS/Sources/Network/*.m"
+  "ATProtoPDS/Sources/Network/*.c"
+)
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.c$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpXrpcRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpServerBuilder\\.m$")
+
+file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
+  "ATProtoPDS/Sources/Network/Xrpc*.m"
+  "ATProtoPDS/Sources/Network/Xrpc*.c"
+  "ATProtoPDS/Sources/Network/PDSHttpXrpcRoutePack.m"
+  "ATProtoPDS/Sources/Sync/RelayXRPCMethods.m"
+  "ATProtoPDS/Sources/Sync/RelayXRPCMethods.c"
+)
+
+file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
+  "ATProtoPDS/Sources/Sync/*.m"
+  "ATProtoPDS/Sources/Sync/*.c"
+)
+list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.m$")
+list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.c$")
+
+file(GLOB_RECURSE ATPROTO_PLC_SOURCES
+  "ATProtoPDS/Sources/PLC/*.m"
+  "ATProtoPDS/Sources/PLC/*.c"
+)
+
+file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
+  "ATProtoPDS/Sources/App/*.m"
+  "ATProtoPDS/Sources/App/*.c"
+  "ATProtoPDS/Sources/CLI/*.m"
+  "ATProtoPDS/Sources/CLI/*.c"
+  "ATProtoPDS/Sources/PDSAuth/*.m"
+  "ATProtoPDS/Sources/PDSAuth/*.c"
+  "ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m"
+)
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/PDSConfiguration\\.m$")
+
+# Handle platform-specific network transport implementations.
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")
+list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m")
 if(APPLE)
-    list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m")
-    if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
-        # OpenSSL-based manager is unavailable on this macOS host.
-        list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
-    endif()
+  list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m")
+  if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+    # OpenSSL-based manager is unavailable on this macOS host.
+    list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
+  endif()
 endif()
 
-# Exclude files using macOS-only APIs on Linux builds
 if(NOT APPLE)
-
-
   # PDSAppleKeyManager.m uses Security.framework (macOS/iOS only)
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
+  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
 
-  # PDSCLIHealthCommand uses Mach APIs (task_info, TASK_VM_INFO)
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
+  # PDSCLIHealthCommand uses Mach APIs.
+  list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
 
-  # SSLPinningManager.m uses SecTrust (not yet ported)
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
+  # SSLPinningManager.m uses SecTrust (not yet ported).
+  list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
 
-  # WebSocketServer.m uses Network.framework
-  list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
+  # WebSocketServer.m uses Network.framework.
+  list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
 
-  # Enable Identity resolvers (using GNUstep NSURLSession or fallback)
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Core/DID\\.m$")
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Federation/FederationClient\\.m$")
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolver\\.m$")
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/HandleResolver\\.m$")
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCClient\\.m$")
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCDirectoryClient\\.m$")
-  # list(FILTER ATProtoPDS_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/PLCAccountCreator\\.m$")
-
-  # Add Linux stub implementations
-  list(APPEND ATProtoPDS_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/Stubs/LinuxStubs.m")
+  # Add Linux stub implementations and compat shims.
+  list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/Stubs/LinuxStubs.m")
+  file(GLOB COMPAT_SOURCES
+    "Sources/Compat/*.m"
+    "Sources/Compat/*.c")
+  list(APPEND ATPROTO_CORE_SOURCES ${COMPAT_SOURCES})
 endif()
 
-# Add compat sources for Linux
-if(NOT APPLE)
-  file(GLOB COMPAT_SOURCES "Sources/Compat/**/*.m")
-  file(GLOB COMPAT_SOURCES_C "Sources/Compat/**/*.c")
-  file(GLOB ATPROTOPDS_COMPAT_SOURCES "ATProtoPDS/Sources/Compat/**/*.m")
-  list(APPEND ATProtoPDS_OBJC_SOURCES ${COMPAT_SOURCES} ${COMPAT_SOURCES_C} ${ATPROTOPDS_COMPAT_SOURCES})
-endif()
+pds_filter_common_sources(ATPROTO_CORE_SOURCES)
+pds_filter_common_sources(ATPROTO_STORAGE_SOURCES)
+pds_filter_common_sources(ATPROTO_SERVICES_SOURCES)
+pds_filter_common_sources(ATPROTO_TRANSPORT_SOURCES)
+pds_filter_common_sources(ATPROTO_XRPC_SOURCES)
+pds_filter_common_sources(ATPROTO_SYNC_SOURCES)
+pds_filter_common_sources(ATPROTO_PLC_SOURCES)
+pds_filter_common_sources(ATPROTO_RUNTIME_SOURCES)
 
-set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES} ${COMPAT_SOURCES_C})
+set(ATPROTO_ALL_RUNTIME_SOURCES
+  ${ATPROTO_CORE_SOURCES}
+  ${ATPROTO_STORAGE_SOURCES}
+  ${ATPROTO_SERVICES_SOURCES}
+  ${ATPROTO_TRANSPORT_SOURCES}
+  ${ATPROTO_XRPC_SOURCES}
+  ${ATPROTO_SYNC_SOURCES}
+  ${ATPROTO_PLC_SOURCES}
+  ${ATPROTO_RUNTIME_SOURCES}
+)
+list(REMOVE_DUPLICATES ATPROTO_ALL_RUNTIME_SOURCES)
+
+add_library(ATProtoCore STATIC ${ATPROTO_CORE_SOURCES})
+add_library(ATProtoStorage STATIC ${ATPROTO_STORAGE_SOURCES})
+add_library(ATProtoServices STATIC ${ATPROTO_SERVICES_SOURCES})
+add_library(ATProtoTransport STATIC ${ATPROTO_TRANSPORT_SOURCES})
+add_library(ATProtoXRPC STATIC ${ATPROTO_XRPC_SOURCES})
+add_library(ATProtoSync STATIC ${ATPROTO_SYNC_SOURCES})
+add_library(ATProtoPLC STATIC ${ATPROTO_PLC_SOURCES})
+add_library(ATProtoRuntime STATIC ${ATPROTO_RUNTIME_SOURCES})
+
+set(PDS_MODULE_TARGETS
+  ATProtoCore
+  ATProtoStorage
+  ATProtoServices
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoSync
+  ATProtoPLC
+  ATProtoRuntime
+)
+
+foreach(target ${PDS_MODULE_TARGETS})
+  target_include_directories(${target} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+    ${SECP256K1_INCLUDE_DIRS}
+  )
+  target_compile_definitions(${target} PUBLIC
+    SQLITE_THREADSAFE=2
+  )
+endforeach()
+
+target_link_libraries(ATProtoStorage PUBLIC ATProtoCore)
+target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore)
+target_link_libraries(ATProtoTransport PUBLIC ATProtoCore)
+target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
+target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore)
+target_link_libraries(ATProtoPLC PUBLIC ATProtoTransport ATProtoCore)
+target_link_libraries(ATProtoRuntime PUBLIC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore)
 
 #=============================
 # Main Executables
@@ -309,16 +447,23 @@ set(ATProtoPDS_SOURCES ${ATProtoPDS_OBJC_SOURCES} ${ATProtoPDS_C_SOURCES} ${COMP
 
 # CLI Tool (kaszlak - PDS binary)
 add_executable(kaszlak
-  ${ATProtoPDS_SOURCES}
   ATProtoPDS/Sources/CLI/main.m
 )
 
 target_include_directories(kaszlak PRIVATE
-  ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
 target_link_libraries(kaszlak PRIVATE
+  ATProtoRuntime
+  ATProtoServices
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoSync
+  ATProtoStorage
+  ATProtoCore
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
@@ -334,19 +479,26 @@ set_target_properties(kaszlak PROPERTIES
 
 # PLC Server (campagnola - PLC directory binary)
 add_executable(campagnola
-  ${ATProtoPDS_SOURCES}
   ATProtoPDS/Sources/PLC/main.m
 )
 
 target_include_directories(campagnola PRIVATE
-  ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
 target_link_libraries(campagnola PRIVATE
+  ATProtoPLC
+  ATProtoTransport
+  ATProtoCore
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
+)
+
+target_compile_definitions(campagnola PRIVATE
+  SQLITE_THREADSAFE=2
 )
 
 set_target_properties(campagnola PROPERTIES
@@ -355,16 +507,20 @@ set_target_properties(campagnola PROPERTIES
 
 # Relay Server (zuk - AT Protocol relay)
 add_executable(zuk
-  ${ATProtoPDS_SOURCES}
   ATProtoPDS/Sources/Relay/main.m
 )
 
 target_include_directories(zuk PRIVATE
-  ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
 target_link_libraries(zuk PRIVATE
+  ATProtoRuntime
+  ATProtoSync
+  ATProtoTransport
+  ATProtoCore
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
@@ -380,16 +536,23 @@ set_target_properties(zuk PROPERTIES
 
 # Tutorial 1: Hello PDS Example
 add_executable(hello-pds
-  ${ATProtoPDS_SOURCES}
   examples/tutorial-1-hello-pds/src/main.m
 )
 
 target_include_directories(hello-pds PRIVATE
-  ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
 target_link_libraries(hello-pds PRIVATE
+  ATProtoRuntime
+  ATProtoServices
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoSync
+  ATProtoStorage
+  ATProtoCore
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
 )
@@ -426,13 +589,16 @@ if(BUILD_FUZZERS)
     set(FUZZER_DRIVER "fuzzing/standalone_driver.cpp")
   endif()
 
-  set(FUZZER_SOURCES ${ATProtoPDS_SOURCES})
+  set(FUZZER_SOURCES ${ATPROTO_ALL_RUNTIME_SOURCES})
   
   # Macro to add fuzzer targets
   macro(add_pds_fuzzer name source)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
       add_executable(${name} ${source} ${FUZZER_SOURCES} ${FUZZER_DRIVER})
-      target_include_directories(${name} PRIVATE ATProtoPDS/Sources ${SECP256K1_INCLUDE_DIRS})
+      target_include_directories(${name} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+        ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+        ${SECP256K1_INCLUDE_DIRS})
       target_link_libraries(${name} PRIVATE ${PLATFORM_LIBRARIES} ${SECP256K1_LIBRARIES})
       target_compile_options(${name} PRIVATE ${FUZZER_CFLAGS})
       target_link_options(${name} PRIVATE ${FUZZER_LDFLAGS})
@@ -519,17 +685,25 @@ if(BUILD_TESTS)
   endif()
 
   add_executable(AllTests
-    ${ATProtoPDS_SOURCES}
     ${TEST_OBJC_SOURCES}
   )
 
   target_include_directories(AllTests PRIVATE
-    ATProtoPDS/Sources
-    ATProtoPDS/Tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests
     ${SECP256K1_INCLUDE_DIRS}
   )
   
   target_link_libraries(AllTests PRIVATE
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoCore
+    ATProtoPLC
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
   )
@@ -556,6 +730,16 @@ if(BUILD_TESTS)
 
   add_test(NAME AllTests COMMAND AllTests)
 endif()
+
+#=============================
+# Dependency Boundary Audits
+#=============================
+add_custom_target(check-boundaries
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_module_boundaries.sh" "${CMAKE_CURRENT_SOURCE_DIR}"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  COMMENT "Validating source import and module linkage boundaries"
+  VERBATIM
+)
 
 #=============================
 # Installation

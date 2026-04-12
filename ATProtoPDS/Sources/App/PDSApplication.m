@@ -10,14 +10,14 @@
 #import "PDSConfiguration.h"
 #import "PDSController.h"
 #import "Admin/PDSAdminController.h"
-#import "Services/PDSAccountService.h"
-#import "Services/PDSRecordService.h"
-#import "Services/PDSBlobService.h"
-#import "Services/PDSRepositoryService.h"
+#import "App/Services/PDSAccountService.h"
+#import "App/Services/PDSRecordService.h"
+#import "App/Services/PDSBlobService.h"
+#import "App/Services/PDSRepositoryService.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSRepositoryFactory.h"
-#import "Services/PDSRelayService.h"
+#import "App/Services/PDSRelayService.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/PDSKeyManagerFactory.h"
@@ -57,6 +57,10 @@
 @property (nonatomic, strong, readwrite) id<PDSAdminController> adminController;
 @property (nonatomic, strong, readwrite) PDSController *legacyController;
 @property (nonatomic, assign, readwrite, getter=isRunning) BOOL running;
+@property (nonatomic, assign) NSUInteger servicePoolSizeOverride;
+@property (nonatomic, assign) NSUInteger userPoolSizeOverride;
+@property (nonatomic, assign) NSUInteger didCachePoolSizeOverride;
+@property (nonatomic, assign) NSUInteger sequencerPoolSizeOverride;
 
 @end
 
@@ -123,20 +127,48 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 #pragma mark - Initialization
 
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
-    return [self initWithConfiguration:configuration dataDirectory:nil];
+    return [self initWithConfiguration:configuration
+                         dataDirectory:nil
+                        serviceMaxSize:0
+                   userDatabaseMaxSize:0
+                       didCacheMaxSize:0
+                     sequencerMaxSize:0];
 }
 
 - (instancetype)initWithDataDirectory:(NSString *)dataDirectory {
-    return [self initWithConfiguration:nil dataDirectory:dataDirectory];
+    return [self initWithConfiguration:nil
+                         dataDirectory:dataDirectory
+                        serviceMaxSize:0
+                   userDatabaseMaxSize:0
+                       didCacheMaxSize:0
+                     sequencerMaxSize:0];
 }
 
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory {
+    return [self initWithConfiguration:configuration
+                         dataDirectory:dataDirectory
+                        serviceMaxSize:0
+                   userDatabaseMaxSize:0
+                       didCacheMaxSize:0
+                     sequencerMaxSize:0];
+}
+
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
+                        dataDirectory:(nullable NSString *)dataDirectory
+                       serviceMaxSize:(NSUInteger)serviceMaxSize
+                  userDatabaseMaxSize:(NSUInteger)userDatabaseMaxSize
+                      didCacheMaxSize:(NSUInteger)didCacheMaxSize
+                    sequencerMaxSize:(NSUInteger)sequencerMaxSize {
     self = [super init];
     if (self) {
         _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
         _dataDirectory = dataDirectory ?: (_configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory]);
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
         _running = NO;
+        _servicePoolSizeOverride = serviceMaxSize;
+        _userPoolSizeOverride = userDatabaseMaxSize;
+        _didCachePoolSizeOverride = didCacheMaxSize;
+        _sequencerPoolSizeOverride = sequencerMaxSize;
 
         // M2: Catch unhandled ObjC exceptions
         NSSetUncaughtExceptionHandler(&PDSApplicationUncaughtExceptionHandler);
@@ -207,15 +239,32 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     }
     
     // Initialize database pools
-    NSUInteger serviceMaxSize = _configuration.serviceDatabasePoolMaxSize > 0 ? _configuration.serviceDatabasePoolMaxSize : 100;
-    NSUInteger userMaxSize = _configuration.userDatabasePoolMaxSize > 0 ? _configuration.userDatabasePoolMaxSize : 30000;
-    NSUInteger didCacheSize = _configuration.didCachePoolMaxSize > 0 ? _configuration.didCachePoolMaxSize : 1000;
-    NSUInteger sequencerSize = _configuration.sequencerPoolMaxSize > 0 ? _configuration.sequencerPoolMaxSize : 100;
+    NSUInteger serviceMaxSize = self.servicePoolSizeOverride > 0
+                                    ? self.servicePoolSizeOverride
+                                    : (_configuration.serviceDatabasePoolMaxSize > 0
+                                           ? _configuration.serviceDatabasePoolMaxSize
+                                           : 100);
+    NSUInteger userMaxSize = self.userPoolSizeOverride > 0
+                                 ? self.userPoolSizeOverride
+                                 : (_configuration.userDatabasePoolMaxSize > 0
+                                        ? _configuration.userDatabasePoolMaxSize
+                                        : 30000);
+    NSUInteger didCacheSize = self.didCachePoolSizeOverride > 0
+                                  ? self.didCachePoolSizeOverride
+                                  : (_configuration.didCachePoolMaxSize > 0
+                                         ? _configuration.didCachePoolMaxSize
+                                         : 1000);
+    NSUInteger sequencerSize = self.sequencerPoolSizeOverride > 0
+                                   ? self.sequencerPoolSizeOverride
+                                   : (_configuration.sequencerPoolMaxSize > 0
+                                          ? _configuration.sequencerPoolMaxSize
+                                          : 100);
     
     _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:_dataDirectory
                                                          serviceMaxSize:serviceMaxSize
                                                        didCacheMaxSize:didCacheSize
                                                      sequencerMaxSize:sequencerSize];
+    _serviceDatabases.refreshTokenTTLSeconds = _configuration.refreshTokenTtlSeconds;
     
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
     

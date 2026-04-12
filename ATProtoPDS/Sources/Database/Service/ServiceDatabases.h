@@ -63,6 +63,9 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 /*! Pool for user-level databases. */
 @property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
 
+/*! Policy value for refresh token expiry (seconds). Defaults to 30 days. */
+@property (nonatomic, assign) NSUInteger refreshTokenTTLSeconds;
+
 /*!
  @method sharedInstance
 
