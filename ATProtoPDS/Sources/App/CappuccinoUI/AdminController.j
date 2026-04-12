@@ -1659,7 +1659,14 @@
         [self setTextView:_accountsResultTextView content:@"Select an account first."];
         return;
     }
-    [self performAccountInviteToggleForDid:(account.did || @"") enable:NO source:@"accounts"];
+
+    var selfRef = self;
+    [self confirmDestructiveWithTitle:@"Disable account invites?"
+                      informativeText:@"This will prevent " + (account.handle || account.did) + " from generating new invite codes. Existing codes remain valid."
+                        confirmHandler:function()
+    {
+        [selfRef performAccountInviteToggleForDid:(account.did || @"") enable:NO source:@"accounts"];
+    }];
 }
 
 - (void)handleEnableSelectedAccountInvites:(id)sender

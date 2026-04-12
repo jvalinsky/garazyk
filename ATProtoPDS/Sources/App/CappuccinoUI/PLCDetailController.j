@@ -73,11 +73,13 @@
     [_statusLabel setDrawsBackground:NO];
     [_statusLabel setFont:[CPFont systemFontOfSize:12.0]];
     [_statusLabel setStringValue:@""];
+    [_statusLabel setAccessibilityLabel:@"Detail status"];
     [_rootView addSubview:_statusLabel];
 
     // Content area
     _contentView = [[CPView alloc] initWithFrame:CGRectMake(20.0, 96.0, 1040.0, 580.0)];
     [_contentView setWantsLayer:YES];
+    [_contentView setAccessibilityLabel:@"DID document content"];
     [_rootView addSubview:_contentView];
 
     return _rootView;
