@@ -3,8 +3,8 @@
 
  @abstract Main application controller for the ATProto PDS.
 
- @discussion PDSController is the central coordinator for all PDS operations.
- It manages database connections, service instances, and provides high-level
+ @discussion PDSController is a compatibility facade over PDSApplication.
+ New runtime composition lives in PDSApplication; this type forwards legacy
  APIs for account, repository, record, and blob operations.
 
  @note This class is being refactored. New code should use the service classes
@@ -16,7 +16,7 @@
 
 #import "Compat/PDSTypes.h"
 #import "Core/ATProtoError.h"
-#import "Services/PDSRecordService.h"
+#import "App/Services/PDSRecordService.h"
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN

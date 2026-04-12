@@ -35,11 +35,11 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "PDSApplication.h"
 #import "Repository/RepoCommit.h"
-#import "Services/PDSAccountService.h"
-#import "Services/PDSBlobService.h"
-#import "Services/PDSRecordService.h"
-#import "Services/PDSRelayService.h"
-#import "Services/PDSRepositoryService.h"
+#import "App/Services/PDSAccountService.h"
+#import "App/Services/PDSBlobService.h"
+#import "App/Services/PDSRecordService.h"
+#import "App/Services/PDSRelayService.h"
+#import "App/Services/PDSRepositoryService.h"
 #import "Sync/SubscribeReposHandler.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -52,69 +52,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 #import "Email/PDSMockEmailProvider.h"
 #import "Email/PDSResendEmailProvider.h"
 #import "Email/PDSSMTPEmailProvider.h"
-
-static BOOL PDSControllerHostIsLocal(NSString *host) {
-  NSString *normalized = [[host ?: @"" lowercaseString]
-      stringByTrimmingCharactersInSet:[NSCharacterSet
-                                          whitespaceAndNewlineCharacterSet]];
-  return normalized.length == 0 || [normalized isEqualToString:@"localhost"] ||
-         [normalized isEqualToString:@"127.0.0.1"] ||
-         [normalized isEqualToString:@"::1"] ||
-         [normalized isEqualToString:@"0.0.0.0"];
-}
-
-static NSString *PDSControllerCanonicalIssuer(PDSConfiguration *configuration,
-                                              NSUInteger portHint) {
-  if (configuration.issuer.length > 0) {
-    return configuration.issuer;
-  }
-
-  NSString *host = configuration.serverHost;
-  if (PDSControllerHostIsLocal(host)) {
-    host = @"localhost";
-  }
-  NSString *scheme = PDSControllerHostIsLocal(host) ? @"http" : @"https";
-  NSUInteger port =
-      portHint > 0
-          ? portHint
-          : (configuration.serverPort > 0 ? configuration.serverPort : 2583);
-  BOOL defaultPort = ([scheme isEqualToString:@"https"] && port == 443) ||
-                     ([scheme isEqualToString:@"http"] && port == 80);
-  if (defaultPort) {
-    return [NSString stringWithFormat:@"%@://%@", scheme, host];
-  }
-  return [NSString
-      stringWithFormat:@"%@://%@:%lu", scheme, host, (unsigned long)port];
-}
-
-static BOOL PDSControllerShouldUseEphemeralJWTKeyForTests(void) {
-  NSDictionary *env = [[NSProcessInfo processInfo] environment];
-  NSString *processName = [[NSProcessInfo processInfo] processName] ?: @"";
-  BOOL runningTests = [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
-                      [processName containsString:@"AllTests"];
-  if (!runningTests) {
-    return NO;
-  }
-
-  NSString *useKeychainEnv = [env[@"PDS_USE_KEYCHAIN"] lowercaseString];
-  if ([useKeychainEnv isEqualToString:@"0"] ||
-      [useKeychainEnv isEqualToString:@"false"] ||
-      [useKeychainEnv isEqualToString:@"no"]) {
-    return YES;
-  }
-
-  return ![PDSConfiguration sharedConfiguration].useKeychain;
-}
-
-static void PDSControllerLogEphemeralJWTKeyModeOnce(void) {
-  static BOOL didLog = NO;
-  if (didLog) {
-    return;
-  }
-  didLog = YES;
-  PDS_LOG_AUTH_INFO(
-      @"Using in-memory secp256k1 JWT signing key in test mode (keychain disabled).");
-}
 
 @implementation PDSController {
   PDSApplication
@@ -225,369 +162,52 @@ static void PDSControllerLogEphemeralJWTKeyModeOnce(void) {
 - (instancetype)initWithDirectory:(NSString *)directory
                    serviceMaxSize:(NSUInteger)serviceMaxSize
                  userDatabaseSize:(NSUInteger)userDatabaseSize {
-  self = [super init];
-  if (self) {
-    // Configure PDSLogger from PDSConfiguration if available
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    if (config) {
-      PDSLogger *logger = [PDSLogger sharedLogger];
-      if (config.logFilePath) {
-        logger.logFilePath = config.logFilePath;
-      }
-      logger.logLevel = config.logLevel;
-      logger.logFormat = config.logFormat;
-      logger.maxLogFileSize = config.maxLogFileSize;
-      logger.maxLogFiles = config.maxLogFiles;
-      logger.asyncLogging = config.asyncLogging;
-      if (config.enabledComponents.count > 0) {
-        logger.enabledComponents =
-            [NSSet setWithArray:config.enabledComponents];
-      }
-
-      PDS_LOG_INFO_C(PDSLogComponentCore,
-                     @"PDSController initializing with data directory: %@",
-                     directory);
-
-      // Configure RateLimiter
-      RateLimiter *limiter = [RateLimiter sharedLimiter];
-      limiter.enabled = config.rateLimitEnabled;
-      // Use granular limits from configuration
-      limiter.didLimit = config.rateLimitDidLimit;
-      limiter.didWindowSeconds = config.rateLimitDidWindowSeconds;
-      limiter.ipLimit = config.rateLimitIpLimit;
-      limiter.ipWindowSeconds = config.rateLimitIpWindowSeconds;
-      limiter.blobLimit = config.rateLimitBlobLimit;
-      limiter.blobWindowSeconds = config.rateLimitBlobWindowSeconds;
-    }
-
-    _dataDirectory = [directory copy];
-    PDS_LOG_CORE_DEBUG(@"Initializing PDSController with dataDirectory: %@",
-                       directory);
-
-    _serviceDatabases =
-        [[PDSServiceDatabases alloc] initWithDirectory:directory
-                                        serviceMaxSize:serviceMaxSize
-                                       didCacheMaxSize:1000
-                                      sequencerMaxSize:100];
-    _userDatabasePool =
-        [[PDSDatabasePool alloc] initWithDbDirectory:directory
-                                             maxSize:userDatabaseSize];
-
-    // Setup Service Container
-    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
-    [container reset];
-
-    id<PDSEmailProvider> emailProvider = nil;
-    if (config) {
-      if ([config.emailProviderType isEqualToString:@"mock"]) {
-        emailProvider = [[PDSMockEmailProvider alloc] init];
-      } else if ([config.emailProviderType isEqualToString:@"smtp"]) {
-        emailProvider = [[PDSSMTPEmailProvider alloc]
-            initWithHost:config.emailSmtpHost ?: @"localhost"
-                    port:config.emailSmtpPort
-                username:config.emailSmtpUsername
-                password:config.emailSmtpPassword
-                  useTLS:config.emailSmtpUseTLS];
-      } else if ([config.emailProviderType isEqualToString:@"resend"]) {
-        if (config.resendFromAddress.length > 0) {
-          id<PDSSecretsProvider> secretsProvider = nil;
-          NSString *source = config.resendAPIKeySource ?: @"env";
-
-          if ([source isEqualToString:@"keychain"]) {
-            secretsProvider = [[PDSKeychainSecretsProvider alloc]
-                initWithService:config.resendKeychainService
-                                    ?: @"com.atproto.pds.resend"];
-          } else {
-            // Default to environment variables
-            secretsProvider = [[PDSEnvironmentSecretsProvider alloc] init];
-          }
-
-          emailProvider = [[PDSResendEmailProvider alloc]
-              initWithSecretsProvider:secretsProvider
-                          fromAddress:config.resendFromAddress
-                          apiEndpoint:config.resendAPIEndpoint];
-
-          PDS_LOG_INFO(
-              @"Initialized Resend email provider (source: %@, from: %@)",
-              source, config.resendFromAddress);
-        } else {
-          PDS_LOG_WARN(@"Resend email provider requested but no from address "
-                       @"configured.");
-        }
-      }
-    }
-
-    PDSAccountService *accountService =
-        [[PDSAccountService alloc] initWithAccountRepository:nil
-                                           sessionRepository:nil
-                                                      minter:nil
-                                               emailProvider:emailProvider];
-    accountService.databasePool = _userDatabasePool;
-    accountService.serviceDatabases = _serviceDatabases;
-    [container registerInstance:accountService
-                    forProtocol:@protocol(PDSAccountService)];
-
-    if (emailProvider) {
-      [container registerInstance:emailProvider
-                      forProtocol:@protocol(PDSEmailProvider)];
-    }
-
-    _accountService = [container resolveProtocol:@protocol(PDSAccountService)];
-
-    // Initialize JWT Minter
-    _jwtMinter = [[JWTMinter alloc] init];
-
-    _httpPort = 2583;
-    _jwtMinter.issuer = PDSControllerCanonicalIssuer(
-        [PDSConfiguration sharedConfiguration], _httpPort);
-    _jwtMinter.audience = _jwtMinter.issuer;
-    _jwtMinter.signingAlgorithm = @"ES256K";
-
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-    BOOL isProduction = [[env[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"] ||
-                        [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
-                        [[env[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
-
-    BOOL hasProvisionedSigningKey = NO;
-    if (PDSControllerShouldUseEphemeralJWTKeyForTests()) {
-      NSError *fallbackError = nil;
-      Secp256k1KeyPair *fallbackKeyPair =
-          [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
-      if (fallbackKeyPair) {
-        _jwtMinter.keyManager = nil;
-        _jwtMinter.signingAlgorithm = @"ES256K";
-        _jwtMinter.privateKey = fallbackKeyPair.privateKey;
-        _jwtMinter.publicKey = fallbackKeyPair.publicKey;
-        hasProvisionedSigningKey = YES;
-        PDSControllerLogEphemeralJWTKeyModeOnce();
-      } else {
-        PDS_LOG_AUTH_WARN(@"Test-mode ephemeral JWT key generation failed; falling back to key manager path: %@",
-                          fallbackError.localizedDescription ?: @"unknown error");
-      }
-    }
-
-    if (!hasProvisionedSigningKey) {
-      NSError *serverKeyError = nil;
-      id<PDSKeyManager> keyManager = [PDSKeyManagerFactory
-          createKeyManagerWithDatabase:[_serviceDatabases
-                                           serviceDatabaseWithError:nil]];
-
-      id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
-      if (serverKeyError) {
-        PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@",
-                          serverKeyError.localizedDescription
-                              ?: @"unknown error");
-      }
-
-      if (activeKey) {
-        _jwtMinter.keyManager = keyManager;
-      } else if (!isProduction) {
-        NSError *fallbackError = nil;
-        Secp256k1KeyPair *fallbackKeyPair = [[Secp256k1 shared] generateKeyPairWithError:&fallbackError];
-        if (fallbackKeyPair) {
-          _jwtMinter.keyManager = nil;
-          _jwtMinter.signingAlgorithm = @"ES256K";
-          _jwtMinter.privateKey = fallbackKeyPair.privateKey;
-          _jwtMinter.publicKey = fallbackKeyPair.publicKey;
-          PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
-        } else {
-          _jwtMinter.keyManager = keyManager;
-          PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@",
-                            fallbackError.localizedDescription ?: @"unknown error");
-        }
-      } else {
-        _jwtMinter.keyManager = keyManager;
-      }
-    }
-
-    _accountService.minter = _jwtMinter;
-
-    _recordService =
-        [[PDSRecordService alloc] initWithDatabasePool:_userDatabasePool];
-
-    // Initialize Blob Storage Abstraction
-    NSString *blobDir =
-        [_dataDirectory stringByAppendingPathComponent:@"blobs"];
-    NSFileManager *fm = [NSFileManager defaultManager];
-    if (![fm fileExistsAtPath:blobDir]) {
-      [fm createDirectoryAtPath:blobDir
-          withIntermediateDirectories:YES
-                           attributes:nil
-                                error:nil];
-    }
-
-    NSURL *blobURL = [NSURL fileURLWithPath:blobDir];
-    PDSDiskBlobProvider *blobProvider =
-        [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
-    BlobStorage *blobStorage =
-        [[BlobStorage alloc] initWithDatabasePool:_userDatabasePool
-                                         provider:blobProvider];
-
-    _blobService =
-        [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool
-                                             storage:blobStorage];
-    _repositoryService =
-        [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
-
-    // Initialize Relay Service
-    _relayService = [[PDSRelayService alloc]
-        initWithRelays:config.crawlRelays
-              hostname:[config canonicalIssuerWithPortHint:_httpPort]];
-
-    // Initialize Admin Controller
-    _adminController =
-        [[PDSAdminController alloc] initWithServiceDatabases:_serviceDatabases
-                                              accountService:_accountService];
-
-    _repos = [NSMutableDictionary dictionary];
-    _collections = [NSMutableDictionary dictionary];
-    _repoQueue = dispatch_queue_create("com.atproto.pds.repository",
-                                       DISPATCH_QUEUE_SERIAL);
-    _controllerQueue = dispatch_queue_create("com.atproto.pds.controller",
-                                             DISPATCH_QUEUE_SERIAL);
-    _plcServerURL = kDefaultPlcServerURL;
-    _running = NO;
-
-    // Load lexicons from bundle, working directory, or data directory.
-    ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
-    NSArray<NSString *> *lexiconPaths =
-        [registry searchPathsForDirectory:_dataDirectory];
-    BOOL loadedAny = NO;
-    for (NSString *path in lexiconPaths) {
-      NSError *loadError = nil;
-      if ([registry loadLexiconsFromDirectory:path error:&loadError]) {
-        loadedAny = YES;
-        PDS_LOG_INFO(@"Loaded lexicons from %@", path);
-      } else if (loadError) {
-        PDS_LOG_WARN(@"Failed to load lexicons from %@: %@", path, loadError);
-      }
-    }
-    if (!loadedAny) {
-      PDS_LOG_WARN(@"No lexicons loaded. Set PDS_LEXICON_PATH or install "
-                   @"lexicons under ATProtoPDS/Resources/lexicons.");
-    }
-
-    PDS_LOG_CORE_INFO(
-        @"PDS Controller initialized with single-tenant architecture");
+  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  PDSApplication *application =
+      [[PDSApplication alloc] initWithConfiguration:config
+                                      dataDirectory:directory
+                                     serviceMaxSize:serviceMaxSize
+                                userDatabaseMaxSize:userDatabaseSize
+                                    didCacheMaxSize:1000
+                                  sequencerMaxSize:100];
+  if (application.legacyController) {
+    return application.legacyController;
   }
-  return self;
+  return [self initWithApplication:application];
 }
 
 #pragma mark - Server Lifecycle
 
 - (BOOL)startServerWithError:(NSError **)error {
-  // If backed by PDSApplication, delegate to it
-  if (_backingApplication) {
-    PDS_LOG_CORE_INFO(@"Starting server via PDSApplication...");
-    BOOL result = [_backingApplication startWithError:error];
-    if (result) {
-      _httpPort = _backingApplication.httpPort;
-      _httpServer = _backingApplication.httpServer;
-      _running = YES;
+  if (!_backingApplication) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:@"PDSControllerErrorDomain"
+                     code:1
+                 userInfo:@{
+                   NSLocalizedDescriptionKey :
+                       @"PDSController requires a backing PDSApplication"
+                 }];
     }
-    return result;
-  }
-
-  // Legacy path: initialize everything ourselves
-  PDS_LOG_CORE_INFO(
-      @"Starting ATProto PDS server with single-tenant architecture...");
-
-  // Initialize XRPC dispatcher
-  _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
-  
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-  if (config.appViewURL.length > 0) {
-      _xrpcDispatcher.proxyURL = [NSURL URLWithString:config.appViewURL];
-      _xrpcDispatcher.upstreamDID = config.appViewDID;
-      _xrpcDispatcher.jwtMinter = _jwtMinter;
-  }
-
-  if (config.ozoneURL.length > 0) {
-      _xrpcDispatcher.ozoneURL = [NSURL URLWithString:config.ozoneURL];
-      _xrpcDispatcher.ozoneDID = config.ozoneDID;
-      _xrpcDispatcher.jwtMinter = _jwtMinter;
-  }
-
-  if (!_subscribeReposHandler) {
-    _subscribeReposHandler = [[SubscribeReposHandler alloc]
-        initWithServiceDatabases:_serviceDatabases];
-  }
-
-  // Build and configure HTTP server using builder
-  PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
-  builder.port = self.httpPort;
-  builder.controller = self;
-  builder.jwtMinter = _jwtMinter;
-  builder.serviceDatabases = _serviceDatabases;
-  builder.xrpcDispatcher = _xrpcDispatcher;
-  builder.subscribeReposHandler = _subscribeReposHandler;
-  builder.issuer = PDSControllerCanonicalIssuer(
-      [PDSConfiguration sharedConfiguration], self.httpPort);
-
-  // Feature flags (all enabled by default)
-  builder.enableXrpc = YES;
-  builder.enableOAuth = YES;
-  builder.enableExploreUI = YES;
-  builder.enableOAuthDemo = YES;
-  builder.enableMSTViewer = YES;
-  builder.enableNodeInfo = YES;
-  builder.enableCappuccinoUIDefault = YES;
-
-  NSError *buildError = nil;
-  _httpServer = [builder buildWithError:&buildError];
-  if (!_httpServer) {
-    PDS_LOG_CORE_ERROR(@"Failed to build HTTP server: %@", buildError);
-    if (error)
-      *error = buildError;
     return NO;
   }
-
-  NSError *httpError = nil;
-  if (![_httpServer startWithError:&httpError]) {
-    PDS_LOG_CORE_ERROR(@"Failed to start HTTP server: %@", httpError);
-    if (error)
-      *error = httpError;
-    return NO;
+  PDS_LOG_CORE_INFO(@"Starting server via PDSApplication...");
+  BOOL result = [_backingApplication startWithError:error];
+  if (result) {
+    _httpPort = _backingApplication.httpPort;
+    _httpServer = _backingApplication.httpServer;
+    _running = YES;
   }
-  _httpPort = _httpServer.port;
-  PDS_LOG_CORE_INFO(@"HTTP server started on port %lu",
-                    (unsigned long)_httpPort);
-  PDS_LOG_CORE_INFO(
-      @"subscribeRepos WebSocket upgrades available on HTTP port %lu",
-      (unsigned long)_httpPort);
-
-  _running = YES;
-  [_relayService start];
-  return YES;
+  return result;
 }
 
 - (void)stopServer {
-  // If backed by PDSApplication, delegate to it
-  if (_backingApplication) {
-    PDS_LOG_CORE_INFO(@"Stopping server via PDSApplication...");
-    [_backingApplication stop];
-    _httpServer = nil;
-    _running = NO;
+  if (!_backingApplication) {
     return;
   }
-
-  // Legacy path
-  PDS_LOG_CORE_INFO(@"Stopping PDS server...");
-
-  [_httpServer stop];
-  [_subscribeReposHandler stop];
-  [_relayService stop];
-
-  // Close databases
-  [_userDatabasePool closeAll];
-  [_serviceDatabases
-      closeAll]; // Assuming PDSServiceDatabases has a closeAll method
-
-  // Flush and close logger to release file handles in the data directory
-  [[PDSLogger sharedLogger] flush];
-  [[PDSLogger sharedLogger] closeLogFile];
-
-  PDS_LOG_CORE_INFO(@"PDS server stopped.");
+  PDS_LOG_CORE_INFO(@"Stopping server via PDSApplication...");
+  [_backingApplication stop];
+  _httpServer = nil;
   _running = NO;
 }
 

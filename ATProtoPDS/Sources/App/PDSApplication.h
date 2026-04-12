@@ -102,6 +102,21 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory NS_DESIGNATED_INITIALIZER;
 
 /*!
+ @method initWithConfiguration:dataDirectory:serviceMaxSize:userDatabaseMaxSize:didCacheMaxSize:sequencerMaxSize:
+
+ @abstract Initializes the application with explicit pool-size composition inputs.
+
+ @discussion This is used by legacy compatibility facades to preserve constructor
+ semantics while delegating runtime composition to PDSApplication.
+ */
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
+                        dataDirectory:(nullable NSString *)dataDirectory
+                       serviceMaxSize:(NSUInteger)serviceMaxSize
+                  userDatabaseMaxSize:(NSUInteger)userDatabaseMaxSize
+                      didCacheMaxSize:(NSUInteger)didCacheMaxSize
+                    sequencerMaxSize:(NSUInteger)sequencerMaxSize;
+
+/*!
  @method initWithDataDirectory:
 
  @abstract Initializes the application with a specific data directory.
