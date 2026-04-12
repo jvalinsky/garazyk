@@ -245,10 +245,10 @@
     if (_webSocket)
         return;
 
-    // Build WebSocket URL
+    // Build WebSocket URL - use standard firehose endpoint
     var protocol = (window.location.protocol === "https:") ? "wss:" : "ws:";
     var host = window.location.host;
-    var wsUrl = protocol + "//" + host + "/api/relay/subscribe";
+    var wsUrl = protocol + "//" + host + "/xrpc/com.atproto.sync.subscribeRepos";
 
     [_statusLabel setStringValue:@"Connecting to " + wsUrl + "..."];
 
