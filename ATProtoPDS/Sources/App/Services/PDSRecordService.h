@@ -10,6 +10,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Core/PDSRecordEvents.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -20,9 +21,6 @@ extern NSErrorDomain const PDSRecordServiceErrorDomain;
 typedef NS_ENUM(NSInteger, PDSRecordServiceError) {
     PDSRecordServiceErrorUnauthorized = 1,
 };
-
-/*! Posted when a record is written (put or delete). userInfo keys: did, collection, rkey, action ("create"/"delete"). */
-extern NSNotificationName const PDSRecordDidChangeNotification;
 
 @class MST;
 @class CID;
