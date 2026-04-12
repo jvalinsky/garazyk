@@ -1,0 +1,160 @@
+version: '3.8'
+
+# Full local ATProto network: PLC (campagnola) -> PDS (kaszlak) -> Relay (zuk) -> AppView (syrena)
+#
+# Usage:
+#   docker build -t nspds:local -f docker/Dockerfile.gnustep --target runtime .
+#   cd docker/local-network && docker compose up -d
+#
+# Ports:
+#   2582 - PLC directory (campagnola)
+#   2583 - PDS             (kaszlak)
+#   2584 - Relay           (zuk)
+#   3200 - AppView         (syrena)
+#
+# AppView admin:
+#   curl -H "Authorization: Bearer localdevadmin" http://localhost:3200/admin/backfill/status
+#
+# Note: backfill is disabled by default because AppViewBackfillWorker resolves DIDs via
+# https://plc.directory (hardcoded), so accounts created on the local PLC won't be found.
+# Real-time ingest from the local relay works fine without backfill.
+# To enable backfill: remove --no-backfill from the local-appview command below.
+
+services:
+
+  local-plc:
+    image: nspds:local
+    container_name: local-plc
+    entrypoint: ["/usr/local/bin/campagnola"]
+    command:
+      - "serve"
+      - "--port"
+      - "2582"
+      - "--database"
+      - "/var/lib/atprotopds/plc.db"
+    ports:
+      - "2582:2582"
+    volumes:
+      - local_plc_data:/var/lib/atprotopds
+    environment:
+      - TZ=UTC
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2582/xrpc/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - local_net
+
+  local-pds:
+    image: nspds:local
+    container_name: local-pds
+    command:
+      - "serve"
+      - "--config"
+      - "/var/lib/atprotopds/config.json"
+      - "--foreground"
+    ports:
+      - "2583:2583"
+    volumes:
+      - local_pds_data:/var/lib/atprotopds
+      - ./pds-config.json:/var/lib/atprotopds/config.json:ro
+    environment:
+      - TZ=UTC
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - HOME=/var/lib/atprotopds
+    depends_on:
+      local-plc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2583/xrpc/com.atproto.server.describeServer"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - local_net
+
+  local-relay:
+    image: nspds:local
+    container_name: local-relay
+    entrypoint: ["/usr/local/bin/zuk"]
+    command:
+      - "serve"
+      - "--upstream"
+      - "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos"
+      - "--port"
+      - "2584"
+      - "--data-dir"
+      - "/var/lib/atprotopds"
+    ports:
+      - "2584:2584"
+    volumes:
+      - local_relay_data:/var/lib/atprotopds
+    environment:
+      - TZ=UTC
+    depends_on:
+      local-pds:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2584/api/relay/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - local_net
+
+  local-appview:
+    image: nspds:local
+    container_name: local-appview
+    entrypoint: ["/usr/local/bin/syrena"]
+    command:
+      - "serve"
+      - "--relay"
+      - "ws://local-relay:2584"
+      - "--port"
+      - "3200"
+      - "--data-dir"
+      - "/var/lib/atprotopds"
+      - "--no-backfill"
+    ports:
+      - "3200:3200"
+    volumes:
+      - local_appview_data:/var/lib/atprotopds
+    environment:
+      - TZ=UTC
+      - APPVIEW_ADMIN_SECRET=localdevadmin
+      - APPVIEW_DATA_DIR=/var/lib/atprotopds
+    depends_on:
+      local-relay:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "curl"
+        - "-f"
+        - "-H"
+        - "Authorization: Bearer localdevadmin"
+        - "http://localhost:3200/admin/backfill/status"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - local_net
+
+networks:
+  local_net:
+    driver: bridge
+
+volumes:
+  local_plc_data:
+    name: local_plc_data
+  local_pds_data:
+    name: local_pds_data
+  local_relay_data:
+    name: local_relay_data
+  local_appview_data:
+    name: local_appview_data
