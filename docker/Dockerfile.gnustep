@@ -222,6 +222,8 @@ RUN echo "/usr/GNUstep/Local/Library/Libraries" > /etc/ld.so.conf.d/gnustep-loca
 # Copy built binaries
 COPY --from=builder /src/build/bin/kaszlak /usr/local/bin/kaszlak
 COPY --from=builder /src/build/bin/campagnola /usr/local/bin/campagnola
+COPY --from=builder /src/build/bin/zuk /usr/local/bin/zuk
+COPY --from=builder /src/build/bin/syrena /usr/local/bin/syrena
 
 # Copy web assets (HTML/CSS/JS for the PDS UI)
 COPY --from=builder /src/ATProtoPDS/Sources/App/Explore/Assets /usr/share/atprotopds/assets/Explore
