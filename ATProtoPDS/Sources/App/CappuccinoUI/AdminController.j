@@ -632,6 +632,79 @@
     }
 }
 
+#pragma mark - Confirmation Dialogs
+
+- (void)confirmDestructiveWithTitle:(CPString)title
+                      informativeText:(CPString)text
+                        confirmHandler:(Function)handler
+{
+    var alert = [[CPAlert alloc] init];
+    [alert setAlertStyle:CPAlertStyleWarning];
+    [alert setMessageText:title];
+    [alert setInformativeText:text];
+
+    // Cancel first (index 0), Confirm second (index 1) - standard macOS pattern
+    [alert addButtonWithTitle:@"Cancel"];
+    [alert addButtonWithTitle:@"Confirm"];
+
+    // Accessibility
+    var buttons = [alert buttons];
+    if (buttons && buttons.length >= 2)
+    {
+        [buttons[0] setAccessibilityLabel:@"Cancel action"];
+        [buttons[1] setAccessibilityLabel:@"Confirm destructive action"];
+    }
+
+    var window = [_rootView window];
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:function(response)
+        {
+            // response: 0 = Cancel, 1 = Confirm
+            if (response === 1 && handler)
+                handler();
+        }];
+    }
+    else
+    {
+        // Fallback if no window - just run handler
+        [alert runModal];
+        var response = [alert returnValue];
+        if (response === 1 && handler)
+            handler();
+    }
+}
+
+- (void)confirmCriticalWithTitle:(CPString)title
+                  informativeText:(CPString)text
+                  confirmHandler:(Function)handler
+{
+    var alert = [[CPAlert alloc] init];
+    [alert setAlertStyle:CPAlertStyleCritical];
+    [alert setMessageText:title];
+    [alert setInformativeText:text];
+
+    [alert addButtonWithTitle:@"Cancel"];
+    [alert addButtonWithTitle:@"Delete"];
+
+    var buttons = [alert buttons];
+    if (buttons && buttons.length >= 2)
+    {
+        [buttons[0] setAccessibilityLabel:@"Cancel deletion"];
+        [buttons[1] setAccessibilityLabel:@"Confirm permanent deletion"];
+    }
+
+    var window = [_rootView window];
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:function(response)
+        {
+            if (response === 1 && handler)
+                handler();
+        }];
+    }
+}
+
 - (void)setTextView:(CPTextView)textView content:(CPString)content
 {
     if (!textView)
