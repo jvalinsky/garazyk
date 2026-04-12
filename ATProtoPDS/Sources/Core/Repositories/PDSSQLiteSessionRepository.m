@@ -22,13 +22,18 @@
     __block BOOL success = NO;
     [_servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        NSString *sql = @"INSERT INTO refresh_tokens (token, account_did, created_at) VALUES (?, ?, ?)";
+        // Include expires_at - default 30 days TTL
+        NSString *sql = @"INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 
+        NSTimeInterval now = [NSDate date].timeIntervalSince1970;
+        NSTimeInterval expiresAt = now + (30 * 24 * 60 * 60); // 30 days from now
+
         sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_double(stmt, 3, [NSDate date].timeIntervalSince1970);
+        sqlite3_bind_double(stmt, 3, now);
+        sqlite3_bind_double(stmt, 4, expiresAt);
 
         if (sqlite3_step(stmt) == SQLITE_DONE) {
             success = YES;
