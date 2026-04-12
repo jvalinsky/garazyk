@@ -126,11 +126,68 @@ int main(int argc, const char * argv[]) {
 
         // Load configuration if provided
         if (configPath) {
-            // TODO: Load JSON config
+            NSError *configError = nil;
+            NSData *configData = [NSData dataWithContentsOfFile:configPath options:0 error:&configError];
+            if (!configData) {
+                PDS_LOG_CORE_ERROR(@"Failed to read config file: %@", configError.localizedDescription);
+                return 1;
+            }
+            NSDictionary *config = [NSJSONSerialization JSONObjectWithData:configData options:0 error:&configError];
+            if (!config || ![config isKindOfClass:[NSDictionary class]]) {
+                PDS_LOG_CORE_ERROR(@"Failed to parse config JSON: %@", configError.localizedDescription);
+                return 1;
+            }
+            
+            // Apply relay config
+            NSDictionary *relayConfig = config[@"relay"];
+            if (relayConfig) {
+                // Override port if not set via CLI
+                if (port == 2584 && relayConfig[@"port"]) {
+                    port = [relayConfig[@"port"] unsignedIntegerValue];
+                }
+                // Add upstreams from config if not set via CLI
+                if (upstreamURLs.count == 0 && relayConfig[@"upstreams"]) {
+                    NSArray *configUpstreams = relayConfig[@"upstreams"];
+                    if ([configUpstreams isKindOfClass:[NSArray class]]) {
+                        [upstreamURLs addObjectsFromArray:configUpstreams];
+                    }
+                }
+                // Override data directory if not set via CLI
+                if (!dataDir && relayConfig[@"dataDirectory"]) {
+                    dataDir = relayConfig[@"dataDirectory"];
+                }
+            }
+            
+            PDS_LOG_CORE_INFO(@"Loaded config from %@", configPath);
         }
 
         if ([command isEqualToString:@"status"]) {
-            printf("Relay status: TODO - query running relay\n");
+            // Query running relay's health endpoint
+            NSURL *healthURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%lu/api/relay/health", (unsigned long)port]];
+            NSError *error = nil;
+            NSData *syncData = [NSData dataWithContentsOfURL:healthURL options:0 error:&error];
+            
+            if (error || !syncData) {
+                printf("Relay status: NOT RUNNING (port %lu)\n", (unsigned long)port);
+                printf("  Error: %s\n", error.localizedDescription.UTF8String);
+                return 1;
+            }
+            
+            NSDictionary *health = [NSJSONSerialization JSONObjectWithData:syncData options:0 error:&error];
+            printf("Relay status: RUNNING\n");
+            printf("  Port: %lu\n", (unsigned long)port);
+            if (health && [health isKindOfClass:[NSDictionary class]]) {
+                id upstreams = health[@"upstreams"];
+                if (upstreams && [upstreams respondsToSelector:@selector(count)] && [upstreams count] > 0) {
+                    printf("  Upstreams: %lu connected\n", (unsigned long)[upstreams count]);
+                }
+                id status = health[@"status"];
+                if (status && [status isKindOfClass:[NSString class]]) {
+                    printf("  Health: %s\n", [status UTF8String]);
+                } else {
+                    printf("  Health: OK\n");
+                }
+            }
             return 0;
         }
 
