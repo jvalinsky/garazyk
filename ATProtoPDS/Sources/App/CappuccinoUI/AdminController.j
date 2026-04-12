@@ -7,6 +7,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 
 @implementation AdminController : CPObject
 {
@@ -564,6 +565,71 @@
 - (void)setStatus:(CPString)message
 {
     [_statusLabel setStringValue:(message || @"")];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedWhite:(75.0/255.0) alpha:1.0]];
+}
+
+- (void)setErrorStatus:(CPString)message
+{
+    [_statusLabel setStringValue:@"Error: " + message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(185.0/255.0)
+                                                         green:(28.0/255.0)
+                                                          blue:(28.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setSuccessStatus:(CPString)message
+{
+    [_statusLabel setStringValue:message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(4.0/255.0)
+                                                         green:(120.0/255.0)
+                                                          blue:(87.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setWarningStatus:(CPString)message
+{
+    [_statusLabel setStringValue:@"Warning: " + message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(180.0/255.0)
+                                                         green:(83.0/255.0)
+                                                          blue:(9.0/255.0)
+                                                         alpha:1.0]];
+}
+
+// Empty state handling for tables
+- (void)showEmptyStateInTableView:(CPTableView)tableView
+                          withIcon:(CPString)iconName
+                          message:(CPString)message
+{
+    var superview = [tableView superview];
+    if (!superview)
+        return;
+
+    // Remove any existing empty state
+    var subviews = [superview subviews];
+    for (var i = 0; i < subviews.length; i++)
+    {
+        if ([subviews[i] isKindOfClass:[EmptyStateView class]])
+            [subviews[i] removeFromSuperview];
+    }
+
+    // Show new empty state
+    [EmptyStateView emptyStateWithIcon:iconName
+                               message:message
+                               inView:superview];
+}
+
+- (void)hideEmptyStateFromTableView:(CPTableView)tableView
+{
+    var superview = [tableView superview];
+    if (!superview)
+        return;
+
+    var subviews = [superview subviews];
+    for (var i = 0; i < subviews.length; i++)
+    {
+        if ([subviews[i] isKindOfClass:[EmptyStateView class]])
+            [subviews[i] removeFromSuperview];
+    }
 }
 
 - (void)setTextView:(CPTextView)textView content:(CPString)content
