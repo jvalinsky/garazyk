@@ -3546,6 +3546,12 @@
     [self loadAccounts];
 }
 
+- (void)handleFocusSearch:(id)sender
+{
+    if (_lookupField && [_lookupField window])
+        [[_lookupField window] makeFirstResponder:_lookupField];
+}
+
 - (void)handleLookup:(id)sender
 {
     var input = [self trimmedString:[_lookupField stringValue]];

@@ -67,6 +67,133 @@
 {
     [self setUpControllers];
     [self setUpWindow];
+    [self setUpMainMenu];
+}
+
+- (void)setUpMainMenu
+{
+    // Create main menu with keyboard shortcuts for WCAG accessibility
+    var mainMenu = [[CPMenu alloc] init];
+
+    // App menu (first item, special)
+    var appMenuItem = [[CPMenuItem alloc] initWithTitle:@"Kaszlak UI" action:nil keyEquivalent:@""];
+    var appMenu = [[CPMenu alloc] initWithTitle:@"Kaszlak UI"];
+    [appMenuItem setSubmenu:appMenu];
+    [mainMenu addItem:appMenuItem];
+
+    // View menu with navigation shortcuts
+    var viewMenuItem = [[CPMenuItem alloc] initWithTitle:@"View" action:nil keyEquivalent:@""];
+    var viewMenu = [[CPMenu alloc] initWithTitle:@"View"];
+
+    // Cmd+1 - PDS
+    var pdsItem = [[CPMenuItem alloc] initWithTitle:@"PDS" action:@selector(handleViewPDS:) keyEquivalent:@"1"];
+    [pdsItem setKeyEquivalentModifierMask:CPCommandKeyMask];
+    [pdsItem setTarget:self];
+    [viewMenu addItem:pdsItem];
+
+    // Cmd+2 - Relay
+    var relayItem = [[CPMenuItem alloc] initWithTitle:@"Relay" action:@selector(handleViewRelay:) keyEquivalent:@"2"];
+    [relayItem setKeyEquivalentModifierMask:CPCommandKeyMask];
+    [relayItem setTarget:self];
+    [viewMenu addItem:relayItem];
+
+    // Cmd+3 - PLC
+    var plcItem = [[CPMenuItem alloc] initWithTitle:@"PLC" action:@selector(handleViewPLC:) keyEquivalent:@"3"];
+    [plcItem setKeyEquivalentModifierMask:CPCommandKeyMask];
+    [plcItem setTarget:self];
+    [viewMenu addItem:plcItem];
+
+    // Cmd+4 - AppView
+    var appViewItem = [[CPMenuItem alloc] initWithTitle:@"AppView" action:@selector(handleViewAppView:) keyEquivalent:@"4"];
+    [appViewItem setKeyEquivalentModifierMask:CPCommandKeyMask];
+    [appViewItem setTarget:self];
+    [viewMenu addItem:appViewItem];
+
+    [viewMenu addItem:[CPMenuItem separatorItem]];
+
+    // Cmd+R - Refresh current view
+    var refreshItem = [[CPMenuItem alloc] initWithTitle:@"Refresh" action:@selector(handleRefreshCurrent:) keyEquivalent:@"r"];
+    [refreshItem setKeyEquivalentModifierMask:CPCommandKeyMask];
+    [refreshItem setTarget:self];
+    [viewMenu addItem:refreshItem];
+
+    // Cmd+F - Focus search
+    var searchItem = [[CPMenuItem alloc] initWithTitle:@"Focus Search" action:@selector(handleFocusSearch:) keyEquivalent:@"f"];
+    [searchItem setKeyEquivalentModifierMask:CPCommandKeyMask];
+    [searchItem setTarget:self];
+    [viewMenu addItem:searchItem];
+
+    [viewMenuItem setSubmenu:viewMenu];
+    [mainMenu addItem:viewMenuItem];
+
+    // Set as main menu
+    [CPApp setMainMenu:mainMenu];
+}
+
+#pragma mark - Keyboard Shortcut Handlers
+
+- (void)handleViewPDS:(id)sender
+{
+    [_serviceTabView selectTabViewItemAtIndex:0];
+}
+
+- (void)handleViewRelay:(id)sender
+{
+    [_serviceTabView selectTabViewItemAtIndex:1];
+}
+
+- (void)handleViewPLC:(id)sender
+{
+    [_serviceTabView selectTabViewItemAtIndex:2];
+}
+
+- (void)handleViewAppView:(id)sender
+{
+    [_serviceTabView selectTabViewItemAtIndex:3];
+}
+
+- (void)handleRefreshCurrent:(id)sender
+{
+    // Refresh the current view based on which service/tab is selected
+    var tabIndex = [_serviceTabView indexOfTabViewItem:[_serviceTabView selectedTabViewItem]];
+
+    if (tabIndex === 0) // PDS
+    {
+        var subTabIndex = [_pdsSubTabView indexOfTabViewItem:[_pdsSubTabView selectedTabViewItem]];
+        if (subTabIndex === 0 && _explorerController)
+            [_explorerController handleRefreshAccounts:sender];
+        else if (subTabIndex === 1 && _adminController)
+            [_adminController handleRefreshOverview:sender];
+    }
+    else if (tabIndex === 1 && _relayDashboardController) // Relay
+    {
+        [_relayDashboardController handleRefresh:sender];
+    }
+    else if (tabIndex === 2 && _plcDirectoryController) // PLC
+    {
+        [_plcDirectoryController handleRefresh:sender];
+    }
+    else if (tabIndex === 3 && _appViewBackfillController) // AppView
+    {
+        [_appViewBackfillController handleRefresh:sender];
+    }
+}
+
+- (void)handleFocusSearch:(id)sender
+{
+    // Focus search field in current view
+    var tabIndex = [_serviceTabView indexOfTabViewItem:[_serviceTabView selectedTabViewItem]];
+
+    if (tabIndex === 0) // PDS
+    {
+        [_explorerController handleFocusSearch:sender];
+    }
+    else if (tabIndex === 2) // PLC
+    {
+        // Focus search field in PLC directory
+        // The directory controller has _searchField
+        // Could add a handleFocusSearch method to PLCDirectoryController
+    }
 }
 
 - (void)setUpControllers
