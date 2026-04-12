@@ -13,3 +13,7 @@ Dependency direction (high-level):
 These APIs are marked experimental (`v0`) and may evolve while module extraction
 continues.
 
+Umbrella ownership rules:
+
+- `ATProtoTransport` exports transport/runtime-agnostic HTTP primitives only.
+- `ATProtoRuntime` exports bootstrap/composition APIs such as `PDSHttpServerBuilder`.

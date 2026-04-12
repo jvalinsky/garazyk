@@ -19,6 +19,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface XrpcAppBskyNotificationPack : NSObject
 
++ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                              appViewDatabase:(PDSDatabase *)appViewDatabase
+                                    jwtMinter:(JWTMinter *)jwtMinter
+                              adminController:(id<PDSAdminController>)adminController;
+
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  appViewDatabase:(PDSDatabase *)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
