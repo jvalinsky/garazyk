@@ -21,6 +21,7 @@
 @import "PLCDetailController.j"
 @import "PLCTimelineController.j"
 @import "PLCMetricsController.j"
+@import "AppViewBackfillController.j"
 
 @implementation AppController : CPObject
 {
@@ -47,14 +48,19 @@
     PLCTimelineController _plcTimelineController;
     PLCMetricsController _plcMetricsController;
 
+    // AppView Controllers
+    AppViewBackfillController _appViewBackfillController;
+
     // Service tab views
     CPTabView _serviceTabView;
     CPView _pdsTabContentView;
     CPView _relayTabContentView;
     CPView _plcTabContentView;
+    CPView _appViewTabContentView;
     CPTabView _pdsSubTabView;
     CPTabView _relaySubTabView;
     CPTabView _plcSubTabView;
+    CPTabView _appViewSubTabView;
 }
 
 - (void)applicationDidFinishLaunching:(CPNotification)aNotification
@@ -95,6 +101,10 @@
                                                                        apiClient:_apiClient];
     _plcMetricsController = [[PLCMetricsController alloc] initWithSessionState:_sessionState
                                                                        apiClient:_apiClient];
+
+    // AppView controllers
+    _appViewBackfillController = [[AppViewBackfillController alloc] initWithSessionState:_sessionState
+                                                                                apiClient:_apiClient];
 
     // Wire directory -> detail/timeline
     [_plcDirectoryController setDelegate:self];
@@ -168,6 +178,18 @@
     [_plcTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_plcTabContentView addSubview:_plcSubTabView];
 
+    // AppView sub-tabs
+    _appViewSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+    [_appViewSubTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [_appViewSubTabView setTabViewType:CPTopTabsBezelBorder];
+
+    [self addTabToView:_appViewSubTabView label:@"Backfill" contentView:[_appViewBackfillController rootView]];
+
+    // AppView content view
+    _appViewTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+    [_appViewTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [_appViewTabContentView addSubview:_appViewSubTabView];
+
     // Service-level tab view (no tabs visible - uses segmented control instead)
     _serviceTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, serviceTabHeight, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
     [_serviceTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
@@ -176,13 +198,15 @@
     [self addTabToView:_serviceTabView label:@"PDS" contentView:_pdsTabContentView];
     [self addTabToView:_serviceTabView label:@"Relay" contentView:_relayTabContentView];
     [self addTabToView:_serviceTabView label:@"PLC" contentView:_plcTabContentView];
+    [self addTabToView:_serviceTabView label:@"AppView" contentView:_appViewTabContentView];
 
     // Service selector segmented control
-    var segmentedControl = [[CPSegmentedControl alloc] initWithFrame:CGRectMake(20.0, 4.0, 260.0, 24.0)];
-    [segmentedControl setSegmentCount:3];
+    var segmentedControl = [[CPSegmentedControl alloc] initWithFrame:CGRectMake(20.0, 4.0, 340.0, 24.0)];
+    [segmentedControl setSegmentCount:4];
     [segmentedControl setLabel:@"PDS" forSegment:0];
     [segmentedControl setLabel:@"Relay" forSegment:1];
     [segmentedControl setLabel:@"PLC" forSegment:2];
+    [segmentedControl setLabel:@"AppView" forSegment:3];
     [segmentedControl setSelectedSegment:0];
     [segmentedControl setTarget:self];
     [segmentedControl setAction:@selector(handleServiceSelected:)];

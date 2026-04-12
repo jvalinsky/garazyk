@@ -147,6 +147,7 @@
     [title setBezeled:NO];
     [title setDrawsBackground:NO];
     [title setFont:[CPFont boldSystemFontOfSize:20.0]];
+    [title setAccessibilityLabel:@"Explore Dashboard Title"];
 
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1040.0, 20.0)];
     [_statusLabel setEditable:NO];
@@ -154,24 +155,33 @@
     [_statusLabel setDrawsBackground:NO];
     [_statusLabel setFont:[CPFont systemFontOfSize:12.0]];
     [_statusLabel setStringValue:@"Idle"];
+    [_statusLabel setAccessibilityLabel:@"Status message"];
 
     _lookupField = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 72.0, 260.0, 28.0)];
     [_lookupField setPlaceholderString:@"Enter DID or handle"];
+    [_lookupField setAccessibilityLabel:@"DID or handle lookup input"];
+    [_lookupField setAccessibilityHint:@"Enter a DID (did:plc:xxx) or handle (user.bskysocial.com) to look up"];
 
     var lookupButton = [[CPButton alloc] initWithFrame:CGRectMake(290.0, 72.0, 80.0, 28.0)];
     [lookupButton setTitle:@"Lookup"];
     [lookupButton setTarget:self];
     [lookupButton setAction:@selector(handleLookup:)];
+    [lookupButton setAccessibilityLabel:@"Lookup DID or handle"];
+    [lookupButton setAccessibilityHint:@"Search for the DID or handle entered above"];
 
     var refreshButton = [[CPButton alloc] initWithFrame:CGRectMake(380.0, 72.0, 110.0, 28.0)];
     [refreshButton setTitle:@"Refresh Accounts"];
     [refreshButton setTarget:self];
     [refreshButton setAction:@selector(handleRefreshAccounts:)];
+    [refreshButton setAccessibilityLabel:@"Refresh accounts list"];
+    [refreshButton setAccessibilityHint:@"Reload the list of known accounts"];
 
     var docsButton = [[CPButton alloc] initWithFrame:CGRectMake(500.0, 72.0, 90.0, 28.0)];
     [docsButton setTitle:@"API Docs"];
     [docsButton setTarget:self];
     [docsButton setAction:@selector(handleOpenDocs:)];
+    [docsButton setAccessibilityLabel:@"Open API documentation"];
+    [docsButton setAccessibilityHint:@"Open the AT Protocol API documentation in a new window"];
 
     var accountsLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 106.0, 120.0, 18.0)];
     [accountsLabel setStringValue:@"Accounts"];
@@ -179,12 +189,15 @@
     [accountsLabel setBezeled:NO];
     [accountsLabel setDrawsBackground:NO];
     [accountsLabel setFont:[CPFont boldSystemFontOfSize:12.0]];
+    [accountsLabel setAccessibilityLabel:@"Accounts section header"];
 
     _accountsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 240.0, 530.0)];
     [_accountsTable setDelegate:self];
     [_accountsTable setDataSource:self];
     [_accountsTable setAllowsEmptySelection:YES];
     [_accountsTable setAllowsMultipleSelection:NO];
+    [_accountsTable setAccessibilityLabel:@"Accounts list"];
+    [_accountsTable setAccessibilityHint:@"Select an account to view details"];
 
     var accountColumn = [[CPTableColumn alloc] initWithIdentifier:@"account"];
     [[accountColumn headerView] setStringValue:@"Handle / DID"];
@@ -239,6 +252,8 @@
     [_didSummaryTable setDelegate:self];
     [_didSummaryTable setDataSource:self];
     [_didSummaryTable setAllowsEmptySelection:YES];
+    [_didSummaryTable setAccessibilityLabel:@"DID summary table"];
+    [_didSummaryTable setAccessibilityHint:@"Shows DID document properties"];
     [_didSummaryTable setAllowsMultipleSelection:NO];
 
     var didSummaryFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"did_summary_field"];
@@ -261,6 +276,8 @@
     [_didItemsTable setDelegate:self];
     [_didItemsTable setDataSource:self];
     [_didItemsTable setAllowsEmptySelection:YES];
+    [_didItemsTable setAccessibilityLabel:@"DID also-known-as items"];
+    [_didItemsTable setAccessibilityHint:@"List of also-known-as identifiers for this DID"];
     [_didItemsTable setAllowsMultipleSelection:NO];
 
     var didItemTypeColumn = [[CPTableColumn alloc] initWithIdentifier:@"did_item_type"];
@@ -310,6 +327,8 @@
     [_plcOpsTable setDelegate:self];
     [_plcOpsTable setDataSource:self];
     [_plcOpsTable setAllowsEmptySelection:YES];
+    [_plcOpsTable setAccessibilityLabel:@"PLC operations history"];
+    [_plcOpsTable setAccessibilityHint:@"Timeline of PLC directory operations"];
     [_plcOpsTable setAllowsMultipleSelection:NO];
 
     var plcWhenColumn = [[CPTableColumn alloc] initWithIdentifier:@"plc_op_when"];
@@ -365,6 +384,8 @@
     [_collectionsTable setDelegate:self];
     [_collectionsTable setDataSource:self];
     [_collectionsTable setAllowsEmptySelection:YES];
+    [_collectionsTable setAccessibilityLabel:@"Record collections"];
+    [_collectionsTable setAccessibilityHint:@"List of record collections (NSID) in this repository"];
     [_collectionsTable setAllowsMultipleSelection:NO];
 
     var collectionNameColumn = [[CPTableColumn alloc] initWithIdentifier:@"collection"];
@@ -503,6 +524,8 @@
     [_feedTable setDelegate:self];
     [_feedTable setDataSource:self];
     [_feedTable setAllowsEmptySelection:YES];
+    [_feedTable setAccessibilityLabel:@"Feed posts"];
+    [_feedTable setAccessibilityHint:@"List of posts in the feed"];
     [_feedTable setAllowsMultipleSelection:NO];
 
     var feedTypeColumn = [[CPTableColumn alloc] initWithIdentifier:@"feed_type"];
@@ -569,6 +592,8 @@
     [_graphTable setDelegate:self];
     [_graphTable setDataSource:self];
     [_graphTable setAllowsEmptySelection:YES];
+    [_graphTable setAccessibilityLabel:@"Graph follows or followers"];
+    [_graphTable setAccessibilityHint:@"List of accounts followed by or following this account"];
     [_graphTable setAllowsMultipleSelection:NO];
 
     var graphHandleColumn = [[CPTableColumn alloc] initWithIdentifier:@"graph_handle"];
@@ -647,6 +672,8 @@
     [_profileSummaryTable setDelegate:self];
     [_profileSummaryTable setDataSource:self];
     [_profileSummaryTable setAllowsEmptySelection:YES];
+    [_profileSummaryTable setAccessibilityLabel:@"Profile summary"];
+    [_profileSummaryTable setAccessibilityHint:@"Key-value pairs from the actor profile"];
     [_profileSummaryTable setAllowsMultipleSelection:NO];
 
     var profileFieldColumn = [[CPTableColumn alloc] initWithIdentifier:@"profile_field"];
@@ -691,34 +718,45 @@
 
     _mstDidField = [[CPTextField alloc] initWithFrame:CGRectMake(42.0, 10.0, 280.0, 24.0)];
     [_mstDidField setPlaceholderString:@"did:plc:..."];
+    [_mstDidField setAccessibilityLabel:@"MST DID input"];
+    [_mstDidField setAccessibilityHint:@"Enter a DID to load its Merkle Search Tree"];
     [mstTab addSubview:_mstDidField];
 
     var loadMSTButton = [[CPButton alloc] initWithFrame:CGRectMake(330.0, 8.0, 80.0, 28.0)];
     [loadMSTButton setTitle:@"Load MST"];
     [loadMSTButton setTarget:self];
     [loadMSTButton setAction:@selector(handleLoadMST:)];
+    [loadMSTButton setAccessibilityLabel:@"Load MST"];
+    [loadMSTButton setAccessibilityHint:@"Load the Merkle Search Tree for the entered DID"];
     [mstTab addSubview:loadMSTButton];
 
     var toggleMSTButton = [[CPButton alloc] initWithFrame:CGRectMake(418.0, 8.0, 95.0, 28.0)];
     [toggleMSTButton setTitle:@"Expand/Collapse"];
     [toggleMSTButton setTarget:self];
     [toggleMSTButton setAction:@selector(handleToggleMSTTree:)];
+    [toggleMSTButton setAccessibilityLabel:@"Toggle tree expansion"];
+    [toggleMSTButton setAccessibilityHint:@"Expand or collapse all nodes in the tree view"];
     [mstTab addSubview:toggleMSTButton];
 
     _mstExportFormatPopup = [[CPPopUpButton alloc] initWithFrame:CGRectMake(522.0, 10.0, 90.0, 24.0)];
     [_mstExportFormatPopup addItemsWithTitles:[@"JSON,DOT,SVG" componentsSeparatedByString:@","]];
+    [_mstExportFormatPopup setAccessibilityLabel:@"Export format selector"];
     [mstTab addSubview:_mstExportFormatPopup];
 
     var exportMSTButton = [[CPButton alloc] initWithFrame:CGRectMake(620.0, 8.0, 80.0, 28.0)];
     [exportMSTButton setTitle:@"Export"];
     [exportMSTButton setTarget:self];
     [exportMSTButton setAction:@selector(handleExportMST:)];
+    [exportMSTButton setAccessibilityLabel:@"Export MST"];
+    [exportMSTButton setAccessibilityHint:@"Export MST data in selected format"];
     [mstTab addSubview:exportMSTButton];
 
     _mstStatsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 130.0)];
     [_mstStatsTable setDelegate:self];
     [_mstStatsTable setDataSource:self];
     [_mstStatsTable setAllowsEmptySelection:YES];
+    [_mstStatsTable setAccessibilityLabel:@"MST statistics"];
+    [_mstStatsTable setAccessibilityHint:@"Summary statistics for the Merkle Search Tree"];
     [_mstStatsTable setAllowsMultipleSelection:NO];
 
     var mstMetricColumn = [[CPTableColumn alloc] initWithIdentifier:@"mst_metric"];
