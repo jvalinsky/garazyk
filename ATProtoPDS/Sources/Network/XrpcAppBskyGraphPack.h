@@ -10,6 +10,7 @@
 @class XrpcDispatcher;
 @class JWTMinter;
 @class PDSDatabase;
+@class PDSServiceDatabases;
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -20,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcAppBskyGraphPack : NSObject
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                  appViewDatabase:(PDSDatabase *)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController;
