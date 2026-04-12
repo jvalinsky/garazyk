@@ -1,9 +1,22 @@
+//
+//  DPoPUtil.m
+//  ATProtoPDS
+//
+//  DPoP utility wrapper. This file uses SecKeyRef which is only available on macOS.
+//  For cross-platform DPoP support, use AuthCryptoDPoP directly with protocol-based keys.
+//
+//  Copyright (c) 2025-2026 Jack Valinsky. All rights reserved.
+//
+
+#if defined(__APPLE__) && !defined(GNUSTEP)
+
 #import "Auth/DPoPUtil.h"
 #import "AuthCrypto/AuthCryptoDPoP.h"
 #import "AuthCrypto/AuthCryptoBase64URL.h"
 #import "AuthCrypto/AuthCryptoJWK.h"
 #import "AuthCrypto/AuthCryptoECDSA.h"
 #import <CommonCrypto/CommonDigest.h>
+#import <Security/Security.h>
 
 NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
@@ -12,8 +25,8 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
 + (nullable instancetype)createWithMethod:(NSString *)htm
                                       uri:(NSString *)htu
-                                  nonce:(nullable NSString *)nonce
-                                  error:(NSError **)error {
+                                    nonce:(nullable NSString *)nonce
+                                    error:(NSError **)error {
     NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromString:htu];
     if (canonicalHTU.length == 0) {
         if (error) {
@@ -90,18 +103,18 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     }
 
     // Use AuthCryptoJWK to get the JWK representation from SecKeyRef
-    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromKey:privateKey error:error];
+    NSDictionary *jwk = [AuthCryptoJWK publicJWKFromSecKey:privateKey error:error];
     if (!jwk) return nil;
-    
+
     // AuthCryptoDPoP expects the full JWK including private material if it's going to sign
     // but it can also take a jwk dictionary and we can inject the private key if needed.
-    // However, AuthCryptoDPoP's createProofForURL currently expects a jwk dictionary 
+    // However, AuthCryptoDPoP's createProofForURL currently expects a jwk dictionary
     // and handles SecKey creation internally from it.
-    
+
     // To maintain DPoPUtil's API (which takes SecKeyRef), we'll do a slightly different path
-    // or update AuthCryptoDPoP to be more flexible. 
+    // or update AuthCryptoDPoP to be more flexible.
     // For now, let's use the underlying components.
-    
+
     NSString *canonicalHTU = [AuthCryptoDPoP canonicalHTUFromURL:url];
     DPoPToken *token = [[DPoPToken alloc] init];
     token.htm = htm;
@@ -117,7 +130,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
         @"alg": @"ES256",
         @"jwk": jwk
     };
-    
+
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
     NSData *payloadData = [NSJSONSerialization dataWithJSONObject:[token payload] options:0 error:error];
     if (!headerData || !payloadData) return nil;
@@ -148,8 +161,8 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
      withPublicKey:(nullable SecKeyRef)publicKey
               method:(NSString *)htm
                  uri:(NSString *)htu
-              nonce:(nullable NSString *)nonce
-               error:(NSError **)error {
+               nonce:(nullable NSString *)nonce
+                error:(NSError **)error {
     NSURL *url = [NSURL URLWithString:htu];
     if (!url) {
         if (error) {
@@ -161,11 +174,11 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     }
 
     // AuthCryptoDPoP handles verification. If publicKey is nil, it can still verify structure
-    // if we pass a dummy/extracted key, but AuthCryptoDPoP's verifyProof currently extracts 
+    // if we pass a dummy/extracted key, but AuthCryptoDPoP's verifyProof currently extracts
     // the key from the JWK in the header.
-    
+
     // If a publicKey is PROVIDED to verifyDPoP, we should ensure it MATCHES the one in the proof.
-    
+
     NSString *thumbprint = nil;
     BOOL valid = [AuthCryptoDPoP verifyProof:dpopJwt
                                       method:htm
@@ -180,7 +193,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 
     if (publicKey) {
         // Extra check: ensure provided publicKey matches the one in the DPoP header
-        NSString *expectedThumbprint = [AuthCryptoJWK thumbprintForKey:publicKey error:error];
+        NSString *expectedThumbprint = [AuthCryptoJWK thumbprintForSecKey:publicKey error:error];
         if (!expectedThumbprint || ![thumbprint isEqualToString:expectedThumbprint]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
@@ -195,3 +208,48 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
 }
 
 @end
+
+#else // GNUstep
+
+// Stub implementations for GNUstep
+// DPoPUtil uses SecKeyRef which is not available on GNUstep.
+// Use AuthCryptoDPoP directly with the protocol-based key interfaces.
+
+#import "Auth/DPoPUtil.h"
+
+NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
+
+@implementation DPoPToken
+
++ (nullable instancetype)createWithMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+    return nil; // Not available on GNUstep
+}
+
+- (NSDictionary *)header { return @{}; }
+- (NSDictionary *)payload { return @{}; }
+
+@end
+
+@implementation DPoPUtil
+
++ (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce key:(void *)privateKey error:(NSError **)error {
+    if (error) {
+        *error = [NSError errorWithDomain:DPoPErrorDomain
+                                     code:-99
+                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use AuthCryptoDPoP instead."}];
+    }
+    return nil;
+}
+
++ (BOOL)verifyDPoP:(NSString *)dpopJwt withPublicKey:(nullable void *)publicKey method:(NSString *)htm uri:(NSString *)htu nonce:(nullable NSString *)nonce error:(NSError **)error {
+    if (error) {
+        *error = [NSError errorWithDomain:DPoPErrorDomain
+                                     code:-99
+                                 userInfo:@{NSLocalizedDescriptionKey: @"DPoPUtil not available on this platform. Use AuthCryptoDPoP instead."}];
+    }
+    return NO;
+}
+
+@end
+
+#endif // __APPLE__ && !GNUSTEP

@@ -394,11 +394,16 @@ if(APPLE)
     # OpenSSL-based manager is unavailable on this macOS host.
     list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
   endif()
+  # PDSOpenSSLES256KeyManager is only for GNUstep/Linux
+  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLES256KeyManager\\.m$")
 endif()
 
 if(NOT APPLE)
   # PDSAppleKeyManager.m uses Security.framework (macOS/iOS only)
   list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
+
+  # PDSOpenSSLES256KeyManager.m is only for GNUstep/Linux
+  # (Already included via GLOB, no need to filter)
 
   # PDSCLIHealthCommand uses Mach APIs.
   list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
@@ -528,6 +533,8 @@ target_link_libraries(campagnola PRIVATE
   ATProtoPLC
   ATProtoTransport
   ATProtoCore
+  ATProtoRuntime
+  ATProtoServices
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
@@ -556,6 +563,9 @@ target_link_libraries(zuk PRIVATE
   ATProtoSync
   ATProtoTransport
   ATProtoCore
+  ATProtoRuntime
+  ATProtoServices
+  ATProtoStorage
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
@@ -645,6 +655,7 @@ target_link_libraries(hello-pds PRIVATE
   ATProtoSync
   ATProtoStorage
   ATProtoCore
+  ATProtoPLC
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
 )
