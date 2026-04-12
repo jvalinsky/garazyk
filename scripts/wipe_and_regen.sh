@@ -3,14 +3,14 @@ set -e
 
 # Build CLI
 echo "Building CLI..."
-cd build && make -j$(sysctl -n hw.ncpu) september && cd ..
+cd build && make -j$(sysctl -n hw.ncpu) kaszlak && cd ..
 
 CLI="./build/bin/kaszlak"
 DATA_DIR="$(pwd)/data"
 
 # Stop existing server
 echo "Stopping existing server..."
-pkill -f september || true
+pkill -f kaszlak || true
 
 # Wipe data
 echo "Wiping data directory: $DATA_DIR"

@@ -8,8 +8,8 @@ BASE_URL = "http://localhost:2583"
 ADMIN_KEY = "admin" # Update if auth is required for account creation, but we use CLI
 
 def run_cli_command(args):
-    """Runs the september CLI command."""
-    cmd = ["./build/bin/september", "-v"] + args
+    """Runs the kaszlak CLI command."""
+    cmd = ["./build/bin/kaszlak", "-v"] + args
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.stdout:
         print(f"CLI Stdout ({' '.join(args)}):")

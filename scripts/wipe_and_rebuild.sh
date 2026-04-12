@@ -34,4 +34,4 @@ echo "🔨 Building..."
 make -j8
 
 echo "✅ Wipe and rebuild complete!"
-echo "   Run './september' to start the server or './tests/AllTests' to run tests."
+echo "   Run './kaszlak' to start the server or './tests/AllTests' to run tests."

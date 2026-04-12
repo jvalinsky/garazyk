@@ -5,12 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="${SCRIPT_DIR}/../.."
 BUILD_DIR="${PROJECT_DIR}/build"
 
-BINARY_NAME="september"
+BINARY_NAME="kaszlak"
 BINARY_PATH="${BUILD_DIR}/bin/${BINARY_NAME}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
-DATA_DIR="${DATA_DIR:-/var/db/september}"
-CONFIG_DIR="${CONFIG_DIR:-/usr/local/etc/september}"
-LOG_DIR="${LOG_DIR:-/var/db/september/log}"
+DATA_DIR="${DATA_DIR:-/var/db/kaszlak}"
+CONFIG_DIR="${CONFIG_DIR:-/usr/local/etc/kaszlak}"
+LOG_DIR="${LOG_DIR:-/var/db/kaszlak/log}"
 
 SYSTEM_USER="_pds"
 SYSTEM_GROUP="_pds"
@@ -45,7 +45,7 @@ check_dependencies() {
 
     if [[ ! -f "${BINARY_PATH}" ]]; then
         log_error "Binary not found at ${BINARY_PATH}"
-        log_info "Please build first: cd ${PROJECT_DIR} && cmake --build build --target september"
+        log_info "Please build first: cd ${PROJECT_DIR} && cmake --build build --target kaszlak"
         exit 1
     fi
 
@@ -84,7 +84,7 @@ create_directories() {
     mkdir -p "${LOG_DIR}"
     mkdir -p "${CONFIG_DIR}"
     mkdir -p "${INSTALL_PREFIX}/bin"
-    mkdir -p "${INSTALL_PREFIX}/etc/september"
+    mkdir -p "${INSTALL_PREFIX}/etc/kaszlak"
 
     chown -R "${SYSTEM_USER}:${SYSTEM_GROUP}" "${DATA_DIR}"
     chown -R "${SYSTEM_USER}:${SYSTEM_GROUP}" "${LOG_DIR}"
@@ -114,16 +114,16 @@ install_config() {
 server:
   host: "0.0.0.0"
   port: 2583
-  dataDirectory: "/var/db/september"
+  dataDirectory: "/var/db/kaszlak"
 
 database:
   type: "sqlite"
-  path: "/var/db/september/actorstore.db"
+  path: "/var/db/kaszlak/actorstore.db"
 
 logging:
   level: "info"
   format: "json"
-  path: "/var/db/september/log/server.log"
+  path: "/var/db/kaszlak/log/server.log"
 
 # Optional: Enable/disable features
 features:
@@ -155,9 +155,9 @@ install_launchd() {
         return 1
     fi
 
-    sed "s|/usr/local/bin/september|${INSTALL_PREFIX}/bin/september|g" "${plist_source}" > "${plist_dest}.tmp"
-    sed -i '' "s|/usr/local/etc/september/config.yaml|${CONFIG_DIR}/config.yaml|g" "${plist_dest}.tmp"
-    sed -i '' "s|/var/db/september|${DATA_DIR}|g" "${plist_dest}.tmp"
+    sed "s|/usr/local/bin/kaszlak|${INSTALL_PREFIX}/bin/kaszlak|g" "${plist_source}" > "${plist_dest}.tmp"
+    sed -i '' "s|/usr/local/etc/kaszlak/config.yaml|${CONFIG_DIR}/config.yaml|g" "${plist_dest}.tmp"
+    sed -i '' "s|/var/db/kaszlak|${DATA_DIR}|g" "${plist_dest}.tmp"
     mv "${plist_dest}.tmp" "${plist_dest}"
 
     chown root:wheel "${plist_dest}"
@@ -205,8 +205,8 @@ Install ATProto PDS as a system service on macOS.
 
 OPTIONS:
     --prefix PATH      Installation prefix (default: /usr/local)
-    --data-dir PATH    Data directory (default: /var/db/september)
-    --config-dir PATH  Configuration directory (default: /usr/local/etc/september)
+    --data-dir PATH    Data directory (default: /var/db/kaszlak)
+    --config-dir PATH  Configuration directory (default: /usr/local/etc/kaszlak)
     --skip-load        Don't load launchd configuration
     --force            Overwrite existing files
     --help             Show this help
@@ -214,7 +214,7 @@ OPTIONS:
 EXAMPLES:
     $0                          # Default installation
     sudo $0                     # With root privileges
-    $0 --prefix /opt/september  # Custom installation path
+    $0 --prefix /opt/kaszlak  # Custom installation path
     $0 --skip-load              # Install but don't start
 
 EOF
