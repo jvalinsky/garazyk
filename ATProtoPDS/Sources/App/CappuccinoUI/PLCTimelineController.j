@@ -72,6 +72,7 @@
     [_statusLabel setDrawsBackground:NO];
     [_statusLabel setFont:[CPFont systemFontOfSize:12.0]];
     [_statusLabel setStringValue:@""];
+    [_statusLabel setAccessibilityLabel:@"Timeline status"];
     [_rootView addSubview:_statusLabel];
 
     // Timeline scroll view
@@ -79,8 +80,10 @@
     [_scrollView setHasHorizontalScroller:NO];
     [_scrollView setHasVerticalScroller:YES];
     [_scrollView setAutohidesScroller:YES];
+    [_scrollView setAccessibilityLabel:@"PLC operation timeline"];
 
     _timelineView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 100.0)];
+    [_timelineView setAccessibilityLabel:@"Timeline visualization"];
     [_scrollView setDocumentView:_timelineView];
     [_rootView addSubview:_scrollView];
 

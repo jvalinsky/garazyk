@@ -98,7 +98,7 @@
     [parent addSubview:filterLabel];
 
     _filterTypePopup = [[CPPopUpButton alloc] initWithFrame:CGRectMake(100.0, 70.0, 120.0, 24.0)];
-    [_filterTypePopup addItemsWithTitles:[@"All", @"Commit", @"Identity", @"Account", @"Error" componentsSeparatedByString:@","]];
+    [_filterTypePopup addItemsWithTitles:[@"All,Commit,Identity,Account,Error" componentsSeparatedByString:@","]];
     [_filterTypePopup setTarget:self];
     [_filterTypePopup setAction:@selector(handleFilterChanged:)];
     [parent addSubview:_filterTypePopup];
@@ -122,6 +122,8 @@
     [_connectButton setTitle:@"Connect"];
     [_connectButton setTarget:self];
     [_connectButton setAction:@selector(handleConnect:)];
+    [_connectButton setAccessibilityLabel:@"Connect to event stream"];
+    [_connectButton setAccessibilityHint:@"Start receiving live events from the relay"];
     [parent addSubview:_connectButton];
 
     _pauseButton = [[CPButton alloc] initWithFrame:CGRectMake(640.0, 68.0, 80.0, 28.0)];
@@ -129,12 +131,16 @@
     [_pauseButton setTarget:self];
     [_pauseButton setAction:@selector(handleTogglePause:)];
     [_pauseButton setEnabled:NO];
+    [_pauseButton setAccessibilityLabel:@"Pause event stream"];
+    [_pauseButton setAccessibilityHint:@"Pause or resume event reception"];
     [parent addSubview:_pauseButton];
 
     _clearButton = [[CPButton alloc] initWithFrame:CGRectMake(730.0, 68.0, 60.0, 28.0)];
     [_clearButton setTitle:@"Clear"];
     [_clearButton setTarget:self];
     [_clearButton setAction:@selector(handleClear:)];
+    [_clearButton setAccessibilityLabel:@"Clear events"];
+    [_clearButton setAccessibilityHint:@"Clear all events from the display"];
     [parent addSubview:_clearButton];
 
     // Event count
@@ -145,6 +151,7 @@
     [countLabel setDrawsBackground:NO];
     [countLabel setTextColor:[CPColor grayColor]];
     [countLabel setTag:@"countLabel"];
+    [countLabel setAccessibilityLabel:@"Event limit indicator"];
     [parent addSubview:countLabel];
 }
 
@@ -156,6 +163,7 @@
     [tableLabel setBezeled:NO];
     [tableLabel setDrawsBackground:NO];
     [tableLabel setFont:[CPFont boldSystemFontOfSize:12.0]];
+    [tableLabel setAccessibilityLabel:@"Event stream section header"];
     [parent addSubview:tableLabel];
 
     _eventsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 700.0, 540.0)];
@@ -164,6 +172,8 @@
     [_eventsTable setAllowsEmptySelection:YES];
     [_eventsTable setAllowsMultipleSelection:NO];
     [_eventsTable setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithCalibratedWhite:0.98 alpha:1.0]]];
+    [_eventsTable setAccessibilityLabel:@"Event stream table"];
+    [_eventsTable setAccessibilityHint:@"Live feed of relay events"];
 
     // Time Column
     var timeColumn = [[CPTableColumn alloc] initWithIdentifier:@"time"];
