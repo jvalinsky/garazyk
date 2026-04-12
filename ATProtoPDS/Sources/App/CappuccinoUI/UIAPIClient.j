@@ -21,6 +21,7 @@
     [endpointBases setObject:@"/oauth-demo" forKey:@"oauthDemo"];
     [endpointBases setObject:@"/api/relay" forKey:@"relay"];
     [endpointBases setObject:@"" forKey:@"plc"]; // PLC endpoints at root
+    [endpointBases setObject:@"" forKey:@"appview"]; // AppView admin at /admin/backfill/*
     return [self initWithEndpointBases:endpointBases];
 }
 
