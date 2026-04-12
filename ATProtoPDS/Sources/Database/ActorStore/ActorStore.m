@@ -351,7 +351,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         char *backfillErrMsg = NULL;
         int backfillResult = sqlite3_exec(self.db,
                                           "UPDATE record_tombstones "
-                                          "SET rev = COALESCE(rev, indexed_at) "
+                                          "SET rev = COALESCE(rev, created_at) "
                                           "WHERE rev IS NULL OR rev = ''",
                                           NULL,
                                           NULL,
@@ -972,7 +972,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     __block NSError *blockError = nil;
 
     void (^workBlock)(void) = ^{
-        NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did "
+        NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did "
                          @"FROM records WHERE uri = ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
@@ -1005,9 +1005,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     void (^workBlock)(void) = ^{
         BOOL hasRevFilter = (rev.length > 0);
         NSString *sql = hasRevFilter
-            ? @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones "
+            ? @"SELECT uri, did, collection, rkey, rev, created_at FROM record_tombstones "
               @"WHERE rev > ? ORDER BY rev LIMIT ?"
-            : @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones "
+            : @"SELECT uri, did, collection, rkey, rev, created_at FROM record_tombstones "
               @"ORDER BY rev LIMIT ?";
 
         NSError *prepError = nil;
@@ -1103,10 +1103,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         
         NSString *sql;
         if (collection) {
-            sql = @"SELECT uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did "
+            sql = @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did "
                   @"FROM records WHERE collection = ? ORDER BY rkey LIMIT ? OFFSET ?";
         } else {
-            sql = @"SELECT uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did "
+            sql = @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did "
                   @"FROM records ORDER BY rkey LIMIT ? OFFSET ?";
         }
         
@@ -1138,7 +1138,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did) "
+    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, created_at, rev, subject_did) "
                      @"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
@@ -1174,7 +1174,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)createRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"INSERT INTO records (uri, did, collection, rkey, cid, value, indexed_at, rev, subject_did) "
+    NSString *sql = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, rev, subject_did) "
                      @"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
@@ -1216,7 +1216,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)updateRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
-    NSString *sql = @"UPDATE records SET did = ?, collection = ?, rkey = ?, cid = ?, value = ?, indexed_at = ?, rev = ?, subject_did = ? "
+    NSString *sql = @"UPDATE records SET did = ?, collection = ?, rkey = ?, cid = ?, value = ?, created_at = ?, rev = ?, subject_did = ? "
                      @"WHERE uri = ?";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
@@ -1283,7 +1283,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
                          rkey:(NSString *)rkey
                            rev:(NSString *)rev
                          error:(NSError **)error {
-    NSString *sql = @"INSERT INTO record_tombstones (uri, did, collection, rkey, rev, indexed_at) "
+    NSString *sql = @"INSERT INTO record_tombstones (uri, did, collection, rkey, rev, created_at) "
                      @"VALUES (?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;
