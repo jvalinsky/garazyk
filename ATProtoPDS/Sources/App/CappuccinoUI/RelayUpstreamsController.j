@@ -9,6 +9,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 
 @implementation RelayUpstreamsController : CPObject
 {
@@ -433,6 +434,35 @@
 - (BOOL)tableView:(CPTableView)tableView shouldSelectRow:(int)row
 {
     return YES;
+}
+
+#pragma mark - Status Helpers
+
+- (void)setErrorStatus:(CPString)message
+{
+    [_statusLabel setStringValue:@"Error: " + message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(185.0/255.0)
+                                                         green:(28.0/255.0)
+                                                          blue:(28.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setSuccessStatus:(CPString)message
+{
+    [_statusLabel setStringValue:message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(4.0/255.0)
+                                                         green:(120.0/255.0)
+                                                          blue:(87.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setWarningStatus:(CPString)message
+{
+    [_statusLabel setStringValue:@"Warning: " + message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(180.0/255.0)
+                                                         green:(83.0/255.0)
+                                                          blue:(9.0/255.0)
+                                                         alpha:1.0]];
 }
 
 @end

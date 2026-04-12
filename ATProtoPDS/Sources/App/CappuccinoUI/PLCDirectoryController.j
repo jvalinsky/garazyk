@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 
 @implementation PLCDirectoryController : CPObject
 {
@@ -259,6 +260,26 @@
 - (void)tableView:(CPTableView)tableView didClickTableColumn:(CPTableColumn)column
 {
     // Could implement sorting here
+}
+
+#pragma mark - Status Helpers
+
+- (void)setErrorStatus:(CPString)message
+{
+    [_statusLabel setStringValue:@"Error: " + message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(185.0/255.0)
+                                                         green:(28.0/255.0)
+                                                          blue:(28.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setSuccessStatus:(CPString)message
+{
+    [_statusLabel setStringValue:message];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(4.0/255.0)
+                                                         green:(120.0/255.0)
+                                                          blue:(87.0/255.0)
+                                                         alpha:1.0]];
 }
 
 @end
