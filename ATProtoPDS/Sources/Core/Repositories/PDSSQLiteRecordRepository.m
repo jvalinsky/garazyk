@@ -47,11 +47,21 @@
 }
 
 - (nullable PDSDatabaseRecord *)recordForUri:(NSString *)uri error:(NSError **)error {
-    // Extract DID from URI to route to correct database
-    NSURL *url = [NSURL URLWithString:uri];
-    NSString *did = url.host;
-    if (!did) {
-        if (error) *error = [NSError errorWithDomain:@"PDSSQLiteRecordRepository" code:2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT-URI"}];
+    // Parse AT-URI manually: at://did/collection/rkey
+    // NSURL doesn't recognize "at://" as a valid scheme, so url.host returns nil
+    if (![uri hasPrefix:@"at://"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSSQLiteRecordRepository" code:2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT-URI: missing at:// prefix"}];
+        }
+        return nil;
+    }
+    NSString *path = [uri substringFromIndex:5];  // Skip "at://"
+    NSRange slashRange = [path rangeOfString:@"/"];
+    NSString *did = slashRange.location == NSNotFound ? path : [path substringToIndex:slashRange.location];
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSSQLiteRecordRepository" code:2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT-URI: missing DID"}];
+        }
         return nil;
     }
 
@@ -96,23 +106,44 @@
 }
 
 - (BOOL)deleteRecord:(NSString *)uri error:(NSError **)error {
-    NSURL *url = [NSURL URLWithString:uri];
-    NSString *did = url.host;
-    if (!did) return NO;
+    // Parse AT-URI manually: at://did/collection/rkey
+    // NSURL doesn't recognize "at://" as a valid scheme, so url.host returns nil
+    if (![uri hasPrefix:@"at://"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSSQLiteRecordRepository"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT-URI: missing at:// prefix"}];
+        }
+        return NO;
+    }
+    NSString *path = [uri substringFromIndex:5];  // Skip "at://"
+    NSRange slashRange = [path rangeOfString:@"/"];
+    NSString *did = slashRange.location == NSNotFound ? path : [path substringToIndex:slashRange.location];
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSSQLiteRecordRepository"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT-URI: missing DID"}];
+        }
+        return NO;
+    }
 
     __block BOOL success = NO;
     [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
+        if (!store) return;
+        
         NSString *sql = @"DELETE FROM records WHERE uri = ?";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 
         sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt) == SQLITE_DONE) {
-            success = YES;
+            success = sqlite3_changes(store.db) > 0;
         }
         [store finalizeStatement:stmt];
     } error:error];
+    
     return success;
 }
 
