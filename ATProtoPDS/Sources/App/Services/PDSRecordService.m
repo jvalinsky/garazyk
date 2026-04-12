@@ -20,7 +20,6 @@
 #include <math.h>
 
 NSErrorDomain const PDSRecordServiceErrorDomain = @"com.atproto.pds.record-service";
-NSNotificationName const PDSRecordDidChangeNotification = @"PDSRecordDidChangeNotification";
 
 static const NSTimeInterval kATProtoCreatedAtMaxSkewSeconds = 24.0 * 60.0 * 60.0;
 
