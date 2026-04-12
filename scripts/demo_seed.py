@@ -9,10 +9,10 @@ import random
 # Configuration from env
 BASE_URL = os.environ.get("PDS_URL", "http://localhost:2583")
 DATA_DIR = os.environ.get("PDS_DATA_DIR", "./data")
-BIN_PATH = os.environ.get("PDS_BIN", "./build/bin/september")
+BIN_PATH = os.environ.get("PDS_BIN", "./build/bin/kaszlak")
 
 def run_cli_command(args):
-    """Runs the september CLI command."""
+    """Runs the kaszlak CLI command."""
     # Global options must come BEFORE the command (args[0])
     # Pass --config /tmp/missing.json to avoid loading ./config.json which overrides data-dir
     cmd = [BIN_PATH, "--verbose", "--data-dir", DATA_DIR, "--config", "/tmp/missing_config_to_force_args.json"] + args
