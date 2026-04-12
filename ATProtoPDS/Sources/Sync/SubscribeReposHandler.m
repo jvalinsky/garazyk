@@ -1,5 +1,4 @@
 #import "Sync/SubscribeReposHandler.h"
-#import "App/PDSController.h"
 #import "Compat/PDSTypes.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
@@ -117,11 +116,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 - (instancetype)initWithServiceDatabases:
     (PDSServiceDatabases *)serviceDatabases {
   return [self initWithServiceDatabases:serviceDatabases userDatabasePool:nil];
-}
-
-- (instancetype)initWithController:(PDSController *)controller {
-  return [self initWithServiceDatabases:controller.serviceDatabases
-                       userDatabasePool:controller.userDatabasePool];
 }
 
 - (void)dealloc {

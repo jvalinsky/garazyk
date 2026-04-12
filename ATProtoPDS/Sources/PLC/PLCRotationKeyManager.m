@@ -2,13 +2,41 @@
 #import "Auth/Secp256k1.h"
 #import "Core/PDSDataPaths.h"
 #import "Debug/PDSLogger.h"
-#import "App/PDSConfiguration.h"
 #import "Auth/CryptoUtils.h"
 
 NSString * const PLCRotationKeyManagerErrorDomain = @"com.atproto.plc.rotation";
 
 static NSString *const kRotationKeyFileName = @"plc_rotation_key.bin";
 static PLCRotationKeyManager *_sharedManager = nil;
+
+static NSString *PDSDefaultDataDirectory(void) {
+    NSString *envDataDirectory = NSProcessInfo.processInfo.environment[@"PDS_DATA_DIR"];
+    if (envDataDirectory.length > 0) {
+        return envDataDirectory;
+    }
+
+#if defined(__APPLE__)
+    NSArray *urls = [[NSFileManager defaultManager]
+        URLsForDirectory:NSApplicationSupportDirectory
+               inDomains:NSUserDomainMask];
+    NSURL *appSupport = urls.count > 0 ? urls[0] : nil;
+    return [[appSupport URLByAppendingPathComponent:@"ATProtoPDS"] path];
+#else
+    return [NSHomeDirectory() stringByAppendingPathComponent:@".local/share/ATProtoPDS"];
+#endif
+}
+
+static NSString *PLCRotationKeyStorageDirectory(void) {
+    NSString *explicitKeysDirectory =
+        NSProcessInfo.processInfo.environment[@"PDS_PLC_KEYS_DIR"];
+    if (explicitKeysDirectory.length > 0) {
+        return explicitKeysDirectory;
+    }
+
+    PDSDataPaths *paths =
+        [PDSDataPaths pathsForBaseDirectory:PDSDefaultDataDirectory()];
+    return paths.keysDirectory;
+}
 
 @interface PLCRotationKeyManager ()
 
@@ -26,9 +54,7 @@ static PLCRotationKeyManager *_sharedManager = nil;
 + (instancetype)sharedManager {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-        NSString *keysDir = config ? config.dataPaths.keysDirectory
-                                   : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].keysDirectory;
+        NSString *keysDir = PLCRotationKeyStorageDirectory();
         _sharedManager = [[PLCRotationKeyManager alloc] initWithStoragePath:keysDir];
     });
     return _sharedManager;
