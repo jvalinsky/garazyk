@@ -7,6 +7,8 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "LoadingSpinner.j"
+@import "EmptyStateView.j"
 
 @implementation ExplorerController : CPObject
 {
@@ -87,6 +89,7 @@
     CPArray _profileSummaryRows;
     CPArray _mstStatsRows;
     CPArray _mstNodeRows;
+    LoadingSpinner _loadingSpinner;
     CPArray _didSummaryRows;
     CPArray _didItemRows;
     CPArray _plcOpRows;
@@ -968,6 +971,82 @@
 - (void)setStatus:(CPString)message
 {
     [_statusLabel setStringValue:(message || @"")];
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedWhite:(75.0/255.0) alpha:1.0]];
+}
+
+- (void)setErrorStatus:(CPString)message
+{
+    [_statusLabel setStringValue:@"Error: " + message];
+    // #B91C1C = WCAG AA compliant red
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(185.0/255.0)
+                                                         green:(28.0/255.0)
+                                                          blue:(28.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setSuccessStatus:(CPString)message
+{
+    [_statusLabel setStringValue:message];
+    // #047857 = WCAG AA compliant green
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(4.0/255.0)
+                                                         green:(120.0/255.0)
+                                                          blue:(87.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setWarningStatus:(CPString)message
+{
+    [_statusLabel setStringValue:@"Warning: " + message];
+    // #B45309 = WCAG AA compliant orange
+    [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:(180.0/255.0)
+                                                         green:(83.0/255.0)
+                                                          blue:(9.0/255.0)
+                                                         alpha:1.0]];
+}
+
+- (void)setLoadingStatus:(CPString)message
+{
+    [self setStatus:message];
+    [self showLoadingSpinner];
+}
+
+- (void)showLoadingSpinner
+{
+    if (!_loadingSpinner)
+    {
+        _loadingSpinner = [LoadingSpinner smallSpinner];
+        [_loadingSpinner setColor:@"gray"];
+    }
+
+    if (_statusLabel && _loadingSpinner)
+    {
+        var statusFrame = [_statusLabel frame];
+        var superview = [_statusLabel superview];
+        if (superview)
+        {
+            [_loadingSpinner removeFromSuperview];
+            [_loadingSpinner setFrameOrigin:CGPointMake(
+                statusFrame.origin.x + statusFrame.size.width + 6.0,
+                statusFrame.origin.y + (statusFrame.size.height - 16.0) / 2.0
+            )];
+            [superview addSubview:_loadingSpinner];
+            [_loadingSpinner startAnimating];
+        }
+    }
+}
+
+- (void)hideLoadingSpinner
+{
+    if (_loadingSpinner)
+    {
+        [_loadingSpinner stopAnimating];
+        [_loadingSpinner removeFromSuperview];
+    }
+}
+
+- (void)clearLoadingSpinner
+{
+    [self hideLoadingSpinner];
 }
 
 - (void)setTextView:(CPTextView)textView content:(CPString)content
