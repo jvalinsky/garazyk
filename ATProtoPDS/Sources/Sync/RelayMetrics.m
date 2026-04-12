@@ -209,4 +209,26 @@
     return output ?: @"";
 }
 
+- (NSDictionary *)snapshotDictionary {
+    __block NSDictionary *snapshot;
+    dispatch_sync(_metricsQueue, ^{
+        snapshot = @{
+            @"upstreamConnections": @(self.upstreamConnections),
+            @"downstreamConnections": @(self.downstreamConnections),
+            @"eventsReceived": @(self.eventsReceived),
+            @"eventsValidated": @(self.eventsValidated),
+            @"eventsInvalidated": @(self.eventsInvalidated),
+            @"eventsForwarded": @(self.eventsForwarded),
+            @"eventsDropped": @(self.eventsDropped),
+            @"mstValidationSuccess": @(self.mstValidationSuccess),
+            @"mstValidationFailure": @(self.mstValidationFailure),
+            @"signatureValidationSuccess": @(self.signatureValidationSuccess),
+            @"signatureValidationFailure": @(self.signatureValidationFailure),
+            @"currentSequence": @(self.currentSequence),
+            @"reconnectionCount": @(self.reconnectionCount)
+        };
+    });
+    return snapshot ?: @{};
+}
+
 @end

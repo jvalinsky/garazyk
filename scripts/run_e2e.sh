@@ -40,7 +40,7 @@ trap cleanup EXIT INT TERM
 
 # Build the project
 echo "[E2E] Building project..."
-cmake --build build --target september atproto-plc || exit 1
+cmake --build build --target kaszlak campagnola || exit 1
 
 # Start PLC server in background
 echo "[E2E] Starting PLC server..."

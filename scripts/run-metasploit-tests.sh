@@ -27,7 +27,7 @@ else
     exit 1
 fi
 
-if ! pgrep -f "september serve" > /dev/null; then
+if ! pgrep -f "kaszlak serve" > /dev/null; then
     echo -e "${RED}Error: PDS Server not running.${NC}"
     echo "Please start it with: ./build/bin/kaszlak serve --foreground &"
     exit 1

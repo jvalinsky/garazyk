@@ -1231,6 +1231,127 @@
       "created_at": "2026-04-11T17:26:02.145988-04:00",
       "updated_at": "2026-04-11T17:26:02.145988-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 113,
+      "change_id": "dfac608b-6555-46f1-8260-95cca250b4d5",
+      "node_type": "action",
+      "title": "Item 1: Fix chat.bsky.convo.* endpoint inconsistency",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:28:36.037262-04:00",
+      "updated_at": "2026-04-11T17:28:36.037262-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 114,
+      "change_id": "f7ccf96f-57cf-40bb-bf4e-2277365cd8bf",
+      "node_type": "outcome",
+      "title": "Item 1 complete: chat.bsky.convo.* uniform 501 response",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:28:37.684792-04:00",
+      "updated_at": "2026-04-11T17:28:37.684792-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"af31afed\",\"confidence\":95}"
+    },
+    {
+      "id": 115,
+      "change_id": "8f20a3fe-0078-480d-80bf-25a82f3a0b0a",
+      "node_type": "action",
+      "title": "Item 2: Add tools.ozone.* proxy support",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:30:39.215828-04:00",
+      "updated_at": "2026-04-11T17:30:39.215828-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 116,
+      "change_id": "b6fb0849-c90d-46cb-9dd3-a9963611afb8",
+      "node_type": "outcome",
+      "title": "Item 2 complete: Ozone moderation service proxy",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:30:39.280559-04:00",
+      "updated_at": "2026-04-11T17:30:39.280559-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"d47aa44b\",\"confidence\":95}"
+    },
+    {
+      "id": 117,
+      "change_id": "7b403dc2-b85e-42dd-b627-a1324bfea70d",
+      "node_type": "action",
+      "title": "Item 3: Fix S3 virtual-hosted URL style",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:31:40.566632-04:00",
+      "updated_at": "2026-04-11T17:31:40.566632-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 118,
+      "change_id": "afcbc6de-3271-4d06-bfb9-2eba9c87b7c6",
+      "node_type": "outcome",
+      "title": "Item 3 complete: AWS bucket URL style fix",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:31:40.652001-04:00",
+      "updated_at": "2026-04-11T17:31:40.652001-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"071902e8\",\"confidence\":95}"
+    },
+    {
+      "id": 119,
+      "change_id": "534ba071-21a2-4fcc-9415-e27445a80377",
+      "node_type": "action",
+      "title": "Item 5: RateLimiter multi-instance safety",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:33:00.931576-04:00",
+      "updated_at": "2026-04-11T17:33:00.931576-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 120,
+      "change_id": "cb6a282c-4338-4336-bd81-5e266e633970",
+      "node_type": "outcome",
+      "title": "Item 5 complete: Atomic rate limit transactions",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:33:01.000165-04:00",
+      "updated_at": "2026-04-11T17:33:01.000165-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"118cb135\",\"confidence\":95}"
+    },
+    {
+      "id": 121,
+      "change_id": "f383a19b-772d-4da0-8bd2-bd2e0ab023dc",
+      "node_type": "action",
+      "title": "Item 4: Implement app.bsky.draft.* endpoints",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:35:10.251722-04:00",
+      "updated_at": "2026-04-11T17:35:10.251722-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 122,
+      "change_id": "921b8933-a221-4f65-a057-5bef34cfa873",
+      "node_type": "outcome",
+      "title": "Item 4 complete: Draft management with private records",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:35:10.318299-04:00",
+      "updated_at": "2026-04-11T17:35:10.318299-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"7c68ed41\",\"confidence\":90}"
+    },
+    {
+      "id": 123,
+      "change_id": "9109c686-3869-4455-956c-affec8a6244f",
+      "node_type": "observation",
+      "title": "Item 4 refined: Draft implementation updated to AT Protocol spec (posts array, TID IDs, empty responses)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-11T17:37:03.474558-04:00",
+      "updated_at": "2026-04-11T17:37:03.474558-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2454,6 +2575,127 @@
       "weight": 1.0,
       "rationale": "Phase 6 complete",
       "created_at": "2026-04-11T17:14:31.127900-04:00"
+    },
+    {
+      "id": 112,
+      "from_node_id": 113,
+      "to_node_id": 114,
+      "from_change_id": "dfac608b-6555-46f1-8260-95cca250b4d5",
+      "to_change_id": "f7ccf96f-57cf-40bb-bf4e-2277365cd8bf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of Item 1 fix",
+      "created_at": "2026-04-11T17:29:24.528574-04:00"
+    },
+    {
+      "id": 113,
+      "from_node_id": 111,
+      "to_node_id": 113,
+      "from_change_id": "b18b8bda-9e68-4a7c-a1a3-3072206f9e73",
+      "to_change_id": "dfac608b-6555-46f1-8260-95cca250b4d5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Item 0 complete; proceed to Item 1",
+      "created_at": "2026-04-11T17:29:24.539975-04:00"
+    },
+    {
+      "id": 114,
+      "from_node_id": 115,
+      "to_node_id": 116,
+      "from_change_id": "8f20a3fe-0078-480d-80bf-25a82f3a0b0a",
+      "to_change_id": "b6fb0849-c90d-46cb-9dd3-a9963611afb8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of Item 2",
+      "created_at": "2026-04-11T17:31:09.668612-04:00"
+    },
+    {
+      "id": 115,
+      "from_node_id": 114,
+      "to_node_id": 115,
+      "from_change_id": "f7ccf96f-57cf-40bb-bf4e-2277365cd8bf",
+      "to_change_id": "8f20a3fe-0078-480d-80bf-25a82f3a0b0a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Item 1 complete; proceed to Item 2",
+      "created_at": "2026-04-11T17:31:09.679052-04:00"
+    },
+    {
+      "id": 116,
+      "from_node_id": 117,
+      "to_node_id": 118,
+      "from_change_id": "7b403dc2-b85e-42dd-b627-a1324bfea70d",
+      "to_change_id": "afcbc6de-3271-4d06-bfb9-2eba9c87b7c6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of Item 3",
+      "created_at": "2026-04-11T17:31:54.710828-04:00"
+    },
+    {
+      "id": 117,
+      "from_node_id": 116,
+      "to_node_id": 117,
+      "from_change_id": "b6fb0849-c90d-46cb-9dd3-a9963611afb8",
+      "to_change_id": "7b403dc2-b85e-42dd-b627-a1324bfea70d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Item 2 complete; proceed to Item 3",
+      "created_at": "2026-04-11T17:31:54.720714-04:00"
+    },
+    {
+      "id": 118,
+      "from_node_id": 119,
+      "to_node_id": 120,
+      "from_change_id": "534ba071-21a2-4fcc-9415-e27445a80377",
+      "to_change_id": "cb6a282c-4338-4336-bd81-5e266e633970",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of Item 5",
+      "created_at": "2026-04-11T17:33:04.532922-04:00"
+    },
+    {
+      "id": 119,
+      "from_node_id": 118,
+      "to_node_id": 119,
+      "from_change_id": "afcbc6de-3271-4d06-bfb9-2eba9c87b7c6",
+      "to_change_id": "534ba071-21a2-4fcc-9415-e27445a80377",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Item 3 complete; proceed to Item 5",
+      "created_at": "2026-04-11T17:33:04.547477-04:00"
+    },
+    {
+      "id": 120,
+      "from_node_id": 121,
+      "to_node_id": 122,
+      "from_change_id": "f383a19b-772d-4da0-8bd2-bd2e0ab023dc",
+      "to_change_id": "921b8933-a221-4f65-a057-5bef34cfa873",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of Item 4",
+      "created_at": "2026-04-11T17:35:23.692763-04:00"
+    },
+    {
+      "id": 121,
+      "from_node_id": 120,
+      "to_node_id": 121,
+      "from_change_id": "cb6a282c-4338-4336-bd81-5e266e633970",
+      "to_change_id": "f383a19b-772d-4da0-8bd2-bd2e0ab023dc",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Item 5 complete; proceed to Item 4",
+      "created_at": "2026-04-11T17:35:23.702344-04:00"
+    },
+    {
+      "id": 122,
+      "from_node_id": 122,
+      "to_node_id": 123,
+      "from_change_id": "921b8933-a221-4f65-a057-5bef34cfa873",
+      "to_change_id": "9109c686-3869-4455-956c-affec8a6244f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Refinement based on lexicon spec",
+      "created_at": "2026-04-11T17:37:03.494415-04:00"
     }
   ],
   "documents": [

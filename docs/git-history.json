@@ -1,5 +1,45 @@
 [
   {
+    "hash": "7c68ed415115caac8d4f4fcd453b6f67f8c25162",
+    "short_hash": "7c68ed4",
+    "author": "Security Bot",
+    "date": "2026-04-11T17:35:07-04:00",
+    "message": "Feature: Implement app.bsky.draft.* endpoints as private records\n\nImplements Item 4 from the Next Steps plan: Local draft management using\nprivate AT records stored in app.bsky.draft.post collection.\n\nImplementation details:\n- Drafts are stored as private records in each actor's database\n- Accessible only by the authenticated actor (authorization enforced)\n- Draft ID is a UUID rkey within the app.bsky.draft.post collection\n- Each draft contains: id, text, createdAt, updatedAt\n\nEndpoints:\n1. POST /xrpc/app.bsky.draft.createDraft\n   Request: { text: string }\n   Response: { id: string, text: string, createdAt: string, updatedAt: string }\n\n2. POST /xrpc/app.bsky.draft.updateDraft\n   Request: { id: string, text: string }\n   Response: { id: string, text: string, createdAt: string, updatedAt: string }\n\n3. GET /xrpc/app.bsky.draft.getDrafts\n   Query params: limit (0-100, default 100), cursor (for pagination)\n   Response: { drafts: [...], cursor?: string }\n\n4. POST /xrpc/app.bsky.draft.deleteDraft\n   Request: { id: string }\n   Response: { id: string }\n\nArchitecture:\n- Uses PDSRecordService for CRUD operations\n- Stores drafts in per-user database pool\n- Automatic timestamp management (createdAt preserved, updatedAt updated)\n- Pagination support with cursor\n\nNotes:\n- Draft specification may need adjustment based on official AT Protocol lexicon\n- Drafts are not broadcast to firehose (private records only)\n- Can be extended to support additional fields (e.g., facets, embeds)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "118cb135e5f41aae4ba0dbd438544ad0508e193a",
+    "short_hash": "118cb13",
+    "author": "Security Bot",
+    "date": "2026-04-11T17:32:58-04:00",
+    "message": "Fix: Wrap rate limiter SELECT/INSERT in atomic transaction\n\nFixes Item 5 from the Next Steps plan: Prevents race condition in rate limit\ncounting when multiple concurrent requests check and increment the limit.\n\nProblem: SELECT to check current count followed by INSERT OR UPDATE without\ntransaction protection allows two concurrent threads to both pass the limit\ncheck and then both increment, resulting in count exceeding the configured limit.\n\nSolution: Wrap the entire SELECT/check/INSERT sequence in BEGIN IMMEDIATE\nTRANSACTION/COMMIT/ROLLBACK. This ensures atomic read-modify-write semantics.\n\nChanges:\n- Begin transaction before SELECT\n- Rollback on any error (prepare failure, limit check failure)\n- Rollback if INSERT fails\n- Commit only after successful INSERT\n- Rollback if INSERT fails\n\nThis ensures that only one thread can increment the counter for a given\nidentifier/type pair in any window, respecting the configured limit.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "071902e828d64a40896b7648a4a7e07914672cda",
+    "short_hash": "071902e",
+    "author": "Security Bot",
+    "date": "2026-04-11T17:31:38-04:00",
+    "message": "Fix: S3 virtual-hosted URL style for AWS standard buckets\n\nFixes Item 3 from the Next Steps plan: AWS deprecated path-style access for\nbuckets created after September 2020, which fail silently with DNS errors.\n\nChanges:\n- PDSCloudStorageBlobProvider.s3URLForKey: Detect S3 provider and use\n  appropriate URL style:\n  - When endpoint is nil (AWS): Use virtual-hosted style\n    https://bucket.s3.region.amazonaws.com/key\n  - When endpoint is set (S3-compatible): Use path-style\n    https://endpoint.example.com/bucket/key\n\n- CloudStorageBlobProviderTests: Added two URL construction tests:\n  - testS3URLConstructionForAWSWithoutEndpoint: Verifies virtual-hosted\n    style for AWS standard buckets\n  - testS3URLConstructionForS3CompatibleEndpoint: Verifies path-style\n    for S3-compatible services (MinIO, R2, B2, etc)\n\nThis fix ensures new AWS bucket deployments work correctly without\nconfiguration changes.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "d47aa44bb98b13db614295f1a7f347e4abab4b49",
+    "short_hash": "d47aa44",
+    "author": "Security Bot",
+    "date": "2026-04-11T17:30:36-04:00",
+    "message": "Feature: Add tools.ozone.* proxy support for moderation services\n\nImplements Item 2 from the Next Steps plan: adds configuration and proxy\nsupport for routing unregistered tools.ozone.* requests to a remote Ozone\nmoderation service.\n\nChanges:\n- PDSConfiguration: Added ozoneURL and ozoneDID properties (from config or\n  PDS_OZONE_URL/PDS_OZONE_DID environment variables)\n- XrpcHandler: Extended fallback proxy logic to route tools.ozone.* methods\n  to configured Ozone service (similar to app.bsky.* routing to AppView)\n- PDSController: Initialize ozoneURL and ozoneDID from configuration\n- XrpcProxyTests: Added two new tests:\n  - testUnknownToolsOzoneMethodFallsBackToConfiguredOzoneProxy: Verifies\n    tools.ozone.* requests proxy when ozoneURL configured\n  - testUnknownOzoneMethodReturnsNotFoundWhenNoOzoneProxyConfigured: Verifies\n    404 MethodNotFound when no Ozone service configured\n\nConfiguration example:\n  [ozone]\n  url = \"https://mod.example.com\"\n  did = \"did:web:mod.example.com\"\n\nOr via environment:\n  PDS_OZONE_URL=https://mod.example.com\n  PDS_OZONE_DID=did:web:mod.example.com\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 6
+  },
+  {
+    "hash": "af31afed2921a64c7045a2ca63c21747134165a7",
+    "short_hash": "af31afe",
+    "author": "Security Bot",
+    "date": "2026-04-11T17:28:22-04:00",
+    "message": "Fix: Uniform 501 response for chat.bsky.convo.* endpoints\n\nAll six direct message handlers now consistently return 501 HttpStatusNotImplemented\nwith message \"Direct messages are not yet supported by this PDS.\" instead of\nmixing 200 OK responses (with empty/fake data) and 404 NotFound.\n\nChanges:\n- getConvo: removed fake stub response (was returning did:plc:stub peer)\n- getMessages: 200 + empty list → 501\n- listConvos: 200 + empty list → 501\n- sendMessage: 404 → 501\n- leaveConvo: 404 → 501\n- updateRead: 404 → 501\n\nFixes inconsistent client UX where polling listConvos succeeds (implying\navailability) but sendMessage fails with 404 or 501 (contradicting availability).\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
     "hash": "6d48fa6ce626acaac1d878b7d7248e4fdc0e52ab",
     "short_hash": "6d48fa6",
     "author": "Security Bot",

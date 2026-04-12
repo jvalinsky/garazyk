@@ -47,6 +47,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)renderPrometheusMetrics;
 
+/*!
+ @method snapshotDictionary
+
+ @abstract Returns a dictionary snapshot of all metrics for JSON API.
+
+ @return Dictionary with all current metric values.
+ */
+- (NSDictionary *)snapshotDictionary;
+
 @property (nonatomic, readonly) int64_t upstreamConnections;
 @property (nonatomic, readonly) int64_t downstreamConnections;
 @property (nonatomic, readonly) int64_t eventsReceived;

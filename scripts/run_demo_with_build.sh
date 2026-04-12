@@ -21,7 +21,7 @@ cmake -S "${PROJECT_DIR}" -B "${BUILD_DIR}" \
     -DCMAKE_OBJC_COMPILER=/usr/bin/clang
 
 echo "Building demo binaries..."
-cmake --build "${BUILD_DIR}" --target atproto-plc september
+cmake --build "${BUILD_DIR}" --target campagnola kaszlak
 
 
 

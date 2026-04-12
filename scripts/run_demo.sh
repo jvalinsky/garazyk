@@ -14,14 +14,14 @@ cleanup() {
     fi
     # Also ensure no strays are left on these ports
     pkill -f "campagnola.*2582" || true
-    pkill -f "september.*2583" || true
+    pkill -f "kaszlak.*2583" || true
 }
 trap cleanup EXIT
 
 # Force cleanup of any existing stray servers before starting
 echo "Cleaning up any existing stray servers..."
 pkill -f "campagnola.*2582" || true
-pkill -f "september.*2583" || true
+pkill -f "kaszlak.*2583" || true
 rm -f plc.log pds.log
 sleep 1
 

@@ -19,6 +19,7 @@
     [endpointBases setObject:@"/xrpc" forKey:@"xrpc"];
     [endpointBases setObject:@"/oauth" forKey:@"oauth"];
     [endpointBases setObject:@"/oauth-demo" forKey:@"oauthDemo"];
+    [endpointBases setObject:@"/api/relay" forKey:@"relay"];
     return [self initWithEndpointBases:endpointBases];
 }
 
