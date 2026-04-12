@@ -12,7 +12,7 @@ PDS_URL = os.environ.get("PDS_URL", "http://localhost:2583")
 # Default to assuming we are in the repo root if not specified
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.environ.get("PDS_DATA_DIR", os.path.join(REPO_ROOT, "data"))
-BIN_PATH = os.environ.get("PDS_BIN", os.path.join(REPO_ROOT, "build/bin/september"))
+BIN_PATH = os.environ.get("PDS_BIN", os.path.join(REPO_ROOT, "build/bin/kaszlak"))
 
 # --- Colors ---
 class Colors:
@@ -37,8 +37,8 @@ def print_error(msg):
 
 # --- Helper Functions ---
 
-def run_september_cli(args):
-    """Executes the native september binary."""
+def run_kaszlak_cli(args):
+    """Executes the native kaszlak binary."""
     if not os.path.exists(BIN_PATH):
         print_error(f"Binary not found at: {BIN_PATH}")
         print_info("Please build the project first or set PDS_BIN environment variable.")
@@ -102,7 +102,7 @@ def create_record(session, collection, record):
 
 def handle_account_create(args):
     print_info(f"Creating account for {args.handle}...")
-    success = run_september_cli(["account", "create", "--email", args.email, "--handle", args.handle, "--password", args.password])
+    success = run_kaszlak_cli(["account", "create", "--email", args.email, "--handle", args.handle, "--password", args.password])
     if success:
         print_success(f"Account {args.handle} created sucessfully!")
     else:

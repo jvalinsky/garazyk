@@ -37,7 +37,7 @@ cleanup() {
         wait "$SERVER_PID" 2>/dev/null || true
     fi
     # Also kill any stray servers on our port
-    pkill -f "september.*$PORT" 2>/dev/null || true
+    pkill -f "kaszlak.*$PORT" 2>/dev/null || true
     rm -f "$DB_PATH" 2>/dev/null || true
 }
 
@@ -51,7 +51,7 @@ start_server() {
 
     info "Starting ATProto PDS server..."
     # Kill any existing server on our port
-    pkill -f "september.*$PORT" 2>/dev/null || true
+    pkill -f "kaszlak.*$PORT" 2>/dev/null || true
     sleep 1
     rm -f "$DB_PATH" 2>/dev/null || true
 
