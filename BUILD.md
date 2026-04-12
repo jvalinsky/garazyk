@@ -1,58 +1,106 @@
-# Build Guide
+# Building garazyk/ATProtoPDS on macOS Tahoe
 
-This file is the short build reference for contributors. The canonical onboarding path still starts in [`docs/index.md`](docs/index.md) and [`docs/01-getting-started/setup.md`](docs/01-getting-started/setup.md).
+## Critical: SDK Name Change on macOS 26
 
-## Build Rules
+**On macOS 26 Tahoe, the SDK is named `macosx26.4`, NOT `macosx`**
 
-- Always use out-of-source builds.
-- On macOS, run `xcodegen generate` before building.
-- Treat `docker/pds/` as the only supported Compose root for deployment-style runs.
+This affects all `xcrun` commands and SDK path lookups.
 
-## macOS
+### Verifying Your SDK
 
 ```bash
-xcodegen generate
-xcodebuild -scheme ATProtoPDS-CLI build
-xcodebuild -scheme AllTests build
+# Show all available SDKs
+xcodebuild -showsdks
+
+# On macOS 26.4 Tahoe, you should see:
+# macOS 26.4                    -sdk macosx26.4
+```
+
+### Build Commands
+
+```bash
+# Set SDKROOT to the actual SDK path (not relying on xcrun)
+export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+
+# Configure cmake
+cmake -B build \
+  -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+
+# Build
+cmake --build build --target AllTests
+```
+
+### Alternative: Using Direct Compiler Path
+
+If xcrun is broken (returns "unable to find sdk"), use direct paths:
+
+```bash
+export CC=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
+export CXX=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
+
+cmake -B build \
+  -DCMAKE_C_COMPILER=$CC \
+  -DCMAKE_CXX_COMPILER=$CXX \
+  -DCMAKE_OBJC_COMPILER=$CC \
+  -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+
+cmake --build build
+```
+
+### Running Tests
+
+```bash
 ./build/tests/AllTests
 ```
 
-Primary outputs:
+### Common Issues
 
-- `./build/bin/kaszlak`
-- `./build/bin/campagnola`
-- `./build/tests/AllTests`
+#### xcrun returns "unable to find sdk: 'macosx'"
 
-## Linux and GNUstep
+**Cause**: macOS 26 Tahoe changed the SDK naming convention.
 
-Choose an explicit build directory and keep using it consistently.
+**Fix**: Use explicit SDK path or SDK name `macosx26.4`:
 
 ```bash
-cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-linux -j
-./build-linux/tests/AllTests
+# Option 1: Set SDKROOT
+export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+
+# Option 2: Use correct SDK name
+xcrun --sdk macosx26.4 --show-sdk-path
 ```
 
-Primary outputs:
+#### CMake 4.0+ Changes
 
-- `./build-linux/bin/kaszlak`
-- `./build-linux/bin/campagnola`
-- `./build-linux/tests/AllTests`
+CMake 4.0+ no longer defines `CMAKE_OSX_SYSROOT` by default. You must:
 
-The output location follows the build directory you pass to CMake. Do not mix `build-linux` configuration with `./build/...` runtime paths.
+1. Set `SDKROOT` environment variable, OR
+2. Pass `-DCMAKE_OSX_SYSROOT=...` to cmake
 
-## Quality Gates
+### Build Targets
 
-Before pushing work that changes code or build-sensitive behavior, verify:
+| Target | Description |
+|--------|-------------|
+| `AllTests` | Run all unit tests |
+| `kaszlak` | PDS CLI tool |
+| `campagnola` | PLC directory server |
+| `zuk` | Relay server |
 
-1. `xcodegen generate`
-2. `xcodebuild -scheme AllTests build`
-3. `./build/tests/AllTests`
-4. `xcodebuild -scheme ATProtoPDS-CLI build`
-5. fuzzer builds if you modified fuzzing-related code
+### Project Structure
 
-## Related Docs
+This project uses **CMake** (NOT xcodegen). There is no `project.yaml`.
 
-- [Setup Guide](docs/01-getting-started/setup.md)
-- [Testing Map](docs/11-reference/testing-map.md)
-- [Contributing Guide](CONTRIBUTING.md)
+- `CMakeLists.txt` - Main build configuration
+- `build/` - CMake build output
+- `build/tests/AllTests` - Test binary
+
+### Quick Start
+
+```bash
+# One-time setup
+export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+cmake -B build
+
+# Build and test
+cmake --build build --target AllTests
+./build/tests/AllTests
+```

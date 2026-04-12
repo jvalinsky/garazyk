@@ -6,15 +6,49 @@ cmake_minimum_required(VERSION 3.21)
 if(APPLE)
     # On macOS, find absolute paths to Xcode compilers to avoid circular proxy invocation
     # through wrappers like /usr/bin/cc or ~/.swiftly/bin/cc
-    execute_process(COMMAND xcrun -find clang OUTPUT_VARIABLE XCODE_CLANG OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND xcrun -find clang++ OUTPUT_VARIABLE XCODE_CLANGXX OUTPUT_STRIP_TRAILING_WHITESPACE)
-    
-    if(XCODE_CLANG)
+    # NOTE: On macOS 26 Tahoe, xcrun requires explicit SDK name (macosx26.4 instead of macosx)
+    # or SDKROOT to be set. Use direct path as fallback if xcrun fails.
+    execute_process(
+        COMMAND xcrun --sdk macosx26.4 -find clang
+        OUTPUT_VARIABLE XCODE_CLANG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE XCODE_CLANG_RESULT
+    )
+    execute_process(
+        COMMAND xcrun --sdk macosx26.4 -find clang++
+        OUTPUT_VARIABLE XCODE_CLANGXX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE XCODE_CLANGXX_RESULT
+    )
+
+    # Only use xcrun output if it succeeded (result == 0) and path exists
+    if(XCODE_CLANG_RESULT EQUAL 0 AND EXISTS "${XCODE_CLANG}")
         set(CMAKE_C_COMPILER "${XCODE_CLANG}")
         set(CMAKE_OBJC_COMPILER "${XCODE_CLANG}")
+    else()
+        # Fallback to direct Xcode toolchain path
+        set(XCODE_TOOLCHAIN "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin")
+        if(EXISTS "${XCODE_TOOLCHAIN}/clang")
+            set(CMAKE_C_COMPILER "${XCODE_TOOLCHAIN}/clang")
+            set(CMAKE_OBJC_COMPILER "${XCODE_TOOLCHAIN}/clang")
+            message(STATUS "Using direct compiler path (xcrun failed): ${XCODE_TOOLCHAIN}/clang")
+        endif()
     endif()
-    if(XCODE_CLANGXX)
+
+    if(XCODE_CLANGXX_RESULT EQUAL 0 AND EXISTS "${XCODE_CLANGXX}")
         set(CMAKE_CXX_COMPILER "${XCODE_CLANGXX}")
+    else()
+        if(EXISTS "${XCODE_TOOLCHAIN}/clang++")
+            set(CMAKE_CXX_COMPILER "${XCODE_TOOLCHAIN}/clang++")
+        endif()
+    endif()
+
+    # Set default SDK path for CMake 4.0+ (which no longer sets CMAKE_OSX_SYSROOT automatically)
+    if(NOT DEFINED CMAKE_OSX_SYSROOT OR CMAKE_OSX_SYSROOT STREQUAL "")
+        set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+        message(STATUS "Setting CMAKE_OSX_SYSROOT to macOS SDK (CMake 4.0+ compatibility)")
     endif()
 elseif(UNIX)
     # On Linux, set compilers BEFORE project() to use clang
