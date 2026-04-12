@@ -324,6 +324,8 @@ file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "ATProtoPDS/Sources/Sync/RelayXRPCMethods.m"
   "ATProtoPDS/Sources/Sync/RelayXRPCMethods.c"
 )
+# XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
+list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Network/XRPCError\\.m$")
 
 file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
   "ATProtoPDS/Sources/Sync/*.m"
@@ -712,6 +714,11 @@ if(BUILD_TESTS)
     execute_process(COMMAND xcode-select -p OUTPUT_VARIABLE XCODE_DEVELOPER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
     find_library(XCTest XCTest PATHS "${XCODE_DEVELOPER_DIR}/Platforms/MacOSX.platform/Developer/Library/Frameworks" REQUIRED)
     target_link_libraries(AllTests PRIVATE ${XCTest})
+    # Critical: Load all Objective-C categories from static libraries
+    # Without -ObjC, category methods (like PDSActorStore+Account) are not linked
+    set_target_properties(AllTests PROPERTIES
+      LINK_FLAGS "-ObjC"
+    )
   else()
      # On GNUstep/Linux we need a test framework. 
      # Usually gnustep-base provides NSAutoreleasePool etc, but XCTest is Apple specific.
