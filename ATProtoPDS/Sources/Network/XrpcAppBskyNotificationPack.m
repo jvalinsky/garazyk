@@ -34,13 +34,16 @@
         NSInteger limit = 50;
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSError *error = nil;
-        NSDictionary *result = [notificationService listNotificationsForActor:actorDID limit:limit cursor:cursor error:&error];
+        NSArray<NSDictionary *> *notifications = [notificationService getNotificationsForActor:actorDID
+                                                                                         limit:limit
+                                                                                       cursor:cursor
+                                                                                         error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result ?: @{@"notifications": @[]}];
+        [response setJsonBody:@{@"notifications": notifications ?: @[]}];
     }];
 
     // app.bsky.notification.getUnreadCount
@@ -80,13 +83,9 @@
                                                              response:response];
         if (!actorDID) return;
         NSDictionary *body = request.jsonBody;
-        NSString *seenAt = body[@"seenAt"];
+        // seenAt is acknowledged but marking all as read
         NSError *error = nil;
-        BOOL success = [notificationService updateSeenForActor:actorDID seenAt:seenAt error:&error];
-        if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update seen"];
-            return;
-        }
+        [notificationService markNotificationsAsReadForActor:actorDID limit:0 error:&error];
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];

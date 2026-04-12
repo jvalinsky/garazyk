@@ -2,6 +2,7 @@
 
 #import "App/PDSConfiguration.h"
 #import "Auth/JWT.h"
+#import "Core/DID.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -9,7 +10,6 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
-#import "PLC/DIDPLCResolver.h"
 
 static NSString *trimmedNonEmptyString(NSString *value) {
   if (![value isKindOfClass:[NSString class]]) {
