@@ -465,4 +465,62 @@
                                                          alpha:1.0]];
 }
 
+#pragma mark - Confirmation Dialogs
+
+- (void)confirmDisconnectUpstream:(CPString)upstreamURL handler:(Function)handler
+{
+    var alert = [[CPAlert alloc] init];
+    [alert setAlertStyle:CPAlertStyleWarning];
+    [alert setMessageText:@"Disconnect upstream?"];
+    [alert setInformativeText:@"This will stop syncing from " + upstreamURL + ". You can reconnect later."];
+
+    [alert addButtonWithTitle:@"Cancel"];
+    [alert addButtonWithTitle:@"Disconnect"];
+
+    var buttons = [alert buttons];
+    if (buttons && buttons.length >= 2)
+    {
+        [buttons[0] setAccessibilityLabel:@"Cancel disconnect"];
+        [buttons[1] setAccessibilityLabel:@"Confirm disconnect upstream"];
+    }
+
+    var window = [_rootView window];
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:function(response)
+        {
+            if (response === 1 && handler)
+                handler();
+        }];
+    }
+}
+
+- (void)confirmRemoveUpstream:(CPString)upstreamURL handler:(Function)handler
+{
+    var alert = [[CPAlert alloc] init];
+    [alert setAlertStyle:CPAlertStyleCritical];
+    [alert setMessageText:@"Remove upstream?"];
+    [alert setInformativeText:@"This will permanently remove " + upstreamURL + " from the configuration."];
+
+    [alert addButtonWithTitle:@"Cancel"];
+    [alert addButtonWithTitle:@"Remove"];
+
+    var buttons = [alert buttons];
+    if (buttons && buttons.length >= 2)
+    {
+        [buttons[0] setAccessibilityLabel:@"Cancel removal"];
+        [buttons[1] setAccessibilityLabel:@"Confirm remove upstream"];
+    }
+
+    var window = [_rootView window];
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:function(response)
+        {
+            if (response === 1 && handler)
+                handler();
+        }];
+    }
+}
+
 @end
