@@ -64,6 +64,10 @@ jobs:
         run: |
           node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates --fail-on-missing
 
+      - name: Check Module Boundaries
+        run: |
+          ./scripts/check_module_boundaries.sh .
+
       - name: Configure (CMake)
         run: |
           cmake -S . -B build \
@@ -216,6 +220,10 @@ jobs:
             libsqlite3-dev \
             libqrencode-dev
 
+      - name: Check Module Boundaries
+        run: |
+          ./scripts/check_module_boundaries.sh .
+
       - name: Configure (GNUstep CMake)
         run: |
           cmake -S . -B build-linux \
@@ -284,6 +292,10 @@ jobs:
         run: |
           brew update
           brew install ninja cmake || true
+
+      - name: Check Module Boundaries
+        run: |
+          ./scripts/check_module_boundaries.sh .
 
       - name: Configure (CMake)
         run: |

@@ -81,7 +81,9 @@
         XCTFail(@"Failed to init DB: %@", error);
     }
     
-    self.handler = [[SubscribeReposHandler alloc] initWithController:self.controller];
+    self.handler = [[SubscribeReposHandler alloc]
+        initWithServiceDatabases:self.controller.serviceDatabases
+                userDatabasePool:self.controller.userDatabasePool];
 }
 
 - (void)tearDown {
@@ -650,7 +652,10 @@
     self.handler = nil;
     
     // 3. Create NEW handler with SAME controller (same DB)
-    SubscribeReposHandler *newHandler = [[SubscribeReposHandler alloc] initWithController:self.controller];
+    SubscribeReposHandler *newHandler =
+        [[SubscribeReposHandler alloc]
+            initWithServiceDatabases:self.controller.serviceDatabases
+                    userDatabasePool:self.controller.userDatabasePool];
     
     // 4. Broadcast new event
     [newHandler broadcastInfo:@"init2" message:@"msg2"];
