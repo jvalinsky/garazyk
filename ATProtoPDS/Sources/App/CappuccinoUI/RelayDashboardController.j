@@ -84,6 +84,7 @@
     [_statusLabel setDrawsBackground:NO];
     [_statusLabel setFont:[CPFont systemFontOfSize:12.0]];
     [_statusLabel setStringValue:@"Loading metrics..."];
+    [_statusLabel setAccessibilityLabel:@"Status message"];
 
     // Connection cards row
     [self buildConnectionCardsInView:_rootView atY:80.0];
@@ -102,12 +103,16 @@
     [refreshBtn setTitle:@"Refresh Now"];
     [refreshBtn setTarget:self];
     [refreshBtn setAction:@selector(handleRefresh:)];
+    [refreshBtn setAccessibilityLabel:@"Refresh metrics"];
+    [refreshBtn setAccessibilityHint:@"Reload relay metrics from server"];
 
     var autoRefreshBtn = [[CPButton alloc] initWithFrame:CGRectMake(130.0, 560.0, 120.0, 28.0)];
     [autoRefreshBtn setTitle:@"Auto Refresh: ON"];
     [autoRefreshBtn setTag:@"autoRefreshBtn"];
     [autoRefreshBtn setTarget:self];
     [autoRefreshBtn setAction:@selector(handleToggleAutoRefresh:)];
+    [autoRefreshBtn setAccessibilityLabel:@"Toggle auto refresh"];
+    [autoRefreshBtn setAccessibilityHint:@"Enable or disable automatic metric refresh"];
 
     [_rootView addSubview:title];
     [_rootView addSubview:_statusLabel];

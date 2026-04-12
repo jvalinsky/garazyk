@@ -79,21 +79,29 @@
 
     _searchField = [[CPTextField alloc] initWithFrame:CGRectMake(72.0, 70.0, 210.0, 24.0)];
     [_searchField setPlaceholderString:@"handle or DID"];
+    [_searchField setAccessibilityLabel:@"Account search"];
+    [_searchField setAccessibilityHint:@"Enter a handle or DID to search for accounts"];
 
     var searchButton = [[CPButton alloc] initWithFrame:CGRectMake(290.0, 68.0, 72.0, 28.0)];
     [searchButton setTitle:@"Search"];
     [searchButton setTarget:self];
     [searchButton setAction:@selector(handleSearchAccounts:)];
+    [searchButton setAccessibilityLabel:@"Search accounts"];
+    [searchButton setAccessibilityHint:@"Search for accounts matching the query"];
 
     var clearButton = [[CPButton alloc] initWithFrame:CGRectMake(368.0, 68.0, 60.0, 28.0)];
     [clearButton setTitle:@"Clear"];
     [clearButton setTarget:self];
     [clearButton setAction:@selector(handleClearSearch:)];
+    [clearButton setAccessibilityLabel:@"Clear search"];
+    [clearButton setAccessibilityHint:@"Clear the search field and show all accounts"];
 
     var loadAccountsButton = [[CPButton alloc] initWithFrame:CGRectMake(436.0, 68.0, 116.0, 28.0)];
     [loadAccountsButton setTitle:@"Load Accounts"];
     [loadAccountsButton setTarget:self];
     [loadAccountsButton setAction:@selector(handleLoadAccounts:)];
+    [loadAccountsButton setAccessibilityLabel:@"Load accounts"];
+    [loadAccountsButton setAccessibilityHint:@"Load accounts from the server"];
 
     var accountsLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 106.0, 120.0, 18.0)];
     [accountsLabel setStringValue:@"Accounts"];
@@ -101,12 +109,15 @@
     [accountsLabel setBezeled:NO];
     [accountsLabel setDrawsBackground:NO];
     [accountsLabel setFont:[CPFont boldSystemFontOfSize:12.0]];
+    [accountsLabel setAccessibilityLabel:@"Accounts section header"];
 
     _accountsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 300.0, 538.0)];
     [_accountsTable setDelegate:self];
     [_accountsTable setDataSource:self];
     [_accountsTable setAllowsEmptySelection:YES];
     [_accountsTable setAllowsMultipleSelection:NO];
+    [_accountsTable setAccessibilityLabel:@"Accounts list"];
+    [_accountsTable setAccessibilityHint:@"Select an account to view its MST"];
 
     var accountHandleColumn = [[CPTableColumn alloc] initWithIdentifier:@"account_handle"];
     [[accountHandleColumn headerView] setStringValue:@"Handle"];
@@ -144,14 +155,20 @@
     [loadTreeButton setTitle:@"Load Tree + Stats"];
     [loadTreeButton setTarget:self];
     [loadTreeButton setAction:@selector(handleLoadSelectedMST:)];
+    [loadTreeButton setAccessibilityLabel:@"Load MST tree"];
+    [loadTreeButton setAccessibilityHint:@"Load the MST tree and statistics for selected account"];
 
     _exportFormatPopup = [[CPPopUpButton alloc] initWithFrame:CGRectMake(640.0, 102.0, 86.0, 24.0)];
     [_exportFormatPopup addItemsWithTitles:[@"json,dot,svg" componentsSeparatedByString:@","]];
+    [_exportFormatPopup setAccessibilityLabel:@"Export format"];
+    [_exportFormatPopup setAccessibilityHint:@"Choose output format for export"];
 
     var exportButton = [[CPButton alloc] initWithFrame:CGRectMake(734.0, 100.0, 76.0, 28.0)];
     [exportButton setTitle:@"Export"];
     [exportButton setTarget:self];
     [exportButton setAction:@selector(handleExport:)];
+    [exportButton setAccessibilityLabel:@"Export MST"];
+    [exportButton setAccessibilityHint:@"Export the MST data in selected format"];
 
     var zoomInButton = [[CPButton alloc] initWithFrame:CGRectMake(818.0, 100.0, 36.0, 28.0)];
     [zoomInButton setTitle:@"+"];
