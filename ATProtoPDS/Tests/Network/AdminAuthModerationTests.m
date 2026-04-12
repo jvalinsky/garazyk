@@ -92,7 +92,7 @@
 - (void)testApplicationModerateRecordRequiresAuth {
     // DEPRECATED: com.atproto.admin.moderateRecord -> tools.ozone.moderation.emitEvent
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.admin.moderateRecord"
-                                                      body=@{
+                                                      body:@{
                                                           @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/1", self.userDid],
                                                           @"reason": @"test"
                                                       }

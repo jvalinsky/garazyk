@@ -3,6 +3,7 @@
 #import "Core/PDSDataPaths.h"
 #import "Debug/PDSLogger.h"
 #import "Auth/CryptoUtils.h"
+#import "App/PDSConfiguration.h"
 
 NSString * const PLCRotationKeyManagerErrorDomain = @"com.atproto.plc.rotation";
 
