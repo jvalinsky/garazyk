@@ -519,7 +519,6 @@ target_include_directories(zuk PRIVATE
 )
 
 target_link_libraries(zuk PRIVATE
-  ATProtoRuntime
   ATProtoSync
   ATProtoTransport
   ATProtoCore

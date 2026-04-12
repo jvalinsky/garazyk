@@ -15,7 +15,6 @@
 
 @class WebSocketServer;
 @class WebSocketConnection;
-@class PDSController;
 @class PDSServiceDatabases;
 @class EventFormatter;
 @class RepoCommit;
@@ -75,10 +74,6 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
                         userDatabasePool:(nullable PDSDatabasePool *)userDatabasePool;
-
-/*! @deprecated Use initWithServiceDatabases: instead. */
-- (instancetype)initWithController:(PDSController *)controller
-    DEPRECATED_MSG_ATTRIBUTE("Use initWithServiceDatabases: instead");
 
 /*! Starts a legacy standalone listener (compatibility/test use only). */
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error

@@ -408,7 +408,10 @@
 - (void)testConfigureServerRegistersSubscribeReposWebSocketRoute {
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
-    SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithController:controller];
+    SubscribeReposHandler *subscribeReposHandler =
+        [[SubscribeReposHandler alloc]
+            initWithServiceDatabases:controller.serviceDatabases
+                    userDatabasePool:controller.userDatabasePool];
 
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     builder.controller = controller;

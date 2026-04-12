@@ -72,6 +72,16 @@ check_no_matches \
   '#import "Services/(PDSAccountService|PDSRecordService|PDSBlobService|PDSRepositoryService|PDSRelayService)\\.h"' \
   ATProtoPDS/Sources
 
+check_no_matches \
+  "Sync module does not import App/*" \
+  '#import "App/' \
+  ATProtoPDS/Sources/Sync
+
+check_no_matches \
+  "PLC module does not import App/*" \
+  '#import "App/' \
+  ATProtoPDS/Sources/PLC
+
 echo "==> Module public dependency DAG checks"
 declare -A allowed
 allowed["ATProtoCore"]=""
@@ -94,6 +104,17 @@ modules=(
   ATProtoRuntime
 )
 
+declare -A module_rank=(
+  [ATProtoCore]=1
+  [ATProtoStorage]=2
+  [ATProtoTransport]=2
+  [ATProtoServices]=3
+  [ATProtoSync]=3
+  [ATProtoPLC]=3
+  [ATProtoXRPC]=4
+  [ATProtoRuntime]=5
+)
+
 for module in "${modules[@]}"; do
   observed="$(extract_public_module_links "$module")"
   read -r -a observed_arr <<<"$observed"
@@ -106,6 +127,20 @@ for module in "${modules[@]}"; do
       echo "FAIL: ${module} links disallowed module dependency: ${dep}"
       failures=$((failures + 1))
     fi
+
+    module_rank_value="${module_rank[$module]:-0}"
+    dep_rank_value="${module_rank[$dep]:-0}"
+    if [[ "$dep_rank_value" -ge "$module_rank_value" ]]; then
+      echo "FAIL: ${module} links reverse/lateral dependency ${dep} (rank ${module_rank_value} -> ${dep_rank_value})"
+      failures=$((failures + 1))
+    fi
+
+    dep_observed="$(extract_public_module_links "$dep")"
+    read -r -a dep_observed_arr <<<"$dep_observed"
+    if contains_word "$module" "${dep_observed_arr[@]}"; then
+      echo "FAIL: direct reverse dependency cycle detected between ${module} and ${dep}"
+      failures=$((failures + 1))
+    fi
   done
 done
 
@@ -113,7 +148,7 @@ echo "==> Executable link surface checks"
 declare -A expected_exec_links
 expected_exec_links["kaszlak"]="ATProtoRuntime ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoStorage ATProtoCore"
 expected_exec_links["campagnola"]="ATProtoPLC ATProtoTransport ATProtoCore"
-expected_exec_links["zuk"]="ATProtoRuntime ATProtoSync ATProtoTransport ATProtoCore"
+expected_exec_links["zuk"]="ATProtoSync ATProtoTransport ATProtoCore"
 
 for exe in kaszlak campagnola zuk; do
   observed="$(extract_private_executable_links "$exe")"
