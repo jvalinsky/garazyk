@@ -10,7 +10,7 @@
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
 #import "Compat/PDSTypes.h"
+#import "Network/PDSHttpServerBuilder.h"
 
 FOUNDATION_EXPORT double ATProtoRuntimeVersionNumber;
 FOUNDATION_EXPORT const unsigned char ATProtoRuntimeVersionString[];
-
