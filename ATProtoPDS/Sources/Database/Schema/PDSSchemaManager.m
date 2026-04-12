@@ -200,7 +200,7 @@
            @"    rkey TEXT NOT NULL,"
            @"    cid BLOB NOT NULL,"
            @"    value BLOB,"
-           @"    indexed_at DATETIME NOT NULL,"
+           @"    created_at DATETIME NOT NULL,"
            @"    rev TEXT,"
            @"    subject_did TEXT"
            @")";
