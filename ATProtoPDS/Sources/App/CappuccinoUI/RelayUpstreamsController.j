@@ -79,16 +79,21 @@
     [addLabel setEditable:NO];
     [addLabel setBezeled:NO];
     [addLabel setDrawsBackground:NO];
+    [addLabel setAccessibilityLabel:@"Add upstream label"];
     [parent addSubview:addLabel];
 
     _addUpstreamField = [[CPTextField alloc] initWithFrame:CGRectMake(120.0, 70.0, 300.0, 24.0)];
     [_addUpstreamField setPlaceholderString:@"wss://bsky.network"];
+    [_addUpstreamField setAccessibilityLabel:@"Upstream URL input"];
+    [_addUpstreamField setAccessibilityHint:@"Enter WebSocket URL of relay upstream to add"];
     [parent addSubview:_addUpstreamField];
 
     var addButton = [[CPButton alloc] initWithFrame:CGRectMake(430.0, 68.0, 60.0, 28.0)];
     [addButton setTitle:@"Add"];
     [addButton setTarget:self];
     [addButton setAction:@selector(handleAddUpstream:)];
+    [addButton setAccessibilityLabel:@"Add upstream"];
+    [addButton setAccessibilityHint:@"Connect to the specified upstream relay"];
     [parent addSubview:addButton];
 
     // Control buttons
@@ -96,18 +101,24 @@
     [refreshBtn setTitle:@"Refresh"];
     [refreshBtn setTarget:self];
     [refreshBtn setAction:@selector(handleRefresh:)];
+    [refreshBtn setAccessibilityLabel:@"Refresh upstreams"];
+    [refreshBtn setAccessibilityHint:@"Reload the list of upstream connections"];
     [parent addSubview:refreshBtn];
 
     var reconnectAllBtn = [[CPButton alloc] initWithFrame:CGRectMake(600.0, 68.0, 120.0, 28.0)];
     [reconnectAllBtn setTitle:@"Reconnect All"];
     [reconnectAllBtn setTarget:self];
     [reconnectAllBtn setAction:@selector(handleReconnectAll:)];
+    [reconnectAllBtn setAccessibilityLabel:@"Reconnect all upstreams"];
+    [reconnectAllBtn setAccessibilityHint:@"Reconnect to all configured upstream relays"];
     [parent addSubview:reconnectAllBtn];
 
     var disconnectAllBtn = [[CPButton alloc] initWithFrame:CGRectMake(730.0, 68.0, 120.0, 28.0)];
     [disconnectAllBtn setTitle:@"Disconnect All"];
     [disconnectAllBtn setTarget:self];
     [disconnectAllBtn setAction:@selector(handleDisconnectAll:)];
+    [disconnectAllBtn setAccessibilityLabel:@"Disconnect all upstreams"];
+    [disconnectAllBtn setAccessibilityHint:@"Disconnect from all upstream relays"];
     [parent addSubview:disconnectAllBtn];
 }
 
@@ -120,6 +131,7 @@
     [tableLabel setBezeled:NO];
     [tableLabel setDrawsBackground:NO];
     [tableLabel setFont:[CPFont boldSystemFontOfSize:12.0]];
+    [tableLabel setAccessibilityLabel:@"Upstreams section header"];
     [parent addSubview:tableLabel];
 
     // Create table
@@ -129,6 +141,8 @@
     [_upstreamsTable setAllowsEmptySelection:YES];
     [_upstreamsTable setAllowsMultipleSelection:NO];
     [_upstreamsTable setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithCalibratedWhite:0.98 alpha:1.0]]];
+    [_upstreamsTable setAccessibilityLabel:@"Upstream connections table"];
+    [_upstreamsTable setAccessibilityHint:@"List of connected relay upstreams"];
 
     // URL Column
     var urlColumn = [[CPTableColumn alloc] initWithIdentifier:@"url"];
@@ -315,9 +329,20 @@
     var url = [sender tag];
     if (!url) return;
 
+    var selfRef = self;
+    [self confirmDisconnectUpstream:url handler:function()
+    {
+        [selfRef disconnectUpstream:url];
+    }];
+}
+
+- (void)disconnectUpstream:(CPString)url
+{
     [_statusLabel setStringValue:@"Disconnecting from " + url + "..."];
+    [self setWarningStatus:@"Disconnecting..."];
 
     var encodedUrl = encodeURIComponent(String(url));
+    var selfRef = self;
     [_apiClient requestJSONWithPath:("/upstreams/" + encodedUrl + "/disconnect")
                       endpointGroup:@"relay"
                              method:@"POST"
@@ -327,12 +352,12 @@
                            {
                                if (errorMessage || statusCode >= 400)
                                {
-                                   [_statusLabel setStringValue:@"Failed to disconnect: " + (errorMessage || "HTTP " + statusCode)];
+                                   [selfRef setErrorStatus:@"Failed to disconnect: " + (errorMessage || "HTTP " + statusCode)];
                                }
                                else
                                {
-                                   [_statusLabel setStringValue:@"Disconnected from " + url];
-                                   [self loadUpstreams];
+                                   [selfRef setSuccessStatus:@"Disconnected from " + url];
+                                   [selfRef loadUpstreams];
                                }
                            }];
 }
@@ -342,9 +367,20 @@
     var url = [sender tag];
     if (!url) return;
 
+    var selfRef = self;
+    [self confirmRemoveUpstream:url handler:function()
+    {
+        [selfRef removeUpstream:url];
+    }];
+}
+
+- (void)removeUpstream:(CPString)url
+{
     [_statusLabel setStringValue:@"Removing upstream " + url + "..."];
+    [self setWarningStatus:@"Removing..."];
 
     var encodedUrl = encodeURIComponent(String(url));
+    var selfRef = self;
     [_apiClient requestJSONWithPath:("/upstreams/" + encodedUrl)
                       endpointGroup:@"relay"
                              method:@"DELETE"
@@ -354,12 +390,12 @@
                            {
                                if (errorMessage || statusCode >= 400)
                                {
-                                   [_statusLabel setStringValue:@"Failed to remove: " + (errorMessage || "HTTP " + statusCode)];
+                                   [selfRef setErrorStatus:@"Failed to remove: " + (errorMessage || "HTTP " + statusCode)];
                                }
                                else
                                {
-                                   [_statusLabel setStringValue:@"Removed upstream " + url];
-                                   [self loadUpstreams];
+                                   [selfRef setSuccessStatus:@"Removed upstream " + url];
+                                   [selfRef loadUpstreams];
                                }
                            }];
 }
