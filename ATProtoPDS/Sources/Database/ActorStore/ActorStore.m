@@ -8,8 +8,10 @@
 #else
 #import "Auth/PDSAppleActorKeyManager.h"
 #endif
+#if !defined(GNUSTEP)
 #import <CommonCrypto/CommonCrypto.h>
 #import <Security/Security.h>
+#endif
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Auth/Secp256k1.h"
@@ -28,7 +30,11 @@ NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
 #pragma clang diagnostic ignored "-Wincomplete-implementation"
 #pragma clang diagnostic ignored "-Wprotocol"
 
+#if !defined(GNUSTEP)
 @interface PDSActorStore () <PDSAppleActorKeyManagerDelegate>
+#else
+@interface PDSActorStore ()
+#endif
 
 - (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type;
 
@@ -1681,6 +1687,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 
 
+#if !defined(GNUSTEP)
 #pragma mark - PDSAppleActorKeyManagerDelegate
 
 - (BOOL)appleActorKeyManager:(PDSAppleActorKeyManager *)manager
@@ -1694,6 +1701,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
                                                  error:(NSError **)error {
     return [self loadSigningKeyWithError:error];
 }
+#endif
 
 #pragma mark - Blob Operations (Moved to PDSActorStore+Blob)
 
