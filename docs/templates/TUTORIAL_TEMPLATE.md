@@ -356,9 +356,9 @@ The complete code for this tutorial is available in:
 
 [Link to related tutorials or next steps]
 
-- **[Tutorial N+1: Title](#)** — [Brief description]
-- **[Related Documentation](#)** — [Brief description]
-- **[Advanced Topic](#)** — [Brief description]
+- **[Tutorial N+1: Title](./tutorial-[N]-[name])** — [Brief description]
+- **[Codebase Map](../01-getting-started/codebase-map)** — Understanding where code lives
+- **[Testing Map](../11-reference/testing-map)** — How to test changes
 
 ## Summary
 
@@ -376,9 +376,9 @@ You've successfully:
 
 [Optional: Links to related resources]
 
-- [Resource 1 Title](#) — [Description]
-- [Resource 2 Title](#) — [Description]
-- [Resource 3 Title](#) — [Description]
+- [Tutorials Index](../10-tutorials/index) — All available tutorials
+- [Setup Guide](../01-getting-started/setup) — Build and run the server
+- [CLI Reference](../11-reference/cli-reference) — Command-line documentation
 
 ## Feedback
 
@@ -393,4 +393,4 @@ If you have questions or suggestions about this tutorial:
 **Version:** [Version number]  
 **Last Updated:** [Date]  
 **Example Code:** `examples/tutorial-[N]-[name]/`  
-**Related Tutorials:** [Tutorial N-1](#), [Tutorial N+1](#)
+**Related Tutorials:** [Tutorial N-1](./tutorial-[N-1]-[prev]), [Tutorial N+1](./tutorial-[N+1]-[next])
