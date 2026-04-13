@@ -12,6 +12,9 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wobjc-protocol-method-implementation"
 
+// Force static linkers to retain this category object file in Linux builds.
+void PDSActorStoreLinkBlobCategory(void) {}
+
 @implementation PDSActorStore (Blob)
 
 #pragma mark - Blob Operations
@@ -153,4 +156,3 @@
 @end
 
 #pragma clang diagnostic pop
-

@@ -106,7 +106,7 @@ if(NOT APPLE)
     include_directories(SYSTEM "/usr/local/include")
     include_directories(SYSTEM "${GNUSTEP_PREFIX}/include")
     include_directories(SYSTEM "${GNUSTEP_PREFIX}/Library/Headers")
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat/PlatformShims)
 
     # Link Directories
     link_directories(BEFORE "/usr/local/lib")
@@ -327,8 +327,6 @@ file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
   "ATProtoPDS/Sources/Identity/*.c"
   "ATProtoPDS/Sources/OAuthProvider/*.m"
   "ATProtoPDS/Sources/OAuthProvider/*.c"
-  "ATProtoPDS/Sources/App/Services/*.m"
-  "ATProtoPDS/Sources/App/Services/*.c"
   "ATProtoPDS/Sources/Services/*.m"
   "ATProtoPDS/Sources/Services/*.c"
   "ATProtoPDS/Sources/Admin/*.m"
@@ -405,8 +403,7 @@ if(NOT APPLE)
   # PDSOpenSSLES256KeyManager.m is only for GNUstep/Linux
   # (Already included via GLOB, no need to filter)
 
-  # PDSCLIHealthCommand uses Mach APIs.
-  list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/CLI/PDSCLIHealthCommand\\.m$")
+  # PDSCLIHealthCommand now has cross-platform guards and is included on Linux.
 
   # SSLPinningManager.m uses SecTrust (not yet ported).
   list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
@@ -414,12 +411,8 @@ if(NOT APPLE)
   # WebSocketServer.m uses Network.framework.
   list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
 
-  # Add Linux stub implementations and compat shims.
-  list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Sources/Compat/Stubs/LinuxStubs.m")
-  file(GLOB COMPAT_SOURCES
-    "Sources/Compat/*.m"
-    "Sources/Compat/*.c")
-  list(APPEND ATPROTO_CORE_SOURCES ${COMPAT_SOURCES})
+  # Compat shim implementations are already captured by the GLOB_RECURSE on
+  # ATProtoPDS/Sources/Compat/*.m above — no explicit additions needed here.
 endif()
 
 pds_filter_common_sources(ATPROTO_CORE_SOURCES)
@@ -475,16 +468,17 @@ foreach(target ${PDS_MODULE_TARGETS})
 endforeach()
 
 target_link_libraries(ATProtoStorage PUBLIC ATProtoCore)
-target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore)
+target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore ${SECP256K1_LIBRARIES})
 target_link_libraries(ATProtoTransport PUBLIC ATProtoCore)
 target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore)
 target_link_libraries(ATProtoPLC PUBLIC ATProtoTransport ATProtoCore)
-target_link_libraries(ATProtoRuntime PUBLIC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore)
+target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore)
 
 #=============================
 # Main Executables
 #=============================
+
 
 # CLI Tool (kaszlak - PDS binary)
 add_executable(kaszlak
@@ -504,7 +498,12 @@ target_link_libraries(kaszlak PRIVATE
   ATProtoXRPC
   ATProtoSync
   ATProtoStorage
+  ATProtoPLC
   ATProtoCore
+  # GNU ld resolves static archives in a single pass; keep a second pass for
+  # cyclic refs between runtime/transport/plc objects.
+  ATProtoRuntime
+  ATProtoPLC
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
   ${READLINE_LIBRARY}
