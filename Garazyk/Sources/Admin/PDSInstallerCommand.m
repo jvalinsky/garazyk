@@ -20,7 +20,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 }
 
 - (NSString *)usage {
-    return @"pds install [daemon|agent|all] [--force]";
+    return @"kaszlak install [daemon|agent|all] [--force]";
 }
 
 - (NSString *)helpText {
@@ -36,10 +36,10 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
            @"  --force    Overwrite existing configuration\n"
            @"  --help     Show this help\n\n"
            @"Examples:\n"
-           @"  pds install agent                    # Install for current user\n"
-           @"  pds install daemon --force           # Reinstall system daemon\n"
-           @"  sudo pds install all                 # Install everything (root required)\n"
-           @"  pds install uninstall --purge        # Remove everything";
+           @"  kaszlak install agent                    # Install for current user\n"
+           @"  kaszlak install daemon --force           # Reinstall system daemon\n"
+           @"  sudo kaszlak install all                 # Install everything (root required)\n"
+           @"  kaszlak install uninstall --purge        # Remove everything";
 }
 
 - (NSArray<NSString *> *)subcommands {
@@ -110,7 +110,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         }
     }
 
-    [context printInfo:@"Installation complete. Use 'pds service status' to check service state."];
+    [context printInfo:@"Installation complete. Use 'kaszlak status' to check service state."];
     return 0;
 }
 
@@ -267,7 +267,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 }
 
 - (NSString *)usage {
-    return @"pds uninstall [daemon|agent|all] [--purge]";
+    return @"kaszlak uninstall [daemon|agent|all] [--purge]";
 }
 
 - (NSString *)helpText {
@@ -397,7 +397,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 }
 
 - (NSString *)usage {
-    return @"pds service <start|stop|restart|logs> [--follow]";
+    return @"kaszlak service <start|stop|restart|logs> [--follow]";
 }
 
 - (NSString *)helpText {
@@ -542,7 +542,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
 }
 
 - (NSString *)usage {
-    return @"pds service-status";
+    return @"kaszlak service-status";
 }
 
 - (NSString *)helpText {
