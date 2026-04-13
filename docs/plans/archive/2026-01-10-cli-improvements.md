@@ -15,13 +15,13 @@ title: CLI Improvements and Crash Fixes Implementation Plan
 ## Task 1: Standardize Command Registration
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m`
-- Modify: `ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m`
+- Modify: `Garazyk/Sources/CLI/PDSCLIRepoCommand.m`
+- Modify: `Garazyk/Sources/CLI/PDSCLIDispatcher.m`
 
 **Step 1: Add +load registration to PDSCLIRepoCommand**
 
 ```objective-c
-// In ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m
+// In Garazyk/Sources/CLI/PDSCLIRepoCommand.m
 @interface PDSRepoCommandRegistrar : NSObject
 @end
 
@@ -35,7 +35,7 @@ title: CLI Improvements and Crash Fixes Implementation Plan
 **Step 2: Remove manual registration from PDSCLIDispatcher**
 
 ```objective-c
-// In ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m
+// In Garazyk/Sources/CLI/PDSCLIDispatcher.m
 - (void)registerDefaultCommands {
     [self addCommand:[PDSCLIHelpCommand command]];
     [self addCommand:[PDSCLIVersionCommand command]];
@@ -51,19 +51,19 @@ Expected: Build passes. Run `./build/bin/kaszlak` to see `repo` in help output.
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/CLI/PDSCLIRepoCommand.m ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m
+git add Garazyk/Sources/CLI/PDSCLIRepoCommand.m Garazyk/Sources/CLI/PDSCLIDispatcher.m
 git commit -m "cli: use +load for repo command registration"
 ```
 
 ### Task 2: Global Argument Parsing in main.m
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/CLI/main.m`
+- Modify: `Garazyk/Sources/CLI/main.m`
 
 **Step 1: Replace manual loops with safe parsing**
 
 ```objective-c
-// In ATProtoPDS/Sources/CLI/main.m
+// In Garazyk/Sources/CLI/main.m
 // Replace the parsing loop with one that checks bounds before accessing args[i+1]
 for (NSUInteger i = 0; i < args.count; i++) {
     NSString *arg = args[i];
@@ -90,25 +90,25 @@ Remove `print_usage()` from `main.m` and call `[[PDSCLIDispatcher sharedDispatch
 
 **Step 3: Verify crash fix**
 
-Run: `./build/bin/kaszlak --data-dir`
+Run: `./build/bin/kaszlak serve --data-dir /tmp/pds-data`
 Expected: Error message instead of crash.
 
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/CLI/main.m
+git add Garazyk/Sources/CLI/main.m
 git commit -m "cli: fix out-of-bounds crash in global arg parsing"
 ```
 
 ### Task 3: Improve Account Command UX
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m`
+- Modify: `Garazyk/Sources/CLI/PDSCLIAccountCommand.m`
 
 **Step 1: Update helpText with required options**
 
 ```objective-c
-// In ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m
+// In Garazyk/Sources/CLI/PDSCLIAccountCommand.m
 - (NSString *)helpText {
     return @"Manage PDS accounts.\n\n"
            @"Subcommands:\n"
@@ -124,7 +124,7 @@ Ensure email and handle are provided and basic format for handle (e.g., contains
 **Step 3: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m
+git add Garazyk/Sources/CLI/PDSCLIAccountCommand.m
 git commit -m "cli: improve account command help and validation"
 ```
 

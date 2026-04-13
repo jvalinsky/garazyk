@@ -7,7 +7,7 @@ _kaszlak() {
     local cur prev words cword
     _init_completion || return
 
-    local commands="serve health account admin invite repo init daemon nuke oauth help version"
+    local commands="serve status account admin invite repo init daemon nuke oauth help version"
     local serve_opts="--port --data-dir --config --log-level --log-components --foreground --help"
     local account_opts="list info create deactivate reactivate delete update-email update-handle update-plc-endpoint"
     local invite_opts="list create revoke"
@@ -56,8 +56,12 @@ _kaszlak() {
         help)
             COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
             ;;
+        status|health|h)
+            if [[ "$cur" == --* ]]; then
+                COMPREPLY=( $(compgen -W "--verbose --json" -- "$cur") )
+            fi
+            ;;
     esac
 }
 
 complete -F _kaszlak kaszlak
-complete -F _kaszlak pds
