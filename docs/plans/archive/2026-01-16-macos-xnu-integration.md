@@ -50,7 +50,7 @@ macOS integration for the ATProto PDS CLI tool: background service operation, se
 - Sleep/wake notification handling
 
 ### Phase 6: Diagnostic Tools
-- `pds diag` command for full system reports
+- `kaszlak diag` command for full system reports
 - CPU/memory profiling
 - Performance trace export
 
@@ -58,16 +58,16 @@ macOS integration for the ATProto PDS CLI tool: background service operation, se
 
 | File | Description |
 |------|-------------|
-| `ATProtoPDS/Sources/Admin/PDSInstallerCommand.m` | Install/uninstall/service commands |
-| `ATProtoPDS/Sources/Admin/PDSDiagnosticCommand.m` | Diagnostic commands |
-| `ATProtoPDS/Sources/Security/PDSBiometricKeychain.h/m` | Touch ID keychain wrapper |
-| `ATProtoPDS/Sources/System/PDSSpotlightIndexer.h/m` | Spotlight integration |
-| `ATProtoPDS/Sources/System/PDSQuickLookGenerator.h/m` | Quick Look previews |
-| `ATProtoPDS/Sources/Network/PDSNetworkMonitor.h/m` | Network monitoring |
-| `ATProtoPDS/Sources/Network/PDSBonjourPublisher.h/m` | Service discovery |
-| `ATProtoPDS/Sources/Debug/PDSPerformanceTracer.h/m` | Performance instrumentation |
-| `ATProtoPDS/Resources/LaunchDaemons/com.atproto.pds.plist` | LaunchDaemon config |
-| `ATProtoPDS/Resources/LaunchAgents/com.atproto.pds.user.plist` | LaunchAgent config |
+| `Garazyk/Sources/Admin/PDSInstallerCommand.m` | Install/uninstall/service commands |
+| `Garazyk/Sources/Admin/PDSDiagnosticCommand.m` | Diagnostic commands |
+| `Garazyk/Sources/Security/PDSBiometricKeychain.h/m` | Touch ID keychain wrapper |
+| `Garazyk/Sources/System/PDSSpotlightIndexer.h/m` | Spotlight integration |
+| `Garazyk/Sources/System/PDSQuickLookGenerator.h/m` | Quick Look previews |
+| `Garazyk/Sources/Network/PDSNetworkMonitor.h/m` | Network monitoring |
+| `Garazyk/Sources/Network/PDSBonjourPublisher.h/m` | Service discovery |
+| `Garazyk/Sources/Debug/PDSPerformanceTracer.h/m` | Performance instrumentation |
+| `Garazyk/Resources/LaunchDaemons/com.atproto.pds.plist` | LaunchDaemon config |
+| `Garazyk/Resources/LaunchAgents/com.atproto.pds.user.plist` | LaunchAgent config |
 | `scripts/install.sh` | Main installer |
 | `scripts/uninstall.sh` | Cleanup script |
 | `scripts/distribute/homebrew-atproto-pds.rb` | Homebrew formula |
