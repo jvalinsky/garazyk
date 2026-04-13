@@ -1,6 +1,10 @@
 #import "PDSCLIDefinitions.h"
 #import "Debug/PDSLogger.h"
 
+#if defined(__APPLE__)
+#import <mach/mach.h>
+#endif
+
 @interface PDSHealthChecker : NSObject
 
 + (NSDictionary *)checkHealthWithContext:(PDSCLICommandContext *)context;
@@ -160,6 +164,7 @@
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"status"] = @"ok";
 
+#if defined(__APPLE__)
     struct task_vm_info vmInfo;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     kern_return_t kr = task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&vmInfo, &count);
@@ -176,6 +181,10 @@
             result[@"message"] = @"High memory usage";
         }
     }
+#else
+    result[@"status"] = @"info";
+    result[@"message"] = @"Memory footprint details unavailable on this platform";
+#endif
 
     return result;
 }
@@ -190,26 +199,26 @@
 @implementation PDSCLIHealthCommand : PDSBaseCommand
 
 - (NSString *)name {
-    return @"health";
+    return @"status";
 }
 
 - (NSString *)summary {
-    return @"Check PDS health status";
+    return @"Check kaszlak status";
 }
 
 - (NSString *)usage {
-    return @"pds health [options]";
+    return @"kaszlak status [options]";
 }
 
 - (NSString *)helpText {
-    return @"Check the health of the PDS. Returns basic or detailed health status.\n\n"
+    return @"Check kaszlak status. Returns basic or detailed health output.\n\n"
            @"Options:\n"
            @"  --verbose    Show detailed health information\n"
            @"  --json       Output in JSON format";
 }
 
 - (NSArray<NSString *> *)aliases {
-    return @[@"status"];
+    return @[@"health"];
 }
 
 - (NSArray<NSString *> *)subcommands {
@@ -234,7 +243,7 @@
         [context printJSON:health];
     } else {
         NSString *status = health[@"status"];
-        printf("PDS Status: %s\n", [status UTF8String]);
+        printf("kaszlak status: %s\n", [status UTF8String]);
         printf("Version: %s\n", [health[@"version"] UTF8String]);
 
         if (verbose) {
