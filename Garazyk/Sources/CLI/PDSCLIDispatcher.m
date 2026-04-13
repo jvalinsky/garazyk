@@ -118,7 +118,7 @@
 }
 
 - (NSString *)usage {
-    return [NSString stringWithFormat:@"pds %@", [self name]];
+    return [NSString stringWithFormat:@"kaszlak %@", [self name]];
 }
 
 - (NSString *)helpText {
@@ -152,11 +152,11 @@
 }
 
 - (NSString *)usage {
-    return @"pds help [command]";
+    return @"kaszlak help [command]";
 }
 
 - (NSString *)helpText {
-    return @"Show help for pds commands. If no command is specified, show general help.";
+    return @"Show help for kaszlak commands. If no command is specified, show general help.";
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -193,11 +193,11 @@
 }
 
 - (NSString *)usage {
-    return @"pds version";
+    return @"kaszlak version";
 }
 
 - (NSString *)helpText {
-    return @"Show the version of the PDS software.";
+    return @"Show the version of the kaszlak PDS software.";
 }
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args context:(PDSCLICommandContext *)context {
@@ -208,7 +208,7 @@
             @"platform": @"macOS"
         }];
     } else {
-        printf("PDS Version 1.0.0 (debug build)\n");
+        printf("kaszlak 1.0.0 (debug build)\n");
     }
     return 0;
 }
@@ -274,7 +274,7 @@
     if (!command) {
         [context printError:[NSString stringWithFormat:@"Unknown command: %@", commandName]];
         [self printUsage];
-        return 1;
+        return PDSCLIExitCodeNotFound;
     }
 
     if (context.verbose) {
@@ -290,7 +290,7 @@
 }
 
 - (void)printUsage {
-    printf("Usage: pds <command> [options]\n\n");
+    printf("Usage: kaszlak <command> [options]\n\n");
     printf("Available commands:\n");
 
     NSArray *sortedKeys = [[self.commands allKeys] sortedArrayUsingSelector:@selector(compare:)];
@@ -305,7 +305,7 @@
         }
     }
 
-    printf("\nUse 'pds help <command>' for more information about a command.\n");
+    printf("\nUse 'kaszlak help <command>' for more information about a command.\n");
 }
 
 - (void)printUsageForCommand:(id<PDSCLICommand>)command {
