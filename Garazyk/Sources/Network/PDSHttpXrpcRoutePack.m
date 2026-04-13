@@ -35,6 +35,19 @@
   }
 
   __weak SubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
+  RequestHandler xrpcDispatchHandler = ^(HttpRequest *request,
+                                         HttpResponse *response) {
+    if ([request.methodString isEqualToString:@"OPTIONS"]) {
+      setCorsHeaders(response, request);
+      response.statusCode = HttpStatusOK;
+      return;
+    }
+    PDS_LOG_HTTP_INFO(@"About to call dispatcher handleRequest for %@",
+                      request.path);
+    [resolvedDispatcher handleRequest:request response:response];
+    PDS_LOG_HTTP_INFO(@"dispatcher handleRequest returned for %@",
+                      request.path);
+  };
 
   // OPTIONS preflight for XRPC prefix
   [server addRoute:@"OPTIONS"
@@ -44,22 +57,15 @@
              response.statusCode = HttpStatusOK;
            }];
 
+  // Register GET/HEAD explicitly so API paths are resolved before the
+  // default GET wildcard UI route.
+  for (NSString *method in @[ @"GET", @"HEAD" ]) {
+    [server addRoute:method path:@"/xrpc" handler:xrpcDispatchHandler];
+    [server addRoute:method path:@"/xrpc/*" handler:xrpcDispatchHandler];
+  }
+
   // Handler for /xrpc (prefix match for all XRPC methods)
-  [server addHandlerForPath:@"/xrpc"
-                    handler:^(HttpRequest *request, HttpResponse *response) {
-                      if ([request.methodString isEqualToString:@"OPTIONS"]) {
-                        setCorsHeaders(response, request);
-                        response.statusCode = HttpStatusOK;
-                        return;
-                      }
-                      PDS_LOG_HTTP_INFO(
-                          @"About to call dispatcher handleRequest for %@",
-                          request.path);
-                      [resolvedDispatcher handleRequest:request response:response];
-                      PDS_LOG_HTTP_INFO(
-                          @"dispatcher handleRequest returned for %@",
-                          request.path);
-                    }];
+  [server addHandlerForPath:@"/xrpc" handler:xrpcDispatchHandler];
 
   // OPTIONS preflight for XRPC methods
   [server addRoute:@"OPTIONS"
@@ -75,6 +81,14 @@
            handler:^(HttpRequest *request, HttpResponse *response) {
              [resolvedDispatcher handleRequest:request response:response];
            }];
+
+  for (NSString *method in @[ @"GET", @"HEAD" ]) {
+    [server addRoute:method
+                path:@"/xrpc/:method"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+               [resolvedDispatcher handleRequest:request response:response];
+             }];
+  }
 
   if (subscribeReposHandler) {
     // OPTIONS preflight for WebSocket upgrade
@@ -104,4 +118,3 @@
 }
 
 @end
-
