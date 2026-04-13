@@ -18,6 +18,8 @@
 #import "AppViewServer/Indexers/AppViewNotificationIndexer.h"
 #import "AppViewServer/Admin/AppViewAdminRoutePack.h"
 #import "Network/HttpServer.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
 
 // ---------------------------------------------------------------------------
