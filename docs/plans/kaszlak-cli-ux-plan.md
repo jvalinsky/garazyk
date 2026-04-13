@@ -3,7 +3,7 @@
 ## Current State Analysis
 
 ### Existing CLI Commands
-The CLI is located in `ATProtoPDS/Sources/CLI/` with the following structure:
+The CLI is located in `Garazyk/Sources/CLI/` with the following structure:
 
 | Command | File | Purpose |
 |---------|------|---------|
@@ -36,7 +36,7 @@ Files that reference "september" that need renaming:
 4. **No interactive mode** - Can't run in interactive REPL style
 5. **Sparse `--help` output** - Commands lack detailed descriptions
 6. **No config validation** - Config errors only shown at runtime
-7. **No command aliases** - Long command names, no shortcuts like `pds s` for `serve`
+7. **No command aliases** - Long command names, no shortcuts like `kaszlak s` for `serve`
 
 ---
 
@@ -52,24 +52,24 @@ Files that reference "september" that need renaming:
 5. Update npm package name
 
 **Files to modify:**
-- `ATProtoPDS/Sources/Admin/PDSInstallerCommand.m`
-- `ATProtoPDS/Sources/Security/PDSBiometricKeychain.m`
-- `ATProtoPDS/Sources/App/CappuccinoUI/package.json`
-- `ATProtoPDS/Sources/App/CappuccinoUI/package-lock.json`
+- `Garazyk/Sources/Admin/PDSInstallerCommand.m`
+- `Garazyk/Sources/Security/PDSBiometricKeychain.m`
+- `Garazyk/Sources/App/CappuccinoUI/package.json`
+- `Garazyk/Sources/App/CappuccinoUI/package-lock.json`
 
 ### Phase 2: Command Grouping & Aliases
 
 **Tasks:**
 1. Implement subcommand groups:
-   - `pds account` (already exists)
-   - `pds admin` (already exists)
-   - `pds repo` (already exists)
-   - `pds server` (rename serve → server)
-   - `pds system` (init, daemon, health)
+   - `kaszlak account` (already exists)
+   - `kaszlak admin` (already exists)
+   - `kaszlak repo` (already exists)
+   - `kaszlak server` (rename serve → server)
+   - `kaszlak system` (init, daemon, health)
 2. Add command aliases:
-   - `pds s` → `pds serve`
-   - `pds a` → `pds account`
-   - `pds i` → `pds invite`
+   - `kaszlak s` → `kaszlak serve`
+   - `kaszlak a` → `kaszlak account`
+   - `kaszlak i` → `kaszlak invite`
 
 **Implementation:** Add `aliases` method to PDSBaseCommand
 
@@ -88,7 +88,7 @@ Files that reference "september" that need renaming:
 **Tasks:**
 1. Generate bash completion script
 2. Generate zsh completion script
-3. Auto-install completion on `pds init`
+3. Auto-install completion on `kaszlak init`
 
 **Files to create:**
 - `scripts/completions/kaszlak.bash`
@@ -97,7 +97,7 @@ Files that reference "september" that need renaming:
 ### Phase 5: Interactive Mode (Future)
 
 **Tasks:**
-1. Add `pds repl` command for interactive mode
+1. Add `kaszlak repl` command for interactive mode
 2. Command history (readline)
 3. Tab completion in REPL
 4. Config editing mode
@@ -108,9 +108,9 @@ Files that reference "september" that need renaming:
 
 - [ ] All "september" references renamed to "kaszlak"
 - [ ] CLI builds without errors after rename
-- [ ] `pds --help` works
-- [ ] `pds serve --help` works
-- [ ] Command aliases work (`pds s` → `pds serve`)
+- [ ] `kaszlak help` works
+- [ ] `kaszlak serve --help` works
+- [ ] Command aliases work (`kaszlak s` → `kaszlak serve`)
 - [ ] Shell completion scripts work
 
 ---

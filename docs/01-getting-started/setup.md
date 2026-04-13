@@ -104,7 +104,7 @@ xcodebuild -scheme AllTests build
 ./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 ```
 
-The CLI grammar is documented as `pds ...`, but in this repository the built binary you will usually invoke directly is `./build/bin/kaszlak`.
+The CLI grammar is `kaszlak <command> [flags]`, and the built binary you will usually invoke directly is `./build/bin/kaszlak`.
 
 ## Recommended Linux Workflow
 
@@ -150,7 +150,7 @@ The config loader reads snake_case keys. Use this shape as the baseline mental m
 Two important subtleties:
 
 - `PDSConfiguration` has development-oriented defaults when instantiated without a config file.
-- `pds serve` has its own CLI defaults and can override config values such as port and data directory.
+- `kaszlak serve` has its own CLI defaults and can override config values such as port and data directory.
 
 Do not infer production guidance from bare runtime defaults.
 

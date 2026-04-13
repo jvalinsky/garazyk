@@ -426,7 +426,7 @@ For integration tests, use September's built-in PLC server (campagnola):
 
 ```bash
 # Start mock PLC server
-./build/bin/campagnola --port 2582 --data-dir ./test-plc-data
+./build/bin/campagnola serve --port 2582 --data-dir ./test-plc-data
 
 # Configure PDS to use mock
 export PLC_URL="http://localhost:2582"
