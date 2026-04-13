@@ -1,4 +1,4 @@
-# Building garazyk/ATProtoPDS on macOS Tahoe
+# Building September PDS on macOS
 
 ## Critical: SDK Name Change on macOS 26
 
@@ -18,33 +18,20 @@ xcodebuild -showsdks
 
 ### Build Commands
 
-```bash
-# Set SDKROOT to the actual SDK path (not relying on xcrun)
-export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-
-# Configure cmake
-cmake -B build \
-  -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-
-# Build
-cmake --build build --target AllTests
-```
-
-### Alternative: Using Direct Compiler Path
-
-If xcrun is broken (returns "unable to find sdk"), use direct paths:
+September uses **XcodeGen** on macOS (not CMake). Out-of-source builds are required.
 
 ```bash
-export CC=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
-export CXX=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
+# Generate Xcode project
+xcodegen generate
 
-cmake -B build \
-  -DCMAKE_C_COMPILER=$CC \
-  -DCMAKE_CXX_COMPILER=$CXX \
-  -DCMAKE_OBJC_COMPILER=$CC \
-  -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+# Build tests
+xcodebuild -scheme AllTests build
 
-cmake --build build
+# Build server
+xcodebuild -scheme ATProtoPDS-CLI build
+
+# Run tests
+./build/tests/AllTests
 ```
 
 ### Running Tests
@@ -69,38 +56,33 @@ export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platf
 xcrun --sdk macosx26.4 --show-sdk-path
 ```
 
-#### CMake 4.0+ Changes
-
-CMake 4.0+ no longer defines `CMAKE_OSX_SYSROOT` by default. You must:
-
-1. Set `SDKROOT` environment variable, OR
-2. Pass `-DCMAKE_OSX_SYSROOT=...` to cmake
-
 ### Build Targets
 
 | Target | Description |
 |--------|-------------|
 | `AllTests` | Run all unit tests |
-| `kaszlak` | PDS CLI tool |
-| `campagnola` | PLC directory server |
-| `zuk` | Relay server |
+| `ATProtoPDS-CLI` | PDS CLI tool (kaszlak) |
+| `ATProtoPDS-PLC` | PLC directory server (campagnola) |
 
 ### Project Structure
 
-This project uses **CMake** (NOT xcodegen). There is no `project.yaml`.
+This project uses **XcodeGen** (NOT cmake). The project is defined in `project.yml`.
 
-- `CMakeLists.txt` - Main build configuration
-- `build/` - CMake build output
+- `project.yml` - XcodeGen configuration
+- `build/` - Xcode build output
 - `build/tests/AllTests` - Test binary
+- `build/bin/` - CLI binaries
 
 ### Quick Start
 
 ```bash
-# One-time setup
-export SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-cmake -B build
+# Generate Xcode project
+xcodegen generate
 
 # Build and test
-cmake --build build --target AllTests
+xcodebuild -scheme AllTests build
 ./build/tests/AllTests
+
+# Build server
+xcodebuild -scheme ATProtoPDS-CLI build
 ```
