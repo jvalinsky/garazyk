@@ -26,7 +26,7 @@
 }
 
 - (NSString *)usage {
-    return @"pds daemon start|stop|restart|status [options]";
+    return @"kaszlak daemon start|stop|restart|status [options]";
 }
 
 - (NSString *)helpText {
@@ -108,7 +108,7 @@
     }
 #endif
 
-    printf("Starting PDS daemon...\n");
+    printf("Starting kaszlak daemon...\n");
     printf("  Log file: %s\n", [logPath UTF8String]);
 
     // 3. Fork
@@ -138,7 +138,7 @@
         }
 
         // Arguments for execv
-        // pds serve --config <path> --data-dir <path>
+        // kaszlak serve --config <path> --data-dir <path>
         const char *argv[] = {
             execPath,
             "serve",
@@ -159,10 +159,10 @@
     // 5. Verify it's alive after a short delay
     [NSThread sleepForTimeInterval:0.5];
     if (kill(pid, 0) == 0) {
-        [context printInfo:[NSString stringWithFormat:@"✅ PDS started in background (PID: %d)", pid]];
+        [context printInfo:[NSString stringWithFormat:@"kaszlak started in background (PID: %d)", pid]];
         return 0;
     } else {
-        [context printError:@"❌ Process failed to start. Check pds-daemon.log for details."];
+        [context printError:@"Process failed to start. Check pds-daemon.log for details."];
         return 1;
     }
 }
@@ -172,12 +172,12 @@
     pid_t pid = [self readPidFromFile:pidPath];
     
     if (pid <= 0 || kill(pid, 0) != 0) {
-        [context printInfo:@"PDS is not running."];
+        [context printInfo:@"kaszlak is not running."];
         [[NSFileManager defaultManager] removeItemAtPath:pidPath error:nil];
         return 0;
     }
 
-    printf("Stopping PDS (PID: %d)...\n", pid);
+    printf("Stopping kaszlak (PID: %d)...\n", pid);
     
     // SIGTERM
     kill(pid, SIGTERM);
@@ -215,10 +215,10 @@
         }];
     } else {
         if (running) {
-            printf("PDS Status: RUNNING\n");
+            printf("kaszlak status: RUNNING\n");
             printf("  PID:      %d\n", pid);
         } else {
-            printf("PDS Status: STOPPED\n");
+            printf("kaszlak status: STOPPED\n");
         }
         printf("  PID file: %s\n", [pidPath UTF8String]);
         printf("  Log file: %s\n", [logPath UTF8String]);
