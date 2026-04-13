@@ -260,12 +260,12 @@ if (result) {
 
 ## See Also
 
-- [Related Documentation 1](#)
-- [Related Documentation 2](#)
-- [Related Documentation 3](#)
+- [Services Overview](../03-application-layer/services-overview) - Service layer architecture
+- [XRPC Dispatch](../04-network-layer/xrpc-dispatch) - Method invocation
+- [Testing Map](../11-reference/testing-map) - Test patterns and organization
 
 ---
 
 **Version:** [Version number when this was added/updated]  
 **Last Updated:** [Date]  
-**Source Files:** `ATProtoPDS/Sources/[Path]/[FileName].h`, `ATProtoPDS/Sources/[Path]/[FileName].m`
+**Source Files:** `Garazyk/Sources/[Path]/[FileName].h`, `Garazyk/Sources/[Path]/[FileName].m`
