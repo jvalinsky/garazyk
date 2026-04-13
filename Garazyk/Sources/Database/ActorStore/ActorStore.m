@@ -22,7 +22,15 @@
 #import "Auth/CryptoUtils.h"
 #import "App/PDSConfiguration.h"
 
+extern void PDSActorStoreLinkAccountCategory(void);
+extern void PDSActorStoreLinkBlobCategory(void);
+
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
+
+static inline void PDSActorStoreEnsureCategoryObjectsLinked(void) {
+    PDSActorStoreLinkAccountCategory();
+    PDSActorStoreLinkBlobCategory();
+}
 
 
 
@@ -67,6 +75,7 @@ static NSString *PDSActorStoreBaseDirectoryFromDBPath(NSString *dbPath) {
 const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (instancetype)initWithDid:(NSString *)did dbPath:(NSString *)dbPath {
+    PDSActorStoreEnsureCategoryObjectsLinked();
     self = [super init];
     if (self) {
         _did = [did copy];
