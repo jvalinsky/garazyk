@@ -188,17 +188,17 @@ In production systems, [explain production relevance and impact].
 
 [Link to related documentation that readers might find helpful.]
 
-- [Related Topic 1](#) - Brief description
-- [Related Topic 2](#) - Brief description
-- [Related Topic 3](#) - Brief description
+- [Codebase Map](../01-getting-started/codebase-map) - Where code lives
+- [Request Lifecycle](../01-getting-started/request-lifecycle) - How requests flow
+- [Testing Map](../11-reference/testing-map) - Test patterns
 
 ## Further Reading
 
 [Link to external resources, specifications, or additional documentation.]
 
-- [External Resource 1](https://example.com) - Description
-- [External Resource 2](https://example.com) - Description
 - [AT Protocol Specification](https://atproto.com/specs) - Official specs
+- [IPLD Specifications](https://ipld.io/specs/) - Data model specs
+- [CBOR RFC](https://datatracker.ietf.org/doc/html/rfc8949) - Data encoding
 
 ## Summary
 

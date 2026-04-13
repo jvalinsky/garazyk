@@ -10,7 +10,7 @@ This guide provides procedures for adding new endpoints, modifying existing func
 
 ```
 
-ATProtoPDS/
+Garazyk/
 ├── Sources/
 │   ├── App/Explore/           # Web interface and API
 │   │   ├── Assets/           # HTML/CSS/JS frontend
@@ -43,7 +43,7 @@ To generate the Xcode project (required before building):
 xcodegen generate
 ```
 
-This creates `ATProtoPDS.xcodeproj` configured to use CMake for all build targets.
+This creates `Garazyk.xcodeproj` configured to use XcodeGen + CMake for all build targets.
 
 ### Building Targets
 
@@ -153,7 +153,7 @@ To add a new XRPC endpoint, follow these steps:
 @end
 ```
 
-ATProtoPDS/
+Garazyk/
 ├── Sources/
 │   ├── App/Explore/           # Web interface and API
 │   │   ├── Assets/           # HTML/CSS/JS frontend
@@ -186,7 +186,7 @@ To generate the Xcode project (required before building):
 xcodegen generate
 ```
 
-This creates `ATProtoPDS.xcodeproj` configured to use CMake for all build targets.
+This creates `Garazyk.xcodeproj` configured to use XcodeGen + CMake for all build targets.
 
 ### Building Targets
 
@@ -389,7 +389,7 @@ searchResponse.arrayItemRef = @"#/components/schemas/Record";
 
 ### Unit Tests
 
-Add tests in `ATProtoPDS/Tests/` directory. All files matching `ATProtoPDS/Tests/**/*.m` are automatically included in the `AllTests` target.
+Add tests in `Garazyk/Tests/` directory. All files matching `Garazyk/Tests/**/*.m` are automatically included in the `AllTests` target.
 
 ```bash
 # Build and run unit tests
