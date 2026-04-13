@@ -342,11 +342,15 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 @implementation PLCServer
 
 - (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor port:(NSUInteger)port {
+    return [self initWithStore:store auditor:auditor host:@"127.0.0.1" port:port];
+}
+
+- (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor host:(NSString *)host port:(NSUInteger)port {
     self = [super init];
     if (self) {
         _store = store;
         _auditor = auditor;
-        _httpServer = [HttpServer serverWithHost:@"127.0.0.1" port:port];
+        _httpServer = [HttpServer serverWithHost:host port:port];
         [self setupRoutes];
     }
     return self;
@@ -773,10 +777,12 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     NSString *cwd = [fm currentDirectoryPath];
     
     NSArray *candidates = @[
-        [cwd stringByAppendingPathComponent:@"ATProtoPDS/Sources/PLC/Assets"],
+        [cwd stringByAppendingPathComponent:@"Garazyk/Sources/PLC/Assets"],
         [cwd stringByAppendingPathComponent:@"Sources/PLC/Assets"],
         [cwd stringByAppendingPathComponent:@"Assets"],
-        [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"Assets"]
+        [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"Assets"],
+        @"/usr/share/atprotopds/assets/PLC",
+        @"/usr/local/share/atprotopds/assets/PLC"
     ];
     
     for (NSString *path in candidates) {

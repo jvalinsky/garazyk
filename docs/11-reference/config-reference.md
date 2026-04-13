@@ -155,7 +155,7 @@ This `appview` block is the current loader shape. Older camelCase examples such 
 | `plc.url = "mock"` | easy local and test bootstrap | never use this in production |
 | `invite_code_required = NO` | friction-free local setup | do not copy into production docs |
 | `debug.skip_plc_operations = YES` | local iteration convenience | disable in production |
-| `server.port = 8080` in config object | class-level default before CLI overrides | `pds serve` still defaults to 2583 |
+| `server.port = 8080` in config object | class-level default before CLI overrides | `kaszlak serve` still defaults to 2583 |
 
 Use runtime defaults to understand the code. Use deployment docs to understand the safe operational baseline.
 

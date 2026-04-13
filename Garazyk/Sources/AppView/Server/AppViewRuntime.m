@@ -133,7 +133,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     // Build backfill orchestrator
     if (config.backfillEnabled) {
         _orchestrator = [[AppViewBackfillOrchestrator alloc]
-            initWithDatabase:_database indexers:_indexers];
+            initWithDatabase:_database indexers:_indexers plcURL:config.plcURL];
         _orchestrator.globalWorkerCap  = config.backfillGlobalWorkers;
         _orchestrator.perHostWorkerCap = config.backfillPerHostWorkers;
         _orchestrator.delegate = self;
@@ -141,6 +141,20 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     // Build HTTP server for query API + admin
     _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
+
+    // Root health/info endpoint
+    [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
+        NSDictionary *info = @{
+            @"service": @"syrena",
+            @"version": @"1.0.0",
+            @"type": @"app.bsky.appview",
+        };
+        NSData *json = [NSJSONSerialization dataWithJSONObject:info options:0 error:nil];
+        [res setHeader:@"application/json" forKey:@"Content-Type"];
+        res.statusCode = 200;
+        [res setBody:json];
+    }];
+
     if (config.adminSecret.length > 0) {
         [AppViewAdminRoutePack registerWithServer:_httpServer
                                     orchestrator:_orchestrator

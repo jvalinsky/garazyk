@@ -6,7 +6,7 @@ title: CLI Reference
 
 ## Overview
 
-The CLI grammar is expressed as `pds <command>`, but in this repository you will usually invoke the built binary directly, for example `./build/bin/kaszlak`.
+The CLI grammar is `kaszlak <command> [flags]`. In this repository you will usually invoke the built binary directly, for example `./build/bin/kaszlak`.
 
 This page documents the commands that are actually registered in the current codebase.
 
@@ -25,7 +25,7 @@ This page documents the commands that are actually registered in the current cod
 | Command | What it does |
 | --- | --- |
 | `serve` | start the PDS server |
-| `health` | local health checks against config, storage, DBs, daemon state, and HTTP reachability |
+| `status` | local status checks against config, storage, DBs, daemon state, and HTTP reachability (`health` remains an alias) |
 | `account` | account creation and account lifecycle management |
 | `invite` | invite code management |
 | `oauth` | OAuth client registration and inspection |
