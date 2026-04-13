@@ -30,8 +30,7 @@ Complete this section if your changes affect documentation. See `docs/DOCUMENTAT
 - [ ] Updated relevant documentation files (list below)
 - [ ] Verified code examples still compile and run
 - [ ] Updated diagrams if architecture changed
-- [ ] Ran link checker (`python3 scripts/test-doc-links.py`)
-- [ ] Built documentation site successfully (`./scripts/build-docs.sh`)
+- [ ] Ran docs validation (`cd docs && npx ts-node scripts/validate-docs.ts`)
 - [ ] Reviewed changes for technical accuracy
 
 #### Documentation files updated:
