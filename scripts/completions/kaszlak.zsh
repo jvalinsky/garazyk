@@ -1,15 +1,15 @@
-#compdef kaszlak pds
+#compdef kaszlak
 
 _kaszlak_commands=(
-  'serve:Start the PDS server'
-  'health:Check PDS health status'
-  'account:Manage PDS accounts'
-  'admin:Manage PDS administrators'
+  'serve:Start the kaszlak server'
+  'status:Check kaszlak status'
+  'account:Manage accounts'
+  'admin:Manage administrators'
   'invite:Manage invite codes'
   'repo:Inspect user repositories'
-  'init:Initialize a new PDS instance'
-  'daemon:Run PDS as a background daemon'
-  'nuke:Delete all PDS data'
+  'init:Initialize a new kaszlak instance'
+  'daemon:Run kaszlak as a background daemon'
+  'nuke:Delete all kaszlak data'
   'oauth:OAuth operations'
   'help:Show help information'
   'version:Show version information'
@@ -135,9 +135,10 @@ _kaszlak() {
     help)
       _describe 'commands' commands
       ;;
-    health|h)
+    status|health|h)
       _describe 'options' \
-        '--verbose:Verbose output'
+        '--verbose:Verbose output' \
+        '--json:JSON output'
       ;;
     *)
       _describe 'commands' commands

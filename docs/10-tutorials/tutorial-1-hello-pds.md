@@ -39,7 +39,7 @@ You will build a working mental model of the startup path that powers the first 
 
 ```mermaid
 flowchart LR
-  CLI["pds serve"] --> Config["PDSConfiguration"]
+  CLI["kaszlak serve"] --> Config["PDSConfiguration"]
   Config --> Controller["PDSController"]
   Controller --> Builder["PDSHttpServerBuilder"]
   Builder --> Http["HttpServer"]
@@ -55,9 +55,9 @@ Start with these files:
 
 | File | Why it matters |
 | --- | --- |
-| `ATProtoPDS/Sources/CLI/main.m` | parses global CLI flags and dispatches commands |
-| `ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m` | turns `serve` into a running server |
-| `ATProtoPDS/Sources/App/PDSConfiguration.m` | loads config and environment overrides |
+| `Garazyk/Sources/CLI/main.m` | parses global CLI flags and dispatches commands |
+| `Garazyk/Sources/CLI/PDSCLIServeCommand.m` | turns `serve` into a running server |
+| `Garazyk/Sources/App/PDSConfiguration.m` | loads config and environment overrides |
 
 Read them in that order. The point is to see which values come from CLI flags, which come from config, and which are fallback defaults.
 
@@ -72,9 +72,9 @@ After CLI parsing, the important handoff is:
 
 For this tutorial, the most useful files are:
 
-- `ATProtoPDS/Sources/App/PDSController.m`
-- `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`
-- `ATProtoPDS/Sources/Network/HttpServer.m`
+- `Garazyk/Sources/App/PDSController.m`
+- `Garazyk/Sources/Network/PDSHttpServerBuilder.m`
+- `Garazyk/Sources/Network/HttpServer.m`
 
 The design reason is straightforward: September wants server boot to be centrally composed rather than scattered across unrelated handlers.
 
@@ -109,9 +109,9 @@ What to look for:
 
 After you understand the runtime path, jump to tests instead of rereading the implementation:
 
-- `ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m`
-- `ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m`
-- `ATProtoPDS/Tests/App/PDSConfigurationTests.m`
+- `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
+- `Garazyk/Tests/XRPC/XrpcHandlerTests.m`
+- `Garazyk/Tests/App/PDSConfigurationTests.m`
 
 Those tests tell you which invariants the project already considers worth protecting.
 
