@@ -19,6 +19,7 @@
 #import "Sync/RelayEventBuffer.h"
 #import "Sync/RelayDownstreamHandler.h"
 #import "Sync/SubscribeReposHandler.h"
+#import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -303,6 +304,8 @@ int main(int argc, const char * argv[]) {
 
         // Create HTTP server
         HttpServer *server = [HttpServer serverWithPort:port];
+        CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
+        [cappuccinoUIHandler setServiceProfile:@"relay"];
 
         // Root info endpoint
         [server addRoute:@"GET"
@@ -317,6 +320,19 @@ int main(int argc, const char * argv[]) {
                      [response setHeader:@"application/json" forKey:@"Content-Type"];
                      response.statusCode = 200;
                      [response setBody:json];
+                 }];
+
+        // Objective-J service UI
+        [server addRoute:@"GET"
+                    path:@"/ui"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [cappuccinoUIHandler handleRequest:request response:response];
+                 }];
+
+        [server addRoute:@"GET"
+                    path:@"/ui/*"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [cappuccinoUIHandler handleRequest:request response:response];
                  }];
 
         // Register relay API endpoints

@@ -9,8 +9,8 @@ title: "Phase 2: JWT Session Token Transition Plan"
 ## Task 1: Enhance Session Class with JWTMinter
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/Session.h`
-- Modify: `ATProtoPDS/Sources/Auth/Session.m`
+- Modify: `Garazyk/Sources/Auth/Session.h`
+- Modify: `Garazyk/Sources/Auth/Session.m`
 
 **Steps:**
 1. Add `JWTMinter` property to `Session`.
@@ -20,7 +20,7 @@ title: "Phase 2: JWT Session Token Transition Plan"
 ## Task 2: Update SessionStore for JWT Validation
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/Session.m` (SessionStore implementation)
+- Modify: `Garazyk/Sources/Auth/Session.m` (SessionStore implementation)
 
 **Steps:**
 1. Update `getSessionByAccessToken:error:` to optionally validate the JWT if needed.
@@ -29,7 +29,7 @@ title: "Phase 2: JWT Session Token Transition Plan"
 ## Task 3: Update XRPC Authentication Extraction
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- Modify: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 **Steps:**
 1. Update `extractDIDFromAuthHeader:controller:request:` to properly verify the JWT using `JWTVerifier`.
@@ -38,7 +38,7 @@ title: "Phase 2: JWT Session Token Transition Plan"
 ## Task 4: Fix Integration Tests
 
 **Files:**
-- Modify: `ATProtoPDS/Tests/Network/PDSIntegrationTests.m`
+- Modify: `Garazyk/Tests/Network/PDSIntegrationTests.m`
 
 **Steps:**
 1. Invert tests that currently assert tokens are NOT JWTs.
@@ -47,7 +47,7 @@ title: "Phase 2: JWT Session Token Transition Plan"
 ## Task 5: Controller Integration
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/App/PDSController.m`
+- Modify: `Garazyk/Sources/App/PDSController.m`
 
 **Steps:**
 1. Ensure `PDSController` initializes `Session` objects with a correctly configured `JWTMinter` (with the PDS private key).

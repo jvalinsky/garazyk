@@ -10,7 +10,7 @@ Admin authentication is functional, but needs a clear production story: secret h
 
 ## Background / current state (as of 2026-02-12)
 
-- File: `ATProtoPDS/Sources/Admin/PDSAdminAuth.m`
+- File: `Garazyk/Sources/Admin/PDSAdminAuth.m`
 - Current behavior highlights:
   - Admin requests authenticate via JWT verification and require `scope` containing `admin` (whitespace-delimited).
   - Tokens can be presented via:
@@ -41,7 +41,7 @@ Implemented:
   - require explicit `PDS_ISSUER` when `PDS_REQUIRE_ISSUER=1`, or
   - require explicit `PDS_ISSUER` when `PDS_ENV=production`.
 - Optional disablement of legacy header auth via `PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1` (forces Bearer-only).
-- Dedicated unit coverage in `ATProtoPDS/Tests/Admin/PDSAdminAuthTests.m`:
+- Dedicated unit coverage in `Garazyk/Tests/Admin/PDSAdminAuthTests.m`:
   - issuer-required failure
   - TTL claim behavior
   - `X-Admin-Token` disabled/enabled behavior
@@ -50,7 +50,7 @@ Implemented:
   - explicit non-namespace admin set is limited to `com.atproto.temp.addReservedHandle`
   - removed stale `com.atproto.server.createInviteCode(s)` entries from admin classification
 - Expanded `PDSAuthzManagerTests` coverage for newly added admin methods (`moderateAccount`, `moderateRecord`, `takeDownAccount`, `getAccountTakedown`, `disableInviteCodes`, `getSubjectStatus`, `updateSubjectStatus`) and non-admin invite-code checks.
-- Registered `PDSAuthzManagerTests` in `ATProtoPDS/Tests/test_main.m` and fixed its DB setup to use temporary SQLite files so the suite runs reliably in CI/local runs.
+- Registered `PDSAuthzManagerTests` in `Garazyk/Tests/test_main.m` and fixed its DB setup to use temporary SQLite files so the suite runs reliably in CI/local runs.
 - Fixed secp256k1 key reload correctness:
   - `Secp256k1KeyPair keyPairWithPrivateKey:` now derives the public key from the provided private key (instead of generating a fresh random pair), preventing signature verification failures after persisted-key reload.
   - Added regression coverage in `JWTTests` (`testKeyPairWithPrivateKeyDerivesMatchingPublicKey`).
@@ -124,7 +124,7 @@ Also ensure:
 
 ### 4) Add tests
 
-- Extend `ATProtoPDS/Tests/Network/AdminAuthXrpcTests.m` and/or add a dedicated auth test file to cover:
+- Extend `Garazyk/Tests/Network/AdminAuthXrpcTests.m` and/or add a dedicated auth test file to cover:
   - missing auth -> 401
   - non-admin -> 403
   - wrong issuer/audience -> 401/403 as appropriate
@@ -145,10 +145,10 @@ Also ensure:
 
 ## Files likely touched
 
-- `ATProtoPDS/Sources/Admin/PDSAdminAuth.m`
-- `ATProtoPDS/Sources/Security/PDSAuthzManager.m`
-- `ATProtoPDS/Tests/Admin/PDSAdminAuthTests.m`
-- `ATProtoPDS/Tests/Network/AdminAuthXrpcTests.m`
+- `Garazyk/Sources/Admin/PDSAdminAuth.m`
+- `Garazyk/Sources/Security/PDSAuthzManager.m`
+- `Garazyk/Tests/Admin/PDSAdminAuthTests.m`
+- `Garazyk/Tests/Network/AdminAuthXrpcTests.m`
 - Documentation (TBD location)
 
 ## Definition of done

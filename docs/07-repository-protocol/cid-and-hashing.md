@@ -68,7 +68,7 @@ The `CID` class provides methods for creating, parsing, and working with content
 @end
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 1-150)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 1-150)
 
 ## Hashing
 
@@ -88,7 +88,7 @@ CID *cid = [CID cidWithDigest:hash codec:0x71];
 NSString *cidString = cid.stringValue;  // "bafy2bzaced..."
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 280-295)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 280-295)
 
 ## Creating CIDs
 
@@ -109,7 +109,7 @@ NSString *cidString = cid.stringValue;  // "bafy2bzaced..."
 NSData *cidBytes = cid.bytes;
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 35-50, 155-175)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 35-50, 155-175)
 
 ### For Records
 
@@ -139,7 +139,7 @@ CID *recordCid = [CID cidWithDigest:hash codec:0x71];
 NSString *cidString = recordCid.stringValue;  // "bafy2bzaced..."
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 35-50, 155-175, 280-295)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 35-50, 155-175, 280-295)
 
 ### For Blocks
 
@@ -167,7 +167,7 @@ CARWriter *writer = [CARWriter writerWithRootCID:rootCID];
 [writer addBlock:carBlock];
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 35-50, 155-175, 280-295); `ATProtoPDS/Sources/Repository/CAR.m` (lines 280-320)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 35-50, 155-175, 280-295); `Garazyk/Sources/Repository/CAR.m` (lines 280-320)
 
 ## Parsing CIDs
 
@@ -192,7 +192,7 @@ if (cid) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 65-85, 155-175)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 65-85, 155-175)
 
 ### From Bytes
 
@@ -208,7 +208,7 @@ if (cidFromBytes) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 87-110, 155-175)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 87-110, 155-175)
 
 ### Comparing CIDs
 
@@ -232,7 +232,7 @@ if ([cidSet containsObject:cid2]) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 177-195)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 177-195)
 
 ## Validation
 
@@ -279,7 +279,7 @@ if ([hash isEqualToData:cidDigest]) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 280-295); `ATProtoPDS/Sources/Blob/BlobStorage.m` (lines 95-115)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 280-295); `Garazyk/Sources/Blob/BlobStorage.m` (lines 95-115)
 
 ## CIDv0 vs CIDv1
 
@@ -372,7 +372,7 @@ NSDictionary *response = @{
 };
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 35-50, 155-175, 280-295)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 35-50, 155-175, 280-295)
 
 ### Verifying Content Integrity
 
@@ -411,7 +411,7 @@ if (![hash isEqualToData:cidDigest]) {
 return YES;
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/CID.m` (lines 280-295); `ATProtoPDS/Sources/Blob/BlobStorage.m` (lines 95-115)
+**Source:** `Garazyk/Sources/Core/CID.m` (lines 280-295); `Garazyk/Sources/Blob/BlobStorage.m` (lines 95-115)
 
 ## See Also
 

@@ -18,7 +18,7 @@ This system addresses a critical quality assurance gap: tests can pass while pro
 
 ### Target Scope
 
-The system analyzes all test code in `ATProtoPDS/Tests/`:
+The system analyzes all test code in `Garazyk/Tests/`:
 - Core (CBOR, CAR, CID, MST) - 12+ test files
 - Auth (OAuth, DPoP, JWT, TOTP, WebAuthn) - 25+ test files
 - Network (XRPC, HTTP, WebSocket) - 40+ test files
@@ -798,52 +798,52 @@ test-audit-validation/
 
 ```bash
 # Analyze all tests
-python -m test_audit_validator --root ATProtoPDS/Tests
+python -m test_audit_validator --root Garazyk/Tests
 
 # Analyze specific directory
-python -m test_audit_validator --root ATProtoPDS/Tests/Auth
+python -m test_audit_validator --root Garazyk/Tests/Auth
 
 # Analyze specific test class
 python -m test_audit_validator --class OAuthDPoPTests
 
 # Filter by severity
-python -m test_audit_validator --root ATProtoPDS/Tests --severity critical,high
+python -m test_audit_validator --root Garazyk/Tests --severity critical,high
 
 # Generate HTML report
-python -m test_audit_validator --root ATProtoPDS/Tests --format html --output report.html
+python -m test_audit_validator --root Garazyk/Tests --format html --output report.html
 ```
 
 ### Incremental Analysis
 
 ```bash
 # First run (full analysis)
-python -m test_audit_validator --root ATProtoPDS/Tests --cache .audit_cache
+python -m test_audit_validator --root Garazyk/Tests --cache .audit_cache
 
 # Subsequent runs (only analyze changed files)
-python -m test_audit_validator --root ATProtoPDS/Tests --cache .audit_cache --incremental
+python -m test_audit_validator --root Garazyk/Tests --cache .audit_cache --incremental
 ```
 
 ### Filtering Examples
 
 ```bash
 # Only Auth domain tests
-python -m test_audit_validator --root ATProtoPDS/Tests --domain Auth
+python -m test_audit_validator --root Garazyk/Tests --domain Auth
 
 # Only property-based tests
-python -m test_audit_validator --root ATProtoPDS/Tests --test-type property
+python -m test_audit_validator --root Garazyk/Tests --test-type property
 
 # Only security tests
-python -m test_audit_validator --root ATProtoPDS/Tests --domain Security
+python -m test_audit_validator --root Garazyk/Tests --domain Security
 ```
 
 ### CI Integration
 
 ```bash
 # Fail CI if critical issues found
-python -m test_audit_validator --root ATProtoPDS/Tests --fail-on critical --format json > audit.json
+python -m test_audit_validator --root Garazyk/Tests --fail-on critical --format json > audit.json
 
 # Generate report for PR comments
-python -m test_audit_validator --root ATProtoPDS/Tests --format markdown --output audit.md
+python -m test_audit_validator --root Garazyk/Tests --format markdown --output audit.md
 ```
 
 ## Configuration
@@ -852,7 +852,7 @@ The system supports configuration via `.test_audit_config.json`:
 
 ```json
 {
-  "root_path": "ATProtoPDS/Tests",
+  "root_path": "Garazyk/Tests",
   "cache_path": ".audit_cache",
   "exclude_patterns": [
     "*/fixtures/*",
@@ -1084,7 +1084,7 @@ After reflection, the unique properties that provide distinct validation value a
 
 **Property 16: Fixture Path Validation**
 
-*For any* interop test, the Test_Audit_System should verify that fixture files are loaded from ATProtoPDS/Tests/fixtures/ and that the paths exist
+*For any* interop test, the Test_Audit_System should verify that fixture files are loaded from Garazyk/Tests/fixtures/ and that the paths exist
 
 **Validates: Requirements 7.4**
 
@@ -1142,7 +1142,7 @@ After reflection, the unique properties that provide distinct validation value a
 
 **Property 25: Fixture Path Existence**
 
-*For any* fixture path referenced in a test, the Test_Audit_System should verify the path exists in ATProtoPDS/Tests/fixtures/
+*For any* fixture path referenced in a test, the Test_Audit_System should verify the path exists in Garazyk/Tests/fixtures/
 
 **Validates: Requirements 9.4**
 
@@ -1178,7 +1178,7 @@ After reflection, the unique properties that provide distinct validation value a
 
 **Property 30: Test Registration Validation**
 
-*For any* test class in ATProtoPDS/Tests/, the Test_Audit_System should verify it is registered in the testClasses array in test_main.m, and report unregistered classes
+*For any* test class in Garazyk/Tests/, the Test_Audit_System should verify it is registered in the testClasses array in test_main.m, and report unregistered classes
 
 **Validates: Requirements 12.1, 12.2**
 
@@ -1476,19 +1476,19 @@ sudo apt-get install libclang-dev
 ```bash
 # Full audit of September PDS tests
 python -m test_audit_validator \
-  --root /path/to/september-pds/ATProtoPDS/Tests \
+  --root /path/to/september-pds/Garazyk/Tests \
   --output audit_report.md \
   --format markdown
 
 # Incremental audit with caching
 python -m test_audit_validator \
-  --root /path/to/september-pds/ATProtoPDS/Tests \
+  --root /path/to/september-pds/Garazyk/Tests \
   --cache .audit_cache \
   --incremental
 
 # CI integration (fail on critical issues)
 python -m test_audit_validator \
-  --root ATProtoPDS/Tests \
+  --root Garazyk/Tests \
   --fail-on critical \
   --format json \
   --output audit.json
@@ -1544,7 +1544,7 @@ jobs:
       - name: Run test audit
         run: |
           python -m test_audit_validator \
-            --root ATProtoPDS/Tests \
+            --root Garazyk/Tests \
             --fail-on critical,high \
             --format markdown \
             --output audit_report.md

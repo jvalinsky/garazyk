@@ -15,8 +15,8 @@ title: Addressing Test and Feature Gaps Implementation Plan
 ## Task 1: Implement PDSNetworkTransport for Linux
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`
-- Test: `ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m` (create if not exists)
+- Modify: `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
+- Test: `Garazyk/Tests/Network/PDSNetworkTransportTests.m` (create if not exists)
 
 **Step 1: Write the failing test for startWithQueue**
 
@@ -33,7 +33,7 @@ title: Addressing Test and Feature Gaps Implementation Plan
 
 **Step 2: Run test to verify it fails**
 
-Run: `xcodebuild -scheme AllTests build test -only-testing:ATProtoPDS/Tests/Network/PDSNetworkTransportTests/testStartWithQueue`
+Run: `xcodebuild -scheme AllTests build test -only-testing:Garazyk/Tests/Network/PDSNetworkTransportTests/testStartWithQueue`
 Expected: FAIL
 
 **Step 3: Write minimal implementation using GNUstep/libdispatch**
@@ -47,14 +47,14 @@ Run same command, Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m ATProtoPDS/Tests/Network/PDSNetworkTransportTests.m
+git add Garazyk/Sources/Network/PDSNetworkTransportLinux.m Garazyk/Tests/Network/PDSNetworkTransportTests.m
 git commit -m "feat: implement startWithQueue for Linux transport"
 ```
 
 ### Task 2: Repair OAuth2HandlerTests
 
 **Files:**
-- Modify: `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
+- Modify: `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
 - Uncomment in: `CMakeLists.txt:276` (remove exclusion)
 
 **Step 1: Write/update failing test for token handling**
@@ -63,7 +63,7 @@ Add test for `handleTokenRequest` method.
 
 **Step 2: Run test to verify it fails**
 
-Run: `xcodebuild -scheme AllTests test -only-testing:ATProtoPDS/Tests/Auth/OAuth2HandlerTests`
+Run: `xcodebuild -scheme AllTests test -only-testing:Garazyk/Tests/Auth/OAuth2HandlerTests`
 Expected: FAIL (if broken)
 
 **Step 3: Fix OAuth2 logic in OAuth2Handler.m**
@@ -77,15 +77,15 @@ Run same, Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m ATProtoPDS/Sources/Auth/OAuth2Handler.m CMakeLists.txt
+git add Garazyk/Tests/Auth/OAuth2HandlerTests.m Garazyk/Sources/Auth/OAuth2Handler.m CMakeLists.txt
 git commit -m "fix: repair OAuth2HandlerTests and logic"
 ```
 
 ### Task 3: Implement token refresh in OAuth2.m
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuth2.m:478`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2Tests.m` (if exists, else create)
+- Modify: `Garazyk/Sources/Auth/OAuth2.m:478`
+- Test: `Garazyk/Tests/Auth/OAuth2Tests.m` (if exists, else create)
 
 **Step 1: Write failing test for refreshToken**
 
@@ -113,15 +113,15 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/OAuth2.m ATProtoPDS/Tests/Auth/OAuth2Tests.m
+git add Garazyk/Sources/Auth/OAuth2.m Garazyk/Tests/Auth/OAuth2Tests.m
 git commit -m "feat: implement token refresh"
 ```
 
 ### Task 4: Add DNS TXT record resolution for handle resolution
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Identity/HandleResolver.m:209`
-- Test: `ATProtoPDS/Tests/Identity/HandleResolverTests.m`
+- Modify: `Garazyk/Sources/Identity/HandleResolver.m:209`
+- Test: `Garazyk/Tests/Identity/HandleResolverTests.m`
 
 **Step 1: Write failing test**
 
@@ -142,15 +142,15 @@ PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Identity/HandleResolver.m ATProtoPDS/Tests/Identity/HandleResolverTests.m
+git add Garazyk/Sources/Identity/HandleResolver.m Garazyk/Tests/Identity/HandleResolverTests.m
 git commit -m "feat: implement DNS TXT record resolution"
 ```
 
 ### Task 5: Implement repository synchronization operations
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m:115-116,160`
-- Test: `ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m`
+- Modify: `Garazyk/Sources/Sync/SubscribeReposHandler.m:115-116,160`
+- Test: `Garazyk/Tests/Sync/SubscribeReposHandlerTests.m`
 
 **Step 1: Write failing tests for extract operations and blobs**
 
@@ -171,16 +171,16 @@ PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Sync/SubscribeReposHandler.m ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m
+git add Garazyk/Sources/Sync/SubscribeReposHandler.m Garazyk/Tests/Sync/SubscribeReposHandlerTests.m
 git commit -m "feat: implement repo sync operations"
 ```
 
 ### Task 6: Add missing API endpoint com.atproto.server.getServiceAuth
 
 **Files:**
-- Create: `ATProtoPDS/Sources/XRPC/Methods/GetServiceAuthMethod.m`
-- Modify: `ATProtoPDS/Sources/XRPC/XrpcMethodRegistry.m`
-- Test: `ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m`
+- Create: `Garazyk/Sources/XRPC/Methods/GetServiceAuthMethod.m`
+- Modify: `Garazyk/Sources/XRPC/XrpcMethodRegistry.m`
+- Test: `Garazyk/Tests/XRPC/GetServiceAuthMethodTests.m`
 
 **Step 1: Write failing test**
 
@@ -205,7 +205,7 @@ PASS
 **Step 6: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/XRPC/Methods/GetServiceAuthMethod.m ATProtoPDS/Sources/XRPC/XrpcMethodRegistry.m ATProtoPDS/Tests/XRPC/GetServiceAuthMethodTests.m
+git add Garazyk/Sources/XRPC/Methods/GetServiceAuthMethod.m Garazyk/Sources/XRPC/XrpcMethodRegistry.m Garazyk/Tests/XRPC/GetServiceAuthMethodTests.m
 git commit -m "feat: add getServiceAuth endpoint"
 ```
 
@@ -213,7 +213,7 @@ git commit -m "feat: add getServiceAuth endpoint"
 
 **Files:**
 - Uncomment: `CMakeLists.txt:276`
-- Fix: `ATProtoPDS/Tests/Identity/DIDResolverTests.m`
+- Fix: `Garazyk/Tests/Identity/DIDResolverTests.m`
 
 **Step 1: Write/update failing tests**
 
@@ -234,14 +234,14 @@ PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Tests/Identity/DIDResolverTests.m CMakeLists.txt
+git add Garazyk/Tests/Identity/DIDResolverTests.m CMakeLists.txt
 git commit -m "fix: re-enable DIDResolverTests"
 ```
 
 ### Task 8: Add CLI command tests
 
 **Files:**
-- Create: `ATProtoPDS/Tests/CLI/PDSCLITests.m`
+- Create: `Garazyk/Tests/CLI/PDSCLITests.m`
 - Modify: `CMakeLists.txt` to include
 
 **Step 1: Write failing tests for repo create-record**
@@ -263,14 +263,14 @@ PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Tests/CLI/PDSCLITests.m CMakeLists.txt
+git add Garazyk/Tests/CLI/PDSCLITests.m CMakeLists.txt
 git commit -m "feat: add CLI command tests"
 ```
 
 ### Task 9: Add integration tests for XrpcHandler
 
 **Files:**
-- Create: `ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m`
+- Create: `Garazyk/Tests/XRPC/XrpcHandlerTests.m`
 - Modify: `CMakeLists.txt`
 
 **Step 1: Write failing integration tests**
@@ -292,7 +292,7 @@ PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Tests/XRPC/XrpcHandlerTests.m CMakeLists.txt
+git add Garazyk/Tests/XRPC/XrpcHandlerTests.m CMakeLists.txt
 git commit -m "feat: add XrpcHandler unit tests"
 ```
 
@@ -300,7 +300,7 @@ git commit -m "feat: add XrpcHandler unit tests"
 
 **Files:**
 - Modify: `CMakeLists.txt`
-- Create: `ATProtoPDS/Tests/Linux/GNUstepTests.m` or similar
+- Create: `Garazyk/Tests/Linux/GNUstepTests.m` or similar
 
 **Step 1: Write failing test for Linux compatibility**
 
@@ -317,7 +317,7 @@ PASS
 **Step 5: Commit**
 
 ```bash
-git add CMakeLists.txt ATProtoPDS/Tests/Linux/GNUstepTests.m
+git add CMakeLists.txt Garazyk/Tests/Linux/GNUstepTests.m
 git commit -m "feat: integrate GNUstep for Linux tests"
 ```
 

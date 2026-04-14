@@ -7,7 +7,7 @@
  * These links don't work in deployed documentation and cause VitePress build failures.
  * 
  * Strategy:
- * 1. Find all HTML-commented links: <!-- [text](../../ATProtoPDS/...) -->
+ * 1. Find all HTML-commented links: <!-- [text](../../Garazyk/...) -->
  * 2. Extract the file path and convert to inline code reference
  * 3. Replace the commented link with the inline code reference
  * 4. Remove the "*Source: " prefix line if it exists
@@ -42,7 +42,7 @@ function removeSourceLinks(filePath: string): FixResult {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Pattern 1: *Source: <!-- [text](../../ATProtoPDS/...) -->*
+    // Pattern 1: *Source: <!-- [text](../../Garazyk/...) -->*
     const sourcePattern = /^\*Source:\s*<!--\s*\[([^\]]+)\]\(([^)]+)\)\s*-->\s*\*\s*$/;
     const sourceMatch = line.match(sourcePattern);
     
@@ -68,7 +68,7 @@ function removeSourceLinks(filePath: string): FixResult {
       continue;
     }
     
-    // Pattern 2: *Source: [text](../../ATProtoPDS/...)* (non-commented)
+    // Pattern 2: *Source: [text](../../Garazyk/...)* (non-commented)
     const sourcePattern2 = /^\*Source:\s*\[([^\]]+)\]\((\.\.\/\.\.\/ATProtoPDS\/[^)]+)\)\s*\*\s*$/;
     const sourceMatch2 = line.match(sourcePattern2);
     
@@ -90,7 +90,7 @@ function removeSourceLinks(filePath: string): FixResult {
       continue;
     }
     
-    // Pattern 3: *Pattern based on: [text](../../ATProtoPDS/...)*
+    // Pattern 3: *Pattern based on: [text](../../Garazyk/...)*
     const patternPattern = /^\*Pattern based on:\s*\[([^\]]+)\]\((\.\.\/\.\.\/ATProtoPDS\/[^)]+)\)\s*\*\s*$/;
     const patternMatch = line.match(patternPattern);
     
@@ -112,7 +112,7 @@ function removeSourceLinks(filePath: string): FixResult {
       continue;
     }
     
-    // Pattern 4: Inline links to source code [text](../../ATProtoPDS/...)
+    // Pattern 4: Inline links to source code [text](../../Garazyk/...)
     const inlinePattern = /\[([^\]]+)\]\((\.\.\/\.\.\/ATProtoPDS\/[^)]+)\)/g;
     if (inlinePattern.test(line)) {
       let modifiedLine = line;
@@ -141,7 +141,7 @@ function removeSourceLinks(filePath: string): FixResult {
       continue;
     }
     
-    // Pattern 5: Standalone <!-- [text](../../ATProtoPDS/...) -->
+    // Pattern 5: Standalone <!-- [text](../../Garazyk/...) -->
     const standalonePattern = /<!--\s*\[([^\]]+)\]\(\.\.\/\.\.\/ATProtoPDS\/[^)]+\)\s*-->/g;
     if (standalonePattern.test(line)) {
       let modifiedLine = line;

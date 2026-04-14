@@ -70,7 +70,7 @@ if (hasCursor) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 760-790)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 760-790)
 
 ### Batch Fetching
 
@@ -146,7 +146,7 @@ Events are fetched in batches for efficiency:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 790-860)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 790-860)
 
 ## Batch Size Configuration
 
@@ -157,7 +157,7 @@ Events are fetched in batches for efficiency:
 static const NSUInteger kSubscribeReposReplayBatchSize = 100;
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (line 28)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (line 28)
 
 This means:
 - Events are fetched 100 at a time from the database
@@ -178,7 +178,7 @@ static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
 _maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 29, 110)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 29, 110)
 
 ### Exceeding Replay Limit
 
@@ -197,7 +197,7 @@ if (replayedCount > self.maxReplayEventsPerConnection) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 820-830)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 820-830)
 
 ## Cursor Management
 
@@ -248,7 +248,7 @@ The server validates cursor format:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 850-880)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 850-880)
 
 ### Effective Replay Cursor
 
@@ -287,7 +287,7 @@ The server may adjust cursors that are too old:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 900-930)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 900-930)
 
 ## Database Event Storage
 
@@ -360,7 +360,7 @@ Each event is sent with a backpressure check:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 970-990)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 970-990)
 
 ### Backpressure Limits
 
@@ -374,7 +374,7 @@ _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
 _maxPendingBytesPerConnection = kSubscribeReposMaxPendingBytesDefault;
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 30-32, 111-112)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 30-32, 111-112)
 
 ## Transition to Live Mode
 
@@ -396,7 +396,7 @@ if (fetchCursor >= self.sequenceNumber) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 850-860)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 850-860)
 
 ### Live Event Delivery
 
@@ -416,7 +416,7 @@ After replay completes, the connection automatically receives live events:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 630-645)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 630-645)
 
 ## Client-Side Cursor Management
 

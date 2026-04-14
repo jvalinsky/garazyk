@@ -30,9 +30,9 @@ flowchart TD
 
 The live rotation-key path spans a few concrete files:
 
-- `ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m` loads or generates the server rotation key and persists it on disk, encrypting it when the master-secret path is available.
-- `ATProtoPDS/Sources/Database/ActorStore/ActorStore.m` can store and retrieve per-DID rotation keys in encrypted form.
-- `ATProtoPDS/Sources/Network/XrpcIdentityMethods.m` builds PLC operations, requires `rotationKeys` on update paths, and chooses whether to sign with the actor-specific key or the server-wide key.
+- `Garazyk/Sources/PLC/PLCRotationKeyManager.m` loads or generates the server rotation key and persists it on disk, encrypting it when the master-secret path is available.
+- `Garazyk/Sources/Database/ActorStore/ActorStore.m` can store and retrieve per-DID rotation keys in encrypted form.
+- `Garazyk/Sources/Network/XrpcIdentityMethods.m` builds PLC operations, requires `rotationKeys` on update paths, and chooses whether to sign with the actor-specific key or the server-wide key.
 - the PLC validation layer rejects malformed `did:key` material and verifies signature chains before accepting state.
 
 That is the real boundary: load keys, choose the right signer, produce a valid PLC operation, and keep the state consistent with what the directory will later verify.

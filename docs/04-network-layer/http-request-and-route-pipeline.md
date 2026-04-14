@@ -45,7 +45,7 @@ The builder currently registers route families in this order:
 5. MST viewer routes
 6. Node info routes
 
-That order comes from `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`. If a specific path is being shadowed, start there before looking at service logic.
+That order comes from `Garazyk/Sources/Network/PDSHttpServerBuilder.m`. If a specific path is being shadowed, start there before looking at service logic.
 
 ## Walkthrough: `describeServer`
 
@@ -74,17 +74,17 @@ This is why a firehose bug can look like "routing is broken" even when the route
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/Network/HttpServer.m` when the request never reaches the expected route family.
-- Start in `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m` when the wrong family answers the path or a route disappears after startup changes.
+- Start in `Garazyk/Sources/Network/HttpServer.m` when the request never reaches the expected route family.
+- Start in `Garazyk/Sources/Network/PDSHttpServerBuilder.m` when the wrong family answers the path or a route disappears after startup changes.
 - Inspect host and proxy handling when OAuth or DPoP URLs look correct locally but wrong behind nginx.
 - Inspect the WebSocket handoff when only `subscribeRepos` fails and normal XRPC methods still work.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Network/PDSHttpServerBuilderTests.m`
-- `ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m`
-- `ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m`
-- `ATProtoPDS/Tests/App/PDSApplicationTests.m`
+- `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
+- `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
+- `Garazyk/Tests/Sync/SubscribeReposHandlerTests.m`
+- `Garazyk/Tests/App/PDSApplicationTests.m`
 
 ## Appendix
 

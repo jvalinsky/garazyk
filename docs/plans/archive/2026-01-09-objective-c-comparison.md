@@ -102,7 +102,7 @@ title: Objective-C Codebase Compliance Comparison Plan
 
 ### Automated Analysis
 - Subagents will use grep/search tools to scan codebase
-- Focus on `ATProtoPDS/Sources/` directory
+- Focus on `Garazyk/Sources/` directory
 - Cross-reference against `docs/guides/objective_c_tips.md`
 
 ### Manual Review
@@ -124,7 +124,7 @@ title: Objective-C Codebase Compliance Comparison Plan
 ## Dependencies
 
 - Research guide: `docs/guides/objective_c_tips.md`
-- Codebase access: `ATProtoPDS/Sources/`
+- Codebase access: `Garazyk/Sources/`
 
 ---
 

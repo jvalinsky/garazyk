@@ -86,11 +86,11 @@ jobs:
           cd ..
           # Check for common retain cycle patterns
           echo "=== Checking for unsafe retain patterns ==="
-          grep -r "__unsafe_unretained" --include="*.m" ATProtoPDS/Sources/ || echo "No __unsafe_unretained found"
+          grep -r "__unsafe_unretained" --include="*.m" Garazyk/Sources/ || echo "No __unsafe_unretained found"
           echo ""
           echo "=== Checking for blocks capturing self without weak-strong dance ==="
           # Warning: This is a heuristic - not all matches are actual issues
-          grep -n "addRoute.*handler:.*\^" --include="*.m" -A 2 ATProtoPDS/Sources/ | grep -v "__weak" | grep -v "weakSelf" || echo "All route handlers appear to use weak-strong dance"
+          grep -n "addRoute.*handler:.*\^" --include="*.m" -A 2 Garazyk/Sources/ | grep -v "__weak" | grep -v "weakSelf" || echo "All route handlers appear to use weak-strong dance"
 
   clang-tidy-analysis:
     name: Clang-Tidy Static Analysis
@@ -131,7 +131,7 @@ jobs:
             echo "Changed files detected"
           fi
           # Run on all Objective-C sources
-          find ATProtoPDS/Sources -name "*.m" -exec clang-tidy -p build {} \; 2>&1 | tee clang-tidy-report.txt || true
+          find Garazyk/Sources -name "*.m" -exec clang-tidy -p build {} \; 2>&1 | tee clang-tidy-report.txt || true
         continue-on-error: true
 
       - name: Upload Clang-Tidy Report

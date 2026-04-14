@@ -60,12 +60,12 @@ flowchart LR
 
 | File | Role |
 | --- | --- |
-| `ATProtoPDS/Sources/App/CappuccinoUI/main.j` | UI entrypoint |
-| `ATProtoPDS/Sources/App/CappuccinoUI/AppController.j` | Window shell and top-level tabs |
-| `ATProtoPDS/Sources/App/CappuccinoUI/ExplorerController.j` | Explore UI state, tables, renderers |
-| `ATProtoPDS/Sources/App/CappuccinoUI/UIAPIClient.j` | HTTP client wrappers for backend routes |
-| `ATProtoPDS/Sources/App/CappuccinoUI/CappuccinoUIHandler.m` | Serves `/ui` assets |
-| `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m` | Route registration and UI defaults |
+| `Garazyk/Sources/App/CappuccinoUI/main.j` | UI entrypoint |
+| `Garazyk/Sources/App/CappuccinoUI/AppController.j` | Window shell and top-level tabs |
+| `Garazyk/Sources/App/CappuccinoUI/ExplorerController.j` | Explore UI state, tables, renderers |
+| `Garazyk/Sources/App/CappuccinoUI/UIAPIClient.j` | HTTP client wrappers for backend routes |
+| `Garazyk/Sources/App/CappuccinoUI/CappuccinoUIHandler.m` | Serves `/ui` assets |
+| `Garazyk/Sources/Network/PDSHttpServerBuilder.m` | Route registration and UI defaults |
 | `scripts/build_cappuccino_ui.sh` | Canonical UI build script |
 
 ## Objective-J And Cappuccino Crash Course
@@ -243,7 +243,7 @@ When reading or writing Objective-J in this repo, use this checklist:
 
 ### Cappuccino API Map For This Repo
 
-The official API index is large. For September's UI, start with the Foundation and AppKit classes that appear repeatedly in `ATProtoPDS/Sources/App/CappuccinoUI/`.
+The official API index is large. For September's UI, start with the Foundation and AppKit classes that appear repeatedly in `Garazyk/Sources/App/CappuccinoUI/`.
 
 | Area | Primary APIs | Why they matter here |
 | --- | --- | --- |

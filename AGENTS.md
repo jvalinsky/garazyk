@@ -13,7 +13,7 @@ For detailed information, see the steering files in `.kiro/steering/`:
 
 1. **Always use out-of-source builds** - Never run `cmake` in repo root
 2. **Use XcodeGen on macOS** - Run `xcodegen generate` before building
-3. **Test runner registration** - Add new test classes to `testClasses` array in `ATProtoPDS/Tests/test_main.m`
+3. **Test runner registration** - Add new test classes to `testClasses` array in `Garazyk/Tests/test_main.m`
 
 ## Quality Gates (Pre-Push)
 

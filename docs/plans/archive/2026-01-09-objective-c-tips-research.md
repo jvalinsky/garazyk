@@ -58,7 +58,7 @@ We will split the research into 4 independent domains to cover the breadth of th
 **Output:** A markdown section "Foundation Patterns".
 
 ## Resources to Browse
-- **Internal Codebase:** `ATProtoPDS/Sources` (Check conventions in `Auth/`, `Database/`, `Network/`).
+- **Internal Codebase:** `Garazyk/Sources` (Check conventions in `Auth/`, `Database/`, `Network/`).
 - **Existing Docs:** `docs/objectivec_networking.md`.
 - **External:** Apple Developer Documentation, NSHipster, Objc.io (via web search/fetch).
 

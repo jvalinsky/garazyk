@@ -11,7 +11,7 @@ export const version = '1.0.0';
  * Main entry point for CLI usage
  */
 export function main() {
-  console.log('ATProtoPDS Documentation Tooling');
+  console.log('Garazyk Documentation Tooling');
   console.log(`Version: ${version}`);
   console.log('\nAvailable commands:');
   console.log('  npm run migrate  - Consolidate documentation');

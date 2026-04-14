@@ -48,7 +48,7 @@ The CAR format is implemented with three main classes:
 @end
 ```
 
-**Source:** `ATProtoPDS/Sources/Repository/CAR.m` (lines 1-100, 200-250, 300-350)
+**Source:** `Garazyk/Sources/Repository/CAR.m` (lines 1-100, 200-250, 300-350)
 
 ## Creating CAR Files
 
@@ -80,7 +80,7 @@ if (success) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Repository/CAR.m` (lines 300-350, 380-420)
+**Source:** `Garazyk/Sources/Repository/CAR.m` (lines 300-350, 380-420)
 
 ## Reading CAR Files
 
@@ -109,7 +109,7 @@ for (CARBlock *block in reader.blocks) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Repository/CAR.m` (lines 150-200, 250-300)
+**Source:** `Garazyk/Sources/Repository/CAR.m` (lines 150-200, 250-300)
 
 ## Streaming CAR
 
@@ -135,7 +135,7 @@ for (CARBlock *block in reader.blocks) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Repository/CAR.m` (lines 150-200)
+**Source:** `Garazyk/Sources/Repository/CAR.m` (lines 150-200)
 
 ## Repository Export
 
@@ -165,7 +165,7 @@ response.body = carData;
 [response setHeaderValue:@"application/vnd.ipld.car" forName:@"Content-Type"];
 ```
 
-**Source:** `ATProtoPDS/Sources/Repository/CAR.m` (lines 300-350, 380-420)
+**Source:** `Garazyk/Sources/Repository/CAR.m` (lines 300-350, 380-420)
 
 ## Repository Import
 
@@ -212,7 +212,7 @@ if (!success) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Repository/CAR.m` (lines 150-200, 250-300)
+**Source:** `Garazyk/Sources/Repository/CAR.m` (lines 150-200, 250-300)
 
 ## Best Practices
 

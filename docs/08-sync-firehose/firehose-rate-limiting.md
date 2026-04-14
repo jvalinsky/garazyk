@@ -218,7 +218,7 @@ Limit the amount of buffered data per connection:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/WebSocketConnection.m` (lines 280-300)
+**Source:** `Garazyk/Sources/Sync/WebSocketConnection.m` (lines 280-300)
 
 ## Backpressure Strategies
 

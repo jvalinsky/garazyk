@@ -10,10 +10,10 @@ This document describes the security architecture, threat model, and mitigation 
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| Handler | `ATProtoPDS/Sources/Auth/OAuth2Handler.m` | Request validation, CSRF, PKCE enforcement |
-| Core | `ATProtoPDS/Sources/Auth/OAuth2.m` | DPoP verification, token lifecycle |
-| Replay Cache | `ATProtoPDS/Sources/Auth/PDSReplayCache.m` | JTI replay protection |
-| Nonce Manager | `ATProtoPDS/Sources/Auth/PDSNonceManager.m` | DPoP nonce issuance/validation |
+| Handler | `Garazyk/Sources/Auth/OAuth2Handler.m` | Request validation, CSRF, PKCE enforcement |
+| Core | `Garazyk/Sources/Auth/OAuth2.m` | DPoP verification, token lifecycle |
+| Replay Cache | `Garazyk/Sources/Auth/PDSReplayCache.m` | JTI replay protection |
+| Nonce Manager | `Garazyk/Sources/Auth/PDSNonceManager.m` | DPoP nonce issuance/validation |
 
 ## Threat Model
 

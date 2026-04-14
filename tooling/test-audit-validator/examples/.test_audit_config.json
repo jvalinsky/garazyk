@@ -1,0 +1,16 @@
+{
+    "root_directory": "Garazyk/Tests",
+    "cache_path": ".test_audit_cache.db",
+    "output_format": "markdown",
+    "output_file": "",
+    "quiet": false,
+    "incremental": true,
+    "fail_on": "critical",
+    "max_file_size": 1048576,
+    "file_timeout": 30,
+    "workers": 4,
+    "domains": [],
+    "severities": [],
+    "test_types": [],
+    "test_classes": []
+}

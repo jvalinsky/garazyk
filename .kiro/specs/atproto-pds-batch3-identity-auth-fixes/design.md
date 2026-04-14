@@ -200,7 +200,7 @@ _For any_ token storage or validation operation, the fixed code SHALL continue t
 
 **Issue A1: Synthetic DID Documents**
 
-**File**: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**File**: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 **Function**: `resolveDid` (lines 200-231)
 
@@ -225,7 +225,7 @@ _For any_ token storage or validation operation, the fixed code SHALL continue t
 
 **Issue B1: UUID Refresh Tokens**
 
-**File**: `ATProtoPDS/Sources/App/Services/PDSAccountService.m`
+**File**: `Garazyk/Sources/App/Services/PDSAccountService.m`
 
 **Function**: `createAccountForEmail:password:handle:did:error:` (line 167)
 

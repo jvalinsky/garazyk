@@ -94,7 +94,7 @@ def main():
     args = parser.parse_args()
 
     registry_path = os.path.join(
-        args.repo_root, "ATProtoPDS", "Sources", "Network", "XrpcMethodRegistry.m"
+        args.repo_root, "Garazyk", "Sources", "Network", "XrpcMethodRegistry.m"
     )
 
     if not os.path.exists(registry_path):

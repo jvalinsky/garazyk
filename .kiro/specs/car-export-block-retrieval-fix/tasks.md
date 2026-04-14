@@ -15,7 +15,7 @@ Update the `prepareRepoExportForDid` method signature to include an output param
 - [x] Update method declaration in header file if needed
 
 ### Files Modified
-- `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m` (method signature and implementation)
+- `Garazyk/Sources/App/Services/PDSRepositoryService.m` (method signature and implementation)
 
 ---
 
@@ -34,7 +34,7 @@ Modify `buildRepoWriterForDid` to receive and use the materialized blocks dictio
 - [x] Maintain existing error handling behavior
 
 ### Files Modified
-- `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m` (buildRepoWriterForDid method)
+- `Garazyk/Sources/App/Services/PDSRepositoryService.m` (buildRepoWriterForDid method)
 
 ---
 
@@ -53,7 +53,7 @@ Modify `writeRepoContents` to receive and use the materialized blocks dictionary
 - [x] Maintain existing error handling and file writing behavior
 
 ### Files Modified
-- `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m` (writeRepoContents method)
+- `Garazyk/Sources/App/Services/PDSRepositoryService.m` (writeRepoContents method)
 
 ---
 
@@ -73,7 +73,7 @@ Modify `repoContentsChunkProducer` to capture and use the materialized blocks di
 - [x] Maintain existing streaming behavior
 
 ### Files Modified
-- `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m` (repoContentsChunkProducer method)
+- `Garazyk/Sources/App/Services/PDSRepositoryService.m` (repoContentsChunkProducer method)
 
 ---
 
@@ -133,7 +133,7 @@ Add verification logging to help debug future block storage/retrieval issues.
 - [ ] Use appropriate log levels (DEBUG for verbose, INFO for summary)
 
 ### Files to Modify
-- `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m`
+- `Garazyk/Sources/App/Services/PDSRepositoryService.m`
 
 ---
 
@@ -163,7 +163,7 @@ Executed 3 tests, with 0 failures (0 unexpected) in 4.434 (4.435) seconds
 ```
 
 ### Files Modified
-- `ATProtoPDS/Tests/Services/CoverageGapTests.m`
+- `Garazyk/Tests/Services/CoverageGapTests.m`
 
 ### Final Test Suite Results
 ```

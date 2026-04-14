@@ -8,8 +8,8 @@ title: Codebase Map
 
 September is easiest to understand when you stop thinking about it as one monolith and start reading it as a set of collaborating subsystems. The project has four contributor surfaces:
 
-- Runtime code in `ATProtoPDS/Sources/`
-- Tests in `ATProtoPDS/Tests/`
+- Runtime code in `Garazyk/Sources/`
+- Tests in `Garazyk/Tests/`
 - Deployment assets in `docker/`
 - The canonical docs site in `docs/`
 
@@ -37,11 +37,11 @@ If you are onboarding to the codebase, read in this order:
 
 1. [Overview](./overview) for the architectural vocabulary.
 2. [Request Lifecycle](./request-lifecycle) to understand the end-to-end path.
-3. `ATProtoPDS/Sources/App/PDSConfiguration.{h,m}` to learn what can be configured.
-4. `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m` to see what the server actually exposes.
-5. `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` to see how protocol methods are wired.
+3. `Garazyk/Sources/App/PDSConfiguration.{h,m}` to learn what can be configured.
+4. `Garazyk/Sources/Network/PDSHttpServerBuilder.m` to see what the server actually exposes.
+5. `Garazyk/Sources/Network/XrpcMethodRegistry.m` to see how protocol methods are wired.
 6. One service path you care about, usually `PDSAccountService` or `PDSRecordService`.
-7. The matching test area in `ATProtoPDS/Tests/`.
+7. The matching test area in `Garazyk/Tests/`.
 
 That sequence gives you the system boundary, the routing surface, then one domain slice with tests.
 

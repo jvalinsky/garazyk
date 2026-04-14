@@ -10,8 +10,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 1. Extract XrpcAuthHelper module
   - [x] 1.1 Create XrpcAuthHelper class with authentication methods
-    - Create ATProtoPDS/Sources/Network/XrpcAuthHelper.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcAuthHelper.m with implementation
+    - Create Garazyk/Sources/Network/XrpcAuthHelper.h with interface
+    - Create Garazyk/Sources/Network/XrpcAuthHelper.m with implementation
     - Implement extractDIDFromAuthHeader (3 method signatures)
     - Implement authorizeAdminRequest method
     - Move JWT verification logic from XrpcMethodRegistry
@@ -58,8 +58,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 2. Extract XrpcIdentityHelper module
   - [x] 2.1 Create XrpcIdentityHelper class with resolution methods
-    - Create ATProtoPDS/Sources/Network/XrpcIdentityHelper.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcIdentityHelper.m with implementation
+    - Create Garazyk/Sources/Network/XrpcIdentityHelper.h with interface
+    - Create Garazyk/Sources/Network/XrpcIdentityHelper.m with implementation
     - Implement resolveHandleToDid method
     - Implement resolveAccountIdentifierToDid method
     - Implement resolveDid method
@@ -98,8 +98,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 3. Extract XrpcErrorHelper module
   - [x] 3.1 Create XrpcErrorHelper class with error construction methods
-    - Create ATProtoPDS/Sources/Network/XrpcErrorHelper.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcErrorHelper.m with implementation
+    - Create Garazyk/Sources/Network/XrpcErrorHelper.h with interface
+    - Create Garazyk/Sources/Network/XrpcErrorHelper.m with implementation
     - Implement setAuthenticationError (401)
     - Implement setAuthorizationError (403)
     - Implement setValidationError (400)
@@ -136,8 +136,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 5. Extract XrpcServerMethods domain module
   - [x] 5.1 Create XrpcServerMethods class
-    - Create ATProtoPDS/Sources/Network/XrpcServerMethods.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcServerMethods.m with implementation
+    - Create Garazyk/Sources/Network/XrpcServerMethods.h with interface
+    - Create Garazyk/Sources/Network/XrpcServerMethods.m with implementation
     - Define registerWithDispatcher class method with all service parameters
     - _Requirements: 4.1_
   
@@ -175,8 +175,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 6. Extract XrpcRepoMethods domain module
   - [x] 6.1 Create XrpcRepoMethods class
-    - Create ATProtoPDS/Sources/Network/XrpcRepoMethods.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcRepoMethods.m with implementation
+    - Create Garazyk/Sources/Network/XrpcRepoMethods.h with interface
+    - Create Garazyk/Sources/Network/XrpcRepoMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 5.1_
   
@@ -207,8 +207,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [ ] 7. Extract XrpcSyncMethods domain module
   - [x] 7.1 Create XrpcSyncMethods class
-    - Create ATProtoPDS/Sources/Network/XrpcSyncMethods.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcSyncMethods.m with implementation
+    - Create Garazyk/Sources/Network/XrpcSyncMethods.h with interface
+    - Create Garazyk/Sources/Network/XrpcSyncMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 6.1_
   
@@ -243,8 +243,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 9. Extract XrpcIdentityMethods domain module
   - [x] 9.1 Create XrpcIdentityMethods class
-    - Create ATProtoPDS/Sources/Network/XrpcIdentityMethods.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcIdentityMethods.m with implementation
+    - Create Garazyk/Sources/Network/XrpcIdentityMethods.h with interface
+    - Create Garazyk/Sources/Network/XrpcIdentityMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 7.1_
   
@@ -276,8 +276,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 10. Extract XrpcAdminMethods domain module
   - [x] 10.1 Create XrpcAdminMethods class
-    - Create ATProtoPDS/Sources/Network/XrpcAdminMethods.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcAdminMethods.m with implementation
+    - Create Garazyk/Sources/Network/XrpcAdminMethods.h with interface
+    - Create Garazyk/Sources/Network/XrpcAdminMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 8.1_
   
@@ -311,8 +311,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 11. Extract XrpcLabelMethods domain module
   - [x] 11.1 Create XrpcLabelMethods class
-    - Create ATProtoPDS/Sources/Network/XrpcLabelMethods.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcLabelMethods.m with implementation
+    - Create Garazyk/Sources/Network/XrpcLabelMethods.h with interface
+    - Create Garazyk/Sources/Network/XrpcLabelMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 9.1_
   
@@ -343,8 +343,8 @@ The refactoring preserves exact behavioral equivalence - all 1012 existing tests
 
 - [x] 12. Extract XrpcAppBskyMethods domain module
   - [x] 12.1 Create XrpcAppBskyMethods class
-    - Create ATProtoPDS/Sources/Network/XrpcAppBskyMethods.h with interface
-    - Create ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m with implementation
+    - Create Garazyk/Sources/Network/XrpcAppBskyMethods.h with interface
+    - Create Garazyk/Sources/Network/XrpcAppBskyMethods.m with implementation
     - Define registerWithDispatcher class method
     - _Requirements: 10.1_
   

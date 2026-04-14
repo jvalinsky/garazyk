@@ -99,7 +99,7 @@
 - [ ] 3. Fix for Batch 1 Trivial Bugs
 
   - [ ] 3.1 Implement sync.getHead CID encoding fix
-    - File: `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m`
+    - File: `Garazyk/Sources/App/Services/PDSRepositoryService.m`
     - Function: `getRepoRoot` (lines 103-122)
     - Remove block data fetch (lines 117-119)
     - Change `rootData = blockData;` to `rootData = rootCidBytes;`
@@ -110,7 +110,7 @@
     - _Requirements: 2.1, 2.2, 3.1, 3.2_
 
   - [ ] 3.2 Implement fprintf debug pollution removal
-    - File: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+    - File: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
     - Function: `resolveDid` helper (lines 185-230)
     - Remove fprintf statements at lines 186, 189, 191, 195
     - Function: `registerComAtprotoIdentityResolveDid` handler (line 5669)
@@ -123,7 +123,7 @@
     - _Requirements: 2.3, 2.4, 2.5, 3.3, 3.4, 3.7_
 
   - [ ] 3.3 Implement placeholder verification key removal
-    - File: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+    - File: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
     - Function: `resolveDid` helper (lines 217-224)
     - Remove entire `@"verificationMethod": @[...]` entry from DID document dictionary
     - Keep all other fields: @context, id, alsoKnownAs, service

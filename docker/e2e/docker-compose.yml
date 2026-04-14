@@ -14,7 +14,14 @@ services:
       - TZ=UTC
     volumes:
       - plc_data:/var/lib/plc
-    command: ["plc", "replica", "--port", "2580"]
+    entrypoint: ["/usr/local/bin/campagnola"]
+    command:
+      - "serve"
+      - "--replica"
+      - "--port"
+      - "2580"
+      - "--database"
+      - "/var/lib/plc/plc.db"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2580/xrpc/_health"]
       interval: 5s
@@ -69,15 +76,22 @@ services:
       - "2584:2584"
     volumes:
       - relay_data:/var/lib/relay
-      - ./relay-config.json:/var/lib/relay/config.json:ro
     environment:
       - TZ=UTC
-    command: ["relay", "serve", "--config", "/var/lib/relay/config.json"]
+    entrypoint: ["/usr/local/bin/zuk"]
+    command:
+      - "serve"
+      - "--upstream"
+      - "ws://e2e-pds:2583/xrpc/com.atproto.sync.subscribeRepos"
+      - "--port"
+      - "2584"
+      - "--data-dir"
+      - "/var/lib/relay"
     depends_on:
       pds:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2584/xrpc/com.atproto.sync.getHead?repo=did:plc:test"]
+      test: ["CMD", "curl", "-f", "http://localhost:2584/api/relay/health"]
       interval: 5s
       timeout: 3s
       retries: 10

@@ -14,7 +14,7 @@ This appears to be caused by key generation attempts in account creation paths d
 
 ## Background / current state (as of 2026-02-12)
 
-- Keygen happens in `ATProtoPDS/Sources/Database/ActorStore/PDSActorStore+Account.m` (see account insert flow).
+- Keygen happens in `Garazyk/Sources/Database/ActorStore/PDSActorStore+Account.m` (see account insert flow).
 - On non-GNUstep builds, key generation is attempted when `self.useKeychainSigningKey` is enabled.
 - In constrained environments, this can fail and log warnings.
 

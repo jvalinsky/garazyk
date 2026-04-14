@@ -134,7 +134,7 @@ Current `WebSocketFrameParsingTests` calls `handleReceivedData:` directly on a `
 - Binary frame at each length boundary: 0, 125, 126, 127, 65535, 65536 bytes
 - Partial frame delivery (feed `handleReceivedData:` in 1-byte increments)
 
-**File:** `ATProtoPDS/Tests/Sync/WebSocketFrameCharacterizationTests.m`
+**File:** `Garazyk/Tests/Sync/WebSocketFrameCharacterizationTests.m`
 
 ### 0.2 WebSocket heartbeat/state characterization
 
@@ -146,7 +146,7 @@ Current `WebSocketFrameParsingTests` calls `handleReceivedData:` directly on a `
 - Close handshake: close frame sent, 5s timeout elapses, state moves to Closed
 - Double-close is idempotent
 
-**File:** `ATProtoPDS/Tests/Sync/WebSocketStateCharacterizationTests.m`
+**File:** `Garazyk/Tests/Sync/WebSocketStateCharacterizationTests.m`
 
 ### 0.3 HTTP/1.1 connection lifecycle characterization
 
@@ -167,7 +167,7 @@ Current `HttpServerTests` has fake listener/connection infrastructure. Extend it
 - Output queue high-water mark: >10MB queued → oldest responses dropped
 - Unsupported Transfer-Encoding → 501
 
-**File:** `ATProtoPDS/Tests/Network/HttpConnectionCharacterizationTests.m`
+**File:** `Garazyk/Tests/Network/HttpConnectionCharacterizationTests.m`
 
 ### 0.4 Outbound retry/backoff characterization
 
@@ -180,7 +180,7 @@ Current `HttpServerTests` has fake listener/connection infrastructure. Extend it
 - Cache hit: second call for same DID returns cached doc without network request
 - Redirect rejection: HTTP 3xx does not follow (delegate returns nil)
 
-**File:** `ATProtoPDS/Tests/PLC/DIDPLCResolverCharacterizationTests.m`
+**File:** `Garazyk/Tests/PLC/DIDPLCResolverCharacterizationTests.m`
 
 ### 0.5 SSRF characterization
 
@@ -195,7 +195,7 @@ Current `HttpServerTests` has fake listener/connection infrastructure. Extend it
 - IPv6 loopback, ULA, link-local: YES
 - IPv4-mapped IPv6 with private IPv4: YES
 
-**File:** `ATProtoPDS/Tests/Network/SSRFClassificationCharacterizationTests.m`
+**File:** `Garazyk/Tests/Network/SSRFClassificationCharacterizationTests.m`
 
 ### 0.6 Parser Hardening Characterization
 
@@ -208,7 +208,7 @@ Current `HttpServerTests` has fake listener/connection infrastructure. Extend it
 - `CID` varint reader with truncated buffers
 - `RepoCommit` CAR decoder with malformed CBOR maps
 
-**File:** `ATProtoPDS/Tests/Core/ParserHardeningCharacterizationTests.m`
+**File:** `Garazyk/Tests/Core/ParserHardeningCharacterizationTests.m`
 
 ---
 
@@ -216,8 +216,8 @@ Current `HttpServerTests` has fake listener/connection infrastructure. Extend it
 
 ### 1.1 Create `WebSocketCodec` — pure frame parser/serializer
 
-**New file:** `ATProtoPDS/Sources/Sync/WebSocketCodec.h`
-**New file:** `ATProtoPDS/Sources/Sync/WebSocketCodec.m`
+**New file:** `Garazyk/Sources/Sync/WebSocketCodec.h`
+**New file:** `Garazyk/Sources/Sync/WebSocketCodec.m`
 
 #### Interface design
 
@@ -274,8 +274,8 @@ typedef NS_ENUM(NSInteger, WSCodecEventType) {
 
 ### 1.2 Create `WebSocketHeartbeatPolicy` — pure heartbeat state machine
 
-**New file:** `ATProtoPDS/Sources/Sync/WebSocketHeartbeatPolicy.h`
-**New file:** `ATProtoPDS/Sources/Sync/WebSocketHeartbeatPolicy.m`
+**New file:** `Garazyk/Sources/Sync/WebSocketHeartbeatPolicy.h`
+**New file:** `Garazyk/Sources/Sync/WebSocketHeartbeatPolicy.m`
 
 #### Interface design
 
@@ -327,8 +327,8 @@ After 1.1 and 1.2, `WebSocketConnection` becomes:
 
 ### 2.1 Create `Http1Parser` — incremental HTTP/1.1 request parser
 
-**New file:** `ATProtoPDS/Sources/Network/Http1Parser.h`
-**New file:** `ATProtoPDS/Sources/Network/Http1Parser.m`
+**New file:** `Garazyk/Sources/Network/Http1Parser.h`
+**New file:** `Garazyk/Sources/Network/Http1Parser.m`
 
 #### Interface design
 
@@ -404,8 +404,8 @@ typedef NS_ENUM(NSInteger, Http1ParserState) {
 
 ### 2.2 Create `Http1PipelinePolicy` — keep-alive/pipelining decisions
 
-**New file:** `ATProtoPDS/Sources/Network/Http1PipelinePolicy.h`
-**New file:** `ATProtoPDS/Sources/Network/Http1PipelinePolicy.m`
+**New file:** `Garazyk/Sources/Network/Http1PipelinePolicy.h`
+**New file:** `Garazyk/Sources/Network/Http1PipelinePolicy.m`
 
 #### Interface design
 
@@ -438,8 +438,8 @@ typedef NS_ENUM(NSInteger, Http1PipelineAction) {
 
 ### 2.3 Consolidate query parameter parsing and HTTP method mapping
 
-**New file:** `ATProtoPDS/Sources/Network/HttpParsing.h`
-**New file:** `ATProtoPDS/Sources/Network/HttpParsing.m`
+**New file:** `Garazyk/Sources/Network/HttpParsing.h`
+**New file:** `Garazyk/Sources/Network/HttpParsing.m`
 
 ```objc
 @interface HttpParsing : NSObject
@@ -482,8 +482,8 @@ After 2.1–2.3, `HttpServer` becomes:
 
 ### 3.1 Create `HttpRetryPolicy` — I/O-free retry/backoff decisions
 
-**New file:** `ATProtoPDS/Sources/Network/HttpRetryPolicy.h`
-**New file:** `ATProtoPDS/Sources/Network/HttpRetryPolicy.m`
+**New file:** `Garazyk/Sources/Network/HttpRetryPolicy.h`
+**New file:** `Garazyk/Sources/Network/HttpRetryPolicy.m`
 
 #### Interface design
 
@@ -523,8 +523,8 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
 
 ### 3.2 Create `SSRFValidator` — consolidated IP classification
 
-**New file:** `ATProtoPDS/Sources/Network/SSRFValidator.h`
-**New file:** `ATProtoPDS/Sources/Network/SSRFValidator.m`
+**New file:** `Garazyk/Sources/Network/SSRFValidator.h`
+**New file:** `Garazyk/Sources/Network/SSRFValidator.m`
 
 ```objc
 @interface SSRFValidator : NSObject

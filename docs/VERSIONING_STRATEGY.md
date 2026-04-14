@@ -34,7 +34,7 @@ Documentation versions follow the project's semantic versioning (SemVer):
 2. **Before Release** (pre-release checklist):
    - Review all documentation for accuracy
    - Verify all code examples compile and run
-   - Update version numbers in _config.yml
+   - Update version metadata in `docs/.vitepress/config.ts`
    - Test all links and cross-references
    - Update CHANGELOG.md with documentation changes
 
@@ -128,9 +128,9 @@ docs/
 
 ## Version Selection UI
 
-### In Jekyll Site
+### In VitePress Site
 
-Add version selector to _config.yml:
+Add version selector/configuration in `docs/.vitepress/config.ts`:
 
 ```yaml
 versions:
@@ -183,7 +183,7 @@ When documenting breaking changes:
 
 ## Version Metadata
 
-### _config.yml Configuration
+### VitePress Configuration
 
 ```yaml
 # Documentation version
@@ -242,7 +242,7 @@ CI pipeline should verify:
 
 ```bash
 # On release, automatically:
-1. Update _config.yml with new version
+1. Update `docs/.vitepress/config.ts` with the new version metadata
 2. Tag documentation with release version
 3. Deploy to gh-pages
 4. Create archive if major version

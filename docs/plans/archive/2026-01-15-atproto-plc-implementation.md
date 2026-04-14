@@ -17,9 +17,9 @@ title: ATProto PLC Utility Implementation Plan
 ## Task 1: Project Structure & Basic Models
 
 **Files:**
-- Create: `ATProtoPDS/Sources/PLC/PLCOperation.h`
-- Create: `ATProtoPDS/Sources/PLC/PLCOperation.m`
-- Test: `ATProtoPDS/Tests/PLC/PLCOperationTests.m`
+- Create: `Garazyk/Sources/PLC/PLCOperation.h`
+- Create: `Garazyk/Sources/PLC/PLCOperation.m`
+- Test: `Garazyk/Tests/PLC/PLCOperationTests.m`
 
 **Step 1: Define PLCOperation model**
 Implement a model that can parse and serialize PLC operations from JSON/CBOR.
@@ -43,9 +43,9 @@ Implement a model that can parse and serialize PLC operations from JSON/CBOR.
 ### Task 2: PLC Store Interface & Mock Implementation
 
 **Files:**
-- Create: `ATProtoPDS/Sources/PLC/PLCStore.h`
-- Create: `ATProtoPDS/Sources/PLC/PLCMockStore.m`
-- Test: `ATProtoPDS/Tests/PLC/PLCStoreTests.m`
+- Create: `Garazyk/Sources/PLC/PLCStore.h`
+- Create: `Garazyk/Sources/PLC/PLCMockStore.m`
+- Test: `Garazyk/Tests/PLC/PLCStoreTests.m`
 
 **Step 1: Define PLCStore protocol**
 ```objc
@@ -65,9 +65,9 @@ Implement a model that can parse and serialize PLC operations from JSON/CBOR.
 ### Task 3: PLC Auditor (Chain Verification)
 
 **Files:**
-- Create: `ATProtoPDS/Sources/PLC/PLCAuditor.h`
-- Create: `ATProtoPDS/Sources/PLC/PLCAuditor.m`
-- Test: `ATProtoPDS/Tests/PLC/PLCAuditorTests.m`
+- Create: `Garazyk/Sources/PLC/PLCAuditor.h`
+- Create: `Garazyk/Sources/PLC/PLCAuditor.m`
+- Test: `Garazyk/Tests/PLC/PLCAuditorTests.m`
 
 **Step 1: Implement Chain Verification**
 Verify `prev` hashes and signature validity using `Secp256k1`.
@@ -81,10 +81,10 @@ Verify `prev` hashes and signature validity using `Secp256k1`.
 ### Task 4: PLC Server & REST API
 
 **Files:**
-- Create: `ATProtoPDS/Sources/PLC/PLCServer.h`
-- Create: `ATProtoPDS/Sources/PLC/PLCServer.m`
-- Modify: `ATProtoPDS/Sources/Network/HttpServer.m` (if needed for routing)
-- Test: `ATProtoPDS/Tests/PLC/PLCServerTests.m`
+- Create: `Garazyk/Sources/PLC/PLCServer.h`
+- Create: `Garazyk/Sources/PLC/PLCServer.m`
+- Modify: `Garazyk/Sources/Network/HttpServer.m` (if needed for routing)
+- Test: `Garazyk/Tests/PLC/PLCServerTests.m`
 
 **Step 1: Implement GET /:did and POST /:did**
 **Step 2: Write integration test using NSURLSession**
@@ -97,10 +97,10 @@ Verify `prev` hashes and signature validity using `Secp256k1`.
 ### Task 5: Web Dashboard
 
 **Files:**
-- Create: `ATProtoPDS/Sources/PLC/Assets/index.html`
-- Create: `ATProtoPDS/Sources/PLC/Assets/css/style.css`
-- Create: `ATProtoPDS/Sources/PLC/Assets/js/app.js`
-- Modify: `ATProtoPDS/Sources/PLC/PLCServer.m`
+- Create: `Garazyk/Sources/PLC/Assets/index.html`
+- Create: `Garazyk/Sources/PLC/Assets/css/style.css`
+- Create: `Garazyk/Sources/PLC/Assets/js/app.js`
+- Modify: `Garazyk/Sources/PLC/PLCServer.m`
 
 **Step 1: Implement static file serving**
 Add `serveStaticFile:` and `assetsPath` to `PLCServer`.
@@ -116,7 +116,7 @@ Implement `index.html` and supporting assets for a simple DID explorer.
 ### Task 6: Standalone Binary & Build Integration
 
 **Files:**
-- Create: `ATProtoPDS/Sources/PLC/main.m`
+- Create: `Garazyk/Sources/PLC/main.m`
 - Modify: `project.yml`
 - Modify: `CMakeLists.txt`
 

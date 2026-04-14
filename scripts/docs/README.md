@@ -1,6 +1,6 @@
 # Documentation Tooling
 
-This directory contains Node.js-based tooling for managing, validating, and maintaining the ATProtoPDS documentation ecosystem.
+This directory contains Node.js-based tooling for managing, validating, and maintaining the Garazyk documentation ecosystem.
 
 ## Setup
 

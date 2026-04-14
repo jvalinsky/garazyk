@@ -10,7 +10,7 @@ outline: deep
 
 This subguide is the advanced internals track for September's network stack. It
 starts from first principles, but it stays grounded in the real code under
-`ATProtoPDS/Sources/`.
+`Garazyk/Sources/`.
 
 The goal is not to build a toy server next to the repository. The goal is to
 understand how September actually:
@@ -74,14 +74,14 @@ Each part assumes the previous one already established the lower layer.
 
 | Area | Primary files | Why they matter |
 | --- | --- | --- |
-| Platform transport | `ATProtoPDS/Sources/Network/PDSNetworkTransport.h`, `PDSNetworkTransportMac.m`, `PDSNetworkTransportLinux.m` | Own the listener and byte-stream abstraction used by `HttpServer` |
-| HTTP server | `ATProtoPDS/Sources/Network/HttpServer.m` | Owns accepted connections, per-connection state, dispatch limits, and response sending |
-| HTTP parsing | `ATProtoPDS/Sources/Network/Http1Parser.m`, `HttpChunkedBodyParser.m` | Turn raw bytes into a structured `HttpRequest` |
-| Routing | `ATProtoPDS/Sources/Network/HttpRouteTrie.m`, `PDSHttpServerBuilder.m` | Map parsed requests to the correct handler family |
-| HTTP response flow | `ATProtoPDS/Sources/Network/HttpResponse.m`, `Http1PipelinePolicy.m` | Serialize responses, stream files or producer chunks, and keep pipelined requests ordered |
-| WebSocket upgrade | `ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m` | Validates RFC 6455 upgrade headers and emits the `101 Switching Protocols` response |
-| WebSocket runtime | `ATProtoPDS/Sources/Sync/WebSocketConnection.m`, `WebSocketCodec.m`, `WebSocketHeartbeatPolicy.m` | Own state, framing, ping/pong, and outbound backpressure |
-| Firehose handoff | `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` | Attaches upgraded sockets and turns them into `subscribeRepos` subscribers |
+| Platform transport | `Garazyk/Sources/Network/PDSNetworkTransport.h`, `PDSNetworkTransportMac.m`, `PDSNetworkTransportLinux.m` | Own the listener and byte-stream abstraction used by `HttpServer` |
+| HTTP server | `Garazyk/Sources/Network/HttpServer.m` | Owns accepted connections, per-connection state, dispatch limits, and response sending |
+| HTTP parsing | `Garazyk/Sources/Network/Http1Parser.m`, `HttpChunkedBodyParser.m` | Turn raw bytes into a structured `HttpRequest` |
+| Routing | `Garazyk/Sources/Network/HttpRouteTrie.m`, `PDSHttpServerBuilder.m` | Map parsed requests to the correct handler family |
+| HTTP response flow | `Garazyk/Sources/Network/HttpResponse.m`, `Http1PipelinePolicy.m` | Serialize responses, stream files or producer chunks, and keep pipelined requests ordered |
+| WebSocket upgrade | `Garazyk/Sources/Network/WebSocketUpgradeHandler.m` | Validates RFC 6455 upgrade headers and emits the `101 Switching Protocols` response |
+| WebSocket runtime | `Garazyk/Sources/Sync/WebSocketConnection.m`, `WebSocketCodec.m`, `WebSocketHeartbeatPolicy.m` | Own state, framing, ping/pong, and outbound backpressure |
+| Firehose handoff | `Garazyk/Sources/Sync/SubscribeReposHandler.m` | Attaches upgraded sockets and turns them into `subscribeRepos` subscribers |
 
 ## Test map
 
@@ -114,8 +114,8 @@ Use these evidence categories throughout the subguide:
   [`getaddrinfo(3)`](https://man7.org/linux/man-pages/man3/getaddrinfo.3.html),
   [`socket(2)`](https://man7.org/linux/man-pages/man2/socket.2.html), and
   [`fcntl(2)`](https://man7.org/linux/man-pages/man2/fcntl.2.html)
-- **Repo**: current September implementation under `ATProtoPDS/Sources/`
-- **Tests**: executable proof under `ATProtoPDS/Tests/`
+- **Repo**: current September implementation under `Garazyk/Sources/`
+- **Tests**: executable proof under `Garazyk/Tests/`
 
 ## What this guide is not
 

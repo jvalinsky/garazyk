@@ -34,7 +34,7 @@ The VitePress documentation migration project has been successfully completed wi
 
 1. **Property 2: Code Block Preservation** - 80 issues
    - Mostly in archived documentation and planning files
-   - Empty code blocks in MAINTENANCE.md, JEKYLL_ARCHIVE.md
+   - Empty code blocks in MAINTENANCE.md, archive/JEKYLL_ARCHIVE.md
    - Missing language identifiers in archived plans and guides
    - **Impact:** Low - does not affect core documentation (01-12 sections)
 
@@ -106,7 +106,7 @@ The following items are in non-critical areas and can be addressed incrementally
 
 1. **Archived Documentation** (80 code blocks)
    - Fix code blocks in `plans/archive/`
-   - Fix code blocks in `docs-jekyll-backup/`
+   - Fix code blocks in `docs/archive/migration-backup/`
    - Add language identifiers to guides
    - These are historical documents, not user-facing
 
@@ -127,7 +127,7 @@ The following items are in non-critical areas and can be addressed incrementally
 
 The VitePress documentation migration is **production-ready**. The build system is functional, 6 out of 7 critical properties pass validation (86%), and the user experience is significantly improved over the Jekyll implementation.
 
-The remaining 80 code block issues are isolated to archived documentation (plans/archive/, docs-jekyll-backup/) and do not impact the primary user-facing documentation (sections 01-12).
+The remaining 80 code block issues are isolated to archived documentation (plans/archive/, docs/archive/migration-backup/) and do not impact the primary user-facing documentation (sections 01-12).
 
 **Key Achievements:**
 - ✅ VitePress build succeeds (was failing)

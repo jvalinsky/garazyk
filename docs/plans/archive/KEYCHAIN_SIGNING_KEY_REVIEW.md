@@ -10,7 +10,7 @@ title: Keychain Signing Key Implementation Review
 **Branch:** `main`  
 **Commit:** `39608062c9ac081039fed5e9d22cd56ac94421fb`  
 **Worktree:** `/Users/jack/Software/objpds`  
-**File Reviewed:** `ATProtoPDS/Sources/Database/ActorStore/ActorStore.m`
+**File Reviewed:** `Garazyk/Sources/Database/ActorStore/ActorStore.m`
 
 ---
 
@@ -165,9 +165,9 @@ if (self.signingKey) {
 
 | Component | Path |
 |-----------|------|
-| ActorStore implementation | `ATProtoPDS/Sources/Database/ActorStore/ActorStore.m` |
-| ActorStore header | `ATProtoPDS/Sources/Database/ActorStore/ActorStore.h` |
-| Secp256k1 wrapper | `ATProtoPDS/Sources/Auth/Secp256k1.m` |
+| ActorStore implementation | `Garazyk/Sources/Database/ActorStore/ActorStore.m` |
+| ActorStore header | `Garazyk/Sources/Database/ActorStore/ActorStore.h` |
+| Secp256k1 wrapper | `Garazyk/Sources/Auth/Secp256k1.m` |
 | Key generation (GNUstep) | Lines 1071-1092 |
 | Key generation (macOS) | Lines 1093-1150 |
 | Key storage | Lines 1017-1069 |

@@ -82,11 +82,11 @@ If the auth path looks wrong, the bug may be configuration-driven rather than al
 
 The most useful source entry points are:
 
-- `ATProtoPDS/Sources/Auth/JWT.m`
-- `ATProtoPDS/Sources/Auth/OAuth2.m`
-- `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
-- `ATProtoPDS/Sources/Auth/DPoPUtil.m`
-- `ATProtoPDS/Sources/AuthCrypto/AuthCryptoDPoP.m`
+- `Garazyk/Sources/Auth/JWT.m`
+- `Garazyk/Sources/Auth/OAuth2.m`
+- `Garazyk/Sources/Auth/OAuth2Handler.m`
+- `Garazyk/Sources/Auth/DPoPUtil.m`
+- `Garazyk/Sources/AuthCrypto/AuthCryptoDPoP.m`
 
 Read them with one question in mind:
 
@@ -111,11 +111,11 @@ This is also the point where an apparently correct JWT implementation can still 
 
 Auth has one of the strongest test surfaces in the repo. Start with:
 
-- `ATProtoPDS/Tests/Auth/JWTTests.m`
-- `ATProtoPDS/Tests/Auth/OAuth2Tests.m`
-- `ATProtoPDS/Tests/Auth/OAuthDPoPTests.m`
-- `ATProtoPDS/Tests/Auth/OAuthIntegrationTests.m`
-- `ATProtoPDS/Tests/Security/JWTSecurityTests.m`
+- `Garazyk/Tests/Auth/JWTTests.m`
+- `Garazyk/Tests/Auth/OAuth2Tests.m`
+- `Garazyk/Tests/Auth/OAuthDPoPTests.m`
+- `Garazyk/Tests/Auth/OAuthIntegrationTests.m`
+- `Garazyk/Tests/Security/JWTSecurityTests.m`
 
 These tests are a better contributor guide than old tutorial-sized code blocks because they show what the project is actually protecting today.
 

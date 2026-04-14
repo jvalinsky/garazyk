@@ -71,7 +71,7 @@ The HandleResolver validates that resolved IP addresses are public by blocking t
 
 ## Implementation
 
-The SSRF protection is implemented in `ATProtoPDS/Sources/Identity/HandleResolver.m`:
+The SSRF protection is implemented in `Garazyk/Sources/Identity/HandleResolver.m`:
 
 ```objective-c
 - (BOOL)validateHandleResolvesToPublicIP:(NSString *)handle error:(NSError **)error {
@@ -84,7 +84,7 @@ The `skipSSRFCheck` property allows disabling SSRF checks for testing purposes o
 
 ## Test Coverage
 
-Tests are located in `ATProtoPDS/Tests/Identity/HandleResolverSSRFTests.m` with coverage for:
+Tests are located in `Garazyk/Tests/Identity/HandleResolverSSRFTests.m` with coverage for:
 
 ### Private IPv4 Detection
 - Class A (`10.x.x.x`)

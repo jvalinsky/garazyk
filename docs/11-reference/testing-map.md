@@ -12,7 +12,7 @@ This page turns the raw test catalog into a contributor workflow.
 
 ## How the Test Tree Is Organized
 
-`ATProtoPDS/Tests/` mirrors the runtime areas closely enough that the fastest way to find tests is often to match directory names.
+`Garazyk/Tests/` mirrors the runtime areas closely enough that the fastest way to find tests is often to match directory names.
 
 | Test area | Covers |
 | --- | --- |
@@ -46,7 +46,7 @@ For the detailed per-class index, use the deep reference under [`docs/tests/`](.
 
 ### Register new test classes
 
-This repository has an explicit test runner registration requirement. If you add a new test class, it must be added to `testClasses` in `ATProtoPDS/Tests/test_main.m`.
+This repository has an explicit test runner registration requirement. If you add a new test class, it must be added to `testClasses` in `Garazyk/Tests/test_main.m`.
 
 If you forget, the test may compile and still never run.
 

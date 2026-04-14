@@ -44,8 +44,8 @@ This plan focuses on verification and completing edge cases.
 **Goal:** Verify RFC 9449 (DPoP) and OAuth 2.0 spec compliance
 
 **Files:**
-- Test: `ATProtoPDS/Tests/Auth/OAuthConformanceTests.m`
-- Implementation: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
+- Test: `Garazyk/Tests/Auth/OAuthConformanceTests.m`
+- Implementation: `Garazyk/Sources/Auth/OAuth2Handler.m`
 
 **Steps:**
 1. Run conformance tests:
@@ -64,8 +64,8 @@ This plan focuses on verification and completing edge cases.
 **Goal:** Verify complete nonce lifecycle
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5146-5264`
-- Manager: `ATProtoPDS/Sources/Auth/PDSNonceManager.m`
+- Implementation: `Garazyk/Sources/Network/XrpcMethodRegistry.m:5146-5264`
+- Manager: `Garazyk/Sources/Auth/PDSNonceManager.m`
 
 **Steps:**
 1. Review `extractDIDFromAuthHeader:` method for nonce validation
@@ -84,8 +84,8 @@ This plan focuses on verification and completing edge cases.
 **Goal:** Ensure DPoP proof cannot be replayed
 
 **Files:**
-- Test: Create `ATProtoPDS/Tests/Auth/DPoPReplayProtectionTests.m`
-- Implementation: `ATProtoPDS/Sources/Auth/DPoPUtil.m`
+- Test: Create `Garazyk/Tests/Auth/DPoPReplayProtectionTests.m`
+- Implementation: `Garazyk/Sources/Auth/DPoPUtil.m`
 
 **Steps:**
 1. Create new test file for replay protection:
@@ -114,7 +114,7 @@ This plan focuses on verification and completing edge cases.
 
 **References:**
 - RFC 9449 Section 7: DPoP Proof Lifecycle
-- Replay cache: `ATProtoPDS/Sources/Auth/PDSReplayCache.m`
+- Replay cache: `Garazyk/Sources/Auth/PDSReplayCache.m`
 
 ---
 
@@ -123,8 +123,8 @@ This plan focuses on verification and completing edge cases.
 **Goal:** Ensure refresh token rotation per OAuth 2.0 spec
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:304-348`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2PreservationTests.m` (Property 2.2)
+- Implementation: `Garazyk/Sources/App/Services/PDSAccountService.m:304-348`
+- Test: `Garazyk/Tests/Auth/OAuth2PreservationTests.m` (Property 2.2)
 
 **Steps:**
 1. Run preservation tests:
@@ -205,12 +205,12 @@ This plan focuses on verification and completing edge cases.
 
 ## Dependencies
 
-- `ATProtoPDS/Sources/Auth/OAuth2Handler.m` - OAuth flow
-- `ATProtoPDS/Sources/Auth/DPoPUtil.m` - DPoP proofs
-- `ATProtoPDS/Sources/Auth/PDSNonceManager.m` - Nonce management
-- `ATProtoPDS/Sources/Auth/PDSReplayCache.m` - Replay protection
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` - Auth extraction
-- `ATProtoPDS/Sources/App/Services/PDSAccountService.m` - Token management
+- `Garazyk/Sources/Auth/OAuth2Handler.m` - OAuth flow
+- `Garazyk/Sources/Auth/DPoPUtil.m` - DPoP proofs
+- `Garazyk/Sources/Auth/PDSNonceManager.m` - Nonce management
+- `Garazyk/Sources/Auth/PDSReplayCache.m` - Replay protection
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m` - Auth extraction
+- `Garazyk/Sources/App/Services/PDSAccountService.m` - Token management
 
 ---
 

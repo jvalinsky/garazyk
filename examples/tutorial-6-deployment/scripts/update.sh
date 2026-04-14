@@ -108,7 +108,7 @@ verify_update() {
     echo "Verifying update..."
     
     # Get version
-    VERSION=$(docker exec nspds kaszlak --version 2>&1 || echo "unknown")
+    VERSION=$(docker exec nspds kaszlak version 2>&1 || echo "unknown")
     echo "  Version: $VERSION"
     
     # Test endpoint

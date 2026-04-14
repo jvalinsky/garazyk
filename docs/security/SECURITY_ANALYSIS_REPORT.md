@@ -52,7 +52,7 @@ title: Security Analysis Report - ATProto PDS
 ## High Priority Issues
 
 ### 1. Deprecated API Usage (HIGH)
-**File:** `ATProtoPDS/Sources/App/PDSController.m:284`
+**File:** `Garazyk/Sources/App/PDSController.m:284`
 **Issue:** Use of deprecated `NSURLConnection sendSynchronousRequest:` (macOS 10.3-10.11)
 **Impact:** API removed in modern macOS, may cause runtime failures
 **Resolution:** Replace with `NSURLSession dataTaskWithRequest:completionHandler:`
@@ -65,7 +65,7 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 ---
 
 ### 2. Missing Nullability Annotations (HIGH)
-**File:** `ATProtoPDS/Sources/Auth/Session.h:331`
+**File:** `Garazyk/Sources/Auth/Session.h:331`
 **Issue:** Double pointer parameters lack nullability specifiers
 **Impact:** Compiler cannot enforce null checks, potential null pointer dereference
 
@@ -86,33 +86,33 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 ## Medium Priority Issues
 
 ### 3. Code Duplication - CBOR Parser (MEDIUM)
-**File:** `ATProtoPDS/Sources/Repository/CBOR.m`
+**File:** `Garazyk/Sources/Repository/CBOR.m`
 **Lines:** 377, 403, 469, 498, 556, 605, 662, 713
 **Issue:** Multiple `bugprone-branch-clone` warnings - switch statements with identical branches
 **Impact:** Maintenance burden, potential for bugs if branches should differ
 
 ### 4. Incomplete Method Implementations (MEDIUM)
 **Files:**
-- `ATProtoPDS/Sources/Auth/DPoPUtil.m:7` - `createWithMethod:uri:nonce:error:` not implemented
-- `ATProtoPDS/Sources/Auth/Session.m:177` - `createSessionForDID:handle:scope:dpopJWK:error:` not implemented
-- `ATProtoPDS/Sources/Database/PDSDatabase.m:1083` - `getRecordsForDid:collection:error:` not implemented
-- `ATProtoPDS/Sources/Repository/MSTPersistence.m:7` - Multiple methods not implemented
+- `Garazyk/Sources/Auth/DPoPUtil.m:7` - `createWithMethod:uri:nonce:error:` not implemented
+- `Garazyk/Sources/Auth/Session.m:177` - `createSessionForDID:handle:scope:dpopJWK:error:` not implemented
+- `Garazyk/Sources/Database/PDSDatabase.m:1083` - `getRecordsForDid:collection:error:` not implemented
+- `Garazyk/Sources/Repository/MSTPersistence.m:7` - Multiple methods not implemented
 
 **Impact:** These methods are declared in headers but may not be called, or are stubs
 
 ### 5. Type Mismatch in Auth Handler (MEDIUM)
-**File:** `ATProtoPDS/Sources/Admin/PDSAdminHandler.m:42`
+**File:** `Garazyk/Sources/Admin/PDSAdminHandler.m:42`
 **Issue:** Passing `nil` to `isAuthenticatedWithRequest:` which requires non-null
 ```objc
 ![auth isAuthenticatedWithRequest:nil]
 ```
 
 ### 6. Property Type Mismatch (MEDIUM)
-**File:** `ATProtoPDS/Sources/Admin/AdminMiddleware.m:10`
+**File:** `Garazyk/Sources/Admin/AdminMiddleware.m:10`
 **Issue:** Property `adminDids` declared as `NSMutableArray<NSString *>` but setter expects `NSArray<NSString *>`
 
 ### 7. Missing Interface Declaration (MEDIUM)
-**File:** `ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m:292`
+**File:** `Garazyk/Sources/CLI/PDSCLIAccountCommand.m:292`
 **Issue:** `@implementation PDSCLIAccountCommand : PDSBaseCommand` - class extension syntax issue
 
 ---
@@ -121,18 +121,18 @@ NSData *responseData = [NSURLConnection sendSynchronousRequest:request returning
 
 ### 8. Format String Issues (LOW)
 **Files:**
-- `ATProtoPDS/Sources/CLI/PDSCLIDispatcher.m:50,61,74` - `%s` with `const void *` (should be `%.*s` or cast)
-- `ATProtoPDS/Sources/CLI/PDSCLIInviteCommand.m:202,250` - Format string issues
+- `Garazyk/Sources/CLI/PDSCLIDispatcher.m:50,61,74` - `%s` with `const void *` (should be `%.*s` or cast)
+- `Garazyk/Sources/CLI/PDSCLIInviteCommand.m:202,250` - Format string issues
 
 ### 9. NSMutableString Type Confusion (LOW)
 **Files:**
-- `ATProtoPDS/Sources/Auth/JWT.m:196,197` - Assigning `NSString *` to `NSMutableString *`
-- `ATProtoPDS/Sources/Auth/PKCEUtil.m:56,57` - Same issue
-- `ATProtoPDS/Sources/Auth/DPoPUtil.m:269` - Passing `NSMutableString *` where `NSData *` expected
+- `Garazyk/Sources/Auth/JWT.m:196,197` - Assigning `NSString *` to `NSMutableString *`
+- `Garazyk/Sources/Auth/PKCEUtil.m:56,57` - Same issue
+- `Garazyk/Sources/Auth/DPoPUtil.m:269` - Passing `NSMutableString *` where `NSData *` expected
 
 ### 10. Incomplete Implementations (LOW)
 **Files:**
-- `ATProtoPDS/Sources/Auth/PDSAppleKeyManager.m` - `publicKeyJWK` implementation exists
+- `Garazyk/Sources/Auth/PDSAppleKeyManager.m` - `publicKeyJWK` implementation exists
 - Multiple files with `bugprone-branch-clone` warnings (identical then/else branches)
 
 ---

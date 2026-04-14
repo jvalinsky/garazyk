@@ -41,10 +41,10 @@ That is why a change can compile on both platforms and still be functionally wro
 
 Two concrete examples define most of the boundary:
 
-1. `ATProtoPDS/Sources/Auth/PDSAppleActorKeyManager.m` can use Keychain-backed storage on macOS, but it must fall back when Keychain APIs are unavailable on GNUstep.
-2. `ATProtoPDS/Sources/Identity/HandleResolver.m` documents a GNUstep path that uses `NSURLConnection` on a background queue instead of assuming the macOS networking stack.
+1. `Garazyk/Sources/Auth/PDSAppleActorKeyManager.m` can use Keychain-backed storage on macOS, but it must fall back when Keychain APIs are unavailable on GNUstep.
+2. `Garazyk/Sources/Identity/HandleResolver.m` documents a GNUstep path that uses `NSURLConnection` on a background queue instead of assuming the macOS networking stack.
 
-Add `ATProtoPDS/Sources/AuthCrypto/AuthCryptoJWK.m` and `ATProtoPDS/Sources/Compat/PDSTypes.h` to that picture, and you have the main reason compatibility work needs deliberate review.
+Add `Garazyk/Sources/AuthCrypto/AuthCryptoJWK.m` and `Garazyk/Sources/Compat/PDSTypes.h` to that picture, and you have the main reason compatibility work needs deliberate review.
 
 ## What Contributors Should Verify
 
@@ -57,16 +57,16 @@ Those questions catch most accidental regressions.
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/Compat/PDSTypes.h` and the compat headers for macro and type issues.
+- Start in `Garazyk/Sources/Compat/PDSTypes.h` and the compat headers for macro and type issues.
 - Start in the Apple and OpenSSL key-manager implementations when signing or key loading diverges by platform.
-- Start in `ATProtoPDS/Sources/Identity/HandleResolver.m` when network behavior differs between macOS and GNUstep.
-- Start in `ATProtoPDS/Sources/Database/PDSDatabase.m` when SQLite or Foundation interaction changes by platform.
+- Start in `Garazyk/Sources/Identity/HandleResolver.m` when network behavior differs between macOS and GNUstep.
+- Start in `Garazyk/Sources/Database/PDSDatabase.m` when SQLite or Foundation interaction changes by platform.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/App/PDSApplicationTests.m`
-- `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
-- `ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m`
+- `Garazyk/Tests/App/PDSApplicationTests.m`
+- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
+- `Garazyk/Tests/Database/Integration/DatabaseMigrationTests.m`
 - the Linux/GNUstep CI build and test jobs
 
 ## Appendix

@@ -110,23 +110,23 @@ Before committing new documentation:
 
 1. **Build check:** Ensure documentation builds without errors
    ```bash
-   cd docs && bundle exec jekyll build
-   ```text
+   cd docs && npm run docs:build
+   ```
 
 2. **Code validation:** Run code example validation
    ```bash
-   ./scripts/validate-doc-code-examples.sh
-   ```text
+   ./scripts/docs/validate-doc-code-examples.sh
+   ```
 
 3. **Link validation:** Check all internal links
    ```bash
-   ./scripts/validate-doc-links.sh
-   ```text
+   ./scripts/docs/validate-doc-links.sh
+   ```
 
 4. **Diagram validation:** Validate SVG diagrams (if applicable)
    ```bash
-   ./scripts/validate-doc-diagrams.sh
-   ```text
+   ./scripts/docs/validate-doc-diagrams.sh
+   ```
 
 ## Documentation Standards
 
