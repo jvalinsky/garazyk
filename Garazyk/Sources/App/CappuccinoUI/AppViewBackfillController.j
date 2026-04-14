@@ -73,14 +73,8 @@
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
 
-    var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 900.0, 28.0)];
-    [title setStringValue:@"AppView Backfill"];
-    [title setEditable:NO];
-    [title setBezeled:NO];
-    [title setDrawsBackground:NO];
-    [title setFont:[CPFont boldSystemFontOfSize:20.0]];
-
-    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1040.0, 20.0)];
+    // Note: Title removed - tab already shows "Backfill" in AppView sub-tabs
+    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 1040.0, 20.0)];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -88,18 +82,17 @@
     [_statusLabel setStringValue:@"Loading status..."];
 
     // Connection cards row
-    [self buildMetricCardsInView:_rootView atY:80.0];
+    [self buildMetricCardsInView:_rootView atY:48.0];
 
     // Repo status section
-    [self buildRepoStatusInView:_rootView atY:200.0];
+    [self buildRepoStatusInView:_rootView atY:168.0];
 
     // Ingest lag section
-    [self buildLagSectionInView:_rootView atY:360.0];
+    [self buildLagSectionInView:_rootView atY:328.0];
 
     // Admin controls
-    [self buildAdminControlsInView:_rootView atY:520.0];
+    [self buildAdminControlsInView:_rootView atY:488.0];
 
-    [_rootView addSubview:title];
     [_rootView addSubview:_statusLabel];
 
     // Start auto-refresh
