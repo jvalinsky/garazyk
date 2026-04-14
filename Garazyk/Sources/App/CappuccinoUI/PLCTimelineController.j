@@ -78,7 +78,7 @@
     _scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 96.0, 1040.0, 580.0)];
     [_scrollView setHasHorizontalScroller:NO];
     [_scrollView setHasVerticalScroller:YES];
-    [_scrollView setAutohidesScroller:YES];
+    [_scrollView setAutohidesScrollers:YES];
 
     _timelineView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 100.0)];
     [_scrollView setDocumentView:_timelineView];

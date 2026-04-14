@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 
 @global CPViewFrameDidChangeNotification
+@global CPNotificationCenter
 
 @implementation ResponsiveMixin : CPObject
 {
