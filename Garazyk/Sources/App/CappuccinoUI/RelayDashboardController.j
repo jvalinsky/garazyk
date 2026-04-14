@@ -399,19 +399,19 @@
     [_droppedLabel setStringValue:String(metrics.eventsDropped || 0)];
 
     // Update event stats
-    [_eventsReceivedLabel setStringValue:self.formatNumber(metrics.eventsReceived)];
-    [_eventsValidatedLabel setStringValue:self.formatNumber(metrics.eventsValidated)];
-    [_eventsForwardedLabel setStringValue:self.formatNumber(metrics.eventsForwarded)];
-    [_eventsDroppedLabel setStringValue:self.formatNumber(metrics.eventsDropped)];
+    [_eventsReceivedLabel setStringValue:[self formatNumber:metrics.eventsReceived]];
+    [_eventsValidatedLabel setStringValue:[self formatNumber:metrics.eventsValidated]];
+    [_eventsForwardedLabel setStringValue:[self formatNumber:metrics.eventsForwarded]];
+    [_eventsDroppedLabel setStringValue:[self formatNumber:metrics.eventsDropped]];
 
     // Update validation stats
-    [_mstSuccessLabel setStringValue:@"✓ " + self.formatNumber(metrics.mstValidationSuccess)];
-    [_mstFailureLabel setStringValue:@"✗ " + self.formatNumber(metrics.mstValidationFailure)];
-    [_sigSuccessLabel setStringValue:@"✓ " + self.formatNumber(metrics.signatureValidationSuccess)];
-    [_sigFailureLabel setStringValue:@"✗ " + self.formatNumber(metrics.signatureValidationFailure)];
+    [_mstSuccessLabel setStringValue:@"✓ " + [self formatNumber:metrics.mstValidationSuccess]];
+    [_mstFailureLabel setStringValue:@"✗ " + [self formatNumber:metrics.mstValidationFailure]];
+    [_sigSuccessLabel setStringValue:@"✓ " + [self formatNumber:metrics.signatureValidationSuccess]];
+    [_sigFailureLabel setStringValue:@"✗ " + [self formatNumber:metrics.signatureValidationFailure]];
 
     // Update sequence info
-    [_sequenceLabel setStringValue:self.formatNumber(metrics.currentSequence)];
+    [_sequenceLabel setStringValue:[self formatNumber:metrics.currentSequence]];
     [_reconnectLabel setStringValue:String(metrics.reconnectionCount || 0)];
 }
 

@@ -29,6 +29,18 @@ The UI loads all controllers regardless of service profile, but:
 - Controllers for disabled services are still instantiated and their `rootView` is called
 - This triggers bugs in controllers that won't be used on certain services
 
+## Additional Fixes Applied
+
+### 5. formatNumber called as JavaScript function instead of Objective-J method
+**Problem**: Using `self.formatNumber(...)` instead of `[self formatNumber:...]` - the method was not being found.
+**Files**: `RelayDashboardController.j:402-414`, `AppViewBackfillController.j:481-490`
+**Fix**: Changed all `self.formatNumber(...)` to `[self formatNumber:...]`
+
+### 6. setUsesAlternatingBackgroundColors: and setAlternatingRowBackgroundColors: not available
+**Problem**: These methods don't exist in current Cappuccino version - causes unrecognized selector crash.
+**Files**: `RelayUpstreamsController.j:134-137`, `RelayEventsController.j:169`
+**Fix**: Removed these method calls (alternating colors not supported in current version)
+
 ## Service Profile Configuration
 
 | Service | Profile | Controllers Loaded |

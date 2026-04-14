@@ -2617,6 +2617,50 @@
       "created_at": "2026-04-13T22:30:18.108091-04:00",
       "updated_at": "2026-04-13T22:30:18.108091-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Debug session April 13, 2026:\\n\\nIssues to fix:\\n1. Post creation (app.bsky.feed.post) fails with 500 InternalServerError - unhandled exception in createRecord handler\\n2. Local PLC rejects operations with 400 - PLCAuditor validation failing\\n3. Fix both issues, then create full E2E data:\\n   - Alice: profile, posts, follow, like, repost\\n   - Bob: profile, posts, like\\n   - Carol: profile, post, follow, like, block\\n4. Verify relay sync and AppView timeline\"}"
+    },
+    {
+      "id": 239,
+      "change_id": "dc7a9fad-d40e-4847-8ef6-99d62bd10a15",
+      "node_type": "action",
+      "title": "Adapt PDS controllers for narrow windows and long data",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-14T17:46:05.648643-04:00",
+      "updated_at": "2026-04-14T17:51:11.848548-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Manual-frame controllers like AdminController need responsive layout for narrow viewports and scrolling data tables\"}"
+    },
+    {
+      "id": 240,
+      "change_id": "3e7c41a8-2eef-4a0b-87da-0a55fbedafdc",
+      "node_type": "action",
+      "title": "Fix Relay upstreams row actions to be interactive buttons",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-14T17:46:07.496647-04:00",
+      "updated_at": "2026-04-14T17:51:11.865777-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Connect | Disconnect | Remove at RelayUpstreamsController.j:453 currently renders as inert text, needs to be clickable action buttons\"}"
+    },
+    {
+      "id": 241,
+      "change_id": "86efa00c-53ef-4d68-b2ea-03f4c70aca91",
+      "node_type": "action",
+      "title": "Adapt metric cards for narrow windows",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-14T17:46:07.504826-04:00",
+      "updated_at": "2026-04-14T17:51:11.880736-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75,\"prompt\":\"RelayDashboardController.j:125 and AppViewBackfillController.j:106 use fixed 4-column widths that clip in narrow windows - need responsive breakpoints\"}"
+    },
+    {
+      "id": 242,
+      "change_id": "a1518f79-6d26-407b-b973-35c9c9af8dd8",
+      "node_type": "action",
+      "title": "Expose AppView admin queue/retry/cancel operations in UI",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-14T17:46:09.124599-04:00",
+      "updated_at": "2026-04-14T17:51:11.889418-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75,\"prompt\":\"Backend exposes queue management, retry, cancel, and ingest health but UI currently doesn't surface these capabilities - need AppViewAdminController enhancements\"}"
     }
   ],
   "edges": [
@@ -5270,6 +5314,50 @@
       "weight": 1.0,
       "rationale": "Follow-up to complete E2E demo with working record creation",
       "created_at": "2026-04-13T22:30:20.947026-04:00"
+    },
+    {
+      "id": 242,
+      "from_node_id": 124,
+      "to_node_id": 239,
+      "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
+      "to_change_id": "dc7a9fad-d40e-4847-8ef6-99d62bd10a15",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-14T17:46:11.208989-04:00"
+    },
+    {
+      "id": 243,
+      "from_node_id": 124,
+      "to_node_id": 240,
+      "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
+      "to_change_id": "3e7c41a8-2eef-4a0b-87da-0a55fbedafdc",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-14T17:46:11.227253-04:00"
+    },
+    {
+      "id": 244,
+      "from_node_id": 124,
+      "to_node_id": 241,
+      "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
+      "to_change_id": "86efa00c-53ef-4d68-b2ea-03f4c70aca91",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-14T17:46:11.243939-04:00"
+    },
+    {
+      "id": 245,
+      "from_node_id": 124,
+      "to_node_id": 242,
+      "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
+      "to_change_id": "a1518f79-6d26-407b-b973-35c9c9af8dd8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-14T17:46:11.258362-04:00"
     }
   ],
   "documents": [
