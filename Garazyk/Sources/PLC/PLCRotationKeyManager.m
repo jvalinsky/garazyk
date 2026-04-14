@@ -16,6 +16,12 @@ static NSString *PDSDefaultDataDirectory(void) {
         return envDataDirectory;
     }
 
+    // Also check HOME - commonly set in containers
+    NSString *homeDir = NSProcessInfo.processInfo.environment[@"HOME"];
+    if (homeDir.length > 0) {
+        return homeDir;
+    }
+
 #if defined(__APPLE__)
     NSArray *urls = [[NSFileManager defaultManager]
         URLsForDirectory:NSApplicationSupportDirectory
