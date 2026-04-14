@@ -1,19 +1,19 @@
 [
   {
-    "hash": "b8a696cdb511c37b46ab5681e1a13215052f1042",
-    "short_hash": "b8a696c",
+    "hash": "dac62dded177a5b8bfcfbd8ea7bfdcc581610a81",
+    "short_hash": "dac62dd",
     "author": "Security Bot",
-    "date": "2026-04-14T02:59:13-04:00",
-    "message": "docs(build): align scheme and binary names with current targets",
-    "files_changed": 13
+    "date": "2026-04-14T02:59:18-04:00",
+    "message": "docs(plan): add objective-j service ops phase 2 backlog",
+    "files_changed": 2
   },
   {
-    "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",
-    "short_hash": "2c99414",
+    "hash": "f5de6f70d3e690b128f147ce1f0e40407083608f",
+    "short_hash": "f5de6f7",
     "author": "Security Bot",
-    "date": "2026-04-13T20:09:35-04:00",
-    "message": "feat: Multi-Service Ops UX API parity\n\nPhase 2 (Relay): Added mutation endpoints\n- POST/DELETE /api/relay/upstreams/*\n- POST /api/relay/upstreams/{url}/connect|disconnect\n- POST /api/relay/upstreams/reconnect-all|disconnect-all\n- GET /api/relay/capabilities for UI feature gating\n\nPhase 3 (AppView): Added backfill queue operations\n- GET /admin/backfill/queue (paginated)\n- GET /admin/backfill/repos/{did} (detail)\n- POST /admin/backfill/repos/{did}/retry (retry)\n- POST /admin/backfill/repos/{did}/cancel (cancel)\n- GET /admin/ingest/health (relay connectivity + lag)\n- GET /admin/capabilities\n\nPhase 4 (PLC): Added per-service auth middleware\n- adminSecret config for PLCServer\n- Protected routes: /_admin/capabilities, /_admin/export, /_admin/audit/rebuild\n\nPhase 1 (PDS): Guarded writes pattern for AdminController\n- guardedWriteWithTitle: preflight + risk badge flow\n- showExecutionReceipt: audit ID display\n\nDatabase methods added:\n- getRepoSyncState:, setRepoSyncState: in AppViewDatabase\n- queueWithLimit:cursor:status:, repoDetail:, retryRepo:, cancelRepo: in Orchestrator\n\nIngest engine properties:\n- relayHealth, throughput (for /admin/ingest/health)",
-    "files_changed": 4395
+    "date": "2026-04-13T22:31:33-04:00",
+    "message": "fix(plc): add HOME env fallback for container key storage\n\nIn container environments, PDS_DATA_DIR may not be set but HOME is\ncommonly available. Add fallback to check HOME when PDS_DATA_DIR is not\nconfigured, enabling rotation key storage in container deployments.",
+    "files_changed": 1
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",

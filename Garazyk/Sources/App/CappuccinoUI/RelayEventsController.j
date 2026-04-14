@@ -166,7 +166,7 @@
     [_eventsTable setDataSource:self];
     [_eventsTable setAllowsEmptySelection:YES];
     [_eventsTable setAllowsMultipleSelection:NO];
-    [_eventsTable setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithCalibratedWhite:0.98 alpha:1.0]]];
+    // setAlternatingRowBackgroundColors: not available in current Cappuccino
 
     // Time Column
     var timeColumn = [[CPTableColumn alloc] initWithIdentifier:@"time"];
