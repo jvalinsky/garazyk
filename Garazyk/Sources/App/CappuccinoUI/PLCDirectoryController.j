@@ -130,7 +130,7 @@
     [_didTable setDataSource:self];
     [_didTable setAllowsEmptySelection:YES];
     [_didTable setAllowsMultipleSelection:NO];
-    [_didTable setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithCalibratedWhite:0.98 alpha:1.0]]];
+    // setAlternatingRowBackgroundColors: not available in current Cappuccino
 
     // DID Column
     var didColumn = [[CPTableColumn alloc] initWithIdentifier:@"did"];

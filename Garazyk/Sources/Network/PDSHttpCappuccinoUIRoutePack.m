@@ -31,6 +31,13 @@
   }
   [cappuccinoUIHandler setServiceProfile:serviceProfile];
 
+  // Root serves Objective-J UI
+  [server addRoute:@"GET"
+              path:@"/"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             [cappuccinoUIHandler handleRequest:request response:response];
+           }];
+
   [server addRoute:@"GET"
               path:@"/ui"
            handler:^(HttpRequest *request, HttpResponse *response) {
