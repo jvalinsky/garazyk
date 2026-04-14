@@ -39,7 +39,7 @@ This script enables `MallocStackLogging=1`, which allows the `leaks` tool to pro
 
 For a visual experience, use Xcode Instruments:
 1. Open `ATProtoPDS.xcodeproj`.
-2. Select the `AllTests` or `ATProtoPDS-CLI` scheme.
+2. Select the `AllTests` or `kaszlak` scheme.
 3. Press `Cmd + I` (Product > Profile).
 4. Select the **Leaks** or **Allocations** instrument.
 
