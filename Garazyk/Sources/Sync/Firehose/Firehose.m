@@ -316,11 +316,13 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
 }
 
 - (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection {
+    PDS_LOG_DEBUG(@"Firehose: WebSocket state changed to %d", (int)connection.state);
     if (connection.state == WebSocketConnectionStateConnected) {
         self.isConnected = YES;
 
         for (FirehoseSubscription *subscription in self.subscriptions) {
             dispatch_async(dispatch_get_main_queue(), ^{
+                PDS_LOG_DEBUG(@"Firehose: Notifying subscription delegate of connect");
                 [subscription.delegate firehoseSubscriptionDidConnect:subscription];
             });
         }
