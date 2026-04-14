@@ -68,10 +68,13 @@ services:
     volumes:
       - local_pds_data:/var/lib/atprotopds
       - ./pds-config.json:/var/lib/atprotopds/config.json:ro
+      - /tmp/pds_keys:/var/lib/atprotopds/keys
     environment:
       - TZ=UTC
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
+      - PDS_DATA_DIR=/var/lib/atprotopds
+      - PDS_PLC_KEYS_DIR=/var/lib/atprotopds/keys
     depends_on:
       local-plc:
         condition: service_healthy
