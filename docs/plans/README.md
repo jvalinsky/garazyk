@@ -24,6 +24,7 @@ Active implementation plans and status documents.
 | `2026-04-10-database-query-methods.md` | Phase 5: Database Query Methods - Verification and performance | 2026-04-10 |
 | `2026-04-10-custom-extensions.md` | Phase 6: Custom Extensions - Pinksea namespace (optional) | 2026-04-10 |
 | `2026-04-10-code-quality.md` | Phase 7: Code Quality & Maintenance - TODOs and fallback warnings | 2026-04-10 |
+| `objective-j-ui/phase-2-service-ops-backlog.md` | Objective-J Service Ops UI Phase 2 backlog - ticketized remediation and service split execution plan | 2026-04-14 |
 
 ## Archived Plans
 
