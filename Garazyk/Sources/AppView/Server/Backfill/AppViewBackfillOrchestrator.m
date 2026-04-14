@@ -310,18 +310,70 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
                            cursor:(NSString *)cursor
                            status:(NSString *)status {
     NSMutableArray *entries = [NSMutableArray array];
+    NSInteger boundedLimit = limit > 0 ? limit : 50;
 
-    AppViewRepoSyncStatus syncStatus = AppViewRepoSyncStatusUnknown;
-    if ([status isEqualToString:@"pending"]) syncStatus = AppViewRepoSyncStatusPending;
-    else if ([status isEqualToString:@"processing"]) syncStatus = AppViewRepoSyncStatusProcessing;
-    else if ([status isEqualToString:@"synced"]) syncStatus = AppViewRepoSyncStatusSynced;
-    else if ([status isEqualToString:@"dirty"]) syncStatus = AppViewRepoSyncStatusDirty;
+    NSMutableArray<NSNumber *> *statusFilters = [NSMutableArray array];
+    if (status.length == 0 || [status isEqualToString:@"all"]) {
+        [statusFilters addObject:@(AppViewRepoSyncStatusPending)];
+        [statusFilters addObject:@(AppViewRepoSyncStatusProcessing)];
+        [statusFilters addObject:@(AppViewRepoSyncStatusSynced)];
+        [statusFilters addObject:@(AppViewRepoSyncStatusDirty)];
+    } else if ([status isEqualToString:@"pending"]) {
+        [statusFilters addObject:@(AppViewRepoSyncStatusPending)];
+    } else if ([status isEqualToString:@"processing"]) {
+        [statusFilters addObject:@(AppViewRepoSyncStatusProcessing)];
+    } else if ([status isEqualToString:@"synced"]) {
+        [statusFilters addObject:@(AppViewRepoSyncStatusSynced)];
+    } else if ([status isEqualToString:@"dirty"]) {
+        [statusFilters addObject:@(AppViewRepoSyncStatusDirty)];
+    } else {
+        return @{
+            @"entries": @[],
+            @"total": @0,
+            @"cursor": [NSNull null],
+        };
+    }
 
     NSError *err = nil;
-    NSArray *repos = [_database listRepoSyncStatesWithStatus:syncStatus
-                                                  limit:limit
-                                               cursor:cursor
-                                                 error:&err];
+    NSMutableArray<AppViewRepoSyncState *> *repos = [NSMutableArray array];
+    for (NSNumber *statusNumber in statusFilters) {
+        NSArray<AppViewRepoSyncState *> *batch =
+            [_database loadRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)statusNumber.integerValue
+                                              limit:boundedLimit
+                                              error:&err];
+        if (err) {
+            break;
+        }
+        if (batch.count > 0) {
+            [repos addObjectsFromArray:batch];
+        }
+    }
+
+    if (err) {
+        return @{
+            @"entries": @[],
+            @"total": @0,
+            @"cursor": [NSNull null],
+            @"error": err.localizedDescription ?: @"failed to load queue",
+        };
+    }
+
+    if (cursor.length > 0) {
+        NSIndexSet *toRemove =
+            [repos indexesOfObjectsPassingTest:^BOOL(AppViewRepoSyncState *repo, NSUInteger idx, BOOL *stop) {
+                return [repo.did compare:cursor] != NSOrderedDescending;
+            }];
+        if (toRemove.count > 0) {
+            [repos removeObjectsAtIndexes:toRemove];
+        }
+    }
+
+    [repos sortUsingComparator:^NSComparisonResult(AppViewRepoSyncState *a, AppViewRepoSyncState *b) {
+        return [a.did compare:b.did];
+    }];
+    if (repos.count > boundedLimit) {
+        [repos removeObjectsInRange:NSMakeRange(boundedLimit, repos.count - boundedLimit)];
+    }
 
     for (AppViewRepoSyncState *repo in repos) {
         [entries addObject:@{
@@ -329,13 +381,13 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
             @"status": [self stringFromSyncStatus:repo.status],
             @"last_rev": repo.lastRev ?: @"",
             @"last_backfill_at": repo.lastBackfillAt ? [repo.lastBackfillAt description] : @"",
-            @"retry_count": @(repo.retryCount),
+            @"retry_count": @(repo.errorCount),
             @"last_error": repo.lastError ?: @"",
         }];
     }
 
     NSString *nextCursor = nil;
-    if (repos.count >= limit) {
+    if (repos.count >= boundedLimit) {
         nextCursor = [repos.lastObject did];
     }
 
@@ -358,9 +410,9 @@ rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
         @"status": [self stringFromSyncStatus:repo.status],
         @"last_rev": repo.lastRev ?: @"",
         @"last_backfill_at": repo.lastBackfillAt ? [repo.lastBackfillAt description] : @"",
-        @"retry_count": @(repo.retryCount),
+        @"retry_count": @(repo.errorCount),
         @"last_error": repo.lastError ?: @"",
-        @"created_at": repo.createdAt ? [repo.createdAt description] : @"",
+        @"created_at": @"",
     };
 }
 
