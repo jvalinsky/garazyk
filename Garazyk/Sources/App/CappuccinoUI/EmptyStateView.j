@@ -14,6 +14,7 @@
     CPTextField _iconLabel;
     CPTextField _messageLabel;
     CPButton _actionButton;
+    Function _actionHandler;
 }
 
 // Material icon codes (from MaterialIcons-Regular.ijsmap)
