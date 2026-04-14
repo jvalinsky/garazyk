@@ -61,6 +61,24 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                       headers:(NSDictionary<NSString *, NSString *> *)headers
                                          body:(nullable NSData *)body;
 
+/**
+ * @brief Processes an admin API request and returns response metadata.
+ *
+ * @param method The HTTP method.
+ * @param path The request path.
+ * @param headers HTTP headers.
+ * @param body Optional body.
+ * @param statusCode Output status code when a route is handled.
+ * @param contentType Output content type when a route is handled.
+ * @return Response body string, or nil if the path is not recognized.
+ */
+- (nullable NSString *)handleRequestWithMethod:(PDSHTTPMethod)method
+                                         path:(NSString *)path
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType;
+
 @end
 
 NS_ASSUME_NONNULL_END
