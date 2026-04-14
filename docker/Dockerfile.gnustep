@@ -104,25 +104,27 @@ FROM node:18-slim AS builder-cappuccino-ui
 WORKDIR /src
 
 # Copy only the CappuccinoUI directory for better cache utilization
-COPY ATProtoPDS/Sources/App/CappuccinoUI/package.json \
-    ATProtoPDS/Sources/App/CappuccinoUI/package-lock.json \
-    ./ATProtoPDS/Sources/App/CappuccinoUI/
+COPY Garazyk/Sources/App/CappuccinoUI/package.json \
+    Garazyk/Sources/App/CappuccinoUI/package-lock.json \
+    ./Garazyk/Sources/App/CappuccinoUI/
 
-RUN cd ATProtoPDS/Sources/App/CappuccinoUI && npm ci
+RUN cd Garazyk/Sources/App/CappuccinoUI && npm ci
 
 # Copy the rest of the CappuccinoUI source
-COPY ATProtoPDS/Sources/App/CappuccinoUI/ ./ATProtoPDS/Sources/App/CappuccinoUI/
+COPY Garazyk/Sources/App/CappuccinoUI/ ./Garazyk/Sources/App/CappuccinoUI/
 
-# Generate frameworks and build release (ignore known capp gen theme crash)
-RUN cd ATProtoPDS/Sources/App/CappuccinoUI && \
-    (npx capp gen --frameworks --force . || true) && \
-    npx jake release && \
-    mkdir -p /tmp/cappuccino-runtime && \
-    cp -R Frameworks /tmp/cappuccino-runtime/ && \
-    cp -R Build/Release/CappuccinoUI/Browser.environment /tmp/cappuccino-runtime/ && \
-    cp -R Build/Release/CappuccinoUI/CommonJS.environment /tmp/cappuccino-runtime/ && \
-    cp index.html Info.plist /tmp/cappuccino-runtime/ && \
-    cp Build/CappuccinoUI.build/Release/Browser.environment/Sources/*.j /tmp/cappuccino-runtime/
+# Generate frameworks and build release (ignore errors - fallback to source)
+# The Objective-J runtime will compile .j files on-the-fly in the browser
+RUN cd Garazyk/Sources/App/CappuccinoUI && \
+    (npx capp gen --frameworks --force . 2>/dev/null || true) && \
+    (npx jake release 2>/dev/null || true)
+
+# Copy all CappuccinoUI source files to runtime (Objective-J compiles on-the-fly in browser)
+RUN mkdir -p /tmp/cappuccino-runtime && \
+    cp -R Garazyk/Sources/App/CappuccinoUI/Frameworks /tmp/cappuccino-runtime/ 2>/dev/null || true && \
+    cp Garazyk/Sources/App/CappuccinoUI/*.j /tmp/cappuccino-runtime/ && \
+    cp Garazyk/Sources/App/CappuccinoUI/Info.plist /tmp/cappuccino-runtime/ 2>/dev/null || true && \
+    cp Garazyk/Sources/App/CappuccinoUI/index.html /tmp/cappuccino-runtime/
 
 # ---------------------------------------------------------------------------
 # Stage 3: Build ATProtoPDS
@@ -148,6 +150,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     pkg-config \
     zlib1g-dev \
+    autoconf \
+    automake \
+    libtool \
     && rm -rf /var/lib/apt/lists/*
 
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100 && \
@@ -170,22 +175,22 @@ WORKDIR /src
 # Copy the project source
 COPY . .
 
-# Verify secp256k1 submodule is present
-RUN test -f secp256k1/CMakeLists.txt || \
-    { echo "ERROR: secp256k1 submodule not checked out. Run: git submodule update --init"; exit 1; }
+# Verify secp256k1 submodule is present (it must be checked out before building)
+RUN test -f vendor/secp256k1/CMakeLists.txt || \
+    { echo "ERROR: vendor/secp256k1 submodule not checked out. Run: git submodule update --init"; exit 1; }
 
-# Build with CMake (Release, no tests, no fuzzers)
-# Do NOT pass -DCMAKE_C_COMPILER or -DCMAKE_OBJC_COMPILER here;
-# CMakeLists.txt handles compiler detection via find_program to avoid
-# an infinite configure loop caused by cache invalidation.
+# Build with CMake (Release) - build only the binaries we need for the stack.
+# secp256k1 is built as a CMake subproject via add_subdirectory(secp256k1),
+# which follows the secp256k1 -> vendor/secp256k1 symlink.
 RUN rm -rf build && mkdir build && cd build && \
     cmake -S /src -B . \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS=OFF \
     -DBUILD_FUZZERS=OFF \
+    -DBUILD_SECP256K1=ON \
     -DGNUSTEP_PREFIX=/usr/GNUstep/Local \
     -DCMAKE_OBJC_FLAGS="-I/usr/GNUstep/Local/Library/Headers" && \
-    cmake --build . --parallel $(nproc)
+    cmake --build . --target kaszlak --target campagnola --target zuk --target syrena --parallel $(nproc)
 
 # ---------------------------------------------------------------------------
 # Stage 3: Minimal runtime image
@@ -193,13 +198,16 @@ RUN rm -rf build && mkdir build && cd build && \
 FROM ubuntu:22.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
     libcurl4 \
     libffi8 \
     libicu70 \
     libqrencode4 \
+    libreadline8 \
     libsqlite3-0 \
     libssl3 \
     libxml2 \
@@ -207,8 +215,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tzdata \
     zlib1g \
     && rm -rf /var/lib/apt/lists/*
-
-ENV TZ=UTC
 
 # Copy GNUstep runtime libraries
 COPY --from=builder-gnustep /usr/GNUstep /usr/GNUstep
@@ -225,20 +231,12 @@ COPY --from=builder /src/build/bin/campagnola /usr/local/bin/campagnola
 COPY --from=builder /src/build/bin/zuk /usr/local/bin/zuk
 COPY --from=builder /src/build/bin/syrena /usr/local/bin/syrena
 
-# Copy web assets (HTML/CSS/JS for the PDS UI)
-COPY --from=builder /src/ATProtoPDS/Sources/App/Explore/Assets /usr/share/atprotopds/assets/Explore
-COPY --from=builder /src/ATProtoPDS/Sources/App/MSTViewer/Assets /usr/share/atprotopds/assets/MSTViewer
-COPY --from=builder /src/ATProtoPDS/Sources/App/OAuthDemo/Assets /usr/share/atprotopds/assets/OAuthDemo
-COPY --from=builder /src/ATProtoPDS/Sources/App/AdminUI/Assets /usr/share/atprotopds/assets/AdminUI
-COPY --from=builder /src/ATProtoPDS/Sources/Auth/Assets /usr/share/atprotopds/assets/Auth
-COPY --from=builder /src/ATProtoPDS/Sources/PLC/Assets /usr/share/atprotopds/assets/PLC
-COPY --from=builder /src/ATProtoPDS/Resources/lexicons /usr/share/atprotopds/lexicons
-
-# Copy Cappuccino UI runtime assets.
-# Docker must include Objective-J source entrypoint files (main.j + app *.j),
-# otherwise Objective-J bootstrap fails in-browser when loading dependencies.
+# Copy Cappuccino UI (Objective-J) - the main UI for PDS
 COPY --from=builder-cappuccino-ui /tmp/cappuccino-runtime/ \
     /usr/share/atprotopds/assets/CappuccinoUI/
+
+# Copy lexicons
+COPY --from=builder /src/Garazyk/Resources/lexicons /usr/share/atprotopds/lexicons
 
 # Create data directory
 RUN mkdir -p /var/lib/atprotopds

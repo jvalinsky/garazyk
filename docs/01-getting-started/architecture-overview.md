@@ -81,7 +81,7 @@ The PDS is built as a layered architecture with clear separation of concerns:
 
 ### 1. HTTP Server Layer
 
-**Location:** `ATProtoPDS/Sources/Network/HttpServer.m`
+**Location:** `Garazyk/Sources/Network/HttpServer.m`
 
 The HTTP server is a custom implementation that:
 - Listens on port 2583 (configurable)
@@ -98,7 +98,7 @@ The HTTP server is a custom implementation that:
 
 ### 2. XRPC Dispatcher Layer
 
-**Location:** `ATProtoPDS/Sources/Network/XrpcDispatcher.m`
+**Location:** `Garazyk/Sources/Network/XrpcDispatcher.m`
 
 The XRPC dispatcher:
 - Routes incoming RPC calls by NSID (e.g., `com.atproto.repo.createRecord`)
@@ -116,7 +116,7 @@ The XRPC dispatcher:
 
 ### 3. Method Registry Layer
 
-**Location:** `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**Location:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 The method registry:
 - Maintains a mapping of NSIDs to handler functions
@@ -135,7 +135,7 @@ The method registry:
 
 ### 4. Service Layer
 
-**Location:** `ATProtoPDS/Sources/Services/`
+**Location:** `Garazyk/Sources/Services/`
 
 The service layer implements business logic:
 
@@ -150,7 +150,7 @@ Each service is accessed through the `PDSApplication` facade.
 
 ### 5. Database Layer
 
-**Location:** `ATProtoPDS/Sources/Database/`
+**Location:** `Garazyk/Sources/Database/`
 
 The database layer uses SQLite with two types of databases:
 

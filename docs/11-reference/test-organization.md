@@ -32,7 +32,7 @@ The repository uses a custom test runner. Runtime method discovery is part of th
 
 The practical rule contributors must remember is:
 
-> New test classes must be added to `ATProtoPDS/Tests/test_main.m`.
+> New test classes must be added to `Garazyk/Tests/test_main.m`.
 
 If you forget that explicit registration step, a test can compile and still never run. That makes this one of the highest-leverage bits of project-specific knowledge in the suite.
 
@@ -64,7 +64,7 @@ When you add coverage, check all of these:
 1. the class lives in the directory that matches the behavior it protects,
 2. the class name and method names explain the behavior under test,
 3. any fixtures live near the existing fixture conventions,
-4. the class is registered in `ATProtoPDS/Tests/test_main.m`,
+4. the class is registered in `Garazyk/Tests/test_main.m`,
 5. you ran the smallest useful suite before widening out.
 
 That list matters more than any individual code snippet because it is what keeps new coverage visible and maintainable.

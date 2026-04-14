@@ -21,7 +21,7 @@ Defense in depth means implementing multiple layers of security controls so that
 - IP-based filtering (optional)
 
 ```objc
-// From ATProtoPDS/Sources/Network/HttpServer.m
+// From Garazyk/Sources/Network/HttpServer.m
 - (void)configureSecurityMiddleware {
     // TLS configuration
     [self requireTLS:YES];
@@ -44,7 +44,7 @@ Defense in depth means implementing multiple layers of security controls so that
 - Scope-based authorization
 
 ```objc
-// From ATProtoPDS/Sources/Network/XrpcAuthHelper.m
+// From Garazyk/Sources/Network/XrpcAuthHelper.m
 - (BOOL)verifyRequest:(XrpcRequest *)request error:(NSError **)error {
     // Layer 2a: Verify JWT signature
     if (![self verifyJWTSignature:request.token error:error]) {
@@ -93,7 +93,7 @@ Defense in depth means implementing multiple layers of security controls so that
 - Magic number verification
 
 ```objc
-// From ATProtoPDS/Sources/Blob/BlobService.m
+// From Garazyk/Sources/Blob/BlobService.m
 - (BOOL)validateBlobUpload:(NSData *)data 
                   mimeType:(NSString *)mimeType 
                        cid:(NSString *)cid 
@@ -145,7 +145,7 @@ Defense in depth means implementing multiple layers of security controls so that
 - Transaction integrity
 
 ```objc
-// From ATProtoPDS/Sources/Services/PDSRecordService.m
+// From Garazyk/Sources/Services/PDSRecordService.m
 - (BOOL)deleteRecord:(NSString *)did 
           collection:(NSString *)collection 
               rkey:(NSString *)rkey 
@@ -194,7 +194,7 @@ Defense in depth means implementing multiple layers of security controls so that
 - Secure deletion
 
 ```objc
-// From ATProtoPDS/Sources/Auth/KeychainManager.m
+// From Garazyk/Sources/Auth/KeychainManager.m
 - (BOOL)storePrivateKey:(NSData *)keyData 
              identifier:(NSString *)identifier 
                   error:(NSError **)error {
@@ -348,7 +348,7 @@ Configure systems with secure settings by default, requiring explicit action to 
 **Secure configuration defaults:**
 
 ```objc
-// From ATProtoPDS/Sources/App/PDSConfiguration.m
+// From Garazyk/Sources/App/PDSConfiguration.m
 - (instancetype)initWithDefaults {
     self = [super init];
     if (self) {

@@ -55,7 +55,7 @@ if (request.method == HttpMethodOPTIONS) {
 }
 ```
 
-**File:** `ATProtoPDS/Sources/Network/XrpcHandler.m`
+**File:** `Garazyk/Sources/Network/XrpcHandler.m`
 
 ---
 
@@ -93,7 +93,7 @@ ON CONFLICT(ip_address) DO UPDATE SET
 
 Also increased defaults from 100 req/60s to 3000 req/300s.
 
-**File:** `ATProtoPDS/Sources/Network/RateLimiter.m`
+**File:** `Garazyk/Sources/Network/RateLimiter.m`
 
 ---
 
@@ -113,7 +113,7 @@ combination with the proxy issue (Issue 6) created `*, *`.
 headers in `XrpcHandler.m` for all non-OPTIONS responses (single authoritative
 source).
 
-**File:** `ATProtoPDS/Sources/Network/HttpResponse.m`
+**File:** `Garazyk/Sources/Network/HttpResponse.m`
 
 ---
 
@@ -171,7 +171,7 @@ if (expectsBody && !state.isChunkedEncoding &&
     contentLengthHeader.length == 0) {
 ```
 
-**File:** `ATProtoPDS/Sources/Network/HttpServer.m`
+**File:** `Garazyk/Sources/Network/HttpServer.m`
 
 ---
 
@@ -205,7 +205,7 @@ blocked = [NSSet setWithArray:@[
 ]];
 ```
 
-**File:** `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**File:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 ---
 
@@ -240,4 +240,4 @@ blocked = [NSSet setWithArray:@[
   docker restart nspds
   ```text
 - **Nginx config**: The `non_idempotent` fix is only on the VM, not in the repo's
-  `deploy/nginx.conf`. Update the repo config to match if deploying elsewhere.
+  `ops/deploy/nginx.conf`. Update the repo config to match if deploying elsewhere.

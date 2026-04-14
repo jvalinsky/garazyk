@@ -147,7 +147,7 @@ curl -X [POST/GET/DELETE] \
 
 ### Handler Location
 
-**File:** `ATProtoPDS/Sources/Network/[XrpcDomainMethods].m`  
+**File:** `Garazyk/Sources/Network/[XrpcDomainMethods].m`  
 **Method:** `handle[MethodName]:response:`
 
 ### Handler Implementation
@@ -335,7 +335,7 @@ curl -X [POST/GET/DELETE] \
 
 ### Unit Test Location
 
-**File:** `ATProtoPDS/Tests/Network/[XrpcDomainMethods]Tests.m`  
+**File:** `Garazyk/Tests/Network/[XrpcDomainMethods]Tests.m`  
 **Test Method:** `test[MethodName]`
 
 ### Example Test
@@ -394,4 +394,4 @@ curl -X [POST/GET/DELETE] \
 **Version:** [Version number when this was added/updated]  
 **Last Updated:** [Date]  
 **Lexicon:** [Link to lexicon definition if available]  
-**Source Files:** `ATProtoPDS/Sources/Network/[XrpcDomainMethods].h`, `ATProtoPDS/Sources/Network/[XrpcDomainMethods].m`
+**Source Files:** `Garazyk/Sources/Network/[XrpcDomainMethods].h`, `Garazyk/Sources/Network/[XrpcDomainMethods].m`

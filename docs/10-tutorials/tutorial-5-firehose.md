@@ -63,11 +63,11 @@ Keeping those boundaries clear is what makes firehose bugs debuggable.
 
 Start with these files:
 
-- `ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m`
-- `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
-- `ATProtoPDS/Sources/Sync/WebSocketServer.m`
-- `ATProtoPDS/Sources/Sync/WebSocketConnection.m`
-- `ATProtoPDS/Sources/Sync/WebSocketCodec.m`
+- `Garazyk/Sources/Network/WebSocketUpgradeHandler.m`
+- `Garazyk/Sources/Sync/SubscribeReposHandler.m`
+- `Garazyk/Sources/Sync/WebSocketServer.m`
+- `Garazyk/Sources/Sync/WebSocketConnection.m`
+- `Garazyk/Sources/Sync/WebSocketCodec.m`
 
 Those files tell you which parts of the stack are transport mechanics and which parts are firehose-specific behavior.
 
@@ -97,12 +97,12 @@ These are system-level questions, and the tests are the fastest way to understan
 
 Start with:
 
-- `ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m`
-- `ATProtoPDS/Tests/Sync/FirehoseTests.m`
-- `ATProtoPDS/Tests/Sync/FirehoseConformanceTests.m`
-- `ATProtoPDS/Tests/Sync/WebSocketConnectionTests.m`
-- `ATProtoPDS/Tests/Network/WebSocketUpgradeHandlerTests.m`
-- `ATProtoPDS/Tests/Integration/FirehoseIntegrationTests.m`
+- `Garazyk/Tests/Sync/SubscribeReposHandlerTests.m`
+- `Garazyk/Tests/Sync/FirehoseTests.m`
+- `Garazyk/Tests/Sync/FirehoseConformanceTests.m`
+- `Garazyk/Tests/Sync/WebSocketConnectionTests.m`
+- `Garazyk/Tests/Network/WebSocketUpgradeHandlerTests.m`
+- `Garazyk/Tests/Integration/FirehoseIntegrationTests.m`
 
 Together they explain:
 

@@ -43,7 +43,7 @@ That means a record write bug can be correct at the endpoint level and still fai
 
 ## Walkthrough: A Normal Record Write
 
-The clearest implementation path is the `putRecord` and `applyWrites` logic in `ATProtoPDS/Sources/App/Services/PDSRecordService.m`.
+The clearest implementation path is the `putRecord` and `applyWrites` logic in `Garazyk/Sources/App/Services/PDSRecordService.m`.
 
 1. The handler normalizes the write request and checks required fields such as repo, collection, and record value.
 2. The service validates the record shape and writes policy before persistence.
@@ -60,21 +60,21 @@ If one of those stages is missing, the repo can look correct in a narrow read pa
 
 The write path and the firehose path are coupled by stored commit material, not by an in-memory callback chain.
 
-`ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` later loads the signed commit block, builds CAR bytes, persists the event sequence, and broadcasts the result to WebSocket consumers. That means "record write succeeded but firehose looks wrong" often points to commit storage or event persistence rather than the request handler.
+`Garazyk/Sources/Sync/SubscribeReposHandler.m` later loads the signed commit block, builds CAR bytes, persists the event sequence, and broadcasts the result to WebSocket consumers. That means "record write succeeded but firehose looks wrong" often points to commit storage or event persistence rather than the request handler.
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/App/Services/PDSRecordService.m` for input normalization, write validation, and commit metadata generation.
-- Start in `ATProtoPDS/Sources/Database/ActorStore/ActorStore.m` for transaction ordering, block persistence, and repo-root updates.
-- Start in `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m` when the failure shows up in export, import, or repository-level read behavior.
-- Start in `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` when commit state looks correct locally but the sync surface is wrong.
+- Start in `Garazyk/Sources/App/Services/PDSRecordService.m` for input normalization, write validation, and commit metadata generation.
+- Start in `Garazyk/Sources/Database/ActorStore/ActorStore.m` for transaction ordering, block persistence, and repo-root updates.
+- Start in `Garazyk/Sources/App/Services/PDSRepositoryService.m` when the failure shows up in export, import, or repository-level read behavior.
+- Start in `Garazyk/Sources/Sync/SubscribeReposHandler.m` when commit state looks correct locally but the sync surface is wrong.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSRepositoryServiceTests.m`
-- `ATProtoPDS/Tests/Integration/CommitChainTests.m`
-- `ATProtoPDS/Tests/Sync/SubscribeReposHandlerTests.m`
+- `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
+- `Garazyk/Tests/App/Services/PDSRepositoryServiceTests.m`
+- `Garazyk/Tests/Integration/CommitChainTests.m`
+- `Garazyk/Tests/Sync/SubscribeReposHandlerTests.m`
 
 ## Appendix
 

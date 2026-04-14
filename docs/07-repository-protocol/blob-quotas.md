@@ -81,13 +81,13 @@ Environment overrides:
 ## Where These Limits Live
 
 - Request-size rejection happens in
-  `ATProtoPDS/Sources/Network/XrpcRepoMethods.m`.
+  `Garazyk/Sources/Network/XrpcRepoMethods.m`.
 - MIME validation and blob metadata writes live in
-  `ATProtoPDS/Sources/Blob/MimeTypeValidator.m` and
-  `ATProtoPDS/Sources/Blob/BlobStorage.m`.
+  `Garazyk/Sources/Blob/MimeTypeValidator.m` and
+  `Garazyk/Sources/Blob/BlobStorage.m`.
 - Blob rate-limit configuration is loaded in
-  `ATProtoPDS/Sources/App/PDSConfiguration.m` and enforced in
-  `ATProtoPDS/Sources/Network/RateLimiter.m`.
+  `Garazyk/Sources/App/PDSConfiguration.m` and enforced in
+  `Garazyk/Sources/Network/RateLimiter.m`.
 
 This split matters operationally. The transport layer protects the server from
 oversized requests, while the storage layer remains the last line of defense for
@@ -102,7 +102,7 @@ balance.
 The current observability surfaces are:
 - Prometheus metrics `pds_blob_count` and `pds_blob_storage_bytes`
 - The admin metrics handler in
-  `ATProtoPDS/Sources/Admin/PDSAdminHandler.m`
+  `Garazyk/Sources/Admin/PDSAdminHandler.m`
 - Explicit blob listing and deletion flows through the blob service and XRPC
   methods
 

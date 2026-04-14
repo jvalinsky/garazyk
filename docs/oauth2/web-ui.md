@@ -12,8 +12,8 @@ The OAuth2 consent screen provides a two-step authorization flow with Classic Ma
 
 | File | Purpose |
 |------|---------|
-| `ATProtoPDS/Sources/Auth/Assets/authorize.html` | Consent screen HTML/JS template |
-| `ATProtoPDS/Sources/Auth/OAuth2Handler.m` | Server-side handler (`serveAuthorizePage`) |
+| `Garazyk/Sources/Auth/Assets/authorize.html` | Consent screen HTML/JS template |
+| `Garazyk/Sources/Auth/OAuth2Handler.m` | Server-side handler (`serveAuthorizePage`) |
 
 ## UI Flow Diagram
 
@@ -141,7 +141,7 @@ The OAuth2 consent screen provides a two-step authorization flow with Classic Ma
 
 ```
 
-ATProtoPDS/Sources/Auth/Assets/authorize.html
+Garazyk/Sources/Auth/Assets/authorize.html
 ```
 
 ### Template Placeholders

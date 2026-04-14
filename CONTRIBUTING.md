@@ -54,7 +54,7 @@ For contributor-facing docs, prefer the numbered pages under `docs/` first. The 
 
 ## Testing Rules That Commonly Get Missed
 
-- New test classes must be added to `ATProtoPDS/Tests/test_main.m`.
+- New test classes must be added to `Garazyk/Tests/test_main.m`.
 - Route or service changes should start with targeted tests, not an immediate full-suite run.
 - If you change fuzzers or fuzzing-sensitive code, rebuild the relevant fuzz targets.
 

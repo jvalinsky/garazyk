@@ -51,7 +51,7 @@ END FUNCTION
 
 #### Root Cause Analysis
 
-**Location**: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`, lines 5536-5540
+**Location**: `Garazyk/Sources/Network/XrpcMethodRegistry.m`, lines 5536-5540
 
 ```objective-c
 NSString *requestedNonce = [request headerForKey:@"DPoP-Nonce"];
@@ -130,8 +130,8 @@ END FUNCTION
 #### Root Cause Analysis
 
 **Locations**:
-- `ATProtoPDS/Sources/Network/HttpRouter.m`, lines 277-374 (4 route registrations)
-- `ATProtoPDS/Sources/Auth/OAuth2Handler.m`, lines 509-520 (2 route registrations)
+- `Garazyk/Sources/Network/HttpRouter.m`, lines 277-374 (4 route registrations)
+- `Garazyk/Sources/Auth/OAuth2Handler.m`, lines 509-520 (2 route registrations)
 
 **Problem**: Both components register handlers for the same OAuth metadata paths:
 - `GET /.well-known/oauth-authorization-server`
@@ -290,7 +290,7 @@ _For any_ OAuth metadata request, the fixed system SHALL return metadata with th
 
 #### Changes Required
 
-**File**: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**File**: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 **Function**: `extractDIDFromAuthHeader:jwtMinter:adminController:request:response:` (lines 5483-5641)
 
@@ -340,7 +340,7 @@ _For any_ OAuth metadata request, the fixed system SHALL return metadata with th
 
 #### Changes Required
 
-**File**: `ATProtoPDS/Sources/Network/HttpRouter.m`
+**File**: `Garazyk/Sources/Network/HttpRouter.m`
 
 **Method**: `setupRoutes` (lines 277-374)
 

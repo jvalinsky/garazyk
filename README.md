@@ -74,7 +74,7 @@ Keeping those roles separate is the main documentation and debugging habit this 
 
 ## Repository Layout
 
-The runtime code lives under `ATProtoPDS/Sources/`. The most important areas for new contributors are:
+The runtime code lives under `Garazyk/Sources/`. The most important areas for new contributors are:
 
 - `App/` for application composition, configuration, and browser tooling
 - `Network/` for HTTP routing, XRPC dispatch, and route registration
@@ -84,7 +84,7 @@ The runtime code lives under `ATProtoPDS/Sources/`. The most important areas for
 - `Sync/` and `Federation/` for firehose and cross-server behavior
 - `CLI/` for the `kaszlak` command-line surface
 
-Tests live under `ATProtoPDS/Tests/` and broadly mirror the runtime structure. New test classes must be added to `ATProtoPDS/Tests/test_main.m` or they will compile without running.
+Tests live under `Garazyk/Tests/` and broadly mirror the runtime structure. New test classes must be added to `Garazyk/Tests/test_main.m` or they will compile without running.
 
 ## Build and Test Workflow
 

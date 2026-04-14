@@ -16,7 +16,7 @@ The PDS Objective-C Implementation Guide documentation has been successfully bui
 
 ### 1. Built Site Verification ✅
 
-**Location:** `docs/_site/`  
+**Location:** `docs/.vitepress/dist/`  
 **Total Pages:** 75 HTML files  
 **Total Size:** ~2.5 MB  
 **Build Status:** ✅ Complete
@@ -44,20 +44,19 @@ The PDS Objective-C Implementation Guide documentation has been successfully bui
 
 ### 2. Build System Verification ✅
 
-**Build Script:** `scripts/build-docs.sh`  
+**Build Script:** `scripts/build/build-docs.sh`  
 **Status:** ✅ Functional
 
 **Capabilities:**
-- [x] Primary builder: Jekyll
-- [x] Fallback builder: Python markdown
-- [x] Dependency management: Bundler
+- [x] Primary builder: VitePress
+- [x] Dependency management: npm
 - [x] Error handling: Proper exit codes
 - [x] Output validation: Directory checks
 
 **Build Configuration:**
-- [x] `docs/_config.yml` present and valid
-- [x] `docs/Gemfile` with Jekyll dependencies
-- [x] Build output directory: `docs/_site/`
+- [x] `docs/.vitepress/config.ts` present and valid
+- [x] `docs/package.json` with VitePress dependencies
+- [x] Build output directory: `docs/.vitepress/dist/`
 - [x] Build process: Automated in CI/CD
 
 ### 3. GitHub Actions Workflow Verification ✅
@@ -71,9 +70,9 @@ The PDS Objective-C Implementation Guide documentation has been successfully bui
 ✅ Trigger: Pull requests to main/develop
 ✅ Trigger: Manual workflow dispatch
 ✅ Build job: Ubuntu latest
-✅ Ruby version: 3.2
-✅ Bundler cache: Enabled
-✅ Build command: jekyll build
+✅ Node.js version: 20
+✅ npm cache: Enabled
+✅ Build command: npm run docs:build
 ✅ Artifact upload: 7-day retention
 ✅ Deployment job: Conditional on main branch
 ✅ Deployment method: GitHub Pages
@@ -83,7 +82,7 @@ The PDS Objective-C Implementation Guide documentation has been successfully bui
 
 **Workflow Steps:**
 1. [x] Checkout repository
-2. [x] Setup Ruby environment
+2. [x] Setup Node.js environment
 3. [x] Build documentation
 4. [x] Validate HTML output
 5. [x] Upload artifact
@@ -218,10 +217,10 @@ https://<username>.github.io/<repository>/
 
 ### Local Access (Development)
 ```bash
-./scripts/build-docs.sh
+./scripts/build/build-docs.sh
 cd docs
-jekyll serve
-# Access at http://localhost:4000
+npm run docs:preview
+# Access at http://localhost:4173
 ```
 
 ## Deployment Process Summary
@@ -233,9 +232,9 @@ jekyll serve
    ↓
 2. GitHub Actions workflow triggers
    ↓
-3. Ruby environment setup
+3. Node.js environment setup
    ↓
-4. Jekyll builds documentation
+4. VitePress builds documentation
    ↓
 5. HTML validation
    ↓

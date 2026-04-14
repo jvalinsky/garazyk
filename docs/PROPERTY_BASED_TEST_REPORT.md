@@ -34,7 +34,7 @@ Generated: 2026-03-04T02:14:10.411Z
 - Code block missing language identifier in TUTORIAL_COMPILATION_ISSUES.md:27
 - Empty code block in MAINTENANCE.md:330
 - Empty code block in MAINTENANCE.md:333
-- Empty code block in JEKYLL_ARCHIVE.md:204
+- Empty code block in archive/JEKYLL_ARCHIVE.md:204
 - Code block missing language identifier in plans/sans-io-refactor.md:529
 - Code block missing language identifier in plans/2026-02-17-pluggable-email-resend.md:86
 - Code block missing language identifier in plans/2026-02-17-pluggable-email-resend.md:254
@@ -140,7 +140,7 @@ Generated: 2026-03-04T02:14:10.411Z
     "issue": "empty"
   },
   {
-    "file": "/Users/jack/Software/garazyk/docs/JEKYLL_ARCHIVE.md",
+    "file": "/Users/jack/Software/garazyk/docs/archive/JEKYLL_ARCHIVE.md",
     "line": 204,
     "issue": "empty"
   },

@@ -41,8 +41,8 @@ If the wrong handler is firing, or a WebSocket endpoint behaves differently from
 
 The main files worth knowing are:
 
-- `ATProtoPDS/Sources/Network/HttpServer.m`
-- `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`
+- `Garazyk/Sources/Network/HttpServer.m`
+- `Garazyk/Sources/Network/PDSHttpServerBuilder.m`
 
 Read them together. The server owns connection behavior, while the builder owns which routes exist and in what order they are installed.
 

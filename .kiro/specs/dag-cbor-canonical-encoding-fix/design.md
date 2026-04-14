@@ -11,8 +11,8 @@ The fix involves replacing the incorrect string-based sorting in `ATProtoCBORSer
 - **Bug_Condition (C)**: The condition that triggers the bug - when a record contains map keys that sort differently under string comparison vs CBOR-byte comparison
 - **Property (P)**: The desired behavior - CIDs computed by the PDS match CIDs computed by external clients using canonical DAG-CBOR encoding
 - **Preservation**: All existing CBOR encoding/decoding functionality that must remain unchanged
-- **ATProtoCBORSerialization**: The class in `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m` that converts JSON objects to CBOR data for CID computation
-- **CBOREncoder**: The class in `ATProtoPDS/Sources/Repository/CBOR.m` that has correct canonical key sorting logic
+- **ATProtoCBORSerialization**: The class in `Garazyk/Sources/Core/ATProtoCBORSerialization.m` that converts JSON objects to CBOR data for CID computation
+- **CBOREncoder**: The class in `Garazyk/Sources/Repository/CBOR.m` that has correct canonical key sorting logic
 - **Canonical DAG-CBOR**: CBOR encoding with deterministic map key ordering (by encoded byte length, then lexicographic)
 - **CID**: Content Identifier - a cryptographic hash of canonically-encoded content
 
@@ -124,7 +124,7 @@ _For any_ input that is NOT a dictionary/map (arrays, strings, numbers, booleans
 
 Assuming our root cause analysis is correct:
 
-**File**: `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m`
+**File**: `Garazyk/Sources/Core/ATProtoCBORSerialization.m`
 
 **Function**: `+ (CBORValue *)cborValueFromObject:(id)obj`
 

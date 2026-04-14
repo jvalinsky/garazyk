@@ -117,7 +117,7 @@ Shows inter-module dependencies:
 
 ## Key Components
 
-### PDSController (`ATProtoPDS/Sources/App/PDSController.h/m`)
+### PDSController (`Garazyk/Sources/App/PDSController.h/m`)
 
 The central "god class" coordinating all operations:
 - Manages all XRPC method handlers
@@ -128,7 +128,7 @@ The central "god class" coordinating all operations:
 
 **Design Concern**: This class has too many responsibilities and should be refactored into separate facades.
 
-### PDSDatabase (`ATProtoPDS/Sources/Database/PDSDatabase.h/m`)
+### PDSDatabase (`Garazyk/Sources/Database/PDSDatabase.h/m`)
 
 Monolithic database controller (~2200 lines):
 - Connection pooling
@@ -139,7 +139,7 @@ Monolithic database controller (~2200 lines):
 
 **Design Concern**: Should be split into dedicated DAOs per entity.
 
-### ActorStore (`ATProtoPDS/Sources/Database/ActorStore/ActorStore.h/m`)
+### ActorStore (`Garazyk/Sources/Database/ActorStore/ActorStore.h/m`)
 
 Per-user database access:
 - Transaction isolation per user
@@ -147,7 +147,7 @@ Per-user database access:
 - Collection management
 - Subscription state
 
-### MST (Merkle Search Tree) (`ATProtoPDS/Sources/Repository/MST.h/m`)
+### MST (Merkle Search Tree) (`Garazyk/Sources/Repository/MST.h/m`)
 
 Content-addressable tree structure:
 - Sorted key-value storage
@@ -155,7 +155,7 @@ Content-addressable tree structure:
 - Cryptographic integrity verification
 - Incremental updates
 
-### XrpcHandler (`ATProtoPDS/Sources/Network/XrpcHandler.h/m`)
+### XrpcHandler (`Garazyk/Sources/Network/XrpcHandler.h/m`)
 
 XRPC protocol dispatcher:
 - NSID-based method routing
@@ -163,7 +163,7 @@ XRPC protocol dispatcher:
 - Lexicon compliance
 - Error handling
 
-### SubscribeReposHandler (`ATProtoPDS/Sources/Sync/SubscribeReposHandler.h/m`)
+### SubscribeReposHandler (`Garazyk/Sources/Sync/SubscribeReposHandler.h/m`)
 
 WebSocket handler for firehose:
 - Connection management

@@ -12,11 +12,11 @@ fi
 mkdir -p "$out_dir"
 
 scan_paths=()
-if [[ -d "$root_dir/ATProtoPDS/Sources/Repository" ]]; then
-  scan_paths+=("$root_dir/ATProtoPDS/Sources/Repository")
+if [[ -d "$root_dir/Garazyk/Sources/Repository" ]]; then
+  scan_paths+=("$root_dir/Garazyk/Sources/Repository")
 fi
-if [[ -d "$root_dir/ATProtoPDS/Sources/Core" ]]; then
-  scan_paths+=("$root_dir/ATProtoPDS/Sources/Core")
+if [[ -d "$root_dir/Garazyk/Sources/Core" ]]; then
+  scan_paths+=("$root_dir/Garazyk/Sources/Core")
 fi
 if [[ ${#scan_paths[@]} -eq 0 ]]; then
   scan_paths+=("$root_dir")

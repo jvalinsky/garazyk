@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: [main, develop]
     paths:
-      - 'ATProtoPDS/Tests/**'
-      - 'tools/test-audit-validator/**'
+      - 'Garazyk/Tests/**'
+      - 'tooling/test-audit-validator/**'
       - '.github/workflows/test-audit.yml'
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: tools/test-audit-validator
+        working-directory: tooling/test-audit-validator
         shell: bash
 
     steps:
@@ -61,7 +61,7 @@ jobs:
             allow_failure: true
     defaults:
       run:
-        working-directory: tools/test-audit-validator
+        working-directory: tooling/test-audit-validator
         shell: bash
 
     steps:
@@ -94,7 +94,7 @@ jobs:
         with:
           name: test-audit-${{ matrix.id }}
           path: |
-            tools/test-audit-validator/.artifacts/test-audit/${{ matrix.report_name }}
+            tooling/test-audit-validator/.artifacts/test-audit/${{ matrix.report_name }}
             /tmp/test-audit/run-${{ matrix.id }}.log
           if-no-files-found: warn
           retention-days: 14
@@ -105,7 +105,7 @@ jobs:
           MODE: ${{ matrix.id }}
           TARGET: ${{ matrix.make_target }}
           EXIT_CODE: ${{ steps.gate.outputs.exit_code }}
-          REPORT_PATH: tools/test-audit-validator/.artifacts/test-audit/${{ matrix.report_name }}
+          REPORT_PATH: tooling/test-audit-validator/.artifacts/test-audit/${{ matrix.report_name }}
           LOG_PATH: /tmp/test-audit/run-${{ matrix.id }}.log
         run: |
           python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"

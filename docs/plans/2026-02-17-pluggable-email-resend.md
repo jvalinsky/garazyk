@@ -31,7 +31,7 @@ Expected: Build succeeds with no errors.
 ### Task 1: Create PDSSecretsProvider Protocol
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Email/PDSSecretsProvider.h`
+- Create: `Garazyk/Sources/Email/PDSSecretsProvider.h`
 
 **Step 1: Write the protocol definition**
 
@@ -62,13 +62,13 @@ NS_ASSUME_NONNULL_END
 
 **Step 2: Verify file is created**
 
-Run: `ls -la ATProtoPDS/Sources/Email/PDSSecretsProvider.h`
+Run: `ls -la Garazyk/Sources/Email/PDSSecretsProvider.h`
 Expected: File exists
 
 **Step 3: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Email/PDSSecretsProvider.h
+git add Garazyk/Sources/Email/PDSSecretsProvider.h
 git commit -m "feat(email): add PDSSecretsProvider protocol for secure secret retrieval"
 ```
 
@@ -77,9 +77,9 @@ git commit -m "feat(email): add PDSSecretsProvider protocol for secure secret re
 ### Task 2: Create PDSEnvironmentSecretsProvider
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Email/PDSEnvironmentSecretsProvider.h`
-- Create: `ATProtoPDS/Sources/Email/PDSEnvironmentSecretsProvider.m`
-- Create: `ATProtoPDS/Tests/Email/PDSEnvironmentSecretsProviderTests.m`
+- Create: `Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.h`
+- Create: `Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.m`
+- Create: `Garazyk/Tests/Email/PDSEnvironmentSecretsProviderTests.m`
 
 **Step 1: Write the header**
 
@@ -234,9 +234,9 @@ Expected: All 6 tests pass
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Email/PDSEnvironmentSecretsProvider.h
-git add ATProtoPDS/Sources/Email/PDSEnvironmentSecretsProvider.m
-git add ATProtoPDS/Tests/Email/PDSEnvironmentSecretsProviderTests.m
+git add Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.h
+git add Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.m
+git add Garazyk/Tests/Email/PDSEnvironmentSecretsProviderTests.m
 git commit -m "feat(email): implement PDSEnvironmentSecretsProvider for env var secrets"
 ```
 
@@ -245,9 +245,9 @@ git commit -m "feat(email): implement PDSEnvironmentSecretsProvider for env var 
 ### Task 3: Create PDSKeychainSecretsProvider
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Email/PDSKeychainSecretsProvider.h`
-- Create: `ATProtoPDS/Sources/Email/PDSKeychainSecretsProvider.m`
-- Create: `ATProtoPDS/Tests/Email/PDSKeychainSecretsProviderTests.m`
+- Create: `Garazyk/Sources/Email/PDSKeychainSecretsProvider.h`
+- Create: `Garazyk/Sources/Email/PDSKeychainSecretsProvider.m`
+- Create: `Garazyk/Tests/Email/PDSKeychainSecretsProviderTests.m`
 
 **Step 1: Write the header**
 
@@ -531,10 +531,10 @@ Expected: All 7 tests pass
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Email/PDSKeychainSecretsProvider.h
-git add ATProtoPDS/Sources/Email/PDSKeychainSecretsProvider.m
+git add Garazyk/Sources/Email/PDSKeychainSecretsProvider.h
+git add Garazyk/Sources/Email/PDSKeychainSecretsProvider.m
 # Note: Tests may be skipped on CI if no Keychain access
-git add ATProtoPDS/Tests/Email/PDSKeychainSecretsProviderTests.m
+git add Garazyk/Tests/Email/PDSKeychainSecretsProviderTests.m
 git commit -m "feat(email): implement PDSKeychainSecretsProvider for secure keychain storage"
 ```
 
@@ -543,9 +543,9 @@ git commit -m "feat(email): implement PDSKeychainSecretsProvider for secure keyc
 ## Task 4: Create PDSEmailHTTPClient Utility
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Email/PDSEmailHTTPClient.h`
-- Create: `ATProtoPDS/Sources/Email/PDSEmailHTTPClient.m`
-- Create: `ATProtoPDS/Tests/Email/PDSEmailHTTPClientTests.m`
+- Create: `Garazyk/Sources/Email/PDSEmailHTTPClient.h`
+- Create: `Garazyk/Sources/Email/PDSEmailHTTPClient.m`
+- Create: `Garazyk/Tests/Email/PDSEmailHTTPClientTests.m`
 
 **Step 1: Write the header**
 
@@ -794,9 +794,9 @@ Expected: Tests pass
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Email/PDSEmailHTTPClient.h
-git add ATProtoPDS/Sources/Email/PDSEmailHTTPClient.m
-git add ATProtoPDS/Tests/Email/PDSEmailHTTPClientTests.m
+git add Garazyk/Sources/Email/PDSEmailHTTPClient.h
+git add Garazyk/Sources/Email/PDSEmailHTTPClient.m
+git add Garazyk/Tests/Email/PDSEmailHTTPClientTests.m
 git commit -m "feat(email): add PDSEmailHTTPClient with retry logic and error handling"
 ```
 
@@ -807,9 +807,9 @@ git commit -m "feat(email): add PDSEmailHTTPClient with retry logic and error ha
 ### Task 5: Create PDSResendEmailProvider
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Email/PDSResendEmailProvider.h`
-- Create: `ATProtoPDS/Sources/Email/PDSResendEmailProvider.m`
-- Create: `ATProtoPDS/Tests/Email/PDSResendEmailProviderTests.m`
+- Create: `Garazyk/Sources/Email/PDSResendEmailProvider.h`
+- Create: `Garazyk/Sources/Email/PDSResendEmailProvider.m`
+- Create: `Garazyk/Tests/Email/PDSResendEmailProviderTests.m`
 
 **Step 1: Write the header**
 
@@ -1082,9 +1082,9 @@ Expected: All tests pass
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Email/PDSResendEmailProvider.h
-git add ATProtoPDS/Sources/Email/PDSResendEmailProvider.m
-git add ATProtoPDS/Tests/Email/PDSResendEmailProviderTests.m
+git add Garazyk/Sources/Email/PDSResendEmailProvider.h
+git add Garazyk/Sources/Email/PDSResendEmailProvider.m
+git add Garazyk/Tests/Email/PDSResendEmailProviderTests.m
 git commit -m "feat(email): implement PDSResendEmailProvider with Resend API integration"
 ```
 
@@ -1095,8 +1095,8 @@ git commit -m "feat(email): implement PDSResendEmailProvider with Resend API int
 ### Task 6: Update PDSConfiguration for Resend Support
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/App/PDSConfiguration.h`
-- Modify: `ATProtoPDS/Sources/App/PDSConfiguration.m`
+- Modify: `Garazyk/Sources/App/PDSConfiguration.h`
+- Modify: `Garazyk/Sources/App/PDSConfiguration.m`
 
 **Step 1: Add new properties to header**
 
@@ -1184,8 +1184,8 @@ Expected: Build succeeds
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/App/PDSConfiguration.h
-git add ATProtoPDS/Sources/App/PDSConfiguration.m
+git add Garazyk/Sources/App/PDSConfiguration.h
+git add Garazyk/Sources/App/PDSConfiguration.m
 git commit -m "feat(config): add Resend email provider configuration options"
 ```
 
@@ -1194,7 +1194,7 @@ git commit -m "feat(config): add Resend email provider configuration options"
 ### Task 7: Update PDSController to Instantiate Resend Provider
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/App/PDSController.m`
+- Modify: `Garazyk/Sources/App/PDSController.m`
 
 **Step 1: Add Resend imports**
 
@@ -1271,7 +1271,7 @@ Expected: Build succeeds
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/App/PDSController.m
+git add Garazyk/Sources/App/PDSController.m
 git commit -m "feat(controller): integrate Resend email provider with secrets provider selection"
 ```
 
@@ -1280,7 +1280,7 @@ git commit -m "feat(controller): integrate Resend email provider with secrets pr
 ### Task 8: Update PDSApplication for Resend Support
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/App/PDSApplication.m`
+- Modify: `Garazyk/Sources/App/PDSApplication.m`
 
 **Step 1: Add Resend imports**
 
@@ -1306,7 +1306,7 @@ Expected: Build succeeds
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/App/PDSApplication.m
+git add Garazyk/Sources/App/PDSApplication.m
 git commit -m "feat(app): add Resend email provider support to PDSApplication"
 ```
 
@@ -1583,19 +1583,19 @@ git status
 ### Files Created (12)
 
 **Core Infrastructure:**
-1. `ATProtoPDS/Sources/Email/PDSSecretsProvider.h` - Protocol for secret storage
-2. `ATProtoPDS/Sources/Email/PDSEnvironmentSecretsProvider.h/.m` - Environment variable secrets
-3. `ATProtoPDS/Sources/Email/PDSKeychainSecretsProvider.h/.m` - Keychain secrets
-4. `ATProtoPDS/Sources/Email/PDSEmailHTTPClient.h/.m` - Shared HTTP client
+1. `Garazyk/Sources/Email/PDSSecretsProvider.h` - Protocol for secret storage
+2. `Garazyk/Sources/Email/PDSEnvironmentSecretsProvider.h/.m` - Environment variable secrets
+3. `Garazyk/Sources/Email/PDSKeychainSecretsProvider.h/.m` - Keychain secrets
+4. `Garazyk/Sources/Email/PDSEmailHTTPClient.h/.m` - Shared HTTP client
 
 **Resend Provider:**
-5. `ATProtoPDS/Sources/Email/PDSResendEmailProvider.h/.m` - Resend API implementation
+5. `Garazyk/Sources/Email/PDSResendEmailProvider.h/.m` - Resend API implementation
 
 **Tests:**
-6. `ATProtoPDS/Tests/Email/PDSEnvironmentSecretsProviderTests.m`
-7. `ATProtoPDS/Tests/Email/PDSKeychainSecretsProviderTests.m`
-8. `ATProtoPDS/Tests/Email/PDSEmailHTTPClientTests.m`
-9. `ATProtoPDS/Tests/Email/PDSResendEmailProviderTests.m`
+6. `Garazyk/Tests/Email/PDSEnvironmentSecretsProviderTests.m`
+7. `Garazyk/Tests/Email/PDSKeychainSecretsProviderTests.m`
+8. `Garazyk/Tests/Email/PDSEmailHTTPClientTests.m`
+9. `Garazyk/Tests/Email/PDSResendEmailProviderTests.m`
 
 **Configuration Examples:**
 10. `config/email-resend-env.json`
@@ -1604,9 +1604,9 @@ git status
 
 ### Files Modified (5)
 
-1. `ATProtoPDS/Sources/App/PDSConfiguration.h/.m` - Resend config options
-2. `ATProtoPDS/Sources/App/PDSController.m` - Resend provider instantiation
-3. `ATProtoPDS/Sources/App/PDSApplication.m` - Resend provider support
+1. `Garazyk/Sources/App/PDSConfiguration.h/.m` - Resend config options
+2. `Garazyk/Sources/App/PDSController.m` - Resend provider instantiation
+3. `Garazyk/Sources/App/PDSApplication.m` - Resend provider support
 4. `README.md` - Documentation
 5. `CHANGELOG.md` - Release notes
 

@@ -177,7 +177,7 @@ These tests cover the management of binary large objects (images, videos).
 
 The `BlobPerformanceTests` suite provides benchmarks for blob storage throughput and latency, enabling performance regression testing and capacity planning.
 
-**Location:** `ATProtoPDS/Tests/Blob/BlobPerformanceTests.m`
+**Location:** `Garazyk/Tests/Blob/BlobPerformanceTests.m`
 
 #### Test Categories
 

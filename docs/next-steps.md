@@ -42,8 +42,8 @@ title: Next Steps Plan
 ### 3. GraphService Implementation (In Progress)
 
 **Uncommitted Files**:
-- `ATProtoPDS/Sources/AppView/GraphService.h`
-- `ATProtoPDS/Sources/AppView/GraphService.m`
+- `Garazyk/Sources/AppView/GraphService.h`
+- `Garazyk/Sources/AppView/GraphService.m`
 
 **Actions**:
 - [ ] Review GraphService implementation
@@ -101,10 +101,10 @@ title: Next Steps Plan
 
 ```
 
-M ATProtoPDS/Sources/Database/Schema.h
-M ATProtoPDS/Sources/Database/Schema.m
-?? ATProtoPDS/Sources/AppView/GraphService.h
-?? ATProtoPDS/Sources/AppView/GraphService.m
+M Garazyk/Sources/Database/Schema.h
+M Garazyk/Sources/Database/Schema.m
+?? Garazyk/Sources/AppView/GraphService.h
+?? Garazyk/Sources/AppView/GraphService.m
 ```
 
 **Action**: Review and commit GraphService, or continue implementation.

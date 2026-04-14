@@ -120,7 +120,7 @@ The WebSocketConnection tracks send buffer levels and applies backpressure when 
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/WebSocketConnection.m` (lines 280-310)
+**Source:** `Garazyk/Sources/Sync/WebSocketConnection.m` (lines 280-310)
 
 ### Buffer Threshold Levels
 
@@ -244,7 +244,7 @@ The connection flushes queued messages asynchronously:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/WebSocketConnection.m` (lines 310-340)
+**Source:** `Garazyk/Sources/Sync/WebSocketConnection.m` (lines 310-340)
 
 ## Broadcaster-Level Backpressure
 
@@ -456,7 +456,7 @@ The WebSocketConnection implements a heartbeat mechanism to detect stalled conne
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/WebSocketConnection.m` (lines 340-380)
+**Source:** `Garazyk/Sources/Sync/WebSocketConnection.m` (lines 340-380)
 
 ## Monitoring and Metrics
 

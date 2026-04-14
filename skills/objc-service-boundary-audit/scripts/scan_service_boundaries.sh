@@ -9,8 +9,8 @@ if ! command -v rg >/dev/null 2>&1; then
   exit 1
 fi
 
-services_path="$root_dir/ATProtoPDS/Sources/App/Services"
-security_path="$root_dir/ATProtoPDS/Sources/Security"
+services_path="$root_dir/Garazyk/Sources/App/Services"
+security_path="$root_dir/Garazyk/Sources/Security"
 if [[ ! -d "$services_path" ]]; then
   services_path="$root_dir/Sources/App/Services"
 fi

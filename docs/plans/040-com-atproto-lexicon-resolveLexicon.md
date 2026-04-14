@@ -10,14 +10,14 @@ Expose lexicon schema resolution via the `com.atproto.lexicon.resolveLexicon` XR
 
 ## Background / current state (as of 2026-02-12)
 
-- Lexicon exists: `ATProtoPDS/Resources/lexicons/com/atproto/lexicon/resolveLexicon.json`
+- Lexicon exists: `Garazyk/Resources/lexicons/com/atproto/lexicon/resolveLexicon.json`
 - Endpoint is implemented in:
-  - `ATProtoPDS/Sources/Network/XrpcHandler.h`
-  - `ATProtoPDS/Sources/Network/XrpcHandler.m`
-  - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+  - `Garazyk/Sources/Network/XrpcHandler.h`
+  - `Garazyk/Sources/Network/XrpcHandler.m`
+  - `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 - Test coverage added in:
-  - `ATProtoPDS/Tests/Network/LexiconResolveXrpcTests.m`
-  - `ATProtoPDS/Tests/test_main.m` (suite registration)
+  - `Garazyk/Tests/Network/LexiconResolveXrpcTests.m`
+  - `Garazyk/Tests/test_main.m` (suite registration)
 
 ## Goals
 
@@ -81,9 +81,9 @@ Expose lexicon schema resolution via the `com.atproto.lexicon.resolveLexicon` XR
 
 ## Files likely touched
 
-- `ATProtoPDS/Sources/Network/XrpcHandler.{h,m}`
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-- `ATProtoPDS/Tests/*` (new targeted tests)
+- `Garazyk/Sources/Network/XrpcHandler.{h,m}`
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m`
+- `Garazyk/Tests/*` (new targeted tests)
 - Potentially lexicon registry implementation (if we decide to store raw JSON or file paths)
 
 ## Definition of done

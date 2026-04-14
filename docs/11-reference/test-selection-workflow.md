@@ -42,26 +42,26 @@ Use these defaults:
 - database pool or migration change: database tests first
 - UI or Explorer tooling change: targeted docs or UI checks plus manual smoke verification
 
-That pattern matches the repo structure under `ATProtoPDS/Tests/` closely enough that directory names are usually your first map.
+That pattern matches the repo structure under `Garazyk/Tests/` closely enough that directory names are usually your first map.
 
 ## The Registration Footgun
 
-This repo has one important test-runner rule that still catches contributors: a new test class must be added to `testClasses` in `ATProtoPDS/Tests/test_main.m`.
+This repo has one important test-runner rule that still catches contributors: a new test class must be added to `testClasses` in `Garazyk/Tests/test_main.m`.
 
 If you forget that step, a test can compile and still never run. Any test-selection workflow should include checking registration when a new class appears to be "passing" too quietly.
 
 ## Where To Debug When This Breaks
 
 - Start in the closest subsystem test directory before inventing new integration coverage.
-- Start in `ATProtoPDS/Tests/test_main.m` when a new test class seems invisible.
+- Start in `Garazyk/Tests/test_main.m` when a new test class seems invisible.
 - Start in manual verification only after targeted automated checks stop giving you new information.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Network/PDSHttpServerBuilderTests.m`
-- `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m`
-- `ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m`
+- `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
+- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
+- `Garazyk/Tests/App/Services/PDSBlobServiceTests.m`
+- `Garazyk/Tests/Database/Pool/DatabasePoolTests.m`
 
 ## Appendix
 
