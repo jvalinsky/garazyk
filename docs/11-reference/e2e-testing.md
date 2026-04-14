@@ -244,7 +244,7 @@ September includes dedicated PLC (Public Ledger of Credentials) integration test
 
 ### PLC Test Environment
 
-Located in `ATProtoPDS/Tests/plc_e2e/`:
+Located in `Garazyk/Tests/plc_e2e/`:
 
 ```yaml
 # docker-compose.yml
@@ -281,7 +281,7 @@ services:
 
 ```bash
 # Start PLC test environment
-cd ATProtoPDS/Tests/plc_e2e
+cd Garazyk/Tests/plc_e2e
 docker compose up -d
 
 # Wait for services to be ready
@@ -292,7 +292,7 @@ cd ../../..
 ./build/tests/AllTests -XCTest PLCServerTests,PLCOperationTests,DIDPLCResolverTests
 
 # Cleanup
-cd ATProtoPDS/Tests/plc_e2e
+cd Garazyk/Tests/plc_e2e
 docker compose down
 ```
 
@@ -370,7 +370,7 @@ jobs:
       
       - name: Start PLC Test Environment
         run: |
-          cd ATProtoPDS/Tests/plc_e2e
+          cd Garazyk/Tests/plc_e2e
           docker compose up -d
           sleep 10
       
@@ -381,7 +381,7 @@ jobs:
       - name: Cleanup PLC Environment
         if: always()
         run: |
-          cd ATProtoPDS/Tests/plc_e2e
+          cd Garazyk/Tests/plc_e2e
           docker compose down
 ```
 

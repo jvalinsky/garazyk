@@ -30,9 +30,9 @@ This plan outlines the implementation of a complete AT Protocol Personal Data Se
 
 ```
 
-ATProtoPDS/
+Garazyk/
 ├── ATProtoPDS.xcodeproj/
-├── ATProtoPDS/
+├── Garazyk/
 │   ├── AppDelegate.h/m        # Application lifecycle
 │   ├── PDSController.h/m      # Main server controller
 │   ├── Network/

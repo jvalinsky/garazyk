@@ -994,7 +994,7 @@ The refactoring follows a phased approach to minimize risk and enable continuous
 
 **New Files:**
 ```
-ATProtoPDS/Sources/Network/
+Garazyk/Sources/Network/
 ├── XrpcAuthHelper.h
 ├── XrpcAuthHelper.m
 ├── XrpcIdentityHelper.h
@@ -1019,7 +1019,7 @@ ATProtoPDS/Sources/Network/
 
 **Modified Files:**
 ```
-ATProtoPDS/Sources/Network/
+Garazyk/Sources/Network/
 ├── XrpcMethodRegistry.h (minimal changes: forward declarations)
 └── XrpcMethodRegistry.m (reduced from 6,308 to ~250 lines)
 ```

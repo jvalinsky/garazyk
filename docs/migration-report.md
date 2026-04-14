@@ -18,5 +18,5 @@ title: VitePress Migration Report
 
 - **Source Directory:** docs/
 - **Target Directory:** docs/
-- **Backup Directory:** docs-jekyll-backup/
+- **Backup Directory:** docs/archive/migration-backup/
 - **Dry Run:** false

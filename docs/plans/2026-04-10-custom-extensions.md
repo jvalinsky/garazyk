@@ -30,7 +30,7 @@ Custom extensions (`com.shinolabs.pinksea.*`) are optional and not required for 
 **Goal:** Get feed for a specific author
 
 **Files:**
-- New: `ATProtoPDS/Sources/Network/XrpcPinkseaMethods.m`
+- New: `Garazyk/Sources/Network/XrpcPinkseaMethods.m`
 
 **Input:**
 - `actor`: string (handle or DID)

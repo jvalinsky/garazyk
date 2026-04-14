@@ -83,11 +83,11 @@ what it does, and the docs should be too.
 
 Start here when you change blob application behavior:
 
-- `ATProtoPDS/Sources/App/Services/PDSBlobService.h`
-- `ATProtoPDS/Sources/App/Services/PDSBlobService.m`
-- `ATProtoPDS/Sources/Blob/BlobStorage.m`
-- `ATProtoPDS/Sources/Network/XrpcRepoMethods.m`
-- `ATProtoPDS/Sources/Network/XrpcSyncMethods.m`
+- `Garazyk/Sources/App/Services/PDSBlobService.h`
+- `Garazyk/Sources/App/Services/PDSBlobService.m`
+- `Garazyk/Sources/Blob/BlobStorage.m`
+- `Garazyk/Sources/Network/XrpcRepoMethods.m`
+- `Garazyk/Sources/Network/XrpcSyncMethods.m`
 
 ## Related Reading
 

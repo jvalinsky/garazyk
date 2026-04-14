@@ -22,7 +22,7 @@ CREATE TABLE schema_version (
 );
 ```
 
-**Source:** `ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m`
+**Source:** `Garazyk/Sources/Database/Schema/PDSSchemaManager.m`
 
 ### Version Numbering
 
@@ -353,7 +353,7 @@ Before deploying a migration:
 
 ### Batch Migration Pattern
 
-**Source:** `ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m` (Lines 100-130)
+**Source:** `Garazyk/Sources/Database/Migration/PDSMigrationManager.m` (Lines 100-130)
 
 ```objc
 // Migrate accounts in batches for better performance

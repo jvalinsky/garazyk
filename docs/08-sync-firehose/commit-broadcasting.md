@@ -183,7 +183,7 @@ The SubscribeReposHandler broadcasts repository commits to all connected clients
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 400-470)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 400-470)
 
 ### Subscription Filtering
 

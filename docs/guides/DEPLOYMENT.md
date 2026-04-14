@@ -8,7 +8,7 @@ title: Deployment Guide
 
 **The PDS speaks plain HTTP.** It does not terminate TLS itself. You must place it behind a reverse proxy that handles HTTPS. Without TLS, the AT Protocol OAuth flow will not work and Bluesky/relay connections will be refused.
 
-The recommended port for the PDS process is **2583** (default) or **8080** (as used in `deploy/production.json`). Your reverse proxy listens on 443 and forwards to that port.
+The recommended port for the PDS process is **2583** (default) or **8080** (as used in `ops/deploy/production.json`). Your reverse proxy listens on 443 and forwards to that port.
 
 ---
 
@@ -25,7 +25,7 @@ pds.example.com {
 }
 ```
 
-A production-ready config with connection pooling, security headers, and structured logging is in [`deploy/Caddyfile`](# Deploy file: Caddyfile). Replace `pds.example.com` and the backend port, then:
+A production-ready config with connection pooling, security headers, and structured logging is in [`ops/deploy/Caddyfile`](# Deploy file: Caddyfile). Replace `pds.example.com` and the backend port, then:
 
 ```sh
 sudo systemctl reload caddy
@@ -35,7 +35,7 @@ sudo systemctl reload caddy
 
 ## Nginx
 
-A full nginx config including WebSocket support for `subscribeRepos` and TLS hardening is in [`deploy/nginx.conf`](# Deploy file: nginx.conf).
+A full nginx config including WebSocket support for `subscribeRepos` and TLS hardening is in [`ops/deploy/nginx.conf`](# Deploy file: nginx.conf).
 
 ```sh
 sudo ln -s /etc/nginx/sites-available/atprotopds.conf /etc/nginx/sites-enabled/
@@ -68,10 +68,10 @@ For Resend email:
 
 ## macOS launchd Service
 
-A ready-to-use launchd plist is at [`deploy/com.atproto.pds.plist`](# Deploy file: com.atproto.pds.plist). Edit it to set your domain and admin password, then:
+A ready-to-use launchd plist is at [`ops/deploy/com.atproto.pds.plist`](# Deploy file: com.atproto.pds.plist). Edit it to set your domain and admin password, then:
 
 ```sh
-sudo cp deploy/com.atproto.pds.plist /Library/LaunchDaemons/
+sudo cp ops/deploy/com.atproto.pds.plist /Library/LaunchDaemons/
 sudo launchctl load /Library/LaunchDaemons/com.atproto.pds.plist
 ```
 

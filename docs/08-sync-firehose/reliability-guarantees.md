@@ -50,7 +50,7 @@ if (![self.serviceDatabases persistEvent:self.sequenceNumber
 [self broadcastEventData:eventData];
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 460-470)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 460-470)
 
 This ensures:
 - Events survive server crashes
@@ -85,7 +85,7 @@ dispatch_async(self.eventQueue, ^{
 });
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 400-410)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 400-410)
 
 ### Serial Event Queue
 
@@ -97,7 +97,7 @@ _eventQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.events",
                                     DISPATCH_QUEUE_SERIAL);
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (line 95)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (line 95)
 
 This ensures:
 - Events are processed one at a time
@@ -271,7 +271,7 @@ If the server crashes:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 1000-1020)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 1000-1020)
 
 ### Client Crash
 
@@ -333,7 +333,7 @@ The server protects itself from slow consumers:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 970-990)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 970-990)
 
 If a client is too slow:
 - Server closes the connection
@@ -356,7 +356,7 @@ The server limits replay to prevent resource exhaustion:
 static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (line 29)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (line 29)
 
 If a client's cursor is too old:
 - Server adjusts cursor to oldest available
@@ -397,7 +397,7 @@ if (commit.rev) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 420-425)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 420-425)
 
 ### Cross-Repository Ordering
 

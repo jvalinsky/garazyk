@@ -17,6 +17,7 @@
 #import "AppViewServer/Indexers/AppViewGraphIndexer.h"
 #import "AppViewServer/Indexers/AppViewNotificationIndexer.h"
 #import "AppViewServer/Admin/AppViewAdminRoutePack.h"
+#import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -143,6 +144,9 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     // Build HTTP server for query API + admin
     _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
+    CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
+    [cappuccinoUIHandler setDataDirectory:config.dataDirectory];
+    [cappuccinoUIHandler setServiceProfile:@"appview"];
 
     // Root health/info endpoint
     [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
@@ -155,6 +159,14 @@ static AppViewRuntime *_sharedRuntime = nil;
         [res setHeader:@"application/json" forKey:@"Content-Type"];
         res.statusCode = 200;
         [res setBody:json];
+    }];
+
+    [_httpServer addRoute:@"GET" path:@"/ui" handler:^(HttpRequest *req, HttpResponse *res) {
+        [cappuccinoUIHandler handleRequest:req response:res];
+    }];
+
+    [_httpServer addRoute:@"GET" path:@"/ui/*" handler:^(HttpRequest *req, HttpResponse *res) {
+        [cappuccinoUIHandler handleRequest:req response:res];
     }];
 
     if (config.adminSecret.length > 0) {

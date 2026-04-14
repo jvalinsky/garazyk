@@ -5,7 +5,7 @@ title: Test Audit Validator Documentation Expansion Plan
 # Test Audit Validator Documentation Expansion Plan
 
 **Generated:** 2026-03-07
-**Scope:** `tools/test-audit-validator/`
+**Scope:** `tooling/test-audit-validator/`
 
 ## Goal
 
@@ -22,17 +22,17 @@ reading the full codebase:
 The current docs explain setup and usage, but they do not yet give a strong
 mental model of the system:
 
-- [`tools/test-audit-validator/README.md`](../../../tools/test-audit-validator/README.md) is command-focused and feature-focused, but light on architecture and rationale.
-- [`tools/test-audit-validator/docs/ARCHITECTURE.md`](../../../tools/test-audit-validator/docs/ARCHITECTURE.md) describes the pipeline at a high level, but not why the Go packages are split the way they are.
-- [`tools/test-audit-validator/LIBCLANG_SETUP.md`](../../../tools/test-audit-validator/LIBCLANG_SETUP.md) explains environment setup, but not why `CGO_*`, `LIBCLANG_PATH`, SDK headers, and `compile_commands.json` matter.
-- [`tools/test-audit-validator/internal/analysis/README.md`](../../../tools/test-audit-validator/internal/analysis/README.md) documents the engine, but it is too isolated from the CLI, parser selector, and overall workflow.
+- [`tooling/test-audit-validator/README.md`](../../../tooling/test-audit-validator/README.md) is command-focused and feature-focused, but light on architecture and rationale.
+- [`tooling/test-audit-validator/docs/ARCHITECTURE.md`](../../../tooling/test-audit-validator/docs/ARCHITECTURE.md) describes the pipeline at a high level, but not why the Go packages are split the way they are.
+- [`tooling/test-audit-validator/LIBCLANG_SETUP.md`](../../../tooling/test-audit-validator/LIBCLANG_SETUP.md) explains environment setup, but not why `CGO_*`, `LIBCLANG_PATH`, SDK headers, and `compile_commands.json` matter.
+- [`tooling/test-audit-validator/internal/analysis/README.md`](../../../tooling/test-audit-validator/internal/analysis/README.md) documents the engine, but it is too isolated from the CLI, parser selector, and overall workflow.
 - There is no dedicated document that explains libclang AST terminology in practical Objective-C terms.
 
 ## Documentation deliverables
 
 ### 1. Expand the top-level README
 
-Update [`tools/test-audit-validator/README.md`](../../../tools/test-audit-validator/README.md) so it does more than list commands.
+Update [`tooling/test-audit-validator/README.md`](../../../tooling/test-audit-validator/README.md) so it does more than list commands.
 
 Add these sections:
 
@@ -49,7 +49,7 @@ the high-level flow without turning into package-by-package reference material.
 
 ### 2. Expand the architecture document into an actual subsystem map
 
-Restructure [`tools/test-audit-validator/docs/ARCHITECTURE.md`](../../../tools/test-audit-validator/docs/ARCHITECTURE.md) into a narrative architecture page.
+Restructure [`tooling/test-audit-validator/docs/ARCHITECTURE.md`](../../../tooling/test-audit-validator/docs/ARCHITECTURE.md) into a narrative architecture page.
 
 Add these subsections:
 
@@ -74,7 +74,7 @@ For each subsection, explain both:
 
 Create a new page:
 
-- [`tools/test-audit-validator/docs/GO_TOOLING_DEEP_DIVE.md`](../../../tools/test-audit-validator/docs/GO_TOOLING_DEEP_DIVE.md)
+- [`tooling/test-audit-validator/docs/GO_TOOLING_DEEP_DIVE.md`](../../../tooling/test-audit-validator/docs/GO_TOOLING_DEEP_DIVE.md)
 
 Purpose:
 
@@ -140,7 +140,7 @@ Recommended outline:
 
 Create a new page:
 
-- [`tools/test-audit-validator/docs/LIBCLANG_AST_PARSING.md`](../../../tools/test-audit-validator/docs/LIBCLANG_AST_PARSING.md)
+- [`tooling/test-audit-validator/docs/LIBCLANG_AST_PARSING.md`](../../../tooling/test-audit-validator/docs/LIBCLANG_AST_PARSING.md)
 
 This is the missing piece the current docs do not cover.
 
@@ -156,8 +156,8 @@ Recommended outline:
 
 Explain these in plain language first, then map them to actual code in:
 
-- [`tools/test-audit-validator/internal/analysis/engine.go`](../../../tools/test-audit-validator/internal/analysis/engine.go)
-- [`tools/test-audit-validator/cmd/test-audit-validator/clang_parser.go`](../../../tools/test-audit-validator/cmd/test-audit-validator/clang_parser.go)
+- [`tooling/test-audit-validator/internal/analysis/engine.go`](../../../tooling/test-audit-validator/internal/analysis/engine.go)
+- [`tooling/test-audit-validator/cmd/test-audit-validator/clang_parser.go`](../../../tooling/test-audit-validator/cmd/test-audit-validator/clang_parser.go)
 
 #### `How parsing works in this tool`
 
@@ -213,7 +213,7 @@ detail. Cover at least:
 
 ### 5. Upgrade the libclang setup guide from setup-only to setup-plus-explanation
 
-Extend [`tools/test-audit-validator/LIBCLANG_SETUP.md`](../../../tools/test-audit-validator/LIBCLANG_SETUP.md) with short explanatory subsections:
+Extend [`tooling/test-audit-validator/LIBCLANG_SETUP.md`](../../../tooling/test-audit-validator/LIBCLANG_SETUP.md) with short explanatory subsections:
 
 - `Why CGO is required`
 - `Why Xcode headers and libraries must match`

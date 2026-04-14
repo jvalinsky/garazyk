@@ -4,7 +4,7 @@
 
 This document specifies requirements for a comprehensive audit system that validates whether test code in the September PDS codebase actually tests what it claims to test. The system will analyze 1017 tests across 155+ test classes to identify mismatches between test names/descriptions and their actual assertions, detect tests that don't validate their claimed functionality, and ensure property-based tests properly validate correctness properties.
 
-The audit targets all test code in `ATProtoPDS/Tests/` including Core (CBOR, CAR, CID, MST), Auth (OAuth, DPoP, JWT), Network (XRPC), Database (SQLite), Repository, Sync/Firehose, Identity (DID/handle resolution), and other subsystems.
+The audit targets all test code in `Garazyk/Tests/` including Core (CBOR, CAR, CID, MST), Auth (OAuth, DPoP, JWT), Network (XRPC), Database (SQLite), Repository, Sync/Firehose, Identity (DID/handle resolution), and other subsystems.
 
 ## Glossary
 
@@ -109,7 +109,7 @@ The audit targets all test code in `ATProtoPDS/Tests/` including Core (CBOR, CAR
 1. WHEN analyzing MST interop tests, THE Test_Audit_System SHALL verify test fixtures from atproto-interop-tests are used
 2. WHEN analyzing CAR interop tests, THE Test_Audit_System SHALL verify compatibility with reference implementations is tested
 3. WHEN analyzing CBOR interop tests, THE Test_Audit_System SHALL verify canonical encoding matches reference outputs
-4. THE Test_Audit_System SHALL verify interop tests load fixture data from `ATProtoPDS/Tests/fixtures/`
+4. THE Test_Audit_System SHALL verify interop tests load fixture data from `Garazyk/Tests/fixtures/`
 5. IF an interop test doesn't compare against reference implementation outputs, THEN THE Test_Audit_System SHALL report an Assertion_Mismatch
 
 ### Requirement 8: Characterization Test Validation
@@ -133,7 +133,7 @@ The audit targets all test code in `ATProtoPDS/Tests/` including Core (CBOR, CAR
 1. WHEN analyzing tests using fixtures, THE Test_Audit_System SHALL identify which fixture files are loaded
 2. THE Test_Audit_System SHALL verify fixture data is actually used in assertions
 3. THE Test_Audit_System SHALL detect unused fixture data
-4. THE Test_Audit_System SHALL verify fixture paths exist in `ATProtoPDS/Tests/fixtures/`
+4. THE Test_Audit_System SHALL verify fixture paths exist in `Garazyk/Tests/fixtures/`
 5. IF a test loads fixtures but doesn't assert against fixture data, THEN THE Test_Audit_System SHALL report a Test_Coverage_Gap
 
 ### Requirement 10: False Positive Detection
@@ -220,7 +220,7 @@ The audit targets all test code in `ATProtoPDS/Tests/` including Core (CBOR, CAR
 #### Acceptance Criteria
 
 1. THE Test_Audit_System SHALL support analyzing individual test files
-2. THE Test_Audit_System SHALL support analyzing test directories (e.g., ATProtoPDS/Tests/Auth/)
+2. THE Test_Audit_System SHALL support analyzing test directories (e.g., Garazyk/Tests/Auth/)
 3. THE Test_Audit_System SHALL support analyzing specific test classes
 4. THE Test_Audit_System SHALL cache analysis results to avoid re-analyzing unchanged tests
 5. THE Test_Audit_System SHALL support filtering by test domain (Auth, Network, Core, etc.)

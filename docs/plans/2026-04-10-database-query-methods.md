@@ -58,8 +58,8 @@ The database query methods are implemented. Earlier security audit flagged `getR
 **Goal:** Confirm implementation works as expected
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Database/PDSDatabase.m:1946-1978`
-- Test: Create test in `ATProtoPDS/Tests/Database/PDSDatabaseTests.m`
+- Implementation: `Garazyk/Sources/Database/PDSDatabase.m:1946-1978`
+- Test: Create test in `Garazyk/Tests/Database/PDSDatabaseTests.m`
 
 **Steps:**
 1. Create test for `getRecordsForDid`:
@@ -150,18 +150,18 @@ The database query methods are implemented. Earlier security audit flagged `getR
 **Goal:** Verify all MST (Merkle Search Tree) persistence methods
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Repository/MSTPersistence.m`
+- Implementation: `Garazyk/Sources/Repository/MSTPersistence.m`
 
 **Steps:**
 1. List all public methods in MSTPersistence.h:
    ```bash
-   rg "^-.*;" ATProtoPDS/Sources/Repository/MSTPersistence.h
+   rg "^-.*;" Garazyk/Sources/Repository/MSTPersistence.h
    ```
 
 2. Verify each method has implementation (not stubbed)
 3. Check for any TODO/FIXME markers:
    ```bash
-   rg "TODO|FIXME|not.*implement" ATProtoPDS/Sources/Repository/MSTPersistence.m
+   rg "TODO|FIXME|not.*implement" Garazyk/Sources/Repository/MSTPersistence.m
    ```
 
 4. Document any gaps
@@ -227,9 +227,9 @@ The database query methods are implemented. Earlier security audit flagged `getR
 
 ## Dependencies
 
-- `ATProtoPDS/Sources/Database/PDSDatabase.m`
-- `ATProtoPDS/Sources/Repository/MSTPersistence.m`
-- `ATProtoPDS/Tests/Database/PDSDatabaseTests.m`
+- `Garazyk/Sources/Database/PDSDatabase.m`
+- `Garazyk/Sources/Repository/MSTPersistence.m`
+- `Garazyk/Tests/Database/PDSDatabaseTests.m`
 
 ---
 

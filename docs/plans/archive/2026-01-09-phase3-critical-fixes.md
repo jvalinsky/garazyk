@@ -17,9 +17,9 @@ title: Phase 3 Critical Issues Implementation Plan
 ## Task 1: Fix Missing PDSController Methods
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/App/PDSController.h`
-- Modify: `ATProtoPDS/Sources/App/PDSController.m`
-- Test: `ATProtoPDS/Tests/Database/PDSControllerTests.m`
+- Modify: `Garazyk/Sources/App/PDSController.h`
+- Modify: `Garazyk/Sources/App/PDSController.m`
+- Test: `Garazyk/Tests/Database/PDSControllerTests.m`
 
 **Context:** The PDS controller is missing critical methods for moderation and labeling endpoints that are required for ATProto compliance.
 
@@ -88,7 +88,7 @@ Add the new methods to the XRPC method registry in `XrpcMethodRegistry.m`.
 **Step 6: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/App/PDSController.h ATProtoPDS/Sources/App/PDSController.m ATProtoPDS/Tests/Database/PDSControllerTests.m ATProtoPDS/Sources/Network/XrpcMethodRegistry.m
+git add Garazyk/Sources/App/PDSController.h Garazyk/Sources/App/PDSController.m Garazyk/Tests/Database/PDSControllerTests.m Garazyk/Sources/Network/XrpcMethodRegistry.m
 git commit -m "feat: add moderation and labeling endpoint stubs to PDSController"
 ```
 
@@ -97,10 +97,10 @@ git commit -m "feat: add moderation and labeling endpoint stubs to PDSController
 ## Task 2: Implement OAuth Server Metadata Publishing
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Auth/OAuthServerMetadata.h`
-- Create: `ATProtoPDS/Sources/Auth/OAuthServerMetadata.m`
-- Modify: `ATProtoPDS/Sources/Network/HttpRouter.m`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2Tests.m`
+- Create: `Garazyk/Sources/Auth/OAuthServerMetadata.h`
+- Create: `Garazyk/Sources/Auth/OAuthServerMetadata.m`
+- Modify: `Garazyk/Sources/Network/HttpRouter.m`
+- Test: `Garazyk/Tests/Auth/OAuth2Tests.m`
 
 **Context:** OAuth 2.0 requires server metadata discovery endpoint for client registration and configuration.
 
@@ -179,7 +179,7 @@ git commit -m "feat: add moderation and labeling endpoint stubs to PDSController
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/OAuthServerMetadata.h ATProtoPDS/Sources/Auth/OAuthServerMetadata.m ATProtoPDS/Sources/Network/HttpRouter.m ATProtoPDS/Tests/Auth/OAuth2Tests.m
+git add Garazyk/Sources/Auth/OAuthServerMetadata.h Garazyk/Sources/Auth/OAuthServerMetadata.m Garazyk/Sources/Network/HttpRouter.m Garazyk/Tests/Auth/OAuth2Tests.m
 git commit -m "feat: implement OAuth 2.0 server metadata discovery endpoint"
 ```
 
@@ -188,9 +188,9 @@ git commit -m "feat: implement OAuth 2.0 server metadata discovery endpoint"
 ## Task 3: Enhance DID Resolution Service
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Identity/DIDResolver.h`
-- Modify: `ATProtoPDS/Sources/Identity/DIDResolver.m`
-- Test: `ATProtoPDS/Tests/Identity/DIDResolverTests.m`
+- Modify: `Garazyk/Sources/Identity/DIDResolver.h`
+- Modify: `Garazyk/Sources/Identity/DIDResolver.m`
+- Test: `Garazyk/Tests/Identity/DIDResolverTests.m`
 
 **Context:** The DID resolution service needs advanced features like caching, batch resolution, and error handling.
 
@@ -285,7 +285,7 @@ git commit -m "feat: implement OAuth 2.0 server metadata discovery endpoint"
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Identity/DIDResolver.h ATProtoPDS/Sources/Identity/DIDResolver.m ATProtoPDS/Tests/Identity/DIDResolverTests.m
+git add Garazyk/Sources/Identity/DIDResolver.h Garazyk/Sources/Identity/DIDResolver.m Garazyk/Tests/Identity/DIDResolverTests.m
 git commit -m "feat: enhance DID resolution service with caching and batch resolution"
 ```
 
@@ -294,8 +294,8 @@ git commit -m "feat: enhance DID resolution service with caching and batch resol
 ## Task 4: Add Error Handling to Metadata Endpoints
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuthServerMetadata.m`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2Tests.m`
+- Modify: `Garazyk/Sources/Auth/OAuthServerMetadata.m`
+- Test: `Garazyk/Tests/Auth/OAuth2Tests.m`
 
 **Context:** Metadata endpoints need proper error handling for invalid requests and server errors.
 
@@ -364,7 +364,7 @@ git commit -m "feat: enhance DID resolution service with caching and batch resol
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/OAuthServerMetadata.m ATProtoPDS/Sources/Network/HttpRouter.m ATProtoPDS/Tests/Auth/OAuth2Tests.m
+git add Garazyk/Sources/Auth/OAuthServerMetadata.m Garazyk/Sources/Network/HttpRouter.m Garazyk/Tests/Auth/OAuth2Tests.m
 git commit -m "feat: add proper error handling to OAuth metadata endpoints"
 ```
 
@@ -373,10 +373,10 @@ git commit -m "feat: add proper error handling to OAuth metadata endpoints"
 ## Task 5: Implement YubiKey OATH Integration
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Auth/YubiKeyOATH.h`
-- Create: `ATProtoPDS/Sources/Auth/YubiKeyOATH.m`
-- Modify: `ATProtoPDS/Sources/Auth/TOTPService.m`
-- Test: `ATProtoPDS/Tests/Auth/TOTPTests.m`
+- Create: `Garazyk/Sources/Auth/YubiKeyOATH.h`
+- Create: `Garazyk/Sources/Auth/YubiKeyOATH.m`
+- Modify: `Garazyk/Sources/Auth/TOTPService.m`
+- Test: `Garazyk/Tests/Auth/TOTPTests.m`
 
 **Context:** Add hardware security key support for TOTP generation using YubiKey OATH protocol.
 
@@ -462,7 +462,7 @@ git commit -m "feat: add proper error handling to OAuth metadata endpoints"
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/YubiKeyOATH.h ATProtoPDS/Sources/Auth/YubiKeyOATH.m ATProtoPDS/Sources/Auth/TOTPService.m ATProtoPDS/Tests/Auth/TOTPTests.m
+git add Garazyk/Sources/Auth/YubiKeyOATH.h Garazyk/Sources/Auth/YubiKeyOATH.m Garazyk/Sources/Auth/TOTPService.m Garazyk/Tests/Auth/TOTPTests.m
 git commit -m "feat: add YubiKey OATH integration framework with software fallback"
 ```
 

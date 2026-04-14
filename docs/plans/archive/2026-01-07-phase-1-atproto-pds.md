@@ -50,7 +50,7 @@ Objective-C, SQLite, macOS Foundation/Network frameworks, ATProto XRPC protocol,
 
 #### Task 1: Complete MST Implementation
 
-**Files:** Modify `ATProtoPDS/ATProtoPDS/Repository/MST.m`, Modify `ATProtoPDS/ATProtoPDS/Repository/MSTPersistence.m`, Modify `ATProtoPDS/ATProtoPDS/PDSController.m`
+**Files:** Modify `Garazyk/Garazyk/Repository/MST.m`, Modify `Garazyk/Garazyk/Repository/MSTPersistence.m`, Modify `Garazyk/Garazyk/PDSController.m`
 
 **Step 1: Implement Full MST Node Serialization**
 Add proper CBOR encoding/decoding for MST nodes with correct hash computation.
@@ -66,7 +66,7 @@ Ensure root CID updates on every repository change.
 
 #### Task 2: CAR File Handling
 
-**Files:** Modify `ATProtoPDS/ATProtoPDS/Repository/CAR.m`, Create `ATProtoPDS/ATProtoPDS/Repository/CARReader.m`, Modify `ATProtoPDS/ATProtoPDS/PDSController.m`
+**Files:** Modify `Garazyk/Garazyk/Repository/CAR.m`, Create `Garazyk/Garazyk/Repository/CARReader.m`, Modify `Garazyk/Garazyk/PDSController.m`
 
 **Step 1: Implement CAR Format Parsing**
 Read CAR files and extract blocks with proper CID validation.
@@ -79,7 +79,7 @@ Support large CAR file generation without full memory loading.
 
 #### Task 3: Blockstore Integration
 
-**Files:** Modify `ATProtoPDS/ATProtoPDS/Blob/BlobStorage.m`, Create `ATProtoPDS/ATProtoPDS/Repository/Blockstore.m`, Modify `ATProtoPDS/ATProtoPDS/Database/Schema.m`
+**Files:** Modify `Garazyk/Garazyk/Blob/BlobStorage.m`, Create `Garazyk/Garazyk/Repository/Blockstore.m`, Modify `Garazyk/Garazyk/Database/Schema.m`
 
 **Step 1: Create Blockstore Abstraction**
 Separate blob storage from repository block storage.
@@ -94,7 +94,7 @@ Block lookup and streaming by CID.
 
 #### Task 4: DID Resolution Service
 
-**Files:** Create `ATProtoPDS/ATProtoPDS/DID/DIDResolver.m`, Modify `ATProtoPDS/ATProtoPDS/Auth/DID.m`, Modify `ATProtoPDS/ATProtoPDS/Network/XrpcMethodRegistry.m`
+**Files:** Create `Garazyk/Garazyk/DID/DIDResolver.m`, Modify `Garazyk/Garazyk/Auth/DID.m`, Modify `Garazyk/Garazyk/Network/XrpcMethodRegistry.m`
 
 **Step 1: Implement PLC Directory Client**
 Query PLC directory for DID documents.
@@ -107,7 +107,7 @@ Implement local caching with TTL for performance.
 
 #### Task 5: Repository Synchronization
 
-**Files:** Create `ATProtoPDS/ATProtoPDS/Sync/RepoSync.m`, Modify `ATProtoPDS/ATProtoPDS/Network/XrpcMethodRegistry.m`, Modify `ATProtoPDS/ATProtoPDS/PDSController.m`
+**Files:** Create `Garazyk/Garazyk/Sync/RepoSync.m`, Modify `Garazyk/Garazyk/Network/XrpcMethodRegistry.m`, Modify `Garazyk/Garazyk/PDSController.m`
 
 **Step 1: Implement sync.getLatestCommit**
 Return current repository head information.
@@ -122,7 +122,7 @@ Bulk block retrieval for sync.
 
 #### Task 6: Label System
 
-**Files:** Create `ATProtoPDS/ATProtoPDS/Moderation/LabelService.m`, Modify `ATProtoPDS/ATProtoPDS/Database/Schema.m`, Modify `ATProtoPDS/ATProtoPDS/Network/XrpcMethodRegistry.m`
+**Files:** Create `Garazyk/Garazyk/Moderation/LabelService.m`, Modify `Garazyk/Garazyk/Database/Schema.m`, Modify `Garazyk/Garazyk/Network/XrpcMethodRegistry.m`
 
 **Step 1: Add Label Database Schema**
 Tables for labels, labelers, and label targets.
@@ -135,7 +135,7 @@ Label filtering and aggregation by target.
 
 #### Task 7: Moderation Actions
 
-**Files:** Create `ATProtoPDS/ATProtoPDS/Moderation/ModerationService.m`, Modify `ATProtoPDS/ATProtoPDS/Database/Schema.m`, Modify `ATProtoPDS/ATProtoPDS/Network/XrpcMethodRegistry.m`
+**Files:** Create `Garazyk/Garazyk/Moderation/ModerationService.m`, Modify `Garazyk/Garazyk/Database/Schema.m`, Modify `Garazyk/Garazyk/Network/XrpcMethodRegistry.m`
 
 **Step 1: Implement Mute/Block Operations**
 Database tracking of moderation relationships.
@@ -150,7 +150,7 @@ Priority-based review workflows.
 
 #### Task 8: Query Optimization
 
-**Files:** Modify `ATProtoPDS/ATProtoPDS/Database/PDSDatabase.m`, Modify `ATProtoPDS/ATProtoPDS/Database/Schema.m`, Create `ATProtoPDS/ATProtoPDS/Database/QueryOptimizer.m`
+**Files:** Modify `Garazyk/Garazyk/Database/PDSDatabase.m`, Modify `Garazyk/Garazyk/Database/Schema.m`, Create `Garazyk/Garazyk/Database/QueryOptimizer.m`
 
 **Step 1: Add Composite Indexes**
 Optimize common query patterns.
@@ -163,7 +163,7 @@ Cursor-based pagination with TID ordering.
 
 #### Task 9: Rate Limiting & Security
 
-**Files:** Create `ATProtoPDS/ATProtoPDS/Security/RateLimiter.m`, Modify `ATProtoPDS/ATProtoPDS/Network/HttpServer.m`, Modify `ATProtoPDS/ATProtoPDS/PDSController.m`
+**Files:** Create `Garazyk/Garazyk/Security/RateLimiter.m`, Modify `Garazyk/Garazyk/Network/HttpServer.m`, Modify `Garazyk/Garazyk/PDSController.m`
 
 **Step 1: Implement Rate Limiting**
 Token bucket algorithm per endpoint/IP.
@@ -176,7 +176,7 @@ Automated blocking of malicious patterns.
 
 #### Task 10: Testing
 
-**Files:** Modify `test_endpoints.sh`, Create `ATProtoPDS/ATProtoPDS/Tests/IntegrationTests.m`, Create `ATProtoPDS/ATProtoPDS/Tests/PerformanceTests.m`
+**Files:** Modify `test_endpoints.sh`, Create `Garazyk/Garazyk/Tests/IntegrationTests.m`, Create `Garazyk/Garazyk/Tests/PerformanceTests.m`
 
 **Step 1: Extend Integration Test Suite**
 Full sync protocol and federation testing.

@@ -15,7 +15,7 @@ Lock the route model, fallback behavior, and cutover strategy so Phase 2 impleme
 5. Full parity gate is mandatory for cutover: Explore + Admin + MST Viewer + OAuth Demo.
 
 ## Current Route Baseline (As Implemented)
-Source of truth: `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`.
+Source of truth: `Garazyk/Sources/Network/PDSHttpServerBuilder.m`.
 
 - OAuth routes are registered first.
 - XRPC routes are registered under `/xrpc`.

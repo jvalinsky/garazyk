@@ -75,7 +75,7 @@ flowchart TD
 
 ```mermaid
 graph TD
-    subgraph "ATProtoPDS/Sources"
+    subgraph "Garazyk/Sources"
         subgraph "App"
             PDS[PDSController]
         end
@@ -272,7 +272,7 @@ flowchart LR
 graph TD
     root[objpds/]
     
-    root --> src[ATProtoPDS/]
+    root --> src[Garazyk/]
     root --> docs[docs/]
     root --> scripts[scripts/]
     root --> config[config files]

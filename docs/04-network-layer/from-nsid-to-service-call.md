@@ -58,7 +58,7 @@ That means a bad response shape does not always mean the service is wrong. The b
 
 ## What The Registry Actually Buys You
 
-`ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` is not just a big lookup table. It is the place where the runtime assembles the public protocol surface from domain-specific registration helpers.
+`Garazyk/Sources/Network/XrpcMethodRegistry.m` is not just a big lookup table. It is the place where the runtime assembles the public protocol surface from domain-specific registration helpers.
 
 That matters for contributor work because:
 
@@ -68,17 +68,17 @@ That matters for contributor work because:
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` when the NSID is missing or the wrong method fires.
-- Start in `ATProtoPDS/Sources/Network/XrpcDispatcher.m` and the auth helpers when the failure is a protocol error before service code runs.
-- Start in `ATProtoPDS/Sources/App/Services/PDSRecordService.m` when the endpoint reaches the service but the repository result is wrong.
+- Start in `Garazyk/Sources/Network/XrpcMethodRegistry.m` when the NSID is missing or the wrong method fires.
+- Start in `Garazyk/Sources/Network/XrpcDispatcher.m` and the auth helpers when the failure is a protocol error before service code runs.
+- Start in `Garazyk/Sources/App/Services/PDSRecordService.m` when the endpoint reaches the service but the repository result is wrong.
 - Start in the domain methods module when the response shape or parameter mapping is wrong even though the service behavior looks correct.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m`
-- `ATProtoPDS/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m`
-- `ATProtoPDS/Tests/Integration/CommitChainTests.m`
+- `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
+- `Garazyk/Tests/CharacterizationTests/XrpcMethodRegistryCharacterizationTests.m`
+- `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
+- `Garazyk/Tests/Integration/CommitChainTests.m`
 
 ## Appendix
 

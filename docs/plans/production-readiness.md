@@ -42,15 +42,15 @@ Primary generated artifacts:
    - `reports/xrpc_coverage.md:13`
    - `reports/xrpc_coverage.md:25`
 2. Refresh-token lifecycle is substantially improved:
-   - Expiry enforced in lookup query: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:278`
-   - Rotation + revocation in refresh path: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:323`
-   - Refresh response returns both tokens: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:343`
+   - Expiry enforced in lookup query: `Garazyk/Sources/Database/Service/ServiceDatabases.m:278`
+   - Rotation + revocation in refresh path: `Garazyk/Sources/App/Services/PDSAccountService.m:323`
+   - Refresh response returns both tokens: `Garazyk/Sources/App/Services/PDSAccountService.m:343`
 3. `refreshSession` contract now uses bearer auth header (not JSON body):
-   - `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:3903`
-   - Lexicon reference: `ATProtoPDS/Resources/lexicons/com/atproto/server/refreshSession.json:7`
+   - `Garazyk/Sources/Network/XrpcMethodRegistry.m:3903`
+   - Lexicon reference: `Garazyk/Resources/lexicons/com/atproto/server/refreshSession.json:7`
 4. XRPC DPoP nonce challenge behavior exists:
-   - `requireNonce:YES`: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5284`
-   - `DPoP-Nonce` header on challenge: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5290`
+   - `requireNonce:YES`: `Garazyk/Sources/Network/XrpcMethodRegistry.m:5284`
+   - `DPoP-Nonce` header on challenge: `Garazyk/Sources/Network/XrpcMethodRegistry.m:5290`
 
 ## Current Blocking Findings
 
@@ -59,10 +59,10 @@ Primary generated artifacts:
 **Impact:** Admin XRPC paths throw `unrecognized selector`, breaking privileged routes and risking process-level exceptions.
 
 Evidence:
-- Call site invokes 4-arg selector: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:85`
-- 4-arg selector declared in header: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.h:65`
-- Implemented method is 5-arg variant (`...request:response:`): `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5226`
-- Broad admin surface depends on this helper: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:1719`
+- Call site invokes 4-arg selector: `Garazyk/Sources/Network/XrpcMethodRegistry.m:85`
+- 4-arg selector declared in header: `Garazyk/Sources/Network/XrpcMethodRegistry.h:65`
+- Implemented method is 5-arg variant (`...request:response:`): `Garazyk/Sources/Network/XrpcMethodRegistry.m:5226`
+- Broad admin surface depends on this helper: `Garazyk/Sources/Network/XrpcMethodRegistry.m:1719`
 
 Test evidence:
 - `AdminAuthXrpcTests`: 34/34 failed with `unrecognized selector`
@@ -73,25 +73,25 @@ Test evidence:
 **Impact:** Non-ASCII passwords are truncated at PBKDF2 input length, creating unintended collisions and weaker credential handling.
 
 Evidence:
-- PBKDF2 uses UTF-8 pointer with UTF-16 length: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:402` and `ATProtoPDS/Sources/App/Services/PDSAccountService.m:403`
-- Salt buffer is 32 bytes but only first 16 bytes are populated from UUID bytes: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:388`
+- PBKDF2 uses UTF-8 pointer with UTF-16 length: `Garazyk/Sources/App/Services/PDSAccountService.m:402` and `Garazyk/Sources/App/Services/PDSAccountService.m:403`
+- Salt buffer is 32 bytes but only first 16 bytes are populated from UUID bytes: `Garazyk/Sources/App/Services/PDSAccountService.m:388`
 
 ### P1 — Base64URL decode padding bug in auth primitives
 
 **Impact:** Valid JWT/DPoP tokens can fail decoding for certain segment lengths, causing interoperability failures.
 
 Evidence:
-- Incorrect padding math in JWT decode: `ATProtoPDS/Sources/Auth/JWT.m:210`
-- Incorrect padding math in DPoP util decode: `ATProtoPDS/Sources/Auth/DPoPUtil.m:354`
+- Incorrect padding math in JWT decode: `Garazyk/Sources/Auth/JWT.m:210`
+- Incorrect padding math in DPoP util decode: `Garazyk/Sources/Auth/DPoPUtil.m:354`
 
 ### P1 — Issuer/public URL consistency still broken
 
 **Impact:** External identity metadata can publish localhost/http-derived values incompatible with production federation.
 
 Evidence:
-- HTTP server builder issuer hardcoded to localhost from app startup path: `ATProtoPDS/Sources/App/PDSApplication.m:427`
-- Builder fallback still defaults to localhost when issuer not supplied: `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m:277`
-- PLC endpoint fallback still permits plain `http://host:port`: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:470`
+- HTTP server builder issuer hardcoded to localhost from app startup path: `Garazyk/Sources/App/PDSApplication.m:427`
+- Builder fallback still defaults to localhost when issuer not supplied: `Garazyk/Sources/Network/PDSHttpServerBuilder.m:277`
+- PLC endpoint fallback still permits plain `http://host:port`: `Garazyk/Sources/App/Services/PDSAccountService.m:470`
 
 ### P1 — Backup script does not match runtime DB naming
 
@@ -99,20 +99,20 @@ Evidence:
 
 Evidence:
 - Backup script targets `service.sqlite`: `scripts/backup_pds.sh:88`
-- Runtime DB path uses `service.db`: `ATProtoPDS/Sources/Database/Pool/DatabasePool.m:63`
+- Runtime DB path uses `service.db`: `Garazyk/Sources/Database/Pool/DatabasePool.m:63`
 
 ### P2 — WebSocket backpressure remains unbounded
 
 **Impact:** Slow consumers can accumulate unbounded outbound queue memory under firehose load.
 
 Evidence:
-- Writes enqueue without byte/queue cap: `ATProtoPDS/Sources/Sync/WebSocketConnection.m:401`
-- Queue-bytes metric exists but is only observational (not enforced): `ATProtoPDS/Sources/Sync/WebSocketConnection.m:421`
+- Writes enqueue without byte/queue cap: `Garazyk/Sources/Sync/WebSocketConnection.m:401`
+- Queue-bytes metric exists but is only observational (not enforced): `Garazyk/Sources/Sync/WebSocketConnection.m:421`
 
 ### P2 — Reliability tests still fail hard in restricted environments
 
 Evidence:
-- `CoverageGapTests` currently fail in restricted socket environments (port bind denied at setup path): `ATProtoPDS/Tests/Services/CoverageGapTests.m:25`
+- `CoverageGapTests` currently fail in restricted socket environments (port bind denied at setup path): `Garazyk/Tests/Services/CoverageGapTests.m:25`
 
 ## Targeted Test Snapshot (This Audit)
 

@@ -9,8 +9,8 @@ The PDS at pds.garazyk.xyz is missing the `/.well-known/atproto-did` route handl
 - **Bug_Condition (C)**: The condition that triggers the bug - when a client requests `GET /.well-known/atproto-did` for a handle owned by the PDS
 - **Property (P)**: The desired behavior when the bug condition holds - the endpoint should return 200 with the DID as plain text
 - **Preservation**: Existing handle resolution behavior via DNS TXT records and other .well-known endpoints (OAuth, NodeInfo, did.json) that must remain unchanged
-- **PDSHttpServerBuilder**: The class in `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m` that configures HTTP routes for production deployment
-- **HandleResolver**: The class in `ATProtoPDS/Sources/Identity/HandleResolver.m` that attempts HTTPS resolution via `/.well-known/atproto-did` before falling back to DNS TXT
+- **PDSHttpServerBuilder**: The class in `Garazyk/Sources/Network/PDSHttpServerBuilder.m` that configures HTTP routes for production deployment
+- **HandleResolver**: The class in `Garazyk/Sources/Identity/HandleResolver.m` that attempts HTTPS resolution via `/.well-known/atproto-did` before falling back to DNS TXT
 - **PDSServiceDatabases**: The database service that provides access to account data for DID lookup
 
 ## Bug Details
@@ -105,7 +105,7 @@ _For any_ HTTP request that does NOT target `/.well-known/atproto-did`, the fixe
 
 Assuming our root cause analysis is correct:
 
-**File**: `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m`
+**File**: `Garazyk/Sources/Network/PDSHttpServerBuilder.m`
 
 **Method**: Add new method `registerWellKnownRoutesWithServer:`
 

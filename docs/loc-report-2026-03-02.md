@@ -46,5 +46,5 @@ The Network subsystem (HTTP server, XRPC dispatcher, routing) is by far the larg
 ## Methodology
 
 - Counted non-empty, non-comment lines in `.m`, `.h`, `.mm`, `.c`, `.cpp` files
-- Excludes test files (in `ATProtoPDS/Tests/`)
-- Production code only in `ATProtoPDS/Sources/`
+- Excludes test files (in `Garazyk/Tests/`)
+- Production code only in `Garazyk/Sources/`
