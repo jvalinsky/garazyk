@@ -149,7 +149,7 @@
     [scroll setDocumentView:_didTable];
     [scroll setHasHorizontalScroller:NO];
     [scroll setHasVerticalScroller:YES];
-    [scroll setAutohidesScroller:YES];
+    [scroll setAutohidesScrollers:YES];
     [parent addSubview:scroll];
 }
 
