@@ -25,6 +25,13 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                       headers:(NSDictionary<NSString *, NSString *> *)headers
                                          body:(nullable NSData *)body;
 
+- (nullable NSString *)handleRequestWithMethod:(PDSHTTPMethod)method
+                                         path:(NSString *)path
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType;
+
 @end
 
 @implementation PDSAdminHandler
@@ -73,6 +80,41 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
                                          path:(NSString *)path
                                       headers:(NSDictionary<NSString *, NSString *> *)headers
                                          body:(nullable NSData *)body {
+    return [self handleRequestWithMethod:method
+                                    path:path
+                                 headers:headers
+                                    body:body
+                              statusCode:nil
+                             contentType:nil];
+}
+
+- (nullable NSString *)handleRequestWithMethod:(PDSHTTPMethod)method
+                                         path:(NSString *)path
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    NSDictionary *packet = [self handleRequestPacketWithMethod:method
+                                                          path:path
+                                                       headers:headers
+                                                          body:body];
+    if (!packet) {
+        return nil;
+    }
+
+    if (statusCode) {
+        *statusCode = [packet[@"status"] integerValue];
+    }
+    if (contentType) {
+        *contentType = packet[@"contentType"];
+    }
+    return packet[@"body"];
+}
+
+- (nullable NSDictionary *)handleRequestPacketWithMethod:(PDSHTTPMethod)method
+                                                    path:(NSString *)path
+                                                 headers:(NSDictionary<NSString *, NSString *> *)headers
+                                                    body:(nullable NSData *)body {
     PDSAdminAuth *auth = [PDSAdminAuth sharedAuth];
 
     if (![path isEqualToString:@"/admin/login"] && ![auth isAuthenticatedWithRequest:headers]) {
@@ -106,7 +148,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     return nil;
 }
 
-- (NSString *)handleAdminIndex:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminIndex:(NSDictionary *)headers body:(NSData *)body {
     return [self jsonResponseWithStatus:200 body:@{
         @"message": @"PDS Admin Dashboard",
         @"version": @"1.0.0",
@@ -123,7 +165,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     }];
 }
 
-- (NSString *)handleAdminLogin:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminLogin:(NSDictionary *)headers body:(NSData *)body {
     if (!body) {
         return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing request body"}];
     }
@@ -153,12 +195,12 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     }
 }
 
-- (NSString *)handleAdminLogout:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminLogout:(NSDictionary *)headers body:(NSData *)body {
     [[PDSAdminAuth sharedAuth] logout];
     return [self jsonResponseWithStatus:200 body:@{@"message": @"Logged out"}];
 }
 
-- (NSString *)handleAdminUsers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
+- (NSDictionary *)handleAdminUsers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
     PDSDatabase *db = self.database;
     if (!db) {
         return [self jsonResponseWithStatus:200 body:@{@"users": @[], @"total": @0}];
@@ -195,7 +237,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     }];
 }
 
-- (NSString *)handleAdminInvites:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
+- (NSDictionary *)handleAdminInvites:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
     PDSDatabase *db = self.database;
 
     if (method == PDSHTTPMethodPOST) {
@@ -272,7 +314,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     }];
 }
 
-- (NSString *)handleAdminInviteDisable:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminInviteDisable:(NSDictionary *)headers body:(NSData *)body {
     if (!body) {
         return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing request body"}];
     }
@@ -302,14 +344,14 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     return [self jsonResponseWithStatus:200 body:@{@"message": @"Invite code disabled"}];
 }
 
-- (NSString *)handleAdminBlobs:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminBlobs:(NSDictionary *)headers body:(NSData *)body {
     return [self jsonResponseWithStatus:200 body:@{
         @"blobs": @[],
         @"total": @0
     }];
 }
 
-- (NSString *)handleAdminMetrics:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminMetrics:(NSDictionary *)headers body:(NSData *)body {
     NSString *accept = headers[@"Accept"] ?: headers[@"accept"] ?: @"";
     PDSMetrics *metrics = [PDSMetrics sharedMetrics];
 
@@ -326,7 +368,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     }];
 }
 
-- (NSString *)handleAdminHealth:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminHealth:(NSDictionary *)headers body:(NSData *)body {
     return [self jsonResponseWithStatus:200 body:@{
         @"status": @"ok",
         @"checks": @{
@@ -344,7 +386,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     }];
 }
 
-- (NSString *)handleAdminStats:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminStats:(NSDictionary *)headers body:(NSData *)body {
     PDSAdminService *svc = self.adminService;
     if (!svc) {
         return [self jsonResponseWithStatus:500 body:@{@"error": @"Admin service unavailable"}];
@@ -359,7 +401,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     return [self jsonResponseWithStatus:200 body:stats];
 }
 
-- (NSString *)handleAdminAuditLog:(NSDictionary *)headers body:(NSData *)body {
+- (NSDictionary *)handleAdminAuditLog:(NSDictionary *)headers body:(NSData *)body {
     PDSAdminService *svc = self.adminService;
     if (!svc) {
         return [self jsonResponseWithStatus:500 body:@{@"error": @"Admin service unavailable"}];
@@ -394,19 +436,28 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
     return [self jsonResponseWithStatus:200 body:result];
 }
 
-- (NSString *)jsonResponseWithStatus:(NSInteger)status body:(NSDictionary *)body {
+- (NSDictionary *)packetWithStatus:(NSInteger)status
+                       contentType:(NSString *)contentType
+                              body:(NSString *)body {
+    return @{
+        @"status": @(status),
+        @"contentType": contentType ?: @"application/json",
+        @"body": body ?: @""
+    };
+}
+
+- (NSDictionary *)jsonResponseWithStatus:(NSInteger)status body:(NSDictionary *)body {
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:body options:0 error:&error];
     if (error) {
-        return @"Internal Error";
+        return [self packetWithStatus:500 contentType:@"application/json" body:@"Internal Error"];
     }
-    return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    NSString *bodyString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    return [self packetWithStatus:status contentType:@"application/json" body:bodyString];
 }
 
-- (NSString *)textResponseWithStatus:(NSInteger)status body:(NSString *)body {
-    NSData *data = [body dataUsingEncoding:NSUTF8StringEncoding];
-    return [NSString stringWithFormat:@"HTTP/1.1 %ld\r\nContent-Type: text/plain\r\nContent-Length: %lu\r\n\r\n%@",
-            (long)status, (unsigned long)data.length, body];
+- (NSDictionary *)textResponseWithStatus:(NSInteger)status body:(NSString *)body {
+    return [self packetWithStatus:status contentType:@"text/plain; charset=utf-8" body:(body ?: @"")];
 }
 
 @end
