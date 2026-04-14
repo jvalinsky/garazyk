@@ -72,14 +72,8 @@
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
 
-    var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 900.0, 28.0)];
-    [title setStringValue:@"Relay Dashboard"];
-    [title setEditable:NO];
-    [title setBezeled:NO];
-    [title setDrawsBackground:NO];
-    [title setFont:[CPFont boldSystemFontOfSize:20.0]];
-
-    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1040.0, 20.0)];
+    // Note: Title removed - tab already shows "Dashboard" in Relay sub-tabs
+    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 1040.0, 20.0)];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -87,19 +81,19 @@
     [_statusLabel setStringValue:@"Loading metrics..."];
 
     // Connection cards row
-    [self buildConnectionCardsInView:_rootView atY:80.0];
+    [self buildConnectionCardsInView:_rootView atY:48.0];
 
     // Event stats section
-    [self buildEventStatsInView:_rootView atY:200.0];
+    [self buildEventStatsInView:_rootView atY:168.0];
 
     // Validation stats section
-    [self buildValidationStatsInView:_rootView atY:360.0];
+    [self buildValidationStatsInView:_rootView atY:328.0];
 
     // Sequence info section
-    [self buildSequenceInfoInView:_rootView atY:480.0];
+    [self buildSequenceInfoInView:_rootView atY:448.0];
 
     // Control buttons
-    var refreshBtn = [[CPButton alloc] initWithFrame:CGRectMake(20.0, 560.0, 100.0, 28.0)];
+    var refreshBtn = [[CPButton alloc] initWithFrame:CGRectMake(20.0, 528.0, 100.0, 28.0)];
     [refreshBtn setTitle:@"Refresh Now"];
     [refreshBtn setTarget:self];
     [refreshBtn setAction:@selector(handleRefresh:)];
@@ -110,7 +104,6 @@
     [autoRefreshBtn setTarget:self];
     [autoRefreshBtn setAction:@selector(handleToggleAutoRefresh:)];
 
-    [_rootView addSubview:title];
     [_rootView addSubview:_statusLabel];
     [_rootView addSubview:refreshBtn];
     [_rootView addSubview:autoRefreshBtn];
