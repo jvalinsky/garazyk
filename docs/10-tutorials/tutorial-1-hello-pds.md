@@ -33,7 +33,7 @@ You will build a working mental model of the startup path that powers the first 
 - Complete [Setup](../01-getting-started/setup)
 - Read [Codebase Map](../01-getting-started/codebase-map)
 - Read [Request Lifecycle](../01-getting-started/request-lifecycle)
-- Be able to build `ATProtoPDS-CLI`
+- Be able to build `kaszlak`
 
 ## Architecture Overview
 
@@ -147,7 +147,7 @@ Once you understand that path, the rest of the server stops feeling opaque.
 
 ```bash
 xcodegen generate
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
 ```
