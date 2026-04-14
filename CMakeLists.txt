@@ -600,6 +600,7 @@ target_link_libraries(ATProtoAppViewServer PRIVATE
   ATProtoSync
   ATProtoTransport
   ATProtoCore
+  ATProtoRuntime
   ${PLATFORM_LIBRARIES}
   ${SECP256K1_LIBRARIES}
 )
@@ -617,6 +618,7 @@ target_include_directories(syrena PRIVATE
 
 target_link_libraries(syrena PRIVATE
   ATProtoAppViewServer
+  ATProtoRuntime
   ATProtoStorage
   ATProtoServices
   ATProtoSync

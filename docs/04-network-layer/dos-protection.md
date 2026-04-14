@@ -275,7 +275,7 @@ if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Network/HttpServer.m` (lines 994-1005)
+**Source:** `Garazyk/Sources/Network/HttpServer.m` (lines 994-1005)
 
 **DID-Based Rate Limiting:**
 
@@ -510,7 +510,7 @@ if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/WebSocketConnection.m` (lines 280-300)
+**Source:** `Garazyk/Sources/Sync/WebSocketConnection.m` (lines 280-300)
 
 ## Monitoring and Detection
 

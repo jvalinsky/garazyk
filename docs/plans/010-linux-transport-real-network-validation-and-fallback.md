@@ -10,7 +10,7 @@ Harden and validate the Linux/GNUstep network transport with real Linux verifica
 
 ## Background / current state (as of 2026-02-12)
 
-- File: `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`
+- File: `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
 - Status:
   - non-blocking connect/read/write exists
   - hostname resolution via `getaddrinfo()` exists
@@ -118,8 +118,8 @@ Out-of-scope:
 
 ## Files likely touched
 
-- `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`
-- `ATProtoPDS/Tests/Network/*` (new tests)
+- `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
+- `Garazyk/Tests/Network/*` (new tests)
 - `docs/GNUSTEP_COMPATIBILITY.md` (if behavior/constraints need documenting)
 
 ## Definition of done

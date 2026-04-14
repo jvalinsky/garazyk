@@ -38,7 +38,7 @@ repo_next_steps_script="$root/scripts/generate_xrpc_next_steps.js"
 "$scripts_dir/map_endpoints.py" "$root" --json > "$output_dir/methods.json"
 
 if [[ -f "$repo_stub_script" && -f "$repo_coverage_script" && -f "$repo_next_steps_script" ]]; then
-  (cd "$root" && "$repo_stub_script" ATProtoPDS/Sources >/dev/null 2>&1 || true)
+  (cd "$root" && "$repo_stub_script" Garazyk/Sources >/dev/null 2>&1 || true)
 
   coverage_cmd=(node "$repo_coverage_script" --source-only)
   if [[ -n "$scope_file" ]]; then

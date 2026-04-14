@@ -21,38 +21,38 @@ Build a unified Admin Control Panel with 4 tabs (Overview, Accounts, Moderation,
 ### Phase 1: Backend - Audit Logging & Stats ✅
 
 **Files Modified:**
-- `ATProtoPDS/Sources/Database/Schema.h` - Added table declarations
-- `ATProtoPDS/Sources/Database/Schema.m` - Added admin_audit_log, reports, admin_config tables
-- `ATProtoPDS/Sources/Database/PDSDatabase.h` - Added category declarations
-- `ATProtoPDS/Sources/Database/PDSDatabase.m` - Added AdminAudit, Reports, AdminConfig categories
-- `ATProtoPDS/Sources/Services/PDSAdminService.h` - Added protocol methods
-- `ATProtoPDS/Sources/Services/PDSAdminService.m` - Implemented audit log, stats, reports methods
-- `ATProtoPDS/Sources/Admin/PDSAdminController.h` - Added controller methods
-- `ATProtoPDS/Sources/Admin/PDSAdminController.m` - Implemented delegation
-- `ATProtoPDS/Sources/Admin/PDSAdminHandler.m` - Added /admin/stats, /admin/audit-log routes
+- `Garazyk/Sources/Database/Schema.h` - Added table declarations
+- `Garazyk/Sources/Database/Schema.m` - Added admin_audit_log, reports, admin_config tables
+- `Garazyk/Sources/Database/PDSDatabase.h` - Added category declarations
+- `Garazyk/Sources/Database/PDSDatabase.m` - Added AdminAudit, Reports, AdminConfig categories
+- `Garazyk/Sources/Services/PDSAdminService.h` - Added protocol methods
+- `Garazyk/Sources/Services/PDSAdminService.m` - Implemented audit log, stats, reports methods
+- `Garazyk/Sources/Admin/PDSAdminController.h` - Added controller methods
+- `Garazyk/Sources/Admin/PDSAdminController.m` - Implemented delegation
+- `Garazyk/Sources/Admin/PDSAdminHandler.m` - Added /admin/stats, /admin/audit-log routes
 
 ### Phase 2: Backend - Reports System ✅
 
 **Files Modified:**
-- `ATProtoPDS/Sources/Network/XrpcHandler.h` - Added report endpoint declarations
-- `ATProtoPDS/Sources/Network/XrpcHandler.m` - Added registration methods
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` - Implemented handlers for:
+- `Garazyk/Sources/Network/XrpcHandler.h` - Added report endpoint declarations
+- `Garazyk/Sources/Network/XrpcHandler.m` - Added registration methods
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m` - Implemented handlers for:
   - `com.atproto.admin.getModerationReports`
   - `com.atproto.admin.resolveReport`
 
 ### Phase 3: Frontend - Admin Control Panel UI ✅
 
 **Files Created:**
-- `ATProtoPDS/Sources/App/AdminUI/Assets/js/admin-panel.js` - Main module with API helpers
-- `ATProtoPDS/Sources/App/AdminUI/Assets/js/admin-overview.js` - Overview tab
-- `ATProtoPDS/Sources/App/AdminUI/Assets/js/admin-accounts.js` - Accounts tab with search
-- `ATProtoPDS/Sources/App/AdminUI/Assets/js/admin-reports.js` - Moderation tab with filters
-- `ATProtoPDS/Sources/App/AdminUI/Assets/js/admin-system.js` - System tab with audit log
-- `ATProtoPDS/Sources/App/AdminUI/Assets/admin-panel.css` - Styling
+- `Garazyk/Sources/App/AdminUI/Assets/js/admin-panel.js` - Main module with API helpers
+- `Garazyk/Sources/App/AdminUI/Assets/js/admin-overview.js` - Overview tab
+- `Garazyk/Sources/App/AdminUI/Assets/js/admin-accounts.js` - Accounts tab with search
+- `Garazyk/Sources/App/AdminUI/Assets/js/admin-reports.js` - Moderation tab with filters
+- `Garazyk/Sources/App/AdminUI/Assets/js/admin-system.js` - System tab with audit log
+- `Garazyk/Sources/App/AdminUI/Assets/admin-panel.css` - Styling
 
 **Files Modified:**
-- `ATProtoPDS/Sources/App/Explore/Assets/index.html` - Added Admin Control Panel window
-- `ATProtoPDS/Sources/App/Explore/Assets/js/ui.js` - Integrated admin panel modules
+- `Garazyk/Sources/App/Explore/Assets/index.html` - Added Admin Control Panel window
+- `Garazyk/Sources/App/Explore/Assets/js/ui.js` - Integrated admin panel modules
 
 ### Phase 4: Integration & Cleanup ✅
 
@@ -67,7 +67,7 @@ Build a unified Admin Control Panel with 4 tabs (Overview, Accounts, Moderation,
 
 ### 1.1 Database Schema
 
-**File:** `ATProtoPDS/Sources/Database/Schema.m`
+**File:** `Garazyk/Sources/Database/Schema.m`
 
 Add new tables:
 
@@ -98,7 +98,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_created ON admin_audit_log(created_at);
 
 ### 1.2 Database Methods
 
-**File:** `ATProtoPDS/Sources/Database/PDSDatabase.m`
+**File:** `Garazyk/Sources/Database/PDSDatabase.m`
 
 Add category `PDSDatabase (AdminAudit)`:
 
@@ -110,7 +110,7 @@ Add category `PDSDatabase (AdminAudit)`:
 
 ### 1.3 Admin Service Updates
 
-**File:** `ATProtoPDS/Sources/Services/PDSAdminService.m`
+**File:** `Garazyk/Sources/Services/PDSAdminService.m`
 
 - Add `logAdminAction:` method that writes to audit log
 - Add `getServerStats` method returning:
@@ -123,7 +123,7 @@ Add category `PDSDatabase (AdminAudit)`:
 
 ### 1.4 Admin Controller Updates
 
-**File:** `ATProtoPDS/Sources/Admin/PDSAdminController.m`
+**File:** `Garazyk/Sources/Admin/PDSAdminController.m`
 
 - Add `- (NSDictionary *)getServerStats:(NSError **)error`
 - Add `- (NSArray *)queryAuditLog:(NSDictionary *)filters limit:(NSInteger)limit cursor:(NSString **)cursor error:(NSError **)error`
@@ -131,7 +131,7 @@ Add category `PDSDatabase (AdminAudit)`:
 
 ### 1.5 Admin HTTP Handler
 
-**File:** `ATProtoPDS/Sources/Admin/PDSAdminHandler.m`
+**File:** `Garazyk/Sources/Admin/PDSAdminHandler.m`
 
 Add routes:
 - `GET /admin/stats` - Return server statistics
@@ -148,7 +148,7 @@ Initialize `admin_config` with:
 
 ### 2.1 Database Schema
 
-**File:** `ATProtoPDS/Sources/Database/Schema.m`
+**File:** `Garazyk/Sources/Database/Schema.m`
 
 ```sql
 CREATE TABLE IF NOT EXISTS reports (
@@ -175,7 +175,7 @@ CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at);
 
 ### 2.2 Database Methods
 
-**File:** `ATProtoPDS/Sources/Database/PDSDatabase.m`
+**File:** `Garazyk/Sources/Database/PDSDatabase.m`
 
 Add category `PDSDatabase (Reports)`:
 
@@ -186,7 +186,7 @@ Add category `PDSDatabase (Reports)`:
 
 ### 2.3 Admin Service Reports
 
-**File:** `ATProtoPDS/Sources/Services/PDSAdminService.m`
+**File:** `Garazyk/Sources/Services/PDSAdminService.m`
 
 Add methods:
 - `- (NSDictionary *)createReport:(NSDictionary *)params error:(NSError **)error`
@@ -195,7 +195,7 @@ Add methods:
 
 ### 2.4 Admin Controller Reports
 
-**File:** `ATProtoPDS/Sources/Admin/PDSAdminController.m`
+**File:** `Garazyk/Sources/Admin/PDSAdminController.m`
 
 Add:
 - `- (NSDictionary *)getReports:(NSDictionary *)params error:(NSError **)error`
@@ -203,19 +203,19 @@ Add:
 
 ### 2.5 XRPC Registration
 
-**File:** `ATProtoPDS/Sources/Network/XrpcHandler.m`
+**File:** `Garazyk/Sources/Network/XrpcHandler.m`
 
 Register endpoints:
 - `com.atproto.admin.getModerationReports` - Query reports
 - `com.atproto.admin.resolveReport` - Resolve/dismiss a report
 
-**File:** `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**File:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 Implement handlers with proper auth checks.
 
 ### 2.6 Update Existing createReport
 
-**File:** `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**File:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 Verify `com.atproto.moderation.createReport` stores to `reports` table.
 
@@ -244,7 +244,7 @@ Add optional email notification when reports are resolved:
 
 ```
 
-ATProtoPDS/Sources/App/AdminUI/Assets/
+Garazyk/Sources/App/AdminUI/Assets/
 ├── admin-panel.html      # Main panel HTML (embedded in index.html or separate)
 ├── admin-panel.css       # Panel-specific styles
 ├── js/
@@ -456,13 +456,13 @@ export const AdminSystem = {
 
 ### 4.1 Update Main UI
 
-**File:** `ATProtoPDS/Sources/App/Explore/Assets/index.html`
+**File:** `Garazyk/Sources/App/Explore/Assets/index.html`
 
 - Remove `win-invite-codes` and `win-moderation` windows
 - Add `win-admin-panel` window structure
 - Add script imports for admin modules
 
-**File:** `ATProtoPDS/Sources/App/Explore/Assets/js/ui.js`
+**File:** `Garazyk/Sources/App/Explore/Assets/js/ui.js`
 
 - Update Admin menu handlers:
   - Remove direct invite/moderation window opens

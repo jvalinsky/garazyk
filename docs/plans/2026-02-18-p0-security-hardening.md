@@ -64,11 +64,11 @@ git commit -m "fix(backup): remove duplicated script body in backup_pds.sh"
 ## Task 2: Update storeRefreshToken to Use Configurable Expiration
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:344-367`
+- Modify: `Garazyk/Sources/Database/Service/ServiceDatabases.m:344-367`
 
 **Step 1: Write failing test**
 
-Create test in `ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m`:
+Create test in `Garazyk/Tests/Database/Service/ServiceDatabasesTests.m`:
 
 ```objc
 - (void)testStoreRefreshToken_UsesConfigurableExpiration {
@@ -108,7 +108,7 @@ Expected: PASS (hardcoded 30 days still works)
 
 **Step 3: Modify storeRefreshToken to use configurable expiration**
 
-Modify `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m:357`:
+Modify `Garazyk/Sources/Database/Service/ServiceDatabases.m:357`:
 
 ```objc
 // OLD (line 357):
@@ -138,7 +138,7 @@ Expected: All tests pass, 0 failures
 **Step 6: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Database/Service/ServiceDatabases.m ATProtoPDS/Tests/Database/Service/ServiceDatabasesTests.m
+git add Garazyk/Sources/Database/Service/ServiceDatabases.m Garazyk/Tests/Database/Service/ServiceDatabasesTests.m
 git commit -m "feat(auth): use configurable refresh token TTL from PDSConfiguration
 
 - Replace hardcoded 30-day expiration with configurable refreshTokenTtlSeconds
@@ -151,8 +151,8 @@ git commit -m "feat(auth): use configurable refresh token TTL from PDSConfigurat
 ## Task 3: Verify Refresh Token Rotation Implementation
 
 **Files:**
-- Verify: `ATProtoPDS/Sources/App/Services/PDSAccountService.m:304-348`
-- Test: `ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m`
+- Verify: `Garazyk/Sources/App/Services/PDSAccountService.m:304-348`
+- Test: `Garazyk/Tests/App/Services/PDSAccountServiceTests.m`
 
 **Step 1: Review existing implementation**
 
@@ -165,7 +165,7 @@ Verify token rotation with a test.
 
 **Step 2: Write test for token rotation**
 
-Add test to `ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m`:
+Add test to `Garazyk/Tests/App/Services/PDSAccountServiceTests.m`:
 
 ```objc
 - (void)testRefreshAccessToken_RotatesRefreshToken {
@@ -228,7 +228,7 @@ Expected: All tests pass, 0 failures
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m
+git add Garazyk/Tests/App/Services/PDSAccountServiceTests.m
 git commit -m "test(auth): verify refresh token rotation behavior
 
 - Add test confirming old token is revoked on refresh
@@ -241,7 +241,7 @@ git commit -m "test(auth): verify refresh token rotation behavior
 ## Task 4: Verify DPoP-Nonce Header Generation
 
 **Files:**
-- Verify: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m:5146-5264`
+- Verify: `Garazyk/Sources/Network/XrpcMethodRegistry.m:5146-5264`
 
 **Step 1: Review existing implementation**
 
@@ -254,7 +254,7 @@ This is already implemented! We need to verify it works correctly.
 
 **Step 2: Write integration test for DPoP nonce flow**
 
-Create new test file `ATProtoPDS/Tests/Network/DPoPNonceFlowTests.m`:
+Create new test file `Garazyk/Tests/Network/DPoPNonceFlowTests.m`:
 
 ```objc
 #import <XCTest/XCTest.h>
@@ -348,7 +348,7 @@ Expected: All tests pass, 0 failures
 **Step 6: Commit**
 
 ```bash
-git add ATProtoPDS/Tests/Network/DPoPNonceFlowTests.m
+git add Garazyk/Tests/Network/DPoPNonceFlowTests.m
 git commit -m "test(auth): add DPoP nonce challenge flow tests
 
 - Verify 401 response with DPoP-Nonce header when proof lacks nonce

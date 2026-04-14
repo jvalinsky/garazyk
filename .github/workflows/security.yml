@@ -88,11 +88,11 @@ jobs:
           CLANG_TIDY="$LLVM_BIN/clang-tidy"
 
           FILES=(
-            ATProtoPDS/Sources/Repository/CBOR.m
-            ATProtoPDS/Sources/Network/HttpRequest.m
-            ATProtoPDS/Sources/Network/XrpcHandler.m
-            ATProtoPDS/Sources/Database/ActorStore/ActorStore.m
-            ATProtoPDS/Sources/Auth/JWT.m
+            Garazyk/Sources/Repository/CBOR.m
+            Garazyk/Sources/Network/HttpRequest.m
+            Garazyk/Sources/Network/XrpcHandler.m
+            Garazyk/Sources/Database/ActorStore/ActorStore.m
+            Garazyk/Sources/Auth/JWT.m
           )
 
           for f in "${FILES[@]}"; do
@@ -106,13 +106,13 @@ jobs:
           CLANG_TIDY="$LLVM_BIN/clang-tidy"
 
           FILES=(
-            ATProtoPDS/Sources/PLC/PLCOperation.m
-            ATProtoPDS/Sources/PLC/PLCRotationKeyManager.m
-            ATProtoPDS/Sources/PLC/DIDPLCResolver.m
-            ATProtoPDS/Sources/PLC/PLCServer.m
-            ATProtoPDS/Sources/PLC/PLCAuditor.m
-            ATProtoPDS/Sources/Core/DID.m
-            ATProtoPDS/Sources/Network/XrpcMethodRegistry.m
+            Garazyk/Sources/PLC/PLCOperation.m
+            Garazyk/Sources/PLC/PLCRotationKeyManager.m
+            Garazyk/Sources/PLC/DIDPLCResolver.m
+            Garazyk/Sources/PLC/PLCServer.m
+            Garazyk/Sources/PLC/PLCAuditor.m
+            Garazyk/Sources/Core/DID.m
+            Garazyk/Sources/Network/XrpcMethodRegistry.m
           )
 
           for f in "${FILES[@]}"; do

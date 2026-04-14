@@ -21,12 +21,12 @@ This document analyzes `did:web` account creation support in the September PDS c
 ### Location
 - **Branch:** `wip-pre-mst-viewer`
 - **Commit:** `77ea749`
-- **File:** `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- **File:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 - **Lines:** ~60-170
 
 ### How to View
 ```bash
-git show 77ea749:ATProtoPDS/Sources/Network/XrpcMethodRegistry.m | sed -n '60,170p'
+git show 77ea749:Garazyk/Sources/Network/XrpcMethodRegistry.m | sed -n '60,170p'
 ```
 
 ### What It Does
@@ -78,12 +78,12 @@ When a `did` parameter is passed to `com.atproto.server.createAccount`, the code
 ### Location
 - **Branch:** `wip-pre-mst-viewer`
 - **Commit:** `77ea749`
-- **File:** `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- **File:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 - **Lines:** ~870-900
 
 ### How to View
 ```bash
-git show 77ea749:ATProtoPDS/Sources/Network/XrpcMethodRegistry.m | sed -n '870,900p'
+git show 77ea749:Garazyk/Sources/Network/XrpcMethodRegistry.m | sed -n '870,900p'
 ```
 
 ### What It Does
@@ -138,12 +138,12 @@ if (pds) {
 ### Location
 - **Branch:** `routing-rewrite`
 - **Commit:** `be53ebc`
-- **File:** `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- **File:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 - **Lines:** ~593-620
 
 ### How to View
 ```bash
-git show be53ebc:ATProtoPDS/Sources/Network/XrpcMethodRegistry.m | sed -n '593,620p'
+git show be53ebc:Garazyk/Sources/Network/XrpcMethodRegistry.m | sed -n '593,620p'
 ```
 
 ### What It Does
@@ -165,7 +165,7 @@ The `com.atproto.admin.updateSubjectStatus` endpoint handles account activation/
 ```
 
 ### CLI Implementation (Main Branch)
-- **File:** `ATProtoPDS/Sources/CLI/PDSCLIAccountCommand.m`
+- **File:** `Garazyk/Sources/CLI/PDSCLIAccountCommand.m`
 - **Lines:** 194-201, 498-514
 
 ```objectivec
@@ -178,12 +178,12 @@ The `com.atproto.admin.updateSubjectStatus` endpoint handles account activation/
 ## 4. DID Document Serving
 
 ### Location (Main Branch)
-- **File:** `ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m`
+- **File:** `Garazyk/Sources/CLI/PDSCLIServeCommand.m`
 - **Lines:** 224-249
 
 ### How to View
 ```bash
-cat ATProtoPDS/Sources/CLI/PDSCLIServeCommand.m | sed -n '224,249p'
+cat Garazyk/Sources/CLI/PDSCLIServeCommand.m | sed -n '224,249p'
 ```
 
 ### What It Does
@@ -222,7 +222,7 @@ The `verificationMethod` array is empty. It should include the server's signing 
 ## 5. Identity Infrastructure (Main Branch)
 
 ### DID Key Encoding
-- **File:** `ATProtoPDS/Sources/Identity/DIDKeyEncoder.m`
+- **File:** `Garazyk/Sources/Identity/DIDKeyEncoder.m`
 - **Commit:** `431617c`
 
 Encodes secp256k1 public keys as `did:key` format:
@@ -232,13 +232,13 @@ Encodes secp256k1 public keys as `did:key` format:
 ```
 
 ### PLC Operation Builder
-- **File:** `ATProtoPDS/Sources/Identity/PLCOperationBuilder.m`
+- **File:** `Garazyk/Sources/Identity/PLCOperationBuilder.m`
 - **Commit:** `431617c`
 
 Builds and signs PLC genesis operations for `did:plc` creation.
 
 ### DNS TXT Resolution
-- **File:** `ATProtoPDS/Sources/Identity/HandleResolver.m`
+- **File:** `Garazyk/Sources/Identity/HandleResolver.m`
 - **Line:** 280
 
 ```objectivec
@@ -247,7 +247,7 @@ NSString *dnsName = [NSString stringWithFormat:@"_atproto.%@", handle];
 ```
 
 ### Secp256k1 Key Generation
-- **File:** `ATProtoPDS/Sources/Auth/Secp256k1.m`
+- **File:** `Garazyk/Sources/Auth/Secp256k1.m`
 
 ```objectivec
 + (nullable instancetype)generateKeyPair:(NSError **)error;
@@ -259,7 +259,7 @@ NSString *dnsName = [NSString stringWithFormat:@"_atproto.%@", handle];
 ## 6. Actor Signing Keys
 
 ### Location (Main Branch)
-- **File:** `ATProtoPDS/Sources/Database/ActorStore/ActorStore.m`
+- **File:** `Garazyk/Sources/Database/ActorStore/ActorStore.m`
 - **Lines:** 1071-1092
 
 ### What It Does
@@ -329,17 +329,17 @@ Wrap `PDSCLIAccountCommand.reactivateAccount` as XRPC endpoint.
 
 ### View JWT verification code
 ```bash
-git show 77ea749:ATProtoPDS/Sources/Network/XrpcMethodRegistry.m | head -200
+git show 77ea749:Garazyk/Sources/Network/XrpcMethodRegistry.m | head -200
 ```
 
 ### View getRecommendedDidCredentials
 ```bash
-git show 77ea749:ATProtoPDS/Sources/Network/XrpcMethodRegistry.m | sed -n '870,900p'
+git show 77ea749:Garazyk/Sources/Network/XrpcMethodRegistry.m | sed -n '870,900p'
 ```
 
 ### View account deactivation
 ```bash
-git show be53ebc:ATProtoPDS/Sources/Network/XrpcMethodRegistry.m | sed -n '590,650p'
+git show be53ebc:Garazyk/Sources/Network/XrpcMethodRegistry.m | sed -n '590,650p'
 ```
 
 ### List all relevant commits

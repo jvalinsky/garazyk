@@ -20,8 +20,8 @@ The codebase uses **Apple's HeaderDoc style** as the primary documentation forma
 ### 1.1 Migrate Javadoc → HeaderDoc
 
 **Files to update:**
-- `ATProtoPDS/Sources/Email/PDSEmailProvider.h`
-- `ATProtoPDS/Sources/Blob/PDSBlobProvider.h`
+- `Garazyk/Sources/Email/PDSEmailProvider.h`
+- `Garazyk/Sources/Blob/PDSBlobProvider.h`
 
 **Change:**
 ```objective-c
@@ -57,8 +57,8 @@ All `.h` files should have consistent file-level documentation:
 ```
 
 **Files missing proper headers:**
-- `ATProtoPDS/Sources/PLC/*.h` (multiple files)
-- `ATProtoPDS/Sources/Sync/*.h` (some files)
+- `Garazyk/Sources/PLC/*.h` (multiple files)
+- `Garazyk/Sources/Sync/*.h` (some files)
 
 ---
 
@@ -465,7 +465,7 @@ Mark API stability:
 ### HeaderDoc Generation
 ```bash
 # Generate HTML documentation
-headerdoc2html -o docs/api ATProtoPDS/Sources
+headerdoc2html -o docs/api Garazyk/Sources
 
 # Resolve cross-references
 resolveLinks docs/api

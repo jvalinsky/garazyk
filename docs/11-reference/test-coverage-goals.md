@@ -30,7 +30,7 @@ September PDS maintains comprehensive test coverage with over 1,017 tests across
 
 ```
 
-ATProtoPDS/Sources/
+Garazyk/Sources/
 ├── Core/           95%+ coverage (CBOR, CAR, CID, MST are critical)
 ├── Auth/           90%+ coverage (OAuth, JWT, DPoP, TOTP, WebAuthn)
 ├── Network/        85%+ coverage (HttpServer, XRPC dispatch)

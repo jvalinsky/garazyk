@@ -1,12 +1,12 @@
 [submodule "secp256k1"]
-	path = secp256k1
+	path = vendor/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1
-[submodule "reference/gnustep-base"]
-	path = reference/gnustep-base
+[submodule "vendor/reference/gnustep-base"]
+	path = vendor/reference/gnustep-base
 	url = https://github.com/gnustep/libs-base.git
-[submodule "reference/gnustep-corebase"]
-	path = reference/gnustep-corebase
+[submodule "vendor/reference/gnustep-corebase"]
+	path = vendor/reference/gnustep-corebase
 	url = https://github.com/gnustep/libs-corebase.git
-[submodule "reference/libobjc2"]
-	path = reference/libobjc2
+[submodule "vendor/reference/libobjc2"]
+	path = vendor/reference/libobjc2
 	url = https://github.com/gnustep/libobjc2.git

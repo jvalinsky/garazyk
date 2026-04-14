@@ -110,7 +110,7 @@ Uses `bafyre` prefix with base64url-encoded SHA-256 (59 chars).
 
 ## Test Files
 
-- **Integration Tests:** `ATProtoPDS/Tests/Network/PDSIntegrationTests.m`
+- **Integration Tests:** `Garazyk/Tests/Network/PDSIntegrationTests.m`
 - **Test Command:** `./build/tests/AllTests`
 - **Test Count:** 7 tests covering session lifecycle, records, tokens, and authentication
 

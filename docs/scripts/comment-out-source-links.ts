@@ -4,7 +4,7 @@
  * Comment Out Source Code Links
  * 
  * Comments out links to source files outside the docs directory
- * (e.g., ../../ATProtoPDS/Sources/...)
+ * (e.g., ../../Garazyk/Sources/...)
  * These cause VitePress build failures and won't work in deployed docs anyway
  */
 
@@ -28,7 +28,7 @@ function commentOutSourceLinks(filepath: string): number {
   const originalContent = content;
   let fixed = 0;
   
-  // Pattern: Links to ../../ATProtoPDS/ or ../../Sources/
+  // Pattern: Links to ../../Garazyk/ or ../../Sources/
   const sourcePattern = /\[([^\]]+)\]\((\.\.\/\.\.\/(?:ATProtoPDS|Sources)\/[^)]+)\)/g;
   const matches = [...content.matchAll(sourcePattern)];
   

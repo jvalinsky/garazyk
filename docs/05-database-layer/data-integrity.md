@@ -14,7 +14,7 @@ Data integrity is critical for a PDS. This document covers verification strategi
 
 The primary integrity verification uses SQLite's built-in `PRAGMA integrity_check`:
 
-**Source:** `ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 60-90)
+**Source:** `Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 60-90)
 
 ```objc
 - (PDSHealthStatus)checkDatabaseIntegrity:(NSError **)error {
@@ -73,7 +73,7 @@ The primary integrity verification uses SQLite's built-in `PRAGMA integrity_chec
 
 Verify referential integrity between tables:
 
-**Source:** `ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 92-120)
+**Source:** `Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 92-120)
 
 ```objc
 - (BOOL)checkForeignKeys:(NSError **)error {
@@ -322,7 +322,7 @@ Verify account data is consistent:
 
 ### Measuring Fragmentation
 
-**Source:** `ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 150-170)
+**Source:** `Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 150-170)
 
 ```objc
 - (NSUInteger)getFragmentationPercent {
@@ -538,7 +538,7 @@ Update query planner statistics:
 
 ### Comprehensive Health Check
 
-**Source:** `ATProtoPDS/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 20-60)
+**Source:** `Garazyk/Sources/Database/Monitoring/PDSHealthCheck.m` (Lines 20-60)
 
 ```objc
 - (NSDictionary<NSString *, id> *)performHealthCheck {

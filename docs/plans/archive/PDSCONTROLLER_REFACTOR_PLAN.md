@@ -31,7 +31,7 @@ Good news: Service classes already exist but aren't fully utilized:
 
 ```
 
-ATProtoPDS/Sources/App/Services/
+Garazyk/Sources/App/Services/
 ├── PDSAccountService.h/m      ✅ Well-defined protocol
 ├── PDSBlobService.h/m         ✅ Good abstraction
 ├── PDSRecordService.h/m       ✅ Good abstraction  
@@ -102,7 +102,7 @@ ATProtoPDS/Sources/App/Services/
 **Goal**: Move HTTP server configuration out of `PDSController`
 
 **New Files**:
-- `ATProtoPDS/Sources/Network/PDSServerConfiguration.h/m`
+- `Garazyk/Sources/Network/PDSServerConfiguration.h/m`
 
 **Changes**:
 
@@ -144,7 +144,7 @@ ATProtoPDS/Sources/App/Services/
 **Goal**: Extract admin, moderation, and labeling operations
 
 **New Files**:
-- `ATProtoPDS/Sources/Admin/PDSAdminController.h/m`
+- `Garazyk/Sources/Admin/PDSAdminController.h/m`
 
 **Interface**:
 
@@ -240,7 +240,7 @@ ATProtoPDS/Sources/App/Services/
 **Goal**: Introduce new entry point that composes controllers
 
 **New Files**:
-- `ATProtoPDS/Sources/App/PDSApplication.h/m`
+- `Garazyk/Sources/App/PDSApplication.h/m`
 
 **Interface**:
 
@@ -410,7 +410,7 @@ ATProtoPDS/Sources/App/Services/
 
 ```
 
-ATProtoPDS/Sources/
+Garazyk/Sources/
 ├── App/
 │   ├── PDSApplication.h/m           # NEW: Main entry point
 │   ├── PDSController.h/m            # MODIFIED: Thin facade (deprecated)

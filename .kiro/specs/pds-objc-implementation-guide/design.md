@@ -339,11 +339,11 @@ HTTP Response
 ### Code Example Sources
 
 Examples will be extracted from:
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` — Method registration
-- `ATProtoPDS/Sources/Services/` — Service implementations
-- `ATProtoPDS/Sources/Database/` — Database patterns
-- `ATProtoPDS/Sources/Auth/` — Authentication flows
-- `ATProtoPDS/Sources/Sync/` — Firehose implementation
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m` — Method registration
+- `Garazyk/Sources/Services/` — Service implementations
+- `Garazyk/Sources/Database/` — Database patterns
+- `Garazyk/Sources/Auth/` — Authentication flows
+- `Garazyk/Sources/Sync/` — Firehose implementation
 
 ### Diagram Generation
 

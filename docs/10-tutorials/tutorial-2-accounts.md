@@ -49,8 +49,8 @@ flowchart LR
 
 The best starting point is:
 
-- `ATProtoPDS/Sources/App/Services/PDSAccountService.m`
-- `ATProtoPDS/Sources/App/Services/PDSAccountService.h`
+- `Garazyk/Sources/App/Services/PDSAccountService.m`
+- `Garazyk/Sources/App/Services/PDSAccountService.h`
 
 Why start there?
 
@@ -111,9 +111,9 @@ That second path is why this tutorial should be read together with [Tutorial 4: 
 
 The fastest way to stabilize your understanding is to move from source to tests:
 
-- `ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m`
-- `ATProtoPDS/Tests/Auth/JWTTests.m`
-- `ATProtoPDS/Tests/CLI/PDSCLIAccountCommandTests.m`
+- `Garazyk/Tests/App/Services/PDSAccountServiceTests.m`
+- `Garazyk/Tests/Auth/JWTTests.m`
+- `Garazyk/Tests/CLI/PDSCLIAccountCommandTests.m`
 
 Those files show:
 

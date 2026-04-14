@@ -70,10 +70,10 @@ The common mistake is to go to logs before knowing which layer should be logging
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m`
-- `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m`
-- `ATProtoPDS/Tests/Integration/CommitChainTests.m`
+- `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
+- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
+- `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
+- `Garazyk/Tests/Integration/CommitChainTests.m`
 
 ## Appendix
 

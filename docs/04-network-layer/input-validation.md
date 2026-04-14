@@ -23,7 +23,7 @@ The `ATProtoValidator` class provides static methods for validating AT Protocol 
 #### DID Validation
 
 ```objc
-// From ATProtoPDS/Sources/Core/ATProtoValidator.m
+// From Garazyk/Sources/Core/ATProtoValidator.m
 
 + (BOOL)validateDID:(NSString *)did error:(NSError **)error {
     if (!did) {
@@ -92,7 +92,7 @@ The `ATProtoValidator` class provides static methods for validating AT Protocol 
 #### Handle Validation
 
 ```objc
-// From ATProtoPDS/Sources/Core/ATProtoValidator.m
+// From Garazyk/Sources/Core/ATProtoValidator.m
 
 + (BOOL)validateHandle:(NSString *)handle error:(NSError **)error {
     if (!handle) {
@@ -143,7 +143,7 @@ The `ATProtoValidator` class provides static methods for validating AT Protocol 
 #### CID Validation
 
 ```objc
-// From ATProtoPDS/Sources/Core/ATProtoValidator.m
+// From Garazyk/Sources/Core/ATProtoValidator.m
 
 + (BOOL)validateCID:(NSString *)cid error:(NSError **)error {
     if (!cid) {
@@ -205,7 +205,7 @@ The `MimeTypeValidator` class enforces strict content type validation and size l
 #### MIME Type Validation
 
 ```objc
-// From ATProtoPDS/Sources/Blob/MimeTypeValidator.m
+// From Garazyk/Sources/Blob/MimeTypeValidator.m
 
 - (BOOL)validateMimeType:(NSString *)mimeType error:(NSError **)error {
     if (!mimeType || mimeType.length == 0) {
@@ -241,7 +241,7 @@ The `MimeTypeValidator` class enforces strict content type validation and size l
 #### Size Validation
 
 ```objc
-// From ATProtoPDS/Sources/Blob/MimeTypeValidator.m
+// From Garazyk/Sources/Blob/MimeTypeValidator.m
 
 - (BOOL)validateSize:(NSUInteger)fileSize 
          forMimeType:(NSString *)mimeType 
@@ -282,7 +282,7 @@ The `MimeTypeValidator` class enforces strict content type validation and size l
 Magic number validation prevents MIME type spoofing by verifying file headers match the claimed content type:
 
 ```objc
-// From ATProtoPDS/Sources/Blob/MimeTypeValidator.m
+// From Garazyk/Sources/Blob/MimeTypeValidator.m
 
 - (BOOL)validateMagicNumbers:(NSData *)data 
             forMimeType:(NSString *)claimedMimeType 
@@ -339,7 +339,7 @@ Magic number validation prevents MIME type spoofing by verifying file headers ma
 XRPC handlers validate request parameters before processing:
 
 ```objc
-// Pattern from ATProtoPDS/Sources/Services/PDSAdminService.m
+// Pattern from Garazyk/Sources/Services/PDSAdminService.m
 
 - (BOOL)disableInviteCodes:(NSArray<NSString *> *)codes
                   accounts:(nullable NSArray<NSString *> *)accounts
@@ -384,7 +384,7 @@ XRPC handlers validate request parameters before processing:
 Sanitization removes sensitive or internal-only data before external transmission:
 
 ```objc
-// From ATProtoPDS/Sources/Sync/EventFormatter.m
+// From Garazyk/Sources/Sync/EventFormatter.m
 
 - (NSDictionary *)formatCommitEvent:(CommitEvent *)event {
     NSMutableDictionary *payload = [NSMutableDictionary dictionary];

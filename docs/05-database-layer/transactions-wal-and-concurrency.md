@@ -41,7 +41,7 @@ If you only think "SQLite has WAL enabled," you will miss half the failure modes
 
 ## Walkthrough: A Normal Actor Write
 
-The actor-store path in `ATProtoPDS/Sources/Database/ActorStore/ActorStore.m` is the core example.
+The actor-store path in `Garazyk/Sources/Database/ActorStore/ActorStore.m` is the core example.
 
 1. A request reaches the store through `DatabasePool`.
 2. The store executes work on its transaction queue so one actor's writes are serialized.
@@ -62,17 +62,17 @@ That is a design fact contributors need to keep in mind when changing side-effec
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/Database/ActorStore/ActorStore.m` for transaction queueing, explicit `BEGIN` and `COMMIT`, and prepared-statement failures.
-- Start in `ATProtoPDS/Sources/Database/Service/ServiceDatabases.m` for WAL pragmas and shared-store coordination.
-- Start in `ATProtoPDS/Sources/Database/Pool/DatabasePool.m` when store reuse, eviction, or path selection causes repeated open-close churn.
+- Start in `Garazyk/Sources/Database/ActorStore/ActorStore.m` for transaction queueing, explicit `BEGIN` and `COMMIT`, and prepared-statement failures.
+- Start in `Garazyk/Sources/Database/Service/ServiceDatabases.m` for WAL pragmas and shared-store coordination.
+- Start in `Garazyk/Sources/Database/Pool/DatabasePool.m` when store reuse, eviction, or path selection causes repeated open-close churn.
 - Start in the owning service when the bug is really cross-store ordering rather than raw SQLite behavior.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Database/Pool/DatabasePoolTests.m`
-- `ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m`
-- `ATProtoPDS/Tests/Integration/CommitChainTests.m`
+- `Garazyk/Tests/Database/Pool/DatabasePoolTests.m`
+- `Garazyk/Tests/Database/Integration/DatabaseMigrationTests.m`
+- `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
+- `Garazyk/Tests/Integration/CommitChainTests.m`
 
 ## Appendix
 

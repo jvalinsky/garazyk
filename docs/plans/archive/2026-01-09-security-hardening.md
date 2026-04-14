@@ -17,8 +17,8 @@ title: Security Hardening Implementation Plan
 ## Task 1: OAuth Client Secret Validation
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m` (Create if needed, or add to existing)
+- Modify: `Garazyk/Sources/Auth/OAuth2Handler.m`
+- Test: `Garazyk/Tests/Auth/OAuth2HandlerTests.m` (Create if needed, or add to existing)
 
 **Step 1: Write the failing test**
 
@@ -48,7 +48,7 @@ Expected: FAIL (likely returns 200 or 400, not 401 for secret mismatch)
 **Step 3: Write minimal implementation**
 
 ```objectivec
-// In ATProtoPDS/Sources/Auth/OAuth2Handler.m - handleTokenRequest:
+// In Garazyk/Sources/Auth/OAuth2Handler.m - handleTokenRequest:
 // After client ID validation:
 NSString *clientSecret = params[@"client_secret"];
 if (!clientSecret || ![clientSecret isEqualToString:client[@"client_secret"]]) {
@@ -69,7 +69,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/OAuth2Handler.m ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m
+git add Garazyk/Sources/Auth/OAuth2Handler.m Garazyk/Tests/Auth/OAuth2HandlerTests.m
 git commit -m "fix(auth): enforce client_secret validation in token endpoint"
 ```
 
@@ -78,10 +78,10 @@ git commit -m "fix(auth): enforce client_secret validation in token endpoint"
 ### Task 2: JWT Algorithm Restriction
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/JWT.h` (Add property)
-- Modify: `ATProtoPDS/Sources/Auth/JWT.m` (Use property)
-- Modify: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` (Set allowed algs)
-- Test: `ATProtoPDS/Tests/Auth/JWTTests.m`
+- Modify: `Garazyk/Sources/Auth/JWT.h` (Add property)
+- Modify: `Garazyk/Sources/Auth/JWT.m` (Use property)
+- Modify: `Garazyk/Sources/Network/XrpcMethodRegistry.m` (Set allowed algs)
+- Test: `Garazyk/Tests/Auth/JWTTests.m`
 
 **Step 1: Write the failing test**
 
@@ -111,12 +111,12 @@ Expected: FAIL (Compile error or test failure)
 
 **Step 3: Write minimal implementation**
 
-In `ATProtoPDS/Sources/Auth/JWT.h`:
+In `Garazyk/Sources/Auth/JWT.h`:
 ```objectivec
 @property (nonatomic, copy) NSArray<NSString *> *allowedAlgorithms;
 ```
 
-In `ATProtoPDS/Sources/Auth/JWT.m - verifyJWT:error:`:
+In `Garazyk/Sources/Auth/JWT.m - verifyJWT:error:`:
 ```objectivec
 if (self.allowedAlgorithms && ![self.allowedAlgorithms containsObject:jwt.header.alg]) {
     if (error) {
@@ -128,7 +128,7 @@ if (self.allowedAlgorithms && ![self.allowedAlgorithms containsObject:jwt.header
 }
 ```
 
-In `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`:
+In `Garazyk/Sources/Network/XrpcMethodRegistry.m`:
 ```objectivec
 verifier.allowedAlgorithms = @[@"RS256", @"ES256"];
 ```
@@ -141,7 +141,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/JWT.h ATProtoPDS/Sources/Auth/JWT.m ATProtoPDS/Sources/Network/XrpcMethodRegistry.m ATProtoPDS/Tests/Auth/JWTTests.m
+git add Garazyk/Sources/Auth/JWT.h Garazyk/Sources/Auth/JWT.m Garazyk/Sources/Network/XrpcMethodRegistry.m Garazyk/Tests/Auth/JWTTests.m
 git commit -m "feat(auth): restrict allowed JWT algorithms"
 ```
 
@@ -150,8 +150,8 @@ git commit -m "feat(auth): restrict allowed JWT algorithms"
 ### Task 3: OAuth State Parameter Requirement
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
+- Modify: `Garazyk/Sources/Auth/OAuth2Handler.m`
+- Test: `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
 
 **Step 1: Write the failing test**
 
@@ -173,7 +173,7 @@ Expected: FAIL (returns 200/302)
 
 **Step 3: Write minimal implementation**
 
-In `ATProtoPDS/Sources/Auth/OAuth2Handler.m`:
+In `Garazyk/Sources/Auth/OAuth2Handler.m`:
 ```objectivec
 if (!params[@"state"] || [(NSString *)params[@"state"] length] == 0) {
     response.statusCode = 400;
@@ -190,7 +190,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/OAuth2Handler.m ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m
+git add Garazyk/Sources/Auth/OAuth2Handler.m Garazyk/Tests/Auth/OAuth2HandlerTests.m
 git commit -m "fix(auth): require state parameter for CSRF protection"
 ```
 
@@ -199,8 +199,8 @@ git commit -m "fix(auth): require state parameter for CSRF protection"
 ### Task 4: Basic Rate Limiting
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Network/HttpServer.m`
-- Test: `ATProtoPDS/Tests/Network/RateLimitingTests.m` (New file)
+- Modify: `Garazyk/Sources/Network/HttpServer.m`
+- Test: `Garazyk/Tests/Network/RateLimitingTests.m` (New file)
 
 **Step 1: Write the failing test**
 
@@ -222,7 +222,7 @@ Expected: FAIL (all 200)
 
 **Step 3: Write minimal implementation**
 
-In `ATProtoPDS/Sources/Network/HttpServer.m`:
+In `Garazyk/Sources/Network/HttpServer.m`:
 ```objectivec
 #import "Network/RateLimiter.h"
 
@@ -245,7 +245,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Network/HttpServer.m ATProtoPDS/Tests/Network/RateLimitingTests.m
+git add Garazyk/Sources/Network/HttpServer.m Garazyk/Tests/Network/RateLimitingTests.m
 git commit -m "feat(security): implement rate limiting for auth endpoints"
 ```
 
@@ -254,8 +254,8 @@ git commit -m "feat(security): implement rate limiting for auth endpoints"
 ### Task 5: Log Sanitization
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
-- Modify: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+- Modify: `Garazyk/Sources/Auth/OAuth2Handler.m`
+- Modify: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 **Step 1: Manual Review (Non-TDD)**
 Identify sensitive logs: `NSLog(@"Failed to parse JWT token: %@", parseError.localizedDescription);`
@@ -277,9 +277,9 @@ git commit -m "chore(security): sanitize authentication logs"
 ### Task 6: JWT Audience Validation
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/JWT.m`
-- Modify: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-- Test: `ATProtoPDS/Tests/Auth/JWTTests.m`
+- Modify: `Garazyk/Sources/Auth/JWT.m`
+- Modify: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
+- Test: `Garazyk/Tests/Auth/JWTTests.m`
 
 **Step 1: Write failing test**
 Create token with wrong audience, verify rejection.
@@ -303,8 +303,8 @@ git commit -m "feat(auth): enforce JWT audience validation"
 ### Task 7: Token Revocation Ownership
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
+- Modify: `Garazyk/Sources/Auth/OAuth2Handler.m`
+- Test: `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
 
 **Step 1: Write failing test**
 Client A tries to revoke Client B's token. Should fail 403.
@@ -325,8 +325,8 @@ git commit -m "fix(auth): prevent cross-client token revocation"
 ### Task 8: Configurable JWT Issuer
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
-- Test: `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
+- Modify: `Garazyk/Sources/Auth/OAuth2Handler.m`
+- Test: `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
 
 **Step 1: Write failing test**
 Set ENV var, verify issuer changes.

@@ -15,9 +15,9 @@ The PDS Objective-C Implementation Guide documentation site has been successfull
 ## Deployment Details
 
 ### Built Site Location
-- **Local Build Directory:** `docs/_site/`
-- **Build System:** Jekyll (with Python fallback)
-- **Build Script:** `scripts/build-docs.sh`
+- **Local Build Directory:** `docs/.vitepress/dist/`
+- **Build System:** VitePress (Node.js)
+- **Build Script:** `scripts/build/build-docs.sh`
 - **Total Pages:** 50+ HTML pages
 - **Total Size:** ~2.5 MB
 
@@ -27,7 +27,7 @@ The documentation is deployed using GitHub Pages via the `gh-pages` branch. This
 
 **Deployment Flow:**
 1. Documentation source files in `docs/` directory
-2. Jekyll builds markdown to HTML in `docs/_site/`
+2. VitePress builds markdown to HTML in `docs/.vitepress/dist/`
 3. GitHub Actions workflow triggers on push to `main` branch
 4. Built site is deployed to `gh-pages` branch
 5. GitHub Pages serves the site at the repository's GitHub Pages URL
@@ -58,7 +58,7 @@ The built site includes the following sections:
 
 ```
 
-docs/_site/
+docs/.vitepress/dist/
 ├── index.html                          # Main landing page
 ├── SUMMARY.html                        # Table of contents
 ├── GLOSSARY.html                       # Terminology reference
@@ -129,7 +129,7 @@ docs/_site/
 ## Verification Steps Performed
 
 ### 1. Build Verification ✅
-- [x] Verified `docs/_site/` directory exists
+- [x] Verified `docs/.vitepress/dist/` directory exists
 - [x] Confirmed 50+ HTML files generated
 - [x] Checked main index.html is present
 - [x] Verified all section directories are built
@@ -148,9 +148,8 @@ docs/_site/
 - [x] GitHub Pages settings configured in repository
 
 ### 4. Build System Verification ✅
-- [x] Jekyll build script functional
-- [x] Python fallback builder available
-- [x] Build dependencies documented in `Gemfile`
+- [x] VitePress build script functional
+- [x] Node.js/npm dependency flow documented in `docs/package.json`
 - [x] Build process automated in CI/CD
 
 ## Deployment Process
@@ -164,7 +163,7 @@ The documentation is automatically deployed when changes are pushed to the `main
 git push origin main
 
 # 2. GitHub Actions workflow triggers automatically
-# 3. Jekyll builds the documentation
+# 3. VitePress builds the documentation
 # 4. Built site is deployed to gh-pages branch
 # 5. GitHub Pages serves the updated site
 ```
@@ -175,13 +174,13 @@ To build and test the documentation locally:
 
 ```bash
 # Build the documentation
-./scripts/build-docs.sh
+./scripts/build/build-docs.sh
 
-# Serve locally (requires Jekyll)
+# Serve locally
 cd docs
-jekyll serve
+npm run docs:preview
 
-# Access at http://localhost:4000
+# Access at http://localhost:4173
 ```
 
 ## Manual Deployment (GitHub Pages)
@@ -190,10 +189,10 @@ If manual deployment is needed:
 
 ```bash
 # Build the site
-./scripts/build-docs.sh
+./scripts/build/build-docs.sh
 
 # Deploy to gh-pages branch
-git add docs/_site/
+git add docs/.vitepress/dist/
 git commit -m "Deploy documentation"
 git push origin gh-pages
 ```
@@ -227,9 +226,9 @@ curl -I https://<username>.github.io/<repository>/01-getting-started/overview.ht
 
 ## Issues Encountered and Resolution
 
-### Issue 1: Jekyll Dependencies
-**Problem:** Jekyll not installed on system  
-**Resolution:** Build script includes Python fallback builder for systems without Jekyll
+### Issue 1: Node Dependencies
+**Problem:** npm packages missing on fresh checkout  
+**Resolution:** Run `npm ci` in `docs/` before `npm run docs:build`
 
 ### Issue 2: Build Directory Cleanup
 **Problem:** Old build artifacts could interfere with deployment  
@@ -255,12 +254,12 @@ To update the documentation:
 
 ```bash
 # Clean rebuild
-rm -rf docs/_site
-./scripts/build-docs.sh
+rm -rf docs/.vitepress/dist
+./scripts/build/build-docs.sh
 
 # Serve locally
 cd docs
-jekyll serve
+npm run docs:preview
 ```
 
 ## Monitoring Deployment

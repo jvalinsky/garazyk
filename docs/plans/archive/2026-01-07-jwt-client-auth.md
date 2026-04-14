@@ -15,8 +15,8 @@ title: JWT Client Authentication Implementation Plan
 ## Task 1: Extend JWT Framework for Client Assertions
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/JWT.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/JWT.m`
+- Modify: `Garazyk/Garazyk/Auth/JWT.h`
+- Modify: `Garazyk/Garazyk/Auth/JWT.m`
 
 **Step 1: Add client assertion JWT creation method**
 
@@ -54,10 +54,10 @@ Run unit tests to verify JWT client assertion functionality works correctly.
 ## Task 2: Add JWKS (JSON Web Key Set) Support
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/Auth/JWKS.h`
-- Create: `ATProtoPDS/ATProtoPDS/Auth/JWKS.m`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2Server.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2Server.m`
+- Create: `Garazyk/Garazyk/Auth/JWKS.h`
+- Create: `Garazyk/Garazyk/Auth/JWKS.m`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2Server.h`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2Server.m`
 
 **Step 1: Create JWKS data structures**
 
@@ -78,10 +78,10 @@ Verify JWKS endpoint returns properly formatted key sets.
 ## Task 3: Extend OAuth2 for private_key_jwt Authentication
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2.m`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2TokenRequest.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2TokenRequest.m`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2.h`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2.m`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2TokenRequest.h`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2TokenRequest.m`
 
 **Step 1: Add client assertion fields to OAuth2TokenRequest**
 
@@ -102,10 +102,10 @@ Verify end-to-end client authentication flow with signed assertions.
 ## Task 4: Add Session Binding to Authentication Keys
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/Session.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/Session.m`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2Server.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2Server.m`
+- Modify: `Garazyk/Garazyk/Auth/Session.h`
+- Modify: `Garazyk/Garazyk/Auth/Session.m`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2Server.h`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2Server.m`
 
 **Step 1: Add key binding to session objects**
 
@@ -126,10 +126,10 @@ Verify that sessions are properly bound to authentication keys.
 ## Task 5: Implement Error Handling
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/OAuth2.m`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/JWT.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Auth/JWT.m`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2.h`
+- Modify: `Garazyk/Garazyk/Auth/OAuth2.m`
+- Modify: `Garazyk/Garazyk/Auth/JWT.h`
+- Modify: `Garazyk/Garazyk/Auth/JWT.m`
 
 **Step 1: Add OAuth2 client authentication errors**
 
@@ -150,7 +150,7 @@ Verify proper error responses for various authentication failure cases.
 ## Task 6: Add Integration Tests and Documentation
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/Auth/OAuthJWTClientAuthTests.m`
+- Create: `Garazyk/Garazyk/Auth/OAuthJWTClientAuthTests.m`
 - Modify: `docs/README.md`
 
 **Step 1: Create  test suite**

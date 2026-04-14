@@ -10,8 +10,8 @@ if ! command -v rg >/dev/null 2>&1; then
 fi
 
 scan_path="$root_dir"
-if [[ -d "$root_dir/ATProtoPDS/Sources/Database" ]]; then
-  scan_path="$root_dir/ATProtoPDS/Sources/Database"
+if [[ -d "$root_dir/Garazyk/Sources/Database" ]]; then
+  scan_path="$root_dir/Garazyk/Sources/Database"
 fi
 
 mkdir -p "$out_dir"
