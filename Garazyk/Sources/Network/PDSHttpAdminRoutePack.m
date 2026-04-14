@@ -14,21 +14,27 @@
   NSArray *adminPaths = @[
     @"/admin", @"/admin/login", @"/admin/logout", @"/admin/users",
     @"/admin/invites", @"/admin/invites/disable", @"/admin/blobs",
-    @"/admin/metrics", @"/admin/health", @"/admin/stats", @"/admin/audit-log",
-    @"/admin/capabilities", @"/admin/audit/receipts"
+    @"/admin/metrics", @"/admin/health", @"/admin/stats", @"/admin/audit-log"
   ];
 
   for (NSString *path in adminPaths) {
     [server addRoute:@"GET"
                 path:path
              handler:^(HttpRequest *request, HttpResponse *response) {
+               NSInteger statusCode = 200;
+               NSString *contentType = nil;
                NSString *result =
                    [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
                                                     path:path
                                                  headers:request.headers
-                                                    body:request.body];
+                                                    body:request.body
+                                              statusCode:&statusCode
+                                             contentType:&contentType];
                if (result) {
-                 response.statusCode = 200;
+                 response.statusCode = statusCode;
+                 if (contentType.length > 0) {
+                   [response setHeader:contentType forKey:@"Content-Type"];
+                 }
                  [response setBodyString:result];
                } else {
                  response.statusCode = 404;
@@ -39,13 +45,20 @@
     [server addRoute:@"POST"
                 path:path
              handler:^(HttpRequest *request, HttpResponse *response) {
+               NSInteger statusCode = 200;
+               NSString *contentType = nil;
                NSString *result =
                    [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
                                                     path:path
                                                  headers:request.headers
-                                                    body:request.body];
+                                                    body:request.body
+                                              statusCode:&statusCode
+                                             contentType:&contentType];
                if (result) {
-                 response.statusCode = 200;
+                 response.statusCode = statusCode;
+                 if (contentType.length > 0) {
+                   [response setHeader:contentType forKey:@"Content-Type"];
+                 }
                  [response setBodyString:result];
                } else {
                  response.statusCode = 404;
@@ -126,4 +139,3 @@
 }
 
 @end
-
