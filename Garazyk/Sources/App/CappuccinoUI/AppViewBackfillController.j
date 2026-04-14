@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "ResponsiveMixin.j"
 
 @implementation AppViewBackfillController : CPObject
 {
@@ -37,8 +38,13 @@
 
     // Admin controls
     CPTextField _didsField;
-    CPTextField _adminTokenField;
+    CPSecureTextField _adminTokenField;
     CPTextView _resultTextView;
+
+    // Queue operations
+    CPTableView _queueTable;
+    CPArray _queueData;
+    CPTextField _selectedRepoLabel;
 
     CPDictionary _lastStatus;
     CPString _refreshTimer;
@@ -97,6 +103,13 @@
 
     // Start auto-refresh
     [self startAutoRefresh];
+
+    // Set up resize observation for responsive layout
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleViewResize:)
+                                                 name:CPViewFrameDidChangeNotification
+                                               object:_rootView];
 
     return _rootView;
 }
@@ -275,7 +288,7 @@
     [tokenLabel setDrawsBackground:NO];
     [parent addSubview:tokenLabel];
 
-    _adminTokenField = [[CPTextField alloc] initWithFrame:CGRectMake(105.0, startY + 28.0, 300.0, 26.0)];
+    _adminTokenField = [[CPSecureTextField alloc] initWithFrame:CGRectMake(105.0, startY + 28.0, 300.0, 26.0)];
     [_adminTokenField setPlaceholderString:@"Enter admin secret"];
     [parent addSubview:_adminTokenField];
 
@@ -329,32 +342,131 @@
     [resultScroll setDocumentView:resultText];
     [parent addSubview:resultScroll];
     _resultTextView = resultText;
+
+    [self buildQueueOperationsInView:parent atY:startY + 170.0];
+}
+
+- (void)buildQueueOperationsInView:(CPView)parent atY:(float)startY
+{
+    var sectionTitle = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, startY, 300.0, 24.0)];
+    [sectionTitle setStringValue:@"Queue Operations"];
+    [sectionTitle setFont:[CPFont boldSystemFontOfSize:14.0]];
+    [sectionTitle setEditable:NO];
+    [sectionTitle setBezeled:NO];
+    [sectionTitle setDrawsBackground:NO];
+    [parent addSubview:sectionTitle];
+
+    _queueTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 600.0, 100.0)];
+    [_queueTable setDelegate:self];
+    [_queueTable setDataSource:self];
+    [_queueTable setAllowsEmptySelection:YES];
+    [_queueTable setAllowsMultipleSelection:NO];
+
+    var didColumn = [[CPTableColumn alloc] initWithIdentifier:@"queue_did"];
+    [[didColumn headerView] setStringValue:@"Repo DID"];
+    [didColumn setWidth:280.0];
+    [_queueTable addTableColumn:didColumn];
+
+    var statusColumn = [[CPTableColumn alloc] initWithIdentifier:@"queue_status"];
+    [[statusColumn headerView] setStringValue:@"Status"];
+    [statusColumn setWidth:100.0];
+    [_queueTable addTableColumn:statusColumn];
+
+    var errorColumn = [[CPTableColumn alloc] initWithIdentifier:@"queue_error"];
+    [[errorColumn headerView] setStringValue:@"Error"];
+    [errorColumn setWidth:200.0];
+    [_queueTable addTableColumn:errorColumn];
+
+    var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, startY + 30.0, 800.0, 120.0)];
+    [scrollView setHasVerticalScroller:YES];
+    [scrollView setAutohidesScrollers:YES];
+    [scrollView setDocumentView:_queueTable];
+    [scrollView setBorderType:CPBezelBorder];
+    [parent addSubview:scrollView];
+
+    var retryBtn = [[CPButton alloc] initWithFrame:CGRectMake(20.0, startY + 160.0, 80.0, 28.0)];
+    [retryBtn setTitle:@"Retry"];
+    [retryBtn setTarget:self];
+    [retryBtn setAction:@selector(handleRetryRepo:)];
+    [parent addSubview:retryBtn];
+
+    var cancelBtn = [[CPButton alloc] initWithFrame:CGRectMake(110.0, startY + 160.0, 80.0, 28.0)];
+    [cancelBtn setTitle:@"Cancel"];
+    [cancelBtn setTarget:self];
+    [cancelBtn setAction:@selector(handleCancelRepo:)];
+    [parent addSubview:cancelBtn];
+
+    _selectedRepoLabel = [[CPTextField alloc] initWithFrame:CGRectMake(200.0, startY + 165.0, 400.0, 18.0)];
+    [_selectedRepoLabel setStringValue:@""];
+    [_selectedRepoLabel setFont:[CPFont systemFontOfSize:11.0]];
+    [_selectedRepoLabel setEditable:NO];
+    [_selectedRepoLabel setBezeled:NO];
+    [_selectedRepoLabel setDrawsBackground:NO];
+    [parent addSubview:_selectedRepoLabel];
+
+    _queueData = [];
 }
 
 #pragma mark - Data Loading
 
 - (void)loadStatus
 {
-    [_apiClient getJSONWithPath:@"/admin/backfill/status"
-                  endpointGroup:@"appview"
-                    queryParams:nil
-                     completion:function(statusCode, payload, errorMessage)
-                     {
-                         if (errorMessage)
-                         {
-                             [_statusLabel setStringValue:@"Error: " + errorMessage];
-                             [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.2 blue:0.2 alpha:1.0]];
-                             return;
-                         }
+    var token = _adminTokenField ? [_adminTokenField stringValue] : @"";
 
-                         [_statusLabel setTextColor:[CPColor colorWithCalibratedWhite:0.3 alpha:1.0]];
+    if (!token || token.length === 0)
+    {
+        [_statusLabel setTextColor:[CPColor colorWithCalibratedWhite:0.3 alpha:1.0]];
+        [_statusLabel setStringValue:@"Enter admin token to load backfill status."];
+        return;
+    }
 
-                         if (payload)
-                         {
-                             [self updateStatusDisplay:payload];
-                             [_statusLabel setStringValue:@"Updated " + new Date().toLocaleTimeString()];
-                         }
-                     }];
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/status"
+                                    endpointGroup:@"appview"
+                                     queryParams:nil],
+        xhr = new XMLHttpRequest();
+
+    xhr.open("GET", String(urlString), YES);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Authorization", "Bearer " + String(token));
+
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState !== 4)
+            return;
+
+        var statusCode = xhr.status || 0,
+            responseText = xhr.responseText || "",
+            payload = nil;
+
+        try { payload = responseText.length > 0 ? JSON.parse(responseText) : {}; } catch (e) {}
+
+        if (statusCode < 200 || statusCode >= 300)
+        {
+            var errMsg = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
+            if (statusCode === 401)
+                errMsg = "Unauthorized - check admin token";
+            [_statusLabel setStringValue:@"Error: " + errMsg];
+            [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.2 blue:0.2 alpha:1.0]];
+            return;
+        }
+
+        [_statusLabel setTextColor:[CPColor colorWithCalibratedWhite:0.3 alpha:1.0]];
+
+        if (payload)
+        {
+            [self updateStatusDisplay:payload];
+            [_statusLabel setStringValue:@"Updated " + new Date().toLocaleTimeString()];
+            [self loadQueueData];
+        }
+    };
+
+    xhr.onerror = function()
+    {
+        [_statusLabel setStringValue:@"Error: Network error"];
+        [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.2 blue:0.2 alpha:1.0]];
+    };
+
+    xhr.send();
 }
 
 - (void)updateStatusDisplay:(id)status
@@ -586,12 +698,153 @@
     xhr.send("{}");
 }
 
+- (void)handleRetryRepo:(id)sender
+{
+    var token = [_adminTokenField stringValue] || "";
+    if (token.length === 0)
+    {
+        [_resultTextView setString:@"Error: Admin token required"];
+        return;
+    }
+
+    var selectedRow = [_queueTable selectedRow];
+    if (selectedRow < 0 || selectedRow >= _queueData.length)
+    {
+        [_resultTextView setString:@"Select a repo from the queue to retry"];
+        return;
+    }
+
+    var repo = _queueData[selectedRow];
+    var did = repo.did;
+
+    [_resultTextView setString:@"Retrying " + did + "..."];
+
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/repos/" + did + "/retry"
+                                    endpointGroup:@"appview"
+                                     queryParams:nil],
+        xhr = new XMLHttpRequest();
+
+    xhr.open("POST", String(urlString), YES);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Authorization", "Bearer " + String(token));
+
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState !== 4)
+            return;
+
+        var statusCode = xhr.status || 0;
+        if (statusCode >= 200 && statusCode < 300)
+        {
+            [_resultTextView setString:@"Retry initiated for " + did];
+            [self loadStatus];
+        }
+        else
+        {
+            [_resultTextView setString:@"Error: Failed to retry " + did + " (HTTP " + statusCode + ")"];
+        }
+    };
+
+    xhr.send();
+}
+
+- (void)handleCancelRepo:(id)sender
+{
+    var token = [_adminTokenField stringValue] || "";
+    if (token.length === 0)
+    {
+        [_resultTextView setString:@"Error: Admin token required"];
+        return;
+    }
+
+    var selectedRow = [_queueTable selectedRow];
+    if (selectedRow < 0 || selectedRow >= _queueData.length)
+    {
+        [_resultTextView setString:@"Select a repo from the queue to cancel"];
+        return;
+    }
+
+    var repo = _queueData[selectedRow];
+    var did = repo.did;
+
+    [_resultTextView setString:@"Cancelling " + did + "..."];
+
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/repos/" + did + "/cancel"
+                                    endpointGroup:@"appview"
+                                     queryParams:nil],
+        xhr = new XMLHttpRequest();
+
+    xhr.open("POST", String(urlString), YES);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Authorization", "Bearer " + String(token));
+
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState !== 4)
+            return;
+
+        var statusCode = xhr.status || 0;
+        if (statusCode >= 200 && statusCode < 300)
+        {
+            [_resultTextView setString:@"Cancelled " + did];
+            [self loadStatus];
+        }
+        else
+        {
+            [_resultTextView setString:@"Error: Failed to cancel " + did + " (HTTP " + statusCode + ")"];
+        }
+    };
+
+    xhr.send();
+}
+
+- (void)loadQueueData
+{
+    var token = [_adminTokenField stringValue] || "";
+    if (!token || token.length === 0)
+        return;
+
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/queue"
+                                    endpointGroup:@"appview"
+                                     queryParams:@{@"limit": @"50"}],
+        xhr = new XMLHttpRequest();
+
+    xhr.open("GET", String(urlString), YES);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Authorization", "Bearer " + String(token));
+
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState !== 4)
+            return;
+
+        var statusCode = xhr.status || 0;
+        if (statusCode >= 200 && statusCode < 300)
+        {
+            try
+            {
+                var payload = JSON.parse(xhr.responseText);
+                _queueData = payload.repos || [];
+                [_queueTable reloadData];
+            }
+            catch (e)
+            {
+                _queueData = [];
+            }
+        }
+    };
+
+    xhr.send();
+}
+
 #pragma mark - CPTableView Data Source
 
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
     if (tableView === _lagTable)
         return _lagData.length;
+    if (tableView === _queueTable)
+        return _queueData.length;
     return 0;
 }
 
@@ -609,7 +862,54 @@
         if ([identifier isEqual:@"lag_status"])
             return item.status || "-";
     }
+    if (tableView === _queueTable && row < _queueData.length)
+    {
+        var repo = _queueData[row];
+        var identifier = [tableColumn identifier];
+
+        if ([identifier isEqual:@"queue_did"])
+            return repo.did || "";
+        if ([identifier isEqual:@"queue_status"])
+            return repo.status || "-";
+        if ([identifier isEqual:@"queue_error"])
+            return repo.error || "-";
+    }
     return @"";
+}
+
+#pragma mark - Responsive Layout
+
+- (void)handleViewResize:(CPNotification)notification
+{
+    var width = _rootView.bounds.size.width;
+    var breakpoint = [ResponsiveMixin currentBreakpointForWidth:width];
+    
+    [self rebuildLayoutForBreakpoint:breakpoint width:width];
+}
+
+- (void)rebuildLayoutForBreakpoint:(CPString)breakpoint width:(float)width
+{
+    var startX = 20.0;
+    var gap = 20.0;
+    var cardWidth = 240.0;
+    var cardHeight = 90.0;
+    var startY = 80.0;
+    
+    var maxColumns = 4;
+    
+    var queueCard = [_queueDepthLabel superview];
+    var workersCard = [_activeWorkersLabel superview];
+    var syncedCard = [_syncedLabel superview];
+    var dirtyCard = [_dirtyLabel superview];
+    var cardViews = [queueCard, workersCard, syncedCard, dirtyCard];
+    
+    for (var i = 0; i < cardViews.length; i++)
+    {
+        var col = i % maxColumns;
+        var row = parseInt(i / maxColumns);
+        var newFrame = CGRectMake(startX + col * (cardWidth + gap), startY + row * (cardHeight + gap), cardWidth, cardHeight);
+        [cardViews[i] setFrame:newFrame];
+    }
 }
 
 @end
