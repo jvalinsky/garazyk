@@ -230,6 +230,7 @@ int main(int argc, char *argv[]) {
       @"AppDelegateTests",
       @"HttpServerTests",
       @"PDSHttpServerBuilderTests",
+      @"PDSHttpAdminRoutePackTests",
       @"WebSocketServerTests",
       @"MSTPersistenceTests",
       @"MSTRebalancingTests",
