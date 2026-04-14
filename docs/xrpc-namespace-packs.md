@@ -54,7 +54,7 @@ The main `XrpcAppBskyMethods.m` will delegate to packs:
 ## File Locations
 
 ```
-ATProtoPDS/Sources/Network/
+Garazyk/Sources/Network/
 ├── XrpcAppBskyMethods.h/.m        # Coordinator (future)
 ├── XrpcAppBskyActorPack.h/.m      # Actor namespace
 ├── XrpcAppBskyFeedPack.h/.m       # Feed namespace
@@ -69,7 +69,7 @@ Files are automatically picked up by the existing CMake glob:
 
 ```cmake
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
-  "ATProtoPDS/Sources/Network/Xrpc*.m"
+  "Garazyk/Sources/Network/Xrpc*.m"
   ...
 )
 ```

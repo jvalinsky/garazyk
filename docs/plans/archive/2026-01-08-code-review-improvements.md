@@ -33,7 +33,7 @@ This plan addresses barriers for new contributors to the ATProtoPDS Objective-C 
 
 ### 1. Fix Test Directory Location
 
-**Issue:** Tests exist at `tests/` but project.yml and Makefile reference `ATProtoPDS/Tests/`.
+**Issue:** Tests exist at `tests/` but project.yml and Makefile reference `Garazyk/Tests/`.
 
 **Files affected:**
 - `tests/` directory
@@ -44,12 +44,12 @@ This plan addresses barriers for new contributors to the ATProtoPDS Objective-C 
 **Action:**
 ```bash
 # Move tests to correct location
-mv tests ATProtoPDS/Tests
+mv tests Garazyk/Tests
 ```
 
 **Update references in:**
-- `project.yml`: Change `- path: tests/` to `- path: ATProtoPDS/Tests/`
-- `Makefile`: Change `TEST_SOURCES = $(wildcard ATProtoPDS/Tests/**/*.m)`
+- `project.yml`: Change `- path: tests/` to `- path: Garazyk/Tests/`
+- `Makefile`: Change `TEST_SOURCES = $(wildcard Garazyk/Tests/**/*.m)`
 - `AGENTS.md`: Update test bundle path reference
 
 ## 2. Add Test Coverage Reporting
@@ -197,7 +197,7 @@ SpaceAfterCStyleCast: false
 **Add to Makefile:**
 ```makefile
 format:
-	clang-format -i -style=file ATProtoPDS/Sources/**/*.m
+	clang-format -i -style=file Garazyk/Sources/**/*.m
 ```
 
 ### 5. Enable Documentation Warnings
@@ -216,8 +216,8 @@ CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 **Issue:** Static analysis warnings need resolution.
 
 **Files affected:**
-- `ATProtoPDS/Sources/Repository/CBOR.m`
-- `ATProtoPDS/Sources/Database/PDSDatabase.m`
+- `Garazyk/Sources/Repository/CBOR.m`
+- `Garazyk/Sources/Database/PDSDatabase.m`
 
 **Actions:**
 1. CBOR.m: Extract hash case logic into helper method to eliminate branch cloning
@@ -227,7 +227,7 @@ CLANG_WARN_DOCUMENTATION_COMMENTS: YES
 
 **Issue:** HTTP responses lack security headers.
 
-**Files affected:** `ATProtoPDS/Sources/Network/HttpResponse.h/m`
+**Files affected:** `Garazyk/Sources/Network/HttpResponse.h/m`
 
 **Action:** Add header constants and apply in responses:
 

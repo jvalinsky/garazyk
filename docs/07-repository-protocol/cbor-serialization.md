@@ -44,7 +44,7 @@ The `ATProtoCBORSerialization` class handles CBOR encoding/decoding:
 @end
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m` (lines 1-50)
+**Source:** `Garazyk/Sources/Core/ATProtoCBORSerialization.m` (lines 1-50)
 
 ## Encoding Records
 
@@ -68,7 +68,7 @@ if (cborData) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m` (lines 8-20)
+**Source:** `Garazyk/Sources/Core/ATProtoCBORSerialization.m` (lines 8-20)
 
 ## Decoding Records
 
@@ -90,7 +90,7 @@ if (decoded && [decoded isKindOfClass:[NSDictionary class]]) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m` (lines 22-35)
+**Source:** `Garazyk/Sources/Core/ATProtoCBORSerialization.m` (lines 22-35)
 
 ## CID Generation
 
@@ -114,7 +114,7 @@ CID *cid = [CID cidWithDigest:hash codec:0x71];
 NSString *cidString = cid.stringValue;  // "bafy2bzaced..."
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m` (lines 8-20); `ATProtoPDS/Sources/Core/CID.m` (lines 280-295)
+**Source:** `Garazyk/Sources/Core/ATProtoCBORSerialization.m` (lines 8-20); `Garazyk/Sources/Core/CID.m` (lines 280-295)
 
 ## Validation
 
@@ -200,7 +200,7 @@ if (cborData) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m` (lines 8-20, 37-100); `ATProtoPDS/Sources/Core/CID.m` (lines 280-295)
+**Source:** `Garazyk/Sources/Core/ATProtoCBORSerialization.m` (lines 8-20, 37-100); `Garazyk/Sources/Core/CID.m` (lines 280-295)
 
 ### Decoding and Validating
 
@@ -235,7 +235,7 @@ NSString *createdAt = record[@"createdAt"];
 NSLog(@"Record text: %@", text);
 ```
 
-**Source:** `ATProtoPDS/Sources/Core/ATProtoCBORSerialization.m` (lines 22-35, 37-100)
+**Source:** `Garazyk/Sources/Core/ATProtoCBORSerialization.m` (lines 22-35, 37-100)
 
 ## Best Practices
 

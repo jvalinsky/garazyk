@@ -44,7 +44,7 @@ If the process dies early, reading endpoint code is usually wasted effort.
 
 ## Walkthrough: `PDSApplication`
 
-The core sequence lives in `ATProtoPDS/Sources/App/PDSApplication.m`.
+The core sequence lives in `Garazyk/Sources/App/PDSApplication.m`.
 
 1. Configuration is loaded and logging is configured.
 2. Infrastructure is initialized, including key managers, databases, and other shared runtime dependencies.
@@ -68,17 +68,17 @@ Those questions map cleanly to the major startup stages.
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/App/PDSApplication.m` for ordering, environment checks, and service composition.
-- Start in `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m` when startup "succeeds" but key routes are missing.
+- Start in `Garazyk/Sources/App/PDSApplication.m` for ordering, environment checks, and service composition.
+- Start in `Garazyk/Sources/Network/PDSHttpServerBuilder.m` when startup "succeeds" but key routes are missing.
 - Start in the database layer when the process dies during infrastructure setup.
 - Start in configuration loading when the runtime identity or data paths look wrong.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/App/PDSApplicationTests.m`
-- `ATProtoPDS/Tests/Network/PDSHttpServerBuilderTests.m`
-- `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
-- `ATProtoPDS/Tests/Database/Integration/DatabaseMigrationTests.m`
+- `Garazyk/Tests/App/PDSApplicationTests.m`
+- `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
+- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
+- `Garazyk/Tests/Database/Integration/DatabaseMigrationTests.m`
 
 ## Appendix
 

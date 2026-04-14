@@ -58,7 +58,7 @@ The main docs now use three different levels of example material:
 | Inline short snippets | Illustrative, small enough to explain one idea clearly |
 | Appendix code and shell blocks | The longer material you may run, adapt, or compare to the repo |
 
-If you need literal source truth, always prefer the runtime files under `ATProtoPDS/Sources/` and the deployment assets under `docker/pds/`.
+If you need literal source truth, always prefer the runtime files under `Garazyk/Sources/` and the deployment assets under `docker/pds/`.
 
 ## Supporting Reference Pages
 

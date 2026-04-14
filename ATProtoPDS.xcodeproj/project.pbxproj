@@ -7,10 +7,11 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		10648047671F3EEF9DBA653B /* zuk */ = {isa = PBXFileReference; includeInIndex = 0; path = zuk; sourceTree = BUILT_PRODUCTS_DIR; };
 		13D39D462940FBEA3280A732 /* Fuzzers */ = {isa = PBXFileReference; includeInIndex = 0; path = Fuzzers; sourceTree = BUILT_PRODUCTS_DIR; };
-		8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */ = {isa = PBXFileReference; includeInIndex = 0; path = "ATProtoPDS-CLI"; sourceTree = BUILT_PRODUCTS_DIR; };
+		383653C551C4015E1A51205C /* kaszlak */ = {isa = PBXFileReference; includeInIndex = 0; path = kaszlak; sourceTree = BUILT_PRODUCTS_DIR; };
 		9116AA617AA1E2F99D962951 /* AllTests */ = {isa = PBXFileReference; includeInIndex = 0; path = AllTests; sourceTree = BUILT_PRODUCTS_DIR; };
-		F44451F9E3F516C90AEACFBF /* atproto-plc */ = {isa = PBXFileReference; includeInIndex = 0; path = "atproto-plc"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C90E0F0D7770DF3CC739ACC5 /* campagnola */ = {isa = PBXFileReference; includeInIndex = 0; path = campagnola; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -25,9 +26,10 @@
 			isa = PBXGroup;
 			children = (
 				9116AA617AA1E2F99D962951 /* AllTests */,
-				F44451F9E3F516C90AEACFBF /* atproto-plc */,
-				8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */,
+				C90E0F0D7770DF3CC739ACC5 /* campagnola */,
 				13D39D462940FBEA3280A732 /* Fuzzers */,
+				383653C551C4015E1A51205C /* kaszlak */,
+				10648047671F3EEF9DBA653B /* zuk */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -35,24 +37,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		11FDDCBFDD2329C0C70E06A9 /* atproto-plc */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = E411162D3D5DBA74AD041980 /* Build configuration list for PBXNativeTarget "atproto-plc" */;
-			buildPhases = (
-				6515BC5414536A367A6BB6DC /* Build PLC with CMake */,
-				28D2C2BB37F1F99BDF6D3BAF /* Sources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = "atproto-plc";
-			packageProductDependencies = (
-			);
-			productName = "atproto-plc";
-			productReference = F44451F9E3F516C90AEACFBF /* atproto-plc */;
-			productType = "com.apple.product-type.tool";
-		};
 		19A684A76685AAE3123D56F9 /* Fuzzers */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E6771ACB5E8BAD3FA7731B9F /* Build configuration list for PBXNativeTarget "Fuzzers" */;
@@ -69,6 +53,42 @@
 			);
 			productName = Fuzzers;
 			productReference = 13D39D462940FBEA3280A732 /* Fuzzers */;
+			productType = "com.apple.product-type.tool";
+		};
+		3BC869A100B31A072F84B1F9 /* campagnola */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B8F2ADF89CA8EB2A0ED8161F /* Build configuration list for PBXNativeTarget "campagnola" */;
+			buildPhases = (
+				27CDABED0F81DC03B1FD6AA5 /* Build PLC with CMake */,
+				212AB002428D18BA7094C7EE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = campagnola;
+			packageProductDependencies = (
+			);
+			productName = campagnola;
+			productReference = C90E0F0D7770DF3CC739ACC5 /* campagnola */;
+			productType = "com.apple.product-type.tool";
+		};
+		580DDE7E7B892F34DD807680 /* zuk */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 10BAC04252201D541B14EC2F /* Build configuration list for PBXNativeTarget "zuk" */;
+			buildPhases = (
+				1E0AB14E01D92B925BA5BAFC /* Build Zuk with CMake */,
+				1EA4DD18F26AFAF469180FCB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = zuk;
+			packageProductDependencies = (
+			);
+			productName = zuk;
+			productReference = 10648047671F3EEF9DBA653B /* zuk */;
 			productType = "com.apple.product-type.tool";
 		};
 		9F7F3F370E6ABECF7565CA85 /* AllTests */ = {
@@ -89,22 +109,22 @@
 			productReference = 9116AA617AA1E2F99D962951 /* AllTests */;
 			productType = "com.apple.product-type.tool";
 		};
-		ADD1CF61F0CF3AC1CD09BC17 /* ATProtoPDS-CLI */ = {
+		A455E7733840859F7F855284 /* kaszlak */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7C25E707EF530E1E2E449DBE /* Build configuration list for PBXNativeTarget "ATProtoPDS-CLI" */;
+			buildConfigurationList = 444CD5D7F7847A4992EEC297 /* Build configuration list for PBXNativeTarget "kaszlak" */;
 			buildPhases = (
-				EABC4FE21AF478FF825078E3 /* Build with CMake */,
-				CF8709E566C9B7048CA34A37 /* Sources */,
+				66A7DD885C7AF9055A923230 /* Build with CMake */,
+				99FFAF0D46D2997EA884759F /* Sources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = "ATProtoPDS-CLI";
+			name = kaszlak;
 			packageProductDependencies = (
 			);
-			productName = "ATProtoPDS-CLI";
-			productReference = 8396A12B6CA646A25FD53880 /* ATProtoPDS-CLI */;
+			productName = kaszlak;
+			productReference = 383653C551C4015E1A51205C /* kaszlak */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -130,10 +150,11 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				ADD1CF61F0CF3AC1CD09BC17 /* ATProtoPDS-CLI */,
 				9F7F3F370E6ABECF7565CA85 /* AllTests */,
 				19A684A76685AAE3123D56F9 /* Fuzzers */,
-				11FDDCBFDD2329C0C70E06A9 /* atproto-plc */,
+				3BC869A100B31A072F84B1F9 /* campagnola */,
+				A455E7733840859F7F855284 /* kaszlak */,
+				580DDE7E7B892F34DD807680 /* zuk */,
 			);
 		};
 /* End PBXProject section */
@@ -158,6 +179,44 @@
 			shellPath = /bin/sh;
 			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build fuzzers\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=ON\ncmake --build . --parallel $(sysctl -n hw.ncpu) --target fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth\n";
 		};
+		1E0AB14E01D92B925BA5BAFC /* Build Zuk with CMake */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Zuk with CMake";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\ncmake --build . --target zuk --parallel $(sysctl -n hw.ncpu)\n";
+		};
+		27CDABED0F81DC03B1FD6AA5 /* Build PLC with CMake */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build PLC with CMake";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\ncmake --build . --target campagnola --parallel $(sysctl -n hw.ncpu)\n";
+		};
 		2B198A56150AAB61D5D9F5DD /* Build Tests with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -177,26 +236,7 @@
 			shellPath = /bin/sh;
 			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build tests\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=ON \\\n  -DBUILD_FUZZERS=OFF\ncmake --build . --target AllTests --parallel $(sysctl -n hw.ncpu)\n";
 		};
-		6515BC5414536A367A6BB6DC /* Build PLC with CMake */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Build PLC with CMake";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\ncmake --build . --target atproto-plc --parallel $(sysctl -n hw.ncpu)\n";
-		};
-		EABC4FE21AF478FF825078E3 /* Build with CMake */ = {
+		66A7DD885C7AF9055A923230 /* Build with CMake */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -213,12 +253,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\n# CMake does not allow changing compilers in an existing build directory.\n# If this build dir was configured via ~/.swiftly/bin/cc, reset it.\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\ncmake --build . --target september --parallel $(sysctl -n hw.ncpu)\n";
+			shellScript = "#!/bin/bash\nset -e\nmkdir -p \"${PROJECT_DIR}/build\"\ncd \"${PROJECT_DIR}/build\"\nXCODE_CLANG=\"$(xcrun -find clang)\"\nXCODE_CLANGXX=\"$(xcrun -find clang++)\"\n# CMake does not allow changing compilers in an existing build directory.\n# If this build dir was configured via ~/.swiftly/bin/cc, reset it.\nif [ -f CMakeCache.txt ] && grep -q \"/\\\\.swiftly/bin/cc\" CMakeCache.txt; then\n  rm -f CMakeCache.txt\n  rm -rf CMakeFiles\nfi\n# Configure and build\ncmake .. \\\n  -DCMAKE_BUILD_TYPE=${CONFIGURATION} \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \\\n  -DCMAKE_C_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_CXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DCMAKE_OBJC_COMPILER=\"${XCODE_CLANG}\" \\\n  -DCMAKE_OBJCXX_COMPILER=\"${XCODE_CLANGXX}\" \\\n  -DBUILD_SECP256K1=ON \\\n  -DBUILD_TESTS=OFF \\\n  -DBUILD_FUZZERS=OFF\ncmake --build . --target kaszlak --parallel $(sysctl -n hw.ncpu)\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		28D2C2BB37F1F99BDF6D3BAF /* Sources */ = {
+		1EA4DD18F26AFAF469180FCB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		212AB002428D18BA7094C7EE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -232,14 +279,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A1D1AFD68E6840C48E789071 /* Sources */ = {
+		99FFAF0D46D2997EA884759F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		CF8709E566C9B7048CA34A37 /* Sources */ = {
+		A1D1AFD68E6840C48E789071 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -252,257 +299,143 @@
 		216530F48B1A1B9766F3EE3F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_C_LANGUAGE_STANDARD = c11;
-				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
-		459F249193D40C6AF9F87016 /* Release */ = {
+		275253DF1920D78CC8F11EE6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/atproto-plc";
-				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/zuk";
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.atproto-plc";
-				PRODUCT_NAME = "atproto-plc";
-				SDKROOT = macosx;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.zuk;
+				PRODUCT_NAME = zuk;
 			};
-			name = Release;
+			name = Debug;
 		};
 		5E99BC093EE4FDF678342FF6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_C_LANGUAGE_STANDARD = c11;
-				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"DEBUG=1",
-				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		74ACB4932C6488E175C702C7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/campagnola";
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.campagnola;
+				PRODUCT_NAME = campagnola;
 			};
 			name = Debug;
 		};
 		7E55FD02412F0501D9B5A497 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/tests/AllTests";
-				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.AllTests;
 				PRODUCT_NAME = AllTests;
-				SDKROOT = macosx;
 			};
 			name = Debug;
-		};
-		83CC1A7CFFD5B68480315FB5 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/september";
-				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.ATProtoPDS-CLI";
-				PRODUCT_NAME = september;
-				SDKROOT = macosx;
-			};
-			name = Release;
 		};
 		8680D1DA4240B2707DD03A16 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.Fuzzers;
 				PRODUCT_NAME = Fuzzers;
-				SDKROOT = macosx;
 			};
 			name = Debug;
+		};
+		933D67B8AA16DB76C1A0D9FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/kaszlak";
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.kaszlak;
+				PRODUCT_NAME = kaszlak;
+			};
+			name = Release;
 		};
 		9D014E872523E169B6D79D2B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.Fuzzers;
 				PRODUCT_NAME = Fuzzers;
-				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A8D2E3738529BEA4111BEC38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/zuk";
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.zuk;
+				PRODUCT_NAME = zuk;
+			};
+			name = Release;
+		};
+		B49860E9FF906EDA0DD6E85B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/campagnola";
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.campagnola;
+				PRODUCT_NAME = campagnola;
 			};
 			name = Release;
 		};
 		DB86B10E66C4A8EAC736030B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/tests/AllTests";
-				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.AllTests;
 				PRODUCT_NAME = AllTests;
-				SDKROOT = macosx;
 			};
 			name = Release;
 		};
-		DDB8E21E25A2E79E9DF0D1DA /* Debug */ = {
+		E35E51E818624B5D064479AA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/september";
-				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/kaszlak";
+				INFOPLIST_FILE = Garazyk/Resources/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.ATProtoPDS-CLI";
-				PRODUCT_NAME = september;
-				SDKROOT = macosx;
-			};
-			name = Debug;
-		};
-		EA9CE69F9D62947585BE6B5B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				EXECUTABLE_PATH = "$(PROJECT_DIR)/build/bin/atproto-plc";
-				INFOPLIST_FILE = ATProtoPDS/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.atproto.atproto-plc";
-				PRODUCT_NAME = "atproto-plc";
-				SDKROOT = macosx;
+				PRODUCT_BUNDLE_IDENTIFIER = com.atproto.kaszlak;
+				PRODUCT_NAME = kaszlak;
 			};
 			name = Debug;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		10BAC04252201D541B14EC2F /* Build configuration list for PBXNativeTarget "zuk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				275253DF1920D78CC8F11EE6 /* Debug */,
+				A8D2E3738529BEA4111BEC38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		19F9A6F379A06F87C344F58C /* Build configuration list for PBXProject "ATProtoPDS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -521,20 +454,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		7C25E707EF530E1E2E449DBE /* Build configuration list for PBXNativeTarget "ATProtoPDS-CLI" */ = {
+		444CD5D7F7847A4992EEC297 /* Build configuration list for PBXNativeTarget "kaszlak" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				DDB8E21E25A2E79E9DF0D1DA /* Debug */,
-				83CC1A7CFFD5B68480315FB5 /* Release */,
+				E35E51E818624B5D064479AA /* Debug */,
+				933D67B8AA16DB76C1A0D9FA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		E411162D3D5DBA74AD041980 /* Build configuration list for PBXNativeTarget "atproto-plc" */ = {
+		B8F2ADF89CA8EB2A0ED8161F /* Build configuration list for PBXNativeTarget "campagnola" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EA9CE69F9D62947585BE6B5B /* Debug */,
-				459F249193D40C6AF9F87016 /* Release */,
+				74ACB4932C6488E175C702C7 /* Debug */,
+				B49860E9FF906EDA0DD6E85B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

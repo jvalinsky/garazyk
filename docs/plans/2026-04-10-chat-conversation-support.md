@@ -109,8 +109,8 @@ CREATE TABLE actor_access (
 **Goal:** New handler file for chat namespace
 
 **Files:**
-- New: `ATProtoPDS/Sources/Network/XrpcChatMethods.m`
-- New: `ATProtoPDS/Sources/Network/XrpcChatMethods.h`
+- New: `Garazyk/Sources/Network/XrpcChatMethods.m`
+- New: `Garazyk/Sources/Network/XrpcChatMethods.h`
 
 **Steps:**
 1. Create header file with registration method
@@ -405,8 +405,8 @@ CREATE TABLE actor_access (
 
 ## Dependencies
 
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` - Registration
-- `ATProtoPDS/Sources/Database/PDSDatabase.m` - Storage
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m` - Registration
+- `Garazyk/Sources/Database/PDSDatabase.m` - Storage
 - WebSocket infrastructure (existing `SubscribeReposHandler.m` as reference)
 
 ---

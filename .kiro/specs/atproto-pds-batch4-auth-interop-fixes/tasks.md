@@ -105,7 +105,7 @@
 - [ ] 3. Fix for DPoP nonce handling and OAuth metadata route duplication
 
   - [ ] 3.1 Implement B2 fix: DPoP nonce extraction from JWT claim
-    - File: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+    - File: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
     - Function: `extractDIDFromAuthHeader:jwtMinter:adminController:request:response:` (lines 5483-5641)
     - Remove incorrect nonce extraction from request header (lines 5536-5540)
     - Add JWT parsing to extract nonce from DPoP proof payload's `nonce` claim
@@ -119,7 +119,7 @@
     - _Requirements: 2.2, 2.3, 3.1, 3.2, 3.3, 3.4_
   
   - [ ] 3.2 Implement B3 fix: Remove OAuth metadata route duplication
-    - File: `ATProtoPDS/Sources/Network/HttpRouter.m`
+    - File: `Garazyk/Sources/Network/HttpRouter.m`
     - Method: `setupRoutes` (lines 277-374)
     - Remove GET `/.well-known/oauth-authorization-server` route registration (lines 277-314)
     - Remove OPTIONS `/.well-known/oauth-authorization-server` CORS preflight (lines 314-324)

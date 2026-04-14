@@ -392,7 +392,7 @@ valgrind --leak-check=summary ./build/bin/kaszlak
 ## Testing Memory Management
 
 ```objc
-// In ATProtoPDS/Tests/MemoryTests.m
+// In Garazyk/Tests/MemoryTests.m
 @interface MemoryTests : XCTestCase
 @end
 

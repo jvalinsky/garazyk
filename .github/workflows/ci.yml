@@ -62,11 +62,11 @@ jobs:
 
       - name: Check XRPC Registry Coverage
         run: |
-          node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates --fail-on-missing
+          node scripts/docs/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates --fail-on-missing
 
       - name: Check Module Boundaries
         run: |
-          ./scripts/check_module_boundaries.sh .
+          ./scripts/dev/check_module_boundaries.sh .
 
       - name: Configure (CMake)
         run: |
@@ -105,29 +105,29 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: vscode-objective-j/package-lock.json
+          cache-dependency-path: tooling/vscode-objective-j/package-lock.json
 
       - name: Install Dependencies
-        working-directory: vscode-objective-j
+        working-directory: tooling/vscode-objective-j
         run: npm ci
 
       - name: Compile TypeScript
-        working-directory: vscode-objective-j
+        working-directory: tooling/vscode-objective-j
         run: npm run compile
 
       - name: Package VSIX
-        working-directory: vscode-objective-j
+        working-directory: tooling/vscode-objective-j
         run: npx @vscode/vsce package --allow-missing-repository
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: objective-j-vsix
-          path: vscode-objective-j/*.vsix
+          path: tooling/vscode-objective-j/*.vsix
 
       - name: Publish to VS Code Marketplace
         if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, 'vscode')
-        working-directory: vscode-objective-j
+        working-directory: tooling/vscode-objective-j
         run: npx @vscode/vsce publish --allow-missing-repository
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
@@ -148,22 +148,22 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ATProtoPDS/Sources/App/CappuccinoUI/package-lock.json
+          cache-dependency-path: Garazyk/Sources/App/CappuccinoUI/package-lock.json
 
       - name: Install Dependencies
-        working-directory: ATProtoPDS/Sources/App/CappuccinoUI
+        working-directory: Garazyk/Sources/App/CappuccinoUI
         run: npm ci
 
       - name: Generate Frameworks
-        working-directory: ATProtoPDS/Sources/App/CappuccinoUI
+        working-directory: Garazyk/Sources/App/CappuccinoUI
         run: npm run frameworks
 
       - name: Build Release
-        working-directory: ATProtoPDS/Sources/App/CappuccinoUI
+        working-directory: Garazyk/Sources/App/CappuccinoUI
         run: npm run build
 
       - name: Verify Build Output
-        working-directory: ATProtoPDS/Sources/App/CappuccinoUI
+        working-directory: Garazyk/Sources/App/CappuccinoUI
         run: |
           if [ ! -d "Build/Release/CappuccinoUI" ]; then
             echo "ERROR: Build output directory not found"
@@ -222,7 +222,7 @@ jobs:
 
       - name: Check Module Boundaries
         run: |
-          ./scripts/check_module_boundaries.sh .
+          ./scripts/dev/check_module_boundaries.sh .
 
       - name: Configure (GNUstep CMake)
         run: |
@@ -295,7 +295,7 @@ jobs:
 
       - name: Check Module Boundaries
         run: |
-          ./scripts/check_module_boundaries.sh .
+          ./scripts/dev/check_module_boundaries.sh .
 
       - name: Configure (CMake)
         run: |

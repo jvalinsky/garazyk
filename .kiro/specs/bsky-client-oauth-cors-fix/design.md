@@ -99,7 +99,7 @@ _For any_ OAuth authorization request where the client_id exists in the oauth_cl
 
 Assuming our root cause analysis is correct:
 
-**File**: `ATProtoPDS/Sources/Auth/OAuth2Handler.m`
+**File**: `Garazyk/Sources/Auth/OAuth2Handler.m`
 
 **Function**: `validateClient:error:`
 
@@ -133,12 +133,12 @@ Assuming our root cause analysis is correct:
    - /oauth/par - OPTIONS handler with CORS headers
    - /oauth/revoke - OPTIONS handler with CORS headers
 
-**File**: `ATProtoPDS/Sources/Auth/OAuth2Handler.h`
+**File**: `Garazyk/Sources/Auth/OAuth2Handler.h`
 
 **Specific Changes**:
 1. **Add client_metadata Property**: Add `client_metadata` property to OAuth2Handler interface for storing parsed metadata
 
-**File**: `ATProtoPDS/Sources/Auth/OAuth2.h`
+**File**: `Garazyk/Sources/Auth/OAuth2.h`
 
 **Specific Changes**:
 1. **Add client_metadata Property**: Add `@property (nonatomic, copy, nullable) NSDictionary *clientMetadata;` to OAuth2AuthorizationRequest interface

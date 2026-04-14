@@ -46,7 +46,7 @@ If you are debugging today's implementation, start in this path first.
 
 ## Legacy standalone server
 
-The repository still contains `ATProtoPDS/Sources/Sync/WebSocketServer.{h,m}`.
+The repository still contains `Garazyk/Sources/Sync/WebSocketServer.{h,m}`.
 That class owns a separate listener based on Network.framework and still exists
 for compatibility and older test seams.
 
@@ -76,11 +76,11 @@ or commit sequencing semantics.
 
 Start with these files:
 
-- `ATProtoPDS/Sources/Network/WebSocketUpgradeHandler.m`
-- `ATProtoPDS/Sources/Sync/WebSocketConnection.m`
-- `ATProtoPDS/Sources/Sync/WebSocketCodec.m`
-- `ATProtoPDS/Sources/Sync/WebSocketHeartbeatPolicy.m`
-- `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
+- `Garazyk/Sources/Network/WebSocketUpgradeHandler.m`
+- `Garazyk/Sources/Sync/WebSocketConnection.m`
+- `Garazyk/Sources/Sync/WebSocketCodec.m`
+- `Garazyk/Sources/Sync/WebSocketHeartbeatPolicy.m`
+- `Garazyk/Sources/Sync/SubscribeReposHandler.m`
 
 Read `WebSocketServer.m` only after that if you need the deprecated standalone
 listener path.

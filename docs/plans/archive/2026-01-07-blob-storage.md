@@ -16,7 +16,7 @@ Objective-C, Foundation framework, NSFileManager for filesystem operations, cust
 ## Task 1: Create BlobStorage Header File
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/Blob/BlobStorage.h`
+- Create: `Garazyk/Garazyk/Blob/BlobStorage.h`
 
 ### Step 1: Write the interface definition
 
@@ -52,14 +52,14 @@ NS_ASSUME_NONNULL_END
 ### Step 2: Commit
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Blob/BlobStorage.h
+git add Garazyk/Garazyk/Blob/BlobStorage.h
 git commit -m "feat: add BlobStorage header with interface definitions"
 ```
 
 ## Task 2: Implement BlobStorage Core Logic
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Blob/BlobStorage.m`
+- Modify: `Garazyk/Garazyk/Blob/BlobStorage.m`
 
 ### Step 1: Write CID computation implementation
 
@@ -275,14 +275,14 @@ git commit -m "feat: add BlobStorage header with interface definitions"
 ### Step 4: Commit
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Blob/BlobStorage.m
+git add Garazyk/Garazyk/Blob/BlobStorage.m
 git commit -m "feat: implement BlobStorage class with CID computation and filesystem operations"
 ```
 
 ## Task 3: Update PDSController with Blob Endpoints
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/PDSController.m`
+- Modify: `Garazyk/Garazyk/PDSController.m`
 
 ### Step 1: Add blob storage property and initialization
 
@@ -436,14 +436,14 @@ git commit -m "feat: implement BlobStorage class with CID computation and filesy
 ### Step 6: Commit
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/PDSController.m
+git add Garazyk/Garazyk/PDSController.m
 git commit -m "feat: add blob storage endpoints to PDSController"
 ```
 
 ## Task 4: Add Basic Tests
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/Blob/BlobStorageTests.m`
+- Create: `Garazyk/Garazyk/Blob/BlobStorageTests.m`
 
 ### Step 1: Write basic unit tests
 
@@ -513,14 +513,14 @@ git commit -m "feat: add blob storage endpoints to PDSController"
 ### Step 2: Commit
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Blob/BlobStorageTests.m
+git add Garazyk/Garazyk/Blob/BlobStorageTests.m
 git commit -m "feat: add basic unit tests for BlobStorage"
 ```
 
 ## Task 5: Update Build Configuration
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS.xcodeproj/project.pbxproj`
+- Modify: `Garazyk/ATProtoPDS.xcodeproj/project.pbxproj`
 
 ### Step 1: Add BlobStorage files to Xcode project
 
@@ -529,7 +529,7 @@ Add the new BlobStorage.h, BlobStorage.m, and BlobStorageTests.m files to the ap
 ### Step 2: Commit
 
 ```bash
-git add ATProtoPDS/ATProtoPDS.xcodeproj/project.pbxproj
+git add Garazyk/ATProtoPDS.xcodeproj/project.pbxproj
 git commit -m "feat: update Xcode project to include BlobStorage files"
 ```
 

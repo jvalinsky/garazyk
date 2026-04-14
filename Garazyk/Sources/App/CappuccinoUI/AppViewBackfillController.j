@@ -1,0 +1,615 @@
+/*
+ * AppViewBackfillController.j
+ * CappuccinoUI
+ *
+ * Backfill status dashboard with queue overview,
+ * worker metrics, and admin controls for AppViewServer.
+ */
+
+@import <Foundation/Foundation.j>
+@import <AppKit/AppKit.j>
+@import "SessionState.j"
+@import "UIAPIClient.j"
+
+@implementation AppViewBackfillController : CPObject
+{
+    SessionState _sessionState;
+    UIAPIClient _apiClient;
+    CPView _rootView;
+
+    CPTextField _statusLabel;
+
+    // Metric cards
+    CPTextField _queueDepthLabel;
+    CPTextField _activeWorkersLabel;
+    CPTextField _syncedLabel;
+    CPTextField _dirtyLabel;
+
+    // Status section labels
+    CPTextField _pendingCountLabel;
+    CPTextField _processingCountLabel;
+    CPTextField _syncedCountLabel;
+    CPTextField _dirtyCountLabel;
+
+    // Lag table
+    CPTableView _lagTable;
+    CPArray _lagData;
+
+    // Admin controls
+    CPTextField _didsField;
+    CPTextField _adminTokenField;
+    CPTextView _resultTextView;
+
+    CPDictionary _lastStatus;
+    CPString _refreshTimer;
+    BOOL _isRunning;
+}
+
+- (id)initWithSessionState:(SessionState)sessionState apiClient:(UIAPIClient)apiClient
+{
+    self = [super init];
+    if (self)
+    {
+        _sessionState = sessionState;
+        _apiClient = apiClient;
+        _lastStatus = nil;
+        _lagData = [];
+        _isRunning = NO;
+    }
+    return self;
+}
+
+- (CPView)rootView
+{
+    if (_rootView)
+        return _rootView;
+
+    _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+
+    var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 900.0, 28.0)];
+    [title setStringValue:@"AppView Backfill"];
+    [title setEditable:NO];
+    [title setBezeled:NO];
+    [title setDrawsBackground:NO];
+    [title setFont:[CPFont boldSystemFontOfSize:20.0]];
+
+    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1040.0, 20.0)];
+    [_statusLabel setEditable:NO];
+    [_statusLabel setBezeled:NO];
+    [_statusLabel setDrawsBackground:NO];
+    [_statusLabel setFont:[CPFont systemFontOfSize:12.0]];
+    [_statusLabel setStringValue:@"Loading status..."];
+
+    // Connection cards row
+    [self buildMetricCardsInView:_rootView atY:80.0];
+
+    // Repo status section
+    [self buildRepoStatusInView:_rootView atY:200.0];
+
+    // Ingest lag section
+    [self buildLagSectionInView:_rootView atY:360.0];
+
+    // Admin controls
+    [self buildAdminControlsInView:_rootView atY:520.0];
+
+    [_rootView addSubview:title];
+    [_rootView addSubview:_statusLabel];
+
+    // Start auto-refresh
+    [self startAutoRefresh];
+
+    return _rootView;
+}
+
+- (void)buildMetricCardsInView:(CPView)parent atY:(float)startY
+{
+    var cardWidth = 240.0,
+        cardHeight = 90.0,
+        gap = 20.0,
+        startX = 20.0;
+
+    // Queue depth card
+    var queueCard = [self buildMetricCardWithTitle:@"Queue Depth"
+                                             value:@"0"
+                                          frame:CGRectMake(startX, startY, cardWidth, cardHeight)
+                                            color:[CPColor colorWithCalibratedRed:0.2 green:0.6 blue:1.0 alpha:1.0]];
+    _queueDepthLabel = [queueCard viewWithTag:@"valueLabel"];
+
+    // Active workers card
+    var workersCard = [self buildMetricCardWithTitle:@"Active Workers"
+                                              value:@"0"
+                                           frame:CGRectMake(startX + cardWidth + gap, startY, cardWidth, cardHeight)
+                                             color:[CPColor colorWithCalibratedRed:0.2 green:0.8 blue:0.4 alpha:1.0]];
+    _activeWorkersLabel = [workersCard viewWithTag:@"valueLabel"];
+
+    // Synced repos card
+    var syncedCard = [self buildMetricCardWithTitle:@"Synced Repos"
+                                             value:@"0"
+                                          frame:CGRectMake(startX + 2 * (cardWidth + gap), startY, cardWidth, cardHeight)
+                                            color:[CPColor colorWithCalibratedRed:0.4 green:0.7 blue:0.4 alpha:1.0]];
+    _syncedLabel = [syncedCard viewWithTag:@"valueLabel"];
+
+    // Dirty repos card
+    var dirtyCard = [self buildMetricCardWithTitle:@"Dirty Repos"
+                                            value:@"0"
+                                         frame:CGRectMake(startX + 3 * (cardWidth + gap), startY, cardWidth, cardHeight)
+                                           color:[CPColor colorWithCalibratedRed:0.9 green:0.5 blue:0.2 alpha:1.0]];
+    _dirtyLabel = [dirtyCard viewWithTag:@"valueLabel"];
+}
+
+- (CPView)buildMetricCardWithTitle:(CPString)title value:(CPString)value frame:(CGRect)frame color:(CPColor)color
+{
+    var card = [[CPView alloc] initWithFrame:frame];
+    [card setWantsLayer:YES];
+    [card setBackgroundColor:[CPColor colorWithCalibratedWhite:0.95 alpha:1.0]];
+
+    // Color bar on left
+    var colorBar = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 4.0, frame.size.height)];
+    [colorBar setBackgroundColor:color];
+    [card addSubview:colorBar];
+
+    // Title
+    var titleLabel = [[CPTextField alloc] initWithFrame:CGRectMake(12.0, 12.0, frame.size.width - 24.0, 20.0)];
+    [titleLabel setStringValue:title];
+    [titleLabel setFont:[CPFont systemFontOfSize:12.0]];
+    [titleLabel setTextColor:[CPColor colorWithCalibratedWhite:0.4 alpha:1.0]];
+    [titleLabel setEditable:NO];
+    [titleLabel setBezeled:NO];
+    [titleLabel setDrawsBackground:NO];
+    [card addSubview:titleLabel];
+
+    // Value
+    var valueLabel = [[CPTextField alloc] initWithFrame:CGRectMake(12.0, 38.0, frame.size.width - 24.0, 40.0)];
+    [valueLabel setStringValue:value];
+    [valueLabel setFont:[CPFont boldSystemFontOfSize:28.0]];
+    [valueLabel setEditable:NO];
+    [valueLabel setBezeled:NO];
+    [valueLabel setDrawsBackground:NO];
+    [valueLabel setTag:@"valueLabel"];
+    [card addSubview:valueLabel];
+
+    return card;
+}
+
+- (void)buildRepoStatusInView:(CPView)parent atY:(float)startY
+{
+    var sectionTitle = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, startY, 200.0, 24.0)];
+    [sectionTitle setStringValue:@"Repo Status Breakdown"];
+    [sectionTitle setFont:[CPFont boldSystemFontOfSize:14.0]];
+    [sectionTitle setEditable:NO];
+    [sectionTitle setBezeled:NO];
+    [sectionTitle setDrawsBackground:NO];
+    [parent addSubview:sectionTitle];
+
+    var statusItems = [
+        {label: @"Pending:", tag: @"pendingCount"},
+        {label: @"Processing:", tag: @"processingCount"},
+        {label: @"Synced:", tag: @"syncedCount"},
+        {label: @"Dirty:", tag: @"dirtyCount"}
+    ];
+
+    var y = startY + 30.0;
+    for (var i = 0; i < statusItems.length; i++)
+    {
+        var item = statusItems[i];
+        var labelField = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, y, 120.0, 22.0)];
+        [labelField setStringValue:item.label];
+        [labelField setFont:[CPFont systemFontOfSize:12.0]];
+        [labelField setEditable:NO];
+        [labelField setBezeled:NO];
+        [labelField setDrawsBackground:NO];
+        [labelField setAlignment:CPRightTextAlignment];
+        [parent addSubview:labelField];
+
+        var valueField = [[CPTextField alloc] initWithFrame:CGRectMake(150.0, y, 200.0, 22.0)];
+        [valueField setStringValue:@"0"];
+        [valueField setFont:[CPFont boldSystemFontOfSize:12.0]];
+        [valueField setEditable:NO];
+        [valueField setBezeled:NO];
+        [valueField setDrawsBackground:NO];
+        [valueField setTag:item.tag];
+        [parent addSubview:valueField];
+
+        y += 26.0;
+    }
+
+    _pendingCountLabel = [parent viewWithTag:@"pendingCount"];
+    _processingCountLabel = [parent viewWithTag:@"processingCount"];
+    _syncedCountLabel = [parent viewWithTag:@"syncedCount"];
+    _dirtyCountLabel = [parent viewWithTag:@"dirtyCount"];
+}
+
+- (void)buildLagSectionInView:(CPView)parent atY:(float)startY
+{
+    var sectionTitle = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, startY, 300.0, 24.0)];
+    [sectionTitle setStringValue:@"Ingest Lag by Relay"];
+    [sectionTitle setFont:[CPFont boldSystemFontOfSize:14.0]];
+    [sectionTitle setEditable:NO];
+    [sectionTitle setBezeled:NO];
+    [sectionTitle setDrawsBackground:NO];
+    [parent addSubview:sectionTitle];
+
+    _lagTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 600.0, 120.0)];
+    [_lagTable setDelegate:self];
+    [_lagTable setDataSource:self];
+    [_lagTable setAllowsEmptySelection:YES];
+    [_lagTable setAllowsMultipleSelection:NO];
+
+    var relayColumn = [[CPTableColumn alloc] initWithIdentifier:@"lag_relay"];
+    [[relayColumn headerView] setStringValue:@"Relay Host"];
+    [relayColumn setWidth:300.0];
+    [_lagTable addTableColumn:relayColumn];
+
+    var lagColumn = [[CPTableColumn alloc] initWithIdentifier:@"lag_value"];
+    [[lagColumn headerView] setStringValue:@"Lag (events)"];
+    [lagColumn setWidth:150.0];
+    [_lagTable addTableColumn:lagColumn];
+
+    var statusColumn = [[CPTableColumn alloc] initWithIdentifier:@"lag_status"];
+    [[statusColumn headerView] setStringValue:@"Status"];
+    [statusColumn setWidth:140.0];
+    [_lagTable addTableColumn:statusColumn];
+
+    var scroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, startY + 30.0, 620.0, 120.0)];
+    [scroll setHasVerticalScroller:YES];
+    [scroll setAutohidesScrollers:YES];
+    [scroll setDocumentView:_lagTable];
+    [parent addSubview:scroll];
+}
+
+- (void)buildAdminControlsInView:(CPView)parent atY:(float)startY
+{
+    var sectionTitle = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, startY, 200.0, 24.0)];
+    [sectionTitle setStringValue:@"Admin Controls"];
+    [sectionTitle setFont:[CPFont boldSystemFontOfSize:14.0]];
+    [sectionTitle setEditable:NO];
+    [sectionTitle setBezeled:NO];
+    [sectionTitle setDrawsBackground:NO];
+    [parent addSubview:sectionTitle];
+
+    // Admin token field
+    var tokenLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, startY + 32.0, 80.0, 18.0)];
+    [tokenLabel setStringValue:@"Admin Token:"];
+    [tokenLabel setEditable:NO];
+    [tokenLabel setBezeled:NO];
+    [tokenLabel setDrawsBackground:NO];
+    [parent addSubview:tokenLabel];
+
+    _adminTokenField = [[CPTextField alloc] initWithFrame:CGRectMake(105.0, startY + 28.0, 300.0, 26.0)];
+    [_adminTokenField setPlaceholderString:@"Enter admin secret"];
+    [parent addSubview:_adminTokenField];
+
+    // DIDs field
+    var didsLabel = [[CPTextField alloc] initWithFrame:CGRectMake(420.0, startY + 32.0, 40.0, 18.0)];
+    [didsLabel setStringValue:@"DIDs:"];
+    [didsLabel setEditable:NO];
+    [didsLabel setBezeled:NO];
+    [didsLabel setDrawsBackground:NO];
+    [parent addSubview:didsLabel];
+
+    _didsField = [[CPTextField alloc] initWithFrame:CGRectMake(465.0, startY + 28.0, 350.0, 26.0)];
+    [_didsField setPlaceholderString:@"did:plc:xxx, did:plc:yyy (comma-separated)"];
+    [parent addSubview:_didsField];
+
+    // Action buttons
+    var enqueueButton = [[CPButton alloc] initWithFrame:CGRectMake(20.0, startY + 64.0, 120.0, 28.0)];
+    [enqueueButton setTitle:@"Enqueue DIDs"];
+    [enqueueButton setTarget:self];
+    [enqueueButton setAction:@selector(handleEnqueueDIDs:)];
+    [parent addSubview:enqueueButton];
+
+    var rebuildButton = [[CPButton alloc] initWithFrame:CGRectMake(150.0, startY + 64.0, 160.0, 28.0)];
+    [rebuildButton setTitle:@"Rebuild Relevance Set"];
+    [rebuildButton setTarget:self];
+    [rebuildButton setAction:@selector(handleRebuildScope:)];
+    [parent addSubview:rebuildButton];
+
+    var refreshButton = [[CPButton alloc] initWithFrame:CGRectMake(320.0, startY + 64.0, 100.0, 28.0)];
+    [refreshButton setTitle:@"Refresh Now"];
+    [refreshButton setTarget:self];
+    [refreshButton setAction:@selector(handleRefresh:)];
+    [parent addSubview:refreshButton];
+
+    var autoRefreshBtn = [[CPButton alloc] initWithFrame:CGRectMake(430.0, startY + 64.0, 140.0, 28.0)];
+    [autoRefreshBtn setTitle:@"Auto Refresh: ON"];
+    [autoRefreshBtn setTag:@"autoRefreshBtn"];
+    [autoRefreshBtn setTarget:self];
+    [autoRefreshBtn setAction:@selector(handleToggleAutoRefresh:)];
+    [parent addSubview:autoRefreshBtn];
+
+    // Result text view
+    var resultScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, startY + 100.0, 1040.0, 60.0)];
+    var resultText = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1040.0, 60.0)];
+    [resultText setEditable:NO];
+    [resultText setSelectable:YES];
+    [resultText setString:@""];
+    [resultText setFont:[CPFont systemFontOfSize:11.0]];
+    [resultScroll setHasVerticalScroller:YES];
+    [resultScroll setAutohidesScrollers:YES];
+    [resultScroll setDocumentView:resultText];
+    [parent addSubview:resultScroll];
+    _resultTextView = resultText;
+}
+
+#pragma mark - Data Loading
+
+- (void)loadStatus
+{
+    [_apiClient getJSONWithPath:@"/admin/backfill/status"
+                  endpointGroup:@"appview"
+                    queryParams:nil
+                     completion:function(statusCode, payload, errorMessage)
+                     {
+                         if (errorMessage)
+                         {
+                             [_statusLabel setStringValue:@"Error: " + errorMessage];
+                             [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.2 blue:0.2 alpha:1.0]];
+                             return;
+                         }
+
+                         [_statusLabel setTextColor:[CPColor colorWithCalibratedWhite:0.3 alpha:1.0]];
+
+                         if (payload)
+                         {
+                             [self updateStatusDisplay:payload];
+                             [_statusLabel setStringValue:@"Updated " + new Date().toLocaleTimeString()];
+                         }
+                     }];
+}
+
+- (void)updateStatusDisplay:(id)status
+{
+    if (!status)
+        return;
+
+    _lastStatus = status;
+
+    // Update metric cards
+    [_queueDepthLabel setStringValue:self.formatNumber(status.queue_depth)];
+    [_activeWorkersLabel setStringValue:String(status.active_workers || 0)];
+    [_syncedLabel setStringValue:self.formatNumber(status.repos_synced)];
+    [_dirtyLabel setStringValue:self.formatNumber(status.repos_dirty)];
+
+    // Update status breakdown
+    [_pendingCountLabel setStringValue:self.formatNumber(status.repos_pending)];
+    [_processingCountLabel setStringValue:self.formatNumber(status.repos_processing)];
+    [_syncedCountLabel setStringValue:self.formatNumber(status.repos_synced)];
+    [_dirtyCountLabel setStringValue:self.formatNumber(status.repos_dirty)];
+
+    // Update lag table
+    var lagByRelay = status.ingest_lag_by_relay || {};
+    _lagData = [];
+    var relayHosts = Object.keys(lagByRelay);
+    for (var i = 0; i < relayHosts.length; i++)
+    {
+        var host = relayHosts[i];
+        var lag = lagByRelay[host];
+        _lagData.push({
+            relay: host,
+            lag: lag,
+            status: lag > 1000 ? "Behind" : (lag > 100 ? "Catching up" : "Synced")
+        });
+    }
+    [_lagTable reloadData];
+}
+
+- (CPString)formatNumber:(id)numValue
+{
+    var num = parseInt(numValue) || 0;
+    if (num >= 1000000000)
+        return (num / 1000000000).toFixed(1) + "B";
+    if (num >= 1000000)
+        return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000)
+        return (num / 1000).toFixed(1) + "K";
+    return String(num);
+}
+
+#pragma mark - Auto Refresh
+
+- (void)startAutoRefresh
+{
+    if (_isRunning)
+        return;
+
+    _isRunning = YES;
+    [self loadStatus];
+
+    if (!(window && window.setInterval))
+        return;
+
+    _refreshTimer = window.setInterval(function()
+    {
+        if (_isRunning)
+            [self loadStatus];
+    }, 3000);
+}
+
+- (void)stopAutoRefresh
+{
+    _isRunning = NO;
+    if (_refreshTimer && window && window.clearInterval)
+    {
+        window.clearInterval(_refreshTimer);
+        _refreshTimer = nil;
+    }
+}
+
+#pragma mark - Actions
+
+- (void)handleRefresh:(id)sender
+{
+    [self loadStatus];
+}
+
+- (void)handleToggleAutoRefresh:(id)sender
+{
+    if (_isRunning)
+    {
+        [self stopAutoRefresh];
+        [sender setTitle:@"Auto Refresh: OFF"];
+    }
+    else
+    {
+        [self startAutoRefresh];
+        [sender setTitle:@"Auto Refresh: ON"];
+    }
+}
+
+- (void)handleEnqueueDIDs:(id)sender
+{
+    var didsText = [_didsField stringValue] || "";
+    var token = [_adminTokenField stringValue] || "";
+
+    if (didsText.length === 0)
+    {
+        [_resultTextView setString:@"Error: Enter at least one DID"];
+        return;
+    }
+
+    if (token.length === 0)
+    {
+        [_resultTextView setString:@"Error: Admin token required"];
+        return;
+    }
+
+    // Parse DIDs (comma-separated)
+    var dids = didsText.split(",").map(function(d) { return d.trim(); }).filter(function(d) { return d.length > 0; });
+
+    if (dids.length === 0)
+    {
+        [_resultTextView setString:@"Error: No valid DIDs found"];
+        return;
+    }
+
+    [_resultTextView setString:@"Enqueuing " + dids.length + " DIDs..."];
+
+    // Direct XHR with Authorization header
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/repos"
+                                    endpointGroup:@"appview"
+                                     queryParams:nil],
+        xhr = new XMLHttpRequest();
+
+    xhr.open("POST", String(urlString), YES);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("Authorization", "Bearer " + String(token));
+
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState !== 4)
+            return;
+
+        var statusCode = xhr.status || 0,
+            responseText = xhr.responseText || "",
+            payload = nil;
+
+        try { payload = JSON.parse(responseText); } catch (e) {}
+
+        if (statusCode < 200 || statusCode >= 300)
+        {
+            var errMsg = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
+            if (statusCode === 401)
+                errMsg = "Unauthorized - check admin token";
+            [_resultTextView setString:@"Error: " + errMsg];
+            return;
+        }
+
+        var result = "Enqueued: " + (payload.enqueued || 0) + "\n";
+        result += "Skipped: " + (payload.skipped || 0);
+        [_resultTextView setString:result];
+        [self loadStatus];
+    };
+
+    xhr.onerror = function()
+    {
+        [_resultTextView setString:@"Error: Network error"];
+    };
+
+    xhr.send(JSON.stringify({dids: dids}));
+}
+
+- (void)handleRebuildScope:(id)sender
+{
+    var token = [_adminTokenField stringValue] || "";
+
+    if (token.length === 0)
+    {
+        [_resultTextView setString:@"Error: Admin token required"];
+        return;
+    }
+
+    [_resultTextView setString:@"Rebuilding relevance scope..."];
+
+    // Direct XHR with Authorization header
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/scope/rebuild"
+                                    endpointGroup:@"appview"
+                                     queryParams:nil],
+        xhr = new XMLHttpRequest();
+
+    xhr.open("POST", String(urlString), YES);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("Authorization", "Bearer " + String(token));
+
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState !== 4)
+            return;
+
+        var statusCode = xhr.status || 0,
+            responseText = xhr.responseText || "",
+            payload = nil;
+
+        try { payload = JSON.parse(responseText); } catch (e) {}
+
+        if (statusCode < 200 || statusCode >= 300)
+        {
+            var errMsg = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
+            if (statusCode === 401)
+                errMsg = "Unauthorized - check admin token";
+            [_resultTextView setString:@"Error: " + errMsg];
+            return;
+        }
+
+        var result = "Relevance set rebuilt\n";
+        result += "Scope size: " + (payload.relevance_set_size || 0) + " DIDs";
+        [_resultTextView setString:result];
+        [self loadStatus];
+    };
+
+    xhr.onerror = function()
+    {
+        [_resultTextView setString:@"Error: Network error"];
+    };
+
+    xhr.send("{}");
+}
+
+#pragma mark - CPTableView Data Source
+
+- (int)numberOfRowsInTableView:(CPTableView)tableView
+{
+    if (tableView === _lagTable)
+        return _lagData.length;
+    return 0;
+}
+
+- (id)tableView:(CPTableView)tableView objectValueForTableColumn:(CPTableColumn)tableColumn row:(int)row
+{
+    if (tableView === _lagTable && row < _lagData.length)
+    {
+        var item = _lagData[row];
+        var identifier = [tableColumn identifier];
+
+        if ([identifier isEqual:@"lag_relay"])
+            return item.relay || "";
+        if ([identifier isEqual:@"lag_value"])
+            return String(item.lag || 0);
+        if ([identifier isEqual:@"lag_status"])
+            return item.status || "-";
+    }
+    return @"";
+}
+
+@end

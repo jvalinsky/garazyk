@@ -52,7 +52,7 @@ On macOS, September PDS uses the system Keychain for secure key storage:
 }
 ```
 
-*Reference: `../../ATProtoPDS/Sources/Auth/PDSAppleActorKeyManager.m`*
+*Reference: `../../Garazyk/Sources/Auth/PDSAppleActorKeyManager.m`*
 
 **Keychain Benefits**:
 - Hardware-backed encryption on devices with Secure Enclave
@@ -103,7 +103,7 @@ On Linux/GNUstep, keys are stored in encrypted files with strict permissions:
 }
 ```
 
-*Reference: `../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m`*
+*Reference: `../../Garazyk/Sources/Auth/PDSOpenSSLKeyManager.m`*
 
 **File-Based Security**:
 - POSIX permissions: 0600 (owner read/write only)
@@ -129,7 +129,7 @@ If persistent storage fails, keys are kept in memory:
 }
 ```
 
-*Reference: `../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m`*
+*Reference: `../../Garazyk/Sources/Auth/PDSOpenSSLKeyManager.m`*
 
 **Memory-Only Considerations**:
 - Keys lost on process restart
@@ -189,7 +189,7 @@ September PDS uses secp256k1 keys for AT Protocol signing:
 }
 ```
 
-*Reference: `../../ATProtoPDS/Sources/Auth/PDSOpenSSLKeyManager.m`*
+*Reference: `../../Garazyk/Sources/Auth/PDSOpenSSLKeyManager.m`*
 
 **Key Properties**:
 - Algorithm: secp256k1 (same as Bitcoin)
@@ -299,7 +299,7 @@ Use Secure Enclave for hardware-backed key storage:
 }
 ```
 
-*Reference: `../../ATProtoPDS/Sources/Security/PDSBiometricKeychain.m`*
+*Reference: `../../Garazyk/Sources/Security/PDSBiometricKeychain.m`*
 
 **Biometric Features**:
 - Touch ID / Face ID required for key access
@@ -336,7 +336,7 @@ Use Secure Enclave for hardware-backed key storage:
 }
 ```
 
-*Reference: `../../ATProtoPDS/Sources/Security/PDSBiometricKeychain.m`*
+*Reference: `../../Garazyk/Sources/Security/PDSBiometricKeychain.m`*
 
 ## HSM Integration
 

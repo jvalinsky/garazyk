@@ -34,7 +34,7 @@ Ensure all code compiles and runs on Linux/GNUstep by routing imports through co
 | **CommonCrypto** | `Sources/Compat/CommonCrypto/` | Complete | SHA1, SHA256, MD5, HMAC, PBKDF2 all mapped to OpenSSL |
 | **Security** | `Sources/Compat/Security/` | Complete | SecRandomCopyBytes via arc4random_buf |
 | **os/log.h** | `Sources/Compat/os/log.h` | Complete | Maps to NSLog with prefix macros |
-| **Foundation** | `ATProtoPDS/Sources/Compat/Foundation/` | Minimal | Only Foundation.h and NSErrorCompat.h |
+| **Foundation** | `Garazyk/Sources/Compat/Foundation/` | Minimal | Only Foundation.h and NSErrorCompat.h |
 
 ### 2.2 Files with Problematic Imports
 
@@ -78,7 +78,7 @@ The following files use NSURLSession, which is experimental on GNUstep:
 
 ### 2.4 PDSNetworkTransportLinux Issues
 
-File: `ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m`
+File: `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
 
 | Line | Issue |
 |------|-------|
@@ -115,7 +115,7 @@ NSURLSession is experimental on GNUstep. Code should either:
 ### Phase 1: Import Path Corrections
 
 #### Step 1.1: Create Import Header
-Create a single umbrella header at `ATProtoPDS/Sources/Compat/ATProtoCompat.h`:
+Create a single umbrella header at `Garazyk/Sources/Compat/ATProtoCompat.h`:
 
 ```objc
 #ifndef ATProtoCompat_h
@@ -229,7 +229,7 @@ Update `GNUSTEP_COMPATIBILITY.md` section "NSURLSession vs NSURLConnection":
 
 | File | Change Type | Lines Affected |
 |------|-------------|----------------|
-| `ATProtoPDS/Sources/Compat/ATProtoCompat.h` | New file | N/A |
+| `Garazyk/Sources/Compat/ATProtoCompat.h` | New file | N/A |
 | `CMakeLists.txt` | Modify | Include path addition |
 | `project.yml` | Modify | Include path addition |
 | `HandleResolver.m` | Modify | Lines 3, 19-25 |

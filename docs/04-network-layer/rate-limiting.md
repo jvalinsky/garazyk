@@ -32,7 +32,7 @@ flowchart TD
 
 ## What Exists Today
 
-The live implementation is `ATProtoPDS/Sources/Network/RateLimiter.{h,m}`. It stores counters in SQLite and exposes four practical surfaces:
+The live implementation is `Garazyk/Sources/Network/RateLimiter.{h,m}`. It stores counters in SQLite and exposes four practical surfaces:
 
 - DID-based limits for authenticated API activity
 - IP-based limits for unauthenticated traffic

@@ -1,7 +1,7 @@
 {
-  "name": "atprotopds-docs-tooling",
+  "name": "garazyk-docs-tooling",
   "version": "1.0.0",
-  "description": "Documentation consolidation and validation tooling for ATProtoPDS",
+  "description": "Documentation consolidation and validation tooling for Garazyk",
   "type": "module",
   "scripts": {
     "lint": "eslint .",
@@ -18,7 +18,7 @@
     "validation",
     "atproto"
   ],
-  "author": "ATProtoPDS Contributors",
+  "author": "Garazyk Contributors",
   "license": "MIT",
   "dependencies": {
     "fs-extra": "^11.2.0",

@@ -31,10 +31,10 @@ Primary sources:
 
 ## Completed
 
-- [x] Source-parsed extraction from `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`.
-- [x] Mapping for typed dispatcher registrations via `ATProtoPDS/Sources/Network/XrpcHandler.m`.
+- [x] Source-parsed extraction from `Garazyk/Sources/Network/XrpcMethodRegistry.m`.
+- [x] Mapping for typed dispatcher registrations via `Garazyk/Sources/Network/XrpcHandler.m`.
 - [x] Parsing of raw string registrations (`registerMethod:@"<nsid>"`).
-- [x] Lexicon method extraction from `ATProtoPDS/Resources/lexicons/**.json`.
+- [x] Lexicon method extraction from `Garazyk/Resources/lexicons/**.json`.
 - [x] Scope filtering via `scripts/xrpc_coverage_scope.txt` (default `com.atproto.*`).
 - [x] Markdown + JSON report generation under `reports/`.
 - [x] CI duplicate guard (`node scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates`).

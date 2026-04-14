@@ -6,7 +6,7 @@ title: "Spec alignment: reconcile code-registered methods missing in lexicons"
 
 ## Summary
 
-The code registers several XRPC methods that are not present in the current `ATProtoPDS/Resources/lexicons/**` set. We need to decide for each:
+The code registers several XRPC methods that are not present in the current `Garazyk/Resources/lexicons/**` set. We need to decide for each:
 
 - Remove the endpoint (if obsolete),
 - Rename it to match a current lexicon method,
@@ -42,16 +42,16 @@ Added compatibility lexicons for previously unmatched in-scope method IDs:
 - `com.atproto.server.getAccount`
 
 Added files:
-- `ATProtoPDS/Resources/lexicons/com/atproto/admin/moderateAccount.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/admin/moderateRecord.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/admin/takeDownAccount.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/admin/getAccountTakedown.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/label/createLabel.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/label/getLabels.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/repo/getBlob.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/repo/deleteBlob.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/repo/updateRecord.json`
-- `ATProtoPDS/Resources/lexicons/com/atproto/server/getAccount.json`
+- `Garazyk/Resources/lexicons/com/atproto/admin/moderateAccount.json`
+- `Garazyk/Resources/lexicons/com/atproto/admin/moderateRecord.json`
+- `Garazyk/Resources/lexicons/com/atproto/admin/takeDownAccount.json`
+- `Garazyk/Resources/lexicons/com/atproto/admin/getAccountTakedown.json`
+- `Garazyk/Resources/lexicons/com/atproto/label/createLabel.json`
+- `Garazyk/Resources/lexicons/com/atproto/label/getLabels.json`
+- `Garazyk/Resources/lexicons/com/atproto/repo/getBlob.json`
+- `Garazyk/Resources/lexicons/com/atproto/repo/deleteBlob.json`
+- `Garazyk/Resources/lexicons/com/atproto/repo/updateRecord.json`
+- `Garazyk/Resources/lexicons/com/atproto/server/getAccount.json`
 
 Validation:
 - `node scripts/generate_xrpc_coverage_report.js --source-only` now reports `missing_in_lexicons: 0` for `com.atproto.*`.
@@ -87,7 +87,7 @@ Validation:
 ## Per-method investigation notes
 
 - `com.atproto.label.createLabel` / `com.atproto.label.getLabels`:
-  - Current `ATProtoPDS/Resources/lexicons/com/atproto/label/` contains `queryLabels` + `subscribeLabels`, not these.
+  - Current `Garazyk/Resources/lexicons/com/atproto/label/` contains `queryLabels` + `subscribeLabels`, not these.
   - Decide whether to:
     - remove the old endpoints and keep only `queryLabels/subscribeLabels`, or
     - add lexicon definitions for the old endpoints as legacy.
@@ -121,9 +121,9 @@ Validation:
 
 ## Files likely touched
 
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-- `ATProtoPDS/Sources/Network/XrpcHandler.{h,m}`
-- `ATProtoPDS/Resources/lexicons/**` (if we add/restore lexicons)
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m`
+- `Garazyk/Sources/Network/XrpcHandler.{h,m}`
+- `Garazyk/Resources/lexicons/**` (if we add/restore lexicons)
 - `lexicons/**` (if we decide to add vendor lexicons outside the bundled set)
 - `scripts/generate_xrpc_coverage_report.js` / schema-sync tooling (to keep reports accurate)
 - `scripts/test_moderation.sh` / `scripts/test_getUserStats.sh` (if we migrate off legacy endpoints)

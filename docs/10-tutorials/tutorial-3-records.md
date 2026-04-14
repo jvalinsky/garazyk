@@ -56,8 +56,8 @@ flowchart LR
 
 Begin with:
 
-- `ATProtoPDS/Sources/App/Services/PDSRecordService.m`
-- `ATProtoPDS/Sources/App/Services/PDSRecordService.h`
+- `Garazyk/Sources/App/Services/PDSRecordService.m`
+- `Garazyk/Sources/App/Services/PDSRecordService.h`
 
 The service boundary is where the record path becomes legible. It answers:
 
@@ -106,10 +106,10 @@ Do this after the service read, not before. It makes the network code much easie
 
 Useful starting tests:
 
-- `ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSRecordTombstoneTests.m`
-- `ATProtoPDS/Tests/Repository/RepoCommitTests.m`
-- `ATProtoPDS/Tests/Core/RecordPathValidationTests.m`
+- `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
+- `Garazyk/Tests/App/Services/PDSRecordTombstoneTests.m`
+- `Garazyk/Tests/Repository/RepoCommitTests.m`
+- `Garazyk/Tests/Core/RecordPathValidationTests.m`
 
 Together they show which invariants the project already treats as critical:
 

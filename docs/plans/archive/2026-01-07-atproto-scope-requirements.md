@@ -36,7 +36,7 @@ Objective-C, OAuth2 protocol, ATProto specifications
 
 ### Task 1: Define ATProto Scope Constants and Validation
 
-**Files:** Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h`, Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m`
+**Files:** Modify `oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.h`, Modify `oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m`
 
 #### Step 1: Add Transitional Scope Constants
 In OAuth2.h, add constants for transitional scopes:
@@ -114,7 +114,7 @@ Add transitional scope mapping method:
 
 #### Step 4: Commit Changes
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.h oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m
 git commit -m "feat: add ATProto scope constants and validation methods"
 ```
 
@@ -185,7 +185,7 @@ Add transitional scope mapping method:
 **Step 4: Commit changes**
 
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.h oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m
 git commit -m "feat: add ATProto scope constants and validation methods"
 ```
 
@@ -193,7 +193,7 @@ git commit -m "feat: add ATProto scope constants and validation methods"
 
 ### Task 2: Integrate Scope Validation in Authorization Request
 
-**Files:** Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m:236-273`
+**Files:** Modify `oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m:236-273`
 
 #### Step 1: Add Scope Validation to Authorization Request Handler
 In `handleAuthorizationRequest:completion:`, add scope validation after basic parameter validation:
@@ -225,14 +225,14 @@ In `handleAuthorizationRequest:completion:`, add scope validation after basic pa
 
 #### Step 2: Commit Changes
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m
 git commit -m "feat: integrate scope validation in authorization request handler"
 ```
 
 **Step 2: Commit changes**
 
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m
 git commit -m "feat: integrate scope validation in authorization request handler"
 ```
 
@@ -240,7 +240,7 @@ git commit -m "feat: integrate scope validation in authorization request handler
 
 ### Task 3: Integrate Scope Validation in Token Request
 
-**Files:** Modify `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m:291-342`
+**Files:** Modify `oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m:291-342`
 
 #### Step 1: Add Scope Validation to Authorization Code Grant
 In `processAuthorizationCodeGrant:completion:`, add scope validation:
@@ -320,7 +320,7 @@ In `processRefreshTokenGrant:completion:`, update scope handling:
 
 #### Step 4: Commit Changes
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m
 git commit -m "feat: integrate scope validation and mapping in token request handlers"
 ```
 
@@ -372,7 +372,7 @@ In `processRefreshTokenGrant:completion:`, update scope handling:
 **Step 4: Commit changes**
 
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m
 git commit -m "feat: integrate scope validation and mapping in token request handlers"
 ```
 
@@ -381,8 +381,8 @@ git commit -m "feat: integrate scope validation and mapping in token request han
 ### Task 4: Implement Scope Permission Mapping
 
 **Files:**
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h`
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m`
+- Modify: `oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.h`
+- Modify: `oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m`
 
 **Step 1: Define permission mapping constants**
 
@@ -453,7 +453,7 @@ Add permission validation method:
 **Step 4: Commit changes**
 
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.h oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.h oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2.m
 git commit -m "feat: implement ATProto scope permission mapping and validation"
 ```
 
@@ -462,8 +462,8 @@ git commit -m "feat: implement ATProto scope permission mapping and validation"
 ### Task 5: Update Session to Include Permissions
 
 **Files:**
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/Session.h`
-- Modify: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/Session.m`
+- Modify: `oauth-atproto-scope/Garazyk/Garazyk/Auth/Session.h`
+- Modify: `oauth-atproto-scope/Garazyk/Garazyk/Auth/Session.m`
 
 **Step 1: Add permissions property to Session**
 
@@ -523,7 +523,7 @@ Add permission calculation method to Session:
 **Step 4: Commit changes**
 
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/Session.h oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/Session.m
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/Session.h oauth-atproto-scope/Garazyk/Garazyk/Auth/Session.m
 git commit -m "feat: add permission calculation to Session class"
 ```
 
@@ -532,7 +532,7 @@ git commit -m "feat: add permission calculation to Session class"
 ### Task 6: Add Tests
 
 **Files:**
-- Create: `oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2ScopeTests.m`
+- Create: `oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2ScopeTests.m`
 - Modify: `oauth-atproto-scope/Makefile` (to include new test file)
 
 **Step 1: Create OAuth2 scope tests**
@@ -625,7 +625,7 @@ Add test file to Makefile compilation.
 **Step 3: Commit changes**
 
 ```bash
-git add oauth-atproto-scope/ATProtoPDS/ATProtoPDS/Auth/OAuth2ScopeTests.m oauth-atproto-scope/Makefile
+git add oauth-atproto-scope/Garazyk/Garazyk/Auth/OAuth2ScopeTests.m oauth-atproto-scope/Makefile
 git commit -m "feat: add  tests for ATProto scope validation and mapping"
 ```
 

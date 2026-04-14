@@ -28,21 +28,21 @@ Events are streamed with sequence numbers for cursor-based resumption.
 ### Task 1: Create Sync Directory Structure
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/Sync/WebSocketServer.h`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/WebSocketServer.m`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/WebSocketConnection.h`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/WebSocketConnection.m`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/EventFormatter.h`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/EventFormatter.m`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/Firehose.h`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/Firehose.m`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/RelayClient.h`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/RelayClient.m`
+- Create: `Garazyk/Garazyk/Sync/WebSocketServer.h`
+- Create: `Garazyk/Garazyk/Sync/WebSocketServer.m`
+- Create: `Garazyk/Garazyk/Sync/WebSocketConnection.h`
+- Create: `Garazyk/Garazyk/Sync/WebSocketConnection.m`
+- Create: `Garazyk/Garazyk/Sync/EventFormatter.h`
+- Create: `Garazyk/Garazyk/Sync/EventFormatter.m`
+- Create: `Garazyk/Garazyk/Sync/Firehose.h`
+- Create: `Garazyk/Garazyk/Sync/Firehose.m`
+- Create: `Garazyk/Garazyk/Sync/RelayClient.h`
+- Create: `Garazyk/Garazyk/Sync/RelayClient.m`
 
 **Step 1: Create Sync directory**
 
 ```bash
-mkdir -p streaming-worktree/ATProtoPDS/ATProtoPDS/Sync
+mkdir -p streaming-worktree/Garazyk/Garazyk/Sync
 ```
 
 **Step 2: Create basic header files with interfaces**
@@ -60,7 +60,7 @@ Add Sync source files to SYNC_SRC variable.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Sync/ ATProtoPDS/Makefile
+git add Garazyk/Garazyk/Sync/ Garazyk/Makefile
 git commit -m "feat: create Sync directory structure for WebSocket streaming"
 ```
 
@@ -69,8 +69,8 @@ git commit -m "feat: create Sync directory structure for WebSocket streaming"
 ### Task 2: Implement WebSocket Connection Handling
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/WebSocketConnection.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/WebSocketConnection.m`
+- Modify: `Garazyk/Garazyk/Sync/WebSocketConnection.h`
+- Modify: `Garazyk/Garazyk/Sync/WebSocketConnection.m`
 
 **Step 1: Define WebSocketConnection interface**
 
@@ -98,7 +98,7 @@ Track connection open/close states and handle cleanup.
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Sync/WebSocketConnection.*
+git add Garazyk/Garazyk/Sync/WebSocketConnection.*
 git commit -m "feat: implement WebSocket connection handling"
 ```
 
@@ -107,8 +107,8 @@ git commit -m "feat: implement WebSocket connection handling"
 ### Task 3: Implement Event Formatting
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/EventFormatter.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/EventFormatter.m`
+- Modify: `Garazyk/Garazyk/Sync/EventFormatter.h`
+- Modify: `Garazyk/Garazyk/Sync/EventFormatter.m`
 
 **Step 1: Define event formatter interface**
 
@@ -129,7 +129,7 @@ Ensure events include proper sequence numbers.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Sync/EventFormatter.*
+git add Garazyk/Garazyk/Sync/EventFormatter.*
 git commit -m "feat: implement event formatting for subscribeRepos"
 ```
 
@@ -138,8 +138,8 @@ git commit -m "feat: implement event formatting for subscribeRepos"
 ### Task 4: Implement Firehose Event Streaming
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/Firehose.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/Firehose.m`
+- Modify: `Garazyk/Garazyk/Sync/Firehose.h`
+- Modify: `Garazyk/Garazyk/Sync/Firehose.m`
 
 **Step 1: Define Firehose interface**
 
@@ -160,7 +160,7 @@ Manage subscription lifecycle and cleanup.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Sync/Firehose.*
+git add Garazyk/Garazyk/Sync/Firehose.*
 git commit -m "feat: implement firehose event streaming logic"
 ```
 
@@ -169,8 +169,8 @@ git commit -m "feat: implement firehose event streaming logic"
 ### Task 5: Create WebSocket Server
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/WebSocketServer.h`
-- Modify: `ATProtoPDS/ATProtoPDS/Sync/WebSocketServer.m`
+- Modify: `Garazyk/Garazyk/Sync/WebSocketServer.h`
+- Modify: `Garazyk/Garazyk/Sync/WebSocketServer.m`
 
 **Step 1: Define WebSocket server interface**
 
@@ -191,7 +191,7 @@ Connect to existing PDSController for event data.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Sync/WebSocketServer.*
+git add Garazyk/Garazyk/Sync/WebSocketServer.*
 git commit -m "feat: create WebSocket server with subscribeRepos endpoint"
 ```
 
@@ -200,12 +200,12 @@ git commit -m "feat: create WebSocket server with subscribeRepos endpoint"
 ### Task 6: Create Missing Network Infrastructure
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/Network/HttpServer.h`
-- Create: `ATProtoPDS/ATProtoPDS/Network/HttpServer.m`
-- Create: `ATProtoPDS/ATProtoPDS/Network/HttpRequest.h`
-- Create: `ATProtoPDS/ATProtoPDS/Network/HttpRequest.m`
-- Create: `ATProtoPDS/ATProtoPDS/Network/HttpResponse.h`
-- Create: `ATProtoPDS/ATProtoPDS/Network/HttpResponse.m`
+- Create: `Garazyk/Garazyk/Network/HttpServer.h`
+- Create: `Garazyk/Garazyk/Network/HttpServer.m`
+- Create: `Garazyk/Garazyk/Network/HttpRequest.h`
+- Create: `Garazyk/Garazyk/Network/HttpRequest.m`
+- Create: `Garazyk/Garazyk/Network/HttpResponse.h`
+- Create: `Garazyk/Garazyk/Network/HttpResponse.m`
 
 **Step 1: Implement HTTP server foundation**
 
@@ -222,7 +222,7 @@ Hooks for WebSocket upgrade handling.
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Network/Http*.*
+git add Garazyk/Garazyk/Network/Http*.*
 git commit -m "feat: create HTTP server infrastructure for WebSocket support"
 ```
 
@@ -231,7 +231,7 @@ git commit -m "feat: create HTTP server infrastructure for WebSocket support"
 ### Task 7: Create Server Main Entry Point
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/server_main.m`
+- Create: `Garazyk/Garazyk/server_main.m`
 
 **Step 1: Implement main function**
 
@@ -252,7 +252,7 @@ Handle SIGTERM/SIGINT for clean shutdown.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/server_main.m
+git add Garazyk/Garazyk/server_main.m
 git commit -m "feat: create server main entry point with WebSocket integration"
 ```
 
@@ -261,8 +261,8 @@ git commit -m "feat: create server main entry point with WebSocket integration"
 ### Task 8: Integrate with PDS Controller
 
 **Files:**
-- Modify: `ATProtoPDS/ATProtoPDS/PDSController.h`
-- Modify: `ATProtoPDS/ATProtoPDS/PDSController.m`
+- Modify: `Garazyk/Garazyk/PDSController.h`
+- Modify: `Garazyk/Garazyk/PDSController.m`
 
 **Step 1: Add event sequencing to PDS controller**
 
@@ -283,7 +283,7 @@ Initialize WebSocket server alongside HTTP server.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/PDSController.*
+git add Garazyk/Garazyk/PDSController.*
 git commit -m "feat: integrate event sequencing and WebSocket support into PDS controller"
 ```
 
@@ -292,8 +292,8 @@ git commit -m "feat: integrate event sequencing and WebSocket support into PDS c
 ### Task 9: Add Event Persistence and Sequencing
 
 **Files:**
-- Create: `ATProtoPDS/ATProtoPDS/Sync/EventSequencer.h`
-- Create: `ATProtoPDS/ATProtoPDS/Sync/EventSequencer.m`
+- Create: `Garazyk/Garazyk/Sync/EventSequencer.h`
+- Create: `Garazyk/Garazyk/Sync/EventSequencer.m`
 
 **Step 1: Define event sequencer interface**
 
@@ -314,7 +314,7 @@ Check cursor validity and handle future cursors.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/ATProtoPDS/Sync/EventSequencer.*
+git add Garazyk/Garazyk/Sync/EventSequencer.*
 git commit -m "feat: add event sequencing and persistence for cursor support"
 ```
 

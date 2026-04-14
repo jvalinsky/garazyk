@@ -35,7 +35,7 @@ This implementation plan converts the Test Audit Validation System design into a
   - [x] 2.1 Implement test file discovery
     - Create `TestDiscoveryEngine` struct with discovery methods
     - Implement `DiscoverTestFiles()` to recursively find test files in directory
-    - Filter for `.m` files in `ATProtoPDS/Tests/` directory
+    - Filter for `.m` files in `Garazyk/Tests/` directory
     - Exclude fixture directories and helper files
     - _Requirements: 1.1_
 
@@ -175,7 +175,7 @@ This implementation plan converts the Test Audit Validation System design into a
 
   - [x] 6.3 Implement InteropTestRule
     - Detect interop tests by naming patterns and fixture usage
-    - Verify fixture files are loaded from ATProtoPDS/Tests/fixtures/
+    - Verify fixture files are loaded from Garazyk/Tests/fixtures/
     - Verify fixture paths exist on filesystem
     - Verify tests compare against reference implementation outputs
     - Report Assertion_Mismatch for interop tests without reference comparison
@@ -441,21 +441,21 @@ This implementation plan converts the Test Audit Validation System design into a
     - _Requirements: 16.1_
 
   - [ ] 15.2 Test analysis of Core domain tests
-    - Run analysis on ATProtoPDS/Tests/Core/ (CBOR, CAR, CID, MST tests)
+    - Run analysis on Garazyk/Tests/Core/ (CBOR, CAR, CID, MST tests)
     - Verify detection of interop tests with fixtures
     - Verify detection of round-trip properties
     - Validate findings against manual review
     - _Requirements: 4.2, 5.5, 7.4_
 
   - [ ] 15.3 Test analysis of Auth domain tests
-    - Run analysis on ATProtoPDS/Tests/Auth/ (OAuth, DPoP, JWT tests)
+    - Run analysis on Garazyk/Tests/Auth/ (OAuth, DPoP, JWT tests)
     - Verify detection of security test patterns
     - Verify detection of cryptographic validation
     - Validate findings against manual review
     - _Requirements: 6.6_
 
   - [ ] 15.4 Test analysis of Network domain tests
-    - Run analysis on ATProtoPDS/Tests/Network/ (XRPC, HTTP tests)
+    - Run analysis on Garazyk/Tests/Network/ (XRPC, HTTP tests)
     - Verify detection of error handling patterns
     - Verify detection of input validation tests
     - Validate findings against manual review

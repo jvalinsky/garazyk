@@ -1,0 +1,10 @@
+# XRPC coverage scope rules
+# Lines starting with "+" are include globs.
+# Lines starting with "-" are exclude globs.
+# Bare patterns are treated as include globs.
+#
+# Default policy for this repo: track core PDS surface first.
+
++com.atproto.*
++app.bsky.*
+-app.bsky.unspecced.*
