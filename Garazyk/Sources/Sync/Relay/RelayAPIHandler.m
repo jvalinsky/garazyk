@@ -255,7 +255,7 @@
     response.statusCode = HttpStatusCreated;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"added"};
     [self setCORS:response];
-    PDSLog(@"Relay: Added upstream %@", url);
+    PDS_LOG_SYNC_INFO(@"Relay: Added upstream %@", url);
 }
 
 - (void)handleUpstreamDetail:(NSString *)url response:(HttpResponse *)response {
@@ -291,7 +291,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"connecting"};
     [self setCORS:response];
-    PDSLog(@"Relay: Connecting to upstream %@", url);
+    PDS_LOG_SYNC_INFO(@"Relay: Connecting to upstream %@", url);
 }
 
 - (void)handleUpstreamDisconnect:(NSString *)url response:(HttpResponse *)response {
@@ -306,7 +306,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"disconnected"};
     [self setCORS:response];
-    PDSLog(@"Relay: Disconnected from upstream %@", url);
+    PDS_LOG_SYNC_INFO(@"Relay: Disconnected from upstream %@", url);
 }
 
 - (void)handleUpstreamRemove:(NSString *)url response:(HttpResponse *)response {
@@ -325,7 +325,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"removed"};
     [self setCORS:response];
-    PDSLog(@"Relay: Removed upstream %@", url);
+    PDS_LOG_SYNC_INFO(@"Relay: Removed upstream %@", url);
 }
 
 - (void)handleReconnectAll:(HttpResponse *)response {
@@ -340,7 +340,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"action": @"reconnect_all"};
     [self setCORS:response];
-    PDSLog(@"Relay: Reconnecting all upstreams");
+    PDS_LOG_SYNC_INFO(@"Relay: Reconnecting all upstreams");
 }
 
 - (void)handleDisconnectAll:(HttpResponse *)response {
@@ -355,7 +355,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"action": @"disconnect_all"};
     [self setCORS:response];
-    PDSLog(@"Relay: Disconnected all upstreams");
+    PDS_LOG_SYNC_INFO(@"Relay: Disconnected all upstreams");
 }
 
 - (void)methodNotAllowed:(HttpResponse *)response {

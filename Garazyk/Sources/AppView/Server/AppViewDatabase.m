@@ -343,6 +343,11 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return result;
 }
 
+- (nullable AppViewRepoSyncState *)getRepoSyncState:(NSString *)did
+                                              error:(NSError **)error {
+    return [self loadRepoSyncStateForDID:did error:error];
+}
+
 - (nullable NSArray<AppViewRepoSyncState *> *)loadRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)status
                                                                      limit:(NSInteger)limit
                                                                      error:(NSError **)error {
@@ -378,6 +383,11 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     });
 
     return [results copy];
+}
+
+- (BOOL)setRepoSyncState:(AppViewRepoSyncState *)state
+                   error:(NSError **)error {
+    return [self upsertRepoSyncState:state error:error];
 }
 
 - (NSInteger)countRepoSyncStatesWithStatus:(AppViewRepoSyncStatus)status error:(NSError **)error {
