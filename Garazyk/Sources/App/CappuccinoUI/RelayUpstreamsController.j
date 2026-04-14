@@ -131,6 +131,7 @@
     _upstreamsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1040.0, 540.0)];
     [_upstreamsTable setDelegate:self];
     [_upstreamsTable setDataSource:self];
+    [_upstreamsTable setUsesAlternatingBackgroundColors:YES];
     [_upstreamsTable setAllowsEmptySelection:YES];
     [_upstreamsTable setAllowsMultipleSelection:NO];
     [_upstreamsTable setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithCalibratedWhite:0.98 alpha:1.0]]];
@@ -456,6 +457,53 @@
     return @"";
 }
 
+- (CPView)tableView:(CPTableView)tableView viewForTableColumn:(CPTableColumn)tableColumn row:(int)row
+{
+    var identifier = [tableColumn identifier];
+    
+    if ([identifier isEqual:@"actions"])
+    {
+        var cellView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 200.0, 28.0)];
+        [cellView setBackgroundColor:[CPColor clearColor]];
+        
+        var url = _upstreams[row].url;
+        
+        var connectBtn = [[CPButton alloc] initWithFrame:CGRectMake(0.0, 2.0, 60.0, 24.0)];
+        [connectBtn setTitle:@"Connect"];
+        [connectBtn setFont:[CPFont systemFontOfSize:11.0]];
+        [connectBtn setBordered:NO];
+        [connectBtn setTextColor:[CPColor colorWithCalibratedRed:0.0 green:0.4 blue:0.8 alpha:1.0]];
+        [connectBtn setTarget:self];
+        [connectBtn setAction:@selector(handleConnectUpstream:)];
+        [connectBtn setTag:row];
+        [cellView addSubview:connectBtn];
+        
+        var disconnectBtn = [[CPButton alloc] initWithFrame:CGRectMake(65.0, 2.0, 75.0, 24.0)];
+        [disconnectBtn setTitle:@"Disconnect"];
+        [disconnectBtn setFont:[CPFont systemFontOfSize:11.0]];
+        [disconnectBtn setBordered:NO];
+        [disconnectBtn setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.5 blue:0.2 alpha:1.0]];
+        [disconnectBtn setTarget:self];
+        [disconnectBtn setAction:@selector(handleDisconnectUpstream:)];
+        [disconnectBtn setTag:row];
+        [cellView addSubview:disconnectBtn];
+        
+        var removeBtn = [[CPButton alloc] initWithFrame:CGRectMake(145.0, 2.0, 55.0, 24.0)];
+        [removeBtn setTitle:@"Remove"];
+        [removeBtn setFont:[CPFont systemFontOfSize:11.0]];
+        [removeBtn setBordered:NO];
+        [removeBtn setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.2 blue:0.2 alpha:1.0]];
+        [removeBtn setTarget:self];
+        [removeBtn setAction:@selector(handleRemoveUpstream:)];
+        [removeBtn setTag:row];
+        [cellView addSubview:removeBtn];
+        
+        return cellView;
+    }
+    
+    return nil;
+}
+
 #pragma mark - CPTableView Delegate
 
 - (BOOL)tableView:(CPTableView)tableView shouldSelectRow:(int)row
@@ -497,7 +545,7 @@
 - (void)confirmDisconnectUpstream:(CPString)upstreamURL handler:(Function)handler
 {
     var alert = [[CPAlert alloc] init];
-    [alert setAlertStyle:CPAlertStyleWarning];
+    [alert setAlertStyle:CPWarningAlertStyle];
     [alert setMessageText:@"Disconnect upstream?"];
     [alert setInformativeText:@"This will stop syncing from " + upstreamURL + ". You can reconnect later."];
 
@@ -524,7 +572,7 @@
 - (void)confirmRemoveUpstream:(CPString)upstreamURL handler:(Function)handler
 {
     var alert = [[CPAlert alloc] init];
-    [alert setAlertStyle:CPAlertStyleCritical];
+    [alert setAlertStyle:CPCriticalAlertStyle];
     [alert setMessageText:@"Remove upstream?"];
     [alert setInformativeText:@"This will permanently remove " + upstreamURL + " from the configuration."];
 
