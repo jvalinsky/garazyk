@@ -188,11 +188,15 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                        error:(NSError *_Nullable)error {
   dispatch_async(dispatch_get_main_queue(), ^{
     switch (state) {
-    case PDSNetworkConnectionStateReady:
+    case PDSNetworkConnectionStateReady: {
       self.state = WebSocketConnectionStateConnected;
       [self startReading];
       [self startHeartbeat];
+      if ([self.delegate respondsToSelector:@selector(webSocketConnectionStateDidChange:)]) {
+        [self.delegate webSocketConnectionStateDidChange:self];
+      }
       break;
+    }
 
     case PDSNetworkConnectionStateCancelled:
       self.state = WebSocketConnectionStateClosed;
