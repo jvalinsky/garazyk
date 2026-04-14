@@ -7,7 +7,7 @@ Type=simple
 User=pds
 Group=pds
 WorkingDirectory=/opt/nspds
-ExecStart=/opt/nspds/bin/atprotopds-cli serve --data-dir /var/lib/nspds --config /etc/nspds/config.json --foreground
+ExecStart=/opt/nspds/bin/kaszlak serve --data-dir /var/lib/nspds --config /etc/nspds/config.json --foreground
 Restart=always
 RestartSec=5
 

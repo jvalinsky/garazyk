@@ -190,7 +190,7 @@ Use it only when you explicitly intend to destroy local state.
 
 ```bash
 xcodegen generate
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 ```
 
