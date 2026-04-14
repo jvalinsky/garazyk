@@ -235,6 +235,10 @@ COPY --from=builder /src/build/bin/syrena /usr/local/bin/syrena
 COPY --from=builder-cappuccino-ui /tmp/cappuccino-runtime/ \
     /usr/share/atprotopds/assets/CappuccinoUI/
 
+# Copy PLC static UI assets used by campagnola root routes
+COPY --from=builder /src/Garazyk/Sources/PLC/Assets \
+    /usr/share/atprotopds/assets/PLC
+
 # Copy lexicons
 COPY --from=builder /src/Garazyk/Resources/lexicons /usr/share/atprotopds/lexicons
 
