@@ -1,5 +1,13 @@
 [
   {
+    "hash": "b8a696cdb511c37b46ab5681e1a13215052f1042",
+    "short_hash": "b8a696c",
+    "author": "Security Bot",
+    "date": "2026-04-14T02:59:13-04:00",
+    "message": "docs(build): align scheme and binary names with current targets",
+    "files_changed": 13
+  },
+  {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",
     "short_hash": "2c99414",
     "author": "Security Bot",
@@ -8,12 +16,12 @@
     "files_changed": 4395
   },
   {
-    "hash": "3d0223e4a986fed604dbbb12cf96b2100bf726b7",
-    "short_hash": "3d0223e",
+    "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",
+    "short_hash": "2c99414",
     "author": "Security Bot",
-    "date": "2026-04-13T12:01:42-04:00",
-    "message": "docs: fix broken documentation references and outdated build docs\n\n- Fix BUILD.md: rewrite for XcodeGen/CMake hybrid build system\n- Fix AGENTS_QUICKREF.md: simplify to actual commands\n- Fix CLAUDE.md: remove obsolete deciduous instructions\n- Fix PULL_REQUEST_TEMPLATE.md: update validation commands\n- Fix templates: replace empty anchor links with real docs links\n- Fix guides: update project name from ATProtoPDS to September/Garazyk",
-    "files_changed": 9
+    "date": "2026-04-13T20:09:35-04:00",
+    "message": "feat: Multi-Service Ops UX API parity\n\nPhase 2 (Relay): Added mutation endpoints\n- POST/DELETE /api/relay/upstreams/*\n- POST /api/relay/upstreams/{url}/connect|disconnect\n- POST /api/relay/upstreams/reconnect-all|disconnect-all\n- GET /api/relay/capabilities for UI feature gating\n\nPhase 3 (AppView): Added backfill queue operations\n- GET /admin/backfill/queue (paginated)\n- GET /admin/backfill/repos/{did} (detail)\n- POST /admin/backfill/repos/{did}/retry (retry)\n- POST /admin/backfill/repos/{did}/cancel (cancel)\n- GET /admin/ingest/health (relay connectivity + lag)\n- GET /admin/capabilities\n\nPhase 4 (PLC): Added per-service auth middleware\n- adminSecret config for PLCServer\n- Protected routes: /_admin/capabilities, /_admin/export, /_admin/audit/rebuild\n\nPhase 1 (PDS): Guarded writes pattern for AdminController\n- guardedWriteWithTitle: preflight + risk badge flow\n- showExecutionReceipt: audit ID display\n\nDatabase methods added:\n- getRepoSyncState:, setRepoSyncState: in AppViewDatabase\n- queueWithLimit:cursor:status:, repoDetail:, retryRepo:, cancelRepo: in Orchestrator\n\nIngest engine properties:\n- relayHealth, throughput (for /admin/ingest/health)",
+    "files_changed": 4395
   },
   {
     "hash": "98777581d356f66ef5f6a5b05823c8e12a6aad89",
@@ -38,14 +46,6 @@
     "date": "2026-04-13T10:57:27-04:00",
     "message": "fix(runtime): GNUstep HTTP parser, XRPC route precedence, ObjC category linking, CMake link order\n\n- Replace GSMimeParser with deterministic manual HTTP/1.1 request-line + header\n  parser in Http1Parser.m for GNUstep/Linux (fixes PLC healthcheck timeouts)\n- Add explicit GET/HEAD XRPC routes in PDSHttpXrpcRoutePack so API paths resolve\n  before the Cappuccino wildcard UI route (fixes /xrpc 404s)\n- Add category-linker anchor functions in PDSActorStore+Account.m and +Blob.m,\n  called from ActorStore.m, preventing GNU ld from stripping category methods\n  in static builds (fixes runtime selector crash)\n- Restore PLC symbols into kaszlak link closure with second static-lib pass in\n  CMakeLists.txt (fixes Docker linker failure)\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
     "files_changed": 11
-  },
-  {
-    "hash": "ebeaff9198ff862bd5c2312c13434a4f1b6369d5",
-    "short_hash": "ebeaff9",
-    "author": "Security Bot",
-    "date": "2026-04-12T18:48:17-04:00",
-    "message": "feat(crypto): add cross-platform ES256 key abstraction\n\nAdd protocol-based key interfaces (PDSKeyProtocol) for cross-platform\nES256/P-256 ECDSA operations. On macOS, uses Apple Security framework.\nOn GNUstep/Linux, uses OpenSSL.\n\nChanges:\n- PDSKeyProtocol.h: Protocol interfaces for public/private keys\n- PDSOpenSSLES256KeyManager: OpenSSL ES256 implementation\n- AuthCryptoJWK: Added protocol-based APIs (deprecated SecKeyRef methods)\n- AuthCryptoDPoP: Cross-platform using protocol interfaces\n- DPoPUtil: Platform guards (macOS only, use AuthCryptoDPoP directly)\n- CMakeLists.txt: Exclude platform-specific files\n\nThe protocol-based approach allows:\n1. macOS: Native Apple Security (SecKeyRef)\n2. GNUstep/Linux: OpenSSL (EC_KEY, ECDSA_sign/verify)\n\n🤖 Generated with Letta\n\nCo-Authored-By: Letta <noreply@letta.com>",
-    "files_changed": 10
   },
   {
     "hash": "ebeaff9198ff862bd5c2312c13434a4f1b6369d5",
