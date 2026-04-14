@@ -409,7 +409,13 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [cappuccinoUIHandler handleRequest:req response:resp];
     }];
 
+    // Objective-J service UI at root
     [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [cappuccinoUIHandler handleRequest:req response:resp];
+    }];
+
+    // Legacy static PLC UI (for backwards compatibility)
+    [self.httpServer addRoute:@"GET" path:@"/static" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf serveStaticFile:@"index.html" response:resp];
     }];
 

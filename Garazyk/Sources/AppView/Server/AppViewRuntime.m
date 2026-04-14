@@ -148,8 +148,13 @@ static AppViewRuntime *_sharedRuntime = nil;
     [cappuccinoUIHandler setDataDirectory:config.dataDirectory];
     [cappuccinoUIHandler setServiceProfile:@"appview"];
 
-    // Root health/info endpoint
+    // Root serves Objective-J UI
     [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
+        [cappuccinoUIHandler handleRequest:req response:res];
+    }];
+
+    // JSON info endpoint
+    [_httpServer addRoute:@"GET" path:@"/info" handler:^(HttpRequest *req, HttpResponse *res) {
         NSDictionary *info = @{
             @"service": @"syrena",
             @"version": @"1.0.0",
