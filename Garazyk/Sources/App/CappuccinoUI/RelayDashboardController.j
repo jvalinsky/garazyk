@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "ResponsiveMixin.j"
 
 @implementation RelayDashboardController : CPObject
 {
@@ -116,6 +117,13 @@
 
     // Start auto-refresh
     [self startAutoRefresh];
+
+    // Set up resize observation for responsive layout
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleViewResize:)
+                                                 name:CPViewFrameDidChangeNotification
+                                               object:_rootView];
 
     return _rootView;
 }
@@ -467,6 +475,48 @@
     {
         [self startAutoRefresh];
         [sender setTitle:@"Auto Refresh: ON"];
+    }
+}
+
+#pragma mark - Responsive Layout
+
+- (void)handleViewResize:(CPNotification)notification
+{
+    var width = _rootView.bounds.size.width;
+    var breakpoint = [ResponsiveMixin currentBreakpointForWidth:width];
+    
+    [self rebuildLayoutForBreakpoint:breakpoint width:width];
+}
+
+- (void)rebuildLayoutForBreakpoint:(CPString)breakpoint width:(float)width
+{
+    var startX = 20.0;
+    var gap = 20.0;
+    var cardWidth = 240.0;
+    var cardHeight = 90.0;
+    var startY = 80.0;
+    
+    var maxColumns = 4;
+    
+    var upstreamCard = [_upstreamLabel superview];
+    var downstreamCard = [_downstreamLabel superview];
+    var eventsCard = [_eventsRateLabel superview];
+    var droppedCard = [_droppedLabel superview];
+    var cardViews = [upstreamCard, downstreamCard, eventsCard, droppedCard];
+    
+    var positions = [
+        CGRectMake(startX, startY, cardWidth, cardHeight),
+        CGRectMake(startX + cardWidth + gap, startY, cardWidth, cardHeight),
+        CGRectMake(startX + 2 * (cardWidth + gap), startY, cardWidth, cardHeight),
+        CGRectMake(startX + 3 * (cardWidth + gap), startY, cardWidth, cardHeight)
+    ];
+    
+    for (var i = 0; i < cardViews.length && i < positions.length; i++)
+    {
+        var col = i % maxColumns;
+        var row = parseInt(i / maxColumns);
+        var newFrame = CGRectMake(startX + col * (cardWidth + gap), startY + row * (cardHeight + gap), cardWidth, cardHeight);
+        [cardViews[i] setFrame:newFrame];
     }
 }
 
