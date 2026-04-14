@@ -48,7 +48,7 @@ When a client first connects to the firehose:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 150-175)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 150-175)
 
 ### Connection States
 
@@ -111,7 +111,7 @@ The server parses and validates the cursor:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 850-880)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 850-880)
 
 ### Cursor Validation
 
@@ -183,7 +183,7 @@ The server validates cursors against several conditions:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 650-720)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 650-720)
 
 ## State Recovery Strategies
 
@@ -229,7 +229,7 @@ if (!hasCursor) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 720-760)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 720-760)
 
 ### With Cursor (Resumption)
 
@@ -264,7 +264,7 @@ if (hasCursor) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 760-790)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 760-790)
 
 ### Outdated Cursor Handling
 
@@ -303,7 +303,7 @@ If a cursor is too old (beyond the replay window), the server adjusts it:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 900-930)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 900-930)
 
 ## Replay Window Management
 
@@ -319,7 +319,7 @@ static const NSUInteger kSubscribeReposMaxReplayEventsDefault = 10000;
 _maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 30, 110)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 30, 110)
 
 ### Oldest Persisted Sequence
 
@@ -344,7 +344,7 @@ The server tracks the oldest available event:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 880-900)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 880-900)
 
 ## Error Handling
 
@@ -364,7 +364,7 @@ if (hasCursor && !cursorValid) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 700-710)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 700-710)
 
 ### Future Cursor
 
@@ -383,7 +383,7 @@ if (hasCursor && parsedCursor > self.sequenceNumber) {
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 710-720)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 710-720)
 
 ### Sending Error Frames
 
@@ -406,7 +406,7 @@ Error frames are sent using the XRPC streaming protocol:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 950-965)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 950-965)
 
 ## Info Events
 
@@ -435,7 +435,7 @@ When a cursor is adjusted, the server sends an info event:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 830-850)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 830-850)
 
 ## Connection Cleanup
 
@@ -452,7 +452,7 @@ When a connection closes or fails, it's removed from the active set:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 965-970)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 965-970)
 
 ### Connection Delegate Methods
 
@@ -485,7 +485,7 @@ The handler implements WebSocket delegate methods for lifecycle events:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 260-285)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 260-285)
 
 ## Client-Side Reconnection
 
@@ -586,7 +586,7 @@ static NSString *const kSubscribeReposErrorInvalidCursor = @"InvalidCursor";
 static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 30-35)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 30-35)
 
 ## See Also
 

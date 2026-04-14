@@ -51,7 +51,7 @@ else()
 endif()
 
 # Get the absolute path to the main PDS source directory
-get_filename_component(PDS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../ATProtoPDS/Sources" ABSOLUTE)
+get_filename_component(PDS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../Garazyk/Sources" ABSOLUTE)
 
 # Include directories
 include_directories(
@@ -84,30 +84,30 @@ include_directories(
 
 # Collect source files from the main PDS (only .m files)
 file(GLOB_RECURSE PDS_SOURCES
-    "../../ATProtoPDS/Sources/App/*.m"
-    "../../ATProtoPDS/Sources/Network/*.m"
-    "../../ATProtoPDS/Sources/Services/*.m"
-    "../../ATProtoPDS/Sources/Database/*.m"
-    "../../ATProtoPDS/Sources/Core/*.m"
-    "../../ATProtoPDS/Sources/Auth/*.m"
-    "../../ATProtoPDS/Sources/Compat/*.m"
-    "../../ATProtoPDS/Sources/Repository/*.m"
-    "../../ATProtoPDS/Sources/Sync/*.m"
-    "../../ATProtoPDS/Sources/Identity/*.m"
-    "../../ATProtoPDS/Sources/Blob/*.m"
-    "../../ATProtoPDS/Sources/Admin/*.m"
-    "../../ATProtoPDS/Sources/Debug/*.m"
-    "../../ATProtoPDS/Sources/PLC/*.m"
-    "../../ATProtoPDS/Sources/OAuthProvider/*.m"
-    "../../ATProtoPDS/Sources/PDSAuth/*.m"
-    "../../ATProtoPDS/Sources/Security/*.m"
-    "../../ATProtoPDS/Sources/Lexicon/*.m"
-    "../../ATProtoPDS/Sources/Email/*.m"
-    "../../ATProtoPDS/Sources/Federation/*.m"
-    "../../ATProtoPDS/Sources/AuthCrypto/*.m"
-    "../../ATProtoPDS/Sources/AuthVerifier/*.m"
-    "../../ATProtoPDS/Sources/Metrics/*.m"
-    "../../ATProtoPDS/Sources/AppView/*.m"
+    "../../Garazyk/Sources/App/*.m"
+    "../../Garazyk/Sources/Network/*.m"
+    "../../Garazyk/Sources/Services/*.m"
+    "../../Garazyk/Sources/Database/*.m"
+    "../../Garazyk/Sources/Core/*.m"
+    "../../Garazyk/Sources/Auth/*.m"
+    "../../Garazyk/Sources/Compat/*.m"
+    "../../Garazyk/Sources/Repository/*.m"
+    "../../Garazyk/Sources/Sync/*.m"
+    "../../Garazyk/Sources/Identity/*.m"
+    "../../Garazyk/Sources/Blob/*.m"
+    "../../Garazyk/Sources/Admin/*.m"
+    "../../Garazyk/Sources/Debug/*.m"
+    "../../Garazyk/Sources/PLC/*.m"
+    "../../Garazyk/Sources/OAuthProvider/*.m"
+    "../../Garazyk/Sources/PDSAuth/*.m"
+    "../../Garazyk/Sources/Security/*.m"
+    "../../Garazyk/Sources/Lexicon/*.m"
+    "../../Garazyk/Sources/Email/*.m"
+    "../../Garazyk/Sources/Federation/*.m"
+    "../../Garazyk/Sources/AuthCrypto/*.m"
+    "../../Garazyk/Sources/AuthVerifier/*.m"
+    "../../Garazyk/Sources/Metrics/*.m"
+    "../../Garazyk/Sources/AppView/*.m"
 )
 
 # Create the executable

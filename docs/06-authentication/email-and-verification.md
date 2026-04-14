@@ -100,8 +100,8 @@ If you are changing onboarding or account flows, you usually need to inspect:
 
 - `PDSConfiguration` for provider selection and env overrides,
 - account service code for when verification is enforced,
-- email provider implementations under `ATProtoPDS/Sources/Email/`,
-- the tests in `ATProtoPDS/Tests/Email/` and related account/auth tests.
+- email provider implementations under `Garazyk/Sources/Email/`,
+- the tests in `Garazyk/Tests/Email/` and related account/auth tests.
 
 If you are writing docs, also cross-check:
 

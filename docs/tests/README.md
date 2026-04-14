@@ -41,7 +41,7 @@ Targeted patterns:
 ./build/tests/AllTests 2>&1 | grep -E "Test (Case|Suite)"
 ```
 
-New test classes must be registered in `ATProtoPDS/Tests/test_main.m`.
+New test classes must be registered in `Garazyk/Tests/test_main.m`.
 
 ## Catalog by Area
 

@@ -13,7 +13,7 @@
 ### Task 1: Add webauthn_credentials table to schema
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m:132-166`
+- Modify: `Garazyk/Sources/Database/Schema/PDSSchemaManager.m:132-166`
 - Verify: Tests pass after migration
 
 **Step 1: Add schema method**
@@ -53,7 +53,7 @@ Expected: PASS
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Database/Schema/PDSSchemaManager.m
+git add Garazyk/Sources/Database/Schema/PDSSchemaManager.m
 git commit -m "feat: add webauthn_credentials table schema"
 ```
 
@@ -62,7 +62,7 @@ git commit -m "feat: add webauthn_credentials table schema"
 ### Task 2: Add WebAuthn credential persistence to PDSDatabase
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Database/PDSDatabase.m`
+- Modify: `Garazyk/Sources/Database/PDSDatabase.m`
 
 **Dependencies:** Task 1 complete
 
@@ -111,7 +111,7 @@ This is implicitly tested by Task 3 handlers.
 **Step 5: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Database/PDSDatabase.m
+git add Garazyk/Sources/Database/PDSDatabase.m
 git commit -m "feat: add WebAuthn credential persistence"
 ```
 
@@ -120,9 +120,9 @@ git commit -m "feat: add WebAuthn credential persistence"
 ### Task 3: Create WebAuthnRegistrationHandler HTTP endpoints
 
 **Files:**
-- Create: `ATProtoPDS/Sources/Auth/WebAuthnRegistrationHandler.m`
-- Create: `ATProtoPDS/Sources/Auth/WebAuthnRegistrationHandler.h`
-- Modify: `ATProtoPDS/Sources/Network/XrpcHandler.m` (register the handler)
+- Create: `Garazyk/Sources/Auth/WebAuthnRegistrationHandler.m`
+- Create: `Garazyk/Sources/Auth/WebAuthnRegistrationHandler.h`
+- Modify: `Garazyk/Sources/Network/XrpcHandler.m` (register the handler)
 - Test: Create test class
 
 **Dependencies:** Task 2 complete
@@ -197,9 +197,9 @@ Expected: PASS
 **Step 6: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/WebAuthnRegistrationHandler.m
-git add ATProtoPDS/Sources/Auth/WebAuthnRegistrationHandler.h
-git add ATProtoPDS/Tests/Auth/WebAuthnRegistrationHandlerTests.m
+git add Garazyk/Sources/Auth/WebAuthnRegistrationHandler.m
+git add Garazyk/Sources/Auth/WebAuthnRegistrationHandler.h
+git add Garazyk/Tests/Auth/WebAuthnRegistrationHandlerTests.m
 git commit -m "feat: add WebAuthn registration HTTP endpoints"
 ```
 
@@ -208,7 +208,7 @@ git commit -m "feat: add WebAuthn registration HTTP endpoints"
 ### Task 4: Integrate WebAuthn into OAuth2 token exchange
 
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/OAuth2.m:735-760`
+- Modify: `Garazyk/Sources/Auth/OAuth2.m:735-760`
 
 **Dependencies:** Task 3 complete
 
@@ -252,7 +252,7 @@ Ensure existing OAuth2 tests pass, add new test for WebAuthn flow:
 **Step 4: Commit**
 
 ```bash
-git add ATProtoPDS/Sources/Auth/OAuth2.m
+git add Garazyk/Sources/Auth/OAuth2.m
 git commit -m "feat: integrate WebAuthn into OAuth2 token flow"
 ```
 

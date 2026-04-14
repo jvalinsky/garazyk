@@ -1,5 +1,69 @@
 [
   {
+    "hash": "cc6d9ae87b9e71567bf845ee0136c76de9bf6fa7",
+    "short_hash": "cc6d9ae",
+    "author": "Security Bot",
+    "date": "2026-04-13T11:02:02-04:00",
+    "message": "fix(appview): add HttpRequest/HttpResponse imports to AppViewRuntime\n\nFixes Docker build failure where HttpResponse was only forward-declared\nvia HttpServer.h but the root GET / handler needs the full interface\nfor setHeader:forKey:, setBody:, and statusCode.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "98777581d356f66ef5f6a5b05823c8e12a6aad89",
+    "short_hash": "9877758",
+    "author": "Security Bot",
+    "date": "2026-04-13T10:58:57-04:00",
+    "message": "feat(cli-ux): migrate docs, scripts, completions, and compose to strict command-first contract\n\n- Docker local-network compose: all services use strict `<binary> serve` syntax\n- Shell completions (bash/zsh): kaszlak branding in descriptions\n- CLI contract test script: validates command-first, flags-before-command rejection,\n  shared base commands, and status/health alias for all four binaries\n- Docs: setup, tutorial, CLI reference, config reference updated to kaszlak naming\n- Plans/archive: updated legacy pds references to kaszlak where in CLI examples\n- AppViewRuntime: added root GET / info endpoint for syrena\n- PLCServer: asset path resolution for Docker system asset directories\n- zuk main: added root GET / info endpoint\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+    "files_changed": 18
+  },
+  {
+    "hash": "4357aa077cfa6a7cc978b05cfe5aed84152da772",
+    "short_hash": "4357aa0",
+    "author": "Security Bot",
+    "date": "2026-04-13T10:58:02-04:00",
+    "message": "feat(cli): enforce strict command-first UX across kaszlak, campagnola, zuk, syrena\n\nAll four binaries now require `<binary> <command> [flags]` invocation:\n- Bare invocation prints usage and exits non-zero\n- Flags before command name are rejected with clear error\n- Shared base commands: serve, status, version, help\n- kaszlak/campagnola: `status` canonical, `health` accepted as alias\n\nCLI branding normalized to kaszlak throughout:\n- PDSCLIRegisterAll uses direct class references (fixes GNU ld stripping)\n- PDSCLIDispatcher, HealthCommand, DaemonCommand, InstallerCommand updated\n- Version output: \"kaszlak 1.0.0\" instead of \"PDS Version 1.0.0\"\n- campagnola version: \"campagnola (AT Protocol PLC Directory) 1.0.0\"\n\nRoot info endpoints added for zuk (GET /) and syrena (GET /).\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+    "files_changed": 14
+  },
+  {
+    "hash": "6363e679816a38c71a1aa70eb8a264c35a665cfa",
+    "short_hash": "6363e67",
+    "author": "Security Bot",
+    "date": "2026-04-13T10:57:27-04:00",
+    "message": "fix(runtime): GNUstep HTTP parser, XRPC route precedence, ObjC category linking, CMake link order\n\n- Replace GSMimeParser with deterministic manual HTTP/1.1 request-line + header\n  parser in Http1Parser.m for GNUstep/Linux (fixes PLC healthcheck timeouts)\n- Add explicit GET/HEAD XRPC routes in PDSHttpXrpcRoutePack so API paths resolve\n  before the Cappuccino wildcard UI route (fixes /xrpc 404s)\n- Add category-linker anchor functions in PDSActorStore+Account.m and +Blob.m,\n  called from ActorStore.m, preventing GNU ld from stripping category methods\n  in static builds (fixes runtime selector crash)\n- Restore PLC symbols into kaszlak link closure with second static-lib pass in\n  CMakeLists.txt (fixes Docker linker failure)\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+    "files_changed": 11
+  },
+  {
+    "hash": "ebeaff9198ff862bd5c2312c13434a4f1b6369d5",
+    "short_hash": "ebeaff9",
+    "author": "Security Bot",
+    "date": "2026-04-12T18:48:17-04:00",
+    "message": "feat(crypto): add cross-platform ES256 key abstraction\n\nAdd protocol-based key interfaces (PDSKeyProtocol) for cross-platform\nES256/P-256 ECDSA operations. On macOS, uses Apple Security framework.\nOn GNUstep/Linux, uses OpenSSL.\n\nChanges:\n- PDSKeyProtocol.h: Protocol interfaces for public/private keys\n- PDSOpenSSLES256KeyManager: OpenSSL ES256 implementation\n- AuthCryptoJWK: Added protocol-based APIs (deprecated SecKeyRef methods)\n- AuthCryptoDPoP: Cross-platform using protocol interfaces\n- DPoPUtil: Platform guards (macOS only, use AuthCryptoDPoP directly)\n- CMakeLists.txt: Exclude platform-specific files\n\nThe protocol-based approach allows:\n1. macOS: Native Apple Security (SecKeyRef)\n2. GNUstep/Linux: OpenSSL (EC_KEY, ECDSA_sign/verify)\n\n🤖 Generated with Letta\n\nCo-Authored-By: Letta <noreply@letta.com>",
+    "files_changed": 10
+  },
+  {
+    "hash": "7f699f3af6a32b737776b3759b81f69a21fa946b",
+    "short_hash": "7f699f3",
+    "author": "Security Bot",
+    "date": "2026-04-12T16:03:29-04:00",
+    "message": "fix(actor-store): add GNUSTEP conditional compilation for Apple frameworks\n\n- Guard CommonCrypto and Security includes with !defined(GNUSTEP)\n- Conditionally adopt PDSAppleActorKeyManagerDelegate protocol\n- Guard delegate method implementations with !defined(GNUSTEP)\n\nEnables compilation on non-Apple platforms that use GNUstep.\n\n🤖 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "7f699f3af6a32b737776b3759b81f69a21fa946b",
+    "short_hash": "7f699f3",
+    "author": "Security Bot",
+    "date": "2026-04-12T16:03:29-04:00",
+    "message": "fix(actor-store): add GNUSTEP conditional compilation for Apple frameworks\n\n- Guard CommonCrypto and Security includes with !defined(GNUSTEP)\n- Conditionally adopt PDSAppleActorKeyManagerDelegate protocol\n- Guard delegate method implementations with !defined(GNUSTEP)\n\nEnables compilation on non-Apple platforms that use GNUstep.\n\n🤖 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "9180bdad9228a3eecc8f62ebc0e60a3fb0368e82",
+    "short_hash": "9180bda",
+    "author": "Security Bot",
+    "date": "2026-04-12T16:01:50-04:00",
+    "message": "feat(cappuccino-ui): complete accessibility labels and add confirmation dialogs\n\nAccessibility labels added to:\n- RelayEventsController.j: connect, pause, clear buttons, events table\n- PLCTimelineController.j: status label, scroll view, timeline view\n- PLCDetailController.j: status label, content view\n- RelayUpstreamsController.j: add field, all control buttons, upstreams table\n\nConfirmation dialogs connected:\n- RelayUpstreamsController: disconnect upstream, remove upstream\n- AdminController: disable account invites (destructive confirmation)\n\nAll destructive actions now require user confirmation before executing.\n\n👁 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 5
+  },
+  {
     "hash": "180e6afbc067d28361a76c4ac25bd6f63c090de7",
     "short_hash": "180e6af",
     "author": "Security Bot",

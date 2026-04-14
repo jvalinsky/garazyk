@@ -36,7 +36,7 @@ The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing i
 **Goal:** Move from 404 to actual state tracking
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m:2697-2706`
+- Implementation: `Garazyk/Sources/Network/XrpcAppBskyMethods.m:2697-2706`
 - Database: Add video_jobs table to schema
 
 **Steps:**
@@ -59,7 +59,7 @@ The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing i
 
 **Citations:**
 - Lexicon: `app.bsky.video.getJobStatus` output schema
-- Similar pattern: `ATProtoPDS/Sources/Database/PDSDatabase.m` (existing job tracking)
+- Similar pattern: `Garazyk/Sources/Database/PDSDatabase.m` (existing job tracking)
 
 ---
 
@@ -68,8 +68,8 @@ The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing i
 **Goal:** Convert uploaded videos to H.264/H.265 for web compatibility
 
 **Files:**
-- New: `ATProtoPDS/Sources/Media/PDSVideoTranscoder.m`
-- Config: `ATProtoPDS/Sources/App/PDSConfiguration.m`
+- New: `Garazyk/Sources/Media/PDSVideoTranscoder.m`
+- Config: `Garazyk/Sources/App/PDSConfiguration.m`
 
 **Steps:**
 1. Add FFmpeg path configuration to PDSConfiguration:
@@ -102,7 +102,7 @@ The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing i
 **Goal:** Generate video thumbnails for preview
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Media/PDSVideoThumbnailGenerator.m`
+- Implementation: `Garazyk/Sources/Media/PDSVideoThumbnailGenerator.m`
 
 **Steps:**
 1. Extract frame at 1 second mark (or user-specified time)
@@ -122,7 +122,7 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 **Goal:** Process videos for content moderation (NSFW blur, etc.)
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Moderation/PDSVideoModerationProcessor.m`
+- Implementation: `Garazyk/Sources/Moderation/PDSVideoModerationProcessor.m`
 - Config: Moderation settings in PDSConfiguration
 
 **Steps:**
@@ -138,8 +138,8 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 **Goal:** Notify clients of job progress in real-time
 
 **Files:**
-- New: `ATProtoPDS/Sources/Sync/PDSVideoJobEventStream.m`
-- Reference: `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m`
+- New: `Garazyk/Sources/Sync/PDSVideoJobEventStream.m`
+- Reference: `Garazyk/Sources/Sync/SubscribeReposHandler.m`
 
 **Steps:**
 1. Add WebSocket endpoint for video job updates
@@ -165,7 +165,7 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 **Goal:** Return limits based on user tier and storage
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m:2745-2754`
+- Implementation: `Garazyk/Sources/Network/XrpcAppBskyMethods.m:2745-2754`
 - Config: Tier-based limits in PDSConfiguration
 
 **Steps:**
@@ -192,7 +192,7 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 **Goal:** Background processing for video jobs
 
 **Files:**
-- New: `ATProtoPDS/Sources/Workers/PDSVideoWorker.m`
+- New: `Garazyk/Sources/Workers/PDSVideoWorker.m`
 - Config: Queue settings in PDSConfiguration
 
 **Steps:**
@@ -244,9 +244,9 @@ CREATE INDEX idx_video_jobs_created ON video_jobs(created_at);
 
 ## Dependencies
 
-- `ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m` - Endpoint registration
-- `ATProtoPDS/Sources/Database/PDSDatabase.m` - Job storage
-- `ATProtoPDS/Sources/App/PDSConfiguration.m` - Configuration
+- `Garazyk/Sources/Network/XrpcAppBskyMethods.m` - Endpoint registration
+- `Garazyk/Sources/Database/PDSDatabase.m` - Job storage
+- `Garazyk/Sources/App/PDSConfiguration.m` - Configuration
 - FFmpeg (system dependency)
 
 ---

@@ -150,7 +150,7 @@ _For any_ XRPC request to `com.atproto.sync.listRepos` or `com.atproto.sync.getR
 
 **Issue A2: sync.getHead returns wrong data type**
 
-**File**: `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m`
+**File**: `Garazyk/Sources/App/Services/PDSRepositoryService.m`
 
 **Function**: `getRepoRoot` (lines 103-122)
 
@@ -178,7 +178,7 @@ END FUNCTION
 
 **Issue C1: sync endpoints hardcode active status**
 
-**File**: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**File**: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 **Handler**: `com.atproto.sync.listRepos` (around line 5126)
 

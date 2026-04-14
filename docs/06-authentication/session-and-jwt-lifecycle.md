@@ -47,7 +47,7 @@ That means a "JWT bug" is often a session-store bug instead.
 The direct session path and the OAuth path converge on the same storage idea.
 
 1. A login flow decides the actor is allowed to authenticate.
-2. `ATProtoPDS/Sources/Auth/Session.m` creates a session object with DID, handle, scope, token type, and optional DPoP thumbprint.
+2. `Garazyk/Sources/Auth/Session.m` creates a session object with DID, handle, scope, token type, and optional DPoP thumbprint.
 3. Access and refresh tokens are minted and expiration times are calculated.
 4. The session row is written into the service database.
 5. Later request auth looks the session back up by access token, not just by decoding the JWT and trusting it blindly.
@@ -78,17 +78,17 @@ When this happens, do not start by changing JWT parsing. Start by confirming the
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/Auth/Session.m` for session lookup, refresh, and revocation behavior.
-- Start in `ATProtoPDS/Sources/Auth/OAuth2.m` when refresh via OAuth rotates incorrectly.
+- Start in `Garazyk/Sources/Auth/Session.m` for session lookup, refresh, and revocation behavior.
+- Start in `Garazyk/Sources/Auth/OAuth2.m` when refresh via OAuth rotates incorrectly.
 - Start in auth helpers when the session row exists but request auth still rejects the token.
-- Start in `ATProtoPDS/Sources/App/PDSApplication.m` and configuration when issuer or environment identity is wrong.
+- Start in `Garazyk/Sources/App/PDSApplication.m` and configuration when issuer or environment identity is wrong.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Auth/SessionStoreTests.m`
-- `ATProtoPDS/Tests/Auth/OAuthSessionTests.m`
-- `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
-- `ATProtoPDS/Tests/CharacterizationTests/SessionCharacterizationTests.m`
+- `Garazyk/Tests/Auth/SessionStoreTests.m`
+- `Garazyk/Tests/Auth/OAuthSessionTests.m`
+- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
+- `Garazyk/Tests/CharacterizationTests/SessionCharacterizationTests.m`
 
 ## Appendix
 

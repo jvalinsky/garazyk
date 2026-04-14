@@ -12,9 +12,9 @@ These numbers were generated from repository state on 2026-02-13 using repo-nati
 
 - Code-registered XRPC methods: **109**
   - Source: `scripts/generate_xrpc_coverage_report.js` (source-parsed mode)
-  - Registry file: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
-  - Mapping file: `ATProtoPDS/Sources/Network/XrpcHandler.m`
-- Lexicon-defined XRPC methods (from `ATProtoPDS/Resources/lexicons/**.json`): **331**
+  - Registry file: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
+  - Mapping file: `Garazyk/Sources/Network/XrpcHandler.m`
+- Lexicon-defined XRPC methods (from `Garazyk/Resources/lexicons/**.json`): **331**
 - In-scope lexicon methods (`com.atproto.*` via scope file): **96**
 - Implemented and in lexicons (in scope): **96**
 - Missing in code (in scope): **0**
@@ -76,7 +76,7 @@ These are not treated as blockers for PDS parity unless scope policy is expanded
 
 1. Keep `scripts/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates` in CI.
 2. Re-run coverage/next-steps generation after registry or lexicon changes.
-3. Decide whether vendor lexicon roots outside `ATProtoPDS/Resources/lexicons` should be included in parity reporting.
+3. Decide whether vendor lexicon roots outside `Garazyk/Resources/lexicons` should be included in parity reporting.
 4. Keep controller/application cross-scope overlap documented; treat only actionable cross-scope duplicates as regressions.
 
 ## Suggested labels (for GitHub)
@@ -91,7 +91,7 @@ These are not treated as blockers for PDS parity unless scope policy is expanded
 
 - [x] Confirm scope policy (which namespaces are “supported here”).
 - [ ] Decide how vendor lexicons are treated in reports:
-  - include only `ATProtoPDS/Resources/lexicons/**`, or
+  - include only `Garazyk/Resources/lexicons/**`, or
   - also include additional `lexicons/**` roots.
 - [x] Land tooling support for `registerMethod:@"<nsid>"` so diffs have no `unknown`.
 - [x] Add repo-local scope config for schema-sync/coverage (default include `com.atproto.*`).

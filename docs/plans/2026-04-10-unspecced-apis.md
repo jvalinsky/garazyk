@@ -59,7 +59,7 @@ The `app.bsky.unspecced.*` namespace contains experimental and non-standard APIs
 **Goal:** Replace stub implementations with functional code
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m`
+- Implementation: `Garazyk/Sources/Network/XrpcAppBskyMethods.m`
 
 #### 4.1a: Complete getConfig
 **Current:** Returns hardcoded `@{@"checkEmailConfirmed": @NO}`
@@ -106,7 +106,7 @@ The `app.bsky.unspecced.*` namespace contains experimental and non-standard APIs
 **Goal:** Support age verification for content restrictions
 
 **Files:**
-- Implementation: `ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m`
+- Implementation: `Garazyk/Sources/Network/XrpcAppBskyMethods.m`
 - Database: Add age_assurance table
 
 **Rationale:** Age assurance is becoming required for certain content types. Even if PDS doesn't verify age directly, it should support the protocol.
@@ -249,9 +249,9 @@ The `app.bsky.unspecced.*` namespace contains experimental and non-standard APIs
 
 ## Dependencies
 
-- `ATProtoPDS/Sources/Network/XrpcAppBskyMethods.m`
-- `ATProtoPDS/Sources/App/PDSConfiguration.m` (for AppView URL)
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` (proxy pattern)
+- `Garazyk/Sources/Network/XrpcAppBskyMethods.m`
+- `Garazyk/Sources/App/PDSConfiguration.m` (for AppView URL)
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m` (proxy pattern)
 
 ---
 

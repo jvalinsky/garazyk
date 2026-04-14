@@ -44,7 +44,7 @@ That means "blob exists" can mean different things depending on whether you chec
 
 ## Walkthrough: Upload And Later Read
 
-The normal upload path lives across `ATProtoPDS/Sources/App/Services/PDSBlobService.m` and `ATProtoPDS/Sources/Blob/BlobStorage.m`.
+The normal upload path lives across `Garazyk/Sources/App/Services/PDSBlobService.m` and `Garazyk/Sources/Blob/BlobStorage.m`.
 
 1. The request arrives with binary data and a MIME type.
 2. `PDSBlobService` hands the bytes to `BlobStorage`.
@@ -74,16 +74,16 @@ If you expect those behaviors, you will debug the wrong subsystem.
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/App/Services/PDSBlobService.m` when request inputs or response shaping look wrong.
-- Start in `ATProtoPDS/Sources/Blob/BlobStorage.m` when CID, metadata, or provider coordination is wrong.
+- Start in `Garazyk/Sources/App/Services/PDSBlobService.m` when request inputs or response shaping look wrong.
+- Start in `Garazyk/Sources/Blob/BlobStorage.m` when CID, metadata, or provider coordination is wrong.
 - Start in the provider implementation when bytes disappear or cannot be loaded even though metadata exists.
 - Start in repository record code when the issue is really a bad reference embedded in a record rather than a storage bug.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Blob/BlobStorageTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSBlobServiceTests.m`
-- `ATProtoPDS/Tests/Integration/CommitChainTests.m`
+- `Garazyk/Tests/Blob/BlobStorageTests.m`
+- `Garazyk/Tests/App/Services/PDSBlobServiceTests.m`
+- `Garazyk/Tests/Integration/CommitChainTests.m`
 
 ## Appendix
 

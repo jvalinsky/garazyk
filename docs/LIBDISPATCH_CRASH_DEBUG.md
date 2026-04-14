@@ -234,7 +234,7 @@ Nginx serves all static files (HTML, CSS, JS, fonts) directly. Only API calls pr
 
 ## Files modified during debugging
 
-- `ATProtoPDS/Sources/Network/HttpServer.m` — dispatch_group changes (3 iterations)
+- `Garazyk/Sources/Network/HttpServer.m` — dispatch_group changes (3 iterations)
 - `/etc/systemd/system/pds.service` — RestartSec=5→1
 - `/etc/systemd/system/plc.service` — RestartSec=5→1
 - `/etc/nginx/sites-enabled/garazyk.xyz` — static file serving + proxy config

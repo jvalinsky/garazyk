@@ -54,9 +54,9 @@ scan-build --use-cc=clang --use-c++=clang++ \
 ## 1.2 C/Objective-C Security Checks
 ```bash
 # Run targeted clang-tidy checks
-clang-tidy ATProtoPDS/Sources/**/*.m \
+clang-tidy Garazyk/Sources/**/*.m \
   -checks='-*,bugprone-*,cert-*,clang-analyzer-*' \
-  -header-filter='ATProtoPDS/.*' \
+  -header-filter='Garazyk/.*' \
   -p build/
 ```
 
@@ -71,9 +71,9 @@ clang-tidy ATProtoPDS/Sources/**/*.m \
 
 ## 1.3 Objective-C Specific Checks
 ```bash
-clang-tidy ATProtoPDS/Sources/**/*.m \
+clang-tidy Garazyk/Sources/**/*.m \
   -checks='-*,objc-*' \
-  -header-filter='ATProtoPDS/.*'
+  -header-filter='Garazyk/.*'
 ```
 
 **Obj-C checks:**
@@ -87,9 +87,9 @@ clang-tidy ATProtoPDS/Sources/**/*.m \
 
 ### 1.4 Security/Cryptography Checks
 ```bash
-clang-tidy ATProtoPDS/Sources/**/*.m \
+clang-tidy Garazyk/Sources/**/*.m \
   -checks='-*,security-*,crypto-*' \
-  -header-filter='ATProtoPDS/.*'
+  -header-filter='Garazyk/.*'
 ```
 
 **Cryptography validation:**
@@ -108,7 +108,7 @@ Checks: >
   -bugprone-reserved-identifier,
   -bugprone-move-forwarding-reference
 
-HeaderFilterRegex: 'ATProtoPDS/.*'
+HeaderFilterRegex: 'Garazyk/.*'
 
 WarningsAsErrors: >
   bugprone-undefined-memory-manipulation,
@@ -134,8 +134,8 @@ AnalyzeTemporaryDtors: false
 ```bash
 # Fuzz XRPC handler
 clang -fsanitize=fuzzer,address,undefined \
-  -IATProtoPDS/Sources \
-  ATProtoPDS/Sources/Network/XrpcHandler.m \
+  -IGarazyk/Sources \
+  Garazyk/Sources/Network/XrpcHandler.m \
   fuzz_xrpc.m -o fuzz_xrpc
 
 ./fuzz_xrpc corpus_xrpc/ -max_len=65536 -jobs=8
@@ -238,8 +238,8 @@ Detects memory errors including buffer overflow, use-after-free, and double-free
 ```bash
 # Build with ASAN
 clang -fsanitize=address -g -O1 \
-  -IATProtoPDS/Sources \
-  ATProtoPDS/Sources/**/*.m \
+  -IGarazyk/Sources \
+  Garazyk/Sources/**/*.m \
   -o atprotopds_asan
 
 # Run tests
@@ -253,8 +253,8 @@ Detects undefined behavior including integer overflow and null pointer dereferen
 ```bash
 # Build with UBSAN
 clang -fsanitize=undefined -g -O1 \
-  -IATProtoPDS/Sources \
-  ATProtoPDS/Sources/**/*.m \
+  -IGarazyk/Sources \
+  Garazyk/Sources/**/*.m \
   -o atprotopds_ubsan
 
 # Run
@@ -268,8 +268,8 @@ Detects data races in concurrent code paths critical for PDS operations.
 ```bash
 # Build with TSAN
 clang -fsanitize=thread -g -O2 \
-  -IATProtoPDS/Sources \
-  ATProtoPDS/Sources/**/*.m \
+  -IGarazyk/Sources \
+  Garazyk/Sources/**/*.m \
   -o atprotopds_tsan
 ```
 
@@ -279,8 +279,8 @@ clang -fsanitize=thread -g -O2 \
 clang -fsanitize=address,undefined,thread \
   -fsanitize-recover=address,undefined \
   -g -O1 \
-  -IATProtoPDS/Sources \
-  ATProtoPDS/Sources/**/*.m \
+  -IGarazyk/Sources \
+  Garazyk/Sources/**/*.m \
   -o atprotopds_full
 ```
 
@@ -389,9 +389,9 @@ jobs:
             -configuration Debug build
       - name: Clang-Tidy
         run: |
-          clang-tidy ATProtoPDS/Sources/**/*.m \
+          clang-tidy Garazyk/Sources/**/*.m \
             -checks='bugprone-*,cert-*,clang-analyzer-*' \
-            -header-filter='ATProtoPDS/.*' \
+            -header-filter='Garazyk/.*' \
             -p build/ > clang_tidy_report.txt
           cat clang_tidy_report.txt
 
@@ -423,7 +423,7 @@ jobs:
       - name: Build with ASAN
         run: |
           clang -fsanitize=address,undefined -g \
-            ATProtoPDS/Sources/**/*.m \
+            Garazyk/Sources/**/*.m \
             -o atprotopds_asan
       - name: Run Tests
         run: |

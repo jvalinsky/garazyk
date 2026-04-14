@@ -22,11 +22,11 @@ This implementation plan follows the bugfix requirements-first workflow to fix A
 - ⏭️ Final checkpoint and deployment verification (Task 5)
 
 **Key Files Modified**:
-- `ATProtoPDS/Sources/Auth/OAuth2Handler.m` - Core OAuth handler with client_metadata support
-- `ATProtoPDS/Sources/Auth/OAuth2Handler.h` - Added clientMetadata property
-- `ATProtoPDS/Tests/Auth/OAuth2ATProtoClientTests.m` - Bug condition exploration tests
-- `ATProtoPDS/Tests/Auth/OAuth2PreservationTests.m` - Preservation property tests
-- `ATProtoPDS/Tests/Auth/OAuth2ClientMetadataValidationTests.m` - Unit tests for metadata validation
+- `Garazyk/Sources/Auth/OAuth2Handler.m` - Core OAuth handler with client_metadata support
+- `Garazyk/Sources/Auth/OAuth2Handler.h` - Added clientMetadata property
+- `Garazyk/Tests/Auth/OAuth2ATProtoClientTests.m` - Bug condition exploration tests
+- `Garazyk/Tests/Auth/OAuth2PreservationTests.m` - Preservation property tests
+- `Garazyk/Tests/Auth/OAuth2ClientMetadataValidationTests.m` - Unit tests for metadata validation
 
 ---
 

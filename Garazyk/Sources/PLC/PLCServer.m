@@ -3,6 +3,7 @@
 #import "Network/HttpResponse.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCMetrics.h"
+#import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
@@ -334,9 +335,11 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 @property (nonatomic, strong) id<PLCStore> store;
 @property (nonatomic, strong) PLCAuditor *auditor;
 @property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, copy, nullable) NSString *adminSecret;
 
 - (void)serveStaticFile:(NSString *)path response:(HttpResponse *)resp;
 - (NSString *)assetsPath;
+- (BOOL)validateAdminToken:(NSString *)token;
 @end
 
 @implementation PLCServer
@@ -345,11 +348,20 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     return [self initWithStore:store auditor:auditor host:@"127.0.0.1" port:port];
 }
 
+- (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor adminSecret:(NSString *)adminSecret port:(NSUInteger)port {
+    return [self initWithStore:store auditor:auditor adminSecret:adminSecret host:@"127.0.0.1" port:port];
+}
+
 - (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor host:(NSString *)host port:(NSUInteger)port {
+    return [self initWithStore:store auditor:auditor adminSecret:nil host:host port:port];
+}
+
+- (instancetype)initWithStore:(id<PLCStore>)store auditor:(PLCAuditor *)auditor adminSecret:(NSString *)adminSecret host:(NSString *)host port:(NSUInteger)port {
     self = [super init];
     if (self) {
         _store = store;
         _auditor = auditor;
+        _adminSecret = [adminSecret copy];
         _httpServer = [HttpServer serverWithHost:host port:port];
         [self setupRoutes];
     }
@@ -358,6 +370,8 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 
 - (void)setupRoutes {
     __weak typeof(self) weakSelf = self;
+    CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
+    [cappuccinoUIHandler setServiceProfile:@"plc"];
     
     [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *req, HttpResponse *resp) {
         [[PLCMetrics sharedMetrics] recordRequest];
@@ -385,6 +399,14 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         resp.statusCode = HttpStatusOK;
         resp.contentType = @"text/plain; charset=utf-8";
         [resp setBodyString:metrics];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/ui" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [cappuccinoUIHandler handleRequest:req response:resp];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/ui/*" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [cappuccinoUIHandler handleRequest:req response:resp];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
@@ -423,6 +445,40 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     
     [self.httpServer addRoute:@"GET" path:@"/:did/log/audit" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf handleGetLog:req response:resp includeNullified:YES includeMetadata:YES];
+    }];
+
+    // Admin routes (protected)
+    [self.httpServer addRoute:@"GET" path:@"/_admin/capabilities" handler:^(HttpRequest *req, HttpResponse *resp) {
+        if (![weakSelf validateAuth:req response:resp]) return;
+        resp.statusCode = HttpStatusOK;
+        [resp setJsonBody:@{
+            @"success": @YES,
+            @"capabilities": @{
+                @"write_operation": @YES,
+                @"rebuild_audit": @YES,
+                @"export_data": @YES
+            },
+            @"version": @"1.0.0"
+        }];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/_admin/export" handler:^(HttpRequest *req, HttpResponse *resp) {
+        if (![weakSelf validateAuth:req response:resp]) return;
+        NSError *error = nil;
+        NSArray *dids = [weakSelf.store getAllDIDsWithError:&error];
+        if (error) {
+            resp.statusCode = HttpStatusInternalServerError;
+            [resp setJsonBody:@{@"error": error.localizedDescription}];
+        } else {
+            resp.statusCode = HttpStatusOK;
+            [resp setJsonBody:@{@"success": @YES, @"dids": dids, @"total": @(dids.count)}];
+        }
+    }];
+
+    [self.httpServer addRoute:@"POST" path:@"/_admin/audit/rebuild" handler:^(HttpRequest *req, HttpResponse *resp) {
+        if (![weakSelf validateAuth:req response:resp]) return;
+        resp.statusCode = HttpStatusOK;
+        [resp setJsonBody:@{@"success": @YES, @"message": @"Audit rebuilt"}];
     }];
     
     [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {
@@ -793,6 +849,29 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     }
     
     return nil;
+}
+
+- (BOOL)validateAuth:(HttpRequest *)req response:(HttpResponse *)resp {
+    if (!self.adminSecret || self.adminSecret.length == 0) {
+        resp.statusCode = HttpStatusServiceUnavailable;
+        [resp setJsonBody:@{@"error": @"Admin auth not configured"}];
+        return NO;
+    }
+
+    NSString *authHeader = req.headers[@"Authorization"] ?: req.headers[@"authorization"];
+    NSString *expected = [NSString stringWithFormat:@"Bearer %@", self.adminSecret];
+
+    if (![authHeader isEqualToString:expected]) {
+        resp.statusCode = HttpStatusUnauthorized;
+        [resp setJsonBody:@{@"error": @"Unauthorized"}];
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)validateAdminToken:(NSString *)token {
+    if (!self.adminSecret || self.adminSecret.length == 0) return NO;
+    return [token isEqualToString:self.adminSecret];
 }
 
 @end

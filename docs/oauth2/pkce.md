@@ -52,10 +52,10 @@ PKCE prevents an attacker who intercepts the authorization code from exchanging 
 
 | File | Purpose |
 |------|---------|
-| `ATProtoPDS/Sources/Auth/PKCEUtil.m` | Code verifier/challenge generation |
-| `ATProtoPDS/Sources/Auth/PKCEUtil.h` | Public API declaration |
-| `ATProtoPDS/Sources/Auth/OAuth2.m` | PKCE verification in token exchange |
-| `ATProtoPDS/Sources/Auth/OAuth2Handler.m` | PKCE enforcement for public clients |
+| `Garazyk/Sources/Auth/PKCEUtil.m` | Code verifier/challenge generation |
+| `Garazyk/Sources/Auth/PKCEUtil.h` | Public API declaration |
+| `Garazyk/Sources/Auth/OAuth2.m` | PKCE verification in token exchange |
+| `Garazyk/Sources/Auth/OAuth2Handler.m` | PKCE enforcement for public clients |
 
 ### PKCEUtil API
 

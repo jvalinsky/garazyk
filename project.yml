@@ -1,4 +1,4 @@
-name: ATProtoPDS
+name: Garazyk
 options:
   bundleIdPrefix: com.atproto
   deploymentTarget:
@@ -22,7 +22,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: kaszlak
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        INFOPLIST_FILE: Garazyk/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/kaszlak"
     prebuildScripts:
@@ -62,7 +62,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: campagnola
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        INFOPLIST_FILE: Garazyk/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/campagnola"
     prebuildScripts:
@@ -100,7 +100,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: zuk
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        INFOPLIST_FILE: Garazyk/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/zuk"
     prebuildScripts:
@@ -138,7 +138,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: AllTests
-        INFOPLIST_FILE: ATProtoPDS/Resources/Info.plist
+        INFOPLIST_FILE: Garazyk/Resources/Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         EXECUTABLE_PATH: "$(PROJECT_DIR)/build/tests/AllTests"
     prebuildScripts:

@@ -73,7 +73,7 @@
 - [ ] 3. Fix for sync endpoint spec compliance issues
 
   - [ ] 3.1 Implement fix for Issue A2 (sync.getHead returns wrong data type)
-    - Open `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m`
+    - Open `Garazyk/Sources/App/Services/PDSRepositoryService.m`
     - Locate the `getRepoRoot` method (lines 103-122)
     - Remove lines 117-119 that fetch block data for the root CID
     - Change the method to return `rootCidBytes` directly instead of `blockData`
@@ -85,7 +85,7 @@
     - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3_
 
   - [ ] 3.2 Implement fix for Issue C1 (sync endpoints hardcode active status)
-    - Open `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+    - Open `Garazyk/Sources/Network/XrpcMethodRegistry.m`
     - Locate the `com.atproto.sync.listRepos` handler (around line 5126)
     - Before constructing the response dictionary, query account status: `BOOL isTakedown = [adminController isAccountTakedownActive:account.did error:&error];`
     - Replace `@"active": @YES` with `@"active": @(!isTakedown)`

@@ -662,7 +662,7 @@ WAL mode allows reads during migration writes:
 
 ### Migration Progress Tracking
 
-**Source:** `ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m` (Lines 235-245)
+**Source:** `Garazyk/Sources/Database/Migration/PDSMigrationManager.m` (Lines 235-245)
 
 ```objc
 - (void)migrateWithProgress:(void (^)(double progress, NSString *status))progressBlock {

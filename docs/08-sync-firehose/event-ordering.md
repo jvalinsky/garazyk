@@ -41,7 +41,7 @@ Every firehose event receives a unique, monotonically increasing sequence number
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 1000-1020)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 1000-1020)
 
 ### Broadcasting with Sequence Numbers
 
@@ -109,7 +109,7 @@ Each event is assigned the next sequence number before broadcasting:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 400-470)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 400-470)
 
 ## Event Ordering Guarantees
 
@@ -162,7 +162,7 @@ All event broadcasting happens on a serial queue to ensure ordering:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 90-120)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 90-120)
 
 ### Event Persistence
 
@@ -220,7 +220,7 @@ On startup, the handler recovers the last sequence number from the database:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 1000-1020)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 1000-1020)
 
 ### Crash Recovery
 
@@ -300,7 +300,7 @@ Identity change events also receive sequence numbers:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 500-540)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 500-540)
 
 ### Account Events
 
@@ -347,7 +347,7 @@ Account status events (takedowns, suspensions):
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 540-580)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 540-580)
 
 ## Detecting Missing Events
 
@@ -419,7 +419,7 @@ Events include both sequence numbers and timestamps:
 }
 ```
 
-**Source:** `ATProtoPDS/Sources/Sync/SubscribeReposHandler.m` (lines 1020-1035)
+**Source:** `Garazyk/Sources/Sync/SubscribeReposHandler.m` (lines 1020-1035)
 
 ### Ordering Semantics
 

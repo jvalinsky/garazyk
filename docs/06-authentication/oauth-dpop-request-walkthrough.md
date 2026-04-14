@@ -40,12 +40,12 @@ If either stage is broken, the whole security story is broken.
 
 ## Walkthrough: Token Exchange
 
-The token exchange enters `ATProtoPDS/Sources/Auth/OAuth2Handler.m`.
+The token exchange enters `Garazyk/Sources/Auth/OAuth2Handler.m`.
 
 1. The handler parses the form body and collects client credentials, DPoP proof, and grant details.
 2. Client metadata and redirect details are validated before the grant is processed.
 3. The handler verifies the DPoP proof against the token endpoint URL and extracts a thumbprint.
-4. The request is handed to `ATProtoPDS/Sources/Auth/OAuth2.m`.
+4. The request is handed to `Garazyk/Sources/Auth/OAuth2.m`.
 5. `processAuthorizationCodeGrant:` checks the authorization code, PKCE state, and the expected DPoP thumbprint.
 6. A session is created through `Session` with the DPoP thumbprint attached.
 7. The token response returns access and refresh tokens that are now bound to that proof key.
@@ -67,17 +67,17 @@ This is why bad proxy headers or mismatched issuers show up as DPoP failures eve
 
 ## Where To Debug When This Breaks
 
-- Start in `ATProtoPDS/Sources/Auth/OAuth2Handler.m` when the token request itself fails.
-- Start in `ATProtoPDS/Sources/Auth/OAuth2.m` when the grant should succeed but the session or token binding is wrong.
-- Start in `ATProtoPDS/Sources/Auth/Session.m` when tokens are minted but later cannot be found or refreshed correctly.
+- Start in `Garazyk/Sources/Auth/OAuth2Handler.m` when the token request itself fails.
+- Start in `Garazyk/Sources/Auth/OAuth2.m` when the grant should succeed but the session or token binding is wrong.
+- Start in `Garazyk/Sources/Auth/Session.m` when tokens are minted but later cannot be found or refreshed correctly.
 - Start in the auth helper path when nonce challenges loop or the request URL does not match what the server expects behind a proxy.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
-- `ATProtoPDS/Tests/Auth/OAuthSessionTests.m`
-- `ATProtoPDS/Tests/Auth/SessionStoreTests.m`
-- `ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m`
+- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
+- `Garazyk/Tests/Auth/OAuthSessionTests.m`
+- `Garazyk/Tests/Auth/SessionStoreTests.m`
+- `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
 
 ## Appendix
 

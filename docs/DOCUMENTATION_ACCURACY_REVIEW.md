@@ -209,11 +209,11 @@ All major classes referenced in documentation exist:
 
 ### ✅ Correct File Paths
 All referenced source files exist:
-- `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m` ✓
-- `ATProtoPDS/Sources/App/PDSApplication.m` ✓
-- `ATProtoPDS/Sources/Network/XrpcRepoMethods.m` ✓
-- `ATProtoPDS/Sources/Network/XrpcAuthHelper.m` ✓
-- `ATProtoPDS/Sources/Network/XrpcErrorHelper.m` ✓
+- `Garazyk/Sources/Network/XrpcMethodRegistry.m` ✓
+- `Garazyk/Sources/App/PDSApplication.m` ✓
+- `Garazyk/Sources/Network/XrpcRepoMethods.m` ✓
+- `Garazyk/Sources/Network/XrpcAuthHelper.m` ✓
+- `Garazyk/Sources/Network/XrpcErrorHelper.m` ✓
 
 ### ✅ Architectural Accuracy
 The high-level architecture diagrams accurately represent:

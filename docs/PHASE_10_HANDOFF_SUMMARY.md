@@ -100,7 +100,7 @@ Created comprehensive monitoring guide covering:
 ### Task 13.5: Archive Jekyll Documentation ✅
 
 **Deliverables**:
-- `docs/JEKYLL_ARCHIVE.md`
+- `docs/archive/JEKYLL_ARCHIVE.md`
 - Updated `README.md` with new documentation URLs
 
 **Jekyll Archive Document**:
@@ -144,7 +144,7 @@ Created comprehensive project summary covering:
 | `MAINTENANCE.md` | Maintenance procedures and workflows | ✅ Complete |
 | `MIGRATION_GUIDE.md` | User-facing migration guide | ✅ Complete |
 | `MONITORING.md` | Monitoring setup and procedures | ✅ Complete |
-| `JEKYLL_ARCHIVE.md` | Jekyll archival documentation | ✅ Complete |
+| `archive/JEKYLL_ARCHIVE.md` | Jekyll archival documentation | ✅ Complete |
 | `PROJECT_SUMMARY.md` | Final project summary and sign-off | ✅ Complete |
 | `templates/DOCUMENTATION_PAGE_TEMPLATE.md` | Page template | ✅ Complete |
 | `templates/STYLE_GUIDE.md` | Writing style guide | ✅ Complete |

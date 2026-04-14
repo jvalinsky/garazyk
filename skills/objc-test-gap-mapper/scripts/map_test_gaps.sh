@@ -4,8 +4,8 @@ set -euo pipefail
 root_dir="${1:-.}"
 out_dir="${2:-/tmp/objc-test-gap-mapper}"
 
-source_root="$root_dir/ATProtoPDS/Sources"
-test_root="$root_dir/ATProtoPDS/Tests"
+source_root="$root_dir/Garazyk/Sources"
+test_root="$root_dir/Garazyk/Tests"
 if [[ ! -d "$source_root" ]]; then
   source_root="$root_dir/Sources"
 fi

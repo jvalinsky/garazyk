@@ -30,8 +30,8 @@ title: Cryptography Implementation Strengthening Plan
 
 ### Task 1: Upgrade HMAC Implementation from SHA-1 to SHA-256
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/CryptoUtils.m`
-- Test: `ATProtoPDS/Tests/Auth/CryptoTests.m`
+- Modify: `Garazyk/Sources/Auth/CryptoUtils.m`
+- Test: `Garazyk/Tests/Auth/CryptoTests.m`
 
 **Current Issue:** `HMACSHA1` method uses SHA-1, which is cryptographically weak.
 
@@ -63,8 +63,8 @@ Find and replace `HMACSHA1` calls with `HMACSHA256` in:
 
 ### Task 2: Implement Argon2 Password Hashing
 **Files:**
-- Modify: `ATProtoPDS/Sources/App/PDSController.m` (hashPassword method)
-- Test: `ATProtoPDS/Tests/Database/PDSControllerTests.m`
+- Modify: `Garazyk/Sources/App/PDSController.m` (hashPassword method)
+- Test: `Garazyk/Tests/Database/PDSControllerTests.m`
 
 **Current Issue:** Simple SHA-256 hashing is insufficient for passwords.
 
@@ -89,10 +89,10 @@ Implement gradual migration of existing SHA-256 hashes to Argon2.
 
 ### Task 3: Implement Key Rotation Framework
 **Files:**
-- Create: `ATProtoPDS/Sources/Auth/KeyRotationManager.h`
-- Create: `ATProtoPDS/Sources/Auth/KeyRotationManager.m`
-- Modify: `ATProtoPDS/Sources/Auth/JWT.m`
-- Test: `ATProtoPDS/Tests/Auth/KeyRotationTests.m`
+- Create: `Garazyk/Sources/Auth/KeyRotationManager.h`
+- Create: `Garazyk/Sources/Auth/KeyRotationManager.m`
+- Modify: `Garazyk/Sources/Auth/JWT.m`
+- Test: `Garazyk/Tests/Auth/KeyRotationTests.m`
 
 **Step 1: Create KeyRotationManager class**
 ```objective-c
@@ -112,8 +112,8 @@ Create admin endpoint for manual key rotation.
 
 ### Task 4: Strengthen Random Number Generation
 **Files:**
-- Modify: `ATProtoPDS/Sources/Auth/CryptoUtils.m`
-- Test: `ATProtoPDS/Tests/Auth/CryptoTests.m`
+- Modify: `Garazyk/Sources/Auth/CryptoUtils.m`
+- Test: `Garazyk/Tests/Auth/CryptoTests.m`
 
 **Current Issue:** Basic random byte generation may not be cryptographically secure.
 
@@ -144,10 +144,10 @@ Replace `generateSalt` method with secure random generation.
 
 ### Task 5: Implement Certificate Pinning for HTTPS
 **Files:**
-- Create: `ATProtoPDS/Sources/Network/SSLPinningManager.h`
-- Create: `ATProtoPDS/Sources/Network/SSLPinningManager.m`
-- Modify: `ATProtoPDS/Sources/Network/HttpServer.m`
-- Test: `ATProtoPDS/Tests/Network/SSLPinningTests.m`
+- Create: `Garazyk/Sources/Network/SSLPinningManager.h`
+- Create: `Garazyk/Sources/Network/SSLPinningManager.m`
+- Modify: `Garazyk/Sources/Network/HttpServer.m`
+- Test: `Garazyk/Tests/Network/SSLPinningTests.m`
 
 **Step 1: Create SSL pinning manager**
 Implement certificate pinning for external HTTPS connections.

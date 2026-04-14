@@ -16,8 +16,8 @@ Objective-C, Foundation framework, existing ATProto PDS components (DIDResolver,
 ### Task 1: Add federation support to PDSController
 
 **Files:**
-- Modify: `federation-worktree/ATProtoPDS/ATProtoPDS/PDSController.h` - Add federation methods
-- Modify: `federation-worktree/ATProtoPDS/ATProtoPDS/PDSController.m` - Implement federation logic
+- Modify: `federation-worktree/Garazyk/Garazyk/PDSController.h` - Add federation methods
+- Modify: `federation-worktree/Garazyk/Garazyk/PDSController.m` - Implement federation logic
 
 ### Step 1: Add federation method declarations to PDSController.h
 
@@ -169,14 +169,14 @@ Objective-C, Foundation framework, existing ATProto PDS components (DIDResolver,
 ### Step 7: Commit federation support
 
 ```bash
-git add federation-worktree/ATProtoPDS/ATProtoPDS/PDSController.h federation-worktree/ATProtoPDS/ATProtoPDS/PDSController.m
+git add federation-worktree/Garazyk/Garazyk/PDSController.h federation-worktree/Garazyk/Garazyk/PDSController.m
 git commit -m "feat: add basic federation support to PDSController for record retrieval"
 ```
 
 ### Task 2: Update XrpcMethodRegistry to handle federated responses
 
 **Files:**
-- Modify: `federation-worktree/ATProtoPDS/ATProtoPDS/Network/XrpcMethodRegistry.m` - Ensure proper error handling for federated requests
+- Modify: `federation-worktree/Garazyk/Garazyk/Network/XrpcMethodRegistry.m` - Ensure proper error handling for federated requests
 
 ### Step 1: Update getRecord handler to handle federation errors
 
@@ -189,14 +189,14 @@ Run existing tests to ensure federation doesn't break local functionality.
 ### Step 3: Commit XrpcMethodRegistry updates
 
 ```bash
-git add federation-worktree/ATProtoPDS/ATProtoPDS/Network/XrpcMethodRegistry.m
+git add federation-worktree/Garazyk/Garazyk/Network/XrpcMethodRegistry.m
 git commit -m "feat: update XrpcMethodRegistry for federated request error handling"
 ```
 
 ## Task 3: Add federation tests
 
 **Files:**
-- Create: `federation-worktree/ATProtoPDS/ATProtoPDS/PDSController+FederationTests.m` - Unit tests for federation
+- Create: `federation-worktree/Garazyk/Garazyk/PDSController+FederationTests.m` - Unit tests for federation
 
 ### Step 1: Create test file with basic federation tests
 
@@ -245,7 +245,7 @@ cd federation-worktree && make test
 ### Step 3: Commit federation tests
 
 ```bash
-git add federation-worktree/ATProtoPDS/ATProtoPDS/PDSController+FederationTests.m
+git add federation-worktree/Garazyk/Garazyk/PDSController+FederationTests.m
 git commit -m "test: add federation unit tests"
 ```
 
@@ -327,7 +327,7 @@ git commit -m "docs: add federation documentation and integration tests"
 ### Task 3: Add federation tests
 
 **Files:**
-- Create: `federation-worktree/ATProtoPDS/ATProtoPDS/PDSController+FederationTests.m` - Unit tests for federation
+- Create: `federation-worktree/Garazyk/Garazyk/PDSController+FederationTests.m` - Unit tests for federation
 
 **Step 1: Create test file with basic federation tests**
 
@@ -376,7 +376,7 @@ cd federation-worktree && make test
 **Step 3: Commit federation tests**
 
 ```bash
-git add federation-worktree/ATProtoPDS/ATProtoPDS/PDSController+FederationTests.m
+git add federation-worktree/Garazyk/Garazyk/PDSController+FederationTests.m
 git commit -m "test: add federation unit tests"
 ```
 

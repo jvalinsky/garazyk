@@ -3,7 +3,7 @@
 ## Runtime Source Tree
 
 ```text
-ATProtoPDS/Sources/
+Garazyk/Sources/
   Admin/          - admin endpoints and moderation flows
   App/            - application composition, configuration, explorer, UI, helper services
   AppView/        - read-model and browser-facing data helpers
@@ -32,10 +32,10 @@ ATProtoPDS/Sources/
 
 ## Key Entry Points
 
-- `ATProtoPDS/Sources/CLI/main.m` - CLI entrypoint
-- `ATProtoPDS/Sources/PLC/main.m` - PLC server entrypoint
-- `ATProtoPDS/Sources/App/PDSApplication.m` - application startup and service composition
-- `ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m` - route registration
+- `Garazyk/Sources/CLI/main.m` - CLI entrypoint
+- `Garazyk/Sources/PLC/main.m` - PLC server entrypoint
+- `Garazyk/Sources/App/PDSApplication.m` - application startup and service composition
+- `Garazyk/Sources/Network/PDSHttpServerBuilder.m` - route registration
 
 ## Route Ownership
 
@@ -46,7 +46,7 @@ ATProtoPDS/Sources/
 
 ## Tests
 
-`ATProtoPDS/Tests/` broadly mirrors the runtime structure. New test classes must be registered in `ATProtoPDS/Tests/test_main.m`.
+`Garazyk/Tests/` broadly mirrors the runtime structure. New test classes must be registered in `Garazyk/Tests/test_main.m`.
 
 ## Supporting Directories
 

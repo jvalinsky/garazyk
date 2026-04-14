@@ -69,10 +69,10 @@ Most local debugging gets easier as soon as those four answers are concrete.
 
 ## Tests That Should Fail If This Changes
 
-- `ATProtoPDS/Tests/App/PDSApplicationTests.m`
-- `ATProtoPDS/Tests/Network/PDSHttpServerBuilderTests.m`
-- `ATProtoPDS/Tests/App/Services/PDSRecordServiceTests.m`
-- `ATProtoPDS/Tests/Auth/OAuth2HandlerTests.m`
+- `Garazyk/Tests/App/PDSApplicationTests.m`
+- `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
+- `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
+- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
 
 ## Appendix
 

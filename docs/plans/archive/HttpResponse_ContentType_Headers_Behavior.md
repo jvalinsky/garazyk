@@ -64,7 +64,7 @@ HttpResponse *response = [[HttpResponse alloc] init];
 
 ## HttpResponse.m Implementation Details
 
-From `ATProtoPDS/Sources/Network/HttpResponse.m`:
+From `Garazyk/Sources/Network/HttpResponse.m`:
 
 ```objc
 - (instancetype)init {
@@ -104,7 +104,7 @@ Only `[response setHeader:forKey:]` and `[response serialize]` update the header
 
 ## Test Coverage
 
-A new test file was added at `ATProtoPDS/Tests/Network/HttpResponseTests.m` with the following test cases:
+A new test file was added at `Garazyk/Tests/Network/HttpResponseTests.m` with the following test cases:
 
 - `testContentTypePropertyDoesNotUpdateHeaders` - Documents current behavior
 - `testSetHeaderUpdatesHeadersCorrectly` - Shows correct usage

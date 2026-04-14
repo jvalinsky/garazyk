@@ -103,11 +103,11 @@ layer exposes. The docs should not describe them as if they already exist.
 
 Start here when you change storage behavior:
 
-- `ATProtoPDS/Sources/Blob/BlobStorage.h`
-- `ATProtoPDS/Sources/Blob/BlobStorage.m`
-- `ATProtoPDS/Sources/Blob/PDSBlobProvider.h`
-- `ATProtoPDS/Sources/Blob/PDSDiskBlobProvider.m`
-- `ATProtoPDS/Sources/App/Services/PDSBlobService.m`
+- `Garazyk/Sources/Blob/BlobStorage.h`
+- `Garazyk/Sources/Blob/BlobStorage.m`
+- `Garazyk/Sources/Blob/PDSBlobProvider.h`
+- `Garazyk/Sources/Blob/PDSDiskBlobProvider.m`
+- `Garazyk/Sources/App/Services/PDSBlobService.m`
 
 Read the service layer together with the provider interface. Most storage bugs
 are really coordination bugs between those two layers.

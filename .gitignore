@@ -9,7 +9,7 @@ DerivedData/
 node_modules/
 
 # Submodules
-secp256k1/
+vendor/secp256k1/
 
 # IDE
 .DS_Store
@@ -42,6 +42,9 @@ xcuserdata/
 # Cache & Worktrees
 .cache/
 .worktrees/
+.vitepress/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 
 # Codex/OpenCode local state
 .opencode/
@@ -73,8 +76,9 @@ docs/tutorial-site.tar.gz
 
 # Research and Reference (local copies)
 reference/
+vendor/reference/
 
-ATProtoPDS/Tests/Blob/debug_blob_test.txt
+Garazyk/Tests/Blob/debug_blob_test.txt
 
 com.apple.DeveloperTools/
 build-dd/
@@ -107,16 +111,16 @@ build_output.txt
 buildServer.json
 
 # Generated audit/result JSON artifacts
-ATProtoPDS/audit_results*.json
-ATProtoPDS/batch*_report.json
-tools/test-audit-validator/batch*_*.json
-tools/test-audit-validator/repo_scan*.json
+Garazyk/audit_results*.json
+Garazyk/batch*_report.json
+tooling/test-audit-validator/batch*_*.json
+tooling/test-audit-validator/repo_scan*.json
 
 # Generated test-audit artifacts
-tools/test-audit-validator/test-audit-validator
-tools/test-audit-validator/audit-report.md
-tools/test-audit-validator/auth_report.md
-tools/test-audit-validator/critical-findings.md
-tools/test-audit-validator/batch*_fixes.txt
-tools/test-audit-validator/batch*_remaining.txt
-tools/test-audit-validator/.artifacts/
+tooling/test-audit-validator/test-audit-validator
+tooling/test-audit-validator/audit-report.md
+tooling/test-audit-validator/auth_report.md
+tooling/test-audit-validator/critical-findings.md
+tooling/test-audit-validator/batch*_fixes.txt
+tooling/test-audit-validator/batch*_remaining.txt
+tooling/test-audit-validator/.artifacts/

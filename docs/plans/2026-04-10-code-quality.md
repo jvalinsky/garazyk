@@ -20,7 +20,7 @@ The codebase has minimal technical debt. Only one TODO marker was found in sourc
 
 | Location | Issue | Priority |
 |----------|-------|----------|
-| `ATProtoPDS/Sources/App/Explore/Assets/static/style.css:84` | "TODO: this is not accessible" | Low |
+| `Garazyk/Sources/App/Explore/Assets/static/style.css:84` | "TODO: this is not accessible" | Low |
 
 **Note:** This is in Explore UI assets, not core PDS code.
 
@@ -43,7 +43,7 @@ These fallbacks are acceptable but should log warnings in production to alert op
 **Goal:** Address accessibility issue in Explore UI
 
 **Files:**
-- File: `ATProtoPDS/Sources/App/Explore/Assets/static/style.css:84`
+- File: `Garazyk/Sources/App/Explore/Assets/static/style.css:84`
 
 **Current code:**
 ```css
@@ -69,9 +69,9 @@ These fallbacks are acceptable but should log warnings in production to alert op
 **Goal:** Ensure fallback behavior logs appropriate warnings in production
 
 **Files:**
-- `ATProtoPDS/Sources/Auth/OAuth2.m:479-517`
-- `ATProtoPDS/Sources/App/PDSController.m:353-396`
-- `ATProtoPDS/Sources/App/PDSApplication.m:279-315`
+- `Garazyk/Sources/Auth/OAuth2.m:479-517`
+- `Garazyk/Sources/App/PDSController.m:353-396`
+- `Garazyk/Sources/App/PDSApplication.m:279-315`
 
 **Steps:**
 1. Verify each fallback logs at WARNING level (not DEBUG)
@@ -94,14 +94,14 @@ PDS_LOG_AUTH_WARN(@"Using in-memory JWT signing key fallback because key manager
 1. Add to pre-commit hook:
    ```bash
    # Check for TODO/FIXME in source files (exclude test files, docs)
-   rg "TODO|FIXME" ATProtoPDS/Sources --type objc | grep -v "^ATProtoPDS/Sources/App/Explore/Assets"
+   rg "TODO|FIXME" Garazyk/Sources --type objc | grep -v "^Garazyk/Sources/App/Explore/Assets"
    ```
 
 2. Add to CI (optional):
    ```yaml
    - name: Check for TODO markers
      run: |
-       rg "TODO|FIXME" ATProtoPDS/Sources --type objc > todos.txt
+       rg "TODO|FIXME" Garazyk/Sources --type objc > todos.txt
        if [ -s todos.txt ]; then
          echo "TODO/FIXME found:"
          cat todos.txt
@@ -160,10 +160,10 @@ xcodebuild -scheme AllTests build
 
 ## Dependencies
 
-- `ATProtoPDS/Sources/App/Explore/Assets/static/style.css`
-- `ATProtoPDS/Sources/Auth/OAuth2.m`
-- `ATProtoPDS/Sources/App/PDSController.m`
-- `ATProtoPDS/Sources/App/PDSApplication.m`
+- `Garazyk/Sources/App/Explore/Assets/static/style.css`
+- `Garazyk/Sources/Auth/OAuth2.m`
+- `Garazyk/Sources/App/PDSController.m`
+- `Garazyk/Sources/App/PDSApplication.m`
 
 ---
 

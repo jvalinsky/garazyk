@@ -94,7 +94,7 @@ We added a server-side guardrail for `app.bsky.feed.post` writes:
 - reject the write if the absolute skew exceeds **24 hours**
 - only apply this when validation is on (optimistic/required), not when validation is explicitly disabled
 
-Implementation: `ATProtoPDS/Sources/App/Services/PDSRecordService.m`
+Implementation: `Garazyk/Sources/App/Services/PDSRecordService.m`
 
 Why it works:
 - It prevents writing repo states that are “locally valid JSON” but end up being “practically invalid” for AppView/client expectations.
@@ -122,7 +122,7 @@ We wrapped XRPC handler dispatch in a `@try/@catch` so an uncaught `NSException`
 
 This changed the symptom from “connection reset” to “500 InternalServerError”, which made the system debuggable under production load.
 
-Implementation: `ATProtoPDS/Sources/Network/XrpcHandler.m`  
+Implementation: `Garazyk/Sources/Network/XrpcHandler.m`  
 Commit: `0eff41f6` (“Catch XRPC handler exceptions”)
 
 ### Diagnosis: stack mapping from production binary
@@ -142,7 +142,7 @@ On GNUstep, this produced an `NSRangeException` (“Invalid location”) under s
 We replaced it with a defensive loop using:
 - `rangeOfComposedCharacterSequenceAtIndex:`
 
-Implementation: `ATProtoPDS/Sources/Lexicon/ATProtoLexiconValidator.m`  
+Implementation: `Garazyk/Sources/Lexicon/ATProtoLexiconValidator.m`  
 Commit: `29a476fd` (“Fix lexicon validation crash on GNUstep”)
 
 Why it works:
@@ -157,7 +157,7 @@ After changing validation code, the test suite surfaced an unrelated reliability
 
 We updated `PDSEmailHTTPClient` to catch exceptions and convert them into an `NSError`, matching expected “error return” behavior.
 
-Implementation: `ATProtoPDS/Sources/Email/PDSEmailHTTPClient.m`  
+Implementation: `Garazyk/Sources/Email/PDSEmailHTTPClient.m`  
 Commit: `29a476fd`
 
 ---

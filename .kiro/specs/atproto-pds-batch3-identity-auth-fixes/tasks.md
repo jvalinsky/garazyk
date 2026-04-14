@@ -20,7 +20,7 @@ The workflow follows the exploratory bugfix methodology: explore the bugs first 
   - **GOAL**: Surface counterexamples that demonstrate both bugs exist
   
   - [ ] 1.1 Test A1: Synthetic DID document missing verificationMethod
-    - Create test in `ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m`
+    - Create test in `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
     - Mock PLC directory to be unreachable (network error)
     - Call `resolveDid` for a local account DID (e.g., "did:plc:test123")
     - **Expected on unfixed code**: Returns synthetic document WITHOUT `verificationMethod` array
@@ -39,7 +39,7 @@ The workflow follows the exploratory bugfix methodology: explore the bugs first 
     - _Requirements: 2.3_
   
   - [ ] 1.3 Test B1: Create account returns UUID refresh token
-    - Create test in `ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m`
+    - Create test in `Garazyk/Tests/App/Services/PDSAccountServiceTests.m`
     - Call `createAccountForEmail:password:handle:did:error:` with valid credentials
     - **Expected on unfixed code**: Returns `refreshJwt` as UUID string (not JWT)
     - Assert that `accessJwt` is a valid JWT (can be parsed, has 3 parts separated by dots)
@@ -81,7 +81,7 @@ The workflow follows the exploratory bugfix methodology: explore the bugs first 
   - Property-based testing generates many test cases for stronger guarantees
   
   - [ ] 2.1 Observe and test: Valid DID resolution continues to work
-    - Create test in `ATProtoPDS/Tests/Network/XrpcMethodRegistryTests.m`
+    - Create test in `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
     - Mock PLC directory to return complete DID document with `verificationMethod` array
     - Call `resolveDid` with valid `did:plc` DID that exists in PLC
     - Observe on UNFIXED code: Returns complete DID document with all fields
@@ -113,7 +113,7 @@ The workflow follows the exploratory bugfix methodology: explore the bugs first 
     - _Requirements: 3.4_
   
   - [ ] 2.4 Observe and test: Session response structure is preserved
-    - Create test in `ATProtoPDS/Tests/App/Services/PDSAccountServiceTests.m`
+    - Create test in `Garazyk/Tests/App/Services/PDSAccountServiceTests.m`
     - Call `createAccountForEmail:password:handle:did:error:` with valid credentials
     - Observe on UNFIXED code: Returns dictionary with did, handle, email, accessJwt, refreshJwt keys
     - Write property-based test: For all successful token generation, response has required fields
@@ -164,7 +164,7 @@ The workflow follows the exploratory bugfix methodology: explore the bugs first 
 - [ ] 3. Fix for synthetic DID documents and UUID refresh tokens
 
   - [ ] 3.1 Implement Issue A1 fix: Remove synthetic DID document construction
-    - Open `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+    - Open `Garazyk/Sources/Network/XrpcMethodRegistry.m`
     - Locate `resolveDid` helper function (lines 200-231)
     - Keep initial DID format validation (lines 200-204)
     - Keep `did:plc` prefix check (line 206)
@@ -183,7 +183,7 @@ The workflow follows the exploratory bugfix methodology: explore the bugs first 
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4_
   
   - [ ] 3.2 Implement Issue B1 fix: Replace UUID with JWT in createAccount
-    - Open `ATProtoPDS/Sources/App/Services/PDSAccountService.m`
+    - Open `Garazyk/Sources/App/Services/PDSAccountService.m`
     - Locate `createAccountForEmail:password:handle:did:error:` method
     - Find line 167: `NSString *refreshToken = [[NSUUID UUID] UUIDString];`
     - Replace with JWT generation:

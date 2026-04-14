@@ -27,7 +27,7 @@ Migrations are organized by database type:
 
 ```
 
-ATProtoPDS/Sources/Database/Migration/
+Garazyk/Sources/Database/Migration/
 ├── ServiceDatabaseMigrations/
 │   ├── Migration_001_InitialSchema.m
 │   ├── Migration_002_AddInviteCodes.m
@@ -112,7 +112,7 @@ CREATE INDEX idx_ipld_blocks_cid ON ipld_blocks(cid);
 
 The `PDSMigrationManager` orchestrates database migrations and handles data transformation.
 
-**Source:** `ATProtoPDS/Sources/Database/Migration/PDSMigrationManager.m`
+**Source:** `Garazyk/Sources/Database/Migration/PDSMigrationManager.m`
 
 ### Migration Execution Flow
 

@@ -208,7 +208,7 @@ All code examples should follow this format:
 
 ```objc
 // Brief description of what this code does
-// Source: ATProtoPDS/Sources/Path/To/File.m (lines 123-145)
+// Source: Garazyk/Sources/Path/To/File.m (lines 123-145)
 
 - (void)exampleMethod {
     // Implementation with comments

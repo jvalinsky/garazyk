@@ -46,8 +46,8 @@ Complete the cross-platform build to support both macOS (Xcode/Apple frameworks)
 ### Task 1: Replace os_log_t with POSIX syslog (objpds-mdu)
 
 **Files to create:**
-- `ATProtoPDS/Sources/Compat/Logging/PDSLogging.h` - Main logging header
-- `ATProtoPDS/Sources/Compat/Logging/PDSLogging.m` - Implementation
+- `Garazyk/Sources/Compat/Logging/PDSLogging.h` - Main logging header
+- `Garazyk/Sources/Compat/Logging/PDSLogging.m` - Implementation
 
 **Approach:**
 ```c
@@ -72,7 +72,7 @@ static inline void PDSLog(int level, const char *subsystem, const char *format, 
 ```
 
 **Files to modify:**
-- `ATProtoPDS/Sources/App/Services/PDSAccountService.m` - Replace os_log_t with PDSLog
+- `Garazyk/Sources/App/Services/PDSAccountService.m` - Replace os_log_t with PDSLog
 - Any other files using os_log_t
 
 **Estimated effort:** 2-3 hours
@@ -80,8 +80,8 @@ static inline void PDSLog(int level, const char *subsystem, const char *format, 
 ### Task 2: Replace NSURLSession with libcurl (objpds-stv)
 
 **Files to create:**
-- `ATProtoPDS/Sources/Compat/Network/PDSHTTPClient.h` - HTTP client interface
-- `ATProtoPDS/Sources/Compat/Network/PDSHTTPClient.m` - libcurl implementation
+- `Garazyk/Sources/Compat/Network/PDSHTTPClient.h` - HTTP client interface
+- `Garazyk/Sources/Compat/Network/PDSHTTPClient.m` - libcurl implementation
 
 **Approach:**
 ```objc
@@ -101,7 +101,7 @@ static inline void PDSLog(int level, const char *subsystem, const char *format, 
 ```
 
 **Files to modify:**
-- `ATProtoPDS/Sources/App/Explore/ExploreHandler.m` - Replace NSURLSession with PDSHTTPClient
+- `Garazyk/Sources/App/Explore/ExploreHandler.m` - Replace NSURLSession with PDSHTTPClient
 
 **Dependencies:**
 - Requires libcurl (already in CMakeLists.txt as DISPATCH_LIB)
@@ -111,7 +111,7 @@ static inline void PDSLog(int level, const char *subsystem, const char *format, 
 ### Task 3: Replace CommonCrypto with OpenSSL (objpds-qpr)
 
 **Files to create:**
-- `ATProtoPDS/Sources/Compat/Security/CommonCryptoCompat.h` - Constants mapping
+- `Garazyk/Sources/Compat/Security/CommonCryptoCompat.h` - Constants mapping
 
 **Approach:**
 ```c
@@ -148,7 +148,7 @@ CCCryptorStatus CCCrypt(CCOperation op, CCAlgorithm alg, CCOptions options,
 ```
 
 **Files to modify:**
-- `ATProtoPDS/Sources/App/Services/PDSAccountService.m` - Replace kCCSuccess with 0
+- `Garazyk/Sources/App/Services/PDSAccountService.m` - Replace kCCSuccess with 0
 
 **Estimated effort:** 1-2 hours
 

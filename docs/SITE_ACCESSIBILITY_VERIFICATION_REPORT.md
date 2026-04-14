@@ -16,7 +16,7 @@ The PDS Objective-C Implementation Guide documentation site has been successfull
 ## Verification Checklist
 
 ### ✅ Core Infrastructure
-- [x] `docs/_site/` directory exists
+- [x] `docs/.vitepress/dist/` directory exists
 - [x] Directory contains 75 HTML files (main + sections + supporting docs)
 - [x] All files are properly formatted HTML with valid structure
 - [x] Site uses responsive CSS with mobile support
@@ -143,7 +143,7 @@ Each section follows a consistent structure:
 ### 1. Directory Structure Verification
 ```
 
-✅ docs/_site/ exists
+✅ docs/.vitepress/dist/ exists
 ✅ All 12 section directories present
 ✅ Proper file organization maintained
 ```
@@ -228,7 +228,7 @@ Each section follows a consistent structure:
 5. **Security:** No dynamic content or database access
 
 ### Recommended Deployment Steps
-1. Copy `docs/_site/` to web server document root
+1. Copy `docs/.vitepress/dist/` to web server document root
 2. Configure web server to serve index.html for directory requests
 3. Enable gzip compression for HTML/CSS
 4. Set appropriate cache headers for static content

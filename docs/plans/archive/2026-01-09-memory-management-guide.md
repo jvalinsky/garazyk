@@ -8,7 +8,7 @@ title: Memory Management Guide Implementation Plan
 
 **Goal:** Create a guide on Objective-C Memory Management based on existing codebase patterns.
 
-**Architecture:** Research-based documentation. Analyze `ATProtoPDS/Sources` for ARC, retain cycles, and lifecycle patterns, then synthesize into Markdown.
+**Architecture:** Research-based documentation. Analyze `Garazyk/Sources` for ARC, retain cycles, and lifecycle patterns, then synthesize into Markdown.
 
 **Tech Stack:** Markdown, Objective-C (analysis).
 
@@ -23,15 +23,15 @@ title: Memory Management Guide Implementation Plan
 ## Task 1: Research Retain Cycles & Block Patterns
 
 **Files:**
-- Read: `ATProtoPDS/Sources/**/*.m` (Sample)
+- Read: `Garazyk/Sources/**/*.m` (Sample)
 
 **Step 1: Search for Block Capture Patterns**
 
 Search for `__weak`, `weakSelf`, `typeof(self)`.
 
 ```bash
-grep -r "__weak" ATProtoPDS/Sources | head -n 20
-grep -r "weakSelf" ATProtoPDS/Sources | head -n 20
+grep -r "__weak" Garazyk/Sources | head -n 20
+grep -r "weakSelf" Garazyk/Sources | head -n 20
 ```
 
 **Step 2: Search for Delegate Declarations**
@@ -39,7 +39,7 @@ grep -r "weakSelf" ATProtoPDS/Sources | head -n 20
 Search for `delegate` properties to verify `weak` attribute usage.
 
 ```bash
-grep -r "@property.*delegate" ATProtoPDS/Sources | head -n 20
+grep -r "@property.*delegate" Garazyk/Sources | head -n 20
 ```
 
 **Step 3: Analyze Findings**
@@ -49,12 +49,12 @@ Review the grep outputs to identify 2-3 canonical examples of correct usage to i
 ### Task 2: Research Object Lifecycle & Pools
 
 **Files:**
-- Read: `ATProtoPDS/Sources/**/*.m` (Sample)
+- Read: `Garazyk/Sources/**/*.m` (Sample)
 
 **Step 1: Search for Autorelease Pools**
 
 ```bash
-grep -r "@autoreleasepool" ATProtoPDS/Sources
+grep -r "@autoreleasepool" Garazyk/Sources
 ```
 
 **Step 2: Search for Dealloc Patterns**
@@ -62,7 +62,7 @@ grep -r "@autoreleasepool" ATProtoPDS/Sources
 Look for `dealloc` implementations (cleanup, logging).
 
 ```bash
-grep -r "dealloc" ATProtoPDS/Sources | head -n 20
+grep -r "dealloc" Garazyk/Sources | head -n 20
 ```
 
 **Step 3: Search for Property Attributes**
@@ -70,8 +70,8 @@ grep -r "dealloc" ATProtoPDS/Sources | head -n 20
 Identify usage of `assign`, `unsafe_unretained`, `copy`.
 
 ```bash
-grep -r "@property.*assign" ATProtoPDS/Sources | head -n 10
-grep -r "@property.*copy" ATProtoPDS/Sources | head -n 10
+grep -r "@property.*assign" Garazyk/Sources | head -n 10
+grep -r "@property.*copy" Garazyk/Sources | head -n 10
 ```
 
 ### Task 3: Write Memory Management Guide

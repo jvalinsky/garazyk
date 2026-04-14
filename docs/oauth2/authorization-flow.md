@@ -356,9 +356,9 @@ Authorization codes can store DPoP JWK:
 
 | File | Purpose |
 |------|---------|
-| `ATProtoPDS/Sources/Auth/OAuth2Handler.m` | HTTP endpoint handlers |
-| `ATProtoPDS/Sources/Auth/OAuth2.m` | Authorization server logic |
-| `ATProtoPDS/Sources/Auth/Assets/authorize.html` | Web UI template |
+| `Garazyk/Sources/Auth/OAuth2Handler.m` | HTTP endpoint handlers |
+| `Garazyk/Sources/Auth/OAuth2.m` | Authorization server logic |
+| `Garazyk/Sources/Auth/Assets/authorize.html` | Web UI template |
 
 ## Related Documentation
 

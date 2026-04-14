@@ -5,13 +5,13 @@ on:
     branches: [main, develop]
     paths:
       - 'docs/**'
-      - 'ATProtoPDS/Sources/**'
+      - 'Garazyk/Sources/**'
       - '.github/workflows/build-docs.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'docs/**'
-      - 'ATProtoPDS/Sources/**'
+      - 'Garazyk/Sources/**'
   workflow_dispatch:
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
       - name: Run Validation
         run: |
           cd docs
-          npm run validate || echo "Validation warnings detected"
+          npm run validate:all || echo "Validation warnings detected"
 
       - name: Build Documentation
         run: |
@@ -60,13 +60,13 @@ jobs:
 
       - name: Validate Internal Links
         run: |
-          chmod +x scripts/validate-doc-links.sh
-          ./scripts/validate-doc-links.sh
+          chmod +x scripts/docs/validate-doc-links.sh
+          ./scripts/docs/validate-doc-links.sh
 
       - name: Validate Diagrams
         run: |
-          chmod +x scripts/validate-doc-diagrams.sh
-          ./scripts/validate-doc-diagrams.sh
+          chmod +x scripts/docs/validate-doc-diagrams.sh
+          ./scripts/docs/validate-doc-diagrams.sh
 
       - name: Test Redirects (Preview)
         run: |
@@ -74,8 +74,8 @@ jobs:
           npm run docs:preview &
           PREVIEW_PID=$!
           sleep 5
-          chmod +x scripts/test-redirects.sh
-          ./scripts/test-redirects.sh http://localhost:4173 || true
+          chmod +x ../scripts/docs/test-redirects.sh
+          ../scripts/docs/test-redirects.sh http://localhost:4173 || true
           kill $PREVIEW_PID
 
       - name: Upload Documentation Artifact

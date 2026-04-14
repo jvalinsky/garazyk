@@ -30,8 +30,8 @@ The PDSController has grown into a monolithic class handling 8+ different respon
 
 ### Task 1: Create PDSAccountService
 **Files:**
-- Create: `ATProtoPDS/Sources/App/Services/PDSAccountService.h`
-- Create: `ATProtoPDS/Sources/App/Services/PDSAccountService.m`
+- Create: `Garazyk/Sources/App/Services/PDSAccountService.h`
+- Create: `Garazyk/Sources/App/Services/PDSAccountService.m`
 
 **Methods to extract:**
 - `createAccountForEmail:password:handle:did:error:`
@@ -41,8 +41,8 @@ The PDSController has grown into a monolithic class handling 8+ different respon
 
 ### Task 2: Create PDSRecordService  
 **Files:**
-- Create: `ATProtoPDS/Sources/App/Services/PDSRecordService.h`
-- Create: `ATProtoPDS/Sources/App/Services/PDSRecordService.m`
+- Create: `Garazyk/Sources/App/Services/PDSRecordService.h`
+- Create: `Garazyk/Sources/App/Services/PDSRecordService.m`
 
 **Methods to extract:**
 - `getRecord:forDid:error:`
@@ -52,8 +52,8 @@ The PDSController has grown into a monolithic class handling 8+ different respon
 
 ### Task 3: Create PDSBlobService
 **Files:**
-- Create: `ATProtoPDS/Sources/App/Services/PDSBlobService.h`
-- Create: `ATProtoPDS/Sources/App/Services/PDSBlobService.m`
+- Create: `Garazyk/Sources/App/Services/PDSBlobService.h`
+- Create: `Garazyk/Sources/App/Services/PDSBlobService.m`
 
 **Methods to extract:**
 - `getBlob:forDid:error:`
@@ -64,7 +64,7 @@ The PDSController has grown into a monolithic class handling 8+ different respon
 
 ### Task 4: Update PDSController
 **Files:**
-- Modify: `ATProtoPDS/Sources/App/PDSController.m`
+- Modify: `Garazyk/Sources/App/PDSController.m`
 
 **Changes:**
 - Add service properties

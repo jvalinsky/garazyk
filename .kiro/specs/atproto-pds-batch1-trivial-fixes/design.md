@@ -237,7 +237,7 @@ _For any_ input that does NOT involve the specific bug conditions (sync.getHead,
 
 Assuming our root cause analysis is correct:
 
-**File 1**: `ATProtoPDS/Sources/App/Services/PDSRepositoryService.m`
+**File 1**: `Garazyk/Sources/App/Services/PDSRepositoryService.m`
 
 **Function**: `getRepoRoot` (lines 103-122)
 
@@ -259,7 +259,7 @@ Assuming our root cause analysis is correct:
    - This aligns with the method name `getRepoRoot` (returns root CID, not root block)
    - This aligns with caller expectations (all callers use `[CID cidFromBytes:]` on the result)
 
-**File 2**: `ATProtoPDS/Sources/Network/XrpcMethodRegistry.m`
+**File 2**: `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 **Function**: `resolveDid` helper (lines 185-230)
 
