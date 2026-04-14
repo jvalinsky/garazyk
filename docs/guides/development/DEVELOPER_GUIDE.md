@@ -51,7 +51,7 @@ You can build targets using `xcodebuild` or from within Xcode.
 
 **Main CLI Tool:**
 ```bash
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ```
 
 ## Objective-C Development Guidelines
@@ -194,7 +194,7 @@ You can build targets using `xcodebuild` or from within Xcode.
 
 **Main CLI Tool:**
 ```bash
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ```
 
 The binary will be available at `./build/bin/kaszlak`.

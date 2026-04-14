@@ -21,7 +21,7 @@ Before pushing code, verify:
 1. `xcodegen generate` succeeds
 2. `xcodebuild -scheme AllTests build` succeeds
 3. `./build/tests/AllTests` passes with 0 failures
-4. `xcodebuild -scheme ATProtoPDS-CLI build` succeeds
+4. `xcodebuild -scheme kaszlak build` succeeds
 5. Fuzzers build successfully (if modified)
 
 ## Production Deployment (pds.garazyk.xyz)

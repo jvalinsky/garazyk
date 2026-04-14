@@ -26,7 +26,7 @@
 
 ```bash
 xcodegen generate
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
 ```
@@ -46,7 +46,7 @@ Outputs follow the build directory you choose with CMake.
 1. `xcodegen generate` succeeds
 2. `xcodebuild -scheme AllTests build` succeeds
 3. `./build/tests/AllTests` passes
-4. `xcodebuild -scheme ATProtoPDS-CLI build` succeeds
+4. `xcodebuild -scheme kaszlak build` succeeds
 5. fuzzers build if modified
 
 ## Docs System

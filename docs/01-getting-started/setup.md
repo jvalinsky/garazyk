@@ -36,7 +36,7 @@ On macOS, regenerate the Xcode project before building:
 
 ```bash
 xcodegen generate
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ```
 
 ### Treat `docs/` as the canonical docs site
@@ -88,7 +88,7 @@ Why this matters:
 ### Step 3: build the main targets
 
 ```bash
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 xcodebuild -scheme AllTests build
 ```
 

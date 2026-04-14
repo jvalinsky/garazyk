@@ -324,7 +324,7 @@ jobs:
       
       - name: Build
         run: |
-          cmake --build build --parallel 4 --target atprotopds-cli AllTests
+          cmake --build build --parallel 4 --target kaszlak AllTests
       
       - name: Run Tests
         run: |

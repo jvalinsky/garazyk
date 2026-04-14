@@ -31,7 +31,7 @@ Older collections such as [`docs/guides/`](docs/guides/README.md), [`docs/archit
 git clone https://github.com/jvalinsky/September.git
 cd September
 xcodegen generate
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 ```
 
@@ -100,7 +100,7 @@ Core contributor loop:
 xcodegen generate
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ```
 
 If you touch fuzzers, build them too. If you change docs, update the relevant contributor pages rather than leaving behavior and docs to drift apart.

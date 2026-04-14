@@ -28,7 +28,7 @@ xcodegen generate
 xcodebuild -scheme AllTests build
 
 # Build server
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 
 # Run tests
 ./build/tests/AllTests
@@ -61,8 +61,8 @@ xcrun --sdk macosx26.4 --show-sdk-path
 | Target | Description |
 |--------|-------------|
 | `AllTests` | Run all unit tests |
-| `ATProtoPDS-CLI` | PDS CLI tool (kaszlak) |
-| `ATProtoPDS-PLC` | PLC directory server (campagnola) |
+| `kaszlak` | PDS CLI tool |
+| `campagnola` | PLC directory server |
 
 ### Project Structure
 
@@ -84,5 +84,5 @@ xcodebuild -scheme AllTests build
 ./build/tests/AllTests
 
 # Build server
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ```
