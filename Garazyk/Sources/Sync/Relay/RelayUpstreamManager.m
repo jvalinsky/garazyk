@@ -190,6 +190,7 @@
 - (void)relayClientDidConnect:(RelayClient *)client {
     NSString *url = [self urlForClient:client];
     if (url) {
+        PDS_LOG_SYNC_INFO(@"RelayUpstreamManager: Client connected to %@", url);
         dispatch_async(_managerQueue, ^{
             [self.connectedUpstreams addObject:url];
             self.reconnectAttempts[url] = @0;
