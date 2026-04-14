@@ -2584,6 +2584,39 @@
       "created_at": "2026-04-13T20:00:57.008620-04:00",
       "updated_at": "2026-04-13T20:00:57.008620-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"files\":[\"Sources/App/CappuccinoUI/PLCDirectoryController.j\"]}"
+    },
+    {
+      "id": 236,
+      "change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
+      "node_type": "outcome",
+      "title": "Multi-Service Ops UX API parity complete",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-13T22:00:42.662551-04:00",
+      "updated_at": "2026-04-13T22:00:42.662551-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2c99414d\"}"
+    },
+    {
+      "id": 237,
+      "change_id": "410d4f03-de01-4999-9079-da539bfa5229",
+      "node_type": "outcome",
+      "title": "PDS demo rebuilt from scratch",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-13T22:00:54.252110-04:00",
+      "updated_at": "2026-04-13T22:00:54.252110-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2c99414d\"}"
+    },
+    {
+      "id": 238,
+      "change_id": "6d66b86d-9041-4513-94bb-39c7aa68cb5a",
+      "node_type": "goal",
+      "title": "Debug E2E Demo - record creation and PLC issues",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-13T22:30:18.108091-04:00",
+      "updated_at": "2026-04-13T22:30:18.108091-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Debug session April 13, 2026:\\n\\nIssues to fix:\\n1. Post creation (app.bsky.feed.post) fails with 500 InternalServerError - unhandled exception in createRecord handler\\n2. Local PLC rejects operations with 400 - PLCAuditor validation failing\\n3. Fix both issues, then create full E2E data:\\n   - Alice: profile, posts, follow, like, repost\\n   - Bob: profile, posts, like\\n   - Carol: profile, post, follow, like, block\\n4. Verify relay sync and AppView timeline\"}"
     }
   ],
   "edges": [
@@ -5171,6 +5204,72 @@
       "weight": 1.0,
       "rationale": "Phase 4: PLC operations app",
       "created_at": "2026-04-13T20:00:59.825302-04:00"
+    },
+    {
+      "id": 236,
+      "from_node_id": 231,
+      "to_node_id": 236,
+      "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
+      "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "All 4 phases complete with new endpoints across PDS, Relay, AppView, and PLC",
+      "created_at": "2026-04-13T22:00:47.847146-04:00"
+    },
+    {
+      "id": 237,
+      "from_node_id": 232,
+      "to_node_id": 236,
+      "from_change_id": "03ed1494-324f-44d8-9b55-7a1c21ba07d5",
+      "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Relay mutation endpoints implemented",
+      "created_at": "2026-04-13T22:00:50.775294-04:00"
+    },
+    {
+      "id": 238,
+      "from_node_id": 233,
+      "to_node_id": 236,
+      "from_change_id": "20c7820a-d646-4623-ace8-8bad68e965fa",
+      "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "PDS guarded writes pattern added",
+      "created_at": "2026-04-13T22:00:51.187632-04:00"
+    },
+    {
+      "id": 239,
+      "from_node_id": 234,
+      "to_node_id": 236,
+      "from_change_id": "733a00e6-5582-4e7e-a241-b67742711c03",
+      "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "AppView backfill/r/ingest operations implemented",
+      "created_at": "2026-04-13T22:00:51.311614-04:00"
+    },
+    {
+      "id": 240,
+      "from_node_id": 235,
+      "to_node_id": 236,
+      "from_change_id": "afe44759-a82f-4b78-a280-c56fc9a816e5",
+      "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "PLC per-service auth middleware implemented",
+      "created_at": "2026-04-13T22:00:51.340061-04:00"
+    },
+    {
+      "id": 241,
+      "from_node_id": 231,
+      "to_node_id": 238,
+      "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
+      "to_change_id": "6d66b86d-9041-4513-94bb-39c7aa68cb5a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Follow-up to complete E2E demo with working record creation",
+      "created_at": "2026-04-13T22:30:20.947026-04:00"
     }
   ],
   "documents": [
