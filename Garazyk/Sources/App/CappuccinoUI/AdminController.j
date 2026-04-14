@@ -628,7 +628,7 @@
                         confirmHandler:(Function)handler
 {
     var alert = [[CPAlert alloc] init];
-    [alert setAlertStyle:CPAlertStyleWarning];
+    [alert setAlertStyle:CPWarningAlertStyle];
     [alert setMessageText:title];
     [alert setInformativeText:text];
 
@@ -668,7 +668,7 @@
                   confirmHandler:(Function)handler
 {
     var alert = [[CPAlert alloc] init];
-    [alert setAlertStyle:CPAlertStyleCritical];
+    [alert setAlertStyle:CPCriticalAlertStyle];
     [alert setMessageText:title];
     [alert setInformativeText:text];
 
@@ -703,11 +703,11 @@
             completion:(Function)completion
 {
     var riskLabel = @"LOW";
-    var alertStyle = CPAlertStyleWarning;
+    var alertStyle = CPWarningAlertStyle;
     if ([riskLevel isEqual:@"high"])
     {
         riskLabel = @"HIGH";
-        alertStyle = CPAlertStyleCritical;
+        alertStyle = CPCriticalAlertStyle;
     }
 
     var confirmTitle = @"Confirm " + action;
