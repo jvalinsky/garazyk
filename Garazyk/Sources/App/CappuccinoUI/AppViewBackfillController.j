@@ -478,16 +478,16 @@
     _lastStatus = status;
 
     // Update metric cards
-    [_queueDepthLabel setStringValue:self.formatNumber(status.queue_depth)];
+    [_queueDepthLabel setStringValue:[self formatNumber:status.queue_depth]];
     [_activeWorkersLabel setStringValue:String(status.active_workers || 0)];
-    [_syncedLabel setStringValue:self.formatNumber(status.repos_synced)];
-    [_dirtyLabel setStringValue:self.formatNumber(status.repos_dirty)];
+    [_syncedLabel setStringValue:[self formatNumber:status.repos_synced]];
+    [_dirtyLabel setStringValue:[self formatNumber:status.repos_dirty]];
 
     // Update status breakdown
-    [_pendingCountLabel setStringValue:self.formatNumber(status.repos_pending)];
-    [_processingCountLabel setStringValue:self.formatNumber(status.repos_processing)];
-    [_syncedCountLabel setStringValue:self.formatNumber(status.repos_synced)];
-    [_dirtyCountLabel setStringValue:self.formatNumber(status.repos_dirty)];
+    [_pendingCountLabel setStringValue:[self formatNumber:status.repos_pending]];
+    [_processingCountLabel setStringValue:[self formatNumber:status.repos_processing]];
+    [_syncedCountLabel setStringValue:[self formatNumber:status.repos_synced]];
+    [_dirtyCountLabel setStringValue:[self formatNumber:status.repos_dirty]];
 
     // Update lag table
     var lagByRelay = status.ingest_lag_by_relay || {};
