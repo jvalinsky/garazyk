@@ -131,10 +131,10 @@
     _upstreamsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1040.0, 540.0)];
     [_upstreamsTable setDelegate:self];
     [_upstreamsTable setDataSource:self];
-    [_upstreamsTable setUsesAlternatingBackgroundColors:YES];
+    // setUsesAlternatingBackgroundColors: not available in current Cappuccino
     [_upstreamsTable setAllowsEmptySelection:YES];
     [_upstreamsTable setAllowsMultipleSelection:NO];
-    [_upstreamsTable setAlternatingRowBackgroundColors:[[CPColor whiteColor], [CPColor colorWithCalibratedWhite:0.98 alpha:1.0]]];
+    // setAlternatingRowBackgroundColors: not available in current Cappuccino
 
     // URL Column
     var urlColumn = [[CPTableColumn alloc] initWithIdentifier:@"url"];
