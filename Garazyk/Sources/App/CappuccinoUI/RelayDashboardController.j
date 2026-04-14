@@ -120,7 +120,7 @@
 
     // Set up resize observation for responsive layout
     [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
-    [[NSNotificationCenter defaultCenter] addObserver:self
+    [[CPNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleViewResize:)
                                                  name:CPViewFrameDidChangeNotification
                                                object:_rootView];
