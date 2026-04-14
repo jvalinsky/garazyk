@@ -322,18 +322,24 @@ int main(int argc, const char * argv[]) {
                      [response setBody:json];
                  }];
 
-        // Objective-J service UI
+// Objective-J service UI
+        [server addRoute:@"GET"
+                    path:@"/"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                      [cappuccinoUIHandler handleRequest:request response:response];
+                  }];
+
         [server addRoute:@"GET"
                     path:@"/ui"
                  handler:^(HttpRequest *request, HttpResponse *response) {
-                     [cappuccinoUIHandler handleRequest:request response:response];
-                 }];
+                      [cappuccinoUIHandler handleRequest:request response:response];
+                  }];
 
         [server addRoute:@"GET"
                     path:@"/ui/*"
                  handler:^(HttpRequest *request, HttpResponse *response) {
-                     [cappuccinoUIHandler handleRequest:request response:response];
-                 }];
+                      [cappuccinoUIHandler handleRequest:request response:response];
+                  }];
 
         // Register relay API endpoints
         [server addRoute:@"GET"
