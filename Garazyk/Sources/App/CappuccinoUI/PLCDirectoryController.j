@@ -53,17 +53,9 @@
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
 
-    // Title
-    var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 400.0, 28.0)];
-    [title setStringValue:@"PLC Directory"];
-    [title setEditable:NO];
-    [title setBezeled:NO];
-    [title setDrawsBackground:NO];
-    [title setFont:[CPFont boldSystemFontOfSize:20.0]];
-    [_rootView addSubview:title];
-
+    // Note: Title removed - tab already shows "Directory" in PLC sub-tabs
     // Status label
-    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 600.0, 20.0)];
+    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 600.0, 20.0]);
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
