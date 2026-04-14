@@ -60,6 +60,7 @@
         _apiClient = apiClient;
         _lastStatus = nil;
         _lagData = [];
+        _queueData = [];
         _isRunning = NO;
     }
     return self;
