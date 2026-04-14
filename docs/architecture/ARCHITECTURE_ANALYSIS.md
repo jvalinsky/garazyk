@@ -399,7 +399,7 @@ xcodegen generate
 
 | Target | Purpose | Binary Location |
 |--------|---------|-----------------|
-| ATProtoPDS-CLI | Command-line tool | `./build/bin/atprotopds-cli` |
+| kaszlak | Command-line tool | `./build/bin/kaszlak` |
 | ATProtoPDS-Server | HTTP server | Bundled in app |
 | AllTests | Unit tests (158 tests) | `./build/tests/AllTests` |
 | Fuzzers | Security testing | `./build/fuzzing/` |
