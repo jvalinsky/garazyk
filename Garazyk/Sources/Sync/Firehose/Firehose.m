@@ -175,8 +175,8 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
     BOOL useTLS = [self.serverURL.scheme.lowercaseString isEqualToString:@"wss"] ||
                   [self.serverURL.scheme.lowercaseString isEqualToString:@"https"];
 
-    NSString *effectiveHost = useTLS ? host : host;
-    uint16_t effectivePort = useTLS ? 443 : port;
+    NSString *effectiveHost = host;
+    uint16_t effectivePort = useTLS ? port : port;
 
     self.connection = [[WebSocketConnection alloc] initWithHost:effectiveHost
                                                            port:effectivePort
