@@ -418,7 +418,6 @@
         if (filterType && filterType !== @"All")
         {
             var eventType = (event.type || "").toLowerCase();
-            var filterLower = filterType.toLowerCase();
             if (filterType === @"Commit" && eventType !== "commit" && eventType !== "#commit")
                 typeMatch = NO;
             else if (filterType === @"Identity" && eventType !== "identity" && eventType !== "#identity")

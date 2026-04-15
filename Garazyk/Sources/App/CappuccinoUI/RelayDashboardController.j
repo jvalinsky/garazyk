@@ -410,7 +410,15 @@
 
 - (CPString)formatNumber:(id)numValue
 {
-    var num = parseInt(numValue) || 0;
+    var num = Number(numValue);
+    if (!isFinite(num))
+        num = parseInt(numValue, 10);
+    if (!isFinite(num))
+        num = 0;
+    num = Math.floor(num);
+    if (num < 0)
+        num = 0;
+
     if (num >= 1000000000)
         return (num / 1000000000).toFixed(1) + "B";
     if (num >= 1000000)
