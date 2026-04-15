@@ -13,6 +13,45 @@
     _pdsBaseURL = @"http://localhost:2583";
     _plcBaseURL = @"http://localhost:2580";
     _relayBaseURL = @"http://localhost:2584";
+
+    NSError *probeError = nil;
+    if (![self isLocalNetworkStackReachable:&probeError]) {
+        XCTSkip(@"Skipping E2E docker tests: local-network stack not reachable (%@). Run docker/local-network compose first.",
+                probeError.localizedDescription ?: @"unknown error");
+    }
+}
+
+- (BOOL)isLocalNetworkStackReachable:(NSError **)error {
+    NSArray<NSString *> *probeURLs = @[
+        [NSString stringWithFormat:@"%@/xrpc/com.atproto.server.describeServer", self.pdsBaseURL],
+        [NSString stringWithFormat:@"%@/xrpc/com.atproto.sync.listHosts", self.relayBaseURL]
+    ];
+
+    for (NSString *probeURLString in probeURLs) {
+        NSURL *url = [NSURL URLWithString:probeURLString];
+        if (!url) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"E2EDockerTests"
+                                             code:1
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid probe URL"}];
+            }
+            return NO;
+        }
+
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+        request.timeoutInterval = 1.5;
+        NSHTTPURLResponse *response = nil;
+        NSError *requestError = nil;
+        [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&requestError];
+        if (requestError || response == nil || response.statusCode <= 0) {
+            if (error) {
+                *error = requestError;
+            }
+            return NO;
+        }
+    }
+
+    return YES;
 }
 
 #pragma mark - PLC Tests

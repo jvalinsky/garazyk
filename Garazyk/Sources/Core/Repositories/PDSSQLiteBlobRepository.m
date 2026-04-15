@@ -25,7 +25,7 @@
     __block BOOL success = NO;
     [_databasePool transactWithDid:blob.did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mime_type, size, created_at) VALUES (?, ?, ?, ?, ?)";
+        NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?)";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 

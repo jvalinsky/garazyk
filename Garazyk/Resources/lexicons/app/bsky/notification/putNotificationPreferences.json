@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "app.bsky.notification.putNotificationPreferences",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Legacy alias for updating notification preferences.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["priority"],
+          "properties": {
+            "priority": { "type": "boolean" }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

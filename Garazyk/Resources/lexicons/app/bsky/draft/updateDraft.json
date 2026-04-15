@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "app.bsky.draft.updateDraft",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Update an existing draft post.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["uri"],
+          "properties": {
+            "uri": { "type": "string", "format": "at-uri" },
+            "text": { "type": "string" },
+            "langs": {
+              "type": "array",
+              "items": { "type": "string", "format": "language" }
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}
