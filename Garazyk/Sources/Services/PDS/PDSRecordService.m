@@ -14,6 +14,7 @@
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconError.h"
 #import "Core/Repositories/PDSRecordRepository.h"
+#import "Core/Repositories/PDSSQLiteRecordRepository.h"
 #import "Repository/MST.h"
 #import <CommonCrypto/CommonDigest.h>
 #import "Repository/RepoCommit.h"
@@ -100,6 +101,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool {
     if (self = [super init]) {
         self.databasePool = databasePool;
+        self.recordRepository = [[PDSSQLiteRecordRepository alloc] initWithDatabasePool:databasePool];
         _mstCacheByDid = [NSMutableDictionary dictionary];
         _mstCacheQueue = dispatch_queue_create("com.atproto.pds.recordservice.mstcache", DISPATCH_QUEUE_SERIAL);
     }
@@ -176,6 +178,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     NSArray<PDSDatabaseRecord *> *records = [self.recordRepository recordsForDid:did
                                                                       collection:collection
                                                                            error:error];
+    if (records && records.count > limit) {
+        records = [records subarrayWithRange:NSMakeRange(0, limit)];
+    }
 
     NSMutableArray *result = [NSMutableArray array];
     for (PDSDatabaseRecord *record in records) {
@@ -365,7 +370,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                      value:value
                     forDid:did
                   actorDid:did
-            validationMode:PDSValidationModeRequired
+            validationMode:PDSValidationModeOptimistic
                      error:error];
 }
 
@@ -403,10 +408,26 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                       ? existingRecord.cid
                                       : nil;
 
-    BOOL success = [self.recordRepository deleteRecord:uri error:error];
-    if (success && hadExistingRecord) {
-        // We still need the tombstone for firehose purposes if that's how it's implemented.
-        // For now the recordRepository delete handles the basic deletion.
+    __block BOOL success = YES;
+    [self.databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        if (hadExistingRecord) {
+            if (![transactor addRecordTombstoneURI:uri
+                                               did:did
+                                         collection:collection
+                                              rkey:rkey
+                                                rev:writeRev
+                                              error:blockError]) {
+                success = NO;
+                return;
+            }
+        }
+
+        if (![transactor deleteRecord:uri forDid:did error:blockError]) {
+            success = NO;
+        }
+    } error:error];
+    if (!success) {
+        return NO;
     }
 
     if (success) {

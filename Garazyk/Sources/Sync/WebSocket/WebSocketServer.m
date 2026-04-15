@@ -2,6 +2,11 @@
 #import "Compat/PDSTypes.h"
 #import "Sync/WebSocketConnection.h"
 
+NSString *const WebSocketServerErrorDomain = @"com.atproto.pds.websocket.server";
+NSInteger const WebSocketServerErrorCodeListenerFailed = 1000;
+NSInteger const WebSocketServerErrorCodeInvalidHandshake = 1001;
+NSInteger const WebSocketServerErrorCodeConnectionFailed = 1002;
+
 #if defined(__linux__) || defined(__GNUstep__)
 #import <sys/socket.h>
 #import <netinet/in.h>
@@ -10,11 +15,6 @@
 #import <fcntl.h>
 #import <errno.h>
 #import <netdb.h>
-
-NSString *const WebSocketServerErrorDomain = @"com.atproto.pds.websocket.server";
-NSInteger const WebSocketServerErrorCodeListenerFailed = 1000;
-NSInteger const WebSocketServerErrorCodeInvalidHandshake = 1001;
-NSInteger const WebSocketServerErrorCodeConnectionFailed = 1002;
 
 static inline int set_nonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
@@ -30,12 +30,12 @@ static inline int set_reuseaddr(int fd) {
 @property(nonatomic, readwrite) uint16_t port;
 @property(nonatomic, readwrite) WebSocketServerState state;
 @property(nonatomic, assign) int serverSocket;
-@property(nonatomic, assign) dispatch_source_t acceptSource;
-@property(nonatomic, assign) dispatch_queue_t listenerQueue;
-@property(nonatomic, assign) dispatch_queue_t connectionsQueue;
+@property(nonatomic, strong) dispatch_source_t acceptSource;
+@property(nonatomic, strong) dispatch_queue_t listenerQueue;
+@property(nonatomic, strong) dispatch_queue_t connectionsQueue;
 @property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
-@property(nonatomic, assign) dispatch_semaphore_t stopSemaphore;
-@property(nonatomic, assign) dispatch_group_t taskGroup;
+@property(nonatomic, strong) dispatch_semaphore_t stopSemaphore;
+@property(nonatomic, strong) dispatch_group_t taskGroup;
 @end
 
 @implementation WebSocketServer
@@ -202,9 +202,12 @@ static inline int set_reuseaddr(int fd) {
 - (void)setState:(WebSocketServerState)state {
     if (_state != state) {
         _state = state;
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self.delegate webSocketServer:self stateDidChange:state];
-        });
+        id<WebSocketServerDelegate> delegate = self.delegate;
+        if ([delegate respondsToSelector:@selector(webSocketServer:stateDidChange:)]) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [delegate webSocketServer:self stateDidChange:state];
+            });
+        }
     }
 }
 
@@ -212,17 +215,17 @@ static inline int set_reuseaddr(int fd) {
 
 #else
 
-@import Network;
+#import <Network/Network.h>
 
 @interface WebSocketServer ()
 @property(nonatomic, readwrite) uint16_t port;
 @property(nonatomic, readwrite) WebSocketServerState state;
 @property(nonatomic, strong) nw_listener_t listener;
-@property(nonatomic, assign) dispatch_queue_t listenerQueue;
-@property(nonatomic, assign) dispatch_queue_t connectionsQueue;
+@property(nonatomic, strong) dispatch_queue_t listenerQueue;
+@property(nonatomic, strong) dispatch_queue_t connectionsQueue;
 @property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
-@property(nonatomic, assign) dispatch_semaphore_t stopSemaphore;
-@property(nonatomic, assign) dispatch_group_t taskGroup;
+@property(nonatomic, strong) dispatch_semaphore_t stopSemaphore;
+@property(nonatomic, strong) dispatch_group_t taskGroup;
 @end
 
 @implementation WebSocketServer
@@ -411,9 +414,12 @@ static inline int set_reuseaddr(int fd) {
 - (void)setState:(WebSocketServerState)state {
     if (_state != state) {
         _state = state;
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self.delegate webSocketServer:self stateDidChange:state];
-        });
+        id<WebSocketServerDelegate> delegate = self.delegate;
+        if ([delegate respondsToSelector:@selector(webSocketServer:stateDidChange:)]) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [delegate webSocketServer:self stateDidChange:state];
+            });
+        }
     }
 }
 

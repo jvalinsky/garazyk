@@ -74,11 +74,34 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
                  remoteAddress:(NSString *)remoteAddress {
   self = [super init];
   if (self) {
+    NSString *normalizedPath = [path copy] ?: @"";
+    NSString *normalizedQueryString = [queryString copy] ?: @"";
+    NSDictionary<NSString *, id> *normalizedQueryParams = [queryParams copy] ?: @{};
+
+    // Some tests and internal call sites pass "/path?query" in `path`.
+    // Normalize this form so routing and query lookups remain deterministic.
+    NSRange queryRange = [normalizedPath rangeOfString:@"?"];
+    if (queryRange.location != NSNotFound) {
+      NSString *embeddedPath = [normalizedPath substringToIndex:queryRange.location];
+      NSString *embeddedQuery =
+          [normalizedPath substringFromIndex:queryRange.location + 1];
+      normalizedPath = embeddedPath;
+
+      if (normalizedQueryString.length == 0) {
+        normalizedQueryString = embeddedQuery;
+      }
+      if (normalizedQueryParams.count == 0) {
+        NSDictionary<NSString *, id> *parsed =
+            [HttpParsing parseQueryString:normalizedQueryString];
+        normalizedQueryParams = parsed ?: @{};
+      }
+    }
+
     _method = method;
     _methodString = [methodString copy];
-    _path = [path copy];
-    _queryString = [queryString copy];
-    _queryParams = [queryParams copy];
+    _path = normalizedPath;
+    _queryString = normalizedQueryString;
+    _queryParams = normalizedQueryParams;
     _version = [version copy];
     _headers = [self normalizeHeaders:headers];
     _body = [body copy];

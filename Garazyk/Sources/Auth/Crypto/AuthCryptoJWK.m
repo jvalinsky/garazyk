@@ -8,6 +8,7 @@
 
 #import "AuthCrypto/AuthCryptoJWK.h"
 #import "AuthCrypto/AuthCryptoBase64URL.h"
+#import "AuthCrypto/AuthCryptoECDSA.h"
 #import "Auth/PDSKeyProtocol.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
@@ -141,7 +142,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
 
     CFErrorRef cfError = NULL;
     CFDataRef signature = SecKeyCreateSignature(_secKey,
-                                                 kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                                 kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
                                                  (__bridge CFDataRef)hashData,
                                                  &cfError);
     if (!signature) {
@@ -215,40 +216,15 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
-    const uint8_t *raw = signature.bytes;
-
-    NSMutableData *derSig = [NSMutableData data];
-
-    int rStart = 0;
-    while (rStart < 31 && raw[rStart] == 0) rStart++;
-    int rLen = 32 - rStart;
-    if (raw[rStart] & 0x80) rLen++;
-
-    int sStart = 32;
-    while (sStart < 63 && raw[sStart] == 0) sStart++;
-    int sLen = 64 - sStart;
-    if (raw[sStart] & 0x80) sLen++;
-
-    uint8_t header[6] = {0x30, 0, 0x02, 0, 0x02, 0};
-    header[1] = 2 + rLen + 2 + sLen;
-    header[3] = rLen;
-    header[5] = sLen;
-    [derSig appendBytes:header length:6];
-
-    if (raw[rStart] & 0x80) {
-        uint8_t zero = 0;
-        [derSig appendBytes:&zero length:1];
-        [derSig appendBytes:raw + rStart length:rLen - 1];
-    } else {
-        [derSig appendBytes:raw + rStart length:rLen];
-    }
-
-    if (raw[sStart] & 0x80) {
-        uint8_t zero = 0;
-        [derSig appendBytes:&zero length:1];
-        [derSig appendBytes:raw + sStart length:sLen - 1];
-    } else {
-        [derSig appendBytes:raw + sStart length:sLen];
+    NSError *derError = nil;
+    NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
+    if (!derSig) {
+        if (error) {
+            *error = derError ?: [NSError errorWithDomain:AuthCryptoErrorDomain
+                                                     code:PDSKeyErrorCodeInvalidSignature
+                                                 userInfo:@{NSLocalizedDescriptionKey: @"Invalid raw ECDSA signature"}];
+        }
+        return NO;
     }
 
     SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
@@ -263,7 +239,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
 
     CFErrorRef cfError = NULL;
     BOOL valid = SecKeyVerifySignature(pubKey,
-                                       kSecKeyAlgorithmECDSASignatureMessageX962SHA256,
+                                       kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
                                        (__bridge CFDataRef)hashData,
                                        (__bridge CFDataRef)derSig,
                                        &cfError);
@@ -313,41 +289,15 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
-    // Convert raw r||s signature to DER format
-    const uint8_t *raw = signature.bytes;
-
-    NSMutableData *derSig = [NSMutableData data];
-
-    int rStart = 0;
-    while (rStart < 31 && raw[rStart] == 0) rStart++;
-    int rLen = 32 - rStart;
-    if (raw[rStart] & 0x80) rLen++;
-
-    int sStart = 32;
-    while (sStart < 63 && raw[sStart] == 0) sStart++;
-    int sLen = 64 - sStart;
-    if (raw[sStart] & 0x80) sLen++;
-
-    uint8_t header[6] = {0x30, 0, 0x02, 0, 0x02, 0};
-    header[1] = 2 + rLen + 2 + sLen;
-    header[3] = rLen;
-    header[5] = sLen;
-    [derSig appendBytes:header length:6];
-
-    if (raw[rStart] & 0x80) {
-        uint8_t zero = 0;
-        [derSig appendBytes:&zero length:1];
-        [derSig appendBytes:raw + rStart length:rLen - 1];
-    } else {
-        [derSig appendBytes:raw + rStart length:rLen];
-    }
-
-    if (raw[sStart] & 0x80) {
-        uint8_t zero = 0;
-        [derSig appendBytes:&zero length:1];
-        [derSig appendBytes:raw + sStart length:sLen - 1];
-    } else {
-        [derSig appendBytes:raw + sStart length:sLen];
+    NSError *derError = nil;
+    NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
+    if (!derSig) {
+        if (error) {
+            *error = derError ?: [NSError errorWithDomain:AuthCryptoErrorDomain
+                                                     code:PDSKeyErrorCodeInvalidSignature
+                                                 userInfo:@{NSLocalizedDescriptionKey: @"Invalid raw ECDSA signature"}];
+        }
+        return NO;
     }
 
     SecKeyRef pubKey = _isPrivateKey ? SecKeyCopyPublicKey(_secKey) : _secKey;
