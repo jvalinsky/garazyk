@@ -31,10 +31,12 @@ This page documents the commands that are actually registered in the current cod
 | `oauth` | OAuth client registration and inspection |
 | `repo` | direct repository inspection and mutation helpers |
 | `admin` | administrator management |
+| `relay` | in-process relay helper commands (`bgs` and `relayd` aliases) |
 | `daemon` | background-process lifecycle management |
 | `init` | interactive config bootstrap |
 | `install` | service installation and related management |
 | `nuke-data` | destructive data reset command |
+| `repl` | interactive shell mode (`shell` and `interactive` aliases) |
 | `help` | help output |
 | `version` | version output |
 
@@ -59,9 +61,9 @@ Example:
 ./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 ```
 
-## `health`
+## `status`
 
-`health` is a local operator check, not a replacement for application-level protocol tests. It inspects:
+`status` is a local operator check, not a replacement for application-level protocol tests. It inspects:
 
 - expected databases,
 - storage availability,
@@ -69,7 +71,7 @@ Example:
 - daemon status,
 - and HTTP reachability of `describeServer`.
 
-Alias: `status`
+Alias: `health`
 
 ## `account`
 
@@ -134,6 +136,20 @@ Current subcommands:
 
 This manages administrator DIDs and admin account creation. It is separate from application-level moderation APIs.
 
+## `relay`
+
+Current subcommands:
+
+- `serve`
+- `start`
+- `stop`
+- `status`
+- `upstream add|remove|list`
+
+`relay serve` requires at least one `--upstream` URL. It accepts relay-specific options such as `--port`, `--retention`, and `--mode`.
+
+This command is separate from the standalone `zuk` binary and from `PDSRelayService`, which only sends crawl hints after local record changes. For the service-layer distinction, read [Relay Service](../03-application-layer/relay-service).
+
 ## `daemon`
 
 Current subcommands:
@@ -159,7 +175,7 @@ It is useful for bootstrapping, but contributors should still validate the outpu
 
 ## `install`
 
-`install` handles macOS-style service installation and related helper flows. Its surface currently includes:
+`install` handles macOS-style service installation and related helper flows. Its subcommands include:
 
 - `daemon`
 - `agent`
@@ -169,6 +185,17 @@ It is useful for bootstrapping, but contributors should still validate the outpu
 - `status`
 
 This is a service-management convenience layer, not the main development path.
+
+## `repl`
+
+`repl` starts an interactive `kaszlak>` shell. It supports command history and REPL-only dot commands:
+
+- `.help`
+- `.history`
+- `.clear`
+- `.exit`
+
+Aliases: `shell`, `interactive`
 
 ## `nuke-data`
 
@@ -207,12 +234,14 @@ xcodebuild -scheme kaszlak build
 The CLI docs were previously wrong in two ways:
 
 - documenting command names that are not registered anymore,
-- and omitting registered commands such as `serve`, `daemon`, `oauth`, `install`, and `nuke-data`.
+- and omitting registered commands such as `serve`, `status`, `relay`, `daemon`, `oauth`, `repl`, `install`, and `nuke-data`.
 
 If this page drifts again, regenerate it from the registered command implementations instead of copying old examples forward.
 
 ## Related Reading
 
 - [Setup](../01-getting-started/setup)
+- [Build Guide](../../BUILD.md)
 - [Config Reference](./config-reference)
 - [Testing Map](./testing-map)
+- [Relay Service](../03-application-layer/relay-service)

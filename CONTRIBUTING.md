@@ -28,7 +28,7 @@ macOS is the primary contributor path. Use:
 xcodegen generate
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-xcodebuild -scheme ATProtoPDS-CLI build
+xcodebuild -scheme kaszlak build
 ```
 
 Linux and GNUstep contributors should keep their chosen out-of-source build directory consistent:
@@ -76,12 +76,15 @@ Before pushing:
 1. `xcodegen generate`
 2. `xcodebuild -scheme AllTests build`
 3. `./build/tests/AllTests`
-4. `xcodebuild -scheme ATProtoPDS-CLI build`
+4. `xcodebuild -scheme kaszlak build`
 5. fuzzer builds if modified
 
 ## Related Docs
 
 - [Build Guide](BUILD.md)
+- [Setup Guide](docs/01-getting-started/setup.md)
+- [Test Selection Workflow](docs/11-reference/test-selection-workflow.md)
 - [CLI Reference](docs/11-reference/cli-reference.md)
 - [Config Reference](docs/11-reference/config-reference.md)
+- [Documentation Style Guide](DOCUMENTATION.md)
 - [Troubleshooting](docs/11-reference/troubleshooting.md)

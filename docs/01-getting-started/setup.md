@@ -121,13 +121,13 @@ cmake --build build-linux -j
 ### Step 2: run tests if the build generated them
 
 ```bash
-./build/tests/AllTests
+./build-linux/tests/AllTests
 ```
 
 ### Step 3: start the server with explicit paths
 
 ```bash
-./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
+./build-linux/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 ```
 
 ## Minimal Local Config Shape
@@ -202,6 +202,9 @@ Development defaults and secure deployment defaults are not the same thing. Prod
 
 - [Codebase Map](./codebase-map)
 - [Request Lifecycle](./request-lifecycle)
+- [Build Guide](../../BUILD.md)
+- [Contributing Guide](../../CONTRIBUTING.md)
 - [Config Reference](../11-reference/config-reference)
 - [CLI Reference](../11-reference/cli-reference)
+- [Testing Map](../11-reference/testing-map)
 - [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)

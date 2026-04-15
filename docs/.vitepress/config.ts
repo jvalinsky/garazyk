@@ -4,7 +4,7 @@ import { sidebarConfig } from './sidebar'
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: 'September PDS Documentation',
-  description: 'Comprehensive guide for implementing an ATProto Personal Data Server in Objective-C',
+  description: 'Contributor documentation for the September AT Protocol PDS implementation in Objective-C',
   base: '/docs/',
   lang: 'en-US',
   
@@ -150,12 +150,12 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:locale', content: 'en' }],
     ['meta', { property: 'og:title', content: 'September PDS Documentation' }],
-    ['meta', { property: 'og:description', content: 'Comprehensive guide for implementing an ATProto Personal Data Server in Objective-C' }],
+    ['meta', { property: 'og:description', content: 'Contributor documentation for the September AT Protocol PDS implementation in Objective-C' }],
     ['meta', { property: 'og:site_name', content: 'September PDS' }],
     ['meta', { property: 'og:url', content: 'https://pds.garazyk.xyz/docs/' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: 'September PDS Documentation' }],
-    ['meta', { name: 'twitter:description', content: 'Comprehensive guide for implementing an ATProto Personal Data Server in Objective-C' }]
+    ['meta', { name: 'twitter:description', content: 'Contributor documentation for the September AT Protocol PDS implementation in Objective-C' }]
   ],
   
   // Build configuration

@@ -8,13 +8,17 @@ title: API Reference
 
 This page is a map to the runtime API surface, not a giant payload dump. The useful contributor question is usually not "what does one response example look like?" It is "which surface am I changing, and where do I verify it?"
 
-September exposes three different kinds of HTTP surface:
+September exposes several HTTP surfaces with different owners:
 
 | Surface | Role |
 | --- | --- |
 | `/xrpc/com.atproto.*` | protocol-facing ATProto methods |
 | `/api/pds/*` | contributor-facing explorer and inspection endpoints |
+| `/api/relay/*` | relay operations and health endpoints |
+| `/api/mst/*` and `/mst-viewer` | repository/MST inspection helpers |
 | `/ui` | browser UI built on top of inspection and protocol data |
+| `/metrics` | Prometheus-style runtime metrics |
+| `/oauth/*` and `/.well-known/*` | OAuth, DID, and discovery routes |
 
 Keeping those roles separate makes the code much easier to reason about.
 
@@ -46,6 +50,19 @@ Use `/api/pds/*` when you need fast inspection of runtime state without building
 
 Use `/ui` when you need the richer contributor workflow rather than raw JSON. The UI is especially useful for comparing structured rendering to the Explorer API responses beneath it.
 
+### Relay API
+
+Use `/api/relay/*` when you are working on relay admin and health flows exposed through `PDSHttpRelayAPIRoutePack` and `RelayAPIHandler`. The main paths are:
+
+- `/api/relay/health`
+- `/api/relay/metrics`
+- `/api/relay/capabilities`
+- `/api/relay/upstreams`
+- `/api/relay/upstreams/reconnect-all`
+- `/api/relay/upstreams/disconnect-all`
+
+This is separate from protocol firehose behavior under XRPC. Use [Firehose Overview](../08-sync-firehose/firehose-overview) and [Relay Service](../03-application-layer/relay-service) when you need the sync-side mental model.
+
 ## Endpoint Families
 
 | Area | What changes usually mean |
@@ -54,6 +71,8 @@ Use `/ui` when you need the richer contributor workflow rather than raw JSON. Th
 | repository and records | lexicon shapes, repository service logic, MST/CAR behavior, auth scopes |
 | sync and firehose | commit sequencing, cursor behavior, WebSocket delivery, backpressure |
 | explorer and tooling | handler wiring, operator workflows, generated OpenAPI, UI-facing inspection data |
+| relay APIs | upstream connection state, relay health, relay capabilities, UI operations |
+| metrics and admin | observability, admin route packs, deployment verification |
 
 That framing is more useful than a long list of similar request and response payloads because it tells you where else to look when you touch one endpoint.
 
@@ -61,7 +80,7 @@ That framing is more useful than a long list of similar request and response pay
 
 When you need source truth for an endpoint, follow the same path every time:
 
-1. Start at route registration in `PDSHttpServerBuilder` or the relevant CLI or handler entrypoint.
+1. Start at route registration in `PDSHttpServerBuilder` or the relevant route pack.
 2. Find the method or handler that owns auth, parsing, and response shaping.
 3. Identify the service layer or repository/database layer it calls into.
 4. Read the closest tests before assuming behavior is intentional.
@@ -104,6 +123,8 @@ That order keeps failures local and avoids debugging the browser first when the 
 - [CLI Reference](./cli-reference)
 - [Config Reference](./config-reference)
 - [Testing Map](./testing-map)
+- [HTTP Request and Route Pipeline](../04-network-layer/http-request-and-route-pipeline)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)
 
 ## Appendix
 
@@ -113,79 +134,13 @@ That order keeps failures local and avoids debugging the browser first when the 
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
 curl -sS http://127.0.0.1:2583/api/pds/openapi.yaml | head
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
+curl -sS http://127.0.0.1:2583/api/relay/health | jq .
+curl -sS http://127.0.0.1:2583/metrics | head
 ```
 
-**Endpoint:** `GET /xrpc/com.atproto.sync.subscribeRepos` (WebSocket upgrade)
+### Error response shape
 
-**Parameters:**
-```
-
-cursor=optional-sequence-number
-```
-
-**Events:**
-```json
-{
-  "t": "#commit",
-  "commit": {
-    "root": "bafyreiabc123...",
-    "prev": "bafyredef456...",
-    "timestamp": "2024-01-01T00:00:00Z",
-    "did": "did:plc:user123"
-  },
-  "seq": 12345,
-  "time": "2024-01-01T00:00:00Z"
-}
-```
-
-## Blob Methods (com.atproto.repo.*)
-
-### uploadBlob
-
-Upload a blob (file).
-
-**Endpoint:** `POST /xrpc/com.atproto.repo.uploadBlob`
-
-**Headers:**
-```
-
-Authorization: Bearer <access-token>
-Content-Type: image/jpeg
-```
-
-**Body:** Binary blob data
-
-**Response:**
-```json
-{
-  "blob": {
-    "cid": "bafyreiabc123...",
-    "mimeType": "image/jpeg",
-    "size": 12345
-  }
-}
-```
-
-### getBlob
-
-Get a blob by CID.
-
-**Endpoint:** `GET /xrpc/com.atproto.repo.getBlob`
-
-**Parameters:**
-```
-
-did=did:plc:user123
-cid=bafyreiabc123...
-```
-
-**Response:** Binary blob data
-
-## Error Responses
-
-### Error Format
-
-All errors follow this format:
+Most JSON error responses follow this shape:
 
 ```json
 {
@@ -206,55 +161,34 @@ All errors follow this format:
 | RateLimited | 429 | Too many requests |
 | InternalServerError | 500 | Server error |
 
-## Authentication
+### Auth headers
 
-### JWT Token
-
-Include in Authorization header:
+For authenticated XRPC or OAuth flows, expect bearer tokens and DPoP proofs where the owning handler requires them:
 
 ```
-
 Authorization: Bearer <jwt-token>
-```
-
-### DPoP Proof
-
-Include DPoP proof header:
-
-```
-
 DPoP: <dpop-jwt>
 ```
 
-## Rate Limiting
+Read [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop) and [Auth Helpers](../04-network-layer/auth-helpers) before changing auth behavior.
 
-### Headers
+### Rate limiting headers
 
 ```
-
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 999
 X-RateLimit-Reset: 1234567890
 ```
 
-### Limits
+The exact budget comes from [Config Reference](./config-reference) and `RateLimiter`.
 
-- **Default:** 1000 requests per hour
-- **Authenticated:** 10000 requests per hour
-- **Admin:** Unlimited
+### Cursor pagination
 
-## Pagination
-
-### Cursor-Based Pagination
-
-Use `cursor` parameter to get next page:
+Cursor-based endpoints use a `cursor` parameter and return a response cursor when another page exists:
 
 ```
-
 GET /xrpc/com.atproto.repo.listRecords?cursor=abc123
 ```
-
-Response includes `cursor` for next page:
 
 ```json
 {
@@ -263,9 +197,7 @@ Response includes `cursor` for next page:
 }
 ```
 
-## Content Types
-
-### Supported Content Types
+### Common content types
 
 - `application/json` — JSON data
 - `application/cbor` — CBOR data
@@ -275,6 +207,6 @@ Response includes `cursor` for next page:
 
 ## Next Steps
 
-- **[Configuration Reference](config-reference)** — Configuration options
-- **[CLI Reference](cli-reference)** — Command-line interface
-- **[Troubleshooting](troubleshooting)** — Common issues
+- [Configuration Reference](config-reference) for config keys that shape API behavior
+- [CLI Reference](cli-reference) for local inspection paths
+- [Troubleshooting](troubleshooting) for common failure modes

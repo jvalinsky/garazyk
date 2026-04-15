@@ -19,17 +19,17 @@ This page is the shortest route from "I can build it" to "I know where to change
 
 | Area | What it owns | Where to start |
 | --- | --- | --- |
-| App | Application composition, configuration, shared services, web UIs | `Sources/App/`, `PDSApplication`, `PDSConfiguration` |
-| Network | HTTP routing, XRPC dispatch, auth gates, route registration | `Sources/Network/`, `PDSHttpServerBuilder`, `XrpcMethodRegistry` |
-| Database | Service DBs, actor stores, pooling, migrations, monitoring | `Sources/Database/` |
-| Repository | MST, CAR, commit logic, repository state | `Sources/Repository/`, `Sources/Core/Repositories/` |
-| Auth | JWT, DPoP, OAuth, verifier helpers, signing paths | `Sources/Auth/`, `Sources/AuthCrypto/`, `Sources/AuthVerifier/`, `Sources/OAuthProvider/`, `Sources/PDSAuth/` |
-| Services | Account, record, admin, phone verification, higher-level business logic | `Sources/Services/`, `Sources/App/Services/` |
-| Identity and PLC | Handle validation, DID/PLC operations, PLC server | `Sources/Identity/`, `Sources/PLC/` |
-| Sync and Federation | Firehose, relay behavior, cross-PDS flows | `Sources/Sync/`, `Sources/Federation/` |
-| AppView and UI | Read-model services plus contributor-facing browser tools | `Sources/AppView/`, `Sources/App/Explore/`, `Sources/App/CappuccinoUI/`, `Sources/App/AdminUI/` |
-| CLI and Admin | Operator workflows and admin surfaces | `Sources/CLI/`, `Sources/Admin/` |
-| Supporting subsystems | Blob storage, metrics, lexicon validation, compatibility shims, logging | `Sources/Blob/`, `Sources/Metrics/`, `Sources/Lexicon/`, `Sources/Compat/`, `Sources/Debug/` |
+| App | Application composition, configuration, shared services, web UIs | `Garazyk/Sources/App/`, `PDSApplication`, `PDSConfiguration` |
+| Network | HTTP routing, XRPC dispatch, auth gates, route registration | `Garazyk/Sources/Network/`, `PDSHttpServerBuilder`, `XrpcMethodRegistry` |
+| Database | Service DBs, actor stores, pooling, migrations, monitoring | `Garazyk/Sources/Database/` |
+| Repository | MST, CAR, commit logic, repository state | `Garazyk/Sources/Repository/`, `Garazyk/Sources/Core/Repositories/` |
+| Auth | JWT, DPoP, OAuth, verifier helpers, signing paths | `Garazyk/Sources/Auth/`, `Garazyk/Sources/Auth/Crypto/`, `Garazyk/Sources/Auth/Verifier/`, `Garazyk/Sources/Auth/OAuthProvider/`, `Garazyk/Sources/Auth/PDS/` |
+| Services | Account, record, admin, phone verification, higher-level business logic | `Garazyk/Sources/Services/`, `Garazyk/Sources/App/Services/` |
+| Identity and PLC | Handle validation, DID/PLC operations, PLC server | `Garazyk/Sources/Identity/`, `Garazyk/Sources/PLC/` |
+| Sync, Relay, and Federation | Firehose, relay behavior, relay APIs, cross-PDS flows | `Garazyk/Sources/Sync/`, `Garazyk/Sources/Relay/`, `Garazyk/Sources/Federation/` |
+| AppView and UI | Read-model services plus contributor-facing browser tools | `Garazyk/Sources/AppView/`, `Garazyk/Sources/App/Explore/`, `Garazyk/Sources/App/CappuccinoUI/`, `Garazyk/Sources/App/AdminUI/` |
+| CLI and Admin | Operator workflows and admin surfaces | `Garazyk/Sources/CLI/`, `Garazyk/Sources/Admin/` |
+| Supporting subsystems | Blob storage, media helpers, metrics, lexicon validation, compatibility shims, logging | `Garazyk/Sources/Blob/`, `Garazyk/Sources/Media/`, `Garazyk/Sources/Metrics/`, `Garazyk/Sources/Lexicon/`, `Garazyk/Sources/Compat/`, `Garazyk/Sources/Debug/` |
 
 ## Read Order for New Contributors
 
@@ -70,13 +70,13 @@ The test tree mostly mirrors the runtime tree, which is a useful navigation tric
 
 | Runtime area | Test area |
 | --- | --- |
-| `Sources/Auth/` | `Tests/Auth/` |
-| `Sources/Network/` | `Tests/Network/`, `Tests/XRPC/` |
-| `Sources/Database/` | `Tests/Database/` |
-| `Sources/Repository/` | `Tests/Repository/` |
-| `Sources/AppView/` | `Tests/AppView/` |
-| `Sources/Email/` | `Tests/Email/` |
-| `Sources/PLC/` | `Tests/PLC/`, `Tests/plc_e2e/` |
+| `Garazyk/Sources/Auth/` | `Garazyk/Tests/Auth/` |
+| `Garazyk/Sources/Network/` | `Garazyk/Tests/Network/`, `Garazyk/Tests/XRPC/` |
+| `Garazyk/Sources/Database/` | `Garazyk/Tests/Database/` |
+| `Garazyk/Sources/Repository/` | `Garazyk/Tests/Repository/` |
+| `Garazyk/Sources/AppView/` | `Garazyk/Tests/AppView/`, `Garazyk/Tests/AppViewServer/` |
+| `Garazyk/Sources/Email/` | `Garazyk/Tests/Email/` |
+| `Garazyk/Sources/PLC/` | `Garazyk/Tests/PLC/`, `Garazyk/Tests/plc_e2e/` |
 
 Use [Testing Map](../11-reference/testing-map) when you need the contributor workflow instead of the raw directory listing.
 
@@ -106,5 +106,7 @@ When you add or rewrite contributor-facing docs, link to those areas deliberatel
 
 - [Request Lifecycle](./request-lifecycle)
 - [Setup](./setup)
+- [Architecture Overview](./architecture-overview)
+- [API Reference](../11-reference/api-reference)
 - [Testing Map](../11-reference/testing-map)
 - [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui)

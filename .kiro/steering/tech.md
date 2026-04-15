@@ -51,4 +51,4 @@ Outputs follow the build directory you choose with CMake.
 
 ## Docs System
 
-The canonical contributor docs live in `docs/` and are organized as a VitePress site. Older collections under `docs/guides/`, `docs/architecture/`, `docs/security/`, and `docs/tests/` are deep reference rather than the main onboarding path.
+The canonical contributor docs live in `docs/` and are organized as a VitePress site. Older collections under `docs/guides/`, `docs/architecture/`, `docs/security/`, and `docs/tests/` are deep reference rather than the main onboarding path. Use `DOCUMENTATION.md` and `skills/rewrite-dev-docs-comments/` for doc and comment rewrites.

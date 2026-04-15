@@ -80,8 +80,9 @@ The runtime code lives under `Garazyk/Sources/`. The most important areas for ne
 - `Network/` for HTTP routing, XRPC dispatch, and route registration
 - `Database/` for service databases, actor stores, migrations, and pools
 - `Repository/` and `Core/` for MST, CAR, CID, and repository invariants
-- `Auth/`, `AuthCrypto/`, `AuthVerifier/`, `OAuthProvider/`, and `PDSAuth/` for auth flows
+- `Auth/`, including `Auth/Crypto/`, `Auth/Verifier/`, `Auth/OAuthProvider/`, and `Auth/PDS/`, for auth flows
 - `Sync/` and `Federation/` for firehose and cross-server behavior
+- `Relay/` and `AppView/` for standalone relay and read-model surfaces
 - `CLI/` for the `kaszlak` command-line surface
 
 Tests live under `Garazyk/Tests/` and broadly mirror the runtime structure. New test classes must be added to `Garazyk/Tests/test_main.m` or they will compile without running.
@@ -114,12 +115,14 @@ More detail:
 
 ## Binaries
 
-The repository currently produces these primary executables:
+The repository produces these primary executables:
 
 | Binary | Purpose |
 | --- | --- |
 | `kaszlak` | main PDS CLI and server binary |
 | `campagnola` | standalone PLC server |
+| `zuk` | standalone AT Protocol relay server |
+| `syrena` | standalone AppView server in the CMake build |
 | `AllTests` | shared Objective-C test runner |
 
 See [CLI Reference](docs/11-reference/cli-reference.md) for the current command families and contributor usage patterns.
@@ -145,7 +148,7 @@ When you modify a feature:
 
 1. identify the surface you are changing
 2. confirm the route registration point
-3. change the owning service or domain logic, not just the route
+3. change the owning service or domain logic in addition to the route
 4. run the smallest useful test surface first
 5. update contributor tooling and docs if the behavior is inspectable there
 

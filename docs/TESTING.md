@@ -4,39 +4,39 @@ title: Testing Guide
 
 # Testing Guide
 
-This document describes the `ATProtoPDS` testing strategy. The test suites are organized by protocol and subsystem so failures map to concrete implementation areas.
+This page is the older detailed testing guide. For contributor workflow decisions, start with [Testing Map](11-reference/testing-map), [Test Selection Workflow](11-reference/test-selection-workflow), and [Test Organization](11-reference/test-organization).
 
 > [!IMPORTANT]
-> **Current Status (2026-03-01):** The test suite is fully stabilized with a **100% pass rate** (1267 passing tests). For details on the stabilization effort, see the [Test Suite Stabilization Report](test-suite-stabilization-report-2026-03-01).
+> Dated pass-rate reports are historical. Verify the current tree with `xcodegen generate`, `xcodebuild -scheme AllTests build`, and `./build/tests/AllTests`.
 
 ## Running Tests
 
 ### macOS (Xcode)
-The project is configured for Xcode. You can run the full test suite directly from the IDE or via command line.
+The macOS path uses XcodeGen and the generated `Garazyk.xcodeproj`.
 
 **Command Line:**
 ```bash
-# Build and run all tests
-xcodebuild -scheme AllTests test
-
-# Run a specific test suite
-xcodebuild -scheme AllTests test -only-testing:AllTests/HandleResolverTests
+xcodegen generate
+xcodebuild -scheme AllTests build
+./build/tests/AllTests
 ```
 
 **IDE:**
-1. Open `ATProtoPDS.xcodeproj`.
+1. Run `xcodegen generate`.
+2. Open `Garazyk.xcodeproj`.
 2. Select the `AllTests` scheme.
-3. Press `Cmd+U` to run all tests.
+3. Build the scheme, then run `./build/tests/AllTests` for the custom runner.
 
 ## Linux (GNUstep)
-Linux support is provided via GNUstep. Tests can be built and run using CMake.
+Linux support is provided via GNUstep. Use an out-of-source CMake build directory.
 
 ```bash
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug
-make -j$(nproc)
-./tests/AllTests
+cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-linux -j
+./build-linux/tests/AllTests
 ```
+
+New Objective-C test classes must be registered in `Garazyk/Tests/test_main.m`; otherwise they can compile without running.
 
 ## Identity & Authentication
 

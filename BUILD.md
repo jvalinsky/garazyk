@@ -1,4 +1,6 @@
-# Building September PDS on macOS
+# Build Guide
+
+This page is the short build reference for September PDS. Use [Setup Guide](docs/01-getting-started/setup.md) for the full contributor workflow and [Testing Map](docs/11-reference/testing-map.md) when you need to choose a test scope.
 
 ## Critical: SDK Name Change on macOS 26
 
@@ -16,28 +18,41 @@ xcodebuild -showsdks
 # macOS 26.4                    -sdk macosx26.4
 ```
 
-### Build Commands
+## macOS Build Commands
 
-September uses **XcodeGen** on macOS (not CMake). Out-of-source builds are required.
+September uses XcodeGen on macOS. The generated Xcode targets call CMake into the out-of-source `build/` directory; do not run CMake in the repository root.
 
 ```bash
-# Generate Xcode project
 xcodegen generate
-
-# Build tests
 xcodebuild -scheme AllTests build
-
-# Build server
 xcodebuild -scheme kaszlak build
-
-# Run tests
 ./build/tests/AllTests
 ```
 
-### Running Tests
+### Running Tests On macOS
 
 ```bash
+xcodegen generate
+xcodebuild -scheme AllTests build
 ./build/tests/AllTests
+```
+
+Target one class when the custom runner supports the selector you need:
+
+```bash
+./build/tests/AllTests -XCTest MSTInteropTests
+```
+
+New Objective-C test classes must be registered in `Garazyk/Tests/test_main.m`; otherwise they can compile without running.
+
+## Linux and GNUstep Build Commands
+
+Use an explicit out-of-source build directory:
+
+```bash
+cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-linux -j
+./build-linux/tests/AllTests
 ```
 
 ### Common Issues
@@ -60,29 +75,36 @@ xcrun --sdk macosx26.4 --show-sdk-path
 
 | Target | Description |
 |--------|-------------|
-| `AllTests` | Run all unit tests |
+| `AllTests` | Shared Objective-C test runner |
 | `kaszlak` | PDS CLI tool |
 | `campagnola` | PLC directory server |
+| `zuk` | standalone relay server |
+| `syrena` | standalone AppView server in the CMake build |
+| `Fuzzers` | XcodeGen aggregate target for fuzz harnesses |
 
 ### Project Structure
 
-This project uses **XcodeGen** (NOT cmake). The project is defined in `project.yml`.
+The macOS project is generated from `project.yml`.
 
 - `project.yml` - XcodeGen configuration
-- `build/` - Xcode build output
+- `Garazyk.xcodeproj` - generated Xcode project
+- `build/` - macOS CMake output used by generated Xcode schemes
 - `build/tests/AllTests` - Test binary
 - `build/bin/` - CLI binaries
+- `build-linux/` - conventional Linux/GNUstep build directory
 
 ### Quick Start
 
 ```bash
-# Generate Xcode project
 xcodegen generate
-
-# Build and test
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-
-# Build server
 xcodebuild -scheme kaszlak build
 ```
+
+## Related Docs
+
+- [Contributor Guide](docs/index.md)
+- [Setup Guide](docs/01-getting-started/setup.md)
+- [CLI Reference](docs/11-reference/cli-reference.md)
+- [Test Selection Workflow](docs/11-reference/test-selection-workflow.md)
