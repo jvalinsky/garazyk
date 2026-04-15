@@ -8,6 +8,7 @@
 #import "Core/Repositories/PDSRecordRepository.h"
 #import "Core/Repositories/PDSBlockRepository.h"
 #import "Core/Repositories/PDSSessionRepository.h"
+#import "Core/Repositories/PDSSQLiteBlobRepository.h"
 #import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -22,6 +23,7 @@
     if (self = [super init]) {
         self.databasePool = databasePool;
         self.blobStorage = storage;
+        self.blobRepository = [[PDSSQLiteBlobRepository alloc] initWithDatabasePool:databasePool];
     }
     return self;
 }

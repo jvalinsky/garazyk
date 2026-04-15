@@ -1,19 +1,19 @@
 [
   {
-    "hash": "dac62dded177a5b8bfcfbd8ea7bfdcc581610a81",
-    "short_hash": "dac62dd",
+    "hash": "c2eb5bc8b48b232291409d3abe89b6d9702007ed",
+    "short_hash": "c2eb5bc",
     "author": "Security Bot",
-    "date": "2026-04-14T02:59:18-04:00",
-    "message": "docs(plan): add objective-j service ops phase 2 backlog",
+    "date": "2026-04-14T19:17:51-04:00",
+    "message": "debug(Firehose): add logging for connection state tracking",
     "files_changed": 2
   },
   {
-    "hash": "f5de6f70d3e690b128f147ce1f0e40407083608f",
-    "short_hash": "f5de6f7",
+    "hash": "35e4560c56517d405f333dbbcccaccc6f93cd7fb",
+    "short_hash": "35e4560",
     "author": "Security Bot",
-    "date": "2026-04-13T22:31:33-04:00",
-    "message": "fix(plc): add HOME env fallback for container key storage\n\nIn container environments, PDS_DATA_DIR may not be set but HOME is\ncommonly available. Add fallback to check HOME when PDS_DATA_DIR is not\nconfigured, enabling rotation key storage in container deployments.",
-    "files_changed": 1
+    "date": "2026-04-14T18:37:20-04:00",
+    "message": "fix(CappuccinoUI): fix formatNumber method calls and remove unsupported table methods\n\n- Change self.formatNumber(...) to [self formatNumber:...] for Objective-J syntax\n- Remove setUsesAlternatingBackgroundColors and setAlternatingRowBackgroundColors\n  (not available in current Cappuccino version)\n- Update debugging docs",
+    "files_changed": 7
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",

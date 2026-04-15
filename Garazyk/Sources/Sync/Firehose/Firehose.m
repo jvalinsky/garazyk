@@ -3,6 +3,7 @@
 #import "Sync/EventFormatter.h"
 #import "Core/CID.h"
 #import "Core/ATProtoDagCBOR.h"
+#import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const FirehoseErrorDomain = @"com.atproto.pds.firehose";

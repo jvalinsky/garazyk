@@ -84,6 +84,113 @@
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
     NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
 
+    // app.bsky.notification.getPreferences (legacy alias used by tests/clients)
+    [dispatcher registerMethod:@"app.bsky.notification.getPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSError *error = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load preferences"];
+            return;
+        }
+
+        BOOL priority = NO;
+        NSArray *prefsList = [currentPrefs[@"preferences"] isKindOfClass:[NSArray class]] ? currentPrefs[@"preferences"] : @[];
+        for (id entry in prefsList) {
+            if (![entry isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
+            NSDictionary *pref = (NSDictionary *)entry;
+            if ([pref[@"$type"] isEqualToString:@"app.bsky.notification.defs#notificationPref"]) {
+                priority = [pref[@"priority"] boolValue];
+                break;
+            }
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"priority": @(priority)}];
+    }];
+
+    // app.bsky.notification.putPreferences (legacy alias used by tests/clients)
+    [dispatcher registerMethod:@"app.bsky.notification.putPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        BOOL priority = [body[@"priority"] boolValue];
+        NSError *error = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load preferences"];
+            return;
+        }
+
+        NSMutableArray *prefsList = [NSMutableArray array];
+        if ([currentPrefs[@"preferences"] isKindOfClass:[NSArray class]]) {
+            [prefsList addObjectsFromArray:currentPrefs[@"preferences"]];
+        }
+
+        BOOL replaced = NO;
+        for (NSUInteger index = 0; index < prefsList.count; index++) {
+            id entry = prefsList[index];
+            if (![entry isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
+            NSDictionary *pref = (NSDictionary *)entry;
+            if ([pref[@"$type"] isEqualToString:@"app.bsky.notification.defs#notificationPref"]) {
+                prefsList[index] = @{
+                    @"$type": @"app.bsky.notification.defs#notificationPref",
+                    @"priority": @(priority)
+                };
+                replaced = YES;
+                break;
+            }
+        }
+
+        if (!replaced) {
+            [prefsList addObject:@{
+                @"$type": @"app.bsky.notification.defs#notificationPref",
+                @"priority": @(priority)
+            }];
+        }
+
+        BOOL saved = [actorService putPreferencesForActor:actorDID preferences:prefsList error:&error];
+        if (!saved) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
     // app.bsky.notification.listNotifications
     [dispatcher registerMethod:@"app.bsky.notification.listNotifications" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -239,9 +346,31 @@
             return;
         }
 
+        NSString *serviceDid = body[@"serviceDid"];
         NSString *token = body[@"token"];
+        NSString *platform = body[@"platform"];
+        NSString *appId = body[@"appId"];
+
+        if (![serviceDid isKindOfClass:[NSString class]] || serviceDid.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid serviceDid"];
+            return;
+        }
         if (![token isKindOfClass:[NSString class]] || token.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"Missing or invalid token"];
+            return;
+        }
+        if (![platform isKindOfClass:[NSString class]] || platform.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid platform"];
+            return;
+        }
+        if (![appId isKindOfClass:[NSString class]] || appId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing or invalid appId"];
+            return;
+        }
+
+        NSArray *validPlatforms = @[@"ios", @"android", @"web"];
+        if (![validPlatforms containsObject:platform]) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid platform, must be one of: ios, android, web"];
             return;
         }
 

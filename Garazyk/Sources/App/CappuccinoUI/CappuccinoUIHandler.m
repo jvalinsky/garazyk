@@ -163,16 +163,12 @@
 
   NSArray<NSString *> *relativeSearchSuffixes = @[
     @"Garazyk/Sources/App/CappuccinoUI/dist/CappuccinoUI",
-    @"ATProtoPDS/Sources/App/CappuccinoUI/dist/CappuccinoUI",
     @"Sources/App/CappuccinoUI/dist/CappuccinoUI",
     @"Garazyk/Sources/App/CappuccinoUI/Build/Release/CappuccinoUI",
-    @"ATProtoPDS/Sources/App/CappuccinoUI/Build/Release/CappuccinoUI",
     @"Sources/App/CappuccinoUI/Build/Release/CappuccinoUI",
     @"Garazyk/Sources/App/CappuccinoUI/Build/Debug/CappuccinoUI",
-    @"ATProtoPDS/Sources/App/CappuccinoUI/Build/Debug/CappuccinoUI",
     @"Sources/App/CappuccinoUI/Build/Debug/CappuccinoUI",
     @"Garazyk/Sources/App/CappuccinoUI",
-    @"ATProtoPDS/Sources/App/CappuccinoUI",
     @"Sources/App/CappuccinoUI"
   ];
 
@@ -190,21 +186,10 @@
         stringByStandardizingPath];
     [self addUniquePath:relativeToDataDistGarazyk toArray:candidates];
 
-    NSString *relativeToDataDistATProto = [[self.dataDirectory
-        stringByAppendingPathComponent:
-            @"../ATProtoPDS/Sources/App/CappuccinoUI/dist/CappuccinoUI"]
-        stringByStandardizingPath];
-    [self addUniquePath:relativeToDataDistATProto toArray:candidates];
-
     NSString *relativeToDataSourceGarazyk = [[self.dataDirectory
         stringByAppendingPathComponent:@"../Garazyk/Sources/App/CappuccinoUI"]
         stringByStandardizingPath];
     [self addUniquePath:relativeToDataSourceGarazyk toArray:candidates];
-
-    NSString *relativeToDataSourceATProto = [[self.dataDirectory
-        stringByAppendingPathComponent:@"../ATProtoPDS/Sources/App/CappuccinoUI"]
-        stringByStandardizingPath];
-    [self addUniquePath:relativeToDataSourceATProto toArray:candidates];
   }
 
   // Well-known system paths for packaged / Docker deployments.
