@@ -75,6 +75,7 @@ services:
       - HOME=/var/lib/atprotopds
       - PDS_DATA_DIR=/var/lib/atprotopds
       - PDS_PLC_KEYS_DIR=/var/lib/atprotopds/keys
+      - PDS_MASTER_SECRET=32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe
     depends_on:
       local-plc:
         condition: service_healthy
