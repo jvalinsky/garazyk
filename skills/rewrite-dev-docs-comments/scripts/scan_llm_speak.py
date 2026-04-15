@@ -33,6 +33,7 @@ TEXT_SUFFIXES = {
     ".yaml",
     ".yml",
     ".json",
+    ".j",
 }
 
 
@@ -50,33 +51,50 @@ class Finding:
 PATTERNS: Sequence[tuple[str, str, str]] = (
     (
         "marketing-hype",
-        r"\b(cutting[- ]edge|game[- ]chang(?:er|ing)|revolutionary|best[- ]in[- ]class|world[- ]class|seamless(?:ly)?|next[- ]gen)\b",
+        (
+            r"\b(cutting[- ]edge|game[- ]chang(?:er|ing)|revolutionary|best[- ]in[- ]class|"
+            r"world[- ]class|seamless(?:ly)?|next[- ]gen|state[- ]of[- ]the[- ]art|"
+            r"transformative|innovative|enterprise[- ]grade|supercharge|unlock)\b"
+        ),
         "Replace hype with concrete technical behavior.",
     ),
     (
         "filler",
-        r"\b(it is important to note that|please note that|in this context|at the end of the day|in order to)\b",
+        (
+            r"\b(it is important to note that|please note that|in this context|"
+            r"at the end of the day|in order to|it(?:'s| is) worth noting that|in summary|"
+            r"in conclusion|overall[, ]+)\b"
+        ),
         "Delete filler and state the point directly.",
     ),
     (
         "vague-quality",
-        r"\b(robust|comprehensive|powerful|scalable|efficient|optimized)\b",
+        r"\b(robust|comprehensive|powerful|scalable|efficient|optimized|intuitive|user[- ]friendly)\b",
         "Add measurable detail (scope, limits, or outcomes).",
     ),
     (
+        "timeline-anchor",
+        r"\b(currently|now|new|latest|as of this writing|at present)\b",
+        "Prefer timeless phrasing for long-lived technical docs.",
+    ),
+    (
         "assistant-voice",
-        r"\b(let'?s dive|delve into|we can see that|as an ai|i hope this helps)\b",
+        (
+            r"\b(let'?s dive|delve into|we can see that|as an ai|i hope this helps|"
+            r"in today'?s (fast-paced )?digital landscape|leverage|harness)\b"
+        ),
         "Use neutral, peer-to-peer engineering tone.",
     ),
     (
         "softener",
-        r"\b(simply|just|obviously|clearly|basically)\b",
+        r"\b(simply|just|obviously|clearly|basically|easy(?:ly)?)\b",
         "Remove softeners and describe exact behavior.",
     ),
 )
 
 COMMENT_RESTATE_RE = re.compile(
-    r"^\s*(//|#|/\*+|\*+)\s*(this|these)\s+(function|method|class|loop|variable|line)\b",
+    r"^\s*(//|#|/\*+|\*+)\s*(this|these|the)\s+"
+    r"(function|method|class|loop|variable|line|property|file|module)\b",
     re.IGNORECASE,
 )
 
@@ -121,7 +139,20 @@ def read_text(path: str) -> str:
 
 def scan_text(path: str, text: str) -> List[Finding]:
     findings: List[Finding] = []
+    in_fenced_code = False
     for line_no, line in enumerate(text.splitlines(), start=1):
+        stripped = line.lstrip()
+        if stripped.startswith("```"):
+            in_fenced_code = not in_fenced_code
+            continue
+
+        if in_fenced_code:
+            continue
+
+        # Skip markdown table rows to avoid flagging deliberate pattern catalogs.
+        if stripped.startswith("|"):
+            continue
+
         for category, regex, message in COMPILED_PATTERNS:
             for match in regex.finditer(line):
                 findings.append(
