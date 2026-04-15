@@ -8,8 +8,10 @@ Garazyk/Sources/
   App/            - application composition, configuration, explorer, UI, helper services
   AppView/        - read-model and browser-facing data helpers
   Auth/           - JWT, OAuth, DPoP, TOTP, WebAuthn
-  AuthCrypto/     - crypto helpers used by auth flows
-  AuthVerifier/   - verification helpers and request checks
+  Auth/Crypto/    - crypto helpers used by auth flows
+  Auth/Verifier/  - verification helpers and request checks
+  Auth/OAuthProvider/ - OAuth provider support code
+  Auth/PDS/       - PDS auth integration points
   Blob/           - blob storage and blob-specific operations
   CLI/            - `kaszlak` command-line surface
   Compat/         - macOS and GNUstep compatibility code
@@ -19,11 +21,11 @@ Garazyk/Sources/
   Federation/     - cross-PDS and federation behavior
   Identity/       - handle and DID resolution, PLC client logic
   Lexicon/        - lexicon and schema helpers
+  Media/          - media helpers and processing
   Metrics/        - runtime metrics
   Network/        - HTTP server, route registration, XRPC dispatch
-  OAuthProvider/  - OAuth provider support code
-  PDSAuth/        - PDS auth integration points
   PLC/            - `campagnola` PLC server code
+  Relay/          - standalone relay server entrypoints
   Repository/     - repository state, commits, blob and MST interactions
   Security/       - security-sensitive helpers
   Services/       - shared service-layer abstractions
@@ -42,7 +44,7 @@ Garazyk/Sources/
 - `/xrpc/*` - `XrpcDispatcher`, `XrpcMethodRegistry`, and domain method modules
 - `/api/pds/*` - `PDSHttpServerBuilder` plus `ExploreHandler`
 - `/ui` - `PDSHttpServerBuilder` plus `CappuccinoUIHandler`
-- `/api/mst/*`, `/metrics`, `/.well-known/*`, and admin routes - server builder plus their specific handlers
+- `/api/mst/*`, `/api/relay/*`, `/metrics`, `/.well-known/*`, and admin routes - server builder plus their specific route packs and handlers
 
 ## Tests
 
