@@ -106,7 +106,7 @@ if(NOT APPLE)
     include_directories(SYSTEM "/usr/local/include")
     include_directories(SYSTEM "${GNUSTEP_PREFIX}/include")
     include_directories(SYSTEM "${GNUSTEP_PREFIX}/Library/Headers")
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Compat/PlatformShims)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Compat/PlatformShims)
 
     # Link Directories
     link_directories(BEFORE "/usr/local/lib")
@@ -286,63 +286,67 @@ function(pds_filter_common_sources source_var)
 endfunction()
 
 file(GLOB_RECURSE ATPROTO_CORE_SOURCES
-  "ATProtoPDS/Sources/Core/*.m"
-  "ATProtoPDS/Sources/Core/*.c"
-  "ATProtoPDS/Sources/Compat/*.m"
-  "ATProtoPDS/Sources/Compat/*.c"
-  "ATProtoPDS/Sources/Debug/*.m"
-  "ATProtoPDS/Sources/Debug/*.c"
-  "ATProtoPDS/Sources/Metrics/*.m"
-  "ATProtoPDS/Sources/Metrics/*.c"
-  "ATProtoPDS/Sources/AuthCrypto/*.m"
-  "ATProtoPDS/Sources/AuthCrypto/*.c"
-  "ATProtoPDS/Sources/AuthVerifier/*.m"
-  "ATProtoPDS/Sources/AuthVerifier/*.c"
-  "ATProtoPDS/Sources/Security/*.m"
-  "ATProtoPDS/Sources/Security/*.c"
-  "ATProtoPDS/Sources/Lexicon/*.m"
-  "ATProtoPDS/Sources/Lexicon/*.c"
-  "ATProtoPDS/Sources/App/PDSConfiguration.m"
+  "Garazyk/Sources/Core/*.m"
+  "Garazyk/Sources/Core/*.c"
+  "Garazyk/Sources/Compat/*.m"
+  "Garazyk/Sources/Compat/*.c"
+  "Garazyk/Sources/Debug/*.m"
+  "Garazyk/Sources/Debug/*.c"
+  "Garazyk/Sources/Metrics/*.m"
+  "Garazyk/Sources/Metrics/*.c"
+  "Garazyk/Sources/Auth/Crypto/*.m"
+  "Garazyk/Sources/Auth/Crypto/*.c"
+  "Garazyk/Sources/Auth/Verifier/*.m"
+  "Garazyk/Sources/Auth/Verifier/*.c"
+  "Garazyk/Sources/Security/*.m"
+  "Garazyk/Sources/Security/*.c"
+  "Garazyk/Sources/Lexicon/*.m"
+  "Garazyk/Sources/Lexicon/*.c"
+  "Garazyk/Sources/App/PDSConfiguration.m"
 )
 list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.m$")
 list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.c$")
 
 file(GLOB_RECURSE ATPROTO_STORAGE_SOURCES
-  "ATProtoPDS/Sources/Database/*.m"
-  "ATProtoPDS/Sources/Database/*.c"
-  "ATProtoPDS/Sources/Repository/*.m"
-  "ATProtoPDS/Sources/Repository/*.c"
-  "ATProtoPDS/Sources/Core/Repositories/*.m"
-  "ATProtoPDS/Sources/Core/Repositories/*.c"
+  "Garazyk/Sources/Database/*.m"
+  "Garazyk/Sources/Database/*.c"
+  "Garazyk/Sources/Repository/*.m"
+  "Garazyk/Sources/Repository/*.c"
+  "Garazyk/Sources/Core/Repositories/*.m"
+  "Garazyk/Sources/Core/Repositories/*.c"
 )
 
 file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
-  "ATProtoPDS/Sources/Auth/*.m"
-  "ATProtoPDS/Sources/Auth/*.c"
-  "ATProtoPDS/Sources/Blob/*.m"
-  "ATProtoPDS/Sources/Blob/*.c"
-  "ATProtoPDS/Sources/Email/*.m"
-  "ATProtoPDS/Sources/Email/*.c"
-  "ATProtoPDS/Sources/Identity/*.m"
-  "ATProtoPDS/Sources/Identity/*.c"
-  "ATProtoPDS/Sources/OAuthProvider/*.m"
-  "ATProtoPDS/Sources/OAuthProvider/*.c"
-  "ATProtoPDS/Sources/Services/*.m"
-  "ATProtoPDS/Sources/Services/*.c"
-  "ATProtoPDS/Sources/Admin/*.m"
-  "ATProtoPDS/Sources/Admin/*.c"
-  "ATProtoPDS/Sources/AppView/*.m"
-  "ATProtoPDS/Sources/AppView/*.c"
-  "ATProtoPDS/Sources/Media/*.m"
-  "ATProtoPDS/Sources/Media/*.c"
-  "ATProtoPDS/Sources/Federation/*.m"
-  "ATProtoPDS/Sources/Federation/*.c"
+  "Garazyk/Sources/Auth/*.m"
+  "Garazyk/Sources/Auth/*.c"
+  "Garazyk/Sources/Blob/*.m"
+  "Garazyk/Sources/Blob/*.c"
+  "Garazyk/Sources/Email/*.m"
+  "Garazyk/Sources/Email/*.c"
+  "Garazyk/Sources/Identity/*.m"
+  "Garazyk/Sources/Identity/*.c"
+  "Garazyk/Sources/Services/*.m"
+  "Garazyk/Sources/Services/*.c"
+  "Garazyk/Sources/Admin/*.m"
+  "Garazyk/Sources/Admin/*.c"
+  "Garazyk/Sources/AppView/*.m"
+  "Garazyk/Sources/AppView/*.c"
+  "Garazyk/Sources/Media/*.m"
+  "Garazyk/Sources/Media/*.c"
+  "Garazyk/Sources/Federation/*.m"
+  "Garazyk/Sources/Federation/*.c"
 )
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/PDSAuth/.*")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Crypto/.*")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Verifier/.*")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDS/.*")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Services/.*")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Server/.*")
+list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Services/PDS(AdminService|PhoneVerificationProvider)\\.m$")
 
 file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
-  "ATProtoPDS/Sources/Network/*.m"
-  "ATProtoPDS/Sources/Network/*.c"
+  "Garazyk/Sources/Network/*.m"
+  "Garazyk/Sources/Network/*.c"
 )
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.c$")
@@ -350,44 +354,47 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpXrpcRoute
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpServerBuilder\\.m$")
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
-  "ATProtoPDS/Sources/Network/Xrpc*.m"
-  "ATProtoPDS/Sources/Network/Xrpc*.c"
-  "ATProtoPDS/Sources/Network/PDSHttpXrpcRoutePack.m"
-  "ATProtoPDS/Sources/Sync/RelayXRPCMethods.m"
-  "ATProtoPDS/Sources/Sync/RelayXRPCMethods.c"
+  "Garazyk/Sources/Network/Xrpc*.m"
+  "Garazyk/Sources/Network/Xrpc*.c"
+  "Garazyk/Sources/Network/PDSHttpXrpcRoutePack.m"
+  "Garazyk/Sources/Sync/RelayXRPCMethods.m"
+  "Garazyk/Sources/Sync/RelayXRPCMethods.c"
 )
 # XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
 list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Network/XRPCError\\.m$")
+list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Sync/Relay/RelayXRPCMethods\\.m$")
+list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Sync/Relay/RelayXRPCMethods\\.c$")
 
 file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
-  "ATProtoPDS/Sources/Sync/*.m"
-  "ATProtoPDS/Sources/Sync/*.c"
+  "Garazyk/Sources/Sync/*.m"
+  "Garazyk/Sources/Sync/*.c"
 )
+list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/(Firehose|Relay|WebSocket)/.*\\.(m|c)$")
 list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.m$")
 list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.c$")
 
 file(GLOB_RECURSE ATPROTO_PLC_SOURCES
-  "ATProtoPDS/Sources/PLC/*.m"
-  "ATProtoPDS/Sources/PLC/*.c"
+  "Garazyk/Sources/PLC/*.m"
+  "Garazyk/Sources/PLC/*.c"
 )
 
 file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
-  "ATProtoPDS/Sources/App/*.m"
-  "ATProtoPDS/Sources/App/*.c"
-  "ATProtoPDS/Sources/CLI/*.m"
-  "ATProtoPDS/Sources/CLI/*.c"
-  "ATProtoPDS/Sources/PDSAuth/*.m"
-  "ATProtoPDS/Sources/PDSAuth/*.c"
-  "ATProtoPDS/Sources/Network/PDSHttpServerBuilder.m"
+  "Garazyk/Sources/App/*.m"
+  "Garazyk/Sources/App/*.c"
+  "Garazyk/Sources/CLI/*.m"
+  "Garazyk/Sources/CLI/*.c"
+  "Garazyk/Sources/Auth/PDS/*.m"
+  "Garazyk/Sources/Auth/PDS/*.c"
+  "Garazyk/Sources/Network/PDSHttpServerBuilder.m"
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/PDSConfiguration\\.m$")
 
 # Handle platform-specific network transport implementations.
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")
-list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportLinux.m")
+list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/PDSNetworkTransportLinux.m")
 if(APPLE)
-  list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources/Network/PDSNetworkTransportMac.m")
+  list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/PDSNetworkTransportMac.m")
   if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
     # OpenSSL-based manager is unavailable on this macOS host.
     list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
@@ -400,8 +407,10 @@ if(NOT APPLE)
   # PDSAppleKeyManager.m uses Security.framework (macOS/iOS only)
   list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
 
-  # PDSOpenSSLES256KeyManager.m is only for GNUstep/Linux
-  # (Already included via GLOB, no need to filter)
+  # PDSOpenSSLES256KeyManager is required by AuthCryptoJWK (Core) on GNUstep.
+  # Keep it in Core to satisfy static-link ordering for Linux binaries.
+  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLES256KeyManager\\.m$")
+  list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m")
 
   # PDSCLIHealthCommand now has cross-platform guards and is included on Linux.
 
@@ -412,7 +421,7 @@ if(NOT APPLE)
   list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
 
   # Compat shim implementations are already captured by the GLOB_RECURSE on
-  # ATProtoPDS/Sources/Compat/*.m above — no explicit additions needed here.
+  # Garazyk/Sources/Compat/*.m above — no explicit additions needed here.
 endif()
 
 pds_filter_common_sources(ATPROTO_CORE_SOURCES)
@@ -458,8 +467,8 @@ set(PDS_MODULE_TARGETS
 
 foreach(target ${PDS_MODULE_TARGETS})
   target_include_directories(${target} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
     ${SECP256K1_INCLUDE_DIRS}
   )
   target_compile_definitions(${target} PUBLIC
@@ -482,12 +491,12 @@ target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTr
 
 # CLI Tool (kaszlak - PDS binary)
 add_executable(kaszlak
-  ATProtoPDS/Sources/CLI/main.m
+  Garazyk/Sources/CLI/main.m
 )
 
 target_include_directories(kaszlak PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
@@ -519,12 +528,12 @@ set_target_properties(kaszlak PROPERTIES
 
 # PLC Server (campagnola - PLC directory binary)
 add_executable(campagnola
-  ATProtoPDS/Sources/PLC/main.m
+  Garazyk/Sources/PLC/main.m
 )
 
 target_include_directories(campagnola PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
@@ -549,12 +558,12 @@ set_target_properties(campagnola PROPERTIES
 
 # Relay Server (zuk - AT Protocol relay)
 add_executable(zuk
-  ATProtoPDS/Sources/Relay/main.m
+  Garazyk/Sources/Relay/main.m
 )
 
 target_include_directories(zuk PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
@@ -580,8 +589,8 @@ set_target_properties(zuk PROPERTIES
 
 # AppView server source library
 file(GLOB_RECURSE ATPROTO_APPVIEW_SERVER_SOURCES
-  "ATProtoPDS/Sources/AppViewServer/*.m"
-  "ATProtoPDS/Sources/AppViewServer/*.c"
+  "Garazyk/Sources/AppViewServer/*.m"
+  "Garazyk/Sources/AppViewServer/*.c"
 )
 # Exclude binary entrypoint from the library
 list(FILTER ATPROTO_APPVIEW_SERVER_SOURCES EXCLUDE REGEX ".*/AppViewServer/Binary/.*\\.m$")
@@ -589,8 +598,8 @@ list(FILTER ATPROTO_APPVIEW_SERVER_SOURCES EXCLUDE REGEX ".*/AppViewServer/Binar
 add_library(ATProtoAppViewServer STATIC ${ATPROTO_APPVIEW_SERVER_SOURCES})
 
 target_include_directories(ATProtoAppViewServer PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
@@ -607,12 +616,12 @@ target_link_libraries(ATProtoAppViewServer PRIVATE
 
 # AppView Server binary (syrena)
 add_executable(syrena
-  ATProtoPDS/Sources/AppViewServer/Binary/main.m
+  Garazyk/Sources/AppViewServer/Binary/main.m
 )
 
 target_include_directories(syrena PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
@@ -643,8 +652,8 @@ add_executable(hello-pds
 )
 
 target_include_directories(hello-pds PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
@@ -700,8 +709,8 @@ if(BUILD_FUZZERS)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
       add_executable(${name} ${source} ${FUZZER_SOURCES} ${FUZZER_DRIVER})
       target_include_directories(${name} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-        ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
+        ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+        ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
         ${SECP256K1_INCLUDE_DIRS})
       target_link_libraries(${name} PRIVATE ${PLATFORM_LIBRARIES} ${SECP256K1_LIBRARIES})
       target_compile_options(${name} PRIVATE ${FUZZER_CFLAGS})
@@ -736,15 +745,15 @@ if(BUILD_TESTS)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
 
   # Test sources
-  file(GLOB_RECURSE TEST_OBJC_SOURCES "ATProtoPDS/Tests/**/*.m")
-  list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/test_main.m")
-  list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests/Database/PDSDatabaseLRUTests.m")
+  file(GLOB_RECURSE TEST_OBJC_SOURCES "Garazyk/Tests/**/*.m")
+  list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/test_main.m")
+  list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/Database/PDSDatabaseLRUTests.m")
   
   # Exclude problematic tests (preserved from original)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
   # Exclude top-level Integration tests only, except our new PLC integration test
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/PDSIntegrationTests.m")
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "ATProtoPDS/Tests/Integration/comprehensive_tests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/PDSIntegrationTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/comprehensive_tests.m")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   # Phase 1: Enabled Core Logic & Crypto Tests
@@ -793,9 +802,9 @@ if(BUILD_TESTS)
   )
 
   target_include_directories(AllTests PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Frameworks
-    ${CMAKE_CURRENT_SOURCE_DIR}/ATProtoPDS/Tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests
     ${SECP256K1_INCLUDE_DIRS}
   )
   
@@ -934,14 +943,14 @@ file(WRITE "${CMAKE_BINARY_DIR}/run-clang-tidy.sh" "#!/bin/bash
 set -e
 cd \"${CMAKE_SOURCE_DIR}\"
 echo \"Running clang-tidy static analysis...\"
-find ATProtoPDS/Sources -name \"*.m\" -o -name \"*.c\" | head -50 | xargs -I{} clang-tidy -p . --config-file=.clang-tidy {} 2>&1 | grep -E \"(warning|error)\" | head -100 || true
+find Garazyk/Sources -name \"*.m\" -o -name \"*.c\" | head -50 | xargs -I{} clang-tidy -p . --config-file=.clang-tidy {} 2>&1 | grep -E \"(warning|error)\" | head -100 || true
 echo \"Clang-tidy analysis complete.\"
 ")
 
 file(WRITE "${CMAKE_BINARY_DIR}/run-format.sh" "#!/bin/bash
 cd \"${CMAKE_SOURCE_DIR}\"
 echo \"Formatting source files...\"
-find ATProtoPDS/Sources ATProtoPDS/Tests -name \"*.m\" -o -name \"*.c\" -o -name \"*.h\" | xargs clang-format -i -style=file
+find Garazyk/Sources Garazyk/Tests -name \"*.m\" -o -name \"*.c\" -o -name \"*.h\" | xargs clang-format -i -style=file
 echo \"Formatting complete.\"
 ")
 

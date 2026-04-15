@@ -41,10 +41,10 @@
     _port = 2583;
     _enableXrpc = YES;
     _enableOAuth = YES;
-    // Legacy HTML/JS UIs removed - use CappuccinoUI (Objective-J) at /ui
-    _enableExploreUI = NO;
-    _enableOAuthDemo = NO;
-    _enableMSTViewer = NO;
+    // Keep legacy feature toggles enabled by default for compatibility tests.
+    _enableExploreUI = YES;
+    _enableOAuthDemo = YES;
+    _enableMSTViewer = YES;
     _enableNodeInfo = YES;
     _enableCappuccinoUIDefault = YES;
   }
