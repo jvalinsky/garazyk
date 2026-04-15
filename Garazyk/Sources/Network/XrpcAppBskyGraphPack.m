@@ -512,6 +512,68 @@
         [response setJsonBody:@{@"starterPacks": @[]}];
     }];
 
+    // app.bsky.graph.getStarterPacksWithMembership - List starter packs and viewer membership
+    [dispatcher registerMethod:@"app.bsky.graph.getStarterPacksWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *viewerDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                              jwtMinter:jwtMinter
+                                                        adminController:adminController
+                                                                request:request
+                                                               response:response];
+        if (!viewerDid) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actor = [request queryParamForKey:@"actor"];
+        if (actor.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        if (!XrpcParseLimit(request.queryParams[@"limit"], &limit, 1, 100, response)) {
+            return;
+        }
+
+        NSError *dbError = nil;
+        NSArray *rows = [appViewDatabase executeParameterizedQuery:
+                         @"SELECT uri, did, rkey FROM records "
+                         @"WHERE collection = ? ORDER BY rkey DESC LIMIT ?"
+                                                      params:@[@"app.bsky.graph.starterpack", @(limit)]
+                                                       error:&dbError];
+        if (!rows) {
+            [XrpcErrorHelper setInternalServerError:response message:dbError.localizedDescription ?: @"Failed to load starter packs"];
+            return;
+        }
+
+        NSMutableArray<NSDictionary *> *entries = [NSMutableArray arrayWithCapacity:rows.count];
+        for (NSDictionary *row in rows) {
+            NSString *uri = [row[@"uri"] isKindOfClass:[NSString class]] ? row[@"uri"] : nil;
+            NSString *creatorDid = [row[@"did"] isKindOfClass:[NSString class]] ? row[@"did"] : nil;
+            if (uri.length == 0 || creatorDid.length == 0) {
+                continue;
+            }
+
+            NSDictionary *creatorProfile = [actorService getProfileForActor:creatorDid error:nil];
+            if (!creatorProfile) {
+                creatorProfile = @{@"did": creatorDid, @"handle": @"handle.invalid"};
+            }
+
+            NSDictionary *starterPack = @{
+                @"uri": uri,
+                @"creator": creatorProfile
+            };
+            [entries addObject:@{
+                @"starterPack": starterPack,
+                @"listItem": [NSNull null]
+            }];
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"starterPacksWithMembership": entries}];
+    }];
+
     PDS_LOG_INFO(@"Registered app.bsky.graph.* endpoints");
 }
 

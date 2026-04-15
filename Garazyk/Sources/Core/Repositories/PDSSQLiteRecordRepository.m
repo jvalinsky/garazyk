@@ -68,7 +68,8 @@
     __block PDSDatabaseRecord *record = nil;
     [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = @"SELECT * FROM records WHERE uri = ?";
+        NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did "
+                        @"FROM records WHERE uri = ?";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 
@@ -87,7 +88,11 @@
     __block NSMutableArray<PDSDatabaseRecord *> *records = [NSMutableArray array];
     [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = collection ? @"SELECT * FROM records WHERE did = ? AND collection = ?" : @"SELECT * FROM records WHERE did = ?";
+        NSString *sql = collection
+            ? @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did "
+              @"FROM records WHERE did = ? AND collection = ?"
+            : @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did "
+              @"FROM records WHERE did = ?";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 
@@ -139,7 +144,7 @@
 
         sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt) == SQLITE_DONE) {
-            success = sqlite3_changes(store.db) > 0;
+            success = YES;
         }
         [store finalizeStatement:stmt];
     } error:error];
@@ -155,15 +160,25 @@
     record.rkey = @((const char *)sqlite3_column_text(stmt, 3));
     record.cid = @((const char *)sqlite3_column_text(stmt, 4));
     record.value = @((const char *)sqlite3_column_text(stmt, 5));
-    
-    const char *subjectDidText = (const char *)sqlite3_column_text(stmt, 6);
+
+    double createdAtSeconds = sqlite3_column_double(stmt, 6);
+    if (createdAtSeconds > 0.0) {
+        record.createdAt = [NSDate dateWithTimeIntervalSince1970:createdAtSeconds];
+    } else {
+        const char *createdAtText = (const char *)sqlite3_column_text(stmt, 6);
+        if (createdAtText) {
+            record.createdAt = [NSDateFormatter atproto_dateFromString:@(createdAtText)];
+        }
+    }
+
+    const char *revText = (const char *)sqlite3_column_text(stmt, 7);
+    if (revText) {
+        record.rev = @(revText);
+    }
+
+    const char *subjectDidText = (const char *)sqlite3_column_text(stmt, 8);
     if (subjectDidText) {
         record.subjectDid = @(subjectDidText);
-    }
-    
-    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 7);
-    if (createdAtText) {
-        record.createdAt = [NSDateFormatter atproto_dateFromString:@(createdAtText)];
     }
     
     return record;
