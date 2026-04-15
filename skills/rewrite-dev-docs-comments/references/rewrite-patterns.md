@@ -1,64 +1,81 @@
 # Rewrite Patterns
 
-Use this reference to convert low-signal prose into concise engineering writing.
+Use this reference to rewrite docs/comments into high-signal engineering prose.
 
-## Fast Rubric
-- Keep: facts, constraints, tradeoffs, invariants, failure modes, and decisions.
-- Cut: hype, filler, repeated obvious statements, and anthropomorphic assistant voice.
-- Replace: vague adjectives with measurable or falsifiable detail.
+## Signal-First Rubric
+- Keep: behavior, constraints, invariants, failure modes, tradeoffs, and operator actions.
+- Cut: hype, filler, time-sensitive qualifiers, and assistant-style narration.
+- Replace: vague claims with measurable detail or explicit uncertainty.
 
-## Common Anti-Patterns
-| Anti-pattern | Why it hurts | Rewrite target |
+## Low-Signal to High-Signal Replacements
+| Low-signal phrasing | Why it hurts | Rewrite target |
 | --- | --- | --- |
-| "robust / comprehensive / seamless / powerful" | Says quality without evidence | Describe behavior, scope, and limits |
-| "it is important to note that" | Adds no content | Delete and state the fact directly |
-| "simply / just / easy" | Hides complexity and edge cases | State exact required steps or preconditions |
-| Repeating the same point in 2-3 sentences | Inflates size, lowers signal | Keep one precise sentence |
-| Comment restates code | Adds maintenance cost | Remove, or explain why/constraint |
-| Marketing claims ("game-changing", "best-in-class") | Non-technical, non-verifiable | Replace with measured outcomes |
+| robust / comprehensive / powerful / seamless | Claims quality without evidence | State scope, mechanism, and limits |
+| game-changing / best-in-class / next-gen / cutting-edge | Marketing, not engineering signal | Replace with measurable behavior |
+| it is important to note that / in conclusion | Adds filler, no information | Delete and state the fact directly |
+| simply / just / easy | Masks complexity and risks | State prerequisites and exact steps |
+| currently / now / latest | Ages quickly in long-lived docs | Write timelessly about present behavior |
+| this function increments X | Restates obvious code | Explain why increment matters |
 
 ## Rewrite Moves
-1. Lead with the concrete claim.
-2. Add mechanism ("how") if needed for implementation decisions.
-3. Add boundary conditions (when it fails, what it does not cover).
-4. Remove redundant transitions and conversational filler.
-5. Prefer short sentences with specific nouns.
+1. Start with the concrete behavior or decision.
+2. Add mechanism only if it helps implementation or operations.
+3. Add boundaries: limits, preconditions, and failure handling.
+4. Remove duplicate sentences and conversational glue.
+5. Keep sentence length short and nouns specific.
 
-## Examples
+## Situational Utility Check
+Every paragraph should answer at least one of these:
+- What action should the reader take?
+- Why does this behavior exist?
+- When does it fail or not apply?
+- What constraint or invariant must stay true?
+- What is the blast radius if this is wrong?
+
+Delete any paragraph that answers none.
+
+## Objective-C Comment Transformations
 Bad:
-```text
-This robust endpoint implementation seamlessly handles requests and ensures excellent reliability for users.
+```objc
+// This method sets the token.
+- (void)setToken:(NSString *)token;
 ```
 
 Better:
-```text
-The endpoint enforces a 2s upstream timeout, retries once on network resets, and returns 503 for persistent failures.
+```objc
+/// Store the bearer token used for outbound federation requests.
+/// Reject empty values and clear cached auth headers.
+- (void)setToken:(NSString *)token;
 ```
 
 Bad:
-```text
-// This function increments the counter by one.
-counter++;
+```objc
+/**
+ * A robust and comprehensive validator.
+ */
+- (BOOL)validateDID:(NSString *)did error:(NSError **)error;
 ```
 
 Better:
-```text
-// Keep the counter monotonic so cursor ordering stays stable across reconnects.
-counter++;
+```objc
+/**
+ Validate DID syntax and supported key types before persistence.
+
+ @param did Candidate DID from client input.
+ @param error Optional error pointer; receives NSPDSErrorDomain on failure.
+ @result YES when DID is accepted for write; NO when validation fails.
+ */
+- (BOOL)validateDID:(NSString *)did error:(NSError **)error;
 ```
 
-Bad:
-```text
-It is important to note that we basically just validate input here.
-```
-
-Better:
-```text
-Validate `did` format and reject unsupported key types before DB writes.
-```
+## Placement Rules
+- Public API contracts belong in header declarations.
+- Implementation details belong in source near risky code paths.
+- Operator steps belong in runbooks/how-to docs.
+- Architecture tradeoffs belong in explanation/design docs.
 
 ## Comment-Specific Rules
-- Explain why a line exists, not what the syntax already shows.
-- Name invariants and side effects when they are non-obvious.
-- Keep comments close to the risky branch or unusual contract.
-- Delete stale comments immediately when behavior changes.
+- Explain why and constraints, not syntax.
+- Mention side effects, ordering assumptions, and threading expectations when non-obvious.
+- Keep comments adjacent to the code they constrain.
+- Delete or update stale comments in the same change that modifies behavior.
