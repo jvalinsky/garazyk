@@ -200,7 +200,8 @@
            @"    rkey TEXT NOT NULL,"
            @"    cid BLOB NOT NULL,"
            @"    value BLOB,"
-           @"    created_at DATETIME NOT NULL,"
+           @"    created_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+           @"    indexed_at DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
            @"    rev TEXT,"
            @"    subject_did TEXT"
            @")";

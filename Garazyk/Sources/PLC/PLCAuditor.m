@@ -13,6 +13,10 @@
 #if defined(__APPLE__) && !defined(GNUSTEP)
 #import <Security/Security.h>
 #endif
+#if __has_include(<openssl/ec.h>)
+#import <openssl/ec.h>
+#import <openssl/obj_mac.h>
+#endif
 
 static NSTimeInterval const kPLCRecoveryWindowSeconds = 72 * 60 * 60;
 static NSUInteger const kPLCHourLimit = 10;
@@ -648,6 +652,48 @@ static NSData *PLCDEREncodeRawSignature(NSData *rawSig) {
     return [der copy];
 }
 
+static NSData *PLCUncompressP256PublicKeyOpenSSL(NSData *compressedKey) {
+#if __has_include(<openssl/ec.h>)
+    if (compressedKey.length != 33) {
+        return nil;
+    }
+    const uint8_t *bytes = compressedKey.bytes;
+    if (bytes[0] != 0x02 && bytes[0] != 0x03) {
+        return nil;
+    }
+
+    EC_KEY *ecKey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+    if (!ecKey) {
+        return nil;
+    }
+
+    const EC_GROUP *group = EC_KEY_get0_group(ecKey);
+    EC_POINT *point = group ? EC_POINT_new(group) : NULL;
+    if (!group || !point ||
+        EC_POINT_oct2point(group, point, compressedKey.bytes, compressedKey.length, NULL) != 1) {
+        if (point) EC_POINT_free(point);
+        EC_KEY_free(ecKey);
+        return nil;
+    }
+
+    size_t pointLen = EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+    NSMutableData *result = nil;
+    if (pointLen == 65) {
+        result = [NSMutableData dataWithLength:pointLen];
+        if (EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED, result.mutableBytes, pointLen, NULL) != pointLen) {
+            result = nil;
+        }
+    }
+
+    EC_POINT_free(point);
+    EC_KEY_free(ecKey);
+    return result;
+#else
+    (void)compressedKey;
+    return nil;
+#endif
+}
+
 typedef struct {
     uint32_t w[8]; // Little-endian 32-bit words
 } PLCP256Field;
@@ -897,11 +943,16 @@ static BOOL PLCP256UncompressPublicKey(const uint8_t compressed[33], uint8_t out
     uint8_t uncompressedBuffer[65];
     
     if (pubKey.length == 33) {
-        // Compressed format - decompress
-        if (!PLCP256UncompressPublicKey(pubKey.bytes, uncompressedBuffer)) {
-            return NO;
+        // Prefer OpenSSL decompression when available; keep field-arithmetic fallback.
+        NSData *opensslDecompressed = PLCUncompressP256PublicKeyOpenSSL(pubKey);
+        if (opensslDecompressed.length == 65) {
+            uncompressedPubKey = opensslDecompressed;
+        } else {
+            if (!PLCP256UncompressPublicKey(pubKey.bytes, uncompressedBuffer)) {
+                return NO;
+            }
+            uncompressedPubKey = [NSData dataWithBytes:uncompressedBuffer length:65];
         }
-        uncompressedPubKey = [NSData dataWithBytes:uncompressedBuffer length:65];
     } else if (pubKey.length != 65) {
         return NO;
     }

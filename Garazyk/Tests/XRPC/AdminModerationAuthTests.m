@@ -13,7 +13,8 @@
                                                           @"action": @"flag"
                                                       }
                                                    headers:nil];
-    XCTAssertEqual(response.statusCode, 401);
+    XCTAssertEqual(response.statusCode, 410);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testModerateAccountReturnsForbiddenForNonAdmin {
@@ -24,7 +25,8 @@
                                                           @"action": @"flag"
                                                       }
                                                    headers:headers];
-    XCTAssertEqual(response.statusCode, 403);
+    XCTAssertEqual(response.statusCode, 410);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testModerateRecordReturnsUnauthorizedWithoutAuth {
@@ -34,7 +36,8 @@
                                                           @"action": @"flag"
                                                       }
                                                    headers:nil];
-    XCTAssertEqual(response.statusCode, 401);
+    XCTAssertEqual(response.statusCode, 410);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testModerateRecordReturnsForbiddenForNonAdmin {
@@ -45,7 +48,8 @@
                                                           @"action": @"flag"
                                                       }
                                                    headers:headers];
-    XCTAssertEqual(response.statusCode, 403);
+    XCTAssertEqual(response.statusCode, 410);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"MethodNotSupported");
 }
 
 - (void)testGetSubjectStatusRequiresAuth {
