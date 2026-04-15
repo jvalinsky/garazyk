@@ -710,10 +710,11 @@
 
     var repo = _queueData[selectedRow];
     var did = repo.did;
+    var encodedDID = encodeURIComponent(String(did));
 
     [_resultTextView setString:@"Retrying " + did + "..."];
 
-    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/repos/" + did + "/retry"
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/repos/" + encodedDID + "/retry"
                                     endpointGroup:@"appview"
                                      queryParams:nil],
         xhr = new XMLHttpRequest();
@@ -760,10 +761,11 @@
 
     var repo = _queueData[selectedRow];
     var did = repo.did;
+    var encodedDID = encodeURIComponent(String(did));
 
     [_resultTextView setString:@"Cancelling " + did + "..."];
 
-    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/repos/" + did + "/cancel"
+    var urlString = [_apiClient URLStringForPath:@"/admin/backfill/repos/" + encodedDID + "/cancel"
                                     endpointGroup:@"appview"
                                      queryParams:nil],
         xhr = new XMLHttpRequest();
