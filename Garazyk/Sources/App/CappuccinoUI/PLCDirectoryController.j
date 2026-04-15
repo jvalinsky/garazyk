@@ -55,7 +55,7 @@
 
     // Note: Title removed - tab already shows "Directory" in PLC sub-tabs
     // Status label
-    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 600.0, 20.0]);
+    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 600.0, 20.0)];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];

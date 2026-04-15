@@ -125,7 +125,6 @@
     var y = 134.0;
     var rowHeight = 22.0;
     var labelWidth = 300.0;
-    var valueWidth = 200.0;
 
     // Requests
     _requestsLabel = [self createLabelAndValue:@"Requests:" parent:parent y:y labelWidth:labelWidth];

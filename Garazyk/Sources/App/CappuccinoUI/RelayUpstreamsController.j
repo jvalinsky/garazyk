@@ -71,6 +71,16 @@
     return _rootView;
 }
 
+- (CPString)upstreamURLForSender:(id)sender
+{
+    var rowIndex = [sender tag];
+    if (rowIndex < 0 || rowIndex >= _upstreams.length)
+        return nil;
+
+    var upstream = _upstreams[rowIndex];
+    return upstream ? upstream.url : nil;
+}
+
 - (void)buildControlsInView:(CPView)parent
 {
     // Add upstream input
@@ -290,8 +300,12 @@
 
 - (void)handleConnectUpstream:(id)sender
 {
-    var url = [sender tag];
-    if (!url) return;
+    var url = [self upstreamURLForSender:sender];
+    if (!url)
+    {
+        [self setErrorStatus:@"Unable to resolve selected upstream row"];
+        return;
+    }
 
     [_statusLabel setStringValue:@"Connecting to " + url + "..."];
 
@@ -318,8 +332,12 @@
 
 - (void)handleDisconnectUpstream:(id)sender
 {
-    var url = [sender tag];
-    if (!url) return;
+    var url = [self upstreamURLForSender:sender];
+    if (!url)
+    {
+        [self setErrorStatus:@"Unable to resolve selected upstream row"];
+        return;
+    }
 
     var selfRef = self;
     [self confirmDisconnectUpstream:url handler:function()
@@ -356,8 +374,12 @@
 
 - (void)handleRemoveUpstream:(id)sender
 {
-    var url = [sender tag];
-    if (!url) return;
+    var url = [self upstreamURLForSender:sender];
+    if (!url)
+    {
+        [self setErrorStatus:@"Unable to resolve selected upstream row"];
+        return;
+    }
 
     var selfRef = self;
     [self confirmRemoveUpstream:url handler:function()
@@ -466,7 +488,8 @@
         var cellView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 200.0, 28.0)];
         [cellView setBackgroundColor:[CPColor clearColor]];
         
-        var url = _upstreams[row].url;
+        var upstream = _upstreams[row] || {};
+        var isActive = upstream.active ? YES : NO;
         
         var connectBtn = [[CPButton alloc] initWithFrame:CGRectMake(0.0, 2.0, 60.0, 24.0)];
         [connectBtn setTitle:@"Connect"];
@@ -476,6 +499,7 @@
         [connectBtn setTarget:self];
         [connectBtn setAction:@selector(handleConnectUpstream:)];
         [connectBtn setTag:row];
+        [connectBtn setEnabled:!isActive];
         [cellView addSubview:connectBtn];
         
         var disconnectBtn = [[CPButton alloc] initWithFrame:CGRectMake(65.0, 2.0, 75.0, 24.0)];
@@ -486,6 +510,7 @@
         [disconnectBtn setTarget:self];
         [disconnectBtn setAction:@selector(handleDisconnectUpstream:)];
         [disconnectBtn setTag:row];
+        [disconnectBtn setEnabled:isActive];
         [cellView addSubview:disconnectBtn];
         
         var removeBtn = [[CPButton alloc] initWithFrame:CGRectMake(145.0, 2.0, 55.0, 24.0)];
