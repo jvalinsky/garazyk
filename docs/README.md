@@ -15,7 +15,7 @@ For contributor-facing guidance, start with the numbered VitePress sections and 
 
 ## What Lives Here
 
-The documentation tree now has two different roles:
+The documentation tree has two different roles:
 
 | Area | Role |
 | --- | --- |
@@ -35,4 +35,7 @@ Use those when you need a catalog or historical detail that would be too dense f
 ## Repository Links
 
 - [Main Project README](../README)
+- [Build Guide](../BUILD)
+- [Contributing Guide](../CONTRIBUTING)
+- [Documentation and Comment Style Guide](../DOCUMENTATION)
 - [Agent Instructions (AGENTS.md)](../AGENTS)

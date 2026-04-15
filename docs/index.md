@@ -53,6 +53,10 @@ Start with [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui), then [Tut
 
 Read [Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment) with [Config Reference](11-reference/config-reference) and [Email & Verification](06-authentication/email-and-verification).
 
+### Update Contributor Docs
+
+Use the repository [Documentation and Comment Style Guide](../DOCUMENTATION.md), then verify command names against [CLI Reference](11-reference/cli-reference), config keys against [Config Reference](11-reference/config-reference), and test guidance against [Testing Map](11-reference/testing-map).
+
 ## The Main Sections
 
 The numbered sections are the primary contributor journey:
@@ -72,7 +76,7 @@ Some material remains intentionally outside the main newcomer path:
 - [`docs/oauth2/README`](oauth2/README) is the deeper OAuth implementation set.
 - [`docs/security/README`](security/README) is the security and audit collection.
 
-Those directories remain useful, but they are deeper reference or historical material. The contributor-facing guidance now lives in the numbered VitePress sections first.
+Those directories remain useful, but they are deeper reference or historical material. The contributor-facing guidance lives in the numbered VitePress sections first.
 
 ## Reading Style
 
@@ -95,3 +99,4 @@ That is the right mental model for a production codebase.
 - [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui)
 - [Testing Map](11-reference/testing-map)
 - [Troubleshooting](11-reference/troubleshooting)
+- [Documentation and Comment Style Guide](../DOCUMENTATION.md)
