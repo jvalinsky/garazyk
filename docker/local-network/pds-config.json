@@ -63,5 +63,8 @@
   },
 "debug": {
     "skip_plc_operations": true
+  },
+  "auth": {
+    "master_secret": "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe"
   }
 }
