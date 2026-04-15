@@ -1,19 +1,19 @@
 [
   {
-    "hash": "c2eb5bc8b48b232291409d3abe89b6d9702007ed",
-    "short_hash": "c2eb5bc",
-    "author": "Security Bot",
-    "date": "2026-04-14T19:17:51-04:00",
-    "message": "debug(Firehose): add logging for connection state tracking",
-    "files_changed": 2
+    "hash": "6dc82c56067c97be8ace7924b01169cc394d8753",
+    "short_hash": "6dc82c5",
+    "author": "Jack Valinsky",
+    "date": "2026-04-15T07:35:43-04:00",
+    "message": "Merge pull request #4 from jvalinsky/codex/recovery-rebaseline-20260414\n\nRecover full build/testnet matrix and stabilize runtime gates",
+    "files_changed": 0
   },
   {
-    "hash": "35e4560c56517d405f333dbbcccaccc6f93cd7fb",
-    "short_hash": "35e4560",
+    "hash": "be49c1469471084e7f72964b5f2e03725175fb84",
+    "short_hash": "be49c14",
     "author": "Security Bot",
-    "date": "2026-04-14T18:37:20-04:00",
-    "message": "fix(CappuccinoUI): fix formatNumber method calls and remove unsupported table methods\n\n- Change self.formatNumber(...) to [self formatNumber:...] for Objective-J syntax\n- Remove setUsesAlternatingBackgroundColors and setAlternatingRowBackgroundColors\n  (not available in current Cappuccino version)\n- Update debugging docs",
-    "files_changed": 7
+    "date": "2026-04-14T19:04:40-04:00",
+    "message": "fix(CappuccinoUI): remove overlapping titles from dashboard controllers",
+    "files_changed": 3
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",

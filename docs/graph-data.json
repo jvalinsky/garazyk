@@ -3200,6 +3200,50 @@
       "created_at": "2026-04-15T07:28:12.943638-04:00",
       "updated_at": "2026-04-15T07:28:17.540928-04:00",
       "metadata_json": "{\"branch\":\"codex/recovery-rebaseline-20260414\"}"
+    },
+    {
+      "id": 292,
+      "change_id": "f48a8527-c301-4a26-a730-dc17c7df9682",
+      "node_type": "observation",
+      "title": "Rewrite skill now includes doc placement and ObjC header-contract guidance",
+      "description": "Expanded rewrite-dev-docs-comments guidance to route content by doc type and to document Objective-C public contracts at header declarations.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:23:45.874184-04:00",
+      "updated_at": "2026-04-15T10:23:59.583375-04:00",
+      "metadata_json": "{\"branch\":\"codex/rewrite-skill-clarity\"}"
+    },
+    {
+      "id": 293,
+      "change_id": "813e609b-5f00-48da-8ca2-3f3fb648c3f2",
+      "node_type": "action",
+      "title": "Expand scanner rules and enforce docs-only gate policy",
+      "description": "Extended scan_llm_speak.py with .j support and additional phrase families while keeping acceptance policy at zero findings for SKILL.md and references only.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:23:48.455877-04:00",
+      "updated_at": "2026-04-15T10:23:59.589948-04:00",
+      "metadata_json": "{\"branch\":\"codex/rewrite-skill-clarity\"}"
+    },
+    {
+      "id": 294,
+      "change_id": "ff3aa990-794e-4eb6-9ae8-6d9bae98636e",
+      "node_type": "outcome",
+      "title": "Rewrite-skill clarity branch merged and available on main",
+      "description": "Close this outcome only after PR merge; this gates the transition into Cappuccino UI hardening work.",
+      "status": "pending",
+      "created_at": "2026-04-15T10:23:52.368610-04:00",
+      "updated_at": "2026-04-15T10:24:01.724366-04:00",
+      "metadata_json": "{\"branch\":\"codex/rewrite-skill-clarity\"}"
+    },
+    {
+      "id": 295,
+      "change_id": "0ce57b7a-1600-4184-aed7-c01966c7d253",
+      "node_type": "action",
+      "title": "Start Cappuccino UI hardening slice on codex/cappuccino-ui-hardening-1",
+      "description": "After rewrite-skill merge, branch from updated main and execute the first UI hardening slice (warnings/errors + service-ops UX polish) with datetime and Docker/CLI normalization out of scope.",
+      "status": "pending",
+      "created_at": "2026-04-15T10:23:55.291088-04:00",
+      "updated_at": "2026-04-15T10:23:59.592383-04:00",
+      "metadata_json": "{\"branch\":\"codex/rewrite-skill-clarity\"}"
     }
   ],
   "edges": [
@@ -6392,6 +6436,61 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:28:17.563878-04:00"
+    },
+    {
+      "id": 291,
+      "from_node_id": 288,
+      "to_node_id": 292,
+      "from_change_id": "244f501c-7aa4-42c3-8e46-2c943da2c257",
+      "to_change_id": "f48a8527-c301-4a26-a730-dc17c7df9682",
+      "edge_type": "enables",
+      "weight": 1.0,
+      "rationale": "Post-recovery baseline enabled skill-hardening follow-up work.",
+      "created_at": "2026-04-15T10:24:08.762763-04:00"
+    },
+    {
+      "id": 292,
+      "from_node_id": 292,
+      "to_node_id": 293,
+      "from_change_id": "f48a8527-c301-4a26-a730-dc17c7df9682",
+      "to_change_id": "813e609b-5f00-48da-8ca2-3f3fb648c3f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Doc placement and header-contract scope required scanner policy/rule updates.",
+      "created_at": "2026-04-15T10:24:12.579985-04:00"
+    },
+    {
+      "id": 293,
+      "from_node_id": 293,
+      "to_node_id": 294,
+      "from_change_id": "813e609b-5f00-48da-8ca2-3f3fb648c3f2",
+      "to_change_id": "ff3aa990-794e-4eb6-9ae8-6d9bae98636e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Skill update lands only when rewrite-skill PR merges to main.",
+      "created_at": "2026-04-15T10:24:14.572795-04:00"
+    },
+    {
+      "id": 294,
+      "from_node_id": 294,
+      "to_node_id": 295,
+      "from_change_id": "ff3aa990-794e-4eb6-9ae8-6d9bae98636e",
+      "to_change_id": "0ce57b7a-1600-4184-aed7-c01966c7d253",
+      "edge_type": "enables",
+      "weight": 1.0,
+      "rationale": "Cappuccino hardening branch starts only after rewrite-skill merge completes.",
+      "created_at": "2026-04-15T10:24:16.526091-04:00"
+    },
+    {
+      "id": 295,
+      "from_node_id": 295,
+      "to_node_id": 243,
+      "from_change_id": "0ce57b7a-1600-4184-aed7-c01966c7d253",
+      "to_change_id": "a9fb9e7f-6175-46ae-81b6-9533e3074399",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "First UI hardening slice consumes the existing pending warning/error cleanup node.",
+      "created_at": "2026-04-15T10:24:18.584143-04:00"
     }
   ],
   "documents": [
