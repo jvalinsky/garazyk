@@ -1,19 +1,19 @@
 [
   {
-    "hash": "54e15b8d1176ccfa231f8498f9234136d7276bec",
-    "short_hash": "54e15b8",
+    "hash": "cf86bf5f503edb5d392a2a08bcb94dfe54049861",
+    "short_hash": "cf86bf5",
     "author": "Security Bot",
-    "date": "2026-04-15T10:41:15-04:00",
-    "message": "cappuccino: harden ops controllers and resolve UI warning regressions",
-    "files_changed": 7
+    "date": "2026-04-15T10:42:58-04:00",
+    "message": "docs: align contributor docs with current repo",
+    "files_changed": 17
   },
   {
-    "hash": "70c54f3209e69a07f93b44c7ab54c322b255c0f8",
-    "short_hash": "70c54f3",
-    "author": "Security Bot",
-    "date": "2026-04-14T20:09:14-04:00",
-    "message": "fix(docker): add PDS_MASTER_SECRET for signing operations",
-    "files_changed": 2
+    "hash": "6dc82c56067c97be8ace7924b01169cc394d8753",
+    "short_hash": "6dc82c5",
+    "author": "Jack Valinsky",
+    "date": "2026-04-15T07:35:43-04:00",
+    "message": "Merge pull request #4 from jvalinsky/codex/recovery-rebaseline-20260414\n\nRecover full build/testnet matrix and stabilize runtime gates",
+    "files_changed": 0
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",

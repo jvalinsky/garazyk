@@ -3284,9 +3284,9 @@
       "node_type": "observation",
       "title": "Docs audit found stale command and path references",
       "description": "Primary stale references: ATProtoPDS-CLI scheme, ATProtoPDS/Sources HeaderDoc path, Linux setup commands pointing at ./build instead of build-linux, abbreviated Sources/Tests paths, and CLI reference gaps for relay/repl/status aliasing.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-15T10:35:59.182150-04:00",
-      "updated_at": "2026-04-15T10:35:59.182150-04:00",
+      "updated_at": "2026-04-15T10:43:50.697211-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"BUILD.md\",\"CONTRIBUTING.md\",\"AGENTS_QUICKREF.md\",\"DOCUMENTATION.md\",\"docs/01-getting-started/setup.md\",\"docs/01-getting-started/codebase-map.md\",\"docs/11-reference/cli-reference.md\"]}"
     },
     {
@@ -3328,9 +3328,9 @@
       "node_type": "observation",
       "title": "Steering docs also needed current repo alignment",
       "description": "The Kiro steering files still omitted /api/relay, zuk, syrena, Media, Relay, and the nested Auth subdirectories. Updated them so future doc passes start from current structure.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-15T10:40:05.949839-04:00",
-      "updated_at": "2026-04-15T10:40:05.949839-04:00",
+      "updated_at": "2026-04-15T10:43:53.708693-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\".kiro/steering/product.md\",\".kiro/steering/tech.md\",\".kiro/steering/structure.md\"]}"
     },
     {
@@ -3339,9 +3339,9 @@
       "node_type": "outcome",
       "title": "Documentation refresh aligned primary docs with current repo",
       "description": "Updated build/contributor references, setup paths, codebase maps, CLI/API references, testing guide, docs workspace links, VitePress metadata, and Kiro steering docs. Verified with targeted rewrite scan, git diff --check, and VitePress docs build.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-15T10:42:22.199306-04:00",
-      "updated_at": "2026-04-15T10:42:22.199306-04:00",
+      "updated_at": "2026-04-15T10:43:56.783950-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"files\":[\"README.md\",\"BUILD.md\",\"CONTRIBUTING.md\",\"DOCUMENTATION.md\",\"docs\",\".kiro/steering\"]}"
     }
   ],
