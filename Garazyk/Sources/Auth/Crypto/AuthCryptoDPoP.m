@@ -41,11 +41,9 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         portString = [NSString stringWithFormat:@":%ld", (long)port];
     }
 
-    // Canonical form: scheme://host[:port]/path?query (no fragment, trailing slash preserved)
+    // Canonical form: scheme://host[:port]/path (query + fragment excluded)
     NSString *path = components.path ?: @"/";
-    NSString *query = components.query ? [NSString stringWithFormat:@"?%@", components.query] : @"";
-
-    return [NSString stringWithFormat:@"%@://%@%@%@%@", scheme, host, portString, path, query];
+    return [NSString stringWithFormat:@"%@://%@%@%@", scheme, host, portString, path];
 }
 
 + (nullable NSString *)canonicalHTUFromString:(NSString *)urlString {
@@ -78,7 +76,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
     if (parts.count != 3) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
-                                         code:-2
+                                         code:-1
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid DPoP proof format"}];
         }
         return NO;
@@ -219,7 +217,10 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-11
-                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP proof missing required nonce"}];
+                                     userInfo:@{
+                                         NSLocalizedDescriptionKey: @"DPoP proof missing required nonce",
+                                         @"use_dpop_nonce": @YES
+                                     }];
         }
         return NO;
     }
@@ -228,7 +229,10 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-11
-                                     userInfo:@{NSLocalizedDescriptionKey: @"DPoP nonce mismatch"}];
+                                     userInfo:@{
+                                         NSLocalizedDescriptionKey: @"DPoP nonce mismatch",
+                                         @"use_dpop_nonce": @YES
+                                     }];
         }
         return NO;
     }
@@ -238,7 +242,10 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
             if (error) {
                 *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                              code:-11
-                                         userInfo:@{NSLocalizedDescriptionKey: @"DPoP nonce validation failed"}];
+                                         userInfo:@{
+                                             NSLocalizedDescriptionKey: @"DPoP nonce validation failed",
+                                             @"use_dpop_nonce": @YES
+                                         }];
             }
             return NO;
         }
