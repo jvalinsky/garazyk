@@ -126,12 +126,8 @@
         return;
     }
 
-    // Sort by date (oldest first)
-    var sortedLog = [[CPArray alloc] init];
-    var logArray = _operationLog;
-
-    // Sort by createdAt
-    var sorted = logArray.sort(function(a, b) {
+    // Sort by createdAt (oldest first) without mutating original log order.
+    var sorted = _operationLog.slice(0).sort(function(a, b) {
         var dateA = new Date(a.createdAt || 0);
         var dateB = new Date(b.createdAt || 0);
         return dateA - dateB;
