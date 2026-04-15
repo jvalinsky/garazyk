@@ -1069,11 +1069,29 @@
 
 - (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree {
     NSMutableArray<MSTDiffOperation *> *operations = [NSMutableArray array];
-    NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
-    [self diffNode:self.root
-          withNode:oldTree.root
-             cache:cache
-        intoOperations:operations];
+    NSMutableDictionary<NSString *, CID *> *newEntries = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSString *, CID *> *oldEntries = [NSMutableDictionary dictionary];
+    [self collectEntriesFromNode:self.root intoMap:newEntries];
+    [self collectEntriesFromNode:oldTree.root intoMap:oldEntries];
+
+    for (NSString *key in newEntries) {
+        CID *newCID = newEntries[key];
+        CID *oldCID = oldEntries[key];
+        if (!oldCID) {
+            [operations addObject:[MSTDiffOperation addOperationWithKey:key currentCID:newCID]];
+        } else if (![newCID.stringValue isEqualToString:oldCID.stringValue]) {
+            [operations addObject:[MSTDiffOperation updateOperationWithKey:key
+                                                              previousCID:oldCID
+                                                               currentCID:newCID]];
+        }
+    }
+
+    for (NSString *key in oldEntries) {
+        if (!newEntries[key]) {
+            [operations addObject:[MSTDiffOperation deleteOperationWithKey:key
+                                                               previousCID:oldEntries[key]]];
+        }
+    }
 
     // Sort by key for deterministic output
     [operations sortUsingComparator:^NSComparisonResult(MSTDiffOperation *a, MSTDiffOperation *b) {
@@ -1081,6 +1099,26 @@
     }];
 
     return [operations copy];
+}
+
+- (void)collectEntriesFromNode:(nullable MSTNode *)node
+                        intoMap:(NSMutableDictionary<NSString *, CID *> *)entryMap {
+    if (!node) {
+        return;
+    }
+
+    if (node.internalLeft) {
+        [self collectEntriesFromNode:node.internalLeft intoMap:entryMap];
+    }
+
+    for (MSTNodeEntry *entry in node.internalEntries) {
+        if (entry.fullKey.length > 0 && entry.value) {
+            entryMap[entry.fullKey] = entry.value;
+        }
+        if (entry.internalTree) {
+            [self collectEntriesFromNode:entry.internalTree intoMap:entryMap];
+        }
+    }
 }
 
 - (void)diffNode:(nullable MSTNode *)newNode

@@ -824,8 +824,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         }];
     }];
 
-    // com.atproto.repo.putRecord
-    [dispatcher registerComAtprotoRepoPutRecord:^(HttpRequest *request, HttpResponse *response) {
+    XrpcMethodHandler upsertRecordHandler = ^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                        jwtMinter:jwtMinter
@@ -900,7 +899,13 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:resBody];
-    }];
+    };
+
+    // com.atproto.repo.putRecord
+    [dispatcher registerComAtprotoRepoPutRecord:upsertRecordHandler];
+
+    // com.atproto.repo.updateRecord
+    [dispatcher registerComAtprotoRepoUpdateRecord:upsertRecordHandler];
 
     // com.atproto.repo.applyWrites
     [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
