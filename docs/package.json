@@ -1,7 +1,7 @@
 {
   "name": "september-pds-docs",
   "version": "1.0.0",
-  "description": "September PDS Documentation - Comprehensive guide for implementing an ATProto Personal Data Server in Objective-C",
+  "description": "Contributor documentation for the September AT Protocol PDS implementation in Objective-C",
   "type": "module",
   "scripts": {
     "docs:dev": "vitepress dev",
