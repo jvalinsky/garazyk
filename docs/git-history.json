@@ -1,19 +1,19 @@
 [
   {
-    "hash": "ef19a84798e36231affbf94d0b1c37106867048a",
-    "short_hash": "ef19a84",
+    "hash": "54e15b8d1176ccfa231f8498f9234136d7276bec",
+    "short_hash": "54e15b8",
     "author": "Security Bot",
-    "date": "2026-04-15T10:23:15-04:00",
-    "message": "skills: harden rewrite-dev-docs-comments workflow and scanner",
+    "date": "2026-04-15T10:41:15-04:00",
+    "message": "cappuccino: harden ops controllers and resolve UI warning regressions",
     "files_changed": 7
   },
   {
-    "hash": "2ecd65d1d0eb37f1d272d63dd15f5aff74d7af57",
-    "short_hash": "2ecd65d",
+    "hash": "70c54f3209e69a07f93b44c7ab54c322b255c0f8",
+    "short_hash": "70c54f3",
     "author": "Security Bot",
-    "date": "2026-04-14T19:08:35-04:00",
-    "message": "fix(Firehose): use actual port from URL instead of hardcoded 443 for TLS",
-    "files_changed": 1
+    "date": "2026-04-14T20:09:14-04:00",
+    "message": "fix(docker): add PDS_MASTER_SECRET for signing operations",
+    "files_changed": 2
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",

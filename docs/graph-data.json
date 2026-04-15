@@ -2668,9 +2668,9 @@
       "node_type": "action",
       "title": "Fix remaining Cappuccino UI warnings and errors",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-14T18:27:49.531988-04:00",
-      "updated_at": "2026-04-14T18:27:49.531988-04:00",
+      "updated_at": "2026-04-15T10:41:28.355030-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70,\"prompt\":\"Address unused variable warnings (filterLower, sortedLog, valueWidth), investigate formatNumber errors in RelayDashboard, and consider lazy-loading controllers by service profile\"}"
     },
     {
@@ -3240,10 +3240,109 @@
       "node_type": "action",
       "title": "Start Cappuccino UI hardening slice on codex/cappuccino-ui-hardening-1",
       "description": "After rewrite-skill merge, branch from updated main and execute the first UI hardening slice (warnings/errors + service-ops UX polish) with datetime and Docker/CLI normalization out of scope.",
-      "status": "active",
+      "status": "completed",
       "created_at": "2026-04-15T10:23:55.291088-04:00",
-      "updated_at": "2026-04-15T10:30:38.980480-04:00",
+      "updated_at": "2026-04-15T10:41:28.389309-04:00",
       "metadata_json": "{\"branch\":\"codex/rewrite-skill-clarity\"}"
+    },
+    {
+      "id": 296,
+      "change_id": "6402546b-5980-4978-b00a-632ab5a03a7e",
+      "node_type": "goal",
+      "title": "Refresh repository documentation against current implementation",
+      "description": "Audit primary documentation, rewrite stale or low-signal sections, and add crosslinks between related docs while preserving current operational constraints.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:34:02.126751-04:00",
+      "updated_at": "2026-04-15T10:42:13.073142-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"README.md\",\"DOCUMENTATION.md\",\"docs\"]}"
+    },
+    {
+      "id": 297,
+      "change_id": "42b1a3fa-d715-4d02-9f38-1ad0052ef7e2",
+      "node_type": "action",
+      "title": "Audit primary docs and stale references",
+      "description": "Read docs entrypoints, map repository structure and command names, then identify outdated references and missing crosslinks before editing.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:34:08.949910-04:00",
+      "updated_at": "2026-04-15T10:42:16.945316-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"README.md\",\"DOCUMENTATION.md\",\"docs/index.md\",\"docs/README.md\"]}"
+    },
+    {
+      "id": 298,
+      "change_id": "865dc1b2-2446-4331-8b24-5439ff628857",
+      "node_type": "action",
+      "title": "Rewrite docs and add crosslinks",
+      "description": "Patch high-traffic docs with current repository facts, remove stale wording, and link related how-to, reference, architecture, security, and test pages.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:34:14.034817-04:00",
+      "updated_at": "2026-04-15T10:42:13.068805-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"README.md\",\"DOCUMENTATION.md\",\"docs\"]}"
+    },
+    {
+      "id": 299,
+      "change_id": "b0eeabcd-1661-4d38-8792-c7f018cc27fc",
+      "node_type": "observation",
+      "title": "Docs audit found stale command and path references",
+      "description": "Primary stale references: ATProtoPDS-CLI scheme, ATProtoPDS/Sources HeaderDoc path, Linux setup commands pointing at ./build instead of build-linux, abbreviated Sources/Tests paths, and CLI reference gaps for relay/repl/status aliasing.",
+      "status": "pending",
+      "created_at": "2026-04-15T10:35:59.182150-04:00",
+      "updated_at": "2026-04-15T10:35:59.182150-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"BUILD.md\",\"CONTRIBUTING.md\",\"AGENTS_QUICKREF.md\",\"DOCUMENTATION.md\",\"docs/01-getting-started/setup.md\",\"docs/01-getting-started/codebase-map.md\",\"docs/11-reference/cli-reference.md\"]}"
+    },
+    {
+      "id": 300,
+      "change_id": "8fb1e131-9da7-4954-b3d5-937113e8b23e",
+      "node_type": "observation",
+      "title": "Cappuccino UI hardening blockers were compile typo plus service-ops row action misrouting",
+      "description": "PLCDirectoryController had a malformed CGRectMake call that broke Objective-J compilation, and RelayUpstreams row action handlers were using row indexes as URL path segments instead of upstream URLs.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:39:00.533843-04:00",
+      "updated_at": "2026-04-15T10:41:28.231112-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 301,
+      "change_id": "1f9f918a-b9ba-42e5-a0a2-c7db48b85e23",
+      "node_type": "action",
+      "title": "Fix Cappuccino warning/error set and harden relay/appview operation handlers",
+      "description": "Removed unused variables (filterLower, sortedLog, valueWidth), hardened RelayDashboard number formatting, fixed PLCDirectory syntax, corrected RelayUpstreams row-action URL resolution and button enablement, and URL-encoded AppView backfill DID actions.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:39:04.467314-04:00",
+      "updated_at": "2026-04-15T10:41:28.268071-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 302,
+      "change_id": "14369e9f-f4a1-405c-b577-d2bdfe5b71ad",
+      "node_type": "outcome",
+      "title": "Cappuccino hardening slice passes build gates and unblocks UI ops flows",
+      "description": "Verified Cappuccino release build succeeds and macOS gates pass for xcodegen + AllTests scheme build + kaszlak build after the hardening fixes.",
+      "status": "completed",
+      "created_at": "2026-04-15T10:39:07.560788-04:00",
+      "updated_at": "2026-04-15T10:41:28.297441-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 303,
+      "change_id": "168b8ccd-89a5-48ce-b0db-d745cba99ac8",
+      "node_type": "observation",
+      "title": "Steering docs also needed current repo alignment",
+      "description": "The Kiro steering files still omitted /api/relay, zuk, syrena, Media, Relay, and the nested Auth subdirectories. Updated them so future doc passes start from current structure.",
+      "status": "pending",
+      "created_at": "2026-04-15T10:40:05.949839-04:00",
+      "updated_at": "2026-04-15T10:40:05.949839-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\".kiro/steering/product.md\",\".kiro/steering/tech.md\",\".kiro/steering/structure.md\"]}"
+    },
+    {
+      "id": 304,
+      "change_id": "6decc691-f021-4572-aee6-7e665d706b45",
+      "node_type": "outcome",
+      "title": "Documentation refresh aligned primary docs with current repo",
+      "description": "Updated build/contributor references, setup paths, codebase maps, CLI/API references, testing guide, docs workspace links, VitePress metadata, and Kiro steering docs. Verified with targeted rewrite scan, git diff --check, and VitePress docs build.",
+      "status": "pending",
+      "created_at": "2026-04-15T10:42:22.199306-04:00",
+      "updated_at": "2026-04-15T10:42:22.199306-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"files\":[\"README.md\",\"BUILD.md\",\"CONTRIBUTING.md\",\"DOCUMENTATION.md\",\"docs\",\".kiro/steering\"]}"
     }
   ],
   "edges": [
@@ -6491,6 +6590,72 @@
       "weight": 1.0,
       "rationale": "First UI hardening slice consumes the existing pending warning/error cleanup node.",
       "created_at": "2026-04-15T10:24:18.584143-04:00"
+    },
+    {
+      "id": 296,
+      "from_node_id": 296,
+      "to_node_id": 297,
+      "from_change_id": "6402546b-5980-4978-b00a-632ab5a03a7e",
+      "to_change_id": "42b1a3fa-d715-4d02-9f38-1ad0052ef7e2",
+      "edge_type": "requires",
+      "weight": 1.0,
+      "rationale": "The docs refresh depends on first auditing canonical entrypoints and stale references.",
+      "created_at": "2026-04-15T10:34:21.340167-04:00"
+    },
+    {
+      "id": 297,
+      "from_node_id": 297,
+      "to_node_id": 298,
+      "from_change_id": "42b1a3fa-d715-4d02-9f38-1ad0052ef7e2",
+      "to_change_id": "865dc1b2-2446-4331-8b24-5439ff628857",
+      "edge_type": "enables",
+      "weight": 1.0,
+      "rationale": "The audit determines which docs need rewriting and crosslinks.",
+      "created_at": "2026-04-15T10:34:21.378657-04:00"
+    },
+    {
+      "id": 298,
+      "from_node_id": 295,
+      "to_node_id": 300,
+      "from_change_id": "0ce57b7a-1600-4184-aed7-c01966c7d253",
+      "to_change_id": "8fb1e131-9da7-4954-b3d5-937113e8b23e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Started active UI hardening slice with concrete blocker discovery.",
+      "created_at": "2026-04-15T10:41:23.572582-04:00"
+    },
+    {
+      "id": 299,
+      "from_node_id": 300,
+      "to_node_id": 301,
+      "from_change_id": "8fb1e131-9da7-4954-b3d5-937113e8b23e",
+      "to_change_id": "1f9f918a-b9ba-42e5-a0a2-c7db48b85e23",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Observed blockers drove the targeted controller fixes.",
+      "created_at": "2026-04-15T10:41:23.590638-04:00"
+    },
+    {
+      "id": 300,
+      "from_node_id": 301,
+      "to_node_id": 302,
+      "from_change_id": "1f9f918a-b9ba-42e5-a0a2-c7db48b85e23",
+      "to_change_id": "14369e9f-f4a1-405c-b577-d2bdfe5b71ad",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Applying controller fixes restored build/test gates for this slice.",
+      "created_at": "2026-04-15T10:41:23.605585-04:00"
+    },
+    {
+      "id": 301,
+      "from_node_id": 298,
+      "to_node_id": 304,
+      "from_change_id": "865dc1b2-2446-4331-8b24-5439ff628857",
+      "to_change_id": "6decc691-f021-4572-aee6-7e665d706b45",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "The rewrite action produced the final docs refresh outcome.",
+      "created_at": "2026-04-15T10:42:25.859193-04:00"
     }
   ],
   "documents": [
