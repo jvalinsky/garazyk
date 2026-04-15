@@ -3229,9 +3229,9 @@
       "node_type": "outcome",
       "title": "Rewrite-skill clarity branch merged and available on main",
       "description": "Close this outcome only after PR merge; this gates the transition into Cappuccino UI hardening work.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-15T10:23:52.368610-04:00",
-      "updated_at": "2026-04-15T10:24:01.724366-04:00",
+      "updated_at": "2026-04-15T10:30:38.974930-04:00",
       "metadata_json": "{\"branch\":\"codex/rewrite-skill-clarity\"}"
     },
     {
@@ -3240,9 +3240,9 @@
       "node_type": "action",
       "title": "Start Cappuccino UI hardening slice on codex/cappuccino-ui-hardening-1",
       "description": "After rewrite-skill merge, branch from updated main and execute the first UI hardening slice (warnings/errors + service-ops UX polish) with datetime and Docker/CLI normalization out of scope.",
-      "status": "pending",
+      "status": "active",
       "created_at": "2026-04-15T10:23:55.291088-04:00",
-      "updated_at": "2026-04-15T10:23:59.592383-04:00",
+      "updated_at": "2026-04-15T10:30:38.980480-04:00",
       "metadata_json": "{\"branch\":\"codex/rewrite-skill-clarity\"}"
     }
   ],

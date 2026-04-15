@@ -1,19 +1,19 @@
 [
   {
-    "hash": "6dc82c56067c97be8ace7924b01169cc394d8753",
-    "short_hash": "6dc82c5",
-    "author": "Jack Valinsky",
-    "date": "2026-04-15T07:35:43-04:00",
-    "message": "Merge pull request #4 from jvalinsky/codex/recovery-rebaseline-20260414\n\nRecover full build/testnet matrix and stabilize runtime gates",
-    "files_changed": 0
+    "hash": "ef19a84798e36231affbf94d0b1c37106867048a",
+    "short_hash": "ef19a84",
+    "author": "Security Bot",
+    "date": "2026-04-15T10:23:15-04:00",
+    "message": "skills: harden rewrite-dev-docs-comments workflow and scanner",
+    "files_changed": 7
   },
   {
-    "hash": "be49c1469471084e7f72964b5f2e03725175fb84",
-    "short_hash": "be49c14",
+    "hash": "2ecd65d1d0eb37f1d272d63dd15f5aff74d7af57",
+    "short_hash": "2ecd65d",
     "author": "Security Bot",
-    "date": "2026-04-14T19:04:40-04:00",
-    "message": "fix(CappuccinoUI): remove overlapping titles from dashboard controllers",
-    "files_changed": 3
+    "date": "2026-04-14T19:08:35-04:00",
+    "message": "fix(Firehose): use actual port from URL instead of hardcoded 443 for TLS",
+    "files_changed": 1
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",
