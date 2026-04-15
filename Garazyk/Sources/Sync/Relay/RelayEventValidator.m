@@ -47,7 +47,9 @@
 }
 
 - (void)setValidationMode:(RelayValidationMode)mode {
-    self.validationMode = mode;
+    @synchronized (self) {
+        _validationMode = mode;
+    }
 }
 
 #pragma mark - Validation Methods

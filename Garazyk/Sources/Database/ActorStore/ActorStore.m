@@ -222,6 +222,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     [self addColumnIfNeeded:@"records" column:@"value" type:@"BLOB"];
     [self addColumnIfNeeded:@"records" column:@"subject_did" type:@"TEXT"];
     [self addColumnIfNeeded:@"records" column:@"rev" type:@"TEXT"];
+    [self addColumnIfNeeded:@"records" column:@"indexed_at" type:@"DATETIME"];
+    [self addColumnIfNeeded:@"record_tombstones" column:@"indexed_at" type:@"DATETIME"];
+    [self addColumnIfNeeded:@"record_tombstones" column:@"created_at" type:@"DATETIME"];
 
     [self addColumnIfNeeded:@"ipld_blocks" column:@"rev" type:@"TEXT"];
     
@@ -366,7 +369,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         char *backfillErrMsg = NULL;
         int backfillResult = sqlite3_exec(self.db,
                                           "UPDATE record_tombstones "
-                                          "SET rev = COALESCE(rev, created_at) "
+                                          "SET rev = COALESCE(rev, CAST(indexed_at AS TEXT), CAST(created_at AS TEXT)) "
                                           "WHERE rev IS NULL OR rev = ''",
                                           NULL,
                                           NULL,
@@ -1020,9 +1023,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     void (^workBlock)(void) = ^{
         BOOL hasRevFilter = (rev.length > 0);
         NSString *sql = hasRevFilter
-            ? @"SELECT uri, did, collection, rkey, rev, created_at FROM record_tombstones "
+            ? @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones "
               @"WHERE rev > ? ORDER BY rev LIMIT ?"
-            : @"SELECT uri, did, collection, rkey, rev, created_at FROM record_tombstones "
+            : @"SELECT uri, did, collection, rkey, rev, indexed_at FROM record_tombstones "
               @"ORDER BY rev LIMIT ?";
 
         NSError *prepError = nil;
@@ -1298,7 +1301,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
                          rkey:(NSString *)rkey
                            rev:(NSString *)rev
                          error:(NSError **)error {
-    NSString *sql = @"INSERT INTO record_tombstones (uri, did, collection, rkey, rev, created_at) "
+    NSString *sql = @"INSERT INTO record_tombstones (uri, did, collection, rkey, rev, indexed_at) "
                      @"VALUES (?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:error];
     if (!stmt) return NO;

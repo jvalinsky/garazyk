@@ -1,5 +1,6 @@
 #import "Sync/RelayUpstreamManager.h"
 #import "Sync/RelayMetrics.h"
+#import "Debug/PDSLogger.h"
 
 @interface RelayUpstreamManager () <RelayClientDelegate>
 
