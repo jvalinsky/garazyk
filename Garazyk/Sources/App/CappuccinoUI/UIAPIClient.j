@@ -212,15 +212,49 @@
 // Convenience method for simple fetch
 - (void)fetch:(CPString)method path:(CPString)path params:(id)params completion:(Function)completion
 {
-    var group = @"explore";
-    // Auto-detect group based on path
-    if ([path hasPrefix:@"/_"] || [path hasPrefix:@"/did:"]) {
+    var requestPath = path || @"",
+        group = @"explore",
+        httpMethod = String(method || "GET").toUpperCase(),
+        relayPrefix = @"/api/relay",
+        queryParams = nil,
+        bodyObject = nil;
+
+    // Auto-detect endpoint group based on path.
+    if ([requestPath hasPrefix:@"/_"] || [requestPath hasPrefix:@"/did:"]) {
         group = @"plc";
-    } else if ([path hasPrefix:@"/api/relay"]) {
+    } else if ([requestPath hasPrefix:relayPrefix]) {
         group = @"relay";
+
+        // Allow callers to pass fully-qualified relay API paths.
+        requestPath = [requestPath substringFromIndex:[relayPrefix length]];
+        if (!requestPath || requestPath.length === 0)
+            requestPath = @"/";
     }
 
-    [self getJSONWithPath:path endpointGroup:group queryParams:params completion:completion];
+    if (httpMethod === "GET" || httpMethod === "DELETE")
+        queryParams = params;
+    else
+        bodyObject = params;
+
+    [self requestJSONWithPath:requestPath
+                endpointGroup:group
+                       method:httpMethod
+                  queryParams:queryParams
+                   bodyObject:bodyObject
+                   completion:function(statusCode, payload, errorMessage)
+                   {
+                       if (!completion)
+                           return;
+
+                       if (errorMessage || statusCode < 200 || statusCode >= 300)
+                       {
+                           var message = errorMessage || ("HTTP " + statusCode);
+                           completion(nil, {localizedDescription: message, statusCode: statusCode, payload: payload});
+                           return;
+                       }
+
+                       completion(payload, nil);
+                   }];
 }
 
 // Fetch raw text (for Prometheus metrics)
