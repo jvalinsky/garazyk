@@ -23,6 +23,7 @@
 
 #import <Foundation/Foundation.h>
 #import "AppViewTypes.h"
+#import "Database/PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -33,10 +34,10 @@ extern NSString * const AppViewDatabaseErrorDomain;
 
 /*!
  @class AppViewDatabase
-
+ 
  @abstract Manages the AppView SQLite database.
  */
-@interface AppViewDatabase : NSObject
+@interface AppViewDatabase : NSObject <PDSQueryDatabase>
 
 /*!
  @method initWithPath:error:
@@ -286,6 +287,29 @@ extern NSString * const AppViewDatabaseErrorDomain;
                     rawRecord:(NSData *)rawRecord
               validationError:(NSString *)validationError
                         error:(NSError **)error;
+
+/*!
+ @method saveRecordWithURI:did:collection:rkey:cid:value:subjectDid:error:
+ @abstract Helper for indexers to materialze records.
+ */
+- (BOOL)saveRecordWithURI:(NSString *)uri
+                     did:(NSString *)did
+              collection:(NSString *)collection
+                    rkey:(NSString *)rkey
+                     cid:(NSString *)cid
+                   value:(nullable NSString *)value
+              subjectDid:(nullable NSString *)subjectDid
+                   error:(NSError **)error;
+
+/*!
+ @method saveBlockWithCid:repoDid:blockData:contentType:error:
+ @abstract Helper for indexers to materialize blocks.
+ */
+- (BOOL)saveBlockWithCid:(NSData *)cid
+                repoDid:(NSString *)repoDid
+              blockData:(NSData *)blockData
+            contentType:(nullable NSString *)contentType
+                  error:(NSError **)error;
 
 #pragma mark - Lifecycle
 
