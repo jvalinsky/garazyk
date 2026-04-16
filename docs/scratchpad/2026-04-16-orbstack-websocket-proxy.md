@@ -104,13 +104,14 @@ curl -s https://local-relay.local-network.orb.local/xrpc/com.atproto.sync.getRep
 | `app.bsky.actor.getProfile` | InvalidRequest | Needs params |
 | `app.bsky.feed.getTimeline` | AuthRequired | ✓ Protected |
 
-### Relay (port 2584)
+### Relay (port 2584) - UPDATED 2026-04-16
 | Endpoint | Status | Notes |
 |----------|--------|-------|
-| `com.atproto.sync.listRepos` | Not Found | **MISSING** |
-| `com.atproto.sync.getHead` | Not Found | **MISSING** |
-| `com.atproto.sync.subscribeRepos` | Not Found | **MISSING** |
-| `com.atproto.sync.getRepo` | Not Found | **MISSING** |
+| `com.atproto.sync.listRepos` | OK | ✓ Works (returns [] when no upstream data) |
+| `com.atproto.sync.getHead` | OK | ✓ Works |
+| `com.atproto.sync.getRepo` | OK | ✓ Works |
+| `com.atproto.sync.subscribeRepos` | 101 localhost | ✓ WebSocket works on localhost |
+| `com.atproto.sync.subscribeRepos` | 404 OrbStack | OrbStack proxy issue (not our code) |
 | `api/relay/health` | OK | ✓ Works |
 | `api/relay/upstreams` | OK | ✓ Works |
 | `api/relay/metrics` | OK | ✓ Works |
@@ -129,10 +130,33 @@ curl -s https://local-relay.local-network.orb.local/xrpc/com.atproto.sync.getRep
 
 ## Implications for Polling Fallback
 
-The Relay service does NOT expose:
-- `com.atproto.sync.listRepos` 
-- `com.atproto.sync.getRepo`
+The Relay NOW exposes:
+- `com.atproto.sync.listRepos` ✓
+- `com.atproto.sync.getHead` ✓
+- `com.atproto.sync.getRepo` ✓
+- `com.atproto.sync.subscribeRepos` WebSocket ✓
 
-The PDS DOES expose these. For the UI Events tab to work, the UI should poll from PDS, not Relay, when the user is viewing the relay service.
+The polling fallback in `RelayEventsController.j` can now use the relay endpoint directly.
 
-Current `RelayEventsController.j` polls `window.location.host` which would be the relay if loaded from relay UI. This needs to be configurable or the UI needs to be served from PDS for event viewing to work.
+---
+
+## AppView XRPC Gaps (Next Phase)
+
+AppView is missing all `app.bsky.*` endpoints. Required endpoints per ATProto spec:
+
+| Priority | Endpoint | Description |
+|----------|----------|-------------|
+| P0 | `app.bsky.feed.getTimeline` | Authenticated user's home feed |
+| P0 | `app.bsky.feed.getAuthorFeed` | Posts by a given account |
+| P0 | `app.bsky.actor.getProfile` | Profile for an account |
+| P0 | `app.bsky.notification.listNotifications` | User's notifications |
+| P1 | `app.bsky.feed.getPostThread` | Thread view for a post |
+| P1 | `app.bsky.graph.getFollows` | Accounts a user follows |
+| P1 | `app.bsky.graph.getFollowers` | Accounts following a user |
+| P2 | `app.bsky.feed.getLikes` | Likes on a post |
+| P2 | `app.bsky.actor.getSuggestions` | Suggested accounts |
+
+Implementation approach:
+1. Create AppViewXrpcRoutePack similar to RelayXrpcRoutePack
+2. Wire up data store (already exists - AppViewDatabase)
+3. Register endpoints at `/xrpc/` path
