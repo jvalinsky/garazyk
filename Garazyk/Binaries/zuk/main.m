@@ -18,11 +18,13 @@
 #import "Sync/RelayAPIHandler.h"
 #import "Sync/RelayEventBuffer.h"
 #import "Sync/RelayDownstreamHandler.h"
+#import "Sync/RelayRepoStateManager.h"
 #import "Sync/SubscribeReposHandler.h"
 #import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/RelayXrpcRoutePack.h"
 #import "Network/PDSNetworkTransport.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
@@ -293,6 +295,10 @@ int main(int argc, const char * argv[]) {
             subscribeReposHandler:subscribeReposHandler];
         downstreamHandler.metrics = metrics;
 
+        // Initialize repo state manager for XRPC queries
+        RelayRepoStateManager *repoStateManager = [[RelayRepoStateManager alloc] init];
+        downstreamHandler.repoStateManager = repoStateManager;
+
         // Initialize upstream manager with configured upstreams
         RelayUpstreamManager *upstreamManager = [[RelayUpstreamManager alloc] initWithInitialURLs:upstreamURLs];
         upstreamManager.delegate = downstreamHandler;
@@ -389,6 +395,12 @@ int main(int argc, const char * argv[]) {
             }
             [strongHandler acceptUpgradedConnection:connection request:request];
         }];
+
+        // Register XRPC sync endpoints (listRepos, getHead, getRepo)
+        RelayXrpcRoutePack *xrpcRoutePack = [[RelayXrpcRoutePack alloc]
+            initWithRepoStateManager:repoStateManager
+               subscribeReposHandler:subscribeReposHandler];
+        [xrpcRoutePack registerRoutesWithServer:server];
 
         // Start server
         NSError *startError = nil;
