@@ -1,5 +1,13 @@
 [
   {
+    "hash": "scratchpad-mo0wxi1u",
+    "short_hash": "scratchpad",
+    "author": "Investigation",
+    "date": "2026-04-16-04:00",
+    "message": "scratchpad: OrbStack WebSocket proxy investigation - polling fallback as solution",
+    "files_changed": 1
+  },
+  {
     "hash": "9ca665285711e180f28a91da818b083c5b60d0d2",
     "short_hash": "9ca6652",
     "author": "Security Bot",
