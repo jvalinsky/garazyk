@@ -409,6 +409,12 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [cappuccinoUIHandler handleRequest:req response:resp];
     }];
 
+    [self.httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *resp) {
+        resp.statusCode = HttpStatusNoContent;
+        resp.contentType = @"image/x-icon";
+        [resp setBodyData:[NSData data]];
+    }];
+
     // Objective-J service UI at root
     [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
         [cappuccinoUIHandler handleRequest:req response:resp];
