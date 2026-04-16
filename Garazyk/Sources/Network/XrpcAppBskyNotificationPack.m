@@ -12,7 +12,7 @@
 @implementation XrpcAppBskyNotificationPack
 
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                              appViewDatabase:(PDSDatabase *)appViewDatabase
+                              appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                     jwtMinter:(JWTMinter *)jwtMinter
                               adminController:(id<PDSAdminController>)adminController {
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
@@ -77,7 +77,7 @@
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(PDSDatabase *)appViewDatabase
+                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController {
 

@@ -1,4 +1,10 @@
 #import "Auth/OAuth2Handler.h"
+#import "Auth/OAuth2.h"
+#import "Auth/Session.h"
+#import "Auth/CryptoUtils.h"
+#import "Auth/PDSReplayCache.h"
+#import "Auth/PDSNonceManager.h"
+#import "Auth/OAuthServerMetadata.h"
 #import "Database/PDSDatabase.h"
 #import "Core/NSDateFormatter+ATProto.h"
 

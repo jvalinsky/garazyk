@@ -17,7 +17,7 @@
 @implementation XrpcAppBskyFeedPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(PDSDatabase *)appViewDatabase
+                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController {
 
