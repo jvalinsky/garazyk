@@ -88,8 +88,10 @@
 
   [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher];
   [XrpcAppBskyVideoPack registerWithDispatcher:dispatcher
-                                     jwtMinter:jwtMinter
-                               adminController:adminController];
+                                serviceDatabases:serviceDatabases
+                                    appViewDatabase:appViewDatabase
+                                         jwtMinter:jwtMinter
+                                   adminController:adminController];
   [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
   [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher];
