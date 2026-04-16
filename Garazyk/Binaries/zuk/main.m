@@ -341,6 +341,14 @@ int main(int argc, const char * argv[]) {
                       [cappuccinoUIHandler handleRequest:request response:response];
                   }];
 
+        [server addRoute:@"GET"
+                    path:@"/favicon.ico"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     response.statusCode = HttpStatusNoContent;
+                     response.contentType = @"image/x-icon";
+                     [response setBodyData:[NSData data]];
+                 }];
+
         // Register relay API endpoints
         [server addRoute:@"GET"
                     path:@"/api/relay/metrics"

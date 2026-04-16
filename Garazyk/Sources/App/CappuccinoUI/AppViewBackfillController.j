@@ -736,7 +736,10 @@
         }
         else
         {
-            [_resultTextView setString:@"Error: Failed to retry " + did + " (HTTP " + statusCode + ")"];
+            var payload = nil;
+            try { payload = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
+            var errorMessage = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
+            [_resultTextView setString:@"Error: Failed to retry " + did + " (" + errorMessage + ")"];
         }
     };
 
@@ -787,7 +790,10 @@
         }
         else
         {
-            [_resultTextView setString:@"Error: Failed to cancel " + did + " (HTTP " + statusCode + ")"];
+            var payload = nil;
+            try { payload = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
+            var errorMessage = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
+            [_resultTextView setString:@"Error: Failed to cancel " + did + " (" + errorMessage + ")"];
         }
     };
 
@@ -820,13 +826,19 @@
             try
             {
                 var payload = JSON.parse(xhr.responseText);
-                _queueData = payload.repos || [];
+                _queueData = payload.entries || payload.repos || [];
                 [_queueTable reloadData];
             }
             catch (e)
             {
                 _queueData = [];
+                [_queueTable reloadData];
             }
+        }
+        else
+        {
+            _queueData = [];
+            [_queueTable reloadData];
         }
     };
 
@@ -868,9 +880,27 @@
         if ([identifier isEqual:@"queue_status"])
             return repo.status || "-";
         if ([identifier isEqual:@"queue_error"])
-            return repo.error || "-";
+            return repo.last_error || repo.error || "-";
     }
     return @"";
+}
+
+- (void)tableViewSelectionDidChange:(CPNotification)notification
+{
+    if ([notification object] !== _queueTable)
+        return;
+
+    var selectedRow = [_queueTable selectedRow];
+    if (selectedRow < 0 || selectedRow >= _queueData.length)
+    {
+        [_selectedRepoLabel setStringValue:@""];
+        return;
+    }
+
+    var repo = _queueData[selectedRow] || {};
+    var did = repo.did || @"";
+    var status = repo.status || @"unknown";
+    [_selectedRepoLabel setStringValue:@"Selected: " + did + " (" + status + ")"];
 }
 
 #pragma mark - Responsive Layout
