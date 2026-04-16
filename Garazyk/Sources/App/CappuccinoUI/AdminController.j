@@ -83,6 +83,7 @@
         return _rootView;
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 900.0, 28.0)];
     [title setStringValue:@"Admin"];
@@ -92,6 +93,7 @@
     [title setFont:[CPFont boldSystemFontOfSize:20.0]];
 
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1038.0, 20.0)];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -141,6 +143,7 @@
     [openModerationButton setAction:@selector(handleOpenModerationPanel:)];
 
     _tabView = [[CPTabView alloc] initWithFrame:CGRectMake(20.0, 104.0, 1040.0, 576.0)];
+    [_tabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_tabView setDelegate:self];
     [self setUpAdminTabs];
 
@@ -167,6 +170,7 @@
 - (void)setUpAdminTabs
 {
     var overviewTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 530.0)];
+    [overviewTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var refreshOverviewButton = [[CPButton alloc] initWithFrame:CGRectMake(10.0, 8.0, 140.0, 28.0)];
     [refreshOverviewButton setTitle:@"Refresh Overview"];
     [refreshOverviewButton setTarget:self];
@@ -177,6 +181,7 @@
     [self addTabItemWithIdentifier:@"overview" label:@"Overview" contentView:overviewTab];
 
     var accountsTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 530.0)];
+    [accountsTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var accountsSearchLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 52.0, 18.0)];
     [accountsSearchLabel setStringValue:@"Search:"];
     [accountsSearchLabel setEditable:NO];
@@ -221,8 +226,10 @@
     [[accountsDidColumn headerView] setStringValue:@"DID"];
     [accountsDidColumn setWidth:220.0];
     [_accountsTable addTableColumn:accountsDidColumn];
+    [_accountsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var accountsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 40.0, 390.0, 480.0)];
+    [accountsScroll setAutoresizingMask:CPViewMaxXMargin | CPViewHeightSizable];
     [accountsScroll setHasVerticalScroller:YES];
     [accountsScroll setAutohidesScrollers:YES];
     [accountsScroll setDocumentView:_accountsTable];
@@ -254,6 +261,7 @@
     [self addTabItemWithIdentifier:@"accounts" label:@"Accounts" contentView:accountsTab];
 
     var reportsTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 530.0)];
+    [reportsTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var reportsStatusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 46.0, 18.0)];
     [reportsStatusLabel setStringValue:@"Status:"];
     [reportsStatusLabel setEditable:NO];
@@ -313,8 +321,10 @@
     [[reportsSubjectColumn headerView] setStringValue:@"Subject"];
     [reportsSubjectColumn setWidth:175.0];
     [_reportsTable addTableColumn:reportsSubjectColumn];
+    [_reportsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var reportsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 40.0, 430.0, 480.0)];
+    [reportsScroll setAutoresizingMask:CPViewMaxXMargin | CPViewHeightSizable];
     [reportsScroll setHasVerticalScroller:YES];
     [reportsScroll setAutohidesScrollers:YES];
     [reportsScroll setDocumentView:_reportsTable];
@@ -351,6 +361,7 @@
     [self addTabItemWithIdentifier:@"reports" label:@"Reports" contentView:reportsTab];
 
     var systemTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 530.0)];
+    [systemTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var refreshSystemButton = [[CPButton alloc] initWithFrame:CGRectMake(10.0, 8.0, 126.0, 28.0)];
     [refreshSystemButton setTitle:@"Refresh System"];
     [refreshSystemButton setTarget:self];
@@ -376,6 +387,7 @@
     [self addTabItemWithIdentifier:@"system" label:@"System" contentView:systemTab];
 
     var invitesTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 530.0)];
+    [invitesTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var inviteForLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 72.0, 18.0)];
     [inviteForLabel setStringValue:@"forAccount:"];
     [inviteForLabel setEditable:NO];
@@ -446,8 +458,10 @@
     [[inviteCreatedAtColumn headerView] setStringValue:@"Created At"];
     [inviteCreatedAtColumn setWidth:190.0];
     [_invitesTable addTableColumn:inviteCreatedAtColumn];
+    [_invitesTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var invitesScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 40.0, 1000.0, 340.0)];
+    [invitesScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [invitesScroll setHasVerticalScroller:YES];
     [invitesScroll setAutohidesScrollers:YES];
     [invitesScroll setDocumentView:_invitesTable];
@@ -458,6 +472,7 @@
     [self addTabItemWithIdentifier:@"invites" label:@"Invite Codes" contentView:invitesTab];
 
     var moderationTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 530.0)];
+    [moderationTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var moderationLoadButton = [[CPButton alloc] initWithFrame:CGRectMake(10.0, 8.0, 104.0, 28.0)];
     [moderationLoadButton setTitle:@"Load Accounts"];
     [moderationLoadButton setTarget:self];
@@ -496,8 +511,10 @@
     [[moderationStatusColumn headerView] setStringValue:@"Status"];
     [moderationStatusColumn setWidth:220.0];
     [_moderationTable addTableColumn:moderationStatusColumn];
+    [_moderationTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var moderationScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 40.0, 1000.0, 340.0)];
+    [moderationScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [moderationScroll setHasVerticalScroller:YES];
     [moderationScroll setAutohidesScrollers:YES];
     [moderationScroll setDocumentView:_moderationTable];
@@ -537,12 +554,14 @@
 - (CPTextView)buildReadOnlyTextViewWithFrame:(CGRect)frame inView:(CPView)parent
 {
     var textView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, frame.size.width, frame.size.height)];
+    [textView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [textView setEditable:NO];
     [textView setSelectable:YES];
     [textView setString:@""];
     [textView setFont:[CPFont systemFontOfSize:12.0]];
 
     var scroll = [[CPScrollView alloc] initWithFrame:frame];
+    [scroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [scroll setHasVerticalScroller:YES];
     [scroll setAutohidesScrollers:YES];
     [scroll setDocumentView:textView];

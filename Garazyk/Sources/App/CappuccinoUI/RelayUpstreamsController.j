@@ -44,6 +44,7 @@
         return _rootView;
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 400.0, 28.0)];
     [title setStringValue:@"Upstream Connections"];
@@ -53,6 +54,7 @@
     [title setFont:[CPFont boldSystemFontOfSize:20.0]];
 
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1040.0, 20.0)];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -139,6 +141,7 @@
 
     // Create table
     _upstreamsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1040.0, 540.0)];
+    [_upstreamsTable setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_upstreamsTable setDelegate:self];
     [_upstreamsTable setDataSource:self];
     // setUsesAlternatingBackgroundColors: not available in current Cappuccino
@@ -169,9 +172,11 @@
     [[actionsColumn headerView] setStringValue:@"Actions"];
     [actionsColumn setWidth:200.0];
     [_upstreamsTable addTableColumn:actionsColumn];
+    [_upstreamsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     // Scroll view
     var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 130.0, 1040.0, 550.0)];
+    [scrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [scrollView setHasVerticalScroller:YES];
     [scrollView setAutohidesScrollers:YES];
     [scrollView setDocumentView:_upstreamsTable];
