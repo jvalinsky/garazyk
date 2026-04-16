@@ -14,6 +14,31 @@
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
 
+static NSString *AppViewAdminExtractRepoDID(NSString *path, NSString *suffix) {
+    NSString *prefix = @"/admin/backfill/repos/";
+    if (![path hasPrefix:prefix]) {
+        return nil;
+    }
+
+    NSString *remaining = [path substringFromIndex:prefix.length];
+    if (suffix.length > 0) {
+        if (![remaining hasSuffix:suffix] || remaining.length <= suffix.length) {
+            return nil;
+        }
+        remaining = [remaining substringToIndex:remaining.length - suffix.length];
+    }
+
+    if ([remaining hasSuffix:@"/"] && remaining.length > 1) {
+        remaining = [remaining substringToIndex:remaining.length - 1];
+    }
+    if (remaining.length == 0) {
+        return nil;
+    }
+
+    NSString *decoded = [remaining stringByRemovingPercentEncoding];
+    return decoded.length > 0 ? decoded : remaining;
+}
+
 @implementation AppViewAdminRoutePack
 
 + (void)registerWithServer:(HttpServer *)server
@@ -136,11 +161,7 @@
              handler:^(HttpRequest *request, HttpResponse *response) {
                  if (![self _validateAdminToken:request secret:adminSecret response:response]) return;
 
-                 NSString *path = request.path;
-                 NSString *did = nil;
-                 if ([path hasPrefix:@"/admin/backfill/repos/"]) {
-                     did = [path substringFromIndex:@"/admin/backfill/repos/".length];
-                 }
+                 NSString *did = AppViewAdminExtractRepoDID(request.path ?: @"", @"");
 
                  if (!did || did.length == 0) {
                      response.statusCode = 400;
@@ -163,15 +184,7 @@
              handler:^(HttpRequest *request, HttpResponse *response) {
                  if (![self _validateAdminToken:request secret:adminSecret response:response]) return;
 
-                 NSString *path = request.path;
-                 NSString *did = nil;
-                 if ([path hasPrefix:@"/admin/backfill/repos/"]) {
-                     NSRange slashRange = [path rangeOfString:@"/retry"];
-                     if (slashRange.location != NSNotFound) {
-                         NSString *afterRepos = [path substringFromIndex:@"/admin/backfill/repos/".length];
-                         did = [afterRepos substringToIndex:slashRange.location - @"/admin/backfill/repos/".length];
-                     }
-                 }
+                 NSString *did = AppViewAdminExtractRepoDID(request.path ?: @"", @"/retry");
 
                  if (!did || did.length == 0) {
                      response.statusCode = 400;
@@ -194,15 +207,7 @@
              handler:^(HttpRequest *request, HttpResponse *response) {
                  if (![self _validateAdminToken:request secret:adminSecret response:response]) return;
 
-                 NSString *path = request.path;
-                 NSString *did = nil;
-                 if ([path hasPrefix:@"/admin/backfill/repos/"]) {
-                     NSRange slashRange = [path rangeOfString:@"/cancel"];
-                     if (slashRange.location != NSNotFound) {
-                         NSString *afterRepos = [path substringFromIndex:@"/admin/backfill/repos/".length];
-                         did = [afterRepos substringToIndex:slashRange.location - @"/admin/backfill/repos/".length];
-                     }
-                 }
+                 NSString *did = AppViewAdminExtractRepoDID(request.path ?: @"", @"/cancel");
 
                  if (!did || did.length == 0) {
                      response.statusCode = 400;
