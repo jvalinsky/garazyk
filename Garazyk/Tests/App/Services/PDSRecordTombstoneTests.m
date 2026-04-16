@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "App/Services/PDSRecordService.h"
+#import "Services/PDS/PDSRecordService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 

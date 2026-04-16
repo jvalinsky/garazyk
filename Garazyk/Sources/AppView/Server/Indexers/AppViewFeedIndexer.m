@@ -4,9 +4,9 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/Indexers/AppViewFeedIndexer.h"
-#import "AppViewServer/AppViewDatabase.h"
-#import "AppViewServer/Ingest/AppViewIngestEngine.h"
+#import "AppView/Server/Indexers/AppViewFeedIndexer.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Debug/PDSLogger.h"
 
 static NSSet<NSString *> *feedCollections(void) {

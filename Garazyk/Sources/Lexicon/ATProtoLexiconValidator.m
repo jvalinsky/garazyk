@@ -494,11 +494,7 @@ static NSRegularExpression *sLanguageTagRegex;
 }
 
 - (BOOL)validateDatetimeFormat:(NSString *)str {
-    // Simplified ISO 8601 check: YYYY-MM-DDTHH:MM:SS(.mmm)(Z|+HH:MM|-HH:MM)
-    // Full validation would use NSDateFormatter
-    if (str.length < 19) return NO; // Minimum: "2024-01-01T00:00:00"
-    if ([str rangeOfString:@"T"].location == NSNotFound) return NO;
-    return [NSDateFormatter atproto_dateFromString:str] != nil;
+    return [ATProtoValidator validateDatetime:str error:nil];
 }
 
 #pragma mark - Integer Validation

@@ -11,7 +11,7 @@
 #import "Network/HttpServer.h"
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Auth/JWT.h"
 #import <sys/socket.h>

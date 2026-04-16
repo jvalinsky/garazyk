@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayClient.h"
-#import "Sync/Firehose.h"
+#import "Sync/Relay/RelayClient.h"
+#import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
 
 NS_ASSUME_NONNULL_BEGIN

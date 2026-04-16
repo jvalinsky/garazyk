@@ -11,7 +11,7 @@
  */
 
 #import "PDSAdminController.h"
-#import "Services/PDSAdminService.h"
+#import "Services/Core/PDSAdminService.h"
 
 @interface PDSAdminController ()
 @property (nonatomic, strong, readwrite) id<PDSAdminService> adminService;
