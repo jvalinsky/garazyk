@@ -3504,9 +3504,9 @@
       "node_type": "goal",
       "title": "Relay WebSocket robustness for OrbStack HTTPS",
       "description": null,
-      "status": "in_progress",
+      "status": "completed",
       "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T00:20:00.000000-04:00",
+      "updated_at": "2026-04-16T03:25:00.000000-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90}"
     },
     {
@@ -3526,10 +3526,10 @@
       "node_type": "action",
       "title": "Investigate OrbStack proxy WebSocket upgrade handling",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T00:20:00.000000-04:00",
-      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":70}"
+      "updated_at": "2026-04-16T03:25:00.000000-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":85,\"files\":[],\"notes\":\"OrbStack HTTPS proxy does not forward WebSocket upgrade headers to Docker containers. localhost:2584 returns 101, but OrbStack HTTPS hostname returns 404. This is an OrbStack networking configuration issue, not a codebase bug. Polling fallback is the correct solution.\"}"
     },
     {
       "id": 322,
@@ -3537,10 +3537,10 @@
       "node_type": "outcome",
       "title": "Firehose works over OrbStack HTTPS via polling fallback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T00:20:00.000000-04:00",
-      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90}"
+      "updated_at": "2026-04-16T03:25:00.000000-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/RelayEventsController.j\"]}"
     }
   ],
   "edges": [
