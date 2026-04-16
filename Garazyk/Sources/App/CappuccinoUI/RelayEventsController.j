@@ -31,9 +31,13 @@
     CPString _currentRepoFilter;
     BOOL _isPaused;
     BOOL _isConnected;
+    BOOL _isPolling;
     id _webSocket;
+    id _pollTimer;
+    CPString _pollCursor;
     int _maxEvents;
     id _selectedEvent;
+    BOOL _wsErrorLogged;
 }
 
 - (id)initWithSessionState:(SessionState)sessionState apiClient:(UIAPIClient)apiClient
@@ -49,9 +53,13 @@
         _currentRepoFilter = @"";
         _isPaused = NO;
         _isConnected = NO;
+        _isPolling = NO;
         _webSocket = nil;
+        _pollTimer = nil;
+        _pollCursor = nil;
         _maxEvents = 500;
         _selectedEvent = nil;
+        _wsErrorLogged = NO;
     }
     return self;
 }
@@ -262,6 +270,9 @@
         _webSocket.onopen = function()
         {
             _isConnected = YES;
+            _isPolling = NO;
+            [self stopPolling];
+            _wsErrorLogged = NO;
             [_statusLabel setStringValue:@"Connected (real-time)"];
             [_connectButton setTitle:@"Disconnect"];
             [_pauseButton setEnabled:YES];
@@ -288,14 +299,27 @@
         {
             _isConnected = NO;
             _webSocket = nil;
-            [_statusLabel setStringValue:@"Disconnected (code: " + event.code + ")"];
+            if (!_isPolling)
+            {
+                [_statusLabel setStringValue:@"Disconnected (code: " + event.code + ") - retrying..."];
+                [self startPollingFallback];
+            }
+            else
+            {
+                [_statusLabel setStringValue:@"Disconnected (code: " + event.code + ")"];
+            }
             [_connectButton setTitle:@"Connect"];
             [_pauseButton setEnabled:NO];
         };
 
         _webSocket.onerror = function(error)
         {
-            [_statusLabel setStringValue:@"WebSocket error"];
+            if (!_wsErrorLogged)
+            {
+                [_statusLabel setStringValue:@"WebSocket error - falling back to polling"];
+                _wsErrorLogged = YES;
+            }
+            [self startPollingFallback];
         };
     }
     catch (e)
@@ -311,10 +335,88 @@
         _webSocket.close();
         _webSocket = nil;
     }
+    [self stopPolling];
     _isConnected = NO;
+    _isPolling = NO;
+    _wsErrorLogged = NO;
     [_connectButton setTitle:@"Connect"];
     [_pauseButton setEnabled:NO];
     [_statusLabel setStringValue:@"Disconnected"];
+}
+
+#pragma mark - Polling Fallback
+
+- (void)startPollingFallback
+{
+    if (_isPolling)
+        return;
+
+    _isPolling = YES;
+    _pollCursor = nil;
+    [_statusLabel setStringValue:@"Polling (fallback mode)"];
+    [_pauseButton setEnabled:YES];
+
+    [self pollOnce];
+
+    var self = this;
+    _pollTimer = setInterval(function() { [self pollOnce]; }, 5000);
+}
+
+- (void)stopPolling
+{
+    if (_pollTimer)
+    {
+        clearInterval(_pollTimer);
+        _pollTimer = nil;
+    }
+    _isPolling = NO;
+}
+
+- (void)pollOnce
+{
+    if (!_isPolling || _isPaused)
+        return;
+
+    var protocol = window.location.protocol;
+    var host = window.location.host;
+    var url = protocol + "//" + host + "/xrpc/com.atproto.sync.getRepo?limit=100";
+    if (_pollCursor)
+        url += "&cursor=" + encodeURIComponent(_pollCursor);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.setRequestHeader("Accept", "application/json");
+
+    var self = this;
+    xhr.onload = function()
+    {
+        if (xhr.status === 200)
+        {
+            try
+            {
+                var data = JSON.parse(xhr.responseText);
+                if (data.repos && data.repos.length > 0)
+                {
+                    for (var i = 0; i < data.repos.length; i++)
+                    {
+                        var repo = data.repos[i];
+                        [self addEvent:{type: "commit", repo: repo.did, seq: repo.rev, ops: [], summary: "repo: " + repo.did.substring(0, 12)}];
+                    }
+                    _pollCursor = data.cursor;
+                }
+                else if (data.cursor)
+                {
+                    _pollCursor = data.cursor;
+                }
+            }
+            catch (e)
+            {
+                // Ignore parse errors
+            }
+        }
+    };
+
+    xhr.send();
 }
 
 - (void)dealloc
@@ -454,7 +556,14 @@
 {
     _isPaused = !_isPaused;
     [_pauseButton setTitle:_isPaused ? @"Resume" : @"Pause"];
-    [_statusLabel setStringValue:_isConnected ? (_isPaused ? @"Paused" : @"Connected (real-time)") : @"Disconnected"];
+    if (_isPaused)
+        [_statusLabel setStringValue:@"Paused"];
+    else if (_isPolling)
+        [_statusLabel setStringValue:@"Polling (fallback mode)"];
+    else if (_isConnected)
+        [_statusLabel setStringValue:@"Connected (real-time)"];
+    else
+        [_statusLabel setStringValue:@"Disconnected"];
 }
 
 - (void)handleClear:(id)sender
