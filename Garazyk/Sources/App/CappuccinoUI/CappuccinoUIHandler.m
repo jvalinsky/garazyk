@@ -263,6 +263,10 @@
   if ([path isEqualToString:@"/ui/profile"] ||
       [path isEqualToString:@"/ui/profile/"]) {
     response.statusCode = HttpStatusOK;
+    [response setHeader:@"no-store, no-cache, must-revalidate"
+                 forKey:@"Cache-Control"];
+    [response setHeader:@"no-cache" forKey:@"Pragma"];
+    [response setHeader:@"0" forKey:@"Expires"];
     [response setJsonBody:[self profilePayload]];
     return;
   }
@@ -320,6 +324,22 @@
   }
 
   if (![fm fileExistsAtPath:filePath]) {
+    if ([relativePath hasSuffix:@".js.map"]) {
+      response.statusCode = HttpStatusOK;
+      [response setHeader:@"no-store, no-cache, must-revalidate"
+                   forKey:@"Cache-Control"];
+      [response setHeader:@"no-cache" forKey:@"Pragma"];
+      [response setHeader:@"0" forKey:@"Expires"];
+      [response setJsonBody:@{
+        @"version" : @3,
+        @"file" : [relativePath lastPathComponent] ?: @"bundle.js",
+        @"sources" : @[],
+        @"names" : @[],
+        @"mappings" : @""
+      }];
+      return;
+    }
+
     response.statusCode = HttpStatusNotFound;
     [response setJsonBody:@{
       @"error" : @"File not found",
@@ -342,6 +362,10 @@
 
   response.statusCode = HttpStatusOK;
   response.contentType = [self contentTypeForPath:filePath];
+  [response setHeader:@"no-store, no-cache, must-revalidate"
+               forKey:@"Cache-Control"];
+  [response setHeader:@"no-cache" forKey:@"Pragma"];
+  [response setHeader:@"0" forKey:@"Expires"];
   // Objective-J runtime compiles/executes modules dynamically and requires
   // `unsafe-eval`. Restrict this relaxation to UI assets only.
   [response setHeader:@"default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"

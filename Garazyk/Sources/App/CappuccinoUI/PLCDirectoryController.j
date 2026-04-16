@@ -51,11 +51,11 @@
     if (_rootView)
         return _rootView;
 
-    _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    var rootFrame = CGRectMake(0.0, 0.0, 1080.0, 700.0),
+        statusFrame = CGRectMake(20.0, 16.0, 600.0, 20.0);
 
-    // Note: Title removed - tab already shows "Directory" in PLC sub-tabs
-    // Status label
-    _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 600.0, 20.0)];
+    _rootView = [[CPView alloc] initWithFrame:rootFrame];
+    _statusLabel = [[CPTextField alloc] initWithFrame:statusFrame];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];

@@ -174,6 +174,12 @@ static AppViewRuntime *_sharedRuntime = nil;
         [cappuccinoUIHandler handleRequest:req response:res];
     }];
 
+    [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *res) {
+        res.statusCode = HttpStatusNoContent;
+        res.contentType = @"image/x-icon";
+        [res setBodyData:[NSData data]];
+    }];
+
     if (config.adminSecret.length > 0) {
         [AppViewAdminRoutePack registerWithServer:_httpServer
                                     orchestrator:_orchestrator

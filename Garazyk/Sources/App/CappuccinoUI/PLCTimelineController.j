@@ -99,17 +99,42 @@
         [subviews[i] removeFromSuperview];
     }
 
-    [_apiClient fetch:@"GET" path:@"/" + did + "/log" params:nil completion:function(response, error) {
+    [_apiClient fetch:@"GET" path:@"/" + did + "/log/audit" params:nil completion:function(response, error) {
         if (error) {
             [_statusLabel setStringValue:@"Error loading timeline: " + error.localizedDescription];
+            _operationLog = [];
+            [self renderTimeline];
             return;
         }
 
-        _operationLog = response || [];
+        _operationLog = [self normalizedOperationLogEntries:response];
         [_statusLabel setStringValue:_operationLog.length + " operations"];
 
         [self renderTimeline];
     }];
+}
+
+- (CPArray)normalizedOperationLogEntries:(id)response
+{
+    if (!response || response.length === undefined)
+        return [];
+
+    var normalized = [];
+    for (var i = 0; i < response.length; i++)
+    {
+        var entry = response[i] || {},
+            operation = entry.operation || entry.op || entry,
+            createdAt = entry.createdAt || operation.createdAt || @"",
+            cid = entry.cid || operation.cid || @"";
+
+        normalized.push({
+            op: operation || {},
+            createdAt: createdAt,
+            cid: cid
+        });
+    }
+
+    return normalized;
 }
 
 - (void)renderTimeline
@@ -128,9 +153,9 @@
 
     // Sort by createdAt (oldest first) without mutating original log order.
     var sorted = _operationLog.slice(0).sort(function(a, b) {
-        var dateA = new Date(a.createdAt || 0);
-        var dateB = new Date(b.createdAt || 0);
-        return dateA - dateB;
+        var tsA = Date.parse(a.createdAt || "") || 0;
+        var tsB = Date.parse(b.createdAt || "") || 0;
+        return tsA - tsB;
     });
 
     var yOffset = 20.0;

@@ -191,6 +191,16 @@
   [PDSHttpMetricsRoutePack registerRoutesWithServer:server];
   [PDSHttpAdminRoutePack registerAdminRoutesWithServer:server];
 
+  // Suppress browser console noise for favicon probes when no icon asset is
+  // shipped with the current runtime bundle.
+  [server addRoute:@"GET"
+              path:@"/favicon.ico"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             response.statusCode = HttpStatusNoContent;
+             response.contentType = @"image/x-icon";
+             [response setBodyData:[NSData data]];
+           }];
+
   // Register default route LAST (must be after all specific routes)
   if (self.enableCappuccinoUIDefault) {
     // Cutover: Objective-J UI is the default entrypoint at `/`.

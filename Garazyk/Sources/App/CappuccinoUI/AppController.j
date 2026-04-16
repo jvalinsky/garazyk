@@ -48,10 +48,10 @@
     RelayEventsController _relayEventsController;
 
     // PLC Controllers
-    PLCDirectoryController _plcDirectoryController;
-    PLCDetailController _plcDetailController;
-    PLCTimelineController _plcTimelineController;
-    PLCMetricsController _plcMetricsController;
+    id _plcDirectoryController;
+    id _plcDetailController;
+    id _plcTimelineController;
+    id _plcMetricsController;
 
     // AppView Controllers
     AppViewBackfillController _appViewBackfillController;
@@ -196,6 +196,24 @@
     return [self normalizedProfile:override];
 }
 
+- (CPString)inferredProfileFromHostname
+{
+    if (!(window && window.location && window.location.hostname))
+        return nil;
+
+    var host = String(window.location.hostname || "").toLowerCase();
+    if (host.indexOf("local-pds.") === 0)
+        return @"pds";
+    if (host.indexOf("local-relay.") === 0)
+        return @"relay";
+    if (host.indexOf("local-plc.") === 0)
+        return @"plc";
+    if (host.indexOf("local-appview.") === 0)
+        return @"appview";
+
+    return nil;
+}
+
 - (CPArray)servicesForProfile:(CPString)profile
 {
     if ([profile isEqualToString:@"full"])
@@ -254,12 +272,13 @@
 
 - (void)applyServiceProfilePayload:(id)payload overrideProfile:(CPString)overrideProfile
 {
-    var payloadProfile = nil;
+    var payloadProfile = nil,
+        inferredProfile = [self inferredProfileFromHostname];
 
     if (payload && payload.serviceProfile)
         payloadProfile = String(payload.serviceProfile);
 
-    _serviceProfile = [self normalizedProfile:(overrideProfile || payloadProfile || @"full")];
+    _serviceProfile = [self normalizedProfile:(overrideProfile || payloadProfile || inferredProfile || @"full")];
     _activeServices = [self servicesForProfile:_serviceProfile];
     _endpointBases = [self endpointBasesFromPayload:payload profile:_serviceProfile];
 }
@@ -452,11 +471,17 @@
 
     if ([self isServiceEnabled:@"plc"])
     {
-        _plcDirectoryController = [[PLCDirectoryController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
-        _plcDetailController = [[PLCDetailController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
-        _plcTimelineController = [[PLCTimelineController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
-        _plcMetricsController = [[PLCMetricsController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
-        [_plcDirectoryController setDelegate:self];
+        if (typeof PLCDirectoryController !== "undefined")
+            _plcDirectoryController = [[PLCDirectoryController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
+        if (typeof PLCDetailController !== "undefined")
+            _plcDetailController = [[PLCDetailController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
+        if (typeof PLCTimelineController !== "undefined")
+            _plcTimelineController = [[PLCTimelineController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
+        if (typeof PLCMetricsController !== "undefined")
+            _plcMetricsController = [[PLCMetricsController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
+
+        if (_plcDirectoryController && [_plcDirectoryController respondsToSelector:@selector(setDelegate:)])
+            [_plcDirectoryController setDelegate:self];
     }
 
     if ([self isServiceEnabled:@"appview"])
@@ -602,6 +627,9 @@
 
 - (void)addTabToView:(CPTabView)tabView label:(CPString)label contentView:(CPView)contentView
 {
+    if (!tabView || !contentView)
+        return;
+
     var item = [[CPTabViewItem alloc] initWithIdentifier:label];
     [item setLabel:label];
     [item setView:contentView];
@@ -615,7 +643,7 @@
 }
 
 // PLCDirectoryController delegate
-- (void)plcDirectoryController:(PLCDirectoryController)controller didSelectDID:(CPString)did
+- (void)plcDirectoryController:(id)controller didSelectDID:(CPString)did
 {
     if (!_plcDetailController || !_plcTimelineController || !_plcSubTabView)
         return;

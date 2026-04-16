@@ -2569,9 +2569,9 @@
       "node_type": "action",
       "title": "AppView backfill queue operations, relevance scope, ingest health, session auth",
       "description": null,
-      "status": "pending",
+      "status": "active",
       "created_at": "2026-04-13T20:00:56.983155-04:00",
-      "updated_at": "2026-04-13T20:00:56.983155-04:00",
+      "updated_at": "2026-04-15T15:23:24.800725-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"files\":[\"Sources/App/CappuccinoUI/AppViewBackfillController.j\"]}"
     },
     {
@@ -2580,9 +2580,9 @@
       "node_type": "action",
       "title": "PLC directory/detail/timeline, write operations, per-service auth",
       "description": null,
-      "status": "pending",
+      "status": "active",
       "created_at": "2026-04-13T20:00:57.008620-04:00",
-      "updated_at": "2026-04-13T20:00:57.008620-04:00",
+      "updated_at": "2026-04-15T15:23:29.079059-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"files\":[\"Sources/App/CappuccinoUI/PLCDirectoryController.j\"]}"
     },
     {
@@ -3343,6 +3343,149 @@
       "created_at": "2026-04-15T10:42:22.199306-04:00",
       "updated_at": "2026-04-15T10:43:56.783950-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"files\":[\"README.md\",\"BUILD.md\",\"CONTRIBUTING.md\",\"DOCUMENTATION.md\",\"docs\",\".kiro/steering\"]}"
+    },
+    {
+      "id": 305,
+      "change_id": "5d1ab055-e007-4296-a4e4-29f48ebaeb1a",
+      "node_type": "observation",
+      "title": "PLC UI fetch adapter signature mismatch hid valid backend data",
+      "description": "UIAPIClient.fetch forwarded (statusCode,payload,errorMessage) directly, but PLC controllers expected (response,error), so successful responses were interpreted as failures with undefined error text.",
+      "status": "completed",
+      "created_at": "2026-04-15T15:22:22.796608-04:00",
+      "updated_at": "2026-04-15T15:40:21.269635-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":97,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/UIAPIClient.j\",\"Garazyk/Sources/App/CappuccinoUI/PLCDirectoryController.j\",\"Garazyk/Sources/App/CappuccinoUI/PLCDetailController.j\",\"Garazyk/Sources/App/CappuccinoUI/PLCTimelineController.j\"]}"
+    },
+    {
+      "id": 306,
+      "change_id": "7541bf67-15db-43ce-91f9-30798b4bc023",
+      "node_type": "action",
+      "title": "Normalize UIAPIClient.fetch to legacy (response,error) contract",
+      "description": "Wrap requestJSON completion to return payload on success and {localizedDescription,statusCode,payload} on failure, while preserving endpoint-group autodetection and HTTP method handling.",
+      "status": "completed",
+      "created_at": "2026-04-15T15:22:26.425071-04:00",
+      "updated_at": "2026-04-15T15:40:21.279631-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":95,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/UIAPIClient.j\"]}"
+    },
+    {
+      "id": 307,
+      "change_id": "a5230765-477c-4d91-b3e4-9da8819da8c0",
+      "node_type": "observation",
+      "title": "AppView queue payload/ID handling diverged from backend contract",
+      "description": "Backfill queue endpoint returns {entries,total,cursor,last_error}, while the UI expected payload.repos and repo.error. Retry/cancel/detail routes also needed percent-decoded DID extraction to handle encoded path segments.",
+      "status": "completed",
+      "created_at": "2026-04-15T15:22:30.744945-04:00",
+      "updated_at": "2026-04-15T15:40:21.287485-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":94,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/AppViewBackfillController.j\",\"Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m\",\"Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillOrchestrator.m\"]}"
+    },
+    {
+      "id": 308,
+      "change_id": "03494ec6-f650-4fd2-ada0-6969117eeb5c",
+      "node_type": "action",
+      "title": "Align AppView backfill UI and admin routes with queue/retry contract",
+      "description": "Parse payload.entries with last_error fallback in queue table, improve retry/cancel error messages, and decode DID segments in AppView admin routes for repo detail/retry/cancel operations.",
+      "status": "completed",
+      "created_at": "2026-04-15T15:22:34.500841-04:00",
+      "updated_at": "2026-04-15T15:40:21.294805-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":93,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/AppViewBackfillController.j\",\"Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m\"]}"
+    },
+    {
+      "id": 309,
+      "change_id": "add282f4-1257-4399-8c68-5d27f18a3735",
+      "node_type": "action",
+      "title": "Switch PLC timeline UI to audit log shape with metadata",
+      "description": "Use /:did/log/audit and normalize entries to support operation/op payload variants plus createdAt/cid metadata before rendering timeline diffs.",
+      "status": "completed",
+      "created_at": "2026-04-15T15:22:37.817656-04:00",
+      "updated_at": "2026-04-15T15:40:21.301595-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":92,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/PLCTimelineController.j\"]}"
+    },
+    {
+      "id": 310,
+      "change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
+      "node_type": "outcome",
+      "title": "UI wiring fixes compile across Cappuccino and native macOS build gates",
+      "description": "After applying fetch adapter, AppView queue contract, DID decoding, and PLC timeline normalization, ./scripts/build_cappuccino_ui.sh, xcodegen generate, xcodebuild AllTests build, and xcodebuild kaszlak build all succeeded.",
+      "status": "completed",
+      "created_at": "2026-04-15T15:22:42.930903-04:00",
+      "updated_at": "2026-04-15T15:40:21.307933-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/UIAPIClient.j\",\"Garazyk/Sources/App/CappuccinoUI/AppViewBackfillController.j\",\"Garazyk/Sources/App/CappuccinoUI/PLCTimelineController.j\",\"Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m\"]}"
+    },
+    {
+      "id": 311,
+      "change_id": "69100b03-fe44-4dc6-8514-5486d08c67ec",
+      "node_type": "observation",
+      "title": "Local-network UI 404s came from stale local-pds runtime image",
+      "description": "Route packs were registered in source, but the running container predated recent UI/backend wiring changes; after recreate, /api/pds and /api/mst endpoints resumed.",
+      "status": "pending",
+      "created_at": "2026-04-15T15:40:25.969036-04:00",
+      "updated_at": "2026-04-15T15:40:25.969036-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"files\":[\"docker/local-network/docker-compose.yml\",\"Garazyk/Sources/Network/PDSHttpServerBuilder.m\"]}"
+    },
+    {
+      "id": 312,
+      "change_id": "638d7a51-83dc-47b5-b98a-81db36033955",
+      "node_type": "action",
+      "title": "Rebuild and recreate local-pds compose service before UI wiring verification",
+      "description": "Rebuilt docker/local-network local-pds image and restarted service, then rechecked endpoint matrix on localhost and local-network.orb.local.",
+      "status": "pending",
+      "created_at": "2026-04-15T15:40:29.720745-04:00",
+      "updated_at": "2026-04-15T15:40:29.720745-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"files\":[\"docker/local-network/docker-compose.yml\"]}"
+    },
+    {
+      "id": 313,
+      "change_id": "1fba13c5-8f00-45c4-ae02-222fa5da6f9c",
+      "node_type": "action",
+      "title": "Add no-cache UI headers and favicon fallback for Cappuccino shell",
+      "description": "Set Cache-Control/Pragma/Expires on /ui/profile and static UI assets to avoid stale Objective-J cache issues; added GET /favicon.ico 204 route to remove browser 404 noise.",
+      "status": "pending",
+      "created_at": "2026-04-15T15:40:33.587657-04:00",
+      "updated_at": "2026-04-15T15:40:33.587657-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"files\":[\"Garazyk/Sources/App/CappuccinoUI/CappuccinoUIHandler.m\",\"Garazyk/Sources/Network/PDSHttpServerBuilder.m\"]}"
+    },
+    {
+      "id": 314,
+      "change_id": "c4f0c491-deb3-4377-9abd-7c3c40a3bcee",
+      "node_type": "outcome",
+      "title": "PDS web UI now returns live backend data with reduced console noise",
+      "description": "Verified 200 responses for /api/pds/accounts and /api/mst/accounts on localhost and local-network.orb.local; /ui/profile now emits no-cache headers; /favicon.ico returns 204.",
+      "status": "pending",
+      "created_at": "2026-04-15T15:40:37.982830-04:00",
+      "updated_at": "2026-04-15T15:40:37.982830-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"files\":[\"Garazyk/Sources/App/CappuccinoUI/CappuccinoUIHandler.m\",\"Garazyk/Sources/Network/PDSHttpServerBuilder.m\",\"docker/local-network/docker-compose.yml\"]}"
+    },
+    {
+      "id": 315,
+      "change_id": "b0699a23-0d7c-4800-858a-e58ef6ac0e5d",
+      "node_type": "observation",
+      "title": "OrbStack relay HTTPS host downgrades subscribeRepos WebSocket attempts to plain GET 404 while localhost upgrade path returns 101",
+      "description": "Validated with identical handshake headers: https://local-relay.local-network.orb.local/xrpc/com.atproto.sync.subscribeRepos returns 404 JSON, while http://127.0.0.1:2584/xrpc/com.atproto.sync.subscribeRepos returns 101 Switching Protocols.",
+      "status": "completed",
+      "created_at": "2026-04-15T23:04:39.191361-04:00",
+      "updated_at": "2026-04-15T23:04:58.252190-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 316,
+      "change_id": "6e719dce-49a6-4b40-a7d5-6e270ecac493",
+      "node_type": "action",
+      "title": "Harden Cappuccino UI shell for deterministic service wiring and parser-failure containment",
+      "description": "Implemented: (1) AppController hostname-based profile fallback when /ui/profile is unavailable, (2) nil-safe tab insertion to prevent CPView _superview crashes when a controller fails to load, (3) PLC controller guardrails for undefined classes, (4) PLCDirectory frame init simplification to avoid nested parser edge cases, and (5) CappuccinoUIHandler .js.map fallback responses to remove Objective-J sourcemap 404 noise.",
+      "status": "completed",
+      "created_at": "2026-04-15T23:04:43.229616-04:00",
+      "updated_at": "2026-04-15T23:04:58.292096-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 317,
+      "change_id": "8b89e7f7-7bca-4bbb-b9a8-71dfae90d120",
+      "node_type": "outcome",
+      "title": "All four local-network service UIs now resolve profile-scoped assets/data on OrbStack hosts",
+      "description": "Verified over HTTPS hostnames: /ui/profile returns correct serviceProfile for plc/pds/relay/appview; /favicon.ico returns 204 everywhere; Objective-J runtime asset and sourcemap resolve 200; PDS /api/pds/accounts and /api/mst/accounts return live data; AppView /admin/backfill/status returns 200 with token; createAccount smoke succeeded after rebuild.",
+      "status": "completed",
+      "created_at": "2026-04-15T23:04:49.196054-04:00",
+      "updated_at": "2026-04-15T23:04:58.299603-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     }
   ],
   "edges": [
@@ -6656,6 +6799,171 @@
       "weight": 1.0,
       "rationale": "The rewrite action produced the final docs refresh outcome.",
       "created_at": "2026-04-15T10:42:25.859193-04:00"
+    },
+    {
+      "id": 302,
+      "from_node_id": 235,
+      "to_node_id": 305,
+      "from_change_id": "afe44759-a82f-4b78-a280-c56fc9a816e5",
+      "to_change_id": "5d1ab055-e007-4296-a4e4-29f48ebaeb1a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "PLC operations phase surfaced a transport contract mismatch between UI helper and PLC controllers.",
+      "created_at": "2026-04-15T15:22:52.792420-04:00"
+    },
+    {
+      "id": 303,
+      "from_node_id": 305,
+      "to_node_id": 306,
+      "from_change_id": "5d1ab055-e007-4296-a4e4-29f48ebaeb1a",
+      "to_change_id": "7541bf67-15db-43ce-91f9-30798b4bc023",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Observation required adapter fix to restore PLC UI data flow.",
+      "created_at": "2026-04-15T15:22:55.111379-04:00"
+    },
+    {
+      "id": 304,
+      "from_node_id": 235,
+      "to_node_id": 309,
+      "from_change_id": "afe44759-a82f-4b78-a280-c56fc9a816e5",
+      "to_change_id": "add282f4-1257-4399-8c68-5d27f18a3735",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "PLC timeline needed metadata-aware log path and entry normalization for accurate rendering.",
+      "created_at": "2026-04-15T15:23:00.204314-04:00"
+    },
+    {
+      "id": 305,
+      "from_node_id": 234,
+      "to_node_id": 307,
+      "from_change_id": "733a00e6-5582-4e7e-a241-b67742711c03",
+      "to_change_id": "a5230765-477c-4d91-b3e4-9da8819da8c0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "AppView phase exposed queue payload shape and encoded DID contract drift.",
+      "created_at": "2026-04-15T15:23:04.319190-04:00"
+    },
+    {
+      "id": 306,
+      "from_node_id": 307,
+      "to_node_id": 308,
+      "from_change_id": "a5230765-477c-4d91-b3e4-9da8819da8c0",
+      "to_change_id": "03494ec6-f650-4fd2-ada0-6969117eeb5c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Queue contract mismatch led directly to UI/controller and route extraction alignment changes.",
+      "created_at": "2026-04-15T15:23:06.861380-04:00"
+    },
+    {
+      "id": 307,
+      "from_node_id": 306,
+      "to_node_id": 310,
+      "from_change_id": "7541bf67-15db-43ce-91f9-30798b4bc023",
+      "to_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
+      "edge_type": "enables",
+      "weight": 1.0,
+      "rationale": "Fetch adapter fix restores payload delivery into PLC views and unblocks successful UI state rendering.",
+      "created_at": "2026-04-15T15:23:11.339952-04:00"
+    },
+    {
+      "id": 308,
+      "from_node_id": 308,
+      "to_node_id": 310,
+      "from_change_id": "03494ec6-f650-4fd2-ada0-6969117eeb5c",
+      "to_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
+      "edge_type": "enables",
+      "weight": 1.0,
+      "rationale": "AppView queue/retry contract alignment enables queue tables and repo controls to operate on real backend data.",
+      "created_at": "2026-04-15T15:23:13.721841-04:00"
+    },
+    {
+      "id": 309,
+      "from_node_id": 309,
+      "to_node_id": 310,
+      "from_change_id": "add282f4-1257-4399-8c68-5d27f18a3735",
+      "to_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
+      "edge_type": "enables",
+      "weight": 1.0,
+      "rationale": "Timeline normalization against audit-log metadata enables real timestamped PLC operation rendering.",
+      "created_at": "2026-04-15T15:23:16.475380-04:00"
+    },
+    {
+      "id": 310,
+      "from_node_id": 311,
+      "to_node_id": 312,
+      "from_change_id": "69100b03-fe44-4dc6-8514-5486d08c67ec",
+      "to_change_id": "638d7a51-83dc-47b5-b98a-81db36033955",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Once stale runtime was identified, compose image rebuild/recreate became the immediate remediation.",
+      "created_at": "2026-04-15T15:40:45.142516-04:00"
+    },
+    {
+      "id": 311,
+      "from_node_id": 312,
+      "to_node_id": 314,
+      "from_change_id": "638d7a51-83dc-47b5-b98a-81db36033955",
+      "to_change_id": "c4f0c491-deb3-4377-9abd-7c3c40a3bcee",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Fresh runtime restored route registration and live data responses.",
+      "created_at": "2026-04-15T15:40:45.150946-04:00"
+    },
+    {
+      "id": 312,
+      "from_node_id": 313,
+      "to_node_id": 314,
+      "from_change_id": "1fba13c5-8f00-45c4-ae02-222fa5da6f9c",
+      "to_change_id": "c4f0c491-deb3-4377-9abd-7c3c40a3bcee",
+      "edge_type": "enables",
+      "weight": 1.0,
+      "rationale": "Cache controls and favicon fallback reduce stale-load and console noise while validating live wiring.",
+      "created_at": "2026-04-15T15:40:45.169353-04:00"
+    },
+    {
+      "id": 313,
+      "from_node_id": 310,
+      "to_node_id": 314,
+      "from_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
+      "to_change_id": "c4f0c491-deb3-4377-9abd-7c3c40a3bcee",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UI wiring hardening was validated end-to-end after runtime refresh and shell hardening.",
+      "created_at": "2026-04-15T15:40:45.179828-04:00"
+    },
+    {
+      "id": 314,
+      "from_node_id": 124,
+      "to_node_id": 316,
+      "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
+      "to_change_id": "6e719dce-49a6-4b40-a7d5-6e270ecac493",
+      "edge_type": "requires",
+      "weight": 1.0,
+      "rationale": "Cappuccino UI goal required shell/data-path hardening to stop runtime crashes and stale profile routing",
+      "created_at": "2026-04-15T23:04:55.067222-04:00"
+    },
+    {
+      "id": 315,
+      "from_node_id": 315,
+      "to_node_id": 316,
+      "from_change_id": "b0699a23-0d7c-4800-858a-e58ef6ac0e5d",
+      "to_change_id": "6e719dce-49a6-4b40-a7d5-6e270ecac493",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Proxy/WebSocket discrepancy informed guardrails and verification scope",
+      "created_at": "2026-04-15T23:04:55.078125-04:00"
+    },
+    {
+      "id": 316,
+      "from_node_id": 316,
+      "to_node_id": 317,
+      "from_change_id": "6e719dce-49a6-4b40-a7d5-6e270ecac493",
+      "to_change_id": "8b89e7f7-7bca-4bbb-b9a8-71dfae90d120",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Hardening changes produced clean asset/status/API behavior across all service hosts",
+      "created_at": "2026-04-15T23:04:55.086235-04:00"
     }
   ],
   "documents": [
