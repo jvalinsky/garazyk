@@ -4,7 +4,7 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/AppViewTypes.h"
+#import "AppView/Server/AppViewTypes.h"
 
 #pragma mark - AppViewRepoSyncState
 

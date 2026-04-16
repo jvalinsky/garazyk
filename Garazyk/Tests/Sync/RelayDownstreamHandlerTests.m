@@ -1,10 +1,10 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayDownstreamHandler.h"
-#import "Sync/RelayEventBuffer.h"
-#import "Sync/SubscribeReposHandler.h"
-#import "Sync/RelayMetrics.h"
-#import "Sync/RelayUpstreamManager.h"
-#import "Sync/Firehose.h"
+#import "Sync/Relay/RelayDownstreamHandler.h"
+#import "Sync/Relay/RelayEventBuffer.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
+#import "Sync/Firehose/Firehose.h"
 
 @interface RelayDownstreamHandlerTests : XCTestCase
 

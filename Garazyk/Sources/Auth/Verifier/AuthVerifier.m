@@ -6,14 +6,14 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AuthVerifier/AuthVerifier.h"
+#import "Auth/Verifier/AuthVerifier.h"
 #import "Auth/JWT.h"
-#import "AuthCrypto/AuthCryptoDPoP.h"
+#import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
 #import "Metrics/PDSMetrics.h"
-#import "OAuthProvider/OAuthProviderProtocols.h"
+#import "Auth/OAuthProvider/OAuthProviderProtocols.h"
 #import <Security/Security.h>
 
 NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";

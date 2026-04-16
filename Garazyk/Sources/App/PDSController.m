@@ -35,12 +35,12 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "PDSApplication.h"
 #import "Repository/RepoCommit.h"
-#import "App/Services/PDSAccountService.h"
-#import "App/Services/PDSBlobService.h"
-#import "App/Services/PDSRecordService.h"
-#import "App/Services/PDSRelayService.h"
-#import "App/Services/PDSRepositoryService.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Services/PDS/PDSAccountService.h"
+#import "Services/PDS/PDSBlobService.h"
+#import "Services/PDS/PDSRecordService.h"
+#import "Services/PDS/PDSRelayService.h"
+#import "Services/PDS/PDSRepositoryService.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 

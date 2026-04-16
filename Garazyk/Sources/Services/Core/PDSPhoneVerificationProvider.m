@@ -1,4 +1,4 @@
-#import "Services/PDSPhoneVerificationProvider.h"
+#import "Services/Core/PDSPhoneVerificationProvider.h"
 
 NSString * const PDSPhoneVerificationProviderErrorDomain = @"com.atproto.pds.phoneverificationprovider";
 

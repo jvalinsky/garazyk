@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/WebSocketConnection.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
 
 @interface MockWebSocketDelegate : NSObject <WebSocketConnectionDelegate>
 @property (nonatomic, strong) NSData *lastMessage;

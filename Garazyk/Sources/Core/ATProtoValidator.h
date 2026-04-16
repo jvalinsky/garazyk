@@ -57,6 +57,17 @@ NS_ASSUME_NONNULL_BEGIN
 + (BOOL)validateTID:(NSString *)tid error:(NSError **)error;
 
 /*!
+ @method validateDatetime:error:
+
+ @abstract Validates a datetime string according to AT Protocol lexicon.
+
+ @param datetime The datetime string to validate (e.g. "2023-11-23T12:34:56.789Z").
+ @param error On return, contains an error if validation failed.
+ @return YES if valid, NO otherwise.
+ */
++ (BOOL)validateDatetime:(NSString *)datetime error:(NSError **)error;
+
+/*!
  @method validateNSID:error:
  
  @abstract Validates a Namespaced Identifier (NSID).

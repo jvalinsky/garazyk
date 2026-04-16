@@ -1,28 +1,18 @@
-#import "AppView/FeedService.h"
+#import "AppView/Services/FeedService.h"
 #import "Database/PDSDatabase.h"
-#import "AppView/ActorService.h"
+#import "AppView/Services/ActorService.h"
 #import "Core/TID.h"
 #import <CommonCrypto/CommonDigest.h>
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Database/Schema.h"
+#import "Core/NSDateFormatter+ATProto.h"
 @interface FeedService ()
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) ActorService *actorService;
 @end
 
 @implementation FeedService
-
-static NSDateFormatter *FeedServiceISO8601Formatter(void) {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    });
-    return formatter;
-}
 
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
@@ -480,7 +470,7 @@ static NSDateFormatter *FeedServiceISO8601Formatter(void) {
         @"replyCount": @([self getReplyCountForURI:uri]),
         @"repostCount": @([self getRepostCountForURI:uri]),
         @"likeCount": @([self getLikeCountForURI:uri]),
-        @"indexedAt": [self getIndexedAtForURI:uri] ?: [FeedServiceISO8601Formatter() stringFromDate:[NSDate date]],
+        @"indexedAt": [self getIndexedAtForURI:uri] ?: [NSDateFormatter atproto_stringFromDate:[NSDate date]],
         @"viewer": @{},
         @"labels": @[]
     };

@@ -6,13 +6,13 @@
  @copyright Copyright (c) 2026 Jack Valinsky
  */
 
-#import "Sync/RelayDownstreamHandler.h"
-#import "Sync/RelayEventBuffer.h"
-#import "Sync/SubscribeReposHandler.h"
-#import "Sync/RelayMetrics.h"
-#import "Sync/RelayRepoStateManager.h"
-#import "Sync/Firehose.h"
-#import "Sync/EventFormatter.h"
+#import "Sync/Relay/RelayDownstreamHandler.h"
+#import "Sync/Relay/RelayEventBuffer.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
+#import "Sync/Firehose/Firehose.h"
+#import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
 

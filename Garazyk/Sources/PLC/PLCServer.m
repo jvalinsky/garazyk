@@ -7,6 +7,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 static const NSUInteger kPLCMaxOperationBytes = 4000;
 static const NSUInteger kPLCMaxAlsoKnownAsEntries = 10;
@@ -18,30 +19,6 @@ static const NSUInteger kPLCMaxServiceEndpointLength = 512;
 static const NSUInteger kPLCMaxVerificationMethodEntries = 10;
 static const NSUInteger kPLCMaxIdentifierLength = 32;
 static const NSUInteger kPLCMaxDidKeyLength = 256;
-
-static NSDateFormatter *PLCServerISO8601Formatter(void) {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    });
-    return formatter;
-}
-
-static NSDateFormatter *PLCServerISO8601MsFormatter(void) {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    });
-    return formatter;
-}
 
 static BOOL PLCValidateDidKey(NSString *key, NSError **error) {
     if (![key isKindOfClass:[NSString class]] || ![key hasPrefix:@"did:key:"]) {
@@ -591,7 +568,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             if (op.cid) entry[@"cid"] = op.cid;
             entry[@"nullified"] = @(op.nullified);
             if (op.createdAt) {
-                entry[@"createdAt"] = [PLCServerISO8601Formatter() stringFromDate:op.createdAt];
+                entry[@"createdAt"] = [NSDateFormatter atproto_stringFromDate:op.createdAt];
             }
             [historyDicts addObject:entry];
         } else {
@@ -739,10 +716,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     NSString *afterStr = req.queryParams[@"after"];
     NSDate *afterDate = nil;
     if (afterStr) {
-        afterDate = [PLCServerISO8601MsFormatter() dateFromString:afterStr];
-        if (!afterDate) {
-            afterDate = [PLCServerISO8601Formatter() dateFromString:afterStr];
-        }
+        afterDate = [NSDateFormatter atproto_dateFromString:afterStr];
     }
     
     NSError *error = nil;
@@ -762,7 +736,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         entry[@"operation"] = [op toDictionary];
         entry[@"cid"] = op.cid;
         entry[@"nullified"] = @(op.nullified);
-        entry[@"createdAt"] = [PLCServerISO8601MsFormatter() stringFromDate:op.createdAt ?: [NSDate date]];
+        entry[@"createdAt"] = [NSDateFormatter atproto_stringFromDate:op.createdAt ?: [NSDate date]];
         
         NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
         if (jsonData) {

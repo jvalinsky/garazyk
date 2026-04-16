@@ -8,10 +8,10 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "AppViewServer/AppViewDatabase.h"
-#import "AppViewServer/AppViewTypes.h"
-#import "AppViewServer/Backfill/AppViewBackfillOrchestrator.h"
-#import "AppViewServer/Indexers/AppViewIndexer.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewTypes.h"
+#import "AppView/Server/Backfill/AppViewBackfillOrchestrator.h"
+#import "AppView/Server/Indexers/AppViewIndexer.h"
 
 // ---------------------------------------------------------------------------
 // Mock indexer that does nothing

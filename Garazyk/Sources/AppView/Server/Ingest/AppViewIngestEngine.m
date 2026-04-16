@@ -4,13 +4,13 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/Ingest/AppViewIngestEngine.h"
+#import "AppView/Server/Ingest/AppViewIngestEngine.h"
 
-#import "AppViewServer/AppViewDatabase.h"
-#import "AppViewServer/AppViewTypes.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewTypes.h"
 #import "Debug/PDSLogger.h"
-#import "Sync/RelayClient.h"
-#import "Sync/Firehose.h"
+#import "Sync/Relay/RelayClient.h"
+#import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
 
 // ---------------------------------------------------------------------------

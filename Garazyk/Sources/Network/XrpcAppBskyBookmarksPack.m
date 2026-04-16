@@ -1,6 +1,6 @@
 #import "Network/XrpcAppBskyBookmarksPack.h"
 
-#import "AppView/BookmarkService.h"
+#import "AppView/Services/BookmarkService.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"

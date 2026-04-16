@@ -6,7 +6,7 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "PDSAuth/PDSAuth.h"
+#import "Auth/PDS/PDSAuth.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/JWT.h"
 #import "Auth/OAuth2.h"

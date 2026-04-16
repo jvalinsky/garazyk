@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/WebSocketCodec.h"
+#import "Sync/WebSocket/WebSocketCodec.h"
 
 @interface WebSocketCodecFragmentationTests : XCTestCase
 @property (nonatomic, strong) WebSocketCodec *codec;

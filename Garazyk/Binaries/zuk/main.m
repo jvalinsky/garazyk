@@ -12,14 +12,14 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Sync/RelayClient.h"
-#import "Sync/RelayUpstreamManager.h"
-#import "Sync/RelayMetrics.h"
-#import "Sync/RelayAPIHandler.h"
-#import "Sync/RelayEventBuffer.h"
-#import "Sync/RelayDownstreamHandler.h"
-#import "Sync/RelayRepoStateManager.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Relay/RelayClient.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
+#import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayAPIHandler.h"
+#import "Sync/Relay/RelayEventBuffer.h"
+#import "Sync/Relay/RelayDownstreamHandler.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 #import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
