@@ -10,6 +10,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Database/PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -18,23 +19,24 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @class NotificationService
-
+ 
  @abstract Service for push notifications and notification feeds.
-
+ 
  @discussion Handles push notification device registration and provides
  paginated access to notification feeds. Supports marking notifications as read.
  */
 @interface NotificationService : NSObject
 
 /*! Initialize with database connection and actor service for profile hydration. */
-- (instancetype)initWithDatabase:(PDSDatabase *)database
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
                     actorService:(nullable ActorService *)actorService;
 
 /*! Convenience initializer (no profile hydration). */
-- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 
 /*! Database connection (exposed for testing). */
-@property (nonatomic, strong, readonly) PDSDatabase *database;
+@property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
+
 
 /*! Register device for push notifications. */
 - (BOOL)registerPushForActor:(NSString *)actorDID

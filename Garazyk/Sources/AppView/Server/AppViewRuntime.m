@@ -17,6 +17,10 @@
 #import "AppView/Server/Indexers/AppViewGraphIndexer.h"
 #import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
 #import "AppView/Server/Admin/AppViewAdminRoutePack.h"
+#import "AppView/Services/FeedService.h"
+#import "AppView/Services/ActorService.h"
+#import "AppView/Services/NotificationService.h"
+#import "Network/AppViewXRpcRoutePack.h"
 #import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
@@ -35,6 +39,9 @@
 @property (nonatomic, strong) AppViewRelevanceSet *relevanceSet;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 @property (nonatomic, strong) HttpServer *httpServer;
+@property (nonatomic, strong) FeedService *feedService;
+@property (nonatomic, strong) ActorService *actorService;
+@property (nonatomic, strong) NotificationService *notificationService;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
 @end
@@ -179,6 +186,17 @@ static AppViewRuntime *_sharedRuntime = nil;
         res.contentType = @"image/x-icon";
         [res setBodyData:[NSData data]];
     }];
+
+    // Initialize Services with AppViewDatabase (which now conforms to PDSQueryDatabase)
+    _feedService = [[FeedService alloc] initWithDatabase:_database];
+    _actorService = [[ActorService alloc] initWithDatabase:_database];
+    _notificationService = [[NotificationService alloc] initWithDatabase:_database];
+
+    // Register XRPC routes
+    AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
+                                                                   actorService:_actorService
+                                                            notificationService:_notificationService];
+    [xrpcPack registerRoutesWithServer:_httpServer];
 
     if (config.adminSecret.length > 0) {
         [AppViewAdminRoutePack registerWithServer:_httpServer

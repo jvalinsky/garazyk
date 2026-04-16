@@ -84,6 +84,33 @@ static NSString * const kSchemaV1 = @""
 ");"
 "CREATE INDEX IF NOT EXISTS idx_dead_letter_did ON appview_dead_letter(did);"
 "CREATE INDEX IF NOT EXISTS idx_dead_letter_created ON appview_dead_letter(created_at);"
+
+// ATProto Record/Block Materialization
+"CREATE TABLE IF NOT EXISTS records ("
+"  uri TEXT PRIMARY KEY,"
+"  did TEXT NOT NULL,"
+"  collection TEXT NOT NULL,"
+"  rkey TEXT NOT NULL,"
+"  cid TEXT NOT NULL,"
+"  value TEXT,"
+"  subject_did TEXT,"
+"  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+"  indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+");"
+"CREATE INDEX IF NOT EXISTS idx_records_did_collection ON records(did, collection);"
+"CREATE INDEX IF NOT EXISTS idx_records_did_collection_rkey ON records(did, collection, rkey);"
+"CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did);"
+"CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection);"
+
+"CREATE TABLE IF NOT EXISTS blocks ("
+"  cid BLOB PRIMARY KEY,"
+"  repo_did TEXT NOT NULL,"
+"  block_data BLOB,"
+"  content_type TEXT,"
+"  size INTEGER,"
+"  created_at TEXT NOT NULL"
+");"
+"CREATE INDEX IF NOT EXISTS idx_blocks_repo_did ON blocks(repo_did);"
 ;
 
 // ---------------------------------------------------------------------------
@@ -799,6 +826,201 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
         }
     });
     return ok;
+}
+
+// ---------------------------------------------------------------------------
+// PDSQueryDatabase Implementation
+// ---------------------------------------------------------------------------
+
+- (nullable NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
+                                                        params:(NSArray *)params
+                                                         error:(NSError **)error {
+    __block NSMutableArray *results = [NSMutableArray array];
+    __block NSError *innerError = nil;
+
+    dispatch_sync(_queue, ^{
+        if (!self->_db) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:1
+                            userInfo:@{NSLocalizedDescriptionKey: @"Database not open"}];
+            return;
+        }
+
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(self->_db)]}];
+            return;
+        }
+
+        [self _bindParams:params toStatement:stmt];
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            int count = sqlite3_column_count(stmt);
+            for (int i = 0; i < count; i++) {
+                NSString *name = @(sqlite3_column_name(stmt, i));
+                id val = [self _valueFromStatement:stmt columnIndex:i];
+                if (val) row[name] = val;
+            }
+            [results addObject:row];
+        }
+        sqlite3_finalize(stmt);
+    });
+
+    if (innerError && error) *error = innerError;
+    return innerError ? nil : results;
+}
+
+- (BOOL)executeParameterizedUpdate:(NSString *)sql
+                           params:(NSArray *)params
+                            error:(NSError **)error {
+    __block BOOL ok = YES;
+    __block NSError *innerError = nil;
+
+    dispatch_sync(_queue, ^{
+        if (!self->_db) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:1
+                            userInfo:@{NSLocalizedDescriptionKey: @"Database not open"}];
+            ok = NO;
+            return;
+        }
+
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(self->_db)]}];
+            ok = NO;
+            return;
+        }
+
+        [self _bindParams:params toStatement:stmt];
+
+        rc = sqlite3_step(stmt);
+        if (rc != SQLITE_DONE) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                            userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(self->_db)]}];
+            ok = NO;
+        }
+        sqlite3_finalize(stmt);
+    });
+
+    if (!ok && error) *error = innerError;
+    return ok;
+}
+
+- (BOOL)executeRawSQL:(NSString *)sql error:(NSError **)error {
+    __block BOOL ok = YES;
+    __block NSError *innerError = nil;
+
+    dispatch_sync(_queue, ^{
+        char *errmsg = NULL;
+        int rc = sqlite3_exec(self->_db, sql.UTF8String, NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                            userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"SQL failed"}];
+            if (errmsg) sqlite3_free(errmsg);
+            ok = NO;
+        }
+    });
+
+    if (!ok && error) *error = innerError;
+    return ok;
+}
+
+- (nullable PDSDatabaseBlock *)getBlockWithCid:(NSData *)cid
+                                      repoDid:(NSString *)repoDid
+                                        error:(NSError **)error {
+    __block PDSDatabaseBlock *block = nil;
+    dispatch_sync(_queue, ^{
+        const char *sql = "SELECT cid, repo_did, block_data, content_type, size, created_at FROM blocks WHERE cid = ? AND repo_did = ?";
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt, 2, repoDid.UTF8String, -1, SQLITE_TRANSIENT);
+
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                block = [[PDSDatabaseBlock alloc] init];
+                const void *cidData = sqlite3_column_blob(stmt, 0);
+                int cidLen = sqlite3_column_bytes(stmt, 0);
+                block.cid = [NSData dataWithBytes:cidData length:cidLen];
+                block.repoDid = @((const char *)sqlite3_column_text(stmt, 1));
+
+                const void *blockData = sqlite3_column_blob(stmt, 2);
+                int blockLen = sqlite3_column_bytes(stmt, 2);
+                if (blockData) block.blockData = [NSData dataWithBytes:blockData length:blockLen];
+
+                const char *ctype = (const char *)sqlite3_column_text(stmt, 3);
+                if (ctype) block.contentType = @(ctype);
+
+                block.size = sqlite3_column_int(stmt, 4);
+
+                const char *createdAt = (const char *)sqlite3_column_text(stmt, 5);
+                if (createdAt) block.createdAt = iso8601Parse(@(createdAt));
+            }
+            sqlite3_finalize(stmt);
+        }
+    });
+    return block;
+}
+
+#pragma mark - Private Helpers
+
+- (void)_bindParams:(NSArray *)params toStatement:(sqlite3_stmt *)stmt {
+    for (NSUInteger i = 0; i < params.count; i++) {
+        id param = params[i];
+        int idx = (int)(i + 1);
+        if (param == [NSNull null]) {
+            sqlite3_bind_null(stmt, idx);
+        } else if ([param isKindOfClass:[NSString class]]) {
+            sqlite3_bind_text(stmt, idx, [param UTF8String], -1, SQLITE_TRANSIENT);
+        } else if ([param isKindOfClass:[NSData class]]) {
+            sqlite3_bind_blob(stmt, idx, [param bytes], (int)[param length], SQLITE_TRANSIENT);
+        } else if ([param isKindOfClass:[NSNumber class]]) {
+            sqlite3_bind_int64(stmt, idx, [param longLongValue]);
+        }
+    }
+}
+
+- (id)_valueFromStatement:(sqlite3_stmt *)stmt columnIndex:(int)idx {
+    int type = sqlite3_column_type(stmt, idx);
+    switch (type) {
+        case SQLITE_INTEGER: return @(sqlite3_column_int64(stmt, idx));
+        case SQLITE_FLOAT:   return @(sqlite3_column_double(stmt, idx));
+        case SQLITE_TEXT:    return @((const char *)sqlite3_column_text(stmt, idx));
+        case SQLITE_BLOB: {
+            const void *data = sqlite3_column_blob(stmt, idx);
+            int len = sqlite3_column_bytes(stmt, idx);
+            return [NSData dataWithBytes:data length:len];
+        }
+        default: return [NSNull null];
+    }
+}
+
+#pragma mark - Record Materialization
+
+- (BOOL)saveRecordWithURI:(NSString *)uri
+                     did:(NSString *)did
+              collection:(NSString *)collection
+                    rkey:(NSString *)rkey
+                     cid:(NSString *)cid
+                   value:(nullable NSString *)value
+              subjectDid:(nullable NSString *)subjectDid
+                   error:(NSError **)error {
+    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, subject_did) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    NSArray *params = @[uri, did, collection, rkey, cid, value ?: [NSNull null], subjectDid ?: [NSNull null]];
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (BOOL)saveBlockWithCid:(NSData *)cid
+                repoDid:(NSString *)repoDid
+              blockData:(NSData *)blockData
+            contentType:(nullable NSString *)contentType
+                  error:(NSError **)error {
+    NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSArray *params = @[cid, repoDid, blockData, contentType ?: @"application/cbor", @(blockData.length), iso8601Now()];
+    return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
 @end

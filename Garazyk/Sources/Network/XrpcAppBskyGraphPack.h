@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Database/PDSQueryDatabase.h"
 
 @class XrpcDispatcher;
 @class JWTMinter;
@@ -22,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                 appViewDatabase:(PDSDatabase *)appViewDatabase
+                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController;
 

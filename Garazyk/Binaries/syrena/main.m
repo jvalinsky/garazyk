@@ -13,8 +13,8 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "AppViewServer/AppViewRuntime.h"
-#import "AppViewServer/Config/AppViewConfiguration.h"
+#import "AppView/Server/AppViewRuntime.h"
+#import "AppView/Server/Config/AppViewConfiguration.h"
 #import "Debug/PDSLogger.h"
 
 static const char *executable_name = "syrena";

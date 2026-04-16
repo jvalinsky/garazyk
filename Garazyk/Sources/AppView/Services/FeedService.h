@@ -10,6 +10,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Database/PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -17,19 +18,20 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @class FeedService
-
+ 
  @abstract Service for feed generation and post threads.
-
+ 
  @discussion Generates various feed views with cursor-based pagination.
  Supports timelines, author feeds, post threads, custom feeds, and likes.
  */
 @interface FeedService : NSObject
 
 /*! Initialize with database connection. */
-- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 
 /*! Database connection (exposed for testing). */
-@property (nonatomic, strong, readonly) PDSDatabase *database;
+@property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
+
 
 /*! Get timeline feed for actor with pagination. */
 - (nullable NSDictionary *)getTimelineForActor:(NSString *)actorDID

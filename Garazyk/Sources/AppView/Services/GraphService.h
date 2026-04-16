@@ -11,6 +11,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Database/PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -18,19 +19,20 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @class GraphService
-
+ 
  @abstract Service for social graph operations.
-
+ 
  @discussion Queries follow, block, and mute records to provide paginated
  social graph views. Uses the same record/block storage pattern as FeedService.
  */
 @interface GraphService : NSObject
 
 /*! Initialize with database connection. */
-- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 
 /*! Database connection (exposed for testing). */
-@property (nonatomic, strong, readonly) PDSDatabase *database;
+@property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
+
 
 #pragma mark - Follows
 

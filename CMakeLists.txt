@@ -350,12 +350,16 @@ file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.c$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpXrpcRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/RelayXrpcRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpServerBuilder\\.m$")
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/Xrpc*.m"
   "Garazyk/Sources/Network/Xrpc*.c"
   "Garazyk/Sources/Network/PDSHttpXrpcRoutePack.m"
+  "Garazyk/Sources/Network/RelayXrpcRoutePack.m"
+  "Garazyk/Sources/Network/AppViewXRpcRoutePack.m"
   "Garazyk/Sources/Sync/RelayXRPCMethods.m"
   "Garazyk/Sources/Sync/RelayXRPCMethods.c"
 )

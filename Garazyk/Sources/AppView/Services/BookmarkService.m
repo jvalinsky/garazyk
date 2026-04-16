@@ -7,14 +7,14 @@
 #import "Database/Schema.h"
 
 @interface BookmarkService ()
-@property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) id<PDSQueryDatabase> database;
 @property (nonatomic, strong) ActorService *actorService;
 @property (nonatomic, strong) FeedService *feedService;
 @end
 
 @implementation BookmarkService
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database {
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];
     if (self) {
         _database = database;

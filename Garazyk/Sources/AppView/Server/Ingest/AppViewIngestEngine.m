@@ -12,6 +12,7 @@
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
+#import "Repository/CAR.h"
 
 // ---------------------------------------------------------------------------
 // AppViewIngestEvent
@@ -213,6 +214,64 @@
     // Log raw event (best-effort; ignore failure — we already checked for dup)
     NSData *dummy = [NSData data]; // raw envelope not available from FirehoseCommitEvent directly
     [_database logEvent:seq did:did rev:rev cid:cid rawEnvelope:dummy error:nil];
+
+    // Materialize blocks and records
+    if (event.blocks) {
+        NSError *carErr = nil;
+        CARReader *reader = [CARReader readFromData:event.blocks error:&carErr];
+        if (reader) {
+            for (CARBlock *block in reader.blocks) {
+                [_database saveBlockWithCid:block.cid.bytes
+                                   repoDid:did
+                                 blockData:block.data
+                               contentType:nil
+                                     error:nil];
+            }
+        } else {
+            PDS_LOG_WARN(@"[AppView Ingest] Failed to parse CAR blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
+        }
+    }
+
+    for (NSDictionary *op in event.ops) {
+        NSString *action = op[@"action"];
+        NSString *path = op[@"path"];
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@", did, path];
+        NSString *cidStr = op[@"cid"];
+        
+        if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
+            NSArray *parts = [path componentsSeparatedByString:@"/"];
+            NSString *collection = parts.count > 0 ? parts[0] : @"unknown";
+            NSString *rkey = parts.count > 1 ? parts[1] : @"unknown";
+            
+            // Extract subject DID if applicable (e.g. follow target)
+            NSString *subjectDid = nil;
+            NSDictionary *record = op[@"record"];
+            if (record && [record isKindOfClass:[NSDictionary class]]) {
+                id subject = record[@"subject"];
+                if ([subject isKindOfClass:[NSString class]]) {
+                    subjectDid = subject;
+                } else if ([subject isKindOfClass:[NSDictionary class]]) {
+                    // Extract DID from at:// uri if present
+                    NSString *uri = subject[@"uri"];
+                    if ([uri hasPrefix:@"at://"]) {
+                        NSArray *uriParts = [uri componentsSeparatedByString:@"/"];
+                        if (uriParts.count > 2) subjectDid = uriParts[2];
+                    }
+                }
+            }
+
+            [_database saveRecordWithURI:uri
+                                    did:did
+                             collection:collection
+                                   rkey:rkey
+                                    cid:cidStr
+                                  value:nil // value field in records table is optional/nullable
+                             subjectDid:subjectDid
+                                  error:nil];
+        } else if ([action isEqualToString:@"delete"]) {
+            [_database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:nil];
+        }
+    }
 
     // Build ingest event
     AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];

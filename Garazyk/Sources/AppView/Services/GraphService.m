@@ -14,13 +14,13 @@
 #import "Core/NSDateFormatter+ATProto.h"
 
 @interface GraphService ()
-@property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) id<PDSQueryDatabase> database;
 @property (nonatomic, strong) ActorService *actorService;
 @end
 
 @implementation GraphService
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database {
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
 
     self = [super init];
     if (self) {

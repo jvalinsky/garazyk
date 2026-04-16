@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "Database/PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -6,7 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface BookmarkService : NSObject
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 
 - (nullable NSDictionary *)getBookmarksForActor:(NSString *)actorDID
                                            limit:(NSInteger)limit
