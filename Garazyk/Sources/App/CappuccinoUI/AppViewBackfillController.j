@@ -237,6 +237,7 @@
     [parent addSubview:sectionTitle];
 
     _lagTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 600.0, 120.0)];
+    [_lagTable setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_lagTable setDelegate:self];
     [_lagTable setDataSource:self];
     [_lagTable setAllowsEmptySelection:YES];
@@ -256,8 +257,10 @@
     [[statusColumn headerView] setStringValue:@"Status"];
     [statusColumn setWidth:140.0];
     [_lagTable addTableColumn:statusColumn];
+    [_lagTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var scroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, startY + 30.0, 620.0, 120.0)];
+    [scroll setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [scroll setHasVerticalScroller:YES];
     [scroll setAutohidesScrollers:YES];
     [scroll setDocumentView:_lagTable];
@@ -326,7 +329,9 @@
 
     // Result text view
     var resultScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, startY + 100.0, 1040.0, 60.0)];
+    [resultScroll setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     var resultText = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1040.0, 60.0)];
+    [resultText setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [resultText setEditable:NO];
     [resultText setSelectable:YES];
     [resultText setString:@""];
@@ -351,6 +356,7 @@
     [parent addSubview:sectionTitle];
 
     _queueTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 600.0, 100.0)];
+    [_queueTable setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_queueTable setDelegate:self];
     [_queueTable setDataSource:self];
     [_queueTable setAllowsEmptySelection:YES];
@@ -370,8 +376,10 @@
     [[errorColumn headerView] setStringValue:@"Error"];
     [errorColumn setWidth:200.0];
     [_queueTable addTableColumn:errorColumn];
+    [_queueTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, startY + 30.0, 800.0, 120.0)];
+    [scrollView setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [scrollView setHasVerticalScroller:YES];
     [scrollView setAutohidesScrollers:YES];
     [scrollView setDocumentView:_queueTable];

@@ -67,6 +67,7 @@
     CPTabView _plcSubTabView;
     CPTabView _appViewSubTabView;
     CPSegmentedControl _serviceSegmentedControl;
+    CPView _serviceBar;
 }
 
 - (void)applicationDidFinishLaunching:(CPNotification)aNotification
@@ -302,12 +303,25 @@
 
 - (CPString)selectedServiceKey
 {
-    if (!_serviceTabView || !_activeServices)
+    if (!_activeServices || _activeServices.length === 0)
         return nil;
+
+    if (_activeServices.length === 1)
+        return _activeServices[0];
+
+    if (_serviceSegmentedControl)
+    {
+        var segmentIndex = [_serviceSegmentedControl selectedSegment];
+        if (segmentIndex >= 0 && segmentIndex < _activeServices.length)
+            return _activeServices[segmentIndex];
+    }
+
+    if (!_serviceTabView)
+        return _activeServices[0];
 
     var tabIndex = [_serviceTabView indexOfTabViewItem:[_serviceTabView selectedTabViewItem]];
     if (tabIndex < 0 || tabIndex >= _activeServices.length)
-        return nil;
+        return _activeServices[0];
 
     return _activeServices[tabIndex];
 }
@@ -494,13 +508,15 @@
 {
     _window = [[CPWindow alloc] initWithContentRect:CGRectMake(80.0, 80.0, 1200.0, 800.0)
                                            styleMask:CPTitledWindowMask | CPClosableWindowMask | CPResizableWindowMask];
+    [_window setMinSize:CGSizeMake(1024.0, 700.0)];
 
     var profileDisplayName = [_serviceProfile isEqualToString:@"full"] ? @"All Services" : [self displayNameForService:_serviceProfile];
     [_window setTitle:[@"Kaszlak UI (Cappuccino) - " stringByAppendingString:profileDisplayName]];
 
     var contentBounds = [[_window contentView] bounds],
         statusBarHeight = 26.0,
-        serviceTabHeight = 32.0;
+        serviceTabHeight = (_activeServices && _activeServices.length > 1) ? 32.0 : 0.0,
+        contentAreaHeight = contentBounds.size.height - statusBarHeight - serviceTabHeight;
 
     var statusBar = [[CPView alloc] initWithFrame:CGRectMake(0.0, contentBounds.size.height - statusBarHeight, contentBounds.size.width, statusBarHeight)];
     [statusBar setAutoresizingMask:CPViewWidthSizable | CPViewMinYMargin];
@@ -517,7 +533,7 @@
 
     if ([self isServiceEnabled:@"pds"])
     {
-        _pdsSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _pdsSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_pdsSubTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_pdsSubTabView setTabViewType:CPTopTabsBezelBorder];
 
@@ -526,14 +542,14 @@
         [self addTabToView:_pdsSubTabView label:@"MST" contentView:[_mstController rootView]];
         [self addTabToView:_pdsSubTabView label:@"OAuth Demo" contentView:[_oauthDemoController rootView]];
 
-        _pdsTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _pdsTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_pdsTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_pdsTabContentView addSubview:_pdsSubTabView];
     }
 
     if ([self isServiceEnabled:@"relay"])
     {
-        _relaySubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _relaySubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_relaySubTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_relaySubTabView setTabViewType:CPTopTabsBezelBorder];
 
@@ -541,14 +557,14 @@
         [self addTabToView:_relaySubTabView label:@"Upstreams" contentView:[_relayUpstreamsController rootView]];
         [self addTabToView:_relaySubTabView label:@"Events" contentView:[_relayEventsController rootView]];
 
-        _relayTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _relayTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_relayTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_relayTabContentView addSubview:_relaySubTabView];
     }
 
     if ([self isServiceEnabled:@"plc"])
     {
-        _plcSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _plcSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_plcSubTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_plcSubTabView setTabViewType:CPTopTabsBezelBorder];
 
@@ -557,27 +573,27 @@
         [self addTabToView:_plcSubTabView label:@"Timeline" contentView:[_plcTimelineController rootView]];
         [self addTabToView:_plcSubTabView label:@"Metrics" contentView:[_plcMetricsController rootView]];
 
-        _plcTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _plcTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_plcTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_plcTabContentView addSubview:_plcSubTabView];
     }
 
     if ([self isServiceEnabled:@"appview"])
     {
-        _appViewSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _appViewSubTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_appViewSubTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_appViewSubTabView setTabViewType:CPTopTabsBezelBorder];
 
         [self addTabToView:_appViewSubTabView label:@"Backfill" contentView:[_appViewBackfillController rootView]];
 
-        _appViewTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+        _appViewTabContentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, contentAreaHeight)];
         [_appViewTabContentView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
         [_appViewTabContentView addSubview:_appViewSubTabView];
     }
 
-    _serviceTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, serviceTabHeight, contentBounds.size.width, contentBounds.size.height - statusBarHeight - serviceTabHeight)];
+    _serviceTabView = [[CPTabView alloc] initWithFrame:CGRectMake(0.0, serviceTabHeight, contentBounds.size.width, contentAreaHeight)];
     [_serviceTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
-    [_serviceTabView setTabViewType:CPTopTabsBezelBorder];
+    [_serviceTabView setTabViewType:CPNoTabsNoBorder];
 
     for (var i = 0; i < _activeServices.length; i++)
     {
@@ -592,32 +608,38 @@
             [self addTabToView:_serviceTabView label:@"AppView" contentView:_appViewTabContentView];
     }
 
-    var segmentCount = _activeServices.length,
-        segmentedWidth = segmentCount * 88.0;
+    _serviceSegmentedControl = nil;
+    _serviceBar = nil;
 
-    if (segmentedWidth < 180.0)
-        segmentedWidth = 180.0;
-
-    _serviceSegmentedControl = [[CPSegmentedControl alloc] initWithFrame:CGRectMake(20.0, 4.0, segmentedWidth, 24.0)];
-    [_serviceSegmentedControl setSegmentCount:segmentCount];
-
-    for (var segmentIndex = 0; segmentIndex < segmentCount; segmentIndex++)
+    if (_activeServices.length > 1)
     {
-        var label = [self displayNameForService:_activeServices[segmentIndex]];
-        [_serviceSegmentedControl setLabel:label forSegment:segmentIndex];
+        var segmentCount = _activeServices.length,
+            segmentedWidth = segmentCount * 88.0;
+
+        if (segmentedWidth < 180.0)
+            segmentedWidth = 180.0;
+
+        _serviceSegmentedControl = [[CPSegmentedControl alloc] initWithFrame:CGRectMake(20.0, 4.0, segmentedWidth, 24.0)];
+        [_serviceSegmentedControl setSegmentCount:segmentCount];
+
+        for (var segmentIndex = 0; segmentIndex < segmentCount; segmentIndex++)
+        {
+            var label = [self displayNameForService:_activeServices[segmentIndex]];
+            [_serviceSegmentedControl setLabel:label forSegment:segmentIndex];
+        }
+
+        [_serviceSegmentedControl setSelectedSegment:0];
+        [_serviceSegmentedControl setTarget:self];
+        [_serviceSegmentedControl setAction:@selector(handleServiceSelected:)];
+        [_serviceSegmentedControl setAutoresizingMask:CPViewMaxXMargin];
+
+        _serviceBar = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, serviceTabHeight)];
+        [_serviceBar setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
+        [_serviceBar setBackgroundColor:[CPColor colorWithCalibratedWhite:0.96 alpha:1.0]];
+        [_serviceBar addSubview:_serviceSegmentedControl];
+        [[_window contentView] addSubview:_serviceBar];
     }
 
-    [_serviceSegmentedControl setSelectedSegment:0];
-    [_serviceSegmentedControl setTarget:self];
-    [_serviceSegmentedControl setAction:@selector(handleServiceSelected:)];
-    [_serviceSegmentedControl setAutoresizingMask:CPViewMaxXMargin];
-
-    var serviceBar = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, contentBounds.size.width, serviceTabHeight)];
-    [serviceBar setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
-    [serviceBar setBackgroundColor:[CPColor colorWithCalibratedWhite:0.96 alpha:1.0]];
-    [serviceBar addSubview:_serviceSegmentedControl];
-
-    [[_window contentView] addSubview:serviceBar];
     [[_window contentView] addSubview:_serviceTabView];
     [[_window contentView] addSubview:statusBar];
 
@@ -639,6 +661,8 @@
 - (void)handleServiceSelected:(id)sender
 {
     var selected = [sender selectedSegment];
+    if (selected < 0)
+        return;
     [_serviceTabView selectTabViewItemAtIndex:selected];
 }
 

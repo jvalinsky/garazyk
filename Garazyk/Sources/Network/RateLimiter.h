@@ -230,4 +230,10 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
 
 @end
 
+/**
+ * @brief Global control for all rate limiters
+ */
+FOUNDATION_EXPORT void RateLimiterSetDisabledGlobally(BOOL disabled);
+FOUNDATION_EXPORT BOOL RateLimiterIsDisabledGlobally(void);
+
 NS_ASSUME_NONNULL_END

@@ -28,6 +28,7 @@
 #import "Network/PDSNetworkTransport.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 static const char *executable_name = "zuk";
 
@@ -152,6 +153,13 @@ static BOOL parse_relay_options(NSArray<NSString *> *args,
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
+#ifdef LINUX
+        // On Linux/GNUstep, verify critical categories are loaded
+        if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {
+            fprintf(stderr, "FATAL: Objective-C category NSDateFormatter(ATProto) not loaded. Check linker settings.\n");
+            return 1;
+        }
+#endif
         if (argc < 2) {
             return fail_with_usage(@"Missing command");
         }

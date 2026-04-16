@@ -198,6 +198,7 @@ int main(int argc, char *argv[]) {
       @"LexiconValidationTests",
       @"RecordPathValidationTests",
       @"ATProtoDateTimeTests",
+      @"NSDateFormatterATProtoTests",
       @"XrpcInputValidationTests",
       @"PDSInputValidatorTests",
       @"XrpcErrorResponseTests",
