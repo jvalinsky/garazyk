@@ -19,6 +19,7 @@
 @class RelayEventBuffer;
 @class SubscribeReposHandler;
 @class RelayMetrics;
+@class RelayRepoStateManager;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -52,6 +53,13 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Metrics tracker for relay statistics.
  */
 @property (nonatomic, strong, nullable) RelayMetrics *metrics;
+
+/*!
+ @property repoStateManager
+
+ @abstract Manages repository state for XRPC queries.
+ */
+@property (nonatomic, strong, readwrite, nullable) RelayRepoStateManager *repoStateManager;
 
 /*!
  @method initWithEventBuffer:subscribeReposHandler:

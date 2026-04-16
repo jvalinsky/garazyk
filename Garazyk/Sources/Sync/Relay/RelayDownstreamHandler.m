@@ -10,6 +10,7 @@
 #import "Sync/RelayEventBuffer.h"
 #import "Sync/SubscribeReposHandler.h"
 #import "Sync/RelayMetrics.h"
+#import "Sync/RelayRepoStateManager.h"
 #import "Sync/Firehose.h"
 #import "Sync/EventFormatter.h"
 #import "Core/CID.h"
@@ -59,6 +60,15 @@
 
             // Store in buffer for backfill
             [self.eventBuffer appendEvent:event seq:seq];
+
+            // Update repo state manager for XRPC queries
+            if (self.repoStateManager && commitEvent.repo) {
+                NSString *rootCidStr = commitEvent.commit.stringValue;
+                [self.repoStateManager handleCommitForRepo:commitEvent.repo
+                                                     root:rootCidStr
+                                                       rev:commitEvent.rev
+                                                       seq:seq];
+            }
 
             // Broadcast to downstream subscribers
             [self broadcastCommitEvent:commitEvent];
