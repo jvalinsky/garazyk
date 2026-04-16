@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "AppView/ActorService.h"
+#import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
 
 @interface ActorServiceTests : XCTestCase

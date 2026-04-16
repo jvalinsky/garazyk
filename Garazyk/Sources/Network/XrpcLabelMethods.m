@@ -8,7 +8,7 @@
 #import "Database/PDSDatabase.h"
 #import "Admin/PDSAdminController.h"
 #import "App/PDSConfiguration.h"
-#import "Services/PDSPhoneVerificationProvider.h"
+#import "Services/Core/PDSPhoneVerificationProvider.h"
 #import "Identity/ATProtoHandleValidator.h"
 
 // Deprecation constants for temp.fetchLabels

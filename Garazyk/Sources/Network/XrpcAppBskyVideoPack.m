@@ -15,11 +15,10 @@
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                   appViewDatabase:(PDSDatabase *)appViewDatabase
                        jwtMinter:(JWTMinter *)jwtMinter
-                 adminController:(id<PDSAdminController>)adminController {
-
-  BlobStorage *blobStorage = serviceDatabases.blobStorage;
+                  adminController:(id<PDSAdminController>)adminController {
 
   [dispatcher registerMethod:@"app.bsky.video.getJobStatus"
+
                       handler:^(HttpRequest *request, HttpResponse *response) {
     NSString *jobId = [request queryParamForKey:@"jobId"];
     if (!jobId) {

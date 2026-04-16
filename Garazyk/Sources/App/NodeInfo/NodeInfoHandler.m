@@ -6,7 +6,7 @@
 #import "NodeInfoProvider.h"
 #import "NodeInfoSchemas.h"
 #import "Debug/PDSLogger.h"
-#import "App/Services/PDSAccountService.h"
+#import "Services/PDS/PDSAccountService.h"
 
 @interface NodeInfoHandler ()
 @property (nonatomic, strong) NodeInfoProvider *provider;

@@ -1,14 +1,14 @@
 
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
-#import "Sync/SubscribeReposHandler.h"
-#import "Sync/WebSocketConnection.h"
-#import "Sync/EventFormatter.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
+#import "Sync/Relay/EventFormatter.h"
 #import "Repository/CAR.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
 #import "Database/Pool/DatabasePool.h"
-#import "App/Services/PDSRecordService.h"
+#import "Services/PDS/PDSRecordService.h"
 #import "Admin/PDSAdminController.h" 
 
 // Expose private property for testing

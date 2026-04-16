@@ -14,7 +14,7 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Sync/RelayUpstreamManager.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
 
 @class RelayEventBuffer;
 @class SubscribeReposHandler;

@@ -1,4 +1,4 @@
-#import "Sync/RelayEventBuffer.h"
+#import "Sync/Relay/RelayEventBuffer.h"
 
 @interface BufferedEvent : NSObject
 @property (nonatomic, strong) id event;

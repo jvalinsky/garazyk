@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayMetrics.h"
+#import "Sync/Relay/RelayMetrics.h"
 
 @interface RelayMetricsTests : XCTestCase
 

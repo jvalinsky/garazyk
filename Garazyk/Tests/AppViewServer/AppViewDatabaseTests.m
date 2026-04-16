@@ -9,8 +9,8 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "AppViewServer/AppViewDatabase.h"
-#import "AppViewServer/AppViewTypes.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewTypes.h"
 
 @interface AppViewDatabaseTests : XCTestCase
 @property (nonatomic, strong) AppViewDatabase *db;

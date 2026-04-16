@@ -2,7 +2,7 @@
 #import "Core/Repositories/PDSAccountRepository.h"
 #import "Core/Repositories/PDSBlobRepository.h"
 #import "Core/Repositories/PDSSessionRepository.h"
-#import "App/Services/PDSAccountService.h"
+#import "Services/PDS/PDSAccountService.h"
 
 // Mock class implementing PDSAccountRepository to verify protocol conformance
 @interface MockAccountRepository : NSObject <PDSAccountRepository>

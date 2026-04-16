@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
-#import "Sync/WebSocketConnection.h"
-#import "Sync/WebSocketCodec.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
+#import "Sync/WebSocket/WebSocketCodec.h"
 
 @interface MockWebSocketDelegate2 : NSObject <WebSocketConnectionDelegate>
 @property (nonatomic, strong) NSMutableArray<NSData *> *messages;

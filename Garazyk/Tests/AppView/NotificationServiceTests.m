@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "AppView/NotificationService.h"
+#import "AppView/Services/NotificationService.h"
 #import "Database/PDSDatabase.h"
 
 @interface NotificationServiceTests : XCTestCase

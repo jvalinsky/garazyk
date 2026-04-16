@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Services/PDSAdminService.h"
+#import "Services/Core/PDSAdminService.h"
 #import "Database/PDSDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN

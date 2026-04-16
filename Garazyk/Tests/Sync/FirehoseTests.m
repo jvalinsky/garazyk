@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
-#import "Sync/Firehose.h"
-#import "Sync/WebSocketConnection.h"
+#import "Sync/Firehose/Firehose.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
 #import "Core/ATProtoDagCBOR.h"
 
 NS_ASSUME_NONNULL_BEGIN

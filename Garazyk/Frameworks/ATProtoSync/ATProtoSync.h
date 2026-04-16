@@ -6,12 +6,12 @@
 
 #import <Foundation/Foundation.h>
 
-#import "Sync/Firehose.h"
-#import "Sync/RelayAPIHandler.h"
-#import "Sync/RelayClient.h"
-#import "Sync/RelayDownstreamHandler.h"
-#import "Sync/RelayUpstreamManager.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/Firehose.h"
+#import "Sync/Relay/RelayAPIHandler.h"
+#import "Sync/Relay/RelayClient.h"
+#import "Sync/Relay/RelayDownstreamHandler.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 
 FOUNDATION_EXPORT double ATProtoSyncVersionNumber;
 FOUNDATION_EXPORT const unsigned char ATProtoSyncVersionString[];

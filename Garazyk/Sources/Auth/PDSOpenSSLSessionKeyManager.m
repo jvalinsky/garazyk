@@ -8,6 +8,7 @@
 
 #import "PDSOpenSSLSessionKeyManager.h"
 #import "Database/PDSDatabase.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 #import <openssl/rsa.h>
@@ -464,27 +465,11 @@ NSString * const OpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslsession
 }
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
-        [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-    });
-    return [formatter stringFromDate:date];
+    return [NSDateFormatter atproto_stringFromDate:date];
 }
 
 - (NSDate *)dateFromISO8601:(NSString *)string {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
-        [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-    });
-    return [formatter dateFromString:string];
+    return [NSDateFormatter atproto_dateFromString:string];
 }
 
 @end

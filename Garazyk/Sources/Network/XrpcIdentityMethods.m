@@ -29,7 +29,7 @@
 #import "Debug/PDSLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Network/RateLimiter.h"
 
 // Forward declarations for XrpcMethodRegistry PLC token methods
