@@ -1278,12 +1278,12 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     
     const char *createdAtText = (const char *)sqlite3_column_text(stmt, 7);
     if (createdAtText) {
-        account.createdAt = [[iso8601Formatter() dateFromString:@(createdAtText)] timeIntervalSince1970];
+        account.createdAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(createdAtText)].timeIntervalSince1970;
     }
     
     const char *updatedAtText = (const char *)sqlite3_column_text(stmt, 8);
     if (updatedAtText) {
-        account.updatedAt = [[iso8601Formatter() dateFromString:@(updatedAtText)] timeIntervalSince1970];
+        account.updatedAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(updatedAtText)].timeIntervalSince1970;
     }
     
     // 2FA
@@ -1327,7 +1327,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     const char *createdAtText = (const char *)sqlite3_column_text(stmt, 5);
     if (createdAtText) {
-        record.createdAt = [iso8601Formatter() dateFromString:@(createdAtText)];
+        record.createdAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(createdAtText)];
     }
 
     return record;
@@ -1857,8 +1857,15 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 }
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
-    return [iso8601Formatter() stringFromDate:date];
+    if (!date) return @"";
+    return [[NSDateFormatter atproto_iso8601Formatter] stringFromDate:date];
 }
+
+- (NSDate *)dateFromIso8601String:(NSString *)string {
+    if (!string) return nil;
+    return [[NSDateFormatter atproto_iso8601Formatter] dateFromString:string];
+}
+
 
 + (void)parseLimit:(NSString *)limit outLimit:(NSUInteger *)outLimit {
     if (outLimit == nil) return;
@@ -1871,7 +1878,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 }
 
 - (NSDate *)dateFromISO8601String:(NSString *)string {
-    return [iso8601Formatter() dateFromString:string];
+    return [[NSDateFormatter atproto_iso8601Formatter] dateFromString:string];
 }
 
 #pragma mark - OAuth Clients
@@ -2333,7 +2340,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
 - (BOOL)deleteAuditLogsOlderThanDays:(NSInteger)days error:(NSError **)error {
     NSDate *cutoffDate = [[NSDate date] dateByAddingTimeInterval:-((NSTimeInterval)days * 24 * 60 * 60)];
-    NSString *cutoffStr = [iso8601Formatter() stringFromDate:cutoffDate];
+    NSString *cutoffStr = [[NSDateFormatter atproto_iso8601Formatter] stringFromDate:cutoffDate];
     
     NSString *sql = @"DELETE FROM admin_audit_log WHERE created_at < ?";
     return [self executeParameterizedUpdate:sql params:@[cutoffStr] error:error];

@@ -1,33 +1,22 @@
 #import <Foundation/Foundation.h>
 #import <sqlite3.h>
+#import "PDSBlock.h"
+#import "PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @header PDSDatabase.h
- 
  @abstract Database layer for ATProto PDS persistence.
- 
  @discussion This header defines the core database interface for persisting
  ATProto data including accounts, repositories, records, blocks, and blobs.
  Uses SQLite for local storage with transactions and migrations.
- 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 extern NSString * const PDSDatabaseErrorDomain;
 
-/*!
- @enum PDSDatabaseError
- 
- @abstract Error codes for database operations.
- 
- @constant PDSDatabaseErrorNotOpen The database connection is not open.
- @constant PDSDatabaseErrorQueryFailed A SQL query execution failed.
- @constant PDSDatabaseErrorMigrationFailed Database schema migration failed.
- @constant PDSDatabaseErrorConstraintViolation A database constraint was violated.
- @constant PDSDatabaseErrorNotFound The requested record was not found.
- */
+/*! Error codes for PDSDatabase. */
 typedef NS_ENUM(NSInteger, PDSDatabaseError) {
     PDSDatabaseErrorNotOpen = 1000,
     PDSDatabaseErrorQueryFailed = 1001,
@@ -38,27 +27,9 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 /*!
  @class PDSDatabase
- 
- @abstract Main database controller for PDS data persistence.
- 
- @discussion PDSDatabase provides the primary interface for all database operations
- in the PDS. It manages SQLite connections, executes queries, and handles
- transactions. The class provides both low-level SQL execution and high-level
- methods for common operations like account and repository management.
- 
- @code
- // Create and open database
- PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:@"/path/to/pds.db"]];
- [db openWithError:nil];
- 
- // Query accounts
- NSArray *accounts = [db getAllAccountsWithError:nil];
- 
- // Close when done
- [db close];
- @endcode
+ @abstract Manages the PDS SQLite database.
  */
-@interface PDSDatabase : NSObject
+@interface PDSDatabase : NSObject <PDSQueryDatabase>
 
 /*! The URL path to the SQLite database file. */
 @property (nonatomic, readonly) NSURL *databaseURL;
@@ -361,41 +332,6 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 /*! The subject DID for relationship records (e.g. follow target). */
 @property (nonatomic, copy, nullable) NSString *subjectDid;
-
-@end
-
-/*!
- @class PDSDatabaseBlock
- 
- @abstract Represents a content block stored in the database.
- 
- @discussion Blocks are content-addressed data units stored in CAR format.
- Each block is identified by its CID and belongs to a specific repository.
- 
- @see PDSDatabase (Blocks)
- */
-@interface PDSDatabaseBlock : NSObject
-
-/*! The CID of this block. */
-@property (nonatomic, copy) NSData *cid;
-
-/*! The DID of the repository that owns this block. */
-@property (nonatomic, copy) NSString *repoDid;
-
-/*! The serialized block data in CAR format. */
-@property (nonatomic, copy, nullable) NSData *blockData;
-
-/*! The content type of the block (e.g., application/json). */
-@property (nonatomic, copy, nullable) NSString *contentType;
-
-/*! The size of the block data in bytes. */
-@property (nonatomic, assign) NSInteger size;
-
-/*! Date when the block was stored. */
-@property (nonatomic, strong) NSDate *createdAt;
-
-/*! Revision TID when this block was first written/materialized. */
-@property (nonatomic, copy, nullable) NSString *rev;
 
 @end
 
