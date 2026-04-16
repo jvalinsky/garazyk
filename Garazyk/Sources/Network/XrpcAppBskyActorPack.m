@@ -197,10 +197,31 @@
         [response setJsonBody:@{@"actors": actors ?: @[]}];
     }];
     
-    // app.bsky.actor.getSuggestions - Get suggested accounts (stub)
+    // app.bsky.actor.getSuggestions - Get suggested accounts
+    // TODO: Implement using graph analysis (follows-of-follows, popular actors, etc.)
     [dispatcher registerMethod:@"app.bsky.actor.getSuggestions" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) {
+            return;
+        }
+
+        // TODO: Replace with actual suggestions from GraphService/FeedService
+        // Strategy: Query follows-of-follows, recent popular actors, etc.
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"actors": @[]}];
+        [response setJsonBody:@{
+            @"actors": @[],
+            @"cursor": [NSNull null]
+        }];
     }];
     
     PDS_LOG_INFO(@"Registered app.bsky.actor.* endpoints");
