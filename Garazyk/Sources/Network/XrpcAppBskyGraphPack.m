@@ -476,10 +476,16 @@
         [response setJsonBody:@{}];
     }];
 
-    // app.bsky.graph.searchStarterPacks - Search starter packs (stub)
+    // app.bsky.graph.searchStarterPacks - Search starter packs
+    // TODO: Implement search using indexed starter pack data
     [dispatcher registerMethod:@"app.bsky.graph.searchStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
+        // TODO: Implement full-text search across indexed starter packs
+        // Query: term, limit, cursor
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"starterPacks": @[]}];
+        [response setJsonBody:@{
+            @"starterPacks": @[],
+            @"cursor": [NSNull null]
+        }];
     }];
 
     // app.bsky.graph.getStarterPack - Get a starter pack
