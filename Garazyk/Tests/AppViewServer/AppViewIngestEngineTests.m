@@ -8,9 +8,9 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "AppViewServer/AppViewDatabase.h"
-#import "AppViewServer/AppViewTypes.h"
-#import "AppViewServer/Ingest/AppViewIngestEngine.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewTypes.h"
+#import "AppView/Server/Ingest/AppViewIngestEngine.h"
 
 // ---------------------------------------------------------------------------
 // Tracking delegate

@@ -6,7 +6,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/PDSDatabase.h"
-#import "App/Services/PDSAccountService.h"
+#import "Services/PDS/PDSAccountService.h"
 
 /**
  * OAuth2 Preservation Property Tests

@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "App/Services/PDSBlobService.h"
+#import "Services/PDS/PDSBlobService.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Database/Pool/DatabasePool.h"

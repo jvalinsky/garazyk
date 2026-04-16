@@ -11,7 +11,7 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "OAuthProvider/OAuthProviderProtocols.h"
+#import "Auth/OAuthProvider/OAuthProviderProtocols.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

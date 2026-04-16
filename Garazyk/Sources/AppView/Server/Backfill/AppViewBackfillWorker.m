@@ -4,10 +4,10 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/Backfill/AppViewBackfillWorker.h"
-#import "AppViewServer/AppViewDatabase.h"
-#import "AppViewServer/AppViewTypes.h"
-#import "AppViewServer/Indexers/AppViewIndexer.h"
+#import "AppView/Server/Backfill/AppViewBackfillWorker.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewTypes.h"
+#import "AppView/Server/Indexers/AppViewIndexer.h"
 #import "Debug/PDSLogger.h"
 
 #import <Foundation/Foundation.h>

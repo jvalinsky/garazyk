@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "App/Services/PDSAccountService.h"
+#import "Services/PDS/PDSAccountService.h"
 #import "Auth/JWT.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Database/Pool/DatabasePool.h"

@@ -2,8 +2,9 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Metrics/PDSMetrics.h"
 #import "Database/PDSDatabase.h"
-#import "Services/PDSAdminService.h"
+#import "Services/Core/PDSAdminService.h"
 #import "App/PDSController.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -35,17 +36,6 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 @end
 
 @implementation PDSAdminHandler
-
-static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss'Z'"];
-        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-    });
-    return formatter;
-}
 
 + (instancetype)sharedHandler {
     static PDSAdminHandler *shared = nil;
@@ -223,7 +213,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
 
         if (account.createdAt > 0) {
             NSDate *date = [NSDate dateWithTimeIntervalSince1970:account.createdAt];
-            user[@"created_at"] = [AdminHandlerISO8601Formatter() stringFromDate:date];
+            user[@"created_at"] = [NSDateFormatter atproto_stringFromDate:date];
         } else {
             user[@"created_at"] = @"";
         }
@@ -299,7 +289,7 @@ static NSDateFormatter *AdminHandlerISO8601Formatter(void) {
             NSTimeInterval ts = [createdAtVal doubleValue];
             if (ts > 0) {
                 NSDate *date = [NSDate dateWithTimeIntervalSince1970:ts];
-                invite[@"created_at"] = [AdminHandlerISO8601Formatter() stringFromDate:date];
+                invite[@"created_at"] = [NSDateFormatter atproto_stringFromDate:date];
             } else {
                 invite[@"created_at"] = @"";
             }

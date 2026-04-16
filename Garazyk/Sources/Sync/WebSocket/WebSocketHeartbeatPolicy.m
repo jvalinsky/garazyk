@@ -1,4 +1,4 @@
-#import "Sync/WebSocketHeartbeatPolicy.h"
+#import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
 
 @interface WebSocketHeartbeatPolicy ()
 @property (nonatomic, assign) NSTimeInterval lastPingSentTime;

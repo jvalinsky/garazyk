@@ -18,7 +18,7 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Sync/RelayConfiguration.h"
+#import "Sync/Relay/RelayConfiguration.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

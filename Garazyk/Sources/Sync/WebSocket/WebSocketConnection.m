@@ -1,9 +1,9 @@
-#import "Sync/WebSocketConnection.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
 #import "Compat/PDSTypes.h"
 #import "Network/PDSNetworkTransport.h"
 #import "Network/HttpParsing.h"
-#import "Sync/WebSocketCodec.h"
-#import "Sync/WebSocketHeartbeatPolicy.h"
+#import "Sync/WebSocket/WebSocketCodec.h"
+#import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
 #import <CommonCrypto/CommonDigest.h>
 
 static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024; // 16MB limit

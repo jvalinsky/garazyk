@@ -3,8 +3,8 @@
 #else
 #import "Compat/XCTest/XCTest.h"
 #endif
-#import "Sync/WebSocketServer.h"
-#import "Sync/WebSocketConnection.h"
+#import "Sync/WebSocket/WebSocketServer.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
 
 @interface WebSocketServer (Testing)
 - (void)addConnection:(WebSocketConnection *)connection;

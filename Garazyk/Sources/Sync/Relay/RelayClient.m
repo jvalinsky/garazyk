@@ -1,7 +1,7 @@
-#import "Sync/RelayClient.h"
+#import "Sync/Relay/RelayClient.h"
 #import "Compat/PDSTypes.h"
-#import "Sync/Firehose.h"
-#import "Sync/WebSocketConnection.h"
+#import "Sync/Firehose/Firehose.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
 
 NSString * const RelayClientErrorDomain = @"com.atproto.pds.relay.client";
 NSInteger const RelayClientErrorCodeConnectionFailed = 4000;

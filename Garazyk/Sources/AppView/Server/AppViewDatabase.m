@@ -4,9 +4,10 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/AppViewDatabase.h"
+#import "AppView/Server/AppViewDatabase.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 #import <sqlite3.h>
 
@@ -90,23 +91,12 @@ static NSString * const kSchemaV1 = @""
 // ---------------------------------------------------------------------------
 
 static NSString *iso8601Now(void) {
-    NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
-    fmt.formatOptions = NSISO8601DateFormatWithInternetDateTime |
-                        NSISO8601DateFormatWithFractionalSeconds;
-    return [fmt stringFromDate:[NSDate date]];
+    return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
 
 static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     if (!str) return nil;
-    NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
-    fmt.formatOptions = NSISO8601DateFormatWithInternetDateTime |
-                        NSISO8601DateFormatWithFractionalSeconds;
-    NSDate *d = [fmt dateFromString:str];
-    if (!d) {
-        fmt.formatOptions = NSISO8601DateFormatWithInternetDateTime;
-        d = [fmt dateFromString:str];
-    }
-    return d;
+    return [NSDateFormatter atproto_dateFromString:str];
 }
 
 // ---------------------------------------------------------------------------
@@ -289,9 +279,8 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             else
                 sqlite3_bind_null(stmt, 3);
             if (state.lastBackfillAt) {
-                NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
-                fmt.formatOptions = NSISO8601DateFormatWithInternetDateTime | NSISO8601DateFormatWithFractionalSeconds;
-                sqlite3_bind_text(stmt, 4, [fmt stringFromDate:state.lastBackfillAt].UTF8String, -1, SQLITE_TRANSIENT);
+                NSString *ts = [NSDateFormatter atproto_stringFromDate:state.lastBackfillAt];
+                sqlite3_bind_text(stmt, 4, ts.UTF8String, -1, SQLITE_TRANSIENT);
             } else {
                 sqlite3_bind_null(stmt, 4);
             }
@@ -646,9 +635,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 - (NSInteger)pruneEventLogOlderThan:(NSDate *)cutoff error:(NSError **)error {
     __block NSInteger deleted = 0;
     dispatch_sync(_queue, ^{
-        NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
-        fmt.formatOptions = NSISO8601DateFormatWithInternetDateTime | NSISO8601DateFormatWithFractionalSeconds;
-        NSString *cutoffStr = [fmt stringFromDate:cutoff];
+        NSString *cutoffStr = [NSDateFormatter atproto_stringFromDate:cutoff];
 
         const char *sql = "DELETE FROM appview_event_log WHERE created_at < ?";
         sqlite3_stmt *stmt = NULL;
@@ -679,15 +666,14 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             "   added_at = excluded.added_at";
         sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
-            NSISO8601DateFormatter *fmt = [[NSISO8601DateFormatter alloc] init];
-            fmt.formatOptions = NSISO8601DateFormatWithInternetDateTime | NSISO8601DateFormatWithFractionalSeconds;
-
             sqlite3_bind_text(stmt, 1, membership.did.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_int(stmt,  2, (int)membership.reason);
-            if (membership.expiresAt)
-                sqlite3_bind_text(stmt, 3, [fmt stringFromDate:membership.expiresAt].UTF8String, -1, SQLITE_TRANSIENT);
-            else
+            if (membership.expiresAt) {
+                NSString *ts = [NSDateFormatter atproto_stringFromDate:membership.expiresAt];
+                sqlite3_bind_text(stmt, 3, ts.UTF8String, -1, SQLITE_TRANSIENT);
+            } else {
                 sqlite3_bind_null(stmt, 3);
+            }
             sqlite3_bind_text(stmt, 4, iso8601Now().UTF8String, -1, SQLITE_TRANSIENT);
 
             int rc = sqlite3_step(stmt);

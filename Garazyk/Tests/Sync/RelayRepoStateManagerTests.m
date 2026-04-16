@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayRepoStateManager.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
 
 @interface RelayRepoStateManagerTests : XCTestCase
 @end

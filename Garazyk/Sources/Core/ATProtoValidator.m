@@ -183,4 +183,37 @@
     return YES;
 }
 
++ (BOOL)validateDatetime:(NSString *)datetime error:(NSError **)error {
+    if (!datetime) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Datetime cannot be nil"}];
+        return NO;
+    }
+
+    // Regex for basic ISO 8601 structure compliant with ATProto lexicon
+    // YYYY-MM-DDTHH:mm:ss[.sss](Z|±HH:MM)
+    NSString *pattern = @"^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(\\.[0-9]{1,20})?(Z|([+-][0-9]{2}:[0-9]{2}))$";
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
+    if ([regex numberOfMatchesInString:datetime options:0 range:NSMakeRange(0, datetime.length)] == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:22 userInfo:@{NSLocalizedDescriptionKey: @"Invalid datetime format"}];
+        return NO;
+    }
+
+    // Range checks
+    int y, m, d, hr, min, sec;
+    sscanf([datetime UTF8String], "%d-%d-%dT%d:%d:%d", &y, &m, &d, &hr, &min, &sec);
+
+    if (y < 0 || y > 9999 || m < 1 || m > 12 || d < 1 || d > 31 || hr < 0 || hr > 23 || min < 0 || min > 59 || sec < 0 || sec > 60) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:23 userInfo:@{NSLocalizedDescriptionKey: @"Datetime components out of range"}];
+        return NO;
+    }
+
+    // Special check for -00:00 (prohibited by lexicon)
+    if ([datetime containsString:@"-00:00"]) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:24 userInfo:@{NSLocalizedDescriptionKey: @"Negative zero timezone offset is prohibited"}];
+        return NO;
+    }
+
+    return YES;
+}
+
 @end

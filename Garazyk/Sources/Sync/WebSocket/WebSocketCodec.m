@@ -1,4 +1,4 @@
-#import "Sync/WebSocketCodec.h"
+#import "Sync/WebSocket/WebSocketCodec.h"
 #include <string.h>
 
 static const uint8_t WS_OPCODE_CONTINUE = 0x0;

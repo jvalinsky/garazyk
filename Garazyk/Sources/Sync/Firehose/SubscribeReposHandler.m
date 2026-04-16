@@ -1,9 +1,10 @@
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Compat/PDSTypes.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
 #import "Core/PDSRecordEvents.h"
 #import "Core/TID.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
@@ -13,10 +14,10 @@
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
 #import "Repository/RepoCommit.h"
-#import "Sync/EventFormatter.h"
-#import "Sync/Firehose.h"
-#import "Sync/WebSocketConnection.h"
-#import "Sync/WebSocketServer.h"
+#import "Sync/Relay/EventFormatter.h"
+#import "Sync/Firehose/Firehose.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
+#import "Sync/WebSocket/WebSocketServer.h"
 #import "Metrics/PDSMetrics.h"
 
 NSString *const SubscribeReposHandlerErrorDomain =
@@ -983,14 +984,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 + (NSString *)rfc3339Timestamp {
-  static NSISO8601DateFormatter *formatter = nil;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    formatter = [[NSISO8601DateFormatter alloc] init];
-    formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime |
-                              NSISO8601DateFormatWithFractionalSeconds;
-  });
-  return [formatter stringFromDate:[NSDate date]];
+  return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
 
 - (NSData *)buildCARBlocksForCommit:(RepoCommit *)commit

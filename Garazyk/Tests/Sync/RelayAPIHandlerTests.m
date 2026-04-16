@@ -1,7 +1,7 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayAPIHandler.h"
-#import "Sync/RelayMetrics.h"
-#import "Sync/RelayUpstreamManager.h"
+#import "Sync/Relay/RelayAPIHandler.h"
+#import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 

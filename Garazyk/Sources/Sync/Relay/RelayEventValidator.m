@@ -1,5 +1,5 @@
-#import "Sync/RelayEventValidator.h"
-#import "Sync/RelayMetrics.h"
+#import "Sync/Relay/RelayEventValidator.h"
+#import "Sync/Relay/RelayMetrics.h"
 #import "Repository/MST.h"
 #import "Auth/Secp256k1.h"
 

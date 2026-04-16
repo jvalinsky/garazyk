@@ -2,8 +2,8 @@
 #import "Auth/CryptoUtils.h"
 #import "Auth/Base32Utils.h"
 #import "Auth/PDSKeyProtocol.h"
-#import "AuthCrypto/AuthCryptoJWK.h"
-#import "AuthCrypto/AuthCryptoBase64URL.h"
+#import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Repository/CBOR.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)

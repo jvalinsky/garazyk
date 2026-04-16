@@ -1,7 +1,7 @@
 #import "RepoAuthXrpcTestBase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "App/PDSApplication.h"
-#import "Sync/EventFormatter.h"
+#import "Sync/Relay/EventFormatter.h"
 
 @interface RepoAuthIdentityTests : RepoAuthXrpcTestBase
 @end

@@ -1,8 +1,8 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayXRPCMethods.h"
-#import "Sync/RelayConfiguration.h"
-#import "Sync/RelayRepoStateManager.h"
-#import "Sync/RelayEventBuffer.h"
+#import "Sync/Relay/RelayXRPCMethods.h"
+#import "Sync/Relay/RelayConfiguration.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
+#import "Sync/Relay/RelayEventBuffer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcMethodRegistry.h"

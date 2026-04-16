@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Auth/DPoPUtil.h"
-#import "AuthCrypto/AuthCryptoDPoP.h"
+#import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/TestKeyFixtures.h"
 
 

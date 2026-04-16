@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayEventFilter.h"
+#import "Sync/Relay/RelayEventFilter.h"
 
 @interface RelayEventFilterTests : XCTestCase
 @end

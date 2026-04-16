@@ -1,6 +1,6 @@
-#import "Sync/WebSocketServer.h"
+#import "Sync/WebSocket/WebSocketServer.h"
 #import "Compat/PDSTypes.h"
-#import "Sync/WebSocketConnection.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
 
 NSString *const WebSocketServerErrorDomain = @"com.atproto.pds.websocket.server";
 NSInteger const WebSocketServerErrorCodeListenerFailed = 1000;

@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "AppView/FeedService.h"
+#import "AppView/Services/FeedService.h"
 #import "Database/PDSDatabase.h"
 
 @interface FeedServiceTests : XCTestCase

@@ -340,7 +340,6 @@ list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/PDSAuth/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Crypto/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Verifier/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDS/.*")
-list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Services/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/AppView/Server/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Services/PDS(AdminService|PhoneVerificationProvider)\\.m$")
 
@@ -366,10 +365,13 @@ list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Sync/Relay/RelayXRPCMethods\\
 list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Sync/Relay/RelayXRPCMethods\\.c$")
 
 file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
-  "Garazyk/Sources/Sync/*.m"
-  "Garazyk/Sources/Sync/*.c"
+  "Garazyk/Sources/Sync/Firehose/*.m"
+  "Garazyk/Sources/Sync/Firehose/*.c"
+  "Garazyk/Sources/Sync/Relay/*.m"
+  "Garazyk/Sources/Sync/Relay/*.c"
+  "Garazyk/Sources/Sync/WebSocket/*.m"
+  "Garazyk/Sources/Sync/WebSocket/*.c"
 )
-list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/(Firehose|Relay|WebSocket)/.*\\.(m|c)$")
 list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.m$")
 list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.c$")
 
@@ -528,7 +530,7 @@ set_target_properties(kaszlak PROPERTIES
 
 # PLC Server (campagnola - PLC directory binary)
 add_executable(campagnola
-  Garazyk/Sources/PLC/main.m
+  Garazyk/Binaries/campagnola/main.m
 )
 
 target_include_directories(campagnola PRIVATE
@@ -558,7 +560,7 @@ set_target_properties(campagnola PROPERTIES
 
 # Relay Server (zuk - AT Protocol relay)
 add_executable(zuk
-  Garazyk/Sources/Relay/main.m
+  Garazyk/Binaries/zuk/main.m
 )
 
 target_include_directories(zuk PRIVATE
@@ -589,11 +591,11 @@ set_target_properties(zuk PROPERTIES
 
 # AppView server source library
 file(GLOB_RECURSE ATPROTO_APPVIEW_SERVER_SOURCES
-  "Garazyk/Sources/AppViewServer/*.m"
-  "Garazyk/Sources/AppViewServer/*.c"
+  "Garazyk/Sources/AppView/Server/*.m"
+  "Garazyk/Sources/AppView/Server/*.c"
 )
 # Exclude binary entrypoint from the library
-list(FILTER ATPROTO_APPVIEW_SERVER_SOURCES EXCLUDE REGEX ".*/AppViewServer/Binary/.*\\.m$")
+list(FILTER ATPROTO_APPVIEW_SERVER_SOURCES EXCLUDE REGEX ".*/AppView/Server/Binary/.*\\.m$")
 
 add_library(ATProtoAppViewServer STATIC ${ATPROTO_APPVIEW_SERVER_SOURCES})
 
@@ -616,7 +618,7 @@ target_link_libraries(ATProtoAppViewServer PRIVATE
 
 # AppView Server binary (syrena)
 add_executable(syrena
-  Garazyk/Sources/AppViewServer/Binary/main.m
+  Garazyk/Binaries/syrena/main.m
 )
 
 target_include_directories(syrena PRIVATE

@@ -4,7 +4,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "AppView/ActorService.h"
+#import "AppView/Services/ActorService.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Identity/ATProtoHandleValidator.h"

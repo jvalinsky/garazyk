@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
-#import "Sync/RelayRepoStateManager.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
 #import "Network/HttpServer.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

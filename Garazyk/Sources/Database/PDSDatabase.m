@@ -4,24 +4,12 @@
 #import "Database/Schema.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Debug/PDSLogger.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #if !defined(__linux__) && !defined(__GNUstep__)
 #import <Security/Security.h>
 #endif
 
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
-
-static NSDateFormatter * iso8601Formatter(void) {
-    // Thread-safe singleton
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
-        [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-    });
-    return formatter;
-}
 
 @interface PDSDatabase ()
 
@@ -2187,7 +2175,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     
     // Generate simple ID
     NSString *takedownId = [[NSUUID UUID] UUIDString];
-    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     
     NSArray *params = @[
         takedownId,
@@ -2283,7 +2271,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 - (BOOL)insertAuditLogEntry:(NSDictionary *)entry error:(NSError **)error {
     NSString *sql = @"INSERT INTO admin_audit_log (admin_did, action, subject_type, subject_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     
-    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     
     NSArray *params = @[
         entry[@"admin_did"] ?: [NSNull null],
@@ -2359,7 +2347,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 
 - (NSString *)createReport:(NSDictionary *)report error:(NSError **)error {
     NSString *reportId = [[NSUUID UUID] UUIDString];
-    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     
     NSString *sql = @"INSERT INTO reports (report_id, reason_type, reason, reported_by_did, subject_type, subject_did, subject_uri, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)";
     
@@ -2432,7 +2420,7 @@ static NSDateFormatter * iso8601Formatter(void) {
     
     if ([status isEqualToString:@"resolved"] || [status isEqualToString:@"dismissed"]) {
         [sql appendString:@", resolved_by_did = ?, resolved_at = ?, resolution_notes = ?"];
-        NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+        NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         [params addObjectsFromArray:@[adminDid ?: [NSNull null], dateStr, notes ?: [NSNull null]]];
     }
     
@@ -2455,7 +2443,7 @@ static NSDateFormatter * iso8601Formatter(void) {
 }
 
 - (BOOL)setAdminConfigValue:(NSString *)value forKey:(NSString *)key error:(NSError **)error {
-    NSString *dateStr = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSString *sql = @"INSERT OR REPLACE INTO admin_config (key, value, updated_at) VALUES (?, ?, ?)";
     return [self executeParameterizedUpdate:sql params:@[key, value, dateStr] error:error];
 }
@@ -2488,7 +2476,7 @@ static NSDateFormatter * iso8601Formatter(void) {
                     mimeType:(NSString *)mimeType
                     fileSize:(NSNumber *)fileSize
                         error:(NSError **)error {
-    NSString *now = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSString *sql = @"INSERT INTO video_jobs (job_id, did, blob_cid, mime_type, file_size, state, progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)";
     
     NSArray *params = @[
@@ -2509,7 +2497,7 @@ static NSDateFormatter * iso8601Formatter(void) {
                     progress:(NSNumber *)progress
                      message:(NSString *)message
                        error:(NSError **)error {
-    NSString *now = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSString *sql = @"UPDATE video_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
     
     NSArray *params = @[
@@ -2528,7 +2516,7 @@ static NSDateFormatter * iso8601Formatter(void) {
                 forDid:(NSString *)did
                 error:(NSError **)error {
     NSString *sql = @"UPDATE accounts SET age_assurance = ?, age_verified_at = ?, updated_at = ? WHERE did = ?";
-    NSString *now = [iso8601Formatter() stringFromDate:[NSDate date]];
+    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSArray *params = @[
         assurance ?: [NSNull null],
         verifiedAt ?: [NSNull null],

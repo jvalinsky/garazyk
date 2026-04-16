@@ -9,7 +9,7 @@
 #import "Network/PDSNetworkTransport.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 
 @implementation PDSHttpXrpcRoutePack
 

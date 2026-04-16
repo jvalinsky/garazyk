@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/WebSocketHeartbeatPolicy.h"
+#import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
 
 @interface WebSocketHeartbeatPolicyTests : XCTestCase
 @property (nonatomic, strong) WebSocketHeartbeatPolicy *policy;

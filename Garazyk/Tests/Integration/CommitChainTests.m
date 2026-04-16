@@ -8,9 +8,9 @@
 #import "Core/CID.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/TID.h"
-#import "App/Services/PDSRecordService.h"
-#import "Sync/SubscribeReposHandler.h"
-#import "Sync/WebSocketConnection.h"
+#import "Services/PDS/PDSRecordService.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
 
 // Expose private property for testing
 @interface SubscribeReposHandler (CommitChainTesting)

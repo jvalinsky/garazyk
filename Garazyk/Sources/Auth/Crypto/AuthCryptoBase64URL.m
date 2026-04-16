@@ -6,7 +6,7 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AuthCrypto/AuthCryptoBase64URL.h"
+#import "Auth/Crypto/AuthCryptoBase64URL.h"
 
 @implementation AuthCryptoBase64URL
 

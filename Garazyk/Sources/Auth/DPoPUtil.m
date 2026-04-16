@@ -11,10 +11,10 @@
 #if defined(__APPLE__) && !defined(GNUSTEP)
 
 #import "Auth/DPoPUtil.h"
-#import "AuthCrypto/AuthCryptoDPoP.h"
-#import "AuthCrypto/AuthCryptoBase64URL.h"
-#import "AuthCrypto/AuthCryptoJWK.h"
-#import "AuthCrypto/AuthCryptoECDSA.h"
+#import "Auth/Crypto/AuthCryptoDPoP.h"
+#import "Auth/Crypto/AuthCryptoBase64URL.h"
+#import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/Crypto/AuthCryptoECDSA.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
 

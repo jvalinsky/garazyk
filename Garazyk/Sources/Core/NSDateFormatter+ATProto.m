@@ -1,212 +1,167 @@
 /*!
  @file NSDateFormatter+ATProto.m
-
+ 
  @abstract Implementation of NSDateFormatter category for ATProto date formatting.
-
+ 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import "NSDateFormatter+ATProto.h"
 
-static NSString *_Nullable normalizeRFC3339ForNSDateFormatter(NSString *_Nullable input) {
-    if (![input isKindOfClass:[NSString class]]) {
-        return nil;
-    }
-
-    NSString *string = [input stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    if (string.length == 0) {
-        return nil;
-    }
-
-    NSRange tRange = [string rangeOfString:@"T"];
-    if (tRange.location == NSNotFound) {
-        return nil;
-    }
-    NSUInteger tIndex = tRange.location;
-
-    NSString *main = string;
-    NSString *tz = nil;
-
-    if ([string hasSuffix:@"Z"]) {
-        if (string.length < 2) {
-            return nil;
-        }
-        main = [string substringToIndex:string.length - 1];
-        tz = @"+0000";
-    } else {
-        NSRange plusRange = [string rangeOfString:@"+" options:NSBackwardsSearch];
-        NSRange minusRange = [string rangeOfString:@"-" options:NSBackwardsSearch];
-
-        NSUInteger tzIndex = NSNotFound;
-        if (plusRange.location != NSNotFound && plusRange.location > tIndex) {
-            tzIndex = plusRange.location;
-        }
-        if (minusRange.location != NSNotFound && minusRange.location > tIndex &&
-            (tzIndex == NSNotFound || minusRange.location > tzIndex)) {
-            tzIndex = minusRange.location;
-        }
-
-        if (tzIndex != NSNotFound) {
-            main = [string substringToIndex:tzIndex];
-            tz = [string substringFromIndex:tzIndex];
-        } else {
-            tz = @"+0000";
-        }
-    }
-
-    if (tz.length < 1) {
-        return nil;
-    }
-    unichar signChar = [tz characterAtIndex:0];
-    if (signChar != '+' && signChar != '-') {
-        return nil;
-    }
-
-    NSString *tzRest = tz.length > 1 ? [tz substringFromIndex:1] : @"";
-    tzRest = [tzRest stringByReplacingOccurrencesOfString:@":" withString:@""];
-
-    NSMutableString *tzDigits = [NSMutableString stringWithCapacity:4];
-    for (NSUInteger i = 0; i < tzRest.length; i++) {
-        unichar ch = [tzRest characterAtIndex:i];
-        if (ch < '0' || ch > '9') {
-            break;
-        }
-        [tzDigits appendFormat:@"%C", ch];
-        if (tzDigits.length >= 4) {
-            break;
-        }
-    }
-
-    if (tzDigits.length == 2) {
-        [tzDigits appendString:@"00"];
-    }
-    if (tzDigits.length != 4) {
-        return nil;
-    }
-
-    NSString *normalizedTZ = [NSString stringWithFormat:@"%C%@", signChar, tzDigits];
-
-    NSString *base = main;
-    NSString *fractionDigits = nil;
-    NSRange dotRange = [main rangeOfString:@"." options:NSBackwardsSearch];
-    if (dotRange.location != NSNotFound && dotRange.location > tIndex) {
-        base = [main substringToIndex:dotRange.location];
-        NSString *fraction = (dotRange.location + 1 < main.length) ? [main substringFromIndex:dotRange.location + 1] : @"";
-
-        NSMutableString *digits = [NSMutableString stringWithCapacity:3];
-        for (NSUInteger i = 0; i < fraction.length; i++) {
-            unichar ch = [fraction characterAtIndex:i];
-            if (ch < '0' || ch > '9') {
-                break;
-            }
-            [digits appendFormat:@"%C", ch];
-            if (digits.length >= 9) {
-                break;
-            }
-        }
-        fractionDigits = digits;
-    }
-
-    NSString *ms = @"000";
-    if ([fractionDigits isKindOfClass:[NSString class]] && fractionDigits.length > 0) {
-        if (fractionDigits.length >= 3) {
-            ms = [fractionDigits substringToIndex:3];
-        } else if (fractionDigits.length == 2) {
-            ms = [fractionDigits stringByAppendingString:@"0"];
-        } else {
-            ms = [fractionDigits stringByAppendingString:@"00"];
-        }
-    }
-
-    NSString *normalizedMain = [NSString stringWithFormat:@"%@.%@", base, ms];
-    return [normalizedMain stringByAppendingString:normalizedTZ];
-}
+// Values for NSISO8601DateFormatOptions from Foundation headers
+// InternetDateTime = Year | Month | Day | Time | DashSeparatorInDate | ColonSeparatorInTime | ColonSeparatorInTimeZone
+// On macOS 14: 1907
+// FractionalSeconds: 2048
+#define AT_NSISO8601DateFormatWithInternetDateTime 1907
+#define AT_NSISO8601DateFormatWithFractionalSeconds 2048
 
 @implementation NSDateFormatter (ATProto)
+
++ (BOOL)isNSISO8601DateFormatterAvailable {
+    return NSClassFromString(@"NSISO8601DateFormatter") != nil;
+}
+
++ (id)atproto_iso8601FormatterInternal {
+    Class isoClass = NSClassFromString(@"NSISO8601DateFormatter");
+    if (isoClass) {
+        static id formatter = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            formatter = [[isoClass alloc] init];
+            SEL setFormatOptionsSEL = NSSelectorFromString(@"setFormatOptions:");
+            if ([formatter respondsToSelector:setFormatOptionsSEL]) {
+                NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime | AT_NSISO8601DateFormatWithFractionalSeconds;
+                NSMethodSignature *sig = [formatter methodSignatureForSelector:setFormatOptionsSEL];
+                NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+                [inv setTarget:formatter];
+                [inv setSelector:setFormatOptionsSEL];
+                [inv setArgument:&options atIndex:2];
+                [inv invoke];
+            }
+        });
+        return formatter;
+    }
+    return nil;
+}
+
++ (id)atproto_iso8601FormatterInternalNoFractionalSeconds {
+    Class isoClass = NSClassFromString(@"NSISO8601DateFormatter");
+    if (isoClass) {
+        static id formatter = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            formatter = [[isoClass alloc] init];
+            SEL setFormatOptionsSEL = NSSelectorFromString(@"setFormatOptions:");
+            if ([formatter respondsToSelector:setFormatOptionsSEL]) {
+                NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime;
+                NSMethodSignature *sig = [formatter methodSignatureForSelector:setFormatOptionsSEL];
+                NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+                [inv setTarget:formatter];
+                [inv setSelector:setFormatOptionsSEL];
+                [inv setArgument:&options atIndex:2];
+                [inv invoke];
+            }
+        });
+        return formatter;
+    }
+    return nil;
+}
 
 + (NSDateFormatter *)atproto_iso8601Formatter {
     static NSDateFormatter *formatter = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
+        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"];
         [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
         [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
     });
     return formatter;
 }
 
-+ (NSISO8601DateFormatter *)atproto_iso8601FormatterInternal {
-    static NSISO8601DateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSISO8601DateFormatter alloc] init];
-        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime | NSISO8601DateFormatWithFractionalSeconds;
-    });
-    return formatter;
-}
-
-+ (NSISO8601DateFormatter *)atproto_iso8601FormatterInternalNoFractionalSeconds {
-    static NSISO8601DateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSISO8601DateFormatter alloc] init];
-        formatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
-    });
-    return formatter;
-}
-
 + (NSString *)atproto_stringFromDate:(NSDate *)date {
-    if (!date) {
-        return nil;
+    if (!date) return nil;
+    
+    id isoFormatter = [self atproto_iso8601FormatterInternal];
+    if (isoFormatter) {
+        SEL stringFromDateSEL = NSSelectorFromString(@"stringFromDate:");
+        if ([isoFormatter respondsToSelector:stringFromDateSEL]) {
+            // Using performSelector: withObject: is safe for return type id
+            return [isoFormatter performSelector:stringFromDateSEL withObject:date];
+        }
     }
-    return [[self atproto_iso8601FormatterInternal] stringFromDate:date];
+    
+    return [[self atproto_iso8601Formatter] stringFromDate:date];
 }
 
-+ (nullable NSDate *)atproto_dateFromString:(NSString *)string {
-    if (!string || string.length == 0) {
-        return nil;
++ (nullable NSDate *)atproto_dateFromStringManual:(NSString *)string {
+    if (!string || string.length == 0) return nil;
+
+    const char *str = [string UTF8String];
+    int y, m, d, hr, min, sec;
+    double fsec = 0;
+    char tz[64];
+    int offset_hr = 0, offset_min = 0;
+    char tz_sign = 'Z';
+
+    // Try with fractional seconds (using double for precision)
+    int count = sscanf(str, "%d-%d-%dT%d:%d:%lf%63s", &y, &m, &d, &hr, &min, &fsec, tz);
+    if (count < 6) {
+        // Try without fractional seconds
+        count = sscanf(str, "%d-%d-%dT%d:%d:%d%63s", &y, &m, &d, &hr, &min, &sec, tz);
+        if (count < 6) return nil;
+        fsec = (double)sec;
     }
 
-    NSDate *date = nil;
-    @try {
-        date = [[self atproto_iso8601FormatterInternal] dateFromString:string];
-    } @catch (NSException *exception) {
-        (void)exception;
-        date = nil;
-    }
-    if (date) return date;
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
+    [calendar setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
+    NSDateComponents *comps = [[NSDateComponents alloc] init];
+    [comps setYear:y];
+    [comps setMonth:m];
+    [comps setDay:d];
+    [comps setHour:hr];
+    [comps setMinute:min];
+    [comps setSecond:(int)fsec];
+    [comps setNanosecond:(int)((fsec - (int)fsec) * 1000000000.0)];
 
-    @try {
-        date = [[self atproto_iso8601FormatterInternalNoFractionalSeconds] dateFromString:string];
-    } @catch (NSException *exception) {
-        (void)exception;
-        date = nil;
-    }
-    if (date) return date;
+    NSDate *date = [calendar dateFromComponents:comps];
 
-    NSString *normalized = normalizeRFC3339ForNSDateFormatter(string);
-    if (normalized.length == 0) {
-        // Fall back to the legacy formatter for non-RFC3339 strings
-        @try {
-            return [[self atproto_iso8601Formatter] dateFromString:string];
-        } @catch (NSException *exception) {
-            (void)exception;
-            return nil;
+    // Handle Timezone
+    if (count == 7) {
+        if (tz[0] == 'Z') {
+            // UTC, already handled
+        } else if (sscanf(tz, "%c%d:%d", &tz_sign, &offset_hr, &offset_min) == 3) {
+            int offset = (offset_hr * 3600) + (offset_min * 60);
+            if (tz_sign == '-') offset = -offset;
+            date = [date dateByAddingTimeInterval:-offset];
         }
     }
 
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
-    [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-    [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    return date;
+}
 
-    @try {
-        return [formatter dateFromString:normalized];
-    } @catch (NSException *exception) {
-        (void)exception;
-        return nil;
++ (nullable NSDate *)atproto_dateFromString:(NSString *)string {
+    if (!string || string.length == 0) return nil;
+
+    if ([self isNSISO8601DateFormatterAvailable]) {
+        id isoFormatter = [self atproto_iso8601FormatterInternal];
+        SEL dateFromStringSEL = NSSelectorFromString(@"dateFromString:");
+        if ([isoFormatter respondsToSelector:dateFromStringSEL]) {
+            NSDate *date = [isoFormatter performSelector:dateFromStringSEL withObject:string];
+            if (date) return date;
+
+            id isoFormatterNoFrac = [self atproto_iso8601FormatterInternalNoFractionalSeconds];
+            date = [isoFormatterNoFrac performSelector:dateFromStringSEL withObject:string];
+            if (date) return date;
+        }
     }
+
+    // Fallback for GNUstep or older macOS
+    NSDate *date = [[self atproto_iso8601Formatter] dateFromString:string];
+    if (date) return date;
+
+    // Manual fallback for extreme robustness
+    return [self atproto_dateFromStringManual:string];
 }
 
 @end

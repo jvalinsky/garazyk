@@ -1,5 +1,5 @@
-#import "Sync/EventFormatter.h"
-#import "Sync/Firehose.h"
+#import "Sync/Relay/EventFormatter.h"
+#import "Sync/Firehose/Firehose.h"
 #import "Core/ATProtoDagCBOR.h"
 #import <CommonCrypto/CommonDigest.h>
 

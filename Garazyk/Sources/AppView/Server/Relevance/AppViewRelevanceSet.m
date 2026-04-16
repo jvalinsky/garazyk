@@ -4,8 +4,8 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/Relevance/AppViewRelevanceSet.h"
-#import "AppViewServer/AppViewDatabase.h"
+#import "AppView/Server/Relevance/AppViewRelevanceSet.h"
+#import "AppView/Server/AppViewDatabase.h"
 #import "Compat/PDSTypes.h"
 #import "Debug/PDSLogger.h"
 

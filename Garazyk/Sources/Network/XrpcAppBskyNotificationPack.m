@@ -5,8 +5,8 @@
 #import "Network/XrpcAppBskyGraphHelpers.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "AppView/NotificationService.h"
-#import "AppView/ActorService.h"
+#import "AppView/Services/NotificationService.h"
+#import "AppView/Services/ActorService.h"
 #import "Debug/PDSLogger.h"
 
 @implementation XrpcAppBskyNotificationPack

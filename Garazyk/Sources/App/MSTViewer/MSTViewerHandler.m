@@ -5,7 +5,7 @@
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
-#import "App/Services/PDSRepositoryService.h"
+#import "Services/PDS/PDSRepositoryService.h"
 #import "Compat/Foundation/NSDataCompat.h"
 #import <Foundation/Foundation.h>
 

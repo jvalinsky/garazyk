@@ -1,12 +1,7 @@
 #import "Auth/OAuth2Handler.h"
-#import "Auth/CryptoUtils.h"
-#import "Auth/JWT.h"
-#import "Auth/OAuth2.h"
-#import "Auth/OAuthServerMetadata.h"
-#import "Auth/PDSNonceManager.h"
-#import "Auth/PDSReplayCache.h"
-#import "Auth/Session.h"
 #import "Database/PDSDatabase.h"
+#import "Core/NSDateFormatter+ATProto.h"
+
 #import <CommonCrypto/CommonDigest.h>
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -14,7 +9,7 @@
 #import "Network/SSRFValidator.h"
 
 #import "App/PDSConfiguration.h"
-#import "App/Services/PDSAccountService.h"
+#import "Services/PDS/PDSAccountService.h"
 #import "Debug/PDSLogger.h"
 
 @interface OAuth2Handler ()
@@ -2907,30 +2902,11 @@ static dispatch_once_t sClientCacheOnceToken;
 }
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
-  static NSDateFormatter *formatter = nil;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
-    [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-    [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-  });
-  return [formatter stringFromDate:date];
+  return [NSDateFormatter atproto_stringFromDate:date];
 }
 
 - (NSDate *)dateFromISO8601String:(NSString *)dateString {
-  if (dateString.length == 0) {
-    return nil;
-  }
-  static NSDateFormatter *formatter = nil;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSSZ"];
-    [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-    [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-  });
-  return [formatter dateFromString:dateString];
+  return [NSDateFormatter atproto_dateFromString:dateString];
 }
 
 - (NSDictionary *)consumePARRequestForURI:(NSString *)requestURI

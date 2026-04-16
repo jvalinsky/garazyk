@@ -1,7 +1,7 @@
 #import "RepoAuthXrpcTestBase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
-#import "AppView/ActorService.h"
+#import "AppView/Services/ActorService.h"
 
 @interface RepoAuthAppBskyTests : RepoAuthXrpcTestBase
 @end

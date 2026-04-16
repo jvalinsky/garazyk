@@ -1,9 +1,9 @@
 #import "CLI/PDSCLIRelayCommand.h"
-#import "Sync/RelayConfiguration.h"
-#import "Sync/RelayUpstreamManager.h"
-#import "Sync/RelayMetrics.h"
-#import "Sync/RelayRepoStateManager.h"
-#import "Sync/RelayEventBuffer.h"
+#import "Sync/Relay/RelayConfiguration.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
+#import "Sync/Relay/RelayMetrics.h"
+#import "Sync/Relay/RelayRepoStateManager.h"
+#import "Sync/Relay/RelayEventBuffer.h"
 #import "Debug/PDSLogger.h"
 
 @interface PDSCLIRelayCommand ()

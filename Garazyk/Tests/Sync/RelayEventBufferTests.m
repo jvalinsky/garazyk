@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayEventBuffer.h"
+#import "Sync/Relay/RelayEventBuffer.h"
 
 @interface RelayEventBufferTests : XCTestCase
 @end

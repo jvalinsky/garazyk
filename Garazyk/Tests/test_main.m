@@ -197,6 +197,7 @@ int main(int argc, char *argv[]) {
       @"OAuth2OPTIONSHandlerTests",
       @"LexiconValidationTests",
       @"RecordPathValidationTests",
+      @"ATProtoDateTimeTests",
       @"XrpcInputValidationTests",
       @"PDSInputValidatorTests",
       @"XrpcErrorResponseTests",

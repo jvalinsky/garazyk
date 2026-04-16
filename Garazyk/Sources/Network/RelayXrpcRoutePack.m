@@ -2,7 +2,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 
 @implementation RelayXrpcRoutePack
 {

@@ -4,7 +4,7 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/Config/AppViewConfiguration.h"
+#import "AppView/Server/Config/AppViewConfiguration.h"
 
 @implementation AppViewConfiguration
 

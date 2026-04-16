@@ -1,25 +1,15 @@
-#import "AppView/ActorService.h"
+#import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Database/Schema.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 @interface ActorService ()
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
 @implementation ActorService
-
-static NSDateFormatter *ActorServiceISO8601Formatter(void) {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    });
-    return formatter;
-}
 
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
     self = [super init];
@@ -71,7 +61,7 @@ static NSDateFormatter *ActorServiceISO8601Formatter(void) {
     NSInteger postsCount = [self getPostsCountForDID:actorDID error:error];
     profile[@"postsCount"] = @(postsCount);
 
-    profile[@"indexedAt"] = [ActorServiceISO8601Formatter() stringFromDate:[NSDate date]];
+    profile[@"indexedAt"] = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 
     return [profile copy];
 }

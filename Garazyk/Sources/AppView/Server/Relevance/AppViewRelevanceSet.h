@@ -22,7 +22,7 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "AppViewServer/AppViewTypes.h"
+#import "AppView/Server/AppViewTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

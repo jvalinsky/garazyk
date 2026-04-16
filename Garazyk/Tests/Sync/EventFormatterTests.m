@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
-#import "Sync/EventFormatter.h"
-#import "Sync/Firehose.h"
+#import "Sync/Relay/EventFormatter.h"
+#import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
 
 @interface EventFormatterTests : XCTestCase

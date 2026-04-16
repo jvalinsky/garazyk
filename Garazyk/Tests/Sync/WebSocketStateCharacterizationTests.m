@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
-#import "Sync/WebSocketConnection.h"
-#import "Sync/WebSocketHeartbeatPolicy.h"
+#import "Sync/WebSocket/WebSocketConnection.h"
+#import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
 
 @interface MockStateWebSocketDelegate : NSObject <WebSocketConnectionDelegate>
 @property (nonatomic, assign) NSInteger lastCloseCode;

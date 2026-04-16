@@ -12,7 +12,7 @@
 #import "Debug/PDSLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/ATProtoValidator.h"
-#import "App/Services/PDSAccountService.h"
+#import "Services/PDS/PDSAccountService.h"
 
 static NSArray<NSString *> *deduplicatedNonEmptyStringArray(id value) {
     if (!value || value == [NSNull null]) {

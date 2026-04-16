@@ -4,11 +4,11 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/Indexers/AppViewGraphIndexer.h"
-#import "AppViewServer/AppViewDatabase.h"
-#import "AppViewServer/AppViewTypes.h"
-#import "AppViewServer/Ingest/AppViewIngestEngine.h"
-#import "AppViewServer/Relevance/AppViewRelevanceSet.h"
+#import "AppView/Server/Indexers/AppViewGraphIndexer.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewTypes.h"
+#import "AppView/Server/Ingest/AppViewIngestEngine.h"
+#import "AppView/Server/Relevance/AppViewRelevanceSet.h"
 #import "Debug/PDSLogger.h"
 
 static NSSet<NSString *> *graphCollections(void) {

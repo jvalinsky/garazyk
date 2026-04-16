@@ -4,7 +4,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Sync/RelayAPIHandler.h"
+#import "Sync/Relay/RelayAPIHandler.h"
 
 @implementation PDSHttpRelayAPIRoutePack
 
