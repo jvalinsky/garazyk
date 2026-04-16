@@ -6,12 +6,12 @@
 #import "Core/NSDateFormatter+ATProto.h"
 
 @interface ActorService ()
-@property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) id<PDSQueryDatabase> database;
 @end
 
 @implementation ActorService
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database {
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     self = [super init];
     if (self) {
         _database = database;
