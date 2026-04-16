@@ -3494,8 +3494,8 @@
       "title": "Which relay websocket robustness path to pursue?",
       "description": null,
       "status": "completed",
-      "created_at": "2026-04-16T00:00:00.000000-04:00",
-      "updated_at": "2026-04-16T00:00:00.000000-04:00",
+      "created_at": "2026-04-16T00:20:00.000000-04:00",
+      "updated_at": "2026-04-16T00:20:00.000000-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     },
     {
@@ -3505,8 +3505,8 @@
       "title": "Relay WebSocket robustness for OrbStack HTTPS",
       "description": null,
       "status": "in_progress",
-      "created_at": "2026-04-16T00:00:00.000000-04:00",
-      "updated_at": "2026-04-16T00:15:00.000000-04:00",
+      "created_at": "2026-04-16T00:20:00.000000-04:00",
+      "updated_at": "2026-04-16T00:20:00.000000-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90}"
     },
     {
@@ -3516,8 +3516,8 @@
       "title": "Add polling fallback in RelayEventsController",
       "description": null,
       "status": "completed",
-      "created_at": "2026-04-16T00:00:00.000000-04:00",
-      "updated_at": "2026-04-16T00:15:00.000000-04:00",
+      "created_at": "2026-04-16T00:20:00.000000-04:00",
+      "updated_at": "2026-04-16T00:20:00.000000-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":95,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/RelayEventsController.j\"]}"
     },
     {
@@ -3527,8 +3527,8 @@
       "title": "Investigate OrbStack proxy WebSocket upgrade handling",
       "description": null,
       "status": "pending",
-      "created_at": "2026-04-16T00:00:00.000000-04:00",
-      "updated_at": "2026-04-16T00:00:00.000000-04:00",
+      "created_at": "2026-04-16T00:20:00.000000-04:00",
+      "updated_at": "2026-04-16T00:20:00.000000-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":70}"
     },
     {
@@ -3538,8 +3538,8 @@
       "title": "Firehose works over OrbStack HTTPS via polling fallback",
       "description": null,
       "status": "pending",
-      "created_at": "2026-04-16T00:00:00.000000-04:00",
-      "updated_at": "2026-04-16T00:00:00.000000-04:00",
+      "created_at": "2026-04-16T00:20:00.000000-04:00",
+      "updated_at": "2026-04-16T00:20:00.000000-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90}"
     }
   ],
@@ -7029,7 +7029,7 @@
       "edge_type": "leads_to",
       "weight": 1,
       "rationale": "Decision needed on robustness approach",
-      "created_at": "2026-04-16T00:00:00.000000-04:00"
+      "created_at": "2026-04-16T00:20:00.000000-04:00"
     },
     {
       "id": 318,
@@ -7040,7 +7040,7 @@
       "edge_type": "leads_to",
       "weight": 1,
       "rationale": "Proceed with polling fallback + proxy investigation",
-      "created_at": "2026-04-16T00:00:00.000000-04:00"
+      "created_at": "2026-04-16T00:20:00.000000-04:00"
     },
     {
       "id": 319,
@@ -7051,7 +7051,7 @@
       "edge_type": "leads_to",
       "weight": 1,
       "rationale": "Implement polling fallback for immediate UX relief",
-      "created_at": "2026-04-16T00:00:00.000000-04:00"
+      "created_at": "2026-04-16T00:20:00.000000-04:00"
     },
     {
       "id": 320,
@@ -7062,7 +7062,7 @@
       "edge_type": "leads_to",
       "weight": 1,
       "rationale": "Investigate proxy compatibility as follow-up",
-      "created_at": "2026-04-16T00:00:00.000000-04:00"
+      "created_at": "2026-04-16T00:20:00.000000-04:00"
     },
     {
       "id": 321,
@@ -7073,7 +7073,7 @@
       "edge_type": "leads_to",
       "weight": 1,
       "rationale": "Polling fallback complete and verified",
-      "created_at": "2026-04-16T00:00:00.000000-04:00"
+      "created_at": "2026-04-16T00:20:00.000000-04:00"
     }
   ],
   "documents": [
