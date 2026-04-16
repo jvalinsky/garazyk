@@ -4,7 +4,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "AppView/ActorService.h"
+#import "AppView/Services/ActorService.h"
 #import "Debug/PDSLogger.h"
 
 @implementation XrpcAppBskyActorPack

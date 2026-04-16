@@ -6,9 +6,9 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AuthCrypto/AuthCryptoDPoP.h"
-#import "AuthCrypto/AuthCryptoBase64URL.h"
-#import "AuthCrypto/AuthCryptoJWK.h"
+#import "Auth/Crypto/AuthCryptoDPoP.h"
+#import "Auth/Crypto/AuthCryptoBase64URL.h"
+#import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/PDSKeyProtocol.h"
 #import "Debug/PDSLogger.h"
 

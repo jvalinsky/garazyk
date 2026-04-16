@@ -4,11 +4,11 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppViewServer/Admin/AppViewAdminRoutePack.h"
+#import "AppView/Server/Admin/AppViewAdminRoutePack.h"
 
-#import "AppViewServer/Backfill/AppViewBackfillOrchestrator.h"
-#import "AppViewServer/Relevance/AppViewRelevanceSet.h"
-#import "AppViewServer/Ingest/AppViewIngestEngine.h"
+#import "AppView/Server/Backfill/AppViewBackfillOrchestrator.h"
+#import "AppView/Server/Relevance/AppViewRelevanceSet.h"
+#import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"

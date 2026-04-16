@@ -1,6 +1,7 @@
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Debug/PDSLogger.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Blob/MimeTypeValidator.h"
 #import "Core/CID.h"
 #import "Database/PDSDatabase.h"
@@ -361,14 +362,7 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
 #pragma mark - Helpers
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-    });
-    return [formatter stringFromDate:date];
+    return [NSDateFormatter atproto_stringFromDate:date];
 }
 
 #pragma mark - Range Response Helpers

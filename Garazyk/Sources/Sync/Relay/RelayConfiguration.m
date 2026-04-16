@@ -1,4 +1,4 @@
-#import "Sync/RelayConfiguration.h"
+#import "Sync/Relay/RelayConfiguration.h"
 
 NSString * const RelayConfigurationErrorDomain = @"com.atproto.relay.configuration";
 

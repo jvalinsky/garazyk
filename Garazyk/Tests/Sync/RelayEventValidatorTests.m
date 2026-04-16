@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayEventValidator.h"
+#import "Sync/Relay/RelayEventValidator.h"
 
 @interface RelayEventValidatorTests : XCTestCase
 

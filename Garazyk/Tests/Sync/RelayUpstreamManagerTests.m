@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Sync/RelayUpstreamManager.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
 
 @interface RelayUpstreamManagerTests : XCTestCase
 

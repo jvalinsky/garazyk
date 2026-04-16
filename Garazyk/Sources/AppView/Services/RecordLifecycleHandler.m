@@ -6,11 +6,11 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppView/RecordLifecycleHandler.h"
-#import "AppView/NotificationService.h"
-#import "AppView/BookmarkService.h"
-#import "AppView/GraphService.h"
-#import "App/Services/PDSRecordService.h"
+#import "AppView/Services/RecordLifecycleHandler.h"
+#import "AppView/Services/NotificationService.h"
+#import "AppView/Services/BookmarkService.h"
+#import "AppView/Services/GraphService.h"
+#import "Services/PDS/PDSRecordService.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"

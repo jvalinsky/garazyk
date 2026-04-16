@@ -9,7 +9,7 @@
 #import "Network/HttpServer.h"
 #import "Network/PDSHttpServerBuilder.h"
 #import "PDSCLIDefinitions.h"
-#import "Sync/SubscribeReposHandler.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 
 @interface PDSCLIServeCommand : PDSBaseCommand
 @end

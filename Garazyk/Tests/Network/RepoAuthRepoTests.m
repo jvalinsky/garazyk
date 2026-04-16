@@ -1,7 +1,7 @@
 #import "RepoAuthXrpcTestBase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "App/Services/PDSBlobService.h"
-#import "App/Services/PDSRepositoryService.h"
+#import "Services/PDS/PDSBlobService.h"
+#import "Services/PDS/PDSRepositoryService.h"
 
 @interface RepoAuthRepoTests : RepoAuthXrpcTestBase
 @end

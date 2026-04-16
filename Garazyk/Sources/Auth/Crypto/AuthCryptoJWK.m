@@ -6,9 +6,9 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AuthCrypto/AuthCryptoJWK.h"
-#import "AuthCrypto/AuthCryptoBase64URL.h"
-#import "AuthCrypto/AuthCryptoECDSA.h"
+#import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/Crypto/AuthCryptoBase64URL.h"
+#import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/PDSKeyProtocol.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)

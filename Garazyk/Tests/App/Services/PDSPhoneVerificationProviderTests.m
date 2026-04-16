@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "Services/PDSPhoneVerificationProvider.h"
+#import "Services/Core/PDSPhoneVerificationProvider.h"
 
 @interface PDSCustomPhoneVerificationProvider : NSObject <PDSPhoneVerificationProvider>
 @end

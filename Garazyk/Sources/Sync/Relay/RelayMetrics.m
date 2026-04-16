@@ -1,4 +1,4 @@
-#import "Sync/RelayMetrics.h"
+#import "Sync/Relay/RelayMetrics.h"
 
 @interface RelayMetrics ()
 

@@ -6,11 +6,12 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppView/GraphService.h"
-#import "AppView/ActorService.h"
+#import "AppView/Services/GraphService.h"
+#import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 @interface GraphService ()
 @property (nonatomic, strong) PDSDatabase *database;
@@ -19,18 +20,8 @@
 
 @implementation GraphService
 
-static NSDateFormatter *GraphServiceISO8601MsFormatter(void) {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
-    });
-    return formatter;
-}
-
 - (instancetype)initWithDatabase:(PDSDatabase *)database {
+
     self = [super init];
     if (self) {
         _database = database;
@@ -222,7 +213,7 @@ static NSDateFormatter *GraphServiceISO8601MsFormatter(void) {
 
 - (BOOL)muteActor:(NSString *)targetDID forActor:(NSString *)actorDID error:(NSError **)error {
     NSString *sql = @"INSERT OR IGNORE INTO actor_mutes (did, muted_did, created_at) VALUES (?, ?, ?)";
-    NSString *now = [GraphServiceISO8601MsFormatter() stringFromDate:[NSDate date]];
+    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 
     return [self.database executeParameterizedUpdate:sql params:@[actorDID, targetDID, now] error:error];
 }
