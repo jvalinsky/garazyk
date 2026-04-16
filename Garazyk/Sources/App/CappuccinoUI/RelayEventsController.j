@@ -15,6 +15,7 @@
     SessionState _sessionState;
     UIAPIClient _apiClient;
     CPView _rootView;
+    CPDictionary _endpointBases;
 
     CPTextField _statusLabel;
     CPTableView _eventsTable;
@@ -40,13 +41,14 @@
     BOOL _wsErrorLogged;
 }
 
-- (id)initWithSessionState:(SessionState)sessionState apiClient:(UIAPIClient)apiClient
+- (id)initWithSessionState:(SessionState)sessionState apiClient:(UIAPIClient)apiClient endpointBases:(CPDictionary)endpointBases
 {
     self = [super init];
     if (self)
     {
         _sessionState = sessionState;
         _apiClient = apiClient;
+        _endpointBases = endpointBases;
         _events = [];
         _filteredEvents = [];
         _currentFilter = @"all";
@@ -379,7 +381,11 @@
 
     var protocol = window.location.protocol;
     var host = window.location.host;
-    var url = protocol + "//" + host + "/xrpc/com.atproto.sync.getRepo?limit=100";
+    
+    var xrpcBase = [_endpointBases objectForKey:@"xrpc"];
+    if (!xrpcBase)
+        xrpcBase = @"/xrpc";
+    var url = protocol + "//" + host + xrpcBase + "/com.atproto.sync.listRepos?limit=100";
     if (_pollCursor)
         url += "&cursor=" + encodeURIComponent(_pollCursor);
 
@@ -400,7 +406,7 @@
                     for (var i = 0; i < data.repos.length; i++)
                     {
                         var repo = data.repos[i];
-                        [self addEvent:{type: "commit", repo: repo.did, seq: repo.rev, ops: [], summary: "repo: " + repo.did.substring(0, 12)}];
+                        [self addEvent:{type: "repo", repo: repo.did, seq: repo.rev, ops: [], summary: "repo: " + (repo.did ? repo.did.substring(0, 12) : "?")}];
                     }
                     _pollCursor = data.cursor;
                 }

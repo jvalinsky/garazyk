@@ -466,7 +466,7 @@
     {
         _relayDashboardController = [[RelayDashboardController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
         _relayUpstreamsController = [[RelayUpstreamsController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
-        _relayEventsController = [[RelayEventsController alloc] initWithSessionState:_sessionState apiClient:_apiClient];
+        _relayEventsController = [[RelayEventsController alloc] initWithSessionState:_sessionState apiClient:_apiClient endpointBases:_endpointBases];
     }
 
     if ([self isServiceEnabled:@"plc"])
