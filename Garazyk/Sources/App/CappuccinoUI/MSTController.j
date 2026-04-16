@@ -56,6 +56,7 @@
         return _rootView;
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 900.0, 28.0)];
     [title setStringValue:@"MST Viewer"];
@@ -65,6 +66,7 @@
     [title setFont:[CPFont boldSystemFontOfSize:20.0]];
 
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1040.0, 20.0)];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -103,6 +105,7 @@
     [accountsLabel setFont:[CPFont boldSystemFontOfSize:12.0]];
 
     _accountsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 300.0, 538.0)];
+    [_accountsTable setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_accountsTable setDelegate:self];
     [_accountsTable setDataSource:self];
     [_accountsTable setAllowsEmptySelection:YES];
@@ -117,8 +120,10 @@
     [[accountDidColumn headerView] setStringValue:@"DID"];
     [accountDidColumn setWidth:160.0];
     [_accountsTable addTableColumn:accountDidColumn];
+    [_accountsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var accountsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 130.0, 300.0, 540.0)];
+    [accountsScroll setAutoresizingMask:CPViewMaxXMargin | CPViewHeightSizable];
     [accountsScroll setHasVerticalScroller:YES];
     [accountsScroll setAutohidesScrollers:YES];
     [accountsScroll setDocumentView:_accountsTable];
@@ -201,12 +206,14 @@
 - (CPTextView)buildReadOnlyTextViewWithFrame:(CGRect)frame inView:(CPView)parent
 {
     var textView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, frame.size.width, frame.size.height)];
+    [textView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [textView setEditable:NO];
     [textView setSelectable:YES];
     [textView setString:@""];
     [textView setFont:[CPFont systemFontOfSize:12.0]];
 
     var scroll = [[CPScrollView alloc] initWithFrame:frame];
+    [scroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [scroll setHasVerticalScroller:YES];
     [scroll setAutohidesScrollers:YES];
     [scroll setDocumentView:textView];

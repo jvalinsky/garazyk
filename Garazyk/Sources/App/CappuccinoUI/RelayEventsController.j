@@ -72,6 +72,7 @@
         return _rootView;
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 400.0, 28.0)];
     [title setStringValue:@"Event Stream"];
@@ -81,6 +82,7 @@
     [title setFont:[CPFont boldSystemFontOfSize:20.0]];
 
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 600.0, 20.0)];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -172,6 +174,7 @@
     [parent addSubview:tableLabel];
 
     _eventsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 700.0, 540.0)];
+    [_eventsTable setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_eventsTable setDelegate:self];
     [_eventsTable setDataSource:self];
     [_eventsTable setAllowsEmptySelection:YES];
@@ -207,8 +210,10 @@
     [[summaryColumn headerView] setStringValue:@"Summary"];
     [summaryColumn setWidth:220.0];
     [_eventsTable addTableColumn:summaryColumn];
+    [_eventsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 130.0, 720.0, 550.0)];
+    [scrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [scrollView setHasVerticalScroller:YES];
     [scrollView setAutohidesScrollers:YES];
     [scrollView setDocumentView:_eventsTable];
@@ -227,12 +232,14 @@
     [parent addSubview:detailLabel];
 
     _eventDetailTextView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, 290.0, 530.0)];
+    [_eventDetailTextView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_eventDetailTextView setEditable:NO];
     [_eventDetailTextView setSelectable:YES];
     [_eventDetailTextView setString:@""];
     [_eventDetailTextView setFont:[CPFont fontWithName:@"Menlo" size:10.0]];
 
     var scroll = [[CPScrollView alloc] initWithFrame:CGRectMake(760.0, 130.0, 310.0, 550.0)];
+    [scroll setAutoresizingMask:CPViewMinXMargin | CPViewHeightSizable];
     [scroll setHasVerticalScroller:YES];
     [scroll setAutohidesScrollers:YES];
     [scroll setDocumentView:_eventDetailTextView];

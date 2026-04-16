@@ -19,6 +19,7 @@
 
     CPTextField _statusLabel;
     CPTextField _didLabel;
+    CPScrollView _contentScrollView;
     CPView _contentView;
 
     CPDictionary _didDocument;
@@ -46,6 +47,7 @@
         return _rootView;
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     // Title
     var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 400.0, 28.0)];
@@ -58,6 +60,7 @@
 
     // DID label
     _didLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 800.0, 24.0)];
+    [_didLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_didLabel setEditable:NO];
     [_didLabel setBezeled:NO];
     [_didLabel setDrawsBackground:NO];
@@ -68,6 +71,7 @@
 
     // Status label
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 68.0, 600.0, 20.0)];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -76,9 +80,15 @@
     [_rootView addSubview:_statusLabel];
 
     // Content area
-    _contentView = [[CPView alloc] initWithFrame:CGRectMake(20.0, 96.0, 1040.0, 580.0)];
+    _contentScrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 96.0, 1040.0, 580.0)];
+    [_contentScrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
+    [_contentScrollView setHasHorizontalScroller:NO];
+    [_contentScrollView setHasVerticalScroller:YES];
+    [_contentScrollView setAutohidesScrollers:YES];
+    _contentView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 580.0)];
     [_contentView setWantsLayer:YES];
-    [_rootView addSubview:_contentView];
+    [_contentScrollView setDocumentView:_contentView];
+    [_rootView addSubview:_contentScrollView];
 
     return _rootView;
 }
@@ -148,12 +158,16 @@
 
     // Raw JSON
     yOffset = [self renderRawJSON:yOffset];
+
+    var contentWidth = [self contentWidthForLayout];
+    [_contentView setFrame:CGRectMake(0.0, 0.0, contentWidth, yOffset + 12.0)];
 }
 
 - (float)renderHandlesSection:(float)yOffset
 {
     var handles = _didDocument[@"alsoKnownAs"] || [];
-    var hasHandles = handles.length > 0;
+    var hasHandles = handles.length > 0,
+        contentWidth = [self contentWidthForLayout];
 
     var sectionLabel = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 200.0, 18.0)];
     [sectionLabel setStringValue:@"Identifies As"];
@@ -165,7 +179,7 @@
     yOffset += 24.0;
 
     if (hasHandles) {
-        var handlesText = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 400.0, 24.0 * handles.length)];
+        var handlesText = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, contentWidth, 24.0 * handles.length)];
         [handlesText setEditable:NO];
         [handlesText setBezeled:NO];
         [handlesText setDrawsBackground:NO];
@@ -184,7 +198,7 @@
         [_contentView addSubview:handlesText];
         yOffset += 24.0 * handles.length + 8.0;
     } else {
-        var noHandles = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 400.0, 24.0)];
+        var noHandles = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, contentWidth, 24.0)];
         [noHandles setStringValue:@"No handles registered"];
         [noHandles setEditable:NO];
         [noHandles setBezeled:NO];
@@ -200,7 +214,8 @@
 
 - (float)renderServicesSection:(float)yOffset
 {
-    var services = _didDocument[@"service"] || [];
+    var services = _didDocument[@"service"] || [],
+        contentWidth = [self contentWidthForLayout];
 
     var sectionLabel = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 200.0, 18.0)];
     [sectionLabel setStringValue:@"Services"];
@@ -227,7 +242,7 @@
                 shortId = svcId.split("#")[1];
             }
 
-            var row = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 800.0, 18.0)];
+            var row = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, contentWidth, 18.0)];
             [row setStringValue:shortId + " | " + svcType + " | " + endpoint];
             [row setEditable:NO];
             [row setBezeled:NO];
@@ -237,7 +252,7 @@
             yOffset += 22.0;
         }
     } else {
-        var noServices = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 400.0, 24.0)];
+        var noServices = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, contentWidth, 24.0)];
         [noServices setStringValue:@"No services registered"];
         [noServices setEditable:NO];
         [noServices setBezeled:NO];
@@ -253,7 +268,8 @@
 
 - (float)renderVerificationMethodsSection:(float)yOffset
 {
-    var methods = _didDocument[@"verificationMethod"] || [];
+    var methods = _didDocument[@"verificationMethod"] || [],
+        contentWidth = [self contentWidthForLayout];
 
     var sectionLabel = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 200.0, 18.0)];
     [sectionLabel setStringValue:@"Verification Methods"];
@@ -281,7 +297,7 @@
             pubkey = pubkey.substring(0, 40) + "...";
         }
 
-        var row = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 800.0, 18.0)];
+        var row = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, contentWidth, 18.0)];
         [row setStringValue:shortId + " | " + methodType + " | " + pubkey];
         [row setEditable:NO];
         [row setBezeled:NO];
@@ -321,6 +337,7 @@
 
 - (float)renderRawJSON:(float)yOffset
 {
+    var contentWidth = [self contentWidthForLayout];
     var sectionLabel = [[CPTextField alloc] initWithFrame:CGRectMake(0.0, yOffset, 200.0, 18.0)];
     [sectionLabel setStringValue:@"Raw DID Document"];
     [sectionLabel setEditable:NO];
@@ -332,14 +349,16 @@
 
     var jsonString = JSON.stringify(_didDocument, null, 2);
 
-    var rawView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, yOffset, 800.0, 200.0)];
+    var rawView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, yOffset, contentWidth, 200.0)];
     [rawView setString:jsonString];
     [rawView setEditable:NO];
     [rawView setFont:[CPFont systemFontOfSize:10.0] withFamily:@"Monaco"];
     [rawView setTextColor:[CPColor colorWithCalibratedWhite:0.2 alpha:1.0]];
     [rawView setBackgroundColor:[CPColor colorWithCalibratedWhite:0.97 alpha:1.0]];
+    [rawView setAutoresizingMask:CPViewWidthSizable];
 
-    var scroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, yOffset, 800.0, 200.0)];
+    var scroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, yOffset, contentWidth, 200.0)];
+    [scroll setAutoresizingMask:CPViewWidthSizable];
     [scroll setDocumentView:rawView];
     [scroll setHasHorizontalScroller:NO];
     [scroll setHasVerticalScroller:YES];
@@ -347,6 +366,14 @@
     yOffset += 216.0;
 
     return yOffset;
+}
+
+- (float)contentWidthForLayout
+{
+    var width = 800.0;
+    if (_contentScrollView)
+        width = [_contentScrollView bounds].size.width - 20.0;
+    return width > 320.0 ? width : 320.0;
 }
 
 @end

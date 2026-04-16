@@ -1,6 +1,6 @@
 #import "PLC/PLCMetrics.h"
 #import "Debug/PDSLogger.h"
-#import <libkern/OSAtomic.h>
+#import "libkern/OSAtomic.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

@@ -30,12 +30,12 @@ static inline int set_reuseaddr(int fd) {
 @property(nonatomic, readwrite) uint16_t port;
 @property(nonatomic, readwrite) WebSocketServerState state;
 @property(nonatomic, assign) int serverSocket;
-@property(nonatomic, strong) dispatch_source_t acceptSource;
-@property(nonatomic, strong) dispatch_queue_t listenerQueue;
-@property(nonatomic, strong) dispatch_queue_t connectionsQueue;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t acceptSource;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t listenerQueue;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionsQueue;
 @property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
-@property(nonatomic, strong) dispatch_semaphore_t stopSemaphore;
-@property(nonatomic, strong) dispatch_group_t taskGroup;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_semaphore_t stopSemaphore;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_group_t taskGroup;
 @end
 
 @implementation WebSocketServer

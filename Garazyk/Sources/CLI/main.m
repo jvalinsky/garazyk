@@ -111,6 +111,13 @@ static int fail_with_usage(NSString *errorMessage) {
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         PDSCLIRegisterAllCommands();
+#ifdef LINUX
+        // On Linux/GNUstep, verify critical categories are loaded
+        if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {
+            fprintf(stderr, "FATAL: Objective-C category NSDateFormatter(ATProto) not loaded. Check linker settings.\n");
+            return PDSCLIExitCodeGeneralError;
+        }
+#endif
 
         if (argc < 2) {
             return fail_with_usage(@"Missing command");

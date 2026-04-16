@@ -8,6 +8,7 @@
 #import "PLC/PLCReplicaStore.h"
 #import "PLC/PLCSyncClient.h"
 #import "Debug/PDSLogger.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 #import <readline/readline.h>
 #import <readline/history.h>
@@ -217,6 +218,13 @@ static int run_status_command(NSString *host, NSUInteger port) {
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
+#ifdef LINUX
+        // On Linux/GNUstep, verify critical categories are loaded
+        if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {
+            fprintf(stderr, "FATAL: Objective-C category NSDateFormatter(ATProto) not loaded. Check linker settings.\n");
+            return 1;
+        }
+#endif
         const char *binaryName = argv[0] ? argv[0] : "campagnola";
         if (argc < 2) {
             return fail_with_usage(binaryName, @"Missing command");

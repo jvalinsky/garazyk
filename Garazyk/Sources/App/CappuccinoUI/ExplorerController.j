@@ -143,6 +143,7 @@
         return _rootView;
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 900.0, 28.0)];
     [title setStringValue:@"Explore"];
@@ -153,6 +154,7 @@
     // Accessibility: setAccessibilityLabel:@"Explore Dashboard Title"
 
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 1040.0, 20.0)];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -195,6 +197,7 @@
     // Accessibility: setAccessibilityLabel:@"Accounts section header"
 
     _accountsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 240.0, 530.0)];
+    [_accountsTable setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_accountsTable setDelegate:self];
     [_accountsTable setDataSource:self];
     [_accountsTable setAllowsEmptySelection:YES];
@@ -206,13 +209,16 @@
     [[accountColumn headerView] setStringValue:@"Handle / DID"];
     [accountColumn setWidth:240.0];
     [_accountsTable addTableColumn:accountColumn];
+    [_accountsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var accountsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 130.0, 260.0, 540.0)];
+    [accountsScroll setAutoresizingMask:CPViewMaxXMargin | CPViewHeightSizable];
     [accountsScroll setHasVerticalScroller:YES];
     [accountsScroll setAutohidesScrollers:YES];
     [accountsScroll setDocumentView:_accountsTable];
 
     _detailsTabView = [[CPTabView alloc] initWithFrame:CGRectMake(300.0, 106.0, 760.0, 564.0)];
+    [_detailsTabView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [self setUpDetailTabs];
 
     [_rootView addSubview:title];
@@ -235,6 +241,7 @@
 - (void)setUpDetailTabs
 {
     var didTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [didTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var didViewLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 40.0, 18.0)];
     [didViewLabel setStringValue:@"View:"];
     [didViewLabel setEditable:NO];
@@ -249,6 +256,7 @@
     [didTab addSubview:_didViewModePopup];
 
     _didRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [_didRenderedView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [didTab addSubview:_didRenderedView];
 
     _didSummaryTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 166.0)];
@@ -267,8 +275,10 @@
     [[didSummaryValueColumn headerView] setStringValue:@"Value"];
     [didSummaryValueColumn setWidth:510.0];
     [_didSummaryTable addTableColumn:didSummaryValueColumn];
+    [_didSummaryTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var didSummaryScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 166.0)];
+    [didSummaryScroll setAutoresizingMask:CPViewWidthSizable];
     [didSummaryScroll setHasVerticalScroller:YES];
     [didSummaryScroll setAutohidesScrollers:YES];
     [didSummaryScroll setDocumentView:_didSummaryTable];
@@ -295,8 +305,10 @@
     [[didItemValueColumn headerView] setStringValue:@"Value"];
     [didItemValueColumn setWidth:370.0];
     [_didItemsTable addTableColumn:didItemValueColumn];
+    [_didItemsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var didItemsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 176.0, 730.0, 282.0)];
+    [didItemsScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [didItemsScroll setHasVerticalScroller:YES];
     [didItemsScroll setAutohidesScrollers:YES];
     [didItemsScroll setDocumentView:_didItemsTable];
@@ -308,6 +320,7 @@
     [self addTabItemWithLabel:@"DID" contentView:didTab];
 
     var plcTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [plcTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var plcViewLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 40.0, 18.0)];
     [plcViewLabel setStringValue:@"View:"];
     [plcViewLabel setEditable:NO];
@@ -322,6 +335,7 @@
     [plcTab addSubview:_plcViewModePopup];
 
     _plcRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [_plcRenderedView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [plcTab addSubview:_plcRenderedView];
 
     _plcOpsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 258.0)];
@@ -345,8 +359,10 @@
     [[plcDetailsColumn headerView] setStringValue:@"Details"];
     [plcDetailsColumn setWidth:360.0];
     [_plcOpsTable addTableColumn:plcDetailsColumn];
+    [_plcOpsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var plcOpsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 258.0)];
+    [plcOpsScroll setAutoresizingMask:CPViewWidthSizable];
     [plcOpsScroll setHasVerticalScroller:YES];
     [plcOpsScroll setAutohidesScrollers:YES];
     [plcOpsScroll setDocumentView:_plcOpsTable];
@@ -367,8 +383,10 @@
     [[plcDetailValueColumn headerView] setStringValue:@"Value"];
     [plcDetailValueColumn setWidth:500.0];
     [_plcDetailTable addTableColumn:plcDetailValueColumn];
+    [_plcDetailTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var plcDetailScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 268.0, 730.0, 190.0)];
+    [plcDetailScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [plcDetailScroll setHasVerticalScroller:YES];
     [plcDetailScroll setAutohidesScrollers:YES];
     [plcDetailScroll setDocumentView:_plcDetailTable];
@@ -380,6 +398,7 @@
     [self addTabItemWithLabel:@"PLC" contentView:plcTab];
 
     var collectionsTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [collectionsTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     _collectionsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 455.0)];
     [_collectionsTable setDelegate:self];
     [_collectionsTable setDataSource:self];
@@ -396,8 +415,10 @@
     [[collectionCountColumn headerView] setStringValue:@"Count"];
     [collectionCountColumn setWidth:130.0];
     [_collectionsTable addTableColumn:collectionCountColumn];
+    [_collectionsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var collectionsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 10.0, 730.0, 455.0)];
+    [collectionsScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [collectionsScroll setHasVerticalScroller:YES];
     [collectionsScroll setAutohidesScrollers:YES];
     [collectionsScroll setDocumentView:_collectionsTable];
@@ -411,6 +432,7 @@
     [self addTabItemWithLabel:@"Collections" contentView:collectionsTab];
 
     var recordsTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [recordsTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     _recordsTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 220.0)];
     [_recordsTable setDelegate:self];
     [_recordsTable setDataSource:self];
@@ -431,8 +453,10 @@
     [[recordsURIColumn headerView] setStringValue:@"URI"];
     [recordsURIColumn setWidth:330.0];
     [_recordsTable addTableColumn:recordsURIColumn];
+    [_recordsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var recordsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 10.0, 730.0, 220.0)];
+    [recordsScroll setAutoresizingMask:CPViewWidthSizable];
     [recordsScroll setHasVerticalScroller:YES];
     [recordsScroll setAutohidesScrollers:YES];
     [recordsScroll setDocumentView:_recordsTable];
@@ -452,6 +476,7 @@
     [recordsTab addSubview:_recordModePopup];
 
     _recordRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 266.0, 730.0, 236.0)];
+    [_recordRenderedView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [recordsTab addSubview:_recordRenderedView];
 
     _recordSummaryTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 124.0)];
@@ -469,8 +494,10 @@
     [[recordValueColumn headerView] setStringValue:@"Value"];
     [recordValueColumn setWidth:540.0];
     [_recordSummaryTable addTableColumn:recordValueColumn];
+    [_recordSummaryTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var recordSummaryScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 124.0)];
+    [recordSummaryScroll setAutoresizingMask:CPViewWidthSizable];
     [recordSummaryScroll setHasVerticalScroller:YES];
     [recordSummaryScroll setAutohidesScrollers:YES];
     [recordSummaryScroll setDocumentView:_recordSummaryTable];
@@ -493,6 +520,7 @@
     [self addTabItemWithLabel:@"Records" contentView:recordsTab];
 
     var feedTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [feedTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     _feedModePopup = [[CPPopUpButton alloc] initWithFrame:CGRectMake(10.0, 10.0, 180.0, 24.0)];
     [_feedModePopup addItemsWithTitles:[@"Posts,Likes,Reposts" componentsSeparatedByString:@","]];
     [feedTab addSubview:_feedModePopup];
@@ -517,6 +545,7 @@
     [feedTab addSubview:_feedViewModePopup];
 
     _feedRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [_feedRenderedView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [feedTab addSubview:_feedRenderedView];
 
     _feedTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 262.0)];
@@ -545,8 +574,10 @@
     [[feedCreatedColumn headerView] setStringValue:@"Created At"];
     [feedCreatedColumn setWidth:130.0];
     [_feedTable addTableColumn:feedCreatedColumn];
+    [_feedTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var feedTableScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 262.0)];
+    [feedTableScroll setAutoresizingMask:CPViewWidthSizable];
     [feedTableScroll setHasVerticalScroller:YES];
     [feedTableScroll setAutohidesScrollers:YES];
     [feedTableScroll setDocumentView:_feedTable];
@@ -567,8 +598,10 @@
     [[feedDetailValueColumn headerView] setStringValue:@"Value"];
     [feedDetailValueColumn setWidth:550.0];
     [_feedDetailTable addTableColumn:feedDetailValueColumn];
+    [_feedDetailTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var feedDetailScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 272.0, 730.0, 186.0)];
+    [feedDetailScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [feedDetailScroll setHasVerticalScroller:YES];
     [feedDetailScroll setAutohidesScrollers:YES];
     [feedDetailScroll setDocumentView:_feedDetailTable];
@@ -580,6 +613,7 @@
     [self addTabItemWithLabel:@"Feed" contentView:feedTab];
 
     var graphTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [graphTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var loadGraphButton = [[CPButton alloc] initWithFrame:CGRectMake(10.0, 8.0, 180.0, 28.0)];
     [loadGraphButton setTitle:@"Load Graph Follows"];
     [loadGraphButton setTarget:self];
@@ -612,8 +646,10 @@
     [[graphCreatedColumn headerView] setStringValue:@"Created At"];
     [graphCreatedColumn setWidth:100.0];
     [_graphTable addTableColumn:graphCreatedColumn];
+    [_graphTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var graphScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 304.0)];
+    [graphScroll setAutoresizingMask:CPViewWidthSizable];
     [graphScroll setHasVerticalScroller:YES];
     [graphScroll setAutohidesScrollers:YES];
     [graphScroll setDocumentView:_graphTable];
@@ -634,8 +670,10 @@
     [[graphDetailValueColumn headerView] setStringValue:@"Value"];
     [graphDetailValueColumn setWidth:540.0];
     [_graphDetailTable addTableColumn:graphDetailValueColumn];
+    [_graphDetailTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var graphDetailScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 356.0, 730.0, 146.0)];
+    [graphDetailScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [graphDetailScroll setHasVerticalScroller:YES];
     [graphDetailScroll setAutohidesScrollers:YES];
     [graphDetailScroll setDocumentView:_graphDetailTable];
@@ -643,6 +681,7 @@
     [self addTabItemWithLabel:@"Graph" contentView:graphTab];
 
     var profileTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [profileTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var loadProfileButton = [[CPButton alloc] initWithFrame:CGRectMake(10.0, 8.0, 150.0, 28.0)];
     [loadProfileButton setTitle:@"Load Profile"];
     [loadProfileButton setTarget:self];
@@ -663,6 +702,7 @@
     [profileTab addSubview:_profileViewModePopup];
 
     _profileRenderedView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 458.0)];
+    [_profileRenderedView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [profileTab addSubview:_profileRenderedView];
 
     _profileSummaryTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 218.0)];
@@ -681,8 +721,10 @@
     [[profileValueColumn headerView] setStringValue:@"Value"];
     [profileValueColumn setWidth:510.0];
     [_profileSummaryTable addTableColumn:profileValueColumn];
+    [_profileSummaryTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var profileSummaryScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 218.0)];
+    [profileSummaryScroll setAutoresizingMask:CPViewWidthSizable];
     [profileSummaryScroll setHasVerticalScroller:YES];
     [profileSummaryScroll setAutohidesScrollers:YES];
     [profileSummaryScroll setDocumentView:_profileSummaryTable];
@@ -705,6 +747,7 @@
     [self addTabItemWithLabel:@"Profile" contentView:profileTab];
 
     var mstTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [mstTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     var mstDidLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 30.0, 18.0)];
     [mstDidLabel setStringValue:@"DID:"];
     [mstDidLabel setEditable:NO];
@@ -758,14 +801,17 @@
     [[mstMetricValueColumn headerView] setStringValue:@"Value"];
     [mstMetricValueColumn setWidth:490.0];
     [_mstStatsTable addTableColumn:mstMetricValueColumn];
+    [_mstStatsTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var mstStatsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(10.0, 44.0, 730.0, 130.0)];
+    [mstStatsScroll setAutoresizingMask:CPViewWidthSizable];
     [mstStatsScroll setHasVerticalScroller:YES];
     [mstStatsScroll setAutohidesScrollers:YES];
     [mstStatsScroll setDocumentView:_mstStatsTable];
     [mstTab addSubview:mstStatsScroll];
 
     _mstTreeListView = [[CPView alloc] initWithFrame:CGRectMake(10.0, 182.0, 730.0, 320.0)];
+    [_mstTreeListView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [mstTab addSubview:_mstTreeListView];
 
     _mstNodesTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 320.0)];
@@ -798,8 +844,10 @@
     [[mstNodeCidColumn headerView] setStringValue:@"CID"];
     [mstNodeCidColumn setWidth:410.0];
     [_mstNodesTable addTableColumn:mstNodeCidColumn];
+    [_mstNodesTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     var mstNodesScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(0.0, 0.0, 730.0, 320.0)];
+    [mstNodesScroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [mstNodesScroll setHasVerticalScroller:YES];
     [mstNodesScroll setAutohidesScrollers:YES];
     [mstNodesScroll setDocumentView:_mstNodesTable];
@@ -811,6 +859,7 @@
     [self addTabItemWithLabel:@"MST Utility" contentView:mstTab];
 
     var utilitiesTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [utilitiesTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     _cidField = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 10.0, 320.0, 24.0)];
     [_cidField setPlaceholderString:@"CID"];
     [utilitiesTab addSubview:_cidField];
@@ -844,6 +893,7 @@
     [self addTabItemWithLabel:@"Utilities" contentView:utilitiesTab];
 
     var authTab = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 740.0, 520.0)];
+    [authTab setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     var handleLabel = [[CPTextField alloc] initWithFrame:CGRectMake(10.0, 12.0, 48.0, 18.0)];
     [handleLabel setStringValue:@"Handle:"];
@@ -943,10 +993,12 @@
 - (CPTextView)buildReadOnlyTextViewWithFrame:(CGRect)frame inView:(CPView)parent
 {
     var scroll = [[CPScrollView alloc] initWithFrame:frame];
+    [scroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [scroll setHasVerticalScroller:YES];
     [scroll setAutohidesScrollers:YES];
 
     var textView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, frame.size.width - 20.0, frame.size.height)];
+    [textView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [textView setEditable:NO];
     [textView setSelectable:YES];
     [textView setFont:[CPFont systemFontOfSize:12.0]];

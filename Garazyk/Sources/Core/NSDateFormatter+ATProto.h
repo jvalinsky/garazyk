@@ -72,4 +72,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+/*!
+ @function NSDateFormatterLinkATProtoCategory
+ @abstract Force static linkers to retain the NSDateFormatter(ATProto) category.
+ */
+extern void NSDateFormatterLinkATProtoCategory(void);
+
 NS_ASSUME_NONNULL_END

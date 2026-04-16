@@ -506,23 +506,41 @@ target_include_directories(kaszlak PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(kaszlak PRIVATE
-  ATProtoRuntime
-  ATProtoServices
-  ATProtoTransport
-  ATProtoXRPC
-  ATProtoSync
-  ATProtoStorage
-  ATProtoPLC
-  ATProtoCore
-  # GNU ld resolves static archives in a single pass; keep a second pass for
-  # cyclic refs between runtime/transport/plc objects.
-  ATProtoRuntime
-  ATProtoPLC
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-  ${READLINE_LIBRARY}
-)
+if(APPLE)
+  target_link_libraries(kaszlak PRIVATE
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoPLC
+    ATProtoCore
+    # GNU ld resolves static archives in a single pass; keep a second pass for
+    # cyclic refs between runtime/transport/plc objects.
+    ATProtoRuntime
+    ATProtoPLC
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(kaszlak PRIVATE
+    -Wl,--whole-archive
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoPLC
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
 
 target_compile_definitions(kaszlak PRIVATE
   SQLITE_THREADSAFE=2
@@ -543,16 +561,31 @@ target_include_directories(campagnola PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(campagnola PRIVATE
-  ATProtoPLC
-  ATProtoTransport
-  ATProtoCore
-  ATProtoRuntime
-  ATProtoServices
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-  ${READLINE_LIBRARY}
-)
+if(APPLE)
+  target_link_libraries(campagnola PRIVATE
+    ATProtoPLC
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(campagnola PRIVATE
+    -Wl,--whole-archive
+    ATProtoPLC
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
 
 target_compile_definitions(campagnola PRIVATE
   SQLITE_THREADSAFE=2
@@ -573,17 +606,33 @@ target_include_directories(zuk PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(zuk PRIVATE
-  ATProtoSync
-  ATProtoTransport
-  ATProtoCore
-  ATProtoRuntime
-  ATProtoServices
-  ATProtoStorage
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-  ${READLINE_LIBRARY}
-)
+if(APPLE)
+  target_link_libraries(zuk PRIVATE
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoStorage
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(zuk PRIVATE
+    -Wl,--whole-archive
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoStorage
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
 
 target_compile_definitions(zuk PRIVATE
   SQLITE_THREADSAFE=2
@@ -631,18 +680,35 @@ target_include_directories(syrena PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(syrena PRIVATE
-  ATProtoAppViewServer
-  ATProtoRuntime
-  ATProtoStorage
-  ATProtoServices
-  ATProtoSync
-  ATProtoTransport
-  ATProtoCore
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-  ${READLINE_LIBRARY}
-)
+if(APPLE)
+  target_link_libraries(syrena PRIVATE
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(syrena PRIVATE
+    -Wl,--whole-archive
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
 
 target_compile_definitions(syrena PRIVATE
   SQLITE_THREADSAFE=2
@@ -829,8 +895,6 @@ if(BUILD_TESTS)
   )
   
   if(APPLE)
-    execute_process(COMMAND xcode-select -p OUTPUT_VARIABLE XCODE_DEVELOPER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-    find_library(XCTest XCTest PATHS "${XCODE_DEVELOPER_DIR}/Platforms/MacOSX.platform/Developer/Library/Frameworks" REQUIRED)
     target_link_libraries(AllTests PRIVATE ${XCTest})
     # Critical: Load all Objective-C categories from static libraries
     # Without -ObjC, category methods (like PDSActorStore+Account) are not linked
@@ -838,11 +902,21 @@ if(BUILD_TESTS)
       LINK_FLAGS "-ObjC"
     )
   else()
-     # On GNUstep/Linux we need a test framework. 
-     # Usually gnustep-base provides NSAutoreleasePool etc, but XCTest is Apple specific.
-     # We might need a port of XCTest or use a different test runner.
-     # For now, we'll try to link what we have, but if the tests import XCTest, they will fail on Linux.
-     # The instructions don't explicitly ask to port tests yet, just build system setup.
+     target_link_libraries(AllTests PRIVATE
+       -Wl,--whole-archive
+       ATProtoRuntime
+       ATProtoServices
+       ATProtoTransport
+       ATProtoXRPC
+       ATProtoSync
+       ATProtoStorage
+       ATProtoCore
+       ATProtoPLC
+       ATProtoAppViewServer
+       -Wl,--no-whole-archive
+       ${PLATFORM_LIBRARIES}
+       ${SECP256K1_LIBRARIES}
+     )
   endif()
 
   target_compile_definitions(AllTests PRIVATE

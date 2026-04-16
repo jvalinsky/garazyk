@@ -8,6 +8,13 @@
 
 #import "NSDateFormatter+ATProto.h"
 
+// Force static linkers to retain this category object file in Linux builds.
+void NSDateFormatterLinkATProtoCategory(void) {
+    static int linked = 0;
+    if (linked) return;
+    linked = 1;
+}
+
 // Values for NSISO8601DateFormatOptions from Foundation headers
 // InternetDateTime = Year | Month | Day | Time | DashSeparatorInDate | ColonSeparatorInTime | ColonSeparatorInTimeZone
 // On macOS 14: 1907

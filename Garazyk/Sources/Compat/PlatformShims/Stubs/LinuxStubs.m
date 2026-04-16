@@ -29,24 +29,5 @@
 - (NSData *)getPublicKeyData { return nil; }
 @end
 
-// Stub for WebSocketServer (macOS-only due to Network.framework)
-@interface WebSocketServer : NSObject
-- (instancetype)initWithPort:(uint16_t)port;
-- (BOOL)start:(NSError **)error;
-- (void)stop;
-@end
-
-@implementation WebSocketServer
-- (instancetype)initWithPort:(uint16_t)port {
-    self = [super init];
-    return self;
-}
-- (BOOL)start:(NSError **)error {
-    if (error) *error = [NSError errorWithDomain:@"WebSocketServer" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"WebSocketServer not available on Linux"}];
-    return NO;
-}
-- (void)stop {}
-@end
-
 
 #endif

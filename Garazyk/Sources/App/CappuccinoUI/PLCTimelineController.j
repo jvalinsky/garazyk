@@ -45,6 +45,7 @@
         return _rootView;
 
     _rootView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1080.0, 700.0)];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
 
     // Title
     var title = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 16.0, 400.0, 28.0)];
@@ -57,6 +58,7 @@
 
     // DID label
     _didLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 44.0, 800.0, 24.0)];
+    [_didLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_didLabel setEditable:NO];
     [_didLabel setBezeled:NO];
     [_didLabel setDrawsBackground:NO];
@@ -67,6 +69,7 @@
 
     // Status label
     _statusLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 68.0, 600.0, 20.0)];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -76,11 +79,13 @@
 
     // Timeline scroll view
     _scrollView = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 96.0, 1040.0, 580.0)];
+    [_scrollView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_scrollView setHasHorizontalScroller:NO];
     [_scrollView setHasVerticalScroller:YES];
     [_scrollView setAutohidesScrollers:YES];
 
-    _timelineView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1020.0, 100.0)];
+    _timelineView = [[CPView alloc] initWithFrame:CGRectMake(0.0, 0.0, [self timelineContentWidth], 100.0)];
+    [_timelineView setAutoresizingMask:CPViewWidthSizable];
     [_scrollView setDocumentView:_timelineView];
     [_rootView addSubview:_scrollView];
 
@@ -139,8 +144,10 @@
 
 - (void)renderTimeline
 {
+    var contentWidth = [self timelineContentWidth];
+
     if (_operationLog.length === 0) {
-        var emptyLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 20.0, 400.0, 24.0)];
+        var emptyLabel = [[CPTextField alloc] initWithFrame:CGRectMake(20.0, 20.0, contentWidth - 40.0, 24.0)];
         [emptyLabel setStringValue:@"No operations found"];
         [emptyLabel setEditable:NO];
         [emptyLabel setBezeled:NO];
@@ -184,7 +191,7 @@
         }
 
         // Date label
-        var dateLabel = [[CPTextField alloc] initWithFrame:CGRectMake(40.0, yOffset, 300.0, 18.0)];
+        var dateLabel = [[CPTextField alloc] initWithFrame:CGRectMake(40.0, yOffset, contentWidth - 60.0, 18.0)];
         [dateLabel setStringValue:date];
         [dateLabel setEditable:NO];
         [dateLabel setBezeled:NO];
@@ -194,7 +201,7 @@
         yOffset += 22.0;
 
         // CID label
-        var cidLabel = [[CPTextField alloc] initWithFrame:CGRectMake(40.0, yOffset, 400.0, 16.0)];
+        var cidLabel = [[CPTextField alloc] initWithFrame:CGRectMake(40.0, yOffset, contentWidth - 60.0, 16.0)];
         var shortCid = cid.length > 30 ? cid.substring(0, 30) + "..." : cid;
         [cidLabel setStringValue:@"CID: " + shortCid];
         [cidLabel setEditable:NO];
@@ -214,7 +221,7 @@
         }
 
         // Raw op (collapsible - simplified as always shown)
-        var rawLabel = [[CPTextField alloc] initWithFrame:CGRectMake(60.0, yOffset, 800.0, 80.0)];
+        var rawLabel = [[CPTextField alloc] initWithFrame:CGRectMake(60.0, yOffset, contentWidth - 80.0, 80.0)];
         [rawLabel setStringValue:JSON.stringify(op, null, 2)];
         [rawLabel setEditable:NO];
         [rawLabel setBezeled:NO];
@@ -228,7 +235,7 @@
     }
 
     // Resize timeline view
-    [_timelineView setFrame:CGRectMake(0.0, 0.0, 1020.0, yOffset + 20.0)];
+    [_timelineView setFrame:CGRectMake(0.0, 0.0, contentWidth, yOffset + 20.0)];
 }
 
 - (float)renderGenesisOperation:(id)op yOffset:(float)yOffset
@@ -400,6 +407,14 @@
     }
 
     return yOffset;
+}
+
+- (float)timelineContentWidth
+{
+    var width = 1020.0;
+    if (_scrollView)
+        width = [_scrollView bounds].size.width - 20.0;
+    return width > 320.0 ? width : 320.0;
 }
 
 @end

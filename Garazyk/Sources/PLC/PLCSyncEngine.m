@@ -1,6 +1,7 @@
 #import "PLCSyncEngine.h"
 #import "PLC/PLCMetrics.h"
 #import "Debug/PDSLogger.h"
+#import "libkern/OSAtomic.h"
 
 NSString * const PLCSyncEngineErrorDomain = @"com.atproto.pds.plc.syncengine";
 

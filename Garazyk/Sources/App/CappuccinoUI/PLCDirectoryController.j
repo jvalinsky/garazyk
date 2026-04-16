@@ -55,7 +55,9 @@
         statusFrame = CGRectMake(20.0, 16.0, 600.0, 20.0);
 
     _rootView = [[CPView alloc] initWithFrame:rootFrame];
+    [_rootView setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     _statusLabel = [[CPTextField alloc] initWithFrame:statusFrame];
+    [_statusLabel setAutoresizingMask:CPViewWidthSizable | CPViewMaxYMargin];
     [_statusLabel setEditable:NO];
     [_statusLabel setBezeled:NO];
     [_statusLabel setDrawsBackground:NO];
@@ -118,6 +120,7 @@
     [parent addSubview:tableLabel];
 
     _didTable = [[CPTableView alloc] initWithFrame:CGRectMake(0.0, 0.0, 1040.0, 540.0)];
+    [_didTable setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [_didTable setDelegate:self];
     [_didTable setDataSource:self];
     [_didTable setAllowsEmptySelection:YES];
@@ -135,9 +138,11 @@
     [[actionColumn headerView] setStringValue:@"Action"];
     [actionColumn setWidth:100.0];
     [_didTable addTableColumn:actionColumn];
+    [_didTable setColumnAutoresizingStyle:CPTableViewLastColumnOnlyAutoresizingStyle];
 
     // Scroll view
     var scroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 132.0, 1040.0, 548.0)];
+    [scroll setAutoresizingMask:CPViewWidthSizable | CPViewHeightSizable];
     [scroll setDocumentView:_didTable];
     [scroll setHasHorizontalScroller:NO];
     [scroll setHasVerticalScroller:YES];
