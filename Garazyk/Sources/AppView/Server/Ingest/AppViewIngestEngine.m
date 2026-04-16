@@ -249,13 +249,23 @@
             if (record && [record isKindOfClass:[NSDictionary class]]) {
                 id subject = record[@"subject"];
                 if ([subject isKindOfClass:[NSString class]]) {
-                    subjectDid = subject;
+                    if ([subject hasPrefix:@"did:"]) {
+                        subjectDid = subject;
+                    } else if ([subject hasPrefix:@"at://"]) {
+                        NSArray *uriParts = [subject componentsSeparatedByString:@"/"];
+                        if (uriParts.count > 2) subjectDid = uriParts[2];
+                    }
                 } else if ([subject isKindOfClass:[NSDictionary class]]) {
-                    // Extract DID from at:// uri if present
+                    // Handle StrongRef (uri) or RepoRef (did)
                     NSString *uri = subject[@"uri"];
                     if ([uri hasPrefix:@"at://"]) {
                         NSArray *uriParts = [uri componentsSeparatedByString:@"/"];
                         if (uriParts.count > 2) subjectDid = uriParts[2];
+                    } else {
+                        NSString *didVal = subject[@"did"];
+                        if ([didVal hasPrefix:@"did:"]) {
+                            subjectDid = didVal;
+                        }
                     }
                 }
             }

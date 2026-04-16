@@ -4,6 +4,7 @@
 #import "App/PDSApplication.h"
 #import "App/PDSConfiguration.h"
 #import "Network/HttpServer.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 /*!
  @file main.m
@@ -30,6 +31,13 @@
 
 int main(int argc, char *argv[]) {
     @autoreleasepool {
+#ifdef LINUX
+        // On Linux/GNUstep, verify critical categories are loaded
+        if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {
+            fprintf(stderr, "FATAL: Objective-C category NSDateFormatter(ATProto) not loaded. Check linker settings.\n");
+            return 1;
+        }
+#endif
         // 1. Create configuration
         PDSConfiguration *config = [[PDSConfiguration alloc] init];
         
