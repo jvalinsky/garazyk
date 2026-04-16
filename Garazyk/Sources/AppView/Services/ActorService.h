@@ -10,6 +10,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Database/PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -17,9 +18,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*!
  @class ActorService
-
+ 
  @abstract Service for actor profiles and preferences.
-
+ 
  @discussion Retrieves actor profile data and manages user preferences.
  Profiles include display name, avatar, description. Preferences store
  user-specific settings.
@@ -27,10 +28,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface ActorService : NSObject
 
 /*! Initialize with database connection. */
-- (instancetype)initWithDatabase:(PDSDatabase *)database;
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 
 /*! Database connection (exposed for testing). */
-@property (nonatomic, strong, readonly) PDSDatabase *database;
+@property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
+
 
 /*! Get profile for actor DID. */
 - (nullable NSDictionary *)getProfileForActor:(NSString *)actorDID error:(NSError **)error;

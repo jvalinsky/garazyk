@@ -5,13 +5,13 @@
 #import "Core/ATProtoCBORSerialization.h"
 
 @interface NotificationService ()
-@property (nonatomic, strong) PDSDatabase *database;
+@property (nonatomic, strong) id<PDSQueryDatabase> database;
 @property (nonatomic, strong) ActorService *actorService;
 @end
 
 @implementation NotificationService
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
                     actorService:(nullable ActorService *)actorService {
     self = [super init];
     if (self) {
@@ -22,7 +22,7 @@
     return self;
 }
 
-- (instancetype)initWithDatabase:(PDSDatabase *)database {
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
     return [self initWithDatabase:database actorService:nil];
 }
 

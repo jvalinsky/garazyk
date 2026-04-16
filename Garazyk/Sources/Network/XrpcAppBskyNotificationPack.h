@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Database/PDSQueryDatabase.h"
 
 @class XrpcDispatcher;
 @class JWTMinter;
@@ -20,12 +21,12 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcAppBskyNotificationPack : NSObject
 
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                              appViewDatabase:(PDSDatabase *)appViewDatabase
+                              appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                     jwtMinter:(JWTMinter *)jwtMinter
                               adminController:(id<PDSAdminController>)adminController;
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(PDSDatabase *)appViewDatabase
+                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController;
 
