@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 
 @implementation PLCTimelineController : CPObject
 {
@@ -18,6 +19,7 @@
     CPView _rootView;
 
     CPTextField _statusLabel;
+    EmptyStateView _emptyState;
     CPTextField _didLabel;
     CPScrollView _scrollView;
     CPView _timelineView;
@@ -97,10 +99,11 @@
     _currentDID = did;
     [_didLabel setStringValue:did];
     [_statusLabel setStringValue:@"Loading timeline..."];
+    [self hideEmptyState];
 
-    // Clear timeline
+    // Clear timeline (iterate in reverse for safety)
     var subviews = [_timelineView subviews];
-    for (var i = 0; i < subviews.length; i++) {
+    for (var i = subviews.length - 1; i >= 0; i--) {
         [subviews[i] removeFromSuperview];
     }
 
@@ -109,14 +112,53 @@
             [_statusLabel setStringValue:@"Error loading timeline: " + error.localizedDescription];
             _operationLog = [];
             [self renderTimeline];
+            
+            [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                  message:@"Could not reach PLC audit log for " + did + ". " + error.localizedDescription];
             return;
         }
 
         _operationLog = [self normalizedOperationLogEntries:response];
         [_statusLabel setStringValue:_operationLog.length + " operations"];
 
+        if (_operationLog.length === 0) {
+            [self showEmptyStateWithIcon:EmptyStateIconHistory
+                                  message:@"No operations found for this DID."];
+        }
+
         [self renderTimeline];
     }];
+}
+
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+        _emptyState = [[EmptyStateView alloc] initWithFrame:[_scrollView bounds]
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Try Again"
+                                                actionHandler:function() { [self loadDID:_currentDID]; }];
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+
+    var frame = [_rootView bounds];
+    if (_scrollView)
+        frame = [_scrollView frame];
+        
+    [_emptyState setFrame:frame];
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
 }
 
 - (CPArray)normalizedOperationLogEntries:(id)response

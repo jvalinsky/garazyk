@@ -612,9 +612,9 @@
     if (!superview)
         return;
 
-    // Remove any existing empty state
+    // Remove any existing empty state (iterate in reverse to avoid index issues)
     var subviews = [superview subviews];
-    for (var i = 0; i < subviews.length; i++)
+    for (var i = subviews.length - 1; i >= 0; i--)
     {
         if ([subviews[i] isKindOfClass:[EmptyStateView class]])
             [subviews[i] removeFromSuperview];
@@ -632,8 +632,9 @@
     if (!superview)
         return;
 
+    // Iterate in reverse to avoid index issues when removing
     var subviews = [superview subviews];
-    for (var i = 0; i < subviews.length; i++)
+    for (var i = subviews.length - 1; i >= 0; i--)
     {
         if ([subviews[i] isKindOfClass:[EmptyStateView class]])
             [subviews[i] removeFromSuperview];
@@ -1895,13 +1896,13 @@
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
     if (tableView === _accountsTable)
-        return _filteredAccounts.length;
+        return _filteredAccounts ? _filteredAccounts.length : 0;
     if (tableView === _reportsTable)
-        return _reports.length;
+        return _reports ? _reports.length : 0;
     if (tableView === _invitesTable)
-        return _invites.length;
+        return _invites ? _invites.length : 0;
     if (tableView === _moderationTable)
-        return _moderationUsers.length;
+        return _moderationUsers ? _moderationUsers.length : 0;
     return 0;
 }
 

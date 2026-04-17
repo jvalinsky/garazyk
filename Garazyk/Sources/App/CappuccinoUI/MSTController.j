@@ -743,7 +743,7 @@
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
     if (tableView === _accountsTable)
-        return _filteredAccounts.length;
+        return _filteredAccounts ? _filteredAccounts.length : 0;
     return 0;
 }
 

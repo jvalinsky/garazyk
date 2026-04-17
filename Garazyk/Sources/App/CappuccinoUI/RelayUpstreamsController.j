@@ -20,6 +20,8 @@
     CPTextField _statusLabel;
     CPTableView _upstreamsTable;
     CPTextField _addUpstreamField;
+    EmptyStateView _emptyState;
+
     CPArray _upstreams;
     CPString _refreshTimer;
     BOOL _isRunning;
@@ -188,6 +190,8 @@
 
 - (void)loadUpstreams
 {
+    [self hideEmptyState];
+
     [_apiClient getJSONWithPath:@"/upstreams"
                   endpointGroup:@"relay"
                     queryParams:nil
@@ -195,21 +199,67 @@
                      {
                          if (errorMessage)
                          {
-                             [_statusLabel setStringValue:@"Error: " + errorMessage];
+                             [self setErrorStatus:errorMessage];
                              _upstreams = [];
+                             [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                                   message:@"Could not reach Relay upstreams API. " + errorMessage];
                          }
                          else if (payload && payload.upstreams)
                          {
                              _upstreams = payload.upstreams;
-                             [_statusLabel setStringValue:@"Loaded " + _upstreams.length + " upstream(s)"];
+                             [self setSuccessStatus:@"Loaded " + _upstreams.length + " upstream(s)"];
+                             
+                             if (_upstreams.length === 0) {
+                                 [self showEmptyStateWithIcon:EmptyStateIconInbox
+                                                       message:@"No connected upstreams. Add one above to start syncing events."];
+                             }
                          }
                          else
                          {
                              _upstreams = [];
-                             [_statusLabel setStringValue:@"No upstreams configured"];
+                             [self setSuccessStatus:@"No upstreams configured"];
+                             [self showEmptyStateWithIcon:EmptyStateIconInbox
+                                                   message:@"No connected upstreams. Add one above to start syncing events."];
                          }
                          [_upstreamsTable reloadData];
                      }];
+}
+
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+    {
+        var initialFrame = [_rootView bounds];
+        _emptyState = [[EmptyStateView alloc] initWithFrame:initialFrame
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Try Again"
+                                                actionHandler:function() { [self loadUpstreams]; }];
+    }
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+
+    var frame = [_rootView bounds];
+    if (_upstreamsTable && [_upstreamsTable superview])
+    {
+        var scroll = [[_upstreamsTable superview] superview];
+        if (scroll) frame = [scroll frame];
+    }
+    
+    [_emptyState setFrame:frame];
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
 }
 
 #pragma mark - Actions
@@ -452,7 +502,7 @@
 
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
-    return _upstreams.length;
+    return _upstreams ? _upstreams.length : 0;
 }
 
 - (id)tableView:(CPTableView)tableView objectValueForTableColumn:(CPTableColumn)tableColumn row:(int)row

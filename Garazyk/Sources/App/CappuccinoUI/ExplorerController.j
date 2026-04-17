@@ -3766,35 +3766,35 @@
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
     if (tableView === _accountsTable)
-        return _accounts.length;
+        return _accounts ? _accounts.length : 0;
     if (tableView === _collectionsTable)
-        return _collections.length;
+        return _collections ? _collections.length : 0;
     if (tableView === _recordsTable)
-        return _records.length;
+        return _records ? _records.length : 0;
     if (tableView === _didSummaryTable)
-        return _didSummaryRows.length;
+        return _didSummaryRows ? _didSummaryRows.length : 0;
     if (tableView === _didItemsTable)
-        return _didItemRows.length;
+        return _didItemRows ? _didItemRows.length : 0;
     if (tableView === _plcOpsTable)
-        return _plcOpRows.length;
+        return _plcOpRows ? _plcOpRows.length : 0;
     if (tableView === _plcDetailTable)
-        return _plcDetailRows.length;
+        return _plcDetailRows ? _plcDetailRows.length : 0;
     if (tableView === _recordSummaryTable)
-        return _recordSummaryRows.length;
+        return _recordSummaryRows ? _recordSummaryRows.length : 0;
     if (tableView === _feedTable)
-        return _feedRows.length;
+        return _feedRows ? _feedRows.length : 0;
     if (tableView === _feedDetailTable)
-        return _feedDetailRows.length;
+        return _feedDetailRows ? _feedDetailRows.length : 0;
     if (tableView === _graphTable)
-        return _graphRows.length;
+        return _graphRows ? _graphRows.length : 0;
     if (tableView === _graphDetailTable)
-        return _graphDetailRows.length;
+        return _graphDetailRows ? _graphDetailRows.length : 0;
     if (tableView === _profileSummaryTable)
-        return _profileSummaryRows.length;
+        return _profileSummaryRows ? _profileSummaryRows.length : 0;
     if (tableView === _mstStatsTable)
-        return _mstStatsRows.length;
+        return _mstStatsRows ? _mstStatsRows.length : 0;
     if (tableView === _mstNodesTable)
-        return _mstNodeRows.length;
+        return _mstNodeRows ? _mstNodeRows.length : 0;
     return 0;
 }
 
