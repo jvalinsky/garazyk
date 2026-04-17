@@ -1105,6 +1105,95 @@
         [response setJsonBody:@{@"success": @YES}];
     }];
 
+#pragma mark - Signatures (3)
+
+    // tools.ozone.signature.findRelatedAccounts
+    [dispatcher registerMethod:@"tools.ozone.signature.findRelatedAccounts"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
+                                 adminController:adminController request:request response:response];
+        if (!authHeader) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *did = body[@"did"];
+
+        if (!did || did.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            return;
+        }
+
+        NSString *limitStr = body[@"limit"];
+        NSString *cursor = body[@"cursor"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit <= 0) limit = 50;
+        if (limit > 100) limit = 100;
+
+        response.statusCode = 200;
+        [response setJsonBody:@{
+            @"accounts": @[],
+            @"cursor": cursor ?: @""
+        }];
+    }];
+
+    // tools.ozone.signature.findCorrelation
+    [dispatcher registerMethod:@"tools.ozone.signature.findCorrelation"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
+                                 adminController:adminController request:request response:response];
+        if (!authHeader) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *did1 = body[@"did1"];
+        NSString *did2 = body[@"did2"];
+
+        if (!did1 || did1.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"did1 is required"];
+            return;
+        }
+
+        if (!did2 || did2.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"did2 is required"];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{
+            @"correlation": @"none",
+            @"confidence": @0.0,
+            @"sharedSignals": @[]
+        }];
+    }];
+
+    // tools.ozone.signature.searchAccounts
+    [dispatcher registerMethod:@"tools.ozone.signature.searchAccounts"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
+                                 adminController:adminController request:request response:response];
+        if (!authHeader) return;
+
+        NSString *query = [request queryParamForKey:@"query"];
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        if (!query || query.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"query is required"];
+            return;
+        }
+
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit <= 0) limit = 50;
+        if (limit > 100) limit = 100;
+
+        response.statusCode = 200;
+        [response setJsonBody:@{
+            @"accounts": @[],
+            @"cursor": cursor ?: @""
+        }];
+    }];
+
 #pragma mark - Server Settings (2)
 
     // tools.ozone.server.getConfig
