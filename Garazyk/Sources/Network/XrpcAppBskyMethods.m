@@ -48,7 +48,7 @@
     PDS_LOG_INFO(@"Local AppView disabled; skipping registration of app.bsky.* "
                  @"feed/graph/notification handlers.");
     [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
-    [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher];
+    // Chat endpoints require database access, skip when AppView is disabled
     return;
   }
 
@@ -94,7 +94,10 @@
                                    adminController:adminController];
   [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
-  [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher];
+  [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
+                               appViewDatabase:appViewDatabase
+                                    jwtMinter:jwtMinter
+                              adminController:adminController];
 }
 
 @end
