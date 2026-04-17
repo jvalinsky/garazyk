@@ -4190,6 +4190,17 @@
       "created_at": "2026-04-17T15:43:55.755849-04:00",
       "updated_at": "2026-04-17T15:43:55.755849-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"8e54ecb3\"}"
+    },
+    {
+      "id": 382,
+      "change_id": "2ecfe19d-ecd3-4f41-aac0-8dc0a484d5b1",
+      "node_type": "outcome",
+      "title": "Sprint 2 Phase 3: WebSocket backpressure metrics tracking - 4 Prometheus metrics with thread-safe recording",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-17T15:48:12.331673-04:00",
+      "updated_at": "2026-04-17T15:48:12.331673-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3820b21d\"}"
     }
   ],
   "edges": [

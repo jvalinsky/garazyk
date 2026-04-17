@@ -1,18 +1,26 @@
 [
   {
+    "hash": "3820b21daa8d4f4cf8f473f3209fd644236639b1",
+    "short_hash": "3820b21",
+    "author": "Security Bot",
+    "date": "2026-04-17T15:48:05-04:00",
+    "message": "feat(websocket): add backpressure metrics tracking to PDSMetrics\n\nSprint 2 Phase 3: WebSocket backpressure metrics integration\n\nNew Prometheus metrics:\n- pds_websocket_backpressure_warnings_total (counter)\n- pds_websocket_backpressure_critical_total (counter)\n- pds_websocket_queue_overflow_closures_total (counter)\n- pds_websocket_connections_under_backpressure (gauge)\n\nImplementation:\n- 4 metric properties added to PDSMetrics (thread-safe)\n- 4 metric recording methods with dispatch_sync protection\n- Metrics initialization in PDSMetrics init\n- Metrics integrated into WebSocketConnection notifications\n- Prometheus export updated with new metrics\n\nBenefits:\n- Production monitoring of backpressure events\n- Alerting on backpressure frequency/severity\n- Visibility into connection health\n- Distinguishes warning from critical from overflow states\n\nAll metrics are:\n- Thread-safe (dispatch_sync protected)\n- Exported in Prometheus format\n- Documented with HELP and TYPE metadata\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "ace080ceba82c974858509f93199e4dfe8bf8cb4",
+    "short_hash": "ace080c",
+    "author": "Security Bot",
+    "date": "2026-04-17T15:46:16-04:00",
+    "message": "docs: link WebSocket backpressure outcome to Sprint 2 goal\n\nOutcome 381: WebSocket backpressure phases 1-4 complete\n- Configuration properties with sensible defaults\n- Delegate notifications for warning/critical/cleared/overflow\n- Enhanced logging with connection context\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
     "hash": "8e54ecb3bc4482b85c09197faff984a036171508",
     "short_hash": "8e54ecb",
     "author": "Security Bot",
     "date": "2026-04-17T15:43:51-04:00",
     "message": "feat(websocket): implement configurable backpressure handling\n\nSprint 2: Phase 1-4 WebSocket backpressure implementation\n\nPhases completed:\n1. Configuration Properties:\n   - Added maxOutboundQueueBytes (default: 10MB)\n   - Added backpressureWarningThreshold (default: 70%)\n   - Added backpressureCriticalThreshold (default: 90%)\n\n2. Delegate Notifications:\n   - Added 4 new optional delegate methods:\n     * didReachBackpressureWarning:queueBytes:\n     * didReachBackpressureCritical:queueBytes:\n     * webSocketConnectionDidClearBackpressure:\n     * willCloseForQueueOverflow:limit:\n   - Added backpressure state tracking (isUnderBackpressure)\n   - Threshold checking in sendFrame: method\n   - Backpressure cleared detection in writeData: completion\n\n4. Enhanced Logging:\n   - Added PDS_LOG_SYNC_WARN for warning and critical thresholds\n   - Added PDS_LOG_SYNC_INFO for backpressure cleared\n   - Added PDS_LOG_SYNC_ERROR for queue overflow\n   - All logs include remote address and queue fill percentage\n\nBenefits:\n- Configurable limits allow tuning for different deployments\n- Delegate notifications decouple detection from response\n- Logging provides visibility into backpressure events\n- Graceful threshold system (warning/critical/overflow)\n- Backward compatible with default values\n\nRemaining:\n- Phase 3: Metrics tracking (PDSMetrics)\n- Phase 5: Test updates (unit/integration tests)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
-    "files_changed": 2
-  },
-  {
-    "hash": "f9fa716034499867739535423cfff48480adacc3",
-    "short_hash": "f9fa716",
-    "author": "Security Bot",
-    "date": "2026-04-17T10:47:26-04:00",
-    "message": "docs: link decision outcome to Sprint 2 goals\n\nOutcome 380: Code review verified P0/P1 bugs don't exist\nLinks:\n- Decision 375 → Outcome 380 (decision resolved)\n- Action 377 (WebSocket backpressure) → Goal 379 (Sprint 2)\n- Action 378 (test robustness) → Goal 379 (Sprint 2)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 2
   },
   {
@@ -24,12 +32,12 @@
     "files_changed": 4
   },
   {
-    "hash": "7b65ac29558f4c4cf60e63b7484f34b3af39efd3",
-    "short_hash": "7b65ac2",
+    "hash": "176d37b73dac9b325b2604483e7adfd64895d192",
+    "short_hash": "176d37b",
     "author": "Security Bot",
-    "date": "2026-04-17T10:00:11-04:00",
-    "message": "fix(mst): add __unsafe_unretained for ARC struct fields\n\nGNUstep clang-14 crashes (segfault) when compiling structs\ncontaining Objective-C object pointers without ownership\nqualifiers under ARC.\n\nThe MSTWalkerStatusProgress struct's curr and walking fields\nhold borrowed references during MST traversal and should not\nretain ownership. Mark them __unsafe_unretained to:\n\n1. Make ARC semantics explicit (non-owning references)\n2. Fix GNUstep/Linux Docker build compilation\n3. Match TypeScript reference design (raw references)\n\nReference: Clang ARC documentation on ownership-qualified\nfields in structs.\n\nFixes docker build segfault:\n  Error 139 in MSTWalker.m.o compilation\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
-    "files_changed": 1
+    "date": "2026-04-17T10:02:39-04:00",
+    "message": "feat(xrpc): add tools.ozone.hosting endpoint\n\nImplement account hosting history tracking endpoint:\n- getAccountHistory: Retrieve hosting events for an account\n  (migrations, moves, suspensions, etc.)\n\nReturns chronological list of hosting events with pagination support.\nAdds new ModerationService method for hosting history queries.\nIncludes 2 test cases covering success and validation.\n\nCoverage: 262/277 endpoints (94.6%)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 4
   },
   {
     "hash": "7b65ac29558f4c4cf60e63b7484f34b3af39efd3",
