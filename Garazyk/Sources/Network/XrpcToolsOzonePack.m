@@ -1194,6 +1194,43 @@
         }];
     }];
 
+#pragma mark - Hosting History (1)
+
+    // tools.ozone.hosting.getAccountHistory
+    [dispatcher registerMethod:@"tools.ozone.hosting.getAccountHistory"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
+                                 adminController:adminController request:request response:response];
+        if (!authHeader) return;
+
+        NSString *did = [request queryParamForKey:@"did"];
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        if (!did || did.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"did is required"];
+            return;
+        }
+
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit <= 0) limit = 50;
+        if (limit > 100) limit = 100;
+
+        NSError *error = nil;
+        NSArray *history = [moderationService getAccountHostingHistory:did limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{
+            @"events": history ?: @[],
+            @"cursor": cursor ?: @""
+        }];
+    }];
+
 #pragma mark - Server Settings (2)
 
     // tools.ozone.server.getConfig
