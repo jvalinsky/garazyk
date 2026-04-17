@@ -652,4 +652,19 @@
     return YES;
 }
 
+#pragma mark - Hosting History
+
+- (nullable NSArray<NSDictionary *> *)getAccountHostingHistory:(NSString *)did
+                                                         limit:(NSInteger)limit
+                                                        cursor:(nullable NSString *)cursor
+                                                         error:(NSError **)error {
+    if (!did) {
+        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+        return nil;
+    }
+
+    return @[];
+}
+
 @end

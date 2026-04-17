@@ -192,6 +192,13 @@ NS_ASSUME_NONNULL_BEGIN
                    updatedBy:(NSString *)adminDid
                        error:(NSError **)error;
 
+#pragma mark - Hosting History
+
+- (nullable NSArray<NSDictionary *> *)getAccountHostingHistory:(NSString *)did
+                                                         limit:(NSInteger)limit
+                                                        cursor:(nullable NSString *)cursor
+                                                         error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
