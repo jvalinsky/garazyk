@@ -14,6 +14,7 @@
 #endif
 #import "Database/PDSDatabase.h"
 #import "Database/Schema/PDSSchemaManager.h"
+#import "Database/Migrations/PDSMigrationManager.h"
 #import "Auth/Secp256k1.h"
 #import "Debug/PDSLogger.h"
 #import "PDSActorStoreInternal.h"
@@ -181,333 +182,63 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)createSchema:(NSError **)error {
-    NSString *schemaSQL = [[PDSSchemaManager sharedManager] actorStoreSchemaSQL];
+    // Sprint 3: Use migration-based schema management
+    PDSMigrationManager *migrationManager = [PDSMigrationManager actorStoreMigrationManager];
 
-    char *errMsg = NULL;
-    int result = sqlite3_exec(self.db, [schemaSQL UTF8String], NULL, NULL, &errMsg);
+    NSInteger currentVersion = [migrationManager currentVersion:self.db];
 
-    if (result != SQLITE_OK) {
-        NSString *schemaError = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Failed to apply schema";
-        BOOL recoverableRevMigrationError = [schemaError rangeOfString:@"no such column: rev"].location != NSNotFound ||
-                                           [schemaError rangeOfString:@"no such column: subject_did"].location != NSNotFound ||
-                                           [schemaError rangeOfString:@"no such column: keychain_tag"].location != NSNotFound;
-        if (!recoverableRevMigrationError) {
-            if (error) {
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                           message:schemaError
-                                          userInfo:@{@"sqlite_code": @(result)}];
-            }
-            if (errMsg) {
-                sqlite3_free(errMsg);
-            }
-            return NO;
-        }
+    // Check for legacy database (has tables but no _migrations)
+    const char *checkMigrationsSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='_migrations'";
+    sqlite3_stmt *checkStmt = NULL;
+    BOOL hasMigrationsTable = NO;
 
-        PDS_LOG_DB_WARN(@"Actor store schema needs revision migration for %@: %@",
-                        self.did,
-                        schemaError);
-    }
-    if (errMsg) {
-        sqlite3_free(errMsg);
+    if (sqlite3_prepare_v2(self.db, checkMigrationsSQL, -1, &checkStmt, NULL) == SQLITE_OK) {
+        hasMigrationsTable = (sqlite3_step(checkStmt) == SQLITE_ROW);
+        sqlite3_finalize(checkStmt);
     }
 
-    // Phase 4 Migrations: Add missing columns to existing tables
-    // Actor and service tables share some common columns
-    [self addColumnIfNeeded:@"accounts" column:@"password_salt" type:@"BLOB"];
-    [self addColumnIfNeeded:@"accounts" column:@"tfa_enabled" type:@"INTEGER DEFAULT 0"];
-    [self addColumnIfNeeded:@"accounts" column:@"tfa_secret" type:@"BLOB"];
-    [self addColumnIfNeeded:@"accounts" column:@"recovery_codes" type:@"BLOB"];
-    [self addColumnIfNeeded:@"accounts" column:@"invite_enabled" type:@"INTEGER DEFAULT 0"];
-
-    [self addColumnIfNeeded:@"records" column:@"value" type:@"BLOB"];
-    [self addColumnIfNeeded:@"records" column:@"subject_did" type:@"TEXT"];
-    [self addColumnIfNeeded:@"records" column:@"rev" type:@"TEXT"];
-    [self addColumnIfNeeded:@"records" column:@"indexed_at" type:@"DATETIME"];
-    [self addColumnIfNeeded:@"record_tombstones" column:@"indexed_at" type:@"DATETIME"];
-    [self addColumnIfNeeded:@"record_tombstones" column:@"created_at" type:@"DATETIME"];
-
-    [self addColumnIfNeeded:@"ipld_blocks" column:@"rev" type:@"TEXT"];
-    
-    // For service DB
-    [self addColumnIfNeeded:@"jwt_signing_keys" column:@"keychain_tag" type:@"TEXT"];
-
-    // Ensure indices for migrated columns
-    sqlite3_exec(_db, "CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did)", NULL, NULL, NULL);
-    sqlite3_exec(_db, "CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection)", NULL, NULL, NULL);
-
-    // Backward-compatible schema evolution for repo revision tracking.
-    NSString *tableInfoSQL = @"PRAGMA table_info(repo_root)";
-    sqlite3_stmt *tableInfoStmt = NULL;
-    int tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
-    if (tableInfoResult != SQLITE_OK) {
+    if (!hasMigrationsTable && currentVersion > 0) {
+        // Shouldn't happen - currentVersion checks _migrations table
         if (error) {
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:@"Failed to inspect repo_root schema"
-                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
+                                       message:@"Internal error: migration state inconsistent"];
         }
         return NO;
     }
 
-    BOOL hasRevColumn = NO;
-    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
-        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
-        if (columnName && strcmp(columnName, "rev") == 0) {
-            hasRevColumn = YES;
-            break;
-        }
-    }
-    sqlite3_finalize(tableInfoStmt);
+    if (!hasMigrationsTable) {
+        // Check if any tables exist (legacy database detection)
+        const char *checkTablesSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1";
+        sqlite3_stmt *tableStmt = NULL;
 
-    if (!hasRevColumn) {
-        char *alterErrMsg = NULL;
-        int alterResult = sqlite3_exec(self.db,
-                                       "ALTER TABLE repo_root ADD COLUMN rev TEXT",
-                                       NULL,
-                                       NULL,
-                                       &alterErrMsg);
-        if (alterResult != SQLITE_OK) {
-            if (error) {
-                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add rev column";
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                           message:msg
-                                          userInfo:@{@"sqlite_code": @(alterResult)}];
+        if (sqlite3_prepare_v2(self.db, checkTablesSQL, -1, &tableStmt, NULL) == SQLITE_OK) {
+            BOOL hasTables = (sqlite3_step(tableStmt) == SQLITE_ROW);
+            sqlite3_finalize(tableStmt);
+
+            if (hasTables) {
+                // Legacy database without _migrations table - not supported
+                NSString *msg = @"Legacy database detected. Fresh installs only with migration system. "
+                                @"Delete database and reinitialize, or migrate manually.";
+                PDS_LOG_DB_ERROR(@"%@", msg);
+                if (error) {
+                    *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                               message:msg
+                                              userInfo:@{NSLocalizedDescriptionKey: msg}];
+                }
+                return NO;
             }
-            if (alterErrMsg) {
-                sqlite3_free(alterErrMsg);
-            }
-            return NO;
         }
     }
 
-    // Backward-compatible schema evolution for per-record revision tracking.
-    tableInfoSQL = @"PRAGMA table_info(records)";
-    tableInfoStmt = NULL;
-    tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
-    if (tableInfoResult != SQLITE_OK) {
-        if (error) {
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:@"Failed to inspect records schema"
-                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
-        }
+    // Run pending migrations
+    NSError *migrationError = nil;
+    if (![migrationManager migrateDatabase:self.db error:&migrationError]) {
+        PDS_LOG_DB_ERROR(@"Actor store migration failed: %@", migrationError);
+        if (error) *error = migrationError;
         return NO;
     }
 
-    BOOL hasRecordRevColumn = NO;
-    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
-        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
-        if (columnName && strcmp(columnName, "rev") == 0) {
-            hasRecordRevColumn = YES;
-            break;
-        }
-    }
-    sqlite3_finalize(tableInfoStmt);
-
-    if (!hasRecordRevColumn) {
-        char *alterErrMsg = NULL;
-        int alterResult = sqlite3_exec(self.db,
-                                       "ALTER TABLE records ADD COLUMN rev TEXT",
-                                       NULL,
-                                       NULL,
-                                       &alterErrMsg);
-        if (alterResult != SQLITE_OK) {
-            if (error) {
-                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add records.rev column";
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                           message:msg
-                                          userInfo:@{@"sqlite_code": @(alterResult)}];
-            }
-            if (alterErrMsg) {
-                sqlite3_free(alterErrMsg);
-            }
-            return NO;
-        }
-    }
-
-    // Backward-compatible schema evolution for tombstone revision tracking.
-    tableInfoSQL = @"PRAGMA table_info(record_tombstones)";
-    tableInfoStmt = NULL;
-    tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
-    if (tableInfoResult != SQLITE_OK) {
-        if (error) {
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:@"Failed to inspect record_tombstones schema"
-                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
-        }
-        return NO;
-    }
-
-    BOOL hasTombstoneRevColumn = NO;
-    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
-        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
-        if (columnName && strcmp(columnName, "rev") == 0) {
-            hasTombstoneRevColumn = YES;
-            break;
-        }
-    }
-    sqlite3_finalize(tableInfoStmt);
-
-    if (!hasTombstoneRevColumn) {
-        char *alterErrMsg = NULL;
-        int alterResult = sqlite3_exec(self.db,
-                                       "ALTER TABLE record_tombstones ADD COLUMN rev TEXT",
-                                       NULL,
-                                       NULL,
-                                       &alterErrMsg);
-        if (alterResult != SQLITE_OK) {
-            if (error) {
-                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add record_tombstones.rev column";
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                           message:msg
-                                          userInfo:@{@"sqlite_code": @(alterResult)}];
-            }
-            if (alterErrMsg) {
-                sqlite3_free(alterErrMsg);
-            }
-            return NO;
-        }
-
-        char *backfillErrMsg = NULL;
-        int backfillResult = sqlite3_exec(self.db,
-                                          "UPDATE record_tombstones "
-                                          "SET rev = COALESCE(rev, CAST(indexed_at AS TEXT), CAST(created_at AS TEXT)) "
-                                          "WHERE rev IS NULL OR rev = ''",
-                                          NULL,
-                                          NULL,
-                                          &backfillErrMsg);
-        if (backfillResult != SQLITE_OK) {
-            if (error) {
-                NSString *msg = backfillErrMsg ? [NSString stringWithUTF8String:backfillErrMsg] : @"Failed to backfill record_tombstones.rev";
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                           message:msg
-                                          userInfo:@{@"sqlite_code": @(backfillResult)}];
-            }
-            if (backfillErrMsg) {
-                sqlite3_free(backfillErrMsg);
-            }
-            return NO;
-        }
-    }
-
-    char *indexErrMsg = NULL;
-    int indexResult = sqlite3_exec(self.db,
-                                   "CREATE INDEX IF NOT EXISTS idx_records_rev ON records(rev)",
-                                   NULL,
-                                   NULL,
-                                   &indexErrMsg);
-    if (indexResult != SQLITE_OK) {
-        if (error) {
-            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create records.rev index";
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:msg
-                                      userInfo:@{@"sqlite_code": @(indexResult)}];
-        }
-        if (indexErrMsg) {
-            sqlite3_free(indexErrMsg);
-        }
-        return NO;
-    }
-
-    indexErrMsg = NULL;
-    indexResult = sqlite3_exec(self.db,
-                               "CREATE INDEX IF NOT EXISTS idx_record_tombstones_rev ON record_tombstones(rev)",
-                               NULL,
-                               NULL,
-                               &indexErrMsg);
-    if (indexResult != SQLITE_OK) {
-        if (error) {
-            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create record_tombstones.rev index";
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:msg
-                                      userInfo:@{@"sqlite_code": @(indexResult)}];
-        }
-        if (indexErrMsg) {
-            sqlite3_free(indexErrMsg);
-        }
-        return NO;
-    }
-
-    indexErrMsg = NULL;
-    indexResult = sqlite3_exec(self.db,
-                               "CREATE INDEX IF NOT EXISTS idx_record_tombstones_did_rev ON record_tombstones(did, rev)",
-                               NULL,
-                               NULL,
-                               &indexErrMsg);
-    if (indexResult != SQLITE_OK) {
-        if (error) {
-            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create record_tombstones.did,rev index";
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:msg
-                                      userInfo:@{@"sqlite_code": @(indexResult)}];
-        }
-        if (indexErrMsg) {
-            sqlite3_free(indexErrMsg);
-        }
-        return NO;
-    }
-
-    // Backward-compatible schema evolution for block revision tracking.
-    tableInfoSQL = @"PRAGMA table_info(ipld_blocks)";
-    tableInfoStmt = NULL;
-    tableInfoResult = sqlite3_prepare_v2(self.db, tableInfoSQL.UTF8String, -1, &tableInfoStmt, NULL);
-    if (tableInfoResult != SQLITE_OK) {
-        if (error) {
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:@"Failed to inspect ipld_blocks schema"
-                                      userInfo:@{@"sqlite_code": @(tableInfoResult)}];
-        }
-        return NO;
-    }
-
-    BOOL hasBlockRevColumn = NO;
-    while (sqlite3_step(tableInfoStmt) == SQLITE_ROW) {
-        const char *columnName = (const char *)sqlite3_column_text(tableInfoStmt, 1);
-        if (columnName && strcmp(columnName, "rev") == 0) {
-            hasBlockRevColumn = YES;
-            break;
-        }
-    }
-    sqlite3_finalize(tableInfoStmt);
-
-    if (!hasBlockRevColumn) {
-        char *alterErrMsg = NULL;
-        int alterResult = sqlite3_exec(self.db,
-                                       "ALTER TABLE ipld_blocks ADD COLUMN rev TEXT",
-                                       NULL,
-                                       NULL,
-                                       &alterErrMsg);
-        if (alterResult != SQLITE_OK) {
-            if (error) {
-                NSString *msg = alterErrMsg ? [NSString stringWithUTF8String:alterErrMsg] : @"Failed to add ipld_blocks.rev column";
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                           message:msg
-                                          userInfo:@{@"sqlite_code": @(alterResult)}];
-            }
-            if (alterErrMsg) {
-                sqlite3_free(alterErrMsg);
-            }
-            return NO;
-        }
-    }
-
-    indexErrMsg = NULL;
-    indexResult = sqlite3_exec(self.db,
-                               "CREATE INDEX IF NOT EXISTS idx_ipld_blocks_rev ON ipld_blocks(rev)",
-                               NULL,
-                               NULL,
-                               &indexErrMsg);
-    if (indexResult != SQLITE_OK) {
-        if (error) {
-            NSString *msg = indexErrMsg ? [NSString stringWithUTF8String:indexErrMsg] : @"Failed to create ipld_blocks.rev index";
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                       message:msg
-                                      userInfo:@{@"sqlite_code": @(indexResult)}];
-        }
-        if (indexErrMsg) {
-            sqlite3_free(indexErrMsg);
-        }
-        return NO;
-    }
-
+    PDS_LOG_DB_INFO(@"Actor store schema migration complete (version %ld)", (long)[migrationManager currentVersion:self.db]);
     return YES;
 }
 
