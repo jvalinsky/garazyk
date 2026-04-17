@@ -63,6 +63,24 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 - (void)webSocketConnection:(WebSocketConnection *)connection
            didFailWithError:(NSError *)error;
 - (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection;
+
+/*! Called when backpressure warning threshold is reached. */
+- (void)webSocketConnection:(WebSocketConnection *)connection
+    didReachBackpressureWarning:(double)fillPercentage
+                     queueBytes:(NSUInteger)bytes;
+
+/*! Called when backpressure critical threshold is reached. */
+- (void)webSocketConnection:(WebSocketConnection *)connection
+    didReachBackpressureCritical:(double)fillPercentage
+                      queueBytes:(NSUInteger)bytes;
+
+/*! Called when backpressure is cleared (queue drops below warning threshold). */
+- (void)webSocketConnectionDidClearBackpressure:(WebSocketConnection *)connection;
+
+/*! Called when connection is about to be closed due to queue overflow. */
+- (void)webSocketConnection:(WebSocketConnection *)connection
+    willCloseForQueueOverflow:(NSUInteger)bytes
+                        limit:(NSUInteger)limit;
 @end
 
 /*!
@@ -105,6 +123,15 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 
 /*! Timeout for heartbeat responses. */
 @property(nonatomic, assign) NSTimeInterval heartbeatTimeout;
+
+/*! Maximum bytes allowed in outbound queue. Default: 10MB. */
+@property(nonatomic, assign) NSUInteger maxOutboundQueueBytes;
+
+/*! Threshold percentage (0.0-1.0) for backpressure warning. Default: 0.7 (70%). */
+@property(nonatomic, assign) double backpressureWarningThreshold;
+
+/*! Threshold percentage (0.0-1.0) for backpressure critical. Default: 0.9 (90%). */
+@property(nonatomic, assign) double backpressureCriticalThreshold;
 
 /*! Negotiated subprotocol. */
 @property(nonatomic, copy, nullable) NSString *subprotocol;
