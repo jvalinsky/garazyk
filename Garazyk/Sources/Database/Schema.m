@@ -32,6 +32,10 @@ NSString * const kPDSConversationsTableName = @"conversations";
 NSString * const kPDSConversationMembersTableName = @"conversation_members";
 NSString * const kPDSMessagesTableName = @"messages";
 NSString * const kPDSMessageReactionsTableName = @"message_reactions";
+NSString * const kPDSGroupsTableName = @"groups";
+NSString * const kPDSGroupMembersTableName = @"group_members";
+NSString * const kPDSGroupInviteLinksTableName = @"group_invite_links";
+NSString * const kPDSGroupJoinRequestsTableName = @"group_join_requests";
 
 NSString * const kPDSAccountTableCreateSQL = 
     @"CREATE TABLE IF NOT EXISTS accounts ("
@@ -411,6 +415,71 @@ NSString * const kPDSIndexMessagesConvoSQL =
 
 NSString * const kPDSIndexMessagesCreatedSQL =
     @"CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)";
+
+#pragma mark - Groups
+
+NSString * const kPDSGroupsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS groups ("
+    @"uri TEXT PRIMARY KEY,"
+    @"creator_did TEXT NOT NULL,"
+    @"name TEXT NOT NULL,"
+    @"description TEXT,"
+    @"avatar_blob_cid TEXT,"
+    @"privacy TEXT NOT NULL DEFAULT 'private',"
+    @"joinability TEXT NOT NULL DEFAULT 'invite_only',"
+    @"created_at TEXT NOT NULL,"
+    @"updated_at TEXT NOT NULL"
+    @")";
+
+NSString * const kPDSGroupMembersTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS group_members ("
+    @"group_uri TEXT NOT NULL,"
+    @"member_did TEXT NOT NULL,"
+    @"role TEXT NOT NULL DEFAULT 'member',"
+    @"status TEXT NOT NULL DEFAULT 'accepted',"
+    @"invited_by TEXT,"
+    @"joined_at TEXT NOT NULL,"
+    @"PRIMARY KEY (group_uri, member_did)"
+    @")";
+
+NSString * const kPDSGroupInviteLinksTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS group_invite_links ("
+    @"id TEXT PRIMARY KEY,"
+    @"group_uri TEXT NOT NULL,"
+    @"created_by TEXT NOT NULL,"
+    @"created_at TEXT NOT NULL,"
+    @"expires_at TEXT,"
+    @"max_uses INTEGER,"
+    @"uses INTEGER DEFAULT 0,"
+    @"enabled INTEGER DEFAULT 1"
+    @")";
+
+NSString * const kPDSGroupJoinRequestsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS group_join_requests ("
+    @"id TEXT PRIMARY KEY,"
+    @"group_uri TEXT NOT NULL,"
+    @"requester_did TEXT NOT NULL,"
+    @"status TEXT NOT NULL DEFAULT 'pending',"
+    @"requested_at TEXT NOT NULL,"
+    @"responded_at TEXT,"
+    @"responded_by TEXT,"
+    @"UNIQUE(group_uri, requester_did)"
+    @")";
+
+NSString * const kPDSIndexGroupMembersGroupSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_group_members_group ON group_members(group_uri)";
+
+NSString * const kPDSIndexGroupMembersMemberSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_group_members_member ON group_members(member_did)";
+
+NSString * const kPDSIndexGroupInviteLinksGroupSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_group_invite_links_group ON group_invite_links(group_uri)";
+
+NSString * const kPDSIndexGroupJoinRequestsGroupSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_group_join_requests_group ON group_join_requests(group_uri)";
+
+NSString * const kPDSIndexGroupJoinRequestsRequesterSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_group_join_requests_requester ON group_join_requests(requester_did)";
 
 #pragma mark - Video Jobs
 

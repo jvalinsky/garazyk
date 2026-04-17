@@ -50,6 +50,10 @@ extern NSString * const kPDSConversationsTableName;
 extern NSString * const kPDSConversationMembersTableName;
 extern NSString * const kPDSMessagesTableName;
 extern NSString * const kPDSMessageReactionsTableName;
+extern NSString * const kPDSGroupsTableName;
+extern NSString * const kPDSGroupMembersTableName;
+extern NSString * const kPDSGroupInviteLinksTableName;
+extern NSString * const kPDSGroupJoinRequestsTableName;
 
 extern NSString * const kPDSAccountTableCreateSQL;
 extern NSString * const kPDSRepoTableCreateSQL;
@@ -78,6 +82,15 @@ extern NSString * const kPDSIndexConversationMembersConvoSQL;
 extern NSString * const kPDSIndexConversationMembersActorSQL;
 extern NSString * const kPDSIndexMessagesConvoSQL;
 extern NSString * const kPDSIndexMessagesCreatedSQL;
+extern NSString * const kPDSGroupsTableCreateSQL;
+extern NSString * const kPDSGroupMembersTableCreateSQL;
+extern NSString * const kPDSGroupInviteLinksTableCreateSQL;
+extern NSString * const kPDSGroupJoinRequestsTableCreateSQL;
+extern NSString * const kPDSIndexGroupMembersGroupSQL;
+extern NSString * const kPDSIndexGroupMembersMemberSQL;
+extern NSString * const kPDSIndexGroupInviteLinksGroupSQL;
+extern NSString * const kPDSIndexGroupJoinRequestsGroupSQL;
+extern NSString * const kPDSIndexGroupJoinRequestsRequesterSQL;
 
 extern NSString * const kPDSIndexBlocksRepoDidSQL;
 extern NSString * const kPDSIndexBlobsDidSQL;
