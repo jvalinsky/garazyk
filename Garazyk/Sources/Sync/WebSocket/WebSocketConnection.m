@@ -4,9 +4,10 @@
 #import "Network/HttpParsing.h"
 #import "Sync/WebSocket/WebSocketCodec.h"
 #import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
+#import "Debug/PDSLogger.h"
 #import <CommonCrypto/CommonDigest.h>
 
-static const NSUInteger WS_MAX_PENDING_SEND_BYTES = 16 * 1024 * 1024; // 16MB limit
+static const NSUInteger WS_DEFAULT_MAX_QUEUE_BYTES = 10 * 1024 * 1024; // 10MB default
 
 NSString *const WebSocketConnectionErrorDomain =
     @"com.atproto.pds.websocket.error";
@@ -34,6 +35,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
 @property(nonatomic, strong) WebSocketCodec *codec;
 @property(nonatomic, strong) WebSocketHeartbeatPolicy *heartbeatPolicy;
+@property(nonatomic, assign) BOOL isUnderBackpressure;
 
 @end
 
@@ -88,6 +90,9 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
       "com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
   _codec = [[WebSocketCodec alloc] init];
   _heartbeatPolicy = [[WebSocketHeartbeatPolicy alloc] init];
+  _maxOutboundQueueBytes = WS_DEFAULT_MAX_QUEUE_BYTES;
+  _backpressureWarningThreshold = 0.7;
+  _backpressureCriticalThreshold = 0.9;
 }
 
 - (NSTimeInterval)heartbeatInterval {
@@ -353,7 +358,22 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
         self.state == WebSocketConnectionStateClosed) {
       return;
     }
-    if (self.queuedSendBytes + frame.length > WS_MAX_PENDING_SEND_BYTES) {
+
+    NSUInteger newQueueSize = self.queuedSendBytes + frame.length;
+    double fillPercentage = (double)newQueueSize / (double)self.maxOutboundQueueBytes;
+
+    // Check critical threshold
+    if (fillPercentage >= self.backpressureCriticalThreshold) {
+      [self notifyBackpressureCritical:fillPercentage bytes:newQueueSize];
+    }
+    // Check warning threshold
+    else if (fillPercentage >= self.backpressureWarningThreshold) {
+      [self notifyBackpressureWarning:fillPercentage bytes:newQueueSize];
+    }
+
+    // Check overflow
+    if (newQueueSize > self.maxOutboundQueueBytes) {
+      [self notifyQueueOverflow:newQueueSize];
       [self.messageQueue removeAllObjects];
       self.queuedSendBytes = 0;
       dispatch_async(dispatch_get_main_queue(), ^{
@@ -420,6 +440,18 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                          strongSelf.queuedSendBytes -= sentFrame.length;
                        }
                      }
+
+                     // Check if backpressure cleared
+                     double fillPercentage = (double)strongSelf.queuedSendBytes /
+                                            (double)strongSelf.maxOutboundQueueBytes;
+                     if (strongSelf.isUnderBackpressure &&
+                         fillPercentage < strongSelf.backpressureWarningThreshold) {
+                       strongSelf.isUnderBackpressure = NO;
+                       dispatch_async(dispatch_get_main_queue(), ^{
+                         [strongSelf notifyBackpressureCleared];
+                       });
+                     }
+
                      [strongSelf flushWriteBuffer];
                    });
 
@@ -490,6 +522,57 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (void)notifyError:(NSError *)error {
   dispatch_async(dispatch_get_main_queue(), ^{
     [self.delegate webSocketConnection:self didFailWithError:error];
+  });
+}
+
+- (void)notifyBackpressureWarning:(double)fillPercentage bytes:(NSUInteger)bytes {
+  if (self.isUnderBackpressure) return; // Already notified
+  self.isUnderBackpressure = YES;
+  PDS_LOG_SYNC_WARN(@"[%@] WebSocket backpressure warning: queue %.1f%% full (%lu/%lu bytes)",
+                    self.remoteAddress, fillPercentage * 100,
+                    bytes, self.maxOutboundQueueBytes);
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if ([self.delegate respondsToSelector:@selector(webSocketConnection:didReachBackpressureWarning:queueBytes:)]) {
+      [self.delegate webSocketConnection:self
+              didReachBackpressureWarning:fillPercentage
+                               queueBytes:bytes];
+    }
+  });
+}
+
+- (void)notifyBackpressureCritical:(double)fillPercentage bytes:(NSUInteger)bytes {
+  PDS_LOG_SYNC_WARN(@"[%@] WebSocket backpressure critical: queue %.1f%% full (%lu/%lu bytes)",
+                    self.remoteAddress, fillPercentage * 100,
+                    bytes, self.maxOutboundQueueBytes);
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if ([self.delegate respondsToSelector:@selector(webSocketConnection:didReachBackpressureCritical:queueBytes:)]) {
+      [self.delegate webSocketConnection:self
+               didReachBackpressureCritical:fillPercentage
+                                queueBytes:bytes];
+    }
+  });
+}
+
+- (void)notifyBackpressureCleared {
+  PDS_LOG_SYNC_INFO(@"[%@] WebSocket backpressure cleared: queue now %.1f%% full (%lu/%lu bytes)",
+                    self.remoteAddress, (double)self.queuedSendBytes / (double)self.maxOutboundQueueBytes * 100,
+                    self.queuedSendBytes, self.maxOutboundQueueBytes);
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if ([self.delegate respondsToSelector:@selector(webSocketConnectionDidClearBackpressure:)]) {
+      [self.delegate webSocketConnectionDidClearBackpressure:self];
+    }
+  });
+}
+
+- (void)notifyQueueOverflow:(NSUInteger)bytes {
+  PDS_LOG_SYNC_ERROR(@"[%@] WebSocket queue overflow: %lu bytes exceeds limit %lu, closing connection",
+                     self.remoteAddress, bytes, self.maxOutboundQueueBytes);
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if ([self.delegate respondsToSelector:@selector(webSocketConnection:willCloseForQueueOverflow:limit:)]) {
+      [self.delegate webSocketConnection:self
+         willCloseForQueueOverflow:bytes
+                              limit:self.maxOutboundQueueBytes];
+    }
   });
 }
 
