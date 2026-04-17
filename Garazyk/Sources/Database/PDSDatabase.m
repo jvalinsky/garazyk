@@ -589,6 +589,71 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         return NO;
     }
 
+    // Chat tables
+    rc = sqlite3_exec(_db, [kPDSConversationsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSConversationMembersTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSMessagesTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSMessageReactionsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexConversationMembersConvoSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexConversationMembersActorSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexMessagesConvoSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
+    rc = sqlite3_exec(_db, [kPDSIndexMessagesCreatedSQL UTF8String], NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
+        return NO;
+    }
+
     rc = sqlite3_exec(_db, [kPDSVideoJobsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
