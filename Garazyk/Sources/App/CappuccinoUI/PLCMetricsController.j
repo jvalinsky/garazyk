@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 
 @implementation PLCMetricsController : CPObject
 {
@@ -18,6 +19,7 @@
     CPView _rootView;
 
     CPTextField _statusLabel;
+    EmptyStateView _emptyState;
 
     // Metric labels
     CPTextField _requestsLabel;
@@ -274,16 +276,59 @@
 
 - (void)fetchMetrics
 {
+    [self hideEmptyState];
+
     [_apiClient fetchRaw:@"GET" path:@"/_metrics" params:nil completion:function(response, error) {
         if (error) {
             [_statusLabel setStringValue:@"Error: " + error.localizedDescription];
+            [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                  message:@"Could not reach PLC metrics endpoint. " + error.localizedDescription];
             return;
         }
 
         // Parse Prometheus text format
         var metrics = [self parsePrometheus:response];
+        
+        if (Object.keys(metrics).length === 0) {
+            [self showEmptyStateWithIcon:EmptyStateIconInbox
+                                  message:@"PLC metrics endpoint returned no data."];
+            return;
+        }
+
         [self renderMetrics:metrics];
     }];
+}
+
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+        _emptyState = [[EmptyStateView alloc] initWithFrame:[_rootView bounds]
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Try Again"
+                                                actionHandler:function() { [self fetchMetrics]; }];
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+    
+    // Cover the main content area (below controls)
+    var frame = [_rootView bounds];
+    frame.origin.y = 100.0;
+    frame.size.height -= 100.0;
+    [_emptyState setFrame:frame];
+    
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
 }
 
 - (CPDictionary)parsePrometheus:(CPString)text

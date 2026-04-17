@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 @import "ResponsiveMixin.j"
 
 @implementation RelayDashboardController : CPObject
@@ -19,6 +20,7 @@
     CPView _rootView;
 
     CPTextField _statusLabel;
+    EmptyStateView _emptyState;
 
     // Metric cards
     CPTextField _upstreamLabel;
@@ -352,24 +354,71 @@
 
 - (void)loadMetrics
 {
+    [self hideEmptyState];
+
     [_apiClient getJSONWithPath:@"/metrics"
                   endpointGroup:@"relay"
                     queryParams:nil
-                     completion:function(statusCode, payload, errorMessage)
-                     {
-                         if (errorMessage)
-                         {
-                             [_statusLabel setStringValue:@"Error: " + errorMessage];
-                             return;
-                         }
+                      completion:function(statusCode, payload, errorMessage)
+                      {
+                          if (errorMessage)
+                          {
+                              [_statusLabel setStringValue:@"Error: " + errorMessage];
+                              [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                                    message:@"Could not reach Relay API. " + errorMessage];
+                              return;
+                          }
 
-                         if (payload && payload.metrics)
-                         {
-                             [self updateMetricsDisplay:payload.metrics];
-                             [_statusLabel setStringValue:@"Updated " + new Date().toLocaleTimeString()];
-                         }
-                     }];
+                          if (payload && payload.metrics)
+                          {
+                              [self updateMetricsDisplay:payload.metrics];
+                              [_statusLabel setStringValue:@"Updated " + new Date().toLocaleTimeString()];
+
+                              if ((payload.metrics.upstreamConnections || 0) === 0) {
+                                  [self showEmptyStateWithIcon:EmptyStateIconEvent
+                                                        message:@"Relay is running but has no upstream connections. It may be idle or waiting for events."];
+                              }
+                          }
+                          else
+                          {
+                              [self showEmptyStateWithIcon:EmptyStateIconInbox
+                                                    message:@"Relay API returned no metrics."];
+                          }
+                      }];
 }
+
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+        _emptyState = [[EmptyStateView alloc] initWithFrame:[_rootView bounds]
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Try Again"
+                                                actionHandler:function() { [self loadMetrics]; }];
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+    
+    // Cover the main content area (below status label)
+    var frame = [_rootView bounds];
+    frame.origin.y = 48.0;
+    frame.size.height -= 48.0;
+    [_emptyState setFrame:frame];
+    
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
+}
+
 
 - (void)updateMetricsDisplay:(id)metrics
 {
