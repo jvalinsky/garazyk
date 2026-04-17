@@ -1,5 +1,6 @@
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
+#import "Repository/MSTWalker.h"
 #import "Repository/CBOR.h"
 #import "Core/CID.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -1068,116 +1069,236 @@
 #pragma mark - Diff Operations
 
 - (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree {
+    // Walker-based diff algorithm (spec-aligned with TypeScript reference)
+    // https://github.com/bluesky-social/atproto/blob/main/packages/repo/src/mst/diff.ts
+    
     NSMutableArray<MSTDiffOperation *> *operations = [NSMutableArray array];
-    NSMutableDictionary<NSString *, CID *> *newEntries = [NSMutableDictionary dictionary];
-    NSMutableDictionary<NSString *, CID *> *oldEntries = [NSMutableDictionary dictionary];
-    [self collectEntriesFromNode:self.root intoMap:newEntries];
-    [self collectEntriesFromNode:oldTree.root intoMap:oldEntries];
-
-    for (NSString *key in newEntries) {
-        CID *newCID = newEntries[key];
-        CID *oldCID = oldEntries[key];
-        if (!oldCID) {
-            [operations addObject:[MSTDiffOperation addOperationWithKey:key currentCID:newCID]];
-        } else if (![newCID.stringValue isEqualToString:oldCID.stringValue]) {
-            [operations addObject:[MSTDiffOperation updateOperationWithKey:key
-                                                              previousCID:oldCID
-                                                               currentCID:newCID]];
-        }
+    
+    // Handle null old tree: everything is new
+    if (oldTree == nil || oldTree.root == nil) {
+        [self collectAllEntriesFromNode:self.root
+                          asAddIntoOperations:operations];
+        return [operations copy];
     }
-
-    for (NSString *key in oldEntries) {
-        if (!newEntries[key]) {
-            [operations addObject:[MSTDiffOperation deleteOperationWithKey:key
-                                                               previousCID:oldEntries[key]]];
-        }
+    
+    // Handle null new tree: everything is deleted
+    if (self.root == nil) {
+        [self collectAllEntriesFromNode:oldTree.root
+                     asDeleteIntoOperations:operations];
+        return [operations copy];
     }
-
-    // Sort by key for deterministic output
-    [operations sortUsingComparator:^NSComparisonResult(MSTDiffOperation *a, MSTDiffOperation *b) {
-        return [a.key compare:b.key];
-    }];
-
+    
+    // Two-walker parallel traversal
+    MSTWalker *leftWalker = [[MSTWalker alloc] initWithRootNode:oldTree.root];
+    MSTWalker *rightWalker = [[MSTWalker alloc] initWithRootNode:self.root];
+    
+    while (!leftWalker.status.isDone || !rightWalker.status.isDone) {
+        // If one walker is finished, consume the rest of the other
+        if (leftWalker.status.isDone && !rightWalker.status.isDone) {
+            // Add everything from right walker
+            [self consumeWalker:rightWalker
+                 asAddIntoOperations:operations];
+            continue;
+        }
+        if (!leftWalker.status.isDone && rightWalker.status.isDone) {
+            // Delete everything from left walker
+            [self consumeWalker:leftWalker
+                 asDeleteIntoOperations:operations];
+            continue;
+        }
+        
+        // Both walkers are in progress
+        if (leftWalker.status.isDone || rightWalker.status.isDone) break;
+        
+        MSTNodeEntry *left = leftWalker.status.currentEntry;
+        MSTNodeEntry *right = rightWalker.status.currentEntry;
+        
+        // Handle nil entries (at root tree level)
+        if (left == nil && right == nil) {
+            // Both at root, need to step into
+            [leftWalker advance];
+            [rightWalker advance];
+            continue;
+        }
+        
+        // Both at leaves: compare and advance
+        if (left != nil && right != nil &&
+            !leftWalker.status.isTreeNode && !rightWalker.status.isTreeNode) {
+            
+            NSComparisonResult cmp = [left.fullKey compare:right.fullKey];
+            
+            if (cmp == NSOrderedSame) {
+                // Same key: check for update
+                if (![left.value.stringValue isEqualToString:right.value.stringValue]) {
+                    [operations addObject:[MSTDiffOperation updateOperationWithKey:left.fullKey
+                                                                        previousCID:left.value
+                                                                         currentCID:right.value]];
+                }
+                [leftWalker advance];
+                [rightWalker advance];
+            } else if (cmp == NSOrderedAscending) {
+                // Left key is smaller: deleted from left
+                [operations addObject:[MSTDiffOperation deleteOperationWithKey:left.fullKey
+                                                                   previousCID:left.value]];
+                [leftWalker advance];
+            } else {
+                // Right key is smaller: added in right
+                [operations addObject:[MSTDiffOperation addOperationWithKey:right.fullKey
+                                                                 currentCID:right.value]];
+                [rightWalker advance];
+            }
+            continue;
+        }
+        
+        // Layer mismatch handling
+        NSUInteger leftLayer = leftWalker.layer;
+        NSUInteger rightLayer = rightWalker.layer;
+        
+        if (leftLayer > rightLayer) {
+            // Left is at higher layer
+            if (!leftWalker.status.isTreeNode) {
+                // Left is leaf at higher layer - shouldn't happen normally
+                [operations addObject:[MSTDiffOperation addOperationWithKey:right.fullKey
+                                                                 currentCID:right.value]];
+                [rightWalker advance];
+            } else {
+                // Left is tree: delete it and step in
+                [operations addObject:[MSTDiffOperation deleteOperationWithKey:left.fullKey
+                                                                   previousCID:left.value]];
+                [leftWalker stepInto];
+            }
+            continue;
+        }
+        
+        if (leftLayer < rightLayer) {
+            // Right is at higher layer
+            if (!rightWalker.status.isTreeNode) {
+                // Right is leaf at higher layer
+                [operations addObject:[MSTDiffOperation deleteOperationWithKey:left.fullKey
+                                                                   previousCID:left.value]];
+                [leftWalker advance];
+            } else {
+                // Right is tree: add it and step in
+                [operations addObject:[MSTDiffOperation addOperationWithKey:right.fullKey
+                                                                 currentCID:right.value]];
+                [rightWalker stepInto];
+            }
+            continue;
+        }
+        
+        // Same layer: handle trees
+        BOOL leftIsTree = leftWalker.status.isTreeNode;
+        BOOL rightIsTree = rightWalker.status.isTreeNode;
+        
+        if (leftIsTree && rightIsTree) {
+            // Both are trees: compare CIDs
+            CID *leftCID = left.internalTree ? [left.internalTree getCID:[NSMapTable strongToStrongObjectsMapTable]] : nil;
+            CID *rightCID = right.internalTree ? [right.internalTree getCID:[NSMapTable strongToStrongObjectsMapTable]] : nil;
+            
+            if (leftCID && rightCID && [leftCID.stringValue isEqualToString:rightCID.stringValue]) {
+                // Same subtree: step over both
+                [leftWalker stepOver];
+                [rightWalker stepOver];
+            } else {
+                // Different subtrees: step into both
+                [leftWalker stepInto];
+                [rightWalker stepInto];
+            }
+            continue;
+        }
+        
+        // Mixed: one tree, one leaf
+        if (!leftIsTree && rightIsTree) {
+            // Left is leaf, right is tree
+            [operations addObject:[MSTDiffOperation addOperationWithKey:right.fullKey
+                                                             currentCID:right.value]];
+            [rightWalker stepInto];
+            continue;
+        }
+        
+        if (leftIsTree && !rightIsTree) {
+            // Left is tree, right is leaf
+            [operations addObject:[MSTDiffOperation deleteOperationWithKey:left.fullKey
+                                                               previousCID:left.value]];
+            [leftWalker stepInto];
+            continue;
+        }
+        
+        // Should not reach here
+        @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                     reason:@"Unidentifiable case in diff walk"
+                                   userInfo:nil];
+    }
+    
     return [operations copy];
 }
 
-- (void)collectEntriesFromNode:(nullable MSTNode *)node
-                        intoMap:(NSMutableDictionary<NSString *, CID *> *)entryMap {
-    if (!node) {
-        return;
+/// Consume all remaining entries from walker as additions
+- (void)consumeWalker:(MSTWalker *)walker
+   asAddIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+    while (!walker.status.isDone) {
+        MSTNodeEntry *entry = walker.status.currentEntry;
+        if (entry != nil && !walker.status.isTreeNode) {
+            [operations addObject:[MSTDiffOperation addOperationWithKey:entry.fullKey
+                                                             currentCID:entry.value]];
+        }
+        [walker advance];
     }
+}
 
+/// Consume all remaining entries from walker as deletions
+- (void)consumeWalker:(MSTWalker *)walker
+asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+    while (!walker.status.isDone) {
+        MSTNodeEntry *entry = walker.status.currentEntry;
+        if (entry != nil && !walker.status.isTreeNode) {
+            [operations addObject:[MSTDiffOperation deleteOperationWithKey:entry.fullKey
+                                                               previousCID:entry.value]];
+        }
+        [walker advance];
+    }
+}
+
+/// Collect all entries from node as additions (used when old tree is nil)
+- (void)collectAllEntriesFromNode:(MSTNode *)node
+               asAddIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+    if (!node) return;
+    
     if (node.internalLeft) {
-        [self collectEntriesFromNode:node.internalLeft intoMap:entryMap];
+        [self collectAllEntriesFromNode:node.internalLeft
+                     asAddIntoOperations:operations];
     }
-
+    
     for (MSTNodeEntry *entry in node.internalEntries) {
         if (entry.fullKey.length > 0 && entry.value) {
-            entryMap[entry.fullKey] = entry.value;
+            [operations addObject:[MSTDiffOperation addOperationWithKey:entry.fullKey
+                                                             currentCID:entry.value]];
         }
         if (entry.internalTree) {
-            [self collectEntriesFromNode:entry.internalTree intoMap:entryMap];
+            [self collectAllEntriesFromNode:entry.internalTree
+                         asAddIntoOperations:operations];
         }
     }
 }
 
-- (void)diffNode:(nullable MSTNode *)newNode
-        withNode:(nullable MSTNode *)oldNode
-           cache:(NSMapTable<MSTNode *, CID *> *)cache
-  intoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
-    if (newNode == oldNode) return;
-    CID *newCID = [newNode getCID:cache];
-    CID *oldCID = [oldNode getCID:cache];
-    if (newCID && oldCID && [newCID.stringValue isEqualToString:oldCID.stringValue]) return;
-
-    // Build maps of entries for current nodes
-    NSMutableDictionary<NSString *, MSTNodeEntry *> *newEntryMap = [NSMutableDictionary dictionary];
-    for (MSTNodeEntry *e in newNode.internalEntries) {
-        newEntryMap[e.fullKey] = e;
-    }
-
-    NSMutableDictionary<NSString *, MSTNodeEntry *> *oldEntryMap = [NSMutableDictionary dictionary];
-    for (MSTNodeEntry *e in oldNode.internalEntries) {
-        oldEntryMap[e.fullKey] = e;
-    }
-
-    // Check for additions and updates
-    for (MSTNodeEntry *newEntry in newNode.internalEntries) {
-        MSTNodeEntry *oldEntry = oldEntryMap[newEntry.fullKey];
-        if (!oldEntry) {
-            [operations addObject:[MSTDiffOperation addOperationWithKey:newEntry.fullKey currentCID:newEntry.value]];
-        } else if (![newEntry.value.stringValue isEqualToString:oldEntry.value.stringValue]) {
-            [operations addObject:[MSTDiffOperation updateOperationWithKey:newEntry.fullKey previousCID:oldEntry.value currentCID:newEntry.value]];
-        }
-    }
-
-    // Check for deletions
-    for (MSTNodeEntry *oldEntry in oldNode.internalEntries) {
-        if (!newEntryMap[oldEntry.fullKey]) {
-            [operations addObject:[MSTDiffOperation deleteOperationWithKey:oldEntry.fullKey previousCID:oldEntry.value]];
-        }
-    }
-
-    // Recurse into subtrees
-    // Interleaved subtrees: left, then each entry's internalTree
-    [self diffNode:newNode.internalLeft withNode:oldNode.internalLeft cache:cache intoOperations:operations];
+/// Collect all entries from node as deletions (used when new tree is nil)
+- (void)collectAllEntriesFromNode:(MSTNode *)node
+            asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
+    if (!node) return;
     
-    // This is a simplification: Prolly trees have complex interleaving. 
-    // For a truly correct recursive diff, we'd need to align subtrees by their key ranges.
-    // However, for this implementation, we can recurse into all child subtrees.
-    for (MSTNodeEntry *newEntry in newNode.internalEntries) {
-        if (newEntry.internalTree) {
-            // Find corresponding subtree in oldNode
-            // This part is tricky because subtrees are positioned between keys.
-            // For now, we'll traverse all subtrees that don't match by CID.
-            [self diffNode:newEntry.internalTree withNode:nil cache:cache intoOperations:operations];
-        }
+    if (node.internalLeft) {
+        [self collectAllEntriesFromNode:node.internalLeft
+                  asDeleteIntoOperations:operations];
     }
-    for (MSTNodeEntry *oldEntry in oldNode.internalEntries) {
-        if (oldEntry.internalTree) {
-            // If the key exists in both, we already handled it above or will.
-            // This needs a more robust "align and diff" logic for full correctness.
-            // But compared to the previous O(N) entries approach, it's better.
+    
+    for (MSTNodeEntry *entry in node.internalEntries) {
+        if (entry.fullKey.length > 0 && entry.value) {
+            [operations addObject:[MSTDiffOperation deleteOperationWithKey:entry.fullKey
+                                                               previousCID:entry.value]];
+        }
+        if (entry.internalTree) {
+            [self collectAllEntriesFromNode:entry.internalTree
+                      asDeleteIntoOperations:operations];
         }
     }
 }
