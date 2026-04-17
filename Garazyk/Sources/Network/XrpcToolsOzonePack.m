@@ -1024,7 +1024,88 @@
         [response setJsonBody:@{@"success": @YES}];
     }];
 
-#pragma mark - Settings (2)
+#pragma mark - Settings Options (3)
+
+    // tools.ozone.setting.upsertOption
+    [dispatcher registerMethod:@"tools.ozone.setting.upsertOption"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *key = body[@"key"];
+        NSString *value = body[@"value"];
+        NSString *scope = body[@"scope"] ?: @"global";
+
+        if (!key || key.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"key is required"];
+            return;
+        }
+
+        if (!value) {
+            [XrpcErrorHelper setValidationError:response message:@"value is required"];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{
+            @"key": key,
+            @"value": value,
+            @"scope": scope
+        }];
+    }];
+
+    // tools.ozone.setting.listOptions
+    [dispatcher registerMethod:@"tools.ozone.setting.listOptions"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
+                                 adminController:adminController request:request response:response];
+        if (!authHeader) return;
+
+        NSString *scope = [request queryParamForKey:@"scope"];
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit <= 0) limit = 50;
+        if (limit > 100) limit = 100;
+
+        response.statusCode = 200;
+        [response setJsonBody:@{
+            @"options": @[],
+            @"cursor": cursor ?: @""
+        }];
+    }];
+
+    // tools.ozone.setting.removeOptions
+    [dispatcher registerMethod:@"tools.ozone.setting.removeOptions"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSArray *keys = body[@"keys"];
+
+        if (!keys || keys.count == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"keys array is required"];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"success": @YES}];
+    }];
+
+#pragma mark - Server Settings (2)
 
     // tools.ozone.server.getConfig
     [dispatcher registerMethod:@"tools.ozone.server.getConfig"
