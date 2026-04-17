@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 @import "ResponsiveMixin.j"
 
 @implementation AppViewBackfillController : CPObject
@@ -19,6 +20,7 @@
     CPView _rootView;
 
     CPTextField _statusLabel;
+    EmptyStateView _emptyState;
 
     // Metric cards
     CPTextField _queueDepthLabel;
@@ -413,15 +415,18 @@
 
 - (void)loadStatus
 {
+    [self hideEmptyState];
     var token = _adminTokenField ? [_adminTokenField stringValue] : @"";
 
     if (!token || token.length === 0)
     {
         [_statusLabel setTextColor:[CPColor colorWithCalibratedWhite:0.3 alpha:1.0]];
         [_statusLabel setStringValue:@"Enter admin token to load backfill status."];
+        [self showEmptyStateWithIcon:EmptyStateIconReport
+                              message:@"Admin token required. Please enter the master secret to view AppView backfill status."];
         return;
     }
-
+    
     var urlString = [_apiClient URLStringForPath:@"/admin/backfill/status"
                                     endpointGroup:@"appview"
                                      queryParams:nil],
@@ -440,13 +445,19 @@
             responseText = xhr.responseText || "",
             payload = nil;
 
-        try { payload = responseText.length > 0 ? JSON.parse(responseText) : {}; } catch (e) {}
+        try { payload = responseText.length > 0 ? JSON.parse(responseText) : {}; } catch (e) { CPLog.warn("AppViewBackfillController: JSON parse error: " + e); }
 
         if (statusCode < 200 || statusCode >= 300)
         {
             var errMsg = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
-            if (statusCode === 401)
+            if (statusCode === 401) {
                 errMsg = "Unauthorized - check admin token";
+                [self showEmptyStateWithIcon:EmptyStateIconReport
+                                      message:@"Invalid admin token. Access to AppView admin routes is restricted."];
+            } else {
+                [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                      message:@"Could not reach AppView admin API. " + errMsg];
+            }
             [_statusLabel setStringValue:@"Error: " + errMsg];
             [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.2 blue:0.2 alpha:1.0]];
             return;
@@ -459,6 +470,11 @@
             [self updateStatusDisplay:payload];
             [_statusLabel setStringValue:@"Updated " + new Date().toLocaleTimeString()];
             [self loadQueueData];
+            
+            if ((payload.queue_depth || 0) === 0 && (payload.repos_synced || 0) === 0) {
+                 [self showEmptyStateWithIcon:EmptyStateIconInbox
+                                       message:@"AppView backfill is idle. No repos are currently queued or synced."];
+            }
         }
     };
 
@@ -466,9 +482,43 @@
     {
         [_statusLabel setStringValue:@"Error: Network error"];
         [_statusLabel setTextColor:[CPColor colorWithCalibratedRed:0.8 green:0.2 blue:0.2 alpha:1.0]];
+        [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                              message:@"Could not reach AppView server. Network connection failed."];
     };
 
     xhr.send();
+}
+
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+        _emptyState = [[EmptyStateView alloc] initWithFrame:[_rootView bounds]
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Refresh"
+                                                actionHandler:function() { [self loadStatus]; }];
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+    
+    // Cover the main content area (below status label)
+    var frame = [_rootView bounds];
+    frame.origin.y = 48.0;
+    frame.size.height -= 48.0;
+    [_emptyState setFrame:frame];
+    
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
 }
 
 - (void)updateStatusDisplay:(id)status
@@ -478,17 +528,25 @@
 
     _lastStatus = status;
 
-    // Update metric cards
-    [_queueDepthLabel setStringValue:[self formatNumber:status.queue_depth]];
-    [_activeWorkersLabel setStringValue:String(status.active_workers || 0)];
-    [_syncedLabel setStringValue:[self formatNumber:status.repos_synced]];
-    [_dirtyLabel setStringValue:[self formatNumber:status.repos_dirty]];
+    // Update metric cards (with nil guards)
+    if (_queueDepthLabel)
+        [_queueDepthLabel setStringValue:[self formatNumber:status.queue_depth]];
+    if (_activeWorkersLabel)
+        [_activeWorkersLabel setStringValue:String(status.active_workers || 0)];
+    if (_syncedLabel)
+        [_syncedLabel setStringValue:[self formatNumber:status.repos_synced]];
+    if (_dirtyLabel)
+        [_dirtyLabel setStringValue:[self formatNumber:status.repos_dirty]];
 
-    // Update status breakdown
-    [_pendingCountLabel setStringValue:[self formatNumber:status.repos_pending]];
-    [_processingCountLabel setStringValue:[self formatNumber:status.repos_processing]];
-    [_syncedCountLabel setStringValue:[self formatNumber:status.repos_synced]];
-    [_dirtyCountLabel setStringValue:[self formatNumber:status.repos_dirty]];
+    // Update status breakdown (with nil guards)
+    if (_pendingCountLabel)
+        [_pendingCountLabel setStringValue:[self formatNumber:status.repos_pending]];
+    if (_processingCountLabel)
+        [_processingCountLabel setStringValue:[self formatNumber:status.repos_processing]];
+    if (_syncedCountLabel)
+        [_syncedCountLabel setStringValue:[self formatNumber:status.repos_synced]];
+    if (_dirtyCountLabel)
+        [_dirtyCountLabel setStringValue:[self formatNumber:status.repos_dirty]];
 
     // Update lag table
     var lagByRelay = status.ingest_lag_by_relay || {};
@@ -618,7 +676,7 @@
             responseText = xhr.responseText || "",
             payload = nil;
 
-        try { payload = JSON.parse(responseText); } catch (e) {}
+        try { payload = JSON.parse(responseText); } catch (e) { CPLog.warn("AppViewBackfillController: JSON parse error: " + e); }
 
         if (statusCode < 200 || statusCode >= 300)
         {
@@ -675,7 +733,7 @@
             responseText = xhr.responseText || "",
             payload = nil;
 
-        try { payload = JSON.parse(responseText); } catch (e) {}
+        try { payload = JSON.parse(responseText); } catch (e) { CPLog.warn("AppViewBackfillController: JSON parse error: " + e); }
 
         if (statusCode < 200 || statusCode >= 300)
         {
@@ -745,7 +803,7 @@
         else
         {
             var payload = nil;
-            try { payload = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
+            try { payload = JSON.parse(xhr.responseText || "{}"); } catch (e) { CPLog.warn("AppViewBackfillController: JSON parse error: " + e); }
             var errorMessage = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
             [_resultTextView setString:@"Error: Failed to retry " + did + " (" + errorMessage + ")"];
         }
@@ -799,7 +857,7 @@
         else
         {
             var payload = nil;
-            try { payload = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
+            try { payload = JSON.parse(xhr.responseText || "{}"); } catch (e) { CPLog.warn("AppViewBackfillController: JSON parse error: " + e); }
             var errorMessage = (payload && payload.error) ? payload.error : ("HTTP " + statusCode);
             [_resultTextView setString:@"Error: Failed to cancel " + did + " (" + errorMessage + ")"];
         }
@@ -858,9 +916,9 @@
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
     if (tableView === _lagTable)
-        return _lagData.length;
+        return _lagData ? _lagData.length : 0;
     if (tableView === _queueTable)
-        return _queueData.length;
+        return _queueData ? _queueData.length : 0;
     return 0;
 }
 
@@ -931,18 +989,21 @@
     
     var maxColumns = 4;
     
-    var queueCard = [_queueDepthLabel superview];
-    var workersCard = [_activeWorkersLabel superview];
-    var syncedCard = [_syncedLabel superview];
-    var dirtyCard = [_dirtyLabel superview];
+    var queueCard = _queueDepthLabel ? [_queueDepthLabel superview] : nil;
+    var workersCard = _activeWorkersLabel ? [_activeWorkersLabel superview] : nil;
+    var syncedCard = _syncedLabel ? [_syncedLabel superview] : nil;
+    var dirtyCard = _dirtyLabel ? [_dirtyLabel superview] : nil;
     var cardViews = [queueCard, workersCard, syncedCard, dirtyCard];
-    
+
     for (var i = 0; i < cardViews.length; i++)
     {
+        var card = cardViews[i];
+        if (!card)
+            continue;
         var col = i % maxColumns;
         var row = parseInt(i / maxColumns);
         var newFrame = CGRectMake(startX + col * (cardWidth + gap), startY + row * (cardHeight + gap), cardWidth, cardHeight);
-        [cardViews[i] setFrame:newFrame];
+        [card setFrame:newFrame];
     }
 }
 
