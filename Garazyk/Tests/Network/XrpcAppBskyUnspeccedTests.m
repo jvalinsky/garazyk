@@ -311,4 +311,86 @@
     XCTAssertEqualObjects(response.jsonBody[@"assurance"], @"no_verification");
 }
 
+#pragma mark - User Discovery Tests (Onboarding & Discovery Pages)
+
+- (void)testGetOnboardingSuggestedUsersSkeleton {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
+- (void)testGetSuggestedOnboardingUsers {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedOnboardingUsers"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
+- (void)testGetSuggestedUsersForDiscover {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForDiscover"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
+- (void)testGetSuggestedUsersForDiscoverSkeleton {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
+- (void)testGetSuggestedUsersForExplore {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForExplore"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
+- (void)testGetSuggestedUsersForExploreSkeleton {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
+- (void)testGetSuggestedUsersForSeeMore {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForSeeMore"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
+- (void)testGetSuggestedUsersForSeeMoreSkeleton {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
+    XCTAssertIsInstance(response.jsonBody[@"actors"], [NSArray class]);
+}
+
 @end
