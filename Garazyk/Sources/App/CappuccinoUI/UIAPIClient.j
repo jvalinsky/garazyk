@@ -231,7 +231,8 @@
             requestPath = @"/";
     }
 
-    if (httpMethod === "GET" || httpMethod === "DELETE")
+    var methodStr = String(httpMethod || "GET");
+    if (methodStr === "GET" || methodStr === "DELETE")
         queryParams = params;
     else
         bodyObject = params;
