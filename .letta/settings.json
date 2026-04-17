@@ -230,7 +230,26 @@
       "Bash(deciduous add action \"Updated docs and validation scripts\" --commit 326f66e3 2>&1)",
       "Bash(deciduous link 341 346 --label results_in 2>&1)",
       "Bash(deciduous sync 2>&1)",
-      "Bash(deciduous add action \"Created implementation plan for XRPC coverage gaps - 5 phases prioritized by impact\" --commit 3e05609c 2>&1 && deciduous sync 2>&1)"
+      "Bash(deciduous add action \"Created implementation plan for XRPC coverage gaps - 5 phases prioritized by impact\" --commit 3e05609c 2>&1 && deciduous sync 2>&1)",
+      "Bash(cd /Users/jack/Software/garazyk && cmake --build build --target AllTests 2>&1 | head -100)",
+      "Bash(cd /Users/jack/Software/garazyk && cmake --build build --target ATProtoXRPC 2>&1)",
+      "Bash(cd /Users/jack/Software/garazyk && cmake --build build --target ATProtoStorage 2>&1 | head -80)",
+      "Bash(cmake --build build --target AllTests 2>&1 | tail -40)",
+      "Bash(cmake --build build --target kaszlak 2>&1 | tail -30)",
+      "Bash(cmake -B build 2>&1 | tail -30)",
+      "Bash(cmake --build build --target kaszlak 2>&1 | tail -50)",
+      "Bash(cmake --build build --target kaszlak 2>&1 | tail -60)",
+      "Bash(cmake --build build --target campagnola 2>&1 | tail -40)",
+      "Bash(cmake --build build --target kaszlak 2>&1 | tail -40)",
+      "Bash(sed -i '' 's/executeUpdate:/executeParameterizedUpdate:/g' /Users/jack/Software/garazyk/Garazyk/Sources/AppView/Services/ModerationService.m && sed -i '' 's/withParams:/params:/g' /Users/jack/Software/garazyk/Garazyk/Sources/AppView/Services/ModerationService.m)",
+      "Bash(deciduous add --help)",
+      "Bash(deciduous add action \"Implement walker-based MST diff algorithm (spec-aligned)\" --commit HEAD)",
+      "Bash(deciduous status 366 completed)",
+      "Bash(deciduous add outcome \"MST diff algorithm now spec-aligned with TypeScript reference - two-walker parallel traversal, layer awareness, CID comparison\" --commit HEAD)",
+      "Bash(deciduous link 366 367)",
+      "Bash(cmake --build build --target kaszlak 2>&1 | tail -20)",
+      "Bash(deciduous add action \"Fix GNUstep Docker build: ARC struct field ownership qualifiers\" --commit HEAD)",
+      "Bash(deciduous add outcome \"Docker build now compiles MSTWalker with ARC-compatible struct fields; local-network stack healthy\")"
     ]
   }
 }

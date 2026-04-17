@@ -34,7 +34,13 @@
       "WebFetch(domain:cappuccino.dev)",
       "Bash(git reset:*)",
       "Bash(docker compose:*)",
-      "Bash(docker compose build:*)"
+      "Bash(docker compose build:*)",
+      "Bash(deciduous link:*)",
+      "Bash(deciduous complete:*)",
+      "Bash(cat:*)",
+      "Bash(for dir in /Users/jack/Software/garazyk/Garazyk/Resources/lexicons/app/bsky/feed /Users/jack/Software/garazyk/Garazyk/Resources/lexicons/app/bsky/graph)",
+      "Bash(do find \"$dir\" -name \"*.json\" -exec sh -c 'if grep -q \"\"\\\\\"\"type\\\\\"\".*\\\\\"\"record\\\\\"\"\"\" \"\"$1\"\"; then basename \"\"$1\"\" .json; fi' _ {} ;)",
+      "Bash(done)"
     ]
   }
 }

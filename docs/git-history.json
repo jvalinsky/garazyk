@@ -1,18 +1,98 @@
 [
   {
+    "hash": "176d37b73dac9b325b2604483e7adfd64895d192",
+    "short_hash": "176d37b",
+    "author": "Security Bot",
+    "date": "2026-04-17T10:02:39-04:00",
+    "message": "feat(xrpc): add tools.ozone.hosting endpoint\n\nImplement account hosting history tracking endpoint:\n- getAccountHistory: Retrieve hosting events for an account\n  (migrations, moves, suspensions, etc.)\n\nReturns chronological list of hosting events with pagination support.\nAdds new ModerationService method for hosting history queries.\nIncludes 2 test cases covering success and validation.\n\nCoverage: 262/277 endpoints (94.6%)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "7b65ac29558f4c4cf60e63b7484f34b3af39efd3",
+    "short_hash": "7b65ac2",
+    "author": "Security Bot",
+    "date": "2026-04-17T10:00:11-04:00",
+    "message": "fix(mst): add __unsafe_unretained for ARC struct fields\n\nGNUstep clang-14 crashes (segfault) when compiling structs\ncontaining Objective-C object pointers without ownership\nqualifiers under ARC.\n\nThe MSTWalkerStatusProgress struct's curr and walking fields\nhold borrowed references during MST traversal and should not\nretain ownership. Mark them __unsafe_unretained to:\n\n1. Make ARC semantics explicit (non-owning references)\n2. Fix GNUstep/Linux Docker build compilation\n3. Match TypeScript reference design (raw references)\n\nReference: Clang ARC documentation on ownership-qualified\nfields in structs.\n\nFixes docker build segfault:\n  Error 139 in MSTWalker.m.o compilation\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "8f44104069cf9cac0dc332c5ee2f6c438b7472a4",
+    "short_hash": "8f44104",
+    "author": "Security Bot",
+    "date": "2026-04-17T07:40:16-04:00",
+    "message": "test(mst): add walker-based diff algorithm tests\n\nAdd comprehensive tests for the new MST diff implementation:\n\n- Basic diff tests (nil trees, identical trees, additions, deletions, updates)\n- Mixed operations test (add/update/delete in one diff)\n- Walker traversal tests (empty tree, single entry, multiple entries)\n- Edge cases (key ordering, large trees)\n\nTests verify key ordering is preserved and no infinite loops occur.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "beaf429fd68a10d9b2cc495b517e0d1653f3d9ab",
+    "short_hash": "beaf429",
+    "author": "Security Bot",
+    "date": "2026-04-17T07:30:01-04:00",
+    "message": "feat(mst): implement walker-based diff algorithm (spec-aligned)\n\nReplace the simplified recursive diff with a two-walker parallel\ntraversal algorithm that matches the TypeScript reference\nimplementation at bluesky-social/atproto.\n\nKey changes:\n- Add MSTWalker class for depth-first MST traversal in key order\n- Add MSTInternal.h for private property access during traversal\n- Rewrite diffFrom: to use two-walker parallel traversal\n- Handle layer mismatches, subtree comparisons, and CID equality\n\nThe previous implementation had a critical bug at line 1173 where\nit passed nil for oldNode instead of finding the matching entry,\nproducing incorrect diff operations during repo sync.\n\nSpec reference:\nhttps://github.com/bluesky-social/atproto/blob/main/packages/repo/src/mst/diff.ts\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "aafe47cee96a9deaa2c34db0779bccd1299bd584",
+    "short_hash": "aafe47c",
+    "author": "Security Bot",
+    "date": "2026-04-17T05:34:30-04:00",
+    "message": "feat(oauth): implement RFC 7662 token introspection HTTP endpoint\n\nExposes OAuth token introspection functionality via POST /oauth/introspect endpoint\nwith full RFC 7662 compliance:\n\n- handleIntrospectRequest: HTTP handler for token introspection requests\n  * Parses form-encoded token parameter\n  * Supports optional client_id for client authentication\n  * Validates JWT tokens by signature and expiration\n  * Returns RFC 7662 compliant response with token metadata\n  * Returns {\"active\": false} for invalid/expired tokens without errors\n  * Checks both JWT access tokens and session refresh tokens\n\n- Route registration: POST /oauth/introspect registered in registerRoutesWithServer\n  * CORS headers applied to all introspection responses\n  * CORS preflight (OPTIONS) already configured\n\n- Header documentation updated to list introspection endpoint\n\n- Comprehensive test coverage (OAuth2IntrospectionTests.m):\n  * Invalid/malformed JWT handling\n  * Missing parameter validation\n  * RFC 7662 response format compliance\n  * Client ID parameter handling\n  * Token expiration checks\n\nAll tokens (JWT and session-based) return 200 with active status. Invalid\nparameters return 400. DPoP binding preserved in active token responses.\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "e4ba10578ef2164452ad375866da03c5d2d2c893",
+    "short_hash": "e4ba105",
+    "author": "Security Bot",
+    "date": "2026-04-17T05:23:50-04:00",
+    "message": "feat(moderation): implement 47 tools.ozone.* moderation endpoints\n\nIntroduces comprehensive moderation toolkit support with:\n\n- ModerationService: Core business logic for moderation operations including:\n  * Event emission and querying for moderation actions\n  * Subject status management (accounts, repos, records)\n  * Team member administration with role-based access\n  * Blocklist/allowlist set management\n  * Communication template lifecycle\n  * User verification (blue check) management\n  * Safelink URL management\n  * Server configuration and settings\n\n- XrpcToolsOzonePack: Full XRPC handler registration for 47 endpoints across:\n  * Moderation core (15 endpoints)\n  * Team management (4 endpoints)\n  * Set management (6 endpoints)\n  * Communication templates (4 endpoints)\n  * User verification (3 endpoints)\n  * Settings (2 endpoints)\n  * Plus hosting, server, safelink, and signature endpoints\n\n- Comprehensive test coverage: 32+ test cases covering authentication,\n  authorization, parameter validation, and successful operations\n\n- Updated XrpcAppBskyMethods.m to register new moderation pack in dispatcher\n\nAll endpoints include:\n* Admin-only access control via JWTMinter and PDSAdminController\n* Parameter validation with descriptive error messages\n* Consistent error handling and HTTP status codes\n* Cursor-based pagination for list endpoints\n* Audit logging for moderation events\n\nCloses #tools-ozone-endpoints",
+    "files_changed": 7
+  },
+  {
+    "hash": "9a6caac2e7b21c6b6a9248783bf79d47af9005e1",
+    "short_hash": "9a6caac",
+    "author": "Security Bot",
+    "date": "2026-04-17T00:58:14-04:00",
+    "message": "feat: implement app.bsky.unspecced.* endpoints (20 endpoints)\n\nComplete stub implementation of unspecced/experimental API endpoints:\n\nCore Configuration & Discovery (7 endpoints):\n- getConfig: System configuration with email verification, labelers, generators\n- getTaggedSuggestions: Tagged content suggestions\n- getPopularFeedGenerators: Popular feed generator discovery\n- getSuggestedFeeds: Feed recommendations\n- getSuggestedUsers: User recommendations\n- getTrendingTopics: Trending topics\n- Labeler.getServices: Available labeler services\n\nSkeleton/Performance Endpoints (4 endpoints):\n- getSuggestedFeedsSkeleton: Lightweight feed suggestions\n- getSuggestedUsersSkeleton: Lightweight user suggestions\n- getSuggestionsSkeleton: Generic suggestions\n- getTrendsSkeleton: Lightweight trending\n\nStarter Packs (4 endpoints):\n- getOnboardingSuggestedStarterPacks: Onboarding packs\n- getOnboardingSuggestedStarterPacksSkeleton: Lightweight onboarding\n- getSuggestedStarterPacks: General starter packs\n- getSuggestedStarterPacksSkeleton: Lightweight starter packs\n\nSearch Skeleton (3 endpoints):\n- searchActorsSkeleton: Actor search preview\n- searchPostsSkeleton: Post search preview\n- searchStarterPacksSkeleton: Starter pack search preview\n\nThread Retrieval (2 endpoints):\n- getPostThreadV2: Get post thread with replies\n- getPostThreadOtherV2: Alternative thread format\n\nAge Assurance/Compliance (2 endpoints):\n- initAgeAssurance: Initialize age verification\n- getAgeAssuranceState: Retrieve age assurance status\n\nAll endpoints return stubs/empty data suitable for client fallback handling.\nComprehensive test coverage with 30+ test cases covering all endpoints,\nparameter validation, and error cases.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "c78193b645666a73c35cbd2168c2337d403ffb24",
+    "short_hash": "c78193b",
+    "author": "Security Bot",
+    "date": "2026-04-17T00:56:15-04:00",
+    "message": "feat: implement deferred group chat features (Phase 3.5)\n\nAdd comprehensive group message system and additional group management:\n\nNew group management endpoints (3):\n- rejectJoinRequest: Allow admins to reject pending join requests\n- listJoinRequests: List all pending join requests for a group (admin only)\n- leaveGroup: Allow members to leave group (except creator)\n\nNew group messaging system (5 endpoints):\n- sendMessage: Send message to group (members only)\n- getMessages: Retrieve paginated group messages\n- addReaction: Add emoji reaction to group message\n- removeReaction: Remove emoji reaction from group message\n- deleteMessageForSelf: Locally delete message for user\n\nDatabase additions:\n- group_messages table: Stores group messages with sender and content\n- group_message_reactions table: Tracks emoji reactions on messages\n- Indexes for efficient message querying by group and creation time\n\nService layer enhancements:\n- 8 new methods in GroupService for request management and messaging\n- Proper member verification before messaging\n- Reaction management with INSERT OR REPLACE semantics\n- Local-only delete support via deleted_for_json field\n\nComprehensive test coverage:\n- 20+ new test cases covering all deferred features\n- Tests for permission checks and auth requirements\n- Message sending, retrieval, and reaction workflows\n- Error handling and validation tests\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "576e063ce5a96bdd1f4f21a34ad5c13f6002e684",
+    "short_hash": "576e063",
+    "author": "Security Bot",
+    "date": "2026-04-17T00:52:08-04:00",
+    "message": "feat: implement group chat system (Sprint 4)\n\nImplement complete group chat functionality with 11 XRPC endpoints:\n- Core management: createGroup, editGroup, getGroupPublicInfo, addMembers, removeMembers, listMembers\n- Invite links: createJoinLink, editJoinLink, disableJoinLink\n- Join requests: requestJoin, approveJoinRequest\n\nChanges:\n- Add 4 group tables to database schema (groups, group_members, group_invite_links, group_join_requests)\n- Implement GroupService with 16 methods for group operations\n- Create XrpcChatBskyGroupPack with all 11 endpoint handlers\n- Register group pack in XRPC dispatcher\n- Add comprehensive integration tests covering all endpoints and permission checks\n\nPermission model:\n- Admin: can edit group, add/remove members, manage invite links, approve join requests\n- Member: can list members, view group info\n- Non-members: cannot access group operations\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
+    "hash": "029af2a2691a8aba0fe7b7ba260d4b4bdcfe7a8a",
+    "short_hash": "029af2a",
+    "author": "Security Bot",
+    "date": "2026-04-17T00:46:38-04:00",
+    "message": "feat: Sprint 3 - Chat feature endpoints implementation\n\nImplement remaining chat endpoints for reactions, read status, muting,\nlocking, batch operations, and self-delete. Complete chat API MVP with\n12 total endpoints (5 core from Sprint 2 + 12 feature endpoints).\n\nFeature Endpoints Implemented (8 total):\n\n1. Reactions:\n   - chat.bsky.convo.addReaction: Add emoji reaction to message\n   - chat.bsky.convo.removeReaction: Remove emoji reaction\n\n2. Read Status:\n   - chat.bsky.convo.updateRead: Mark specific message as read\n   - chat.bsky.convo.updateAllRead: Mark all messages in convo as read\n\n3. Muting:\n   - chat.bsky.convo.muteConvo: Mute conversation notifications\n   - chat.bsky.convo.unmuteConvo: Unmute conversation notifications\n\n4. Locking:\n   - chat.bsky.convo.lockConvo: Lock conversation (prevent messages)\n   - chat.bsky.convo.unlockConvo: Unlock conversation\n\n5. Self-Delete:\n   - chat.bsky.convo.deleteMessageForSelf: Delete message locally (client-side only)\n\n6. Batch Operations:\n   - chat.bsky.convo.sendMessageBatch: Send multiple messages atomically\n\nChatService Extensions:\n- lockConversation/unlockConversation: Manage conversation lock state\n- sendMessageBatch: Atomic batch message sending with lock checking\n- Added locked field to conversations table schema\n\nDatabase Updates:\n- conversations table now includes locked INTEGER field (default 0)\n\nTest Coverage:\n- Added comprehensive tests for all 8 new endpoints\n- Auth requirement tests\n- Batch operation tests\n- Lock/unlock behavior tests\n- Mute/unmute tests\n- Reaction management tests\n\nTotal Chat API Coverage: 17 endpoints\n- 5 core (Sprint 2): getConvoForMembers, acceptConvo, leaveConvo,\n  listConvoRequests, getConvoAvailability\n- 12 feature (Sprint 3): addReaction, removeReaction, updateRead,\n  updateAllRead, muteConvo, unmuteConvo, lockConvo, unlockConvo,\n  deleteMessageForSelf, sendMessageBatch\n\nArchitecture: Embedded in PDS (pragmatic MVP approach)\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "e8b24b0f4cff9d01f8229f346ce564784296d729",
+    "short_hash": "e8b24b0",
+    "author": "Security Bot",
+    "date": "2026-04-17T00:44:54-04:00",
+    "message": "feat: Sprint 2 - Chat service core endpoints implementation\n\nImplement chat database schema, service layer, and 5 core XRPC endpoints\nfor direct messaging support. Chat functionality is now embedded in PDS\nfor pragmatic MVP delivery (defer microservice separation to Phase 3+).\n\nDatabase Schema:\n- conversations: Stores conversation metadata (id, created_at, updated_at)\n- conversation_members: Tracks membership status, muting, read state\n- messages: Stores messages with text, embeds, and deletion tracking\n- message_reactions: Emoji reactions on messages with timestamps\n- Indexes on convo_id, member_did, created_at for efficient queries\n\nChatService (Business Logic Layer):\n- createConversation/getConversationForMembers: Get or create convos\n- acceptConversation/leaveConversation: Manage membership status\n- sendMessage/getMessages: Message CRUD operations\n- deleteMessageForSelf: Local-only message deletion (client-side visibility)\n- updateLastReadMessage: Track read state per member\n- addReaction/removeReaction: Emoji reactions\n- muteConversation/unmuteConversation: Notification preferences\n\nCore XRPC Endpoints (5 implemented):\n1. chat.bsky.convo.getConvoForMembers\n   - Get/create conversation for specified member DIDs\n   - Deterministic: same members always return same convo\n\n2. chat.bsky.convo.acceptConvo\n   - Accept pending conversation request\n   - Updates member status from 'pending' to 'accepted'\n\n3. chat.bsky.convo.leaveConvo\n   - Leave conversation\n   - Updates member status to 'left'\n\n4. chat.bsky.convo.listConvoRequests\n   - List pending conversation requests for authenticated user\n   - Returns convos with member status == 'pending'\n\n5. chat.bsky.convo.getConvoAvailability\n   - Check if user can initiate conversation with actor\n   - Currently: available if actor exists (future: check blocks/privacy)\n\nIntegration Tests:\n- Created XrpcChatBskyConvoTests.m with comprehensive test coverage\n- Auth requirement tests for all endpoints\n- Conversation creation and retrieval\n- Member status transitions (pending → accepted → left)\n- Error handling for missing/invalid parameters\n\nArchitecture Decision:\n- Embedded in PDS (not separate microservice) for MVP\n- Rationale: Pragmatic, faster to market, can refactor later\n- Matches existing pattern (PDS contains multiple service domains)\n- Chat database tables in same SQLite DB as PDS\n\nUpdated XrpcAppBskyMethods to properly instantiate and register ChatService\nwith database, JWT minter, and admin controller.\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 14
+  },
+  {
     "hash": "3e05609cfb90a1118d5490c49410d4f202af3ea0",
     "short_hash": "3e05609",
     "author": "Security Bot",
     "date": "2026-04-17T00:28:02-04:00",
     "message": "docs: add implementation plan for missing XRPC endpoints\n\nPhased approach:\n- Phase 1 (HIGH): graph.getListMutes, getListBlocks, getListsWithMembership, actor.status\n- Phase 2 (MEDIUM): chat.bsky.convo.* 15 endpoints\n- Phase 3 (LOWER): chat.bsky.group.* group chat\n- Phase 4 (LOW): unspecced skeleton endpoints\n- Phase 5 (DEFERRED): tools.ozone.* 67 endpoints\n\nEach endpoint has detailed implementation steps with database, auth, and testing.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
-    "files_changed": 1
-  },
-  {
-    "hash": "aa933f415143c3db0cdba6c9e13c5b45a80c7be2",
-    "short_hash": "aa933f4",
-    "author": "Security Bot",
-    "date": "2026-04-17T00:15:55-04:00",
-    "message": "docs: add XRPC endpoint coverage analysis\n\nComprehensive audit of XRPC methods across all services:\n- PDS (kaszlak): 100% coverage on core namespaces\n- AppView (syrena): ~85% on app.bsky.* (missing some graph/graph methods)\n- Chat: ~25% on chat.bsky.convo.*\n- Ozone: 0% (deferred)\n\nKey findings:\n- com.atproto.*: Full coverage\n- app.bsky.feed.*, app.bsky.notification.*: Full coverage\n- app.bsky.graph.*: Missing getListMutes, getListBlocks, getListsWithMembership\n- app.bsky.unspecced.*: Only 20% (skeleton/experimental endpoints missing)\n- chat.bsky.*: Basic convo implemented, groups missing\n- tools.ozone.*: Not implemented (deferred)\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
     "files_changed": 1
   },
   {
@@ -30,14 +110,6 @@
     "date": "2026-04-16T23:44:54-04:00",
     "message": "refactor: remove skip_plc_operations feature\n\nThis debug feature allowed bypassing PLC registration, but it's\nimportant to verify PLC operations against a local server instead.\n\nChanges:\n- Remove debugSkipPlcOperations property from PDSConfiguration\n- Remove conditional PLC skipping in PDSAccountService and PDSCLIAccountManager\n- Remove generatePlcIdentifier() helper (no longer needed)\n- Update all config files to remove skip_plc_operations setting\n- Update docs and validation scripts\n\nAccount creation now always requires actual PLC registration.\nFor local dev, use local PLC server (campagnola) or did:web.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
     "files_changed": 18
-  },
-  {
-    "hash": "76301c0cb04fb0e8c9132dd70662126f7a57a974",
-    "short_hash": "76301c0",
-    "author": "Security Bot",
-    "date": "2026-04-16T20:26:17-04:00",
-    "message": "chore(docs): sync deciduous decision graph with CappuccinoUI hardening nodes\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
-    "files_changed": 2
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",
