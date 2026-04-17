@@ -19,6 +19,7 @@
 #import "Network/XrpcAppBskyUnspeccedPack.h"
 #import "Network/XrpcAppBskyVideoPack.h"
 #import "Network/XrpcChatBskyConvoPack.h"
+#import "Network/XrpcChatBskyGroupPack.h"
 
 @implementation XrpcAppBskyMethods
 
@@ -98,6 +99,10 @@
                                appViewDatabase:appViewDatabase
                                     jwtMinter:jwtMinter
                               adminController:adminController];
+  [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
+                              appViewDatabase:appViewDatabase
+                                   jwtMinter:jwtMinter
+                             adminController:adminController];
 }
 
 @end
