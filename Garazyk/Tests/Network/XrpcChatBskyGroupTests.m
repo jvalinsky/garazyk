@@ -403,4 +403,217 @@
     XCTAssertTrue([approveResponse.jsonBody[@"success"] boolValue]);
 }
 
+#pragma mark - rejectJoinRequest Tests
+
+- (void)testRejectJoinRequestRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.rejectJoinRequest"
+                                                      body:@{@"requestId": @"test-request"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testRejectJoinRequestSuccessfully {
+    // Second user requests to join
+    NSString *secondUserAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
+    HttpResponse *requestResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.requestJoin"
+                                                              body:@{@"groupUri": self.testGroupUri}
+                                                           headers:@{@"authorization": secondUserAuthHeader}];
+    NSString *requestId = requestResponse.jsonBody[@"requestId"];
+
+    // Admin rejects
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    HttpResponse *rejectResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.rejectJoinRequest"
+                                                             body:@{@"requestId": requestId}
+                                                          headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(rejectResponse.statusCode, 200);
+    XCTAssertTrue([rejectResponse.jsonBody[@"success"] boolValue]);
+}
+
+#pragma mark - listJoinRequests Tests
+
+- (void)testListJoinRequestsRequiresAuth {
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.group.listJoinRequests"
+                                             queryString:[NSString stringWithFormat:@"groupUri=%@", self.testGroupUri]
+                                             queryParams:@{@"groupUri": self.testGroupUri}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testListJoinRequestsRequiresAdmin {
+    NSString *secondUserAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.group.listJoinRequests"
+                                             queryString:[NSString stringWithFormat:@"groupUri=%@", self.testGroupUri]
+                                             queryParams:@{@"groupUri": self.testGroupUri}
+                                                 headers:@{@"authorization": secondUserAuthHeader}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testListJoinRequestsSuccessfully {
+    // Second user requests to join
+    NSString *secondUserAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
+    [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.requestJoin"
+                             body:@{@"groupUri": self.testGroupUri}
+                          headers:@{@"authorization": secondUserAuthHeader}];
+
+    // Admin lists requests
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.group.listJoinRequests"
+                                             queryString:[NSString stringWithFormat:@"groupUri=%@", self.testGroupUri]
+                                             queryParams:@{@"groupUri": self.testGroupUri}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"requests"]);
+    XCTAssertGreaterThan([response.jsonBody[@"requests"] count], 0);
+}
+
+#pragma mark - leaveGroup Tests
+
+- (void)testLeaveGroupRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.leaveGroup"
+                                                      body:@{@"groupUri": self.testGroupUri}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testLeaveGroupSuccessfully {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // First add the user as a member (they're the creator, so they're already a member)
+    // Create another group where user is not creator
+    NSString *secondUserAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.secondUserJwt];
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.createGroup"
+                                                             body:@{
+                                                                 @"name": @"Test Group for Leave",
+                                                                 @"privacy": @"private"
+                                                             }
+                                                          headers:@{@"authorization": secondUserAuthHeader}];
+    NSString *secondGroupUri = createResponse.jsonBody[@"group"][@"uri"];
+
+    // Add first user to second group
+    [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.addMembers"
+                             body:@{@"groupUri": secondGroupUri, @"members": @[self.userDid]}
+                          headers:@{@"authorization": secondUserAuthHeader}];
+
+    // First user leaves
+    HttpResponse *leaveResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.leaveGroup"
+                                                           body:@{@"groupUri": secondGroupUri}
+                                                        headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(leaveResponse.statusCode, 200);
+    XCTAssertTrue([leaveResponse.jsonBody[@"success"] boolValue]);
+}
+
+#pragma mark - sendMessage Tests
+
+- (void)testSendMessageRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.sendMessage"
+                                                      body:@{
+                                                          @"groupUri": self.testGroupUri,
+                                                          @"text": @"Hello group!"
+                                                      }
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testSendMessageSuccessfully {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.sendMessage"
+                                                      body:@{
+                                                          @"groupUri": self.testGroupUri,
+                                                          @"text": @"Hello group!"
+                                                      }
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"messageId"]);
+}
+
+#pragma mark - getMessages Tests
+
+- (void)testGetMessagesNoAuthRequired {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Send a message
+    [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.sendMessage"
+                             body:@{@"groupUri": self.testGroupUri, @"text": @"Test message"}
+                          headers:@{@"authorization": authHeader}];
+
+    // Get messages
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.group.getMessages"
+                                             queryString:[NSString stringWithFormat:@"groupUri=%@", self.testGroupUri]
+                                             queryParams:@{@"groupUri": self.testGroupUri}
+                                                 headers:@{}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"messages"]);
+    XCTAssertGreaterThan([response.jsonBody[@"messages"] count], 0);
+}
+
+#pragma mark - addReaction Tests
+
+- (void)testAddReactionRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.addReaction"
+                                                      body:@{
+                                                          @"messageId": @"msg/test",
+                                                          @"emoji": @"❤️"
+                                                      }
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testAddReactionSuccessfully {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Send a message
+    HttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.sendMessage"
+                                                            body:@{@"groupUri": self.testGroupUri, @"text": @"Test message"}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *messageId = sendResponse.jsonBody[@"messageId"];
+
+    // Add reaction
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.addReaction"
+                                                      body:@{
+                                                          @"messageId": messageId,
+                                                          @"emoji": @"❤️"
+                                                      }
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+}
+
+#pragma mark - removeReaction Tests
+
+- (void)testRemoveReactionRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.removeReaction"
+                                                      body:@{
+                                                          @"messageId": @"msg/test",
+                                                          @"emoji": @"❤️"
+                                                      }
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+#pragma mark - deleteMessageForSelf Tests
+
+- (void)testDeleteMessageForSelfRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.deleteMessageForSelf"
+                                                      body:@{@"messageId": @"msg/test"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testDeleteMessageForSelfSuccessfully {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Send a message
+    HttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.sendMessage"
+                                                            body:@{@"groupUri": self.testGroupUri, @"text": @"Message to delete"}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *messageId = sendResponse.jsonBody[@"messageId"];
+
+    // Delete for self
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.group.deleteMessageForSelf"
+                                                      body:@{@"messageId": messageId}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+}
+
 @end

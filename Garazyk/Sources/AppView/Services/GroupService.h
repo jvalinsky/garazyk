@@ -70,6 +70,44 @@ NS_ASSUME_NONNULL_BEGIN
                  approvingDid:(NSString *)approvingDid
                        error:(NSError **)error;
 
+- (BOOL)rejectJoinRequest:(NSString *)requestId
+            rejectingDid:(NSString *)rejectingDid
+                  error:(NSError **)error;
+
+- (nullable NSArray<NSDictionary *> *)listJoinRequestsForGroup:(NSString *)groupUri
+                                                         error:(NSError **)error;
+
+// Member leave
+- (BOOL)leaveGroup:(NSString *)groupUri
+         memberDid:(NSString *)memberDid
+             error:(NSError **)error;
+
+// Group messaging
+- (nullable NSString *)sendMessageToGroup:(NSString *)groupUri
+                                senderDid:(NSString *)senderDid
+                                    text:(NSString *)text
+                                   embed:(nullable NSString *)embed
+                                   error:(NSError **)error;
+
+- (nullable NSArray<NSDictionary *> *)getMessagesForGroup:(NSString *)groupUri
+                                                    limit:(NSInteger)limit
+                                                  cursor:(nullable NSString *)cursor
+                                                   error:(NSError **)error;
+
+- (BOOL)addReactionToGroupMessage:(NSString *)messageId
+                       actorDid:(NSString *)actorDid
+                         emoji:(NSString *)emoji
+                         error:(NSError **)error;
+
+- (BOOL)removeReactionFromGroupMessage:(NSString *)messageId
+                            actorDid:(NSString *)actorDid
+                              emoji:(NSString *)emoji
+                              error:(NSError **)error;
+
+- (BOOL)deleteGroupMessageForSelf:(NSString *)messageId
+                        memberDid:(NSString *)memberDid
+                            error:(NSError **)error;
+
 // Permission checks
 - (BOOL)isUserAdmin:(NSString *)userDid
            inGroup:(NSString *)groupUri
