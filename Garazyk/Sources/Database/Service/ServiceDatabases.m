@@ -5,6 +5,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/ActorStore/PDSActorStore+Account.h"
 #import "Database/Schema/PDSSchemaManager.h"
+#import "Database/Migrations/PDSMigrationManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/PDSDataPaths.h"
 #import "Identity/ATProtoHandleValidator.h"
@@ -133,11 +134,25 @@ static NSString *appPasswordGenerateSecret(void) {
 #pragma mark - Schema Initialization
 
 - (BOOL)initializeServiceSchema:(NSError **)error {
-    NSString *schemaSQL = [[PDSSchemaManager sharedManager] serviceSchemaSQL];
-    return [self executeSQL:schemaSQL onPool:self.servicePool error:error];
+    // Sprint 3: Use migration-based schema management
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
+    if (!store) return NO;
+
+    PDSMigrationManager *migrationManager = [PDSMigrationManager serviceDatabaseMigrationManager];
+
+    NSError *migrationError = nil;
+    if (![migrationManager migrateDatabase:store.db error:&migrationError]) {
+        PDS_LOG_DB_ERROR(@"Service database migration failed: %@", migrationError);
+        if (error) *error = migrationError;
+        return NO;
+    }
+
+    PDS_LOG_DB_INFO(@"Service database schema migration complete (version %ld)", (long)[migrationManager currentVersion:store.db]);
+    return YES;
 }
 
 - (BOOL)initializeDidCacheSchema:(NSError **)error {
+    // DID cache is simple, use direct schema (migrations can be added later if needed)
     NSString *schemaSQL = [NSString stringWithFormat:@"%@;%@",
                            [[PDSSchemaManager sharedManager] serviceDIDCacheTableSchema],
                            @"CREATE INDEX IF NOT EXISTS idx_did_cache_expires ON did_cache(expires_at);"];
@@ -145,6 +160,7 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (BOOL)initializeSequencerSchema:(NSError **)error {
+    // Sequencer is simple, use direct schema (migrations can be added later if needed)
     NSString *schemaSQL = [NSString stringWithFormat:@"%@;%@",
                            [[PDSSchemaManager sharedManager] serviceRepoSequenceTableSchema],
                            @"CREATE INDEX IF NOT EXISTS idx_repo_sequence_did ON repo_sequence(did);"];
@@ -154,10 +170,10 @@ static NSString *appPasswordGenerateSecret(void) {
 - (BOOL)executeSQL:(NSString *)sql onPool:(PDSDatabasePool *)pool error:(NSError **)error {
     PDSActorStore *store = [pool storeForDid:@"__service__" error:error];
     if (!store) return NO;
-    
+
     char *errMsg = NULL;
     int result = sqlite3_exec(store.db, sql.UTF8String, NULL, NULL, &errMsg);
-    
+
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
@@ -167,7 +183,7 @@ static NSString *appPasswordGenerateSecret(void) {
         sqlite3_free(errMsg);
         return NO;
     }
-    
+
     return YES;
 }
 
