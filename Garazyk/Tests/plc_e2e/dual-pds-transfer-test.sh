@@ -55,7 +55,6 @@ EOF
 
 export PDS_ADMIN_PASSWORD=admin
 export PDS_PLC_URL="http://127.0.0.1:$PLC_PORT"
-export PDS_DEBUG_SKIP_PLC=0
 
 echo "-> Starting PLC Server on port $PLC_PORT..."
 "$PLC_BIN" serve --port $PLC_PORT --database "$PLC_DATA/plc.db" &

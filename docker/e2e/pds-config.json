@@ -60,8 +60,5 @@
   },
   "rate_limit": {
     "enabled": false
-  },
-  "debug": {
-    "skip_plc_operations": false
   }
 }

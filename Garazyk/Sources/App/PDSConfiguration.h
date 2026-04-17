@@ -80,9 +80,6 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! @abstract PLC replica data directory path. */
 @property (nonatomic, readonly, nullable) NSString *plcReplicaDataDir;
 
-/*! @abstract Skip PLC operations (debug mode). */
-@property (nonatomic, assign) BOOL debugSkipPlcOperations;
-
 /*! @abstract Use new repository implementation (Phase 2). */
 @property (nonatomic, assign) BOOL useNewRepositoryImplementation;
 

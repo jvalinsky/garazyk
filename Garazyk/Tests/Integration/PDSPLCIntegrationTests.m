@@ -87,7 +87,6 @@
     self.controller.plcServerURL = [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)self.plcPort];
     
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    config.debugSkipPlcOperations = NO;
     config.plcURL = self.controller.plcServerURL;
 
     // If the environment can't open listeners (EPERM) or can't reach localhost, skip.
@@ -115,7 +114,6 @@
     [self.database close];
     
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    config.debugSkipPlcOperations = YES;
     config.plcURL = @"mock";
     
     [super tearDown];
