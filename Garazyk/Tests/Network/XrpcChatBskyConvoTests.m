@@ -186,4 +186,189 @@
     XCTAssertEqual(response.statusCode, 400);
 }
 
+#pragma mark - Reaction Tests
+
+- (void)testAddReactionRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
+                                                      body:@{@"messageId": @"msg/test", @"emoji": @"❤️"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testAddReactionToMessage {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create message first
+    HttpResponse *createConvoResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                                 body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                              headers:@{@"authorization": authHeader}];
+    NSString *convoId = createConvoResponse.jsonBody[@"convo"][@"id"];
+
+    // Add reaction
+    HttpResponse *reactionResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
+                                                               body:@{@"messageId": @"msg/test123", @"emoji": @"❤️"}
+                                                            headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(reactionResponse.statusCode, 200);
+    XCTAssertEqualObjects(reactionResponse.jsonBody[@"emoji"], @"❤️");
+}
+
+- (void)testRemoveReactionFromMessage {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Remove reaction
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.removeReaction"
+                                                      body:@{@"messageId": @"msg/test123", @"emoji": @"❤️"}
+                                                   headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+}
+
+#pragma mark - Read Status Tests
+
+- (void)testUpdateReadRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateRead"
+                                                      body:@{@"convoId": @"convo/test", @"messageId": @"msg/test"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testUpdateReadState {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create conversation
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+
+    // Update read
+    HttpResponse *readResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateRead"
+                                                          body:@{@"convoId": convoId, @"messageId": @"msg/test123"}
+                                                       headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(readResponse.statusCode, 200);
+}
+
+- (void)testUpdateAllRead {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create conversation
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+
+    // Mark all as read
+    HttpResponse *allReadResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateAllRead"
+                                                              body:@{@"convoId": convoId}
+                                                           headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(allReadResponse.statusCode, 200);
+}
+
+#pragma mark - Muting Tests
+
+- (void)testMuteConvo {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create conversation
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+
+    // Mute conversation
+    HttpResponse *muteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
+                                                          body:@{@"convoId": convoId}
+                                                       headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(muteResponse.statusCode, 200);
+}
+
+- (void)testUnmuteConvo {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create conversation
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+
+    // Unmute conversation
+    HttpResponse *unmuteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unmuteConvo"
+                                                             body:@{@"convoId": convoId}
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(unmuteResponse.statusCode, 200);
+}
+
+#pragma mark - Batch Operations Tests
+
+- (void)testSendMessageBatchRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
+                                                      body:@{@"convoId": @"convo/test", @"messages": @[@{@"text": @"hello"}]}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testSendMessageBatch {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create conversation
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+
+    // Send batch
+    HttpResponse *batchResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
+                                                           body:@{
+                                                               @"convoId": convoId,
+                                                               @"messages": @[
+                                                                   @{@"text": @"hello"},
+                                                                   @{@"text": @"world"}
+                                                               ]
+                                                           }
+                                                        headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(batchResponse.statusCode, 200);
+    XCTAssertNotNil(batchResponse.jsonBody[@"messages"]);
+    XCTAssertEqual([batchResponse.jsonBody[@"messages"] count], 2);
+}
+
+#pragma mark - Locking Tests
+
+- (void)testLockConvo {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create conversation
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+
+    // Lock conversation
+    HttpResponse *lockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.lockConvo"
+                                                          body:@{@"convoId": convoId}
+                                                       headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(lockResponse.statusCode, 200);
+}
+
+- (void)testUnlockConvo {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    // Create conversation
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
+                                                         headers:@{@"authorization": authHeader}];
+    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+
+    // Unlock conversation
+    HttpResponse *unlockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unlockConvo"
+                                                             body:@{@"convoId": convoId}
+                                                          headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(unlockResponse.statusCode, 200);
+}
+
+- (void)testDeleteMessageForSelfRequiresAuth {
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.deleteMessageForSelf"
+                                                      body:@{@"messageId": @"msg/test"}
+                                                   headers:@{}];
+    XCTAssertEqual(response.statusCode, 401);
+}
+
 @end
