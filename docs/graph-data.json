@@ -3739,6 +3739,72 @@
       "created_at": "2026-04-16T20:24:23.973663-04:00",
       "updated_at": "2026-04-16T20:24:23.973663-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 341,
+      "change_id": "9dad934b-ae0f-4285-b26d-233b7a022b4c",
+      "node_type": "decision",
+      "title": "Remove skip_plc_operations debug feature",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T23:48:34.402716-04:00",
+      "updated_at": "2026-04-16T23:48:34.402716-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"326f66e3\",\"prompt\":\"User requested removal: 'we can run a local plc and it's actually extremely important that we do'\"}"
+    },
+    {
+      "id": 342,
+      "change_id": "f17e6ae5-c1e8-45b1-9e4e-a4feb37bb136",
+      "node_type": "action",
+      "title": "Removed debugSkipPlcOperations property from PDSConfiguration.h/m",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T23:49:31.252206-04:00",
+      "updated_at": "2026-04-16T23:49:31.252206-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"326f66e3\"}"
+    },
+    {
+      "id": 343,
+      "change_id": "17cf0342-255b-40d1-a768-91c257f13639",
+      "node_type": "action",
+      "title": "Removed conditional PLC skip logic in PDSAccountService, PDSCLIAccountManager, XrpcIdentityMethods",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T23:49:31.302592-04:00",
+      "updated_at": "2026-04-16T23:49:31.302592-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"326f66e3\"}"
+    },
+    {
+      "id": 344,
+      "change_id": "541d2ec1-8491-4a7c-8ca7-06d954a21e4c",
+      "node_type": "action",
+      "title": "Updated all config files (docker, production, examples) to remove skip_plc_operations",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T23:49:31.570701-04:00",
+      "updated_at": "2026-04-16T23:49:31.570701-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"326f66e3\"}"
+    },
+    {
+      "id": 345,
+      "change_id": "f77d72f2-f946-4e50-98b0-595f28c69122",
+      "node_type": "action",
+      "title": "Updated docs and validation scripts",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T23:49:31.818389-04:00",
+      "updated_at": "2026-04-16T23:49:31.818389-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"326f66e3\"}"
+    },
+    {
+      "id": 346,
+      "change_id": "deb2db89-fe1a-4687-96cb-751d23e1f3fb",
+      "node_type": "outcome",
+      "title": "Account creation now requires actual PLC registration. Local dev must use campagnola or did:web. No more mock DID generation.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T23:51:05.333156-04:00",
+      "updated_at": "2026-04-16T23:51:05.333156-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"326f66e3\"}"
     }
   ],
   "edges": [
@@ -7305,6 +7371,50 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-16T17:32:28.439296-04:00"
+    },
+    {
+      "id": 325,
+      "from_node_id": 341,
+      "to_node_id": 342,
+      "from_change_id": "9dad934b-ae0f-4285-b26d-233b7a022b4c",
+      "to_change_id": "f17e6ae5-c1e8-45b1-9e4e-a4feb37bb136",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T23:51:05.248815-04:00"
+    },
+    {
+      "id": 326,
+      "from_node_id": 341,
+      "to_node_id": 343,
+      "from_change_id": "9dad934b-ae0f-4285-b26d-233b7a022b4c",
+      "to_change_id": "17cf0342-255b-40d1-a768-91c257f13639",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T23:51:05.261061-04:00"
+    },
+    {
+      "id": 327,
+      "from_node_id": 341,
+      "to_node_id": 344,
+      "from_change_id": "9dad934b-ae0f-4285-b26d-233b7a022b4c",
+      "to_change_id": "541d2ec1-8491-4a7c-8ca7-06d954a21e4c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T23:51:05.271759-04:00"
+    },
+    {
+      "id": 328,
+      "from_node_id": 341,
+      "to_node_id": 345,
+      "from_change_id": "9dad934b-ae0f-4285-b26d-233b7a022b4c",
+      "to_change_id": "f77d72f2-f946-4e50-98b0-595f28c69122",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T23:51:05.281202-04:00"
     }
   ],
   "documents": [
