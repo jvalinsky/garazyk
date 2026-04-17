@@ -328,6 +328,104 @@
     XCTAssertNotNil(response.jsonBody[@"verifications"]);
 }
 
+#pragma mark - Safelink Tests
+
+- (void)testQueryRulesSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.safelink.queryRules"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"rules"]);
+    XCTAssertIsInstance(response.jsonBody[@"rules"], [NSArray class]);
+}
+
+- (void)testQueryEventsSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.safelink.queryEvents"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"events"]);
+    XCTAssertIsInstance(response.jsonBody[@"events"], [NSArray class]);
+}
+
+- (void)testAddRuleSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.addRule"
+                                                      body:@{
+                                                          @"url": @"https://malicious.example.com",
+                                                          @"action": @"block"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"id"]);
+    XCTAssertEqualObjects(response.jsonBody[@"action"], @"block");
+}
+
+- (void)testAddRuleRequiresUrl {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.addRule"
+                                                      body:@{@"action": @"block"}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testAddRuleRequiresAction {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.addRule"
+                                                      body:@{@"url": @"https://malicious.example.com"}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testUpdateRuleSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.updateRule"
+                                                      body:@{
+                                                          @"id": @"rule123",
+                                                          @"url": @"https://updated.example.com",
+                                                          @"action": @"warn"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+}
+
+- (void)testUpdateRuleRequiresId {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.updateRule"
+                                                      body:@{
+                                                          @"url": @"https://updated.example.com",
+                                                          @"action": @"warn"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testRemoveRuleSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.removeRule"
+                                                      body:@{@"id": @"rule123"}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+}
+
+- (void)testRemoveRuleRequiresId {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.removeRule"
+                                                      body:@{}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
 #pragma mark - Server Config Tests
 
 - (void)testGetServerConfigSuccessfully {
