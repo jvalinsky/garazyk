@@ -579,6 +579,30 @@
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
+#pragma mark - Hosting History Tests
+
+- (void)testGetAccountHistorySuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.hosting.getAccountHistory"
+                                             queryString:@"did=did%3Aplc%3Atest_user&limit=50"
+                                             queryParams:@{@"did": self.userDid, @"limit": @"50"}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"events"]);
+    XCTAssertIsInstance(response.jsonBody[@"events"], [NSArray class]);
+    XCTAssertNotNil(response.jsonBody[@"cursor"]);
+}
+
+- (void)testGetAccountHistoryRequiresDid {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.hosting.getAccountHistory"
+                                             queryString:@"limit=50"
+                                             queryParams:@{@"limit": @"50"}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
 #pragma mark - Server Config Tests
 
 - (void)testGetServerConfigSuccessfully {
