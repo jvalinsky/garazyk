@@ -1,5 +1,21 @@
 [
   {
+    "hash": "8e54ecb3bc4482b85c09197faff984a036171508",
+    "short_hash": "8e54ecb",
+    "author": "Security Bot",
+    "date": "2026-04-17T15:43:51-04:00",
+    "message": "feat(websocket): implement configurable backpressure handling\n\nSprint 2: Phase 1-4 WebSocket backpressure implementation\n\nPhases completed:\n1. Configuration Properties:\n   - Added maxOutboundQueueBytes (default: 10MB)\n   - Added backpressureWarningThreshold (default: 70%)\n   - Added backpressureCriticalThreshold (default: 90%)\n\n2. Delegate Notifications:\n   - Added 4 new optional delegate methods:\n     * didReachBackpressureWarning:queueBytes:\n     * didReachBackpressureCritical:queueBytes:\n     * webSocketConnectionDidClearBackpressure:\n     * willCloseForQueueOverflow:limit:\n   - Added backpressure state tracking (isUnderBackpressure)\n   - Threshold checking in sendFrame: method\n   - Backpressure cleared detection in writeData: completion\n\n4. Enhanced Logging:\n   - Added PDS_LOG_SYNC_WARN for warning and critical thresholds\n   - Added PDS_LOG_SYNC_INFO for backpressure cleared\n   - Added PDS_LOG_SYNC_ERROR for queue overflow\n   - All logs include remote address and queue fill percentage\n\nBenefits:\n- Configurable limits allow tuning for different deployments\n- Delegate notifications decouple detection from response\n- Logging provides visibility into backpressure events\n- Graceful threshold system (warning/critical/overflow)\n- Backward compatible with default values\n\nRemaining:\n- Phase 3: Metrics tracking (PDSMetrics)\n- Phase 5: Test updates (unit/integration tests)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "f9fa716034499867739535423cfff48480adacc3",
+    "short_hash": "f9fa716",
+    "author": "Security Bot",
+    "date": "2026-04-17T10:47:26-04:00",
+    "message": "docs: link decision outcome to Sprint 2 goals\n\nOutcome 380: Code review verified P0/P1 bugs don't exist\nLinks:\n- Decision 375 → Outcome 380 (decision resolved)\n- Action 377 (WebSocket backpressure) → Goal 379 (Sprint 2)\n- Action 378 (test robustness) → Goal 379 (Sprint 2)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
     "hash": "c3ba36e17383a7783ee696aa89249d1033777b91",
     "short_hash": "c3ba36e",
     "author": "Security Bot",
@@ -8,11 +24,11 @@
     "files_changed": 4
   },
   {
-    "hash": "0371eb3ea23ee569975ac77079e0a43ce1c638f7",
-    "short_hash": "0371eb3",
+    "hash": "7b65ac29558f4c4cf60e63b7484f34b3af39efd3",
+    "short_hash": "7b65ac2",
     "author": "Security Bot",
-    "date": "2026-04-17T10:04:00-04:00",
-    "message": "docs: update XRPC coverage analysis with completed endpoints\n\nCoverage increased from 242/277 (87.4%) to 262/277 (94.6%) by implementing:\n- Sprint 1: 8 app.bsky.unspecced user discovery endpoints\n- Sprint 2: 5 tools.ozone.safelink endpoints\n- Sprint 3: 3 tools.ozone.setting endpoints\n- Sprint 4: 3 tools.ozone.signature endpoints\n- Sprint 5: 1 tools.ozone.hosting endpoint\n\nUpdated endpoint count and coverage percentages:\n- app.bsky.unspecced: 100% coverage (29 endpoints)\n- tools.ozone: 100% coverage (43 endpoints)\n- Overall: 94.6% coverage (262 of 277 endpoints)\n\nRemaining gaps: 15 endpoints (mostly chat.bsky.convo batch operations)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "date": "2026-04-17T10:00:11-04:00",
+    "message": "fix(mst): add __unsafe_unretained for ARC struct fields\n\nGNUstep clang-14 crashes (segfault) when compiling structs\ncontaining Objective-C object pointers without ownership\nqualifiers under ARC.\n\nThe MSTWalkerStatusProgress struct's curr and walking fields\nhold borrowed references during MST traversal and should not\nretain ownership. Mark them __unsafe_unretained to:\n\n1. Make ARC semantics explicit (non-owning references)\n2. Fix GNUstep/Linux Docker build compilation\n3. Match TypeScript reference design (raw references)\n\nReference: Clang ARC documentation on ownership-qualified\nfields in structs.\n\nFixes docker build segfault:\n  Error 139 in MSTWalker.m.o compilation\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
     "files_changed": 1
   },
   {
@@ -30,14 +46,6 @@
     "date": "2026-04-17T07:40:16-04:00",
     "message": "test(mst): add walker-based diff algorithm tests\n\nAdd comprehensive tests for the new MST diff implementation:\n\n- Basic diff tests (nil trees, identical trees, additions, deletions, updates)\n- Mixed operations test (add/update/delete in one diff)\n- Walker traversal tests (empty tree, single entry, multiple entries)\n- Edge cases (key ordering, large trees)\n\nTests verify key ordering is preserved and no infinite loops occur.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
     "files_changed": 1
-  },
-  {
-    "hash": "3f17111001753858ffe71bc93ba4a568f4cfabf1",
-    "short_hash": "3f17111",
-    "author": "Security Bot",
-    "date": "2026-04-17T07:31:00-04:00",
-    "message": "fix(appview): use correct PDSDatabase method names\n\nChatService, GroupService, and ModerationService were using\nincorrect method names executeUpdate:withParams: instead of\nthe correct executeParameterizedUpdate:params:.\n\nAlso removed unused Core/NSURL+Extensions.h imports from\nChatService and GroupService.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
-    "files_changed": 3
   },
   {
     "hash": "aafe47cee96a9deaa2c34db0779bccd1299bd584",

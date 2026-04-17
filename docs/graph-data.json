@@ -4179,6 +4179,17 @@
       "created_at": "2026-04-17T10:47:14.374729-04:00",
       "updated_at": "2026-04-17T10:47:14.374729-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c3ba36e1\"}"
+    },
+    {
+      "id": 381,
+      "change_id": "d7bbe8b1-78dd-4cc3-8753-9ef19b387a39",
+      "node_type": "outcome",
+      "title": "Sprint 2 Phase 1-4: WebSocket backpressure configuration, delegate notifications, enhanced logging",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-17T15:43:55.755849-04:00",
+      "updated_at": "2026-04-17T15:43:55.755849-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"8e54ecb3\"}"
     }
   ],
   "edges": [
@@ -7932,6 +7943,17 @@
       "weight": 1.0,
       "rationale": "Part of Sprint 2 goal",
       "created_at": "2026-04-17T10:47:18.910372-04:00"
+    },
+    {
+      "id": 342,
+      "from_node_id": 377,
+      "to_node_id": 381,
+      "from_change_id": "5f10a50c-46eb-40a3-ae88-e38c2f3bdf42",
+      "to_change_id": "d7bbe8b1-78dd-4cc3-8753-9ef19b387a39",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 1-4 implementation complete, phases 3 and 5 remaining",
+      "created_at": "2026-04-17T15:43:55.875618-04:00"
     }
   ],
   "documents": [
