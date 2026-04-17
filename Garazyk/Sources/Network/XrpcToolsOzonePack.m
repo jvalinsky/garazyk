@@ -881,6 +881,149 @@
         [response setJsonBody:@{@"verifications": verifications ?: @[]}];
     }];
 
+#pragma mark - Safelinks (5)
+
+    // tools.ozone.safelink.queryRules
+    [dispatcher registerMethod:@"tools.ozone.safelink.queryRules"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
+                                 adminController:adminController request:request response:response];
+        if (!authHeader) return;
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit <= 0) limit = 50;
+        if (limit > 100) limit = 100;
+
+        NSError *error = nil;
+        NSArray *rules = [moderationService listSafelinks:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"rules": rules ?: @[], @"cursor": cursor ?: @""}];
+    }];
+
+    // tools.ozone.safelink.queryEvents
+    [dispatcher registerMethod:@"tools.ozone.safelink.queryEvents"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
+                                 adminController:adminController request:request response:response];
+        if (!authHeader) return;
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        if (limit <= 0) limit = 50;
+        if (limit > 100) limit = 100;
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"events": @[], @"cursor": cursor ?: @""}];
+    }];
+
+    // tools.ozone.safelink.addRule
+    [dispatcher registerMethod:@"tools.ozone.safelink.addRule"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *url = body[@"url"];
+        NSString *action = body[@"action"];
+
+        if (!url || url.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"url is required"];
+            return;
+        }
+
+        if (!action || action.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"action is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        NSString *ruleId = [moderationService createSafelink:body createdBy:adminDid error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"id": ruleId ?: @"", @"url": url, @"action": action}];
+    }];
+
+    // tools.ozone.safelink.updateRule
+    [dispatcher registerMethod:@"tools.ozone.safelink.updateRule"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *ruleId = body[@"id"];
+        NSString *url = body[@"url"];
+        NSString *action = body[@"action"];
+
+        if (!ruleId || ruleId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [moderationService updateSafelink:ruleId newUrl:url newAction:action updatedBy:adminDid error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"success": @YES}];
+    }];
+
+    // tools.ozone.safelink.removeRule
+    [dispatcher registerMethod:@"tools.ozone.safelink.removeRule"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *ruleId = body[@"id"];
+
+        if (!ruleId || ruleId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"id is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [moderationService deleteSafelink:ruleId deletedBy:adminDid error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"success": @YES}];
+    }];
+
 #pragma mark - Settings (2)
 
     // tools.ozone.server.getConfig
