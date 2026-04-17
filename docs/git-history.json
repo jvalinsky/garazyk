@@ -1,19 +1,27 @@
 [
   {
+    "hash": "5434591b505b08f48d630f709121543a22b4db72",
+    "short_hash": "5434591",
+    "author": "Security Bot",
+    "date": "2026-04-17T15:51:11-04:00",
+    "message": "test(websocket): add comprehensive backpressure threshold tests\n\nSprint 2 Phase 5: WebSocket backpressure test coverage\n\nUpdates to WebSocketStateCharacterizationTests:\n\n1. Enhanced MockStateWebSocketDelegate:\n   - Added tracking for backpressure warning/critical/cleared/overflow\n   - Stores fill percentages and byte counts for assertions\n   - Properties to verify delegate callbacks were invoked\n\n2. Updated existing test:\n   - testOutboundQueueBackpressure → testOutboundQueueOverflow\n   - Updated to use 10MB default instead of 16MB\n   - Verifies queue overflow delegate notification\n\n3. Added 4 new comprehensive tests:\n   - testConfigurableQueueLimit: Custom 5MB limit\n   - testBackpressureWarningThreshold: 70% threshold\n   - testBackpressureCriticalThreshold: 90% threshold\n   - testBackpressureWarningNotDuplicateNotified: No duplicate warnings\n\nTest coverage includes:\n- Configurable limits are respected\n- Thresholds trigger at correct percentages\n- Delegate methods are invoked with correct parameters\n- Backpressure state transitions properly\n- No duplicate notifications on multi-frame sends\n\nAll tests use proper async handling with XCTestExpectation\nfor dispatch queue operations.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "dd4e82450b6b8ca48d6c87d1c0429c4f405e9017",
+    "short_hash": "dd4e824",
+    "author": "Security Bot",
+    "date": "2026-04-17T15:48:33-04:00",
+    "message": "docs: link Phase 3 metrics outcome to decision graph",
+    "files_changed": 2
+  },
+  {
     "hash": "3820b21daa8d4f4cf8f473f3209fd644236639b1",
     "short_hash": "3820b21",
     "author": "Security Bot",
     "date": "2026-04-17T15:48:05-04:00",
     "message": "feat(websocket): add backpressure metrics tracking to PDSMetrics\n\nSprint 2 Phase 3: WebSocket backpressure metrics integration\n\nNew Prometheus metrics:\n- pds_websocket_backpressure_warnings_total (counter)\n- pds_websocket_backpressure_critical_total (counter)\n- pds_websocket_queue_overflow_closures_total (counter)\n- pds_websocket_connections_under_backpressure (gauge)\n\nImplementation:\n- 4 metric properties added to PDSMetrics (thread-safe)\n- 4 metric recording methods with dispatch_sync protection\n- Metrics initialization in PDSMetrics init\n- Metrics integrated into WebSocketConnection notifications\n- Prometheus export updated with new metrics\n\nBenefits:\n- Production monitoring of backpressure events\n- Alerting on backpressure frequency/severity\n- Visibility into connection health\n- Distinguishes warning from critical from overflow states\n\nAll metrics are:\n- Thread-safe (dispatch_sync protected)\n- Exported in Prometheus format\n- Documented with HELP and TYPE metadata\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 3
-  },
-  {
-    "hash": "ace080ceba82c974858509f93199e4dfe8bf8cb4",
-    "short_hash": "ace080c",
-    "author": "Security Bot",
-    "date": "2026-04-17T15:46:16-04:00",
-    "message": "docs: link WebSocket backpressure outcome to Sprint 2 goal\n\nOutcome 381: WebSocket backpressure phases 1-4 complete\n- Configuration properties with sensible defaults\n- Delegate notifications for warning/critical/cleared/overflow\n- Enhanced logging with connection context\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
-    "files_changed": 2
   },
   {
     "hash": "8e54ecb3bc4482b85c09197faff984a036171508",
@@ -32,11 +40,11 @@
     "files_changed": 4
   },
   {
-    "hash": "176d37b73dac9b325b2604483e7adfd64895d192",
-    "short_hash": "176d37b",
+    "hash": "c3ba36e17383a7783ee696aa89249d1033777b91",
+    "short_hash": "c3ba36e",
     "author": "Security Bot",
-    "date": "2026-04-17T10:02:39-04:00",
-    "message": "feat(xrpc): add tools.ozone.hosting endpoint\n\nImplement account hosting history tracking endpoint:\n- getAccountHistory: Retrieve hosting events for an account\n  (migrations, moves, suspensions, etc.)\n\nReturns chronological list of hosting events with pagination support.\nAdds new ModerationService method for hosting history queries.\nIncludes 2 test cases covering success and validation.\n\nCoverage: 262/277 endpoints (94.6%)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "date": "2026-04-17T10:47:08-04:00",
+    "message": "decision: skip non-existent P0/P1 bugs, proceed with Sprint 2 reliability improvements\n\nCode review findings:\n- Password KDF: Correctly uses UTF-8 byte length (not UTF-16 char count)\n- Base64URL padding: Proper calculation with edge case handling\n- Backup script: Already uses correct service.db naming\n- Admin auth: No selector mismatch found in method registry\n\nInstead of pursuing hypothetical bugs, prioritizing concrete reliability work:\n\nSprint 2: Reliability improvements\n- WebSocket backpressure: Queue byte cap (10MB), backpressure signals\n- Test environment: Graceful fallback for restricted environments\n\nUpdated deciduous nodes:\n- Node 375: Decision on production readiness phase focus\n- Node 376: Option to skip P0/P1 bugs\n- Node 377: WebSocket backpressure action\n- Node 378: Test environment robustness action\n- Node 379: Sprint 2 goal\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 4
   },
   {
