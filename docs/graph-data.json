@@ -3463,7 +3463,7 @@
       "status": "completed",
       "created_at": "2026-04-15T23:04:39.191361-04:00",
       "updated_at": "2026-04-15T23:04:58.252190-04:00",
-      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"scratchpad\":\"docs/scratchpad/2026-04-16-orbstack-websocket-proxy.md\"}"
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     },
     {
       "id": 316,
@@ -3489,58 +3489,256 @@
     },
     {
       "id": 318,
-      "change_id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-      "node_type": "decision",
-      "title": "Which relay websocket robustness path to pursue?",
-      "description": null,
+      "change_id": "498dcbb2-9eba-4207-ad57-b60f66b3f047",
+      "node_type": "outcome",
+      "title": "Ensure AT Protocol datetime conformance and cross-platform compatibility",
+      "description": "Consolidated ISO 8601 date formatting and parsing into NSDateFormatter+ATProto category. Added runtime detection for NSISO8601DateFormatter (macOS 10.12+, GNUstep 1.27+) with fallbacks for older systems. Implemented robust validation in ATProtoValidator following Bsky lexicon specs (allowing leap seconds, up to 20 fractional digits, prohibiting -00:00 offset).",
       "status": "completed",
-      "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T00:20:00.000000-04:00",
+      "created_at": "2026-04-16T03:08:54.584730-04:00",
+      "updated_at": "2026-04-16T17:20:45.178622-04:00",
       "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     },
     {
       "id": 319,
-      "change_id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7",
-      "node_type": "goal",
-      "title": "Relay WebSocket robustness for OrbStack HTTPS",
-      "description": null,
+      "change_id": "6909fba3-5dba-42fb-a88a-f2b20950ac57",
+      "node_type": "action",
+      "title": "Clean up source directory symlinks and canonicalize imports",
+      "description": "Removed redundant top-level symlinks in Garazyk/Sources (e.g., AuthCrypto -> Auth/Crypto) that were causing duplicate compilation and IDE confusion. Updated CMakeLists.txt and mass-replaced all imports in the codebase to use canonical paths. Fixed build failures in XRPC handlers and tests resulting from the path changes.",
       "status": "completed",
-      "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T03:25:00.000000-04:00",
-      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90}"
+      "created_at": "2026-04-16T03:08:54.637985-04:00",
+      "updated_at": "2026-04-16T17:20:45.185620-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     },
     {
       "id": 320,
-      "change_id": "c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8",
+      "change_id": "2cfdf40b-0469-465c-b7a8-fbfa87161e47",
       "node_type": "action",
-      "title": "Add polling fallback in RelayEventsController",
-      "description": null,
+      "title": "Implement polling fallback in RelayEventsController.j for WebSocket failures",
+      "description": "Added HTTP polling fallback using com.atproto.sync.listRepos when WebSocket connection fails or is blocked by OrbStack HTTPS proxy. This ensures the Relay UI remains functional even without real-time streaming.",
       "status": "completed",
-      "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T00:20:00.000000-04:00",
-      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":95,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/RelayEventsController.j\"]}"
+      "created_at": "2026-04-16T17:20:34.963197-04:00",
+      "updated_at": "2026-04-16T17:20:45.133479-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     },
     {
       "id": 321,
-      "change_id": "d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9",
+      "change_id": "ac6cd041-660e-4550-90ea-375b4a215aa0",
       "node_type": "action",
-      "title": "Investigate OrbStack proxy WebSocket upgrade handling",
-      "description": null,
+      "title": "Implement missing sync XRPC endpoints on Relay (listRepos, getHead, getRepo)",
+      "description": "Created RelayXrpcRoutePack and wired it to the zuk relay binary. Implemented listRepos using RelayRepoStateManager to track upstream repo revisions. Added support for getHead and getRepo to satisfy ATProto sync spec.",
       "status": "completed",
-      "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T03:25:00.000000-04:00",
-      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":85,\"files\":[],\"notes\":\"OrbStack HTTPS proxy does not forward WebSocket upgrade headers to Docker containers. localhost:2584 returns 101, but OrbStack HTTPS hostname returns 404. This is an OrbStack networking configuration issue, not a codebase bug. Polling fallback is the correct solution.\",\"scratchpad\":\"docs/scratchpad/2026-04-16-orbstack-websocket-proxy.md\"}"
+      "created_at": "2026-04-16T17:20:35.003974-04:00",
+      "updated_at": "2026-04-16T17:20:45.141779-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     },
     {
       "id": 322,
-      "change_id": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0",
+      "change_id": "5763cb1f-6c97-410c-b6e6-40aafafe405d",
+      "node_type": "decision",
+      "title": "Implement Database Abstraction Layer for standalone AppView",
+      "description": "Decided to implement a PDSQueryDatabase protocol to decouple AppView services (Feed, Actor, etc.) from the PDS-specific PDSDatabase. This allows AppView to run as a separate process with its own materialized SQLite database.",
+      "status": "completed",
+      "created_at": "2026-04-16T17:20:35.043814-04:00",
+      "updated_at": "2026-04-16T17:20:45.149082-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 323,
+      "change_id": "cd549b46-0d65-4187-8abe-99fccae23dc4",
+      "node_type": "action",
+      "title": "Create PDSQueryDatabase protocol and refactor services",
+      "description": "Extracted PDSDatabaseBlock to PDSBlock.h and created PDSQueryDatabase.h protocol. Updated FeedService, ActorService, GraphService, NotificationService, and BookmarkService to use the protocol. This enables these services to query any ATProto-compatible data store.",
+      "status": "completed",
+      "created_at": "2026-04-16T17:20:35.080986-04:00",
+      "updated_at": "2026-04-16T17:20:45.156051-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 324,
+      "change_id": "26d7b402-1658-44c6-8ce5-edf07c0c9c13",
+      "node_type": "action",
+      "title": "Implement record/block materialization in AppView",
+      "description": "Extended AppViewDatabase schema with ATProto records and blocks tables. Updated AppViewIngestEngine to materialize blocks from firehose CAR files and populate the records table during live ingestion. Improved subject_did extraction for social graph hydration.",
+      "status": "completed",
+      "created_at": "2026-04-16T17:20:35.118382-04:00",
+      "updated_at": "2026-04-16T17:20:45.163876-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 325,
+      "change_id": "147a9d25-8685-41a0-b933-abf690f1f312",
       "node_type": "outcome",
-      "title": "Firehose works over OrbStack HTTPS via polling fallback",
+      "title": "AppView standalone operation with materialization complete",
+      "description": "Syrena (AppView) can now serve app.bsky.* XRPC queries from its own materialized database. All core services are refactored to be database-agnostic via the PDSQueryDatabase protocol. Standalone builds for syrena and zuk are verified.",
+      "status": "completed",
+      "created_at": "2026-04-16T17:20:35.155299-04:00",
+      "updated_at": "2026-04-16T17:20:45.171112-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 326,
+      "change_id": "bf634293-3351-458f-ada7-e76bdf3eedf2",
+      "node_type": "goal",
+      "title": "Fix Cappuccino shell duplication and make UI controllers resize with window using manual frames/autoresizing",
       "description": null,
       "status": "completed",
-      "created_at": "2026-04-16T00:20:00.000000-04:00",
-      "updated_at": "2026-04-16T03:25:00.000000-04:00",
-      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\",\"confidence\":90,\"files\":[\"Garazyk/Sources/App/CappuccinoUI/RelayEventsController.j\"]}"
+      "created_at": "2026-04-16T17:31:52.772229-04:00",
+      "updated_at": "2026-04-16T17:32:28.448255-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 327,
+      "change_id": "27f2ddc6-d498-45a0-a208-0c0110b92402",
+      "node_type": "action",
+      "title": "Fix GNUstep category stripping with linker anchors",
+      "description": "Added NSDateFormatterLinkATProtoCategory() and other linker anchors to main entry points (kaszlak, zuk, syrena) to prevent the GNUstep static linker from stripping essential Foundation categories. This fixes runtime errors where Foundation classes did not recognize ATProto-specific methods.",
+      "status": "pending",
+      "created_at": "2026-04-16T17:32:28.428742-04:00",
+      "updated_at": "2026-04-16T17:32:28.428742-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 328,
+      "change_id": "ade62310-8992-4ddb-9cd9-c50f7703d2db",
+      "node_type": "action",
+      "title": "Switch outer service tab shell to CPNoTabsNoBorder and only show segmented service switcher when multiple services are active",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T17:37:08.851374-04:00",
+      "updated_at": "2026-04-16T17:37:08.851374-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 329,
+      "change_id": "bc7e907a-2938-472f-b393-38da9c806af6",
+      "node_type": "action",
+      "title": "Replace fixed-width PLC detail/timeline document views with scroll-backed content sized from current scroll viewport width",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T17:37:13.018616-04:00",
+      "updated_at": "2026-04-16T17:37:13.018616-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 330,
+      "change_id": "9b95b7db-90a2-4da9-8095-6dc5e5cec680",
+      "node_type": "action",
+      "title": "Apply Cappuccino autoresizing masks and table last-column autoresizing style across controllers so sidebars/panes resize without clipping",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T17:37:15.973460-04:00",
+      "updated_at": "2026-04-16T17:37:15.973460-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 331,
+      "change_id": "92d6cd8d-e614-4c48-b36c-998c5468e0fe",
+      "node_type": "goal",
+      "title": "CappuccinoUI defensive hardening audit and fixes",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:09.684834-04:00",
+      "updated_at": "2026-04-16T20:24:09.684834-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 332,
+      "change_id": "ce533cb8-6138-446c-86b1-3433e8b26551",
+      "node_type": "action",
+      "title": "Fix nil array guards in 7 numberOfRowsInTableView implementations",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:13.152412-04:00",
+      "updated_at": "2026-04-16T20:24:13.152412-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 333,
+      "change_id": "8f6867a4-f548-46c4-a92c-45d65944f25a",
+      "node_type": "action",
+      "title": "Fix view hierarchy iteration to use reverse loops and prevent index corruption",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:19.840854-04:00",
+      "updated_at": "2026-04-16T20:24:19.840854-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 334,
+      "change_id": "1e6ec555-e525-4b25-8be8-8a7b108040fb",
+      "node_type": "action",
+      "title": "Add superview nil checks before frame access in RelayUpstreamsController and AppViewBackfillController",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:19.876226-04:00",
+      "updated_at": "2026-04-16T20:24:19.876226-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 335,
+      "change_id": "151dfe56-4510-4a09-9e17-2e604fc095bc",
+      "node_type": "action",
+      "title": "Add timer cleanup dealloc and stopStatusClock methods in AppController",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:19.912031-04:00",
+      "updated_at": "2026-04-16T20:24:19.912031-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 336,
+      "change_id": "5118232a-ec66-41ce-be98-66a6419d1b4f",
+      "node_type": "action",
+      "title": "Add proper dealloc call chain in RelayEventsController for WebSocket cleanup",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:19.947115-04:00",
+      "updated_at": "2026-04-16T20:24:19.947115-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 337,
+      "change_id": "2f5a7047-ea44-4fa6-8dc2-1f935cfbf0a8",
+      "node_type": "action",
+      "title": "Replace empty catch blocks with CPLog.warn in AppViewBackfillController",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:19.981603-04:00",
+      "updated_at": "2026-04-16T20:24:19.981603-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 338,
+      "change_id": "81850477-cd7c-47f3-a510-ebc8c3712454",
+      "node_type": "action",
+      "title": "Add nil guards after viewWithTag calls in AppViewBackfillController",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:20.017456-04:00",
+      "updated_at": "2026-04-16T20:24:20.017456-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 339,
+      "change_id": "29527b87-63e1-4b25-8dce-7d0d5d868b0b",
+      "node_type": "action",
+      "title": "Fix string comparison in UIAPIClient using String() conversion",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:20.051849-04:00",
+      "updated_at": "2026-04-16T20:24:20.051849-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
+    },
+    {
+      "id": 340,
+      "change_id": "e231dd75-96f0-45e8-a1cf-52387fb8dec2",
+      "node_type": "outcome",
+      "title": "CappuccinoUI hardening complete: 503 lines added, 82 removed across 14 files fixing crashes, memory leaks, and silent failures",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-16T20:24:23.973663-04:00",
+      "updated_at": "2026-04-16T20:24:23.973663-04:00",
+      "metadata_json": "{\"branch\":\"codex/cappuccino-ui-hardening-1\"}"
     }
   ],
   "edges": [
@@ -3551,7 +3749,7 @@
       "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
       "to_change_id": "58888d8a-5416-4939-8ee7-d46e1014274a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Identify remaining PLC compliance gaps",
       "created_at": "2026-01-17T00:23:54.419922-05:00"
     },
@@ -3562,7 +3760,7 @@
       "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
       "to_change_id": "511bf237-95e0-4fa2-88e2-193c7cda1ec7",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implement missing PLC compliance pieces",
       "created_at": "2026-01-17T00:34:51.762654-05:00"
     },
@@ -3573,7 +3771,7 @@
       "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
       "to_change_id": "9bce5b4b-14d0-485e-8c6b-50f0777e1f77",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Investigation",
       "created_at": "2026-01-17T23:47:12.377983-05:00"
     },
@@ -3584,7 +3782,7 @@
       "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
       "to_change_id": "6d9e8214-6498-4ab1-99f8-a5b04e696fba",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Finding: Empty JWK coordinates",
       "created_at": "2026-01-17T23:47:18.380531-05:00"
     },
@@ -3595,7 +3793,7 @@
       "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
       "to_change_id": "21610fd3-47b2-49d9-86f3-e597bf720ea5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Finding: DER vs raw signature mismatch",
       "created_at": "2026-01-17T23:47:23.813297-05:00"
     },
@@ -3606,7 +3804,7 @@
       "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
       "to_change_id": "8d0d0a83-9eed-4aa5-a0a3-a780d1e4dc14",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation",
       "created_at": "2026-01-17T23:47:29.106500-05:00"
     },
@@ -3617,7 +3815,7 @@
       "from_change_id": "8d0d0a83-9eed-4aa5-a0a3-a780d1e4dc14",
       "to_change_id": "882bcd0b-c850-4854-85b5-ff9824bd361b",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Complete",
       "created_at": "2026-01-17T23:47:48.011841-05:00"
     },
@@ -3628,7 +3826,7 @@
       "from_change_id": "83749eed-c768-4e46-8924-bd0be1b5f145",
       "to_change_id": "0aadc5eb-9bc6-4c3f-94cf-4ca6a901f74d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Technical decision needed",
       "created_at": "2026-01-17T23:48:07.344495-05:00"
     },
@@ -3639,7 +3837,7 @@
       "from_change_id": "0aadc5eb-9bc6-4c3f-94cf-4ca6a901f74d",
       "to_change_id": "faa212cc-2516-4c8c-bd58-d8514174c1cb",
       "edge_type": "chosen",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Matches what OAuth2DPoPProof.verifyProof expects - raw 64-byte signature",
       "created_at": "2026-01-17T23:48:13.893178-05:00"
     },
@@ -3650,7 +3848,7 @@
       "from_change_id": "0aadc5eb-9bc6-4c3f-94cf-4ca6a901f74d",
       "to_change_id": "0f85327c-9b9f-43d4-b87d-d32c766310e7",
       "edge_type": "rejected",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Verification expects raw format, DER causes signature mismatch",
       "created_at": "2026-01-17T23:48:19.863833-05:00"
     },
@@ -3661,7 +3859,7 @@
       "from_change_id": "ce302e89-0c06-4942-977c-4ef8df3f3164",
       "to_change_id": "a02a4c8c-429e-43e0-b9be-c3b8207c6524",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation of production readiness plan",
       "created_at": "2026-02-17T18:14:13.223554-05:00"
     },
@@ -3672,7 +3870,7 @@
       "from_change_id": "f6f7708a-04c0-4421-bd3a-16952d03a99a",
       "to_change_id": "41898536-f4ad-495e-89bc-099d7b051833",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation step for MST diff plumbing",
       "created_at": "2026-02-17T18:22:44.259719-05:00"
     },
@@ -3683,7 +3881,7 @@
       "from_change_id": "41898536-f4ad-495e-89bc-099d7b051833",
       "to_change_id": "580a3733-8ef4-4a46-a155-acf2ef507ac3",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation complete",
       "created_at": "2026-02-17T18:23:56.289875-05:00"
     },
@@ -3694,7 +3892,7 @@
       "from_change_id": "b9ac482c-e256-44e1-b857-490a674dcf96",
       "to_change_id": "9c799f9d-96fa-4be0-b219-a055561259ab",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation complete",
       "created_at": "2026-02-18T10:09:33.801001-05:00"
     },
@@ -3705,7 +3903,7 @@
       "from_change_id": "a02a4c8c-429e-43e0-b9be-c3b8207c6524",
       "to_change_id": "2cc64e11-805e-4b41-b368-a1ba982578dd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "All fixes confirmed present",
       "created_at": "2026-02-18T10:13:45.771169-05:00"
     },
@@ -3716,7 +3914,7 @@
       "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
       "to_change_id": "c1413c05-dd1f-4347-a42e-48c9eb3a1407",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation of PLC spec compliance",
       "created_at": "2026-02-18T10:30:24.684301-05:00"
     },
@@ -3727,7 +3925,7 @@
       "from_change_id": "3e0545f7-8fad-43b7-b975-c0a4e273b386",
       "to_change_id": "c1413c05-dd1f-4347-a42e-48c9eb3a1407",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Scope includes DI verification",
       "created_at": "2026-02-18T10:30:24.691793-05:00"
     },
@@ -3738,7 +3936,7 @@
       "from_change_id": "880be5b5-0e0a-4c95-9dfb-807536b5ebe7",
       "to_change_id": "e70766c2-978b-4691-84db-df5f3e992c07",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:04.580037-04:00"
     },
@@ -3749,7 +3947,7 @@
       "from_change_id": "880be5b5-0e0a-4c95-9dfb-807536b5ebe7",
       "to_change_id": "b33bfb73-607a-461a-9335-b4bd269589f5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:04.593730-04:00"
     },
@@ -3760,7 +3958,7 @@
       "from_change_id": "880be5b5-0e0a-4c95-9dfb-807536b5ebe7",
       "to_change_id": "7daea917-e068-4b2a-a41f-c24863c71d4c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:04.604859-04:00"
     },
@@ -3771,7 +3969,7 @@
       "from_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "to_change_id": "5aca87eb-244f-4150-bce4-7d5a3a62368d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:05.827882-04:00"
     },
@@ -3782,7 +3980,7 @@
       "from_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "to_change_id": "be24f834-d4f5-43ab-8f1f-01b4371b975d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:05.840955-04:00"
     },
@@ -3793,7 +3991,7 @@
       "from_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "to_change_id": "85dbb6ef-5b6b-407a-86df-60005135bb4b",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:05.852042-04:00"
     },
@@ -3804,7 +4002,7 @@
       "from_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "to_change_id": "2b2b4ffe-c355-4c95-9df3-78edea93b365",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:05.862011-04:00"
     },
@@ -3815,7 +4013,7 @@
       "from_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "to_change_id": "0bfa0276-b760-46f6-b60c-266af0ebd53c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:05.871451-04:00"
     },
@@ -3826,7 +4024,7 @@
       "from_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "to_change_id": "df347872-6400-458a-8e52-27bd1101d152",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:05.879603-04:00"
     },
@@ -3837,7 +4035,7 @@
       "from_change_id": "9b7e2635-7785-4aa4-897d-79e176ba1572",
       "to_change_id": "0a8f6715-1e49-4abc-9f33-81e3092db6e3",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:06.450451-04:00"
     },
@@ -3848,7 +4046,7 @@
       "from_change_id": "9b7e2635-7785-4aa4-897d-79e176ba1572",
       "to_change_id": "98810421-4c50-48ee-9af5-44fdc0222c8e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:06.463424-04:00"
     },
@@ -3859,7 +4057,7 @@
       "from_change_id": "9b7e2635-7785-4aa4-897d-79e176ba1572",
       "to_change_id": "afed691c-a706-4812-9484-f549eb1cd9a6",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:06.475117-04:00"
     },
@@ -3870,7 +4068,7 @@
       "from_change_id": "9b7e2635-7785-4aa4-897d-79e176ba1572",
       "to_change_id": "394c383a-d423-4458-8acf-f9aa9a330452",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:06.485086-04:00"
     },
@@ -3881,7 +4079,7 @@
       "from_change_id": "9b7e2635-7785-4aa4-897d-79e176ba1572",
       "to_change_id": "a277c147-c554-4cbe-a202-897e4535a052",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:06.494216-04:00"
     },
@@ -3892,7 +4090,7 @@
       "from_change_id": "b46b4c32-03f2-488e-8e3d-153d74a1c1db",
       "to_change_id": "880be5b5-0e0a-4c95-9dfb-807536b5ebe7",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:14.447840-04:00"
     },
@@ -3903,7 +4101,7 @@
       "from_change_id": "b46b4c32-03f2-488e-8e3d-153d74a1c1db",
       "to_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:14.460532-04:00"
     },
@@ -3914,7 +4112,7 @@
       "from_change_id": "b46b4c32-03f2-488e-8e3d-153d74a1c1db",
       "to_change_id": "9b7e2635-7785-4aa4-897d-79e176ba1572",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:14.470736-04:00"
     },
@@ -3925,7 +4123,7 @@
       "from_change_id": "482949b2-bb52-441c-9b0a-f97bdefd6e2a",
       "to_change_id": "cc8e7861-c1d5-4180-99b8-a91711d80b66",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:14.880190-04:00"
     },
@@ -3936,7 +4134,7 @@
       "from_change_id": "880be5b5-0e0a-4c95-9dfb-807536b5ebe7",
       "to_change_id": "e9b7e8dc-7c62-4ddd-8e1c-82af9a053612",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T10:01:15.022579-04:00"
     },
@@ -3947,7 +4145,7 @@
       "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
       "to_change_id": "ecec419f-58fb-4bc5-8d4a-46517b0c5ac3",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Completed PLC compliance by adding minimum 1 rotation key check and duplicate validation per did-method-plc v0.3.0 spec",
       "created_at": "2026-04-09T18:11:34.207489-04:00"
     },
@@ -3958,7 +4156,7 @@
       "from_change_id": "ce302e89-0c06-4942-977c-4ef8df3f3164",
       "to_change_id": "c9984d7b-550b-4988-a637-e2a328b294b7",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Completed production readiness fixes including Base64URL padding validation",
       "created_at": "2026-04-09T18:20:06.559925-04:00"
     },
@@ -3969,7 +4167,7 @@
       "from_change_id": "3e0545f7-8fad-43b7-b975-c0a4e273b386",
       "to_change_id": "46cd2924-fe95-41c4-82a8-01401ddb9a23",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "XrpcMethodRegistry already uses proper DI - services passed explicitly to domain modules",
       "created_at": "2026-04-09T18:22:59.457876-04:00"
     },
@@ -3980,7 +4178,7 @@
       "from_change_id": "cc8e7861-c1d5-4180-99b8-a91711d80b66",
       "to_change_id": "30d6ab5e-99cf-4943-87ae-aae0a6b559b6",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Test coverage confirmed",
       "created_at": "2026-04-09T18:25:27.067791-04:00"
     },
@@ -3991,7 +4189,7 @@
       "from_change_id": "e9b7e8dc-7c62-4ddd-8e1c-82af9a053612",
       "to_change_id": "7f44096b-cea9-4050-9f5d-81f24e17118a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Proxy/policy tests confirmed",
       "created_at": "2026-04-09T18:25:27.075637-04:00"
     },
@@ -4002,7 +4200,7 @@
       "from_change_id": "394c383a-d423-4458-8acf-f9aa9a330452",
       "to_change_id": "2b80410d-a6d2-41de-b1d3-ace710c5289a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Token-scoped unregister API already exists",
       "created_at": "2026-04-09T18:27:15.058836-04:00"
     },
@@ -4013,7 +4211,7 @@
       "from_change_id": "a277c147-c554-4cbe-a202-897e4535a052",
       "to_change_id": "e895d3ad-3c48-4c2f-8b31-5e86f5bfac7c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Internal preference storage already implemented",
       "created_at": "2026-04-09T18:28:21.398709-04:00"
     },
@@ -4024,7 +4222,7 @@
       "from_change_id": "98aee062-2087-492f-8184-a60654d391b0",
       "to_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 1: Core infrastructure components",
       "created_at": "2026-04-09T18:28:41.833231-04:00"
     },
@@ -4035,7 +4233,7 @@
       "from_change_id": "98aee062-2087-492f-8184-a60654d391b0",
       "to_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 2: Configuration & integration",
       "created_at": "2026-04-09T18:28:44.304625-04:00"
     },
@@ -4046,7 +4244,7 @@
       "from_change_id": "98aee062-2087-492f-8184-a60654d391b0",
       "to_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 3: Testing & documentation",
       "created_at": "2026-04-09T18:28:44.313533-04:00"
     },
@@ -4057,7 +4255,7 @@
       "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
       "to_change_id": "814aad98-b280-4c62-87f8-253dee0bf9f1",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLCSyncClient for upstream communication",
       "created_at": "2026-04-09T18:28:46.935697-04:00"
     },
@@ -4068,7 +4266,7 @@
       "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
       "to_change_id": "d602c298-3504-4ccb-87e8-7ee8d1176717",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLCPersistentStore with cursor tracking",
       "created_at": "2026-04-09T18:28:46.943678-04:00"
     },
@@ -4079,7 +4277,7 @@
       "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
       "to_change_id": "111620d8-95ad-477b-9918-cfc526a6d116",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLCSyncEngine for sync orchestration",
       "created_at": "2026-04-09T18:28:46.951857-04:00"
     },
@@ -4090,7 +4288,7 @@
       "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
       "to_change_id": "24537a38-e4d7-4c79-b32a-992daae2c00f",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLCReplicaServer read-only variant",
       "created_at": "2026-04-09T18:28:46.959840-04:00"
     },
@@ -4101,7 +4299,7 @@
       "from_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
       "to_change_id": "42a214aa-5edf-433c-9f33-26303040dd00",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Configuration options",
       "created_at": "2026-04-09T18:29:01.925259-04:00"
     },
@@ -4112,7 +4310,7 @@
       "from_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
       "to_change_id": "4b8da783-02bf-46ff-bb40-8b93295d7e2b",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Prometheus metrics",
       "created_at": "2026-04-09T18:29:01.932547-04:00"
     },
@@ -4123,7 +4321,7 @@
       "from_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
       "to_change_id": "dda0a24e-4eb2-4d81-95f6-376a848e9b65",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Docker deployment",
       "created_at": "2026-04-09T18:29:01.942397-04:00"
     },
@@ -4134,7 +4332,7 @@
       "from_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
       "to_change_id": "63cdc6f1-1a6c-4b82-969b-a950fd06868c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Unit tests for new components",
       "created_at": "2026-04-09T18:29:04.909864-04:00"
     },
@@ -4145,7 +4343,7 @@
       "from_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
       "to_change_id": "1bf644ff-fb1c-49a6-9404-df9994a2aece",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Integration tests for sync pipeline",
       "created_at": "2026-04-09T18:29:04.922562-04:00"
     },
@@ -4156,7 +4354,7 @@
       "from_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
       "to_change_id": "9dc0f90d-46a7-43c9-a88f-f42e6b4055e5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Architecture and deployment docs",
       "created_at": "2026-04-09T18:29:04.933268-04:00"
     },
@@ -4167,7 +4365,7 @@
       "from_change_id": "b9ac482c-e256-44e1-b857-490a674dcf96",
       "to_change_id": "b0b38523-ed64-42c1-bada-3110ed8d4bf5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "CLI UX plan created, rename to kaszlak completed",
       "created_at": "2026-04-09T20:16:03.549939-04:00"
     },
@@ -4178,7 +4376,7 @@
       "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
       "to_change_id": "6e6f36ec-7988-411b-b4d8-ef575a8c90a0",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLCSyncClient completed",
       "created_at": "2026-04-09T20:41:37.767126-04:00"
     },
@@ -4189,7 +4387,7 @@
       "from_change_id": "b9ac482c-e256-44e1-b857-490a674dcf96",
       "to_change_id": "635761bf-9f28-4e1f-b0df-fa5c3e88a235",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "All 5 phases of CLI UX plan completed",
       "created_at": "2026-04-09T20:56:55.990746-04:00"
     },
@@ -4200,7 +4398,7 @@
       "from_change_id": "4a86f855-40f2-45c3-be98-e903146f4f29",
       "to_change_id": "cd150981-ddfd-4e4c-9d2d-6ecd3100801c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLC spec compliance completed",
       "created_at": "2026-04-09T20:57:11.470833-04:00"
     },
@@ -4211,7 +4409,7 @@
       "from_change_id": "58888d8a-5416-4939-8ee7-d46e1014274a",
       "to_change_id": "cd150981-ddfd-4e4c-9d2d-6ecd3100801c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T20:57:11.485868-04:00"
     },
@@ -4222,7 +4420,7 @@
       "from_change_id": "511bf237-95e0-4fa2-88e2-193c7cda1ec7",
       "to_change_id": "cd150981-ddfd-4e4c-9d2d-6ecd3100801c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T20:57:11.498089-04:00"
     },
@@ -4233,7 +4431,7 @@
       "from_change_id": "ce302e89-0c06-4942-977c-4ef8df3f3164",
       "to_change_id": "fac36238-2e22-4acd-91e9-c1aa9af94d15",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T20:57:19.674702-04:00"
     },
@@ -4244,7 +4442,7 @@
       "from_change_id": "a02a4c8c-429e-43e0-b9be-c3b8207c6524",
       "to_change_id": "fac36238-2e22-4acd-91e9-c1aa9af94d15",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T20:57:19.681245-04:00"
     },
@@ -4255,7 +4453,7 @@
       "from_change_id": "98aee062-2087-492f-8184-a60654d391b0",
       "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:03:43.536980-04:00"
     },
@@ -4266,7 +4464,7 @@
       "from_change_id": "640fed4d-76d1-4119-8d24-bbed86311a1f",
       "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:03:43.549490-04:00"
     },
@@ -4277,7 +4475,7 @@
       "from_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
       "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:03:43.559848-04:00"
     },
@@ -4288,7 +4486,7 @@
       "from_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
       "to_change_id": "f9f9fc33-be51-491e-8ed2-40817e607647",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:03:43.568817-04:00"
     },
@@ -4299,7 +4497,7 @@
       "from_change_id": "111620d8-95ad-477b-9918-cfc526a6d116",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:51.974878-04:00"
     },
@@ -4310,7 +4508,7 @@
       "from_change_id": "099c2a4b-fa9a-40e7-a9b8-8184e9644083",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:51.984454-04:00"
     },
@@ -4321,7 +4519,7 @@
       "from_change_id": "7d14c6d3-ffb0-4322-b290-3270529941b7",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:51.994587-04:00"
     },
@@ -4332,7 +4530,7 @@
       "from_change_id": "42a214aa-5edf-433c-9f33-26303040dd00",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.002820-04:00"
     },
@@ -4343,7 +4541,7 @@
       "from_change_id": "4b8da783-02bf-46ff-bb40-8b93295d7e2b",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.012054-04:00"
     },
@@ -4354,7 +4552,7 @@
       "from_change_id": "dda0a24e-4eb2-4d81-95f6-376a848e9b65",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.020993-04:00"
     },
@@ -4365,7 +4563,7 @@
       "from_change_id": "63cdc6f1-1a6c-4b82-969b-a950fd06868c",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.029811-04:00"
     },
@@ -4376,7 +4574,7 @@
       "from_change_id": "1bf644ff-fb1c-49a6-9404-df9994a2aece",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.038332-04:00"
     },
@@ -4387,7 +4585,7 @@
       "from_change_id": "9dc0f90d-46a7-43c9-a88f-f42e6b4055e5",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.046150-04:00"
     },
@@ -4398,7 +4596,7 @@
       "from_change_id": "6e6f36ec-7988-411b-b4d8-ef575a8c90a0",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.054132-04:00"
     },
@@ -4409,7 +4607,7 @@
       "from_change_id": "4fbc8a34-7aaa-4b8f-82a1-9c584c65964a",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.062583-04:00"
     },
@@ -4420,7 +4618,7 @@
       "from_change_id": "b35f0172-4b96-40b2-a58a-1cd7aa1f64fe",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.072221-04:00"
     },
@@ -4431,7 +4629,7 @@
       "from_change_id": "1bc47922-6ad3-4e47-99be-cac81e5e2d4e",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.080635-04:00"
     },
@@ -4442,7 +4640,7 @@
       "from_change_id": "9e391446-d2ae-4d62-a7b8-26952797be91",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.088185-04:00"
     },
@@ -4453,7 +4651,7 @@
       "from_change_id": "682b3252-336e-44cd-a427-ccef52ff4ef5",
       "to_change_id": "b01f470f-d528-4fff-b3af-395b3ef262b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-09T21:04:52.095790-04:00"
     },
@@ -4464,7 +4662,7 @@
       "from_change_id": "2d42d388-0a1e-44a1-bbd7-404bd352e10a",
       "to_change_id": "70b21e3c-c90c-4451-b52f-a1e94353c1e4",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Research existing components",
       "created_at": "2026-04-09T21:16:57.261456-04:00"
     },
@@ -4475,7 +4673,7 @@
       "from_change_id": "2d42d388-0a1e-44a1-bbd7-404bd352e10a",
       "to_change_id": "328e1160-900d-49af-95bd-e112eb9b540d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Core infrastructure",
       "created_at": "2026-04-09T21:16:57.273200-04:00"
     },
@@ -4486,7 +4684,7 @@
       "from_change_id": "2d42d388-0a1e-44a1-bbd7-404bd352e10a",
       "to_change_id": "086de5d7-c82a-4b4e-adf0-b3191013802a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Event processing",
       "created_at": "2026-04-09T21:16:57.287016-04:00"
     },
@@ -4497,7 +4695,7 @@
       "from_change_id": "2d42d388-0a1e-44a1-bbd7-404bd352e10a",
       "to_change_id": "67aff759-c213-427d-95fd-c4fe24589978",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "XRPC endpoints",
       "created_at": "2026-04-09T21:16:57.298235-04:00"
     },
@@ -4508,7 +4706,7 @@
       "from_change_id": "2d42d388-0a1e-44a1-bbd7-404bd352e10a",
       "to_change_id": "a46a9d28-030f-4b7b-9011-66629ec90cdb",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "CLI/REPL",
       "created_at": "2026-04-09T21:16:57.308436-04:00"
     },
@@ -4519,7 +4717,7 @@
       "from_change_id": "2d42d388-0a1e-44a1-bbd7-404bd352e10a",
       "to_change_id": "890ef0f2-ace1-4726-a3a2-1290801ba396",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Testing & validation",
       "created_at": "2026-04-09T21:16:57.322844-04:00"
     },
@@ -4530,7 +4728,7 @@
       "from_change_id": "70b21e3c-c90c-4451-b52f-a1e94353c1e4",
       "to_change_id": "ee9aacb6-21c1-497f-b4d6-b512d45b9ab4",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T00:51:46.878292-04:00"
     },
@@ -4541,7 +4739,7 @@
       "from_change_id": "ee9aacb6-21c1-497f-b4d6-b512d45b9ab4",
       "to_change_id": "328e1160-900d-49af-95bd-e112eb9b540d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T00:51:46.885571-04:00"
     },
@@ -4552,7 +4750,7 @@
       "from_change_id": "11603c8a-3493-4707-b388-9c49195ef360",
       "to_change_id": "8cc7bdca-9b43-4975-8dcf-445d98a8d965",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:15:07.091788-04:00"
     },
@@ -4563,7 +4761,7 @@
       "from_change_id": "8cc7bdca-9b43-4975-8dcf-445d98a8d965",
       "to_change_id": "06a25a59-775d-4ec1-8453-68282937c506",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:32:15.651961-04:00"
     },
@@ -4574,7 +4772,7 @@
       "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
       "to_change_id": "16e13b96-1e26-4b48-9b53-a6f1862798cd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:50:51.166686-04:00"
     },
@@ -4585,7 +4783,7 @@
       "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
       "to_change_id": "d8b4a33c-05f5-4c69-b0f9-d66793393cb6",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:50:51.182793-04:00"
     },
@@ -4596,7 +4794,7 @@
       "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
       "to_change_id": "ee2cb17e-ad40-4cd2-b9d4-924243e5e92f",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:50:51.195067-04:00"
     },
@@ -4607,7 +4805,7 @@
       "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
       "to_change_id": "d72173ae-a6a1-49f9-9785-1db7c4155559",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:50:51.203845-04:00"
     },
@@ -4618,7 +4816,7 @@
       "from_change_id": "f4b312c4-c65c-45ec-a91a-138ce4f03abb",
       "to_change_id": "eb8c2e25-4436-4740-983c-d35acdb2ca6d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-10T01:50:51.212032-04:00"
     },
@@ -4629,7 +4827,7 @@
       "from_change_id": "40b754f9-ab91-4ea4-ad49-4e99b73ca824",
       "to_change_id": "c8fff111-fe1a-42e7-ac21-1f3f92cf0391",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 1 implementation",
       "created_at": "2026-04-11T17:03:45.883906-04:00"
     },
@@ -4640,7 +4838,7 @@
       "from_change_id": "40b754f9-ab91-4ea4-ad49-4e99b73ca824",
       "to_change_id": "59927914-5f91-48b7-b2eb-ba081c59e481",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 2 implementation",
       "created_at": "2026-04-11T17:03:45.891454-04:00"
     },
@@ -4651,7 +4849,7 @@
       "from_change_id": "40b754f9-ab91-4ea4-ad49-4e99b73ca824",
       "to_change_id": "a6bbfc91-e978-48f8-a410-28fc5c0f0cff",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 3 implementation",
       "created_at": "2026-04-11T17:03:45.898647-04:00"
     },
@@ -4662,7 +4860,7 @@
       "from_change_id": "40b754f9-ab91-4ea4-ad49-4e99b73ca824",
       "to_change_id": "f3b43dde-1c4e-42bf-b512-f9b19940f87e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 4 implementation",
       "created_at": "2026-04-11T17:03:45.905360-04:00"
     },
@@ -4673,7 +4871,7 @@
       "from_change_id": "40b754f9-ab91-4ea4-ad49-4e99b73ca824",
       "to_change_id": "624e26e7-0296-4b7a-8734-8d64a47a04f2",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 5 implementation",
       "created_at": "2026-04-11T17:03:45.912481-04:00"
     },
@@ -4684,7 +4882,7 @@
       "from_change_id": "40b754f9-ab91-4ea4-ad49-4e99b73ca824",
       "to_change_id": "f9cb128d-eb6e-425c-8666-cc9d5bde81ef",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 6 implementation",
       "created_at": "2026-04-11T17:03:45.919226-04:00"
     },
@@ -4695,7 +4893,7 @@
       "from_change_id": "6d9e5884-a0a8-431f-895c-142c58bd2eba",
       "to_change_id": "ccbaf243-3f39-49a3-ab1d-88fff9cfeb83",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation",
       "created_at": "2026-04-11T17:09:17.828764-04:00"
     },
@@ -4706,7 +4904,7 @@
       "from_change_id": "c8fff111-fe1a-42e7-ac21-1f3f92cf0391",
       "to_change_id": "8a7835c2-5786-4372-9b6a-067ef0994d23",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 1 complete",
       "created_at": "2026-04-11T17:14:31.082469-04:00"
     },
@@ -4717,7 +4915,7 @@
       "from_change_id": "59927914-5f91-48b7-b2eb-ba081c59e481",
       "to_change_id": "cd41cc34-6b5f-4d13-8860-88dc687a6692",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 2 complete",
       "created_at": "2026-04-11T17:14:31.093455-04:00"
     },
@@ -4728,7 +4926,7 @@
       "from_change_id": "a6bbfc91-e978-48f8-a410-28fc5c0f0cff",
       "to_change_id": "ce920def-272c-44e6-97be-53fb52a333e3",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 3 complete",
       "created_at": "2026-04-11T17:14:31.102521-04:00"
     },
@@ -4739,7 +4937,7 @@
       "from_change_id": "f3b43dde-1c4e-42bf-b512-f9b19940f87e",
       "to_change_id": "f6688b19-9978-4546-8e36-5caffb34c4e3",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 4 complete",
       "created_at": "2026-04-11T17:14:31.111697-04:00"
     },
@@ -4750,7 +4948,7 @@
       "from_change_id": "624e26e7-0296-4b7a-8734-8d64a47a04f2",
       "to_change_id": "698e3c6e-8909-447d-9ced-3df08b7653ed",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 5 complete",
       "created_at": "2026-04-11T17:14:31.119987-04:00"
     },
@@ -4761,7 +4959,7 @@
       "from_change_id": "f9cb128d-eb6e-425c-8666-cc9d5bde81ef",
       "to_change_id": "deadf3f2-37de-4995-8a96-f7db9d1eda49",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 6 complete",
       "created_at": "2026-04-11T17:14:31.127900-04:00"
     },
@@ -4772,7 +4970,7 @@
       "from_change_id": "dfac608b-6555-46f1-8260-95cca250b4d5",
       "to_change_id": "f7ccf96f-57cf-40bb-bf4e-2277365cd8bf",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation of Item 1 fix",
       "created_at": "2026-04-11T17:29:24.528574-04:00"
     },
@@ -4783,7 +4981,7 @@
       "from_change_id": "b18b8bda-9e68-4a7c-a1a3-3072206f9e73",
       "to_change_id": "dfac608b-6555-46f1-8260-95cca250b4d5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Item 0 complete; proceed to Item 1",
       "created_at": "2026-04-11T17:29:24.539975-04:00"
     },
@@ -4794,7 +4992,7 @@
       "from_change_id": "8f20a3fe-0078-480d-80bf-25a82f3a0b0a",
       "to_change_id": "b6fb0849-c90d-46cb-9dd3-a9963611afb8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation of Item 2",
       "created_at": "2026-04-11T17:31:09.668612-04:00"
     },
@@ -4805,7 +5003,7 @@
       "from_change_id": "f7ccf96f-57cf-40bb-bf4e-2277365cd8bf",
       "to_change_id": "8f20a3fe-0078-480d-80bf-25a82f3a0b0a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Item 1 complete; proceed to Item 2",
       "created_at": "2026-04-11T17:31:09.679052-04:00"
     },
@@ -4816,7 +5014,7 @@
       "from_change_id": "7b403dc2-b85e-42dd-b627-a1324bfea70d",
       "to_change_id": "afcbc6de-3271-4d06-bfb9-2eba9c87b7c6",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation of Item 3",
       "created_at": "2026-04-11T17:31:54.710828-04:00"
     },
@@ -4827,7 +5025,7 @@
       "from_change_id": "b6fb0849-c90d-46cb-9dd3-a9963611afb8",
       "to_change_id": "7b403dc2-b85e-42dd-b627-a1324bfea70d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Item 2 complete; proceed to Item 3",
       "created_at": "2026-04-11T17:31:54.720714-04:00"
     },
@@ -4838,7 +5036,7 @@
       "from_change_id": "534ba071-21a2-4fcc-9415-e27445a80377",
       "to_change_id": "cb6a282c-4338-4336-bd81-5e266e633970",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation of Item 5",
       "created_at": "2026-04-11T17:33:04.532922-04:00"
     },
@@ -4849,7 +5047,7 @@
       "from_change_id": "afcbc6de-3271-4d06-bfb9-2eba9c87b7c6",
       "to_change_id": "534ba071-21a2-4fcc-9415-e27445a80377",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Item 3 complete; proceed to Item 5",
       "created_at": "2026-04-11T17:33:04.547477-04:00"
     },
@@ -4860,7 +5058,7 @@
       "from_change_id": "f383a19b-772d-4da0-8bd2-bd2e0ab023dc",
       "to_change_id": "921b8933-a221-4f65-a057-5bef34cfa873",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation of Item 4",
       "created_at": "2026-04-11T17:35:23.692763-04:00"
     },
@@ -4871,7 +5069,7 @@
       "from_change_id": "cb6a282c-4338-4336-bd81-5e266e633970",
       "to_change_id": "f383a19b-772d-4da0-8bd2-bd2e0ab023dc",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Item 5 complete; proceed to Item 4",
       "created_at": "2026-04-11T17:35:23.702344-04:00"
     },
@@ -4882,7 +5080,7 @@
       "from_change_id": "921b8933-a221-4f65-a057-5bef34cfa873",
       "to_change_id": "9109c686-3869-4455-956c-affec8a6244f",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Refinement based on lexicon spec",
       "created_at": "2026-04-11T17:37:03.494415-04:00"
     },
@@ -4893,7 +5091,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "15ac0066-1167-45b3-9fe0-89a3241d89a2",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-11T19:32:06.673083-04:00"
     },
@@ -4904,7 +5102,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "d9d7375b-43ef-4b27-bba6-9abde6dc82bc",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-11T19:32:06.683247-04:00"
     },
@@ -4915,7 +5113,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "278ec3a0-f224-4446-97cb-1d8957e68537",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-11T19:32:06.692464-04:00"
     },
@@ -4926,7 +5124,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "87ac0368-5b22-4022-bad6-4ea395b7c4db",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-11T19:32:06.700393-04:00"
     },
@@ -4937,7 +5135,7 @@
       "from_change_id": "87ac0368-5b22-4022-bad6-4ea395b7c4db",
       "to_change_id": "102f2b39-f8ab-4eb7-b2d6-484dbe4ba334",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-11T19:32:06.707748-04:00"
     },
@@ -4948,7 +5146,7 @@
       "from_change_id": "102f2b39-f8ab-4eb7-b2d6-484dbe4ba334",
       "to_change_id": "133fae8a-0104-4cc2-b532-0ee85597444f",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-11T19:32:06.714622-04:00"
     },
@@ -4959,7 +5157,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "6f4d0c70-f48d-4204-86f5-48fa0772ddce",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-11T20:50:11.097410-04:00"
     },
@@ -4970,7 +5168,7 @@
       "from_change_id": "806fa338-4a32-45aa-8df4-07ae490d88e4",
       "to_change_id": "47ca791f-f343-4760-838e-5d7c1723547f",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T14:22:30.704138-04:00"
     },
@@ -4981,7 +5179,7 @@
       "from_change_id": "5bb040e4-4b36-41b0-8c12-58ea12b1c11c",
       "to_change_id": "343a55c0-6901-47c7-821b-aa8e76ac6594",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T14:22:50.596812-04:00"
     },
@@ -4992,7 +5190,7 @@
       "from_change_id": "47ca791f-f343-4760-838e-5d7c1723547f",
       "to_change_id": "cb01df7b-9ae9-4ffa-b19b-e56d748ffd7c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T14:23:03.254354-04:00"
     },
@@ -5003,7 +5201,7 @@
       "from_change_id": "343a55c0-6901-47c7-821b-aa8e76ac6594",
       "to_change_id": "cb01df7b-9ae9-4ffa-b19b-e56d748ffd7c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T14:23:03.264218-04:00"
     },
@@ -5014,7 +5212,7 @@
       "from_change_id": "e6eabed2-3ece-4763-8e25-494a94747fa8",
       "to_change_id": "795fd6d8-d19a-47eb-8e8e-cbe6de68d700",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 1 boundary enforcement implementation",
       "created_at": "2026-04-12T14:27:45.488664-04:00"
     },
@@ -5025,7 +5223,7 @@
       "from_change_id": "e6eabed2-3ece-4763-8e25-494a94747fa8",
       "to_change_id": "5c09b88f-a7e0-43fa-baf7-baaa5d81e23c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 2 transport route-pack decomposition",
       "created_at": "2026-04-12T14:27:45.498356-04:00"
     },
@@ -5036,7 +5234,7 @@
       "from_change_id": "e6eabed2-3ece-4763-8e25-494a94747fa8",
       "to_change_id": "af90aa53-1bae-42ed-9c4d-4db0d89f8bbf",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 3 XRPC app.bsky/chat namespace decomposition",
       "created_at": "2026-04-12T14:27:45.509909-04:00"
     },
@@ -5047,7 +5245,7 @@
       "from_change_id": "e6eabed2-3ece-4763-8e25-494a94747fa8",
       "to_change_id": "a1d89c93-594a-4dd5-873d-dd48ac9a7587",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 4/5 blob-range consolidation and framework surface cleanup",
       "created_at": "2026-04-12T14:27:45.518564-04:00"
     },
@@ -5058,7 +5256,7 @@
       "from_change_id": "795fd6d8-d19a-47eb-8e8e-cbe6de68d700",
       "to_change_id": "625bfaa2-4af3-4e8c-98f6-a0750729b3a7",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Boundary enforcement yielded passing boundary checks",
       "created_at": "2026-04-12T14:27:45.527798-04:00"
     },
@@ -5069,7 +5267,7 @@
       "from_change_id": "a1d89c93-594a-4dd5-873d-dd48ac9a7587",
       "to_change_id": "625bfaa2-4af3-4e8c-98f6-a0750729b3a7",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Consolidation preserved boundary gate pass",
       "created_at": "2026-04-12T14:27:45.536714-04:00"
     },
@@ -5080,7 +5278,7 @@
       "from_change_id": "e6eabed2-3ece-4763-8e25-494a94747fa8",
       "to_change_id": "3e015898-9223-422a-aa43-a3ba82b560d0",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Captured remaining validation blocker in current environment",
       "created_at": "2026-04-12T14:27:45.545664-04:00"
     },
@@ -5091,7 +5289,7 @@
       "from_change_id": "cb01df7b-9ae9-4ffa-b19b-e56d748ffd7c",
       "to_change_id": "e6eabed2-3ece-4763-8e25-494a94747fa8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T14:57:15.549161-04:00"
     },
@@ -5102,7 +5300,7 @@
       "from_change_id": "3cde4057-a5aa-48e5-bbcb-6b631893529d",
       "to_change_id": "e6eabed2-3ece-4763-8e25-494a94747fa8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T14:57:28.788488-04:00"
     },
@@ -5113,7 +5311,7 @@
       "from_change_id": "d8be7502-ae73-4962-8569-4aaa7edf19b2",
       "to_change_id": "659bf9bd-52d7-48f4-a764-cbd8edf94ca1",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "First implementation phase",
       "created_at": "2026-04-12T15:11:15.301770-04:00"
     },
@@ -5124,7 +5322,7 @@
       "from_change_id": "3cde4057-a5aa-48e5-bbcb-6b631893529d",
       "to_change_id": "cb01df7b-9ae9-4ffa-b19b-e56d748ffd7c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T15:19:33.973571-04:00"
     },
@@ -5135,7 +5333,7 @@
       "from_change_id": "11f1ed2d-03f0-4a34-92f0-4a20f881f3f7",
       "to_change_id": "cb01df7b-9ae9-4ffa-b19b-e56d748ffd7c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T15:19:33.982333-04:00"
     },
@@ -5146,7 +5344,7 @@
       "from_change_id": "448c8e69-0188-4307-92e4-5e2996bfdf9e",
       "to_change_id": "cb01df7b-9ae9-4ffa-b19b-e56d748ffd7c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T15:19:33.990277-04:00"
     },
@@ -5157,7 +5355,7 @@
       "from_change_id": "11f1ed2d-03f0-4a34-92f0-4a20f881f3f7",
       "to_change_id": "0331fbe4-7883-496d-b911-6eb9ca1c8e62",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T15:19:55.822776-04:00"
     },
@@ -5168,7 +5366,7 @@
       "from_change_id": "448c8e69-0188-4307-92e4-5e2996bfdf9e",
       "to_change_id": "0331fbe4-7883-496d-b911-6eb9ca1c8e62",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T15:19:55.831034-04:00"
     },
@@ -5179,7 +5377,7 @@
       "from_change_id": "d8be7502-ae73-4962-8569-4aaa7edf19b2",
       "to_change_id": "8e2baab7-46df-41ed-b1ae-9f7becc5a159",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "User rename request",
       "created_at": "2026-04-12T15:28:35.883064-04:00"
     },
@@ -5190,7 +5388,7 @@
       "from_change_id": "659bf9bd-52d7-48f4-a764-cbd8edf94ca1",
       "to_change_id": "008d7abf-df13-4726-a9b6-10990c6a0d75",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 1 implementation complete",
       "created_at": "2026-04-12T15:29:34.186259-04:00"
     },
@@ -5201,7 +5399,7 @@
       "from_change_id": "8e2baab7-46df-41ed-b1ae-9f7becc5a159",
       "to_change_id": "008d7abf-df13-4726-a9b6-10990c6a0d75",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Rename included in outcome",
       "created_at": "2026-04-12T15:29:34.195849-04:00"
     },
@@ -5212,7 +5410,7 @@
       "from_change_id": "659bf9bd-52d7-48f4-a764-cbd8edf94ca1",
       "to_change_id": "99161dbb-ee38-4925-bee3-da6535f95d5a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Core types + DB schema committed",
       "created_at": "2026-04-12T15:32:02.562201-04:00"
     },
@@ -5223,7 +5421,7 @@
       "from_change_id": "659bf9bd-52d7-48f4-a764-cbd8edf94ca1",
       "to_change_id": "7fb324a3-4f98-4b20-9663-78e67329bc49",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Ingest engine committed",
       "created_at": "2026-04-12T15:32:15.448186-04:00"
     },
@@ -5234,7 +5432,7 @@
       "from_change_id": "659bf9bd-52d7-48f4-a764-cbd8edf94ca1",
       "to_change_id": "73128c92-043b-4fcb-9d30-cd01bac42c76",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Backfill plane committed",
       "created_at": "2026-04-12T15:32:36.875860-04:00"
     },
@@ -5245,7 +5443,7 @@
       "from_change_id": "659bf9bd-52d7-48f4-a764-cbd8edf94ca1",
       "to_change_id": "c290f090-2d89-4bbd-a7a1-9c2533938f24",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Indexers + relevance committed",
       "created_at": "2026-04-12T15:32:55.295028-04:00"
     },
@@ -5256,7 +5454,7 @@
       "from_change_id": "8e2baab7-46df-41ed-b1ae-9f7becc5a159",
       "to_change_id": "762f02a3-d1b6-4d17-934e-fea6d3529808",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Syrena binary committed",
       "created_at": "2026-04-12T15:33:12.212198-04:00"
     },
@@ -5267,7 +5465,7 @@
       "from_change_id": "008d7abf-df13-4726-a9b6-10990c6a0d75",
       "to_change_id": "206766cf-35b7-4221-a401-ceb28dc483ba",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Build system committed",
       "created_at": "2026-04-12T15:33:22.562504-04:00"
     },
@@ -5278,7 +5476,7 @@
       "from_change_id": "008d7abf-df13-4726-a9b6-10990c6a0d75",
       "to_change_id": "f8652e23-e24b-471a-b7f9-ea19242a5a6d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Tests committed",
       "created_at": "2026-04-12T15:33:40.796371-04:00"
     },
@@ -5289,7 +5487,7 @@
       "from_change_id": "008d7abf-df13-4726-a9b6-10990c6a0d75",
       "to_change_id": "129be44e-0862-46fc-90e4-e63319f3f39a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Graph synced",
       "created_at": "2026-04-12T15:33:55.773615-04:00"
     },
@@ -5300,7 +5498,7 @@
       "from_change_id": "ecaac352-0817-408d-a9aa-bc4a342268f2",
       "to_change_id": "4f500522-7c56-42ad-86ea-eca9d145adf3",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Dockerfile must ship all four binaries",
       "created_at": "2026-04-12T15:53:57.976940-04:00"
     },
@@ -5311,7 +5509,7 @@
       "from_change_id": "ecaac352-0817-408d-a9aa-bc4a342268f2",
       "to_change_id": "369ec892-beec-49bf-b123-d1380acd2c94",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Compose wires campagnola/kaszlak/zuk/syrena together",
       "created_at": "2026-04-12T15:53:57.985951-04:00"
     },
@@ -5322,7 +5520,7 @@
       "from_change_id": "369ec892-beec-49bf-b123-d1380acd2c94",
       "to_change_id": "32aded75-37af-4267-8b6e-6bc24c991bb5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Implementation committed",
       "created_at": "2026-04-12T15:54:25.808036-04:00"
     },
@@ -5333,7 +5531,7 @@
       "from_change_id": "64d29966-dd66-4f9f-974c-d19cc99465ab",
       "to_change_id": "71ff3bce-4084-43ab-875b-224f1e9e28b5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Goal investigation revealed e2e compose issues",
       "created_at": "2026-04-12T17:13:12.552500-04:00"
     },
@@ -5344,7 +5542,7 @@
       "from_change_id": "64d29966-dd66-4f9f-974c-d19cc99465ab",
       "to_change_id": "e6fa4c47-455e-4ae6-8521-ad9fdfe8755b",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Goal investigation also checked local-network compose",
       "created_at": "2026-04-12T17:13:12.573069-04:00"
     },
@@ -5355,7 +5553,7 @@
       "from_change_id": "71ff3bce-4084-43ab-875b-224f1e9e28b5",
       "to_change_id": "ea8a57e5-8559-4126-9d0f-ee7402a09b52",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Issue observed led to fix decision",
       "created_at": "2026-04-12T17:13:12.663667-04:00"
     },
@@ -5366,7 +5564,7 @@
       "from_change_id": "e6fa4c47-455e-4ae6-8521-ad9fdfe8755b",
       "to_change_id": "ea8a57e5-8559-4126-9d0f-ee7402a09b52",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Local-network compose is OK, need to build image",
       "created_at": "2026-04-12T17:13:12.775236-04:00"
     },
@@ -5377,7 +5575,7 @@
       "from_change_id": "ea8a57e5-8559-4126-9d0f-ee7402a09b52",
       "to_change_id": "b46495d2-a2a6-4cc4-a8d4-092b059b14f8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Decision led to fixing compose file",
       "created_at": "2026-04-12T17:16:08.014789-04:00"
     },
@@ -5388,7 +5586,7 @@
       "from_change_id": "b46495d2-a2a6-4cc4-a8d4-092b059b14f8",
       "to_change_id": "010719b8-6b73-43bb-b948-d3bcec5b4bfc",
       "edge_type": "blocks",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Compose fix done, but image build has new issue",
       "created_at": "2026-04-12T17:19:38.326917-04:00"
     },
@@ -5399,7 +5597,7 @@
       "from_change_id": "42df68c1-2c21-45d2-a249-7d491e3060b5",
       "to_change_id": "196ed973-c55d-419a-ab5b-5d8b910193c7",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "CFHost issue needs GNUstep alternative",
       "created_at": "2026-04-12T17:19:48.415917-04:00"
     },
@@ -5410,7 +5608,7 @@
       "from_change_id": "196ed973-c55d-419a-ab5b-5d8b910193c7",
       "to_change_id": "dcf7b12a-6601-4735-bf66-790875694509",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Decision implemented",
       "created_at": "2026-04-12T17:22:53.204082-04:00"
     },
@@ -5421,7 +5619,7 @@
       "from_change_id": "dc6d57d4-6d2c-4227-904e-70d8e6566e64",
       "to_change_id": "3c1365b1-6e57-4738-86da-88d4b3e2f819",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T22:22:46.839145-04:00"
     },
@@ -5432,7 +5630,7 @@
       "from_change_id": "3c1365b1-6e57-4738-86da-88d4b3e2f819",
       "to_change_id": "e61e51a7-c8e7-4339-8434-f439b7ceb2ab",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T22:22:46.851466-04:00"
     },
@@ -5443,7 +5641,7 @@
       "from_change_id": "e61e51a7-c8e7-4339-8434-f439b7ceb2ab",
       "to_change_id": "c4a4b3da-0685-480e-a2f1-1ce1fa481831",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T22:22:46.862973-04:00"
     },
@@ -5454,7 +5652,7 @@
       "from_change_id": "c4a4b3da-0685-480e-a2f1-1ce1fa481831",
       "to_change_id": "59861db7-7e9e-4ac0-9ec6-0cef368041d6",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-12T22:22:46.871242-04:00"
     },
@@ -5465,7 +5663,7 @@
       "from_change_id": "64d29966-dd66-4f9f-974c-d19cc99465ab",
       "to_change_id": "58d02d47-f74e-4286-9fd0-26210afd61f0",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Continued work on same goal in new session",
       "created_at": "2026-04-13T01:20:11.453227-04:00"
     },
@@ -5476,7 +5674,7 @@
       "from_change_id": "59861db7-7e9e-4ac0-9ec6-0cef368041d6",
       "to_change_id": "58d02d47-f74e-4286-9fd0-26210afd61f0",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Prior observation about secp256k1 became input to this review",
       "created_at": "2026-04-13T01:20:11.461348-04:00"
     },
@@ -5487,7 +5685,7 @@
       "from_change_id": "58d02d47-f74e-4286-9fd0-26210afd61f0",
       "to_change_id": "57300173-51ae-493d-a533-68afa1e6cc5c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix applied",
       "created_at": "2026-04-13T01:20:50.908679-04:00"
     },
@@ -5498,7 +5696,7 @@
       "from_change_id": "58d02d47-f74e-4286-9fd0-26210afd61f0",
       "to_change_id": "d9d60692-fdc9-41ff-a605-53028299c1a9",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix applied",
       "created_at": "2026-04-13T01:20:50.916394-04:00"
     },
@@ -5509,7 +5707,7 @@
       "from_change_id": "58d02d47-f74e-4286-9fd0-26210afd61f0",
       "to_change_id": "7ec0fb47-5771-48bc-b365-c9e6a151e0ec",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix applied",
       "created_at": "2026-04-13T01:20:50.923656-04:00"
     },
@@ -5520,7 +5718,7 @@
       "from_change_id": "58d02d47-f74e-4286-9fd0-26210afd61f0",
       "to_change_id": "61aa45f8-533a-48ff-b6d3-b46d20707342",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix applied",
       "created_at": "2026-04-13T01:20:50.930914-04:00"
     },
@@ -5531,7 +5729,7 @@
       "from_change_id": "ecaac352-0817-408d-a9aa-bc4a342268f2",
       "to_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Docker boot failures discovered while testing local-network compose",
       "created_at": "2026-04-13T10:50:54.933291-04:00"
     },
@@ -5542,7 +5740,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "6b664d1a-219f-42a1-bdfc-d10c2f8918ce",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Root cause: PLC healthcheck timeout",
       "created_at": "2026-04-13T10:50:54.943630-04:00"
     },
@@ -5553,7 +5751,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "56b34728-67ef-4ffd-9ba6-01ee20e803ff",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Root cause: PDS serve command missing at runtime",
       "created_at": "2026-04-13T10:50:54.951067-04:00"
     },
@@ -5564,7 +5762,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "c3ffeac3-5e18-48e8-b59d-03803093b8c2",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Root cause: XRPC endpoints returning 404",
       "created_at": "2026-04-13T10:50:54.958771-04:00"
     },
@@ -5575,7 +5773,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "c80fbc12-70f4-4cc9-b959-730f3d2e5750",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Root cause: PDS runtime selector crash",
       "created_at": "2026-04-13T10:50:54.967476-04:00"
     },
@@ -5586,7 +5784,7 @@
       "from_change_id": "6b664d1a-219f-42a1-bdfc-d10c2f8918ce",
       "to_change_id": "b6bef1c7-c492-41a1-96e1-a9514e220583",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix for GSMimeParser HTTP parsing failure",
       "created_at": "2026-04-13T10:50:54.975107-04:00"
     },
@@ -5597,7 +5795,7 @@
       "from_change_id": "56b34728-67ef-4ffd-9ba6-01ee20e803ff",
       "to_change_id": "405030e1-e81b-4f8e-bb82-4b6e0ca3e0df",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix for command registration stripping",
       "created_at": "2026-04-13T10:50:54.983546-04:00"
     },
@@ -5608,7 +5806,7 @@
       "from_change_id": "c3ffeac3-5e18-48e8-b59d-03803093b8c2",
       "to_change_id": "1206db66-7082-4b6a-86b6-aec64d847760",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix for route precedence bug",
       "created_at": "2026-04-13T10:50:54.991008-04:00"
     },
@@ -5619,7 +5817,7 @@
       "from_change_id": "c80fbc12-70f4-4cc9-b959-730f3d2e5750",
       "to_change_id": "43a64171-5325-4072-97bd-ee78ddf1b5ac",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fix for category method stripping",
       "created_at": "2026-04-13T10:50:54.999147-04:00"
     },
@@ -5630,7 +5828,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "User requested consistent CLI UX across all binaries",
       "created_at": "2026-04-13T10:50:55.006708-04:00"
     },
@@ -5641,7 +5839,7 @@
       "from_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "to_change_id": "c940a14e-da97-4256-9eba-2c53d45606fd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "kaszlak normalization",
       "created_at": "2026-04-13T10:50:55.014695-04:00"
     },
@@ -5652,7 +5850,7 @@
       "from_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "to_change_id": "cbfcd5f7-32c5-4e45-af32-4c1a6915b987",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "campagnola normalization",
       "created_at": "2026-04-13T10:50:55.023185-04:00"
     },
@@ -5663,7 +5861,7 @@
       "from_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "to_change_id": "e07730ce-0a35-4f15-b854-f76ebe59c3d8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "zuk normalization",
       "created_at": "2026-04-13T10:50:55.033197-04:00"
     },
@@ -5674,7 +5872,7 @@
       "from_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "to_change_id": "8eb26458-0189-4bda-8249-4a21d138fcfa",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "syrena normalization",
       "created_at": "2026-04-13T10:50:55.040584-04:00"
     },
@@ -5685,7 +5883,7 @@
       "from_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "to_change_id": "ddb90736-91fd-4190-8b68-8ce3ba87691c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Docs and scripts migration",
       "created_at": "2026-04-13T10:50:55.048389-04:00"
     },
@@ -5696,7 +5894,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "bf310537-70c7-4bd9-8f68-5d9be0c6c5b8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Docker linker failure for kaszlak PLC symbols",
       "created_at": "2026-04-13T10:50:55.055997-04:00"
     },
@@ -5707,7 +5905,7 @@
       "from_change_id": "b6bef1c7-c492-41a1-96e1-a9514e220583",
       "to_change_id": "074b61df-fde2-42c6-929b-7b06e3797839",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Parser fix resolved PLC healthcheck",
       "created_at": "2026-04-13T10:50:55.063947-04:00"
     },
@@ -5718,7 +5916,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "c2055985-145b-4879-8153-027f3d48b65c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "All runtime blockers resolved",
       "created_at": "2026-04-13T10:50:55.072234-04:00"
     },
@@ -5729,7 +5927,7 @@
       "from_change_id": "ddb90736-91fd-4190-8b68-8ce3ba87691c",
       "to_change_id": "0c8bc470-b6cc-4628-a574-2104c2a983fd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Test script validates strict command-first contract",
       "created_at": "2026-04-13T10:50:55.082464-04:00"
     },
@@ -5740,7 +5938,7 @@
       "from_change_id": "c940a14e-da97-4256-9eba-2c53d45606fd",
       "to_change_id": "18306020-0259-4d42-9005-2e1b0da2608b",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Branding normalized in CLI dispatcher and commands",
       "created_at": "2026-04-13T10:50:55.090069-04:00"
     },
@@ -5751,7 +5949,7 @@
       "from_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "to_change_id": "18306020-0259-4d42-9005-2e1b0da2608b",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Branding is part of CLI UX normalization",
       "created_at": "2026-04-13T10:50:55.097628-04:00"
     },
@@ -5762,7 +5960,7 @@
       "from_change_id": "64d29966-dd66-4f9f-974c-d19cc99465ab",
       "to_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Continuation of Docker debug work with CLI normalization added",
       "created_at": "2026-04-13T10:51:03.883418-04:00"
     },
@@ -5773,7 +5971,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "1288f1bc-d4fb-481d-ba0d-3546cd098e59",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Remaining issue after Docker fix",
       "created_at": "2026-04-13T10:51:03.968910-04:00"
     },
@@ -5784,7 +5982,7 @@
       "from_change_id": "fd5588d8-3d9d-426c-8540-877bcfd61de8",
       "to_change_id": "ca190577-d8c8-4e42-806c-12360add8eea",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Remaining issue after Docker fix",
       "created_at": "2026-04-13T10:51:03.976903-04:00"
     },
@@ -5795,7 +5993,7 @@
       "from_change_id": "b6bef1c7-c492-41a1-96e1-a9514e220583",
       "to_change_id": "bab3d43c-9014-4b14-97b4-602c8850f78e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Parser fix committed",
       "created_at": "2026-04-13T10:57:42.026225-04:00"
     },
@@ -5806,7 +6004,7 @@
       "from_change_id": "1206db66-7082-4b6a-86b6-aec64d847760",
       "to_change_id": "bab3d43c-9014-4b14-97b4-602c8850f78e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Route fix committed",
       "created_at": "2026-04-13T10:57:42.034169-04:00"
     },
@@ -5817,7 +6015,7 @@
       "from_change_id": "43a64171-5325-4072-97bd-ee78ddf1b5ac",
       "to_change_id": "bab3d43c-9014-4b14-97b4-602c8850f78e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Category fix committed",
       "created_at": "2026-04-13T10:57:42.041620-04:00"
     },
@@ -5828,7 +6026,7 @@
       "from_change_id": "bf310537-70c7-4bd9-8f68-5d9be0c6c5b8",
       "to_change_id": "bab3d43c-9014-4b14-97b4-602c8850f78e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "CMake fix committed",
       "created_at": "2026-04-13T10:57:42.050385-04:00"
     },
@@ -5839,7 +6037,7 @@
       "from_change_id": "c940a14e-da97-4256-9eba-2c53d45606fd",
       "to_change_id": "dddc035e-61d5-43be-8988-6e95bcf4b3dd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "kaszlak normalization committed",
       "created_at": "2026-04-13T10:58:10.244335-04:00"
     },
@@ -5850,7 +6048,7 @@
       "from_change_id": "cbfcd5f7-32c5-4e45-af32-4c1a6915b987",
       "to_change_id": "dddc035e-61d5-43be-8988-6e95bcf4b3dd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "campagnola normalization committed",
       "created_at": "2026-04-13T10:58:10.254916-04:00"
     },
@@ -5861,7 +6059,7 @@
       "from_change_id": "e07730ce-0a35-4f15-b854-f76ebe59c3d8",
       "to_change_id": "dddc035e-61d5-43be-8988-6e95bcf4b3dd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "zuk normalization committed",
       "created_at": "2026-04-13T10:58:10.264491-04:00"
     },
@@ -5872,7 +6070,7 @@
       "from_change_id": "8eb26458-0189-4bda-8249-4a21d138fcfa",
       "to_change_id": "dddc035e-61d5-43be-8988-6e95bcf4b3dd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "syrena normalization committed",
       "created_at": "2026-04-13T10:58:10.274104-04:00"
     },
@@ -5883,7 +6081,7 @@
       "from_change_id": "405030e1-e81b-4f8e-bb82-4b6e0ca3e0df",
       "to_change_id": "dddc035e-61d5-43be-8988-6e95bcf4b3dd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Direct class registration committed",
       "created_at": "2026-04-13T10:58:10.284368-04:00"
     },
@@ -5894,7 +6092,7 @@
       "from_change_id": "c56a0aae-3697-4861-b58d-387717a3a5da",
       "to_change_id": "dddc035e-61d5-43be-8988-6e95bcf4b3dd",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "CLI UX decision implemented",
       "created_at": "2026-04-13T10:58:10.293790-04:00"
     },
@@ -5905,7 +6103,7 @@
       "from_change_id": "ddb90736-91fd-4190-8b68-8ce3ba87691c",
       "to_change_id": "36727ccb-2c43-49c4-a4e0-2765c2292565",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Docs and scripts migration committed",
       "created_at": "2026-04-13T10:59:23.800579-04:00"
     },
@@ -5916,7 +6114,7 @@
       "from_change_id": "1288f1bc-d4fb-481d-ba0d-3546cd098e59",
       "to_change_id": "36727ccb-2c43-49c4-a4e0-2765c2292565",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Zuk root route handler added",
       "created_at": "2026-04-13T10:59:23.808318-04:00"
     },
@@ -5927,7 +6125,7 @@
       "from_change_id": "ca190577-d8c8-4e42-806c-12360add8eea",
       "to_change_id": "36727ccb-2c43-49c4-a4e0-2765c2292565",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Syrena root route handler added (PLC asset fix in PLCServer)",
       "created_at": "2026-04-13T10:59:23.816044-04:00"
     },
@@ -5938,7 +6136,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "ee14c1e9-bb85-40e8-96b9-a19f921a6360",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Browser-based validation prerequisite for UI rollout",
       "created_at": "2026-04-13T19:21:29.323171-04:00"
     },
@@ -5949,7 +6147,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "26db00e8-e091-4313-9917-7b21c6cadc19",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Shared serving refactor required by all services",
       "created_at": "2026-04-13T19:21:29.333175-04:00"
     },
@@ -5960,7 +6158,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "74f2fb0a-1da2-4e67-a694-292b1eb5f85a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PDS must remove wildcard catch-all risk",
       "created_at": "2026-04-13T19:21:29.342396-04:00"
     },
@@ -5971,7 +6169,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "d6cfef8a-1ac2-4342-85b8-d2626a35bbd4",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Relay needs dedicated UI routes",
       "created_at": "2026-04-13T19:21:29.349839-04:00"
     },
@@ -5982,7 +6180,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "1be6863a-da88-4181-8ebc-8a1f17601500",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "AppView needs dedicated UI routes",
       "created_at": "2026-04-13T19:21:29.356579-04:00"
     },
@@ -5993,7 +6191,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "a90f5e0f-9320-493e-b84b-a84296a55221",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLC needs dedicated /ui routes before dynamic DID paths",
       "created_at": "2026-04-13T19:21:29.363838-04:00"
     },
@@ -6004,7 +6202,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "115ecd3d-b3a3-48b5-a451-4e49b0312e57",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Frontend must be profile-aware",
       "created_at": "2026-04-13T19:21:29.370547-04:00"
     },
@@ -6015,7 +6213,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "a492f99e-defc-48c1-9874-cf057c67db48",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Validation pass required before closure",
       "created_at": "2026-04-13T19:21:29.376836-04:00"
     },
@@ -6026,7 +6224,7 @@
       "from_change_id": "c3ffeac3-5e18-48e8-b59d-03803093b8c2",
       "to_change_id": "74f2fb0a-1da2-4e67-a694-292b1eb5f85a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Route hijack finding addressed by PDS cutover",
       "created_at": "2026-04-13T19:21:29.382911-04:00"
     },
@@ -6037,7 +6235,7 @@
       "from_change_id": "1288f1bc-d4fb-481d-ba0d-3546cd098e59",
       "to_change_id": "d6cfef8a-1ac2-4342-85b8-d2626a35bbd4",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Relay root behavior tracked into relay UI integration",
       "created_at": "2026-04-13T19:21:29.388929-04:00"
     },
@@ -6048,7 +6246,7 @@
       "from_change_id": "ca190577-d8c8-4e42-806c-12360add8eea",
       "to_change_id": "a90f5e0f-9320-493e-b84b-a84296a55221",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLC old UI issue tracked into PLC /ui integration",
       "created_at": "2026-04-13T19:21:29.394767-04:00"
     },
@@ -6059,7 +6257,7 @@
       "from_change_id": "ee14c1e9-bb85-40e8-96b9-a19f921a6360",
       "to_change_id": "259bbf69-6d8f-4c23-8a81-b762b2e6375d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Smoke test discovered environment blocker",
       "created_at": "2026-04-13T19:26:58.940719-04:00"
     },
@@ -6070,7 +6268,7 @@
       "from_change_id": "259bbf69-6d8f-4c23-8a81-b762b2e6375d",
       "to_change_id": "a492f99e-defc-48c1-9874-cf057c67db48",
       "edge_type": "blocks",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Validation matrix browser leg blocked until MCP path is writable",
       "created_at": "2026-04-13T19:26:58.950395-04:00"
     },
@@ -6081,7 +6279,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "New ops UX initiative builds on PDS/Relay/PLC UI work completed",
       "created_at": "2026-04-13T20:00:04.496672-04:00"
     },
@@ -6092,7 +6290,7 @@
       "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
       "to_change_id": "03ed1494-324f-44d8-9b55-7a1c21ba07d5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 2 builds on existing UI upstreams controller; backend mutation endpoints needed",
       "created_at": "2026-04-13T20:00:53.956626-04:00"
     },
@@ -6103,7 +6301,7 @@
       "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
       "to_change_id": "20c7820a-d646-4623-ace8-8bad68e965fa",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 1: PDS operations app with guarded writes",
       "created_at": "2026-04-13T20:00:59.485938-04:00"
     },
@@ -6114,7 +6312,7 @@
       "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
       "to_change_id": "733a00e6-5582-4e7e-a241-b67742711c03",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 3: AppView operations app",
       "created_at": "2026-04-13T20:00:59.801209-04:00"
     },
@@ -6125,7 +6323,7 @@
       "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
       "to_change_id": "afe44759-a82f-4b78-a280-c56fc9a816e5",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Phase 4: PLC operations app",
       "created_at": "2026-04-13T20:00:59.825302-04:00"
     },
@@ -6136,7 +6334,7 @@
       "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
       "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "All 4 phases complete with new endpoints across PDS, Relay, AppView, and PLC",
       "created_at": "2026-04-13T22:00:47.847146-04:00"
     },
@@ -6147,7 +6345,7 @@
       "from_change_id": "03ed1494-324f-44d8-9b55-7a1c21ba07d5",
       "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Relay mutation endpoints implemented",
       "created_at": "2026-04-13T22:00:50.775294-04:00"
     },
@@ -6158,7 +6356,7 @@
       "from_change_id": "20c7820a-d646-4623-ace8-8bad68e965fa",
       "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PDS guarded writes pattern added",
       "created_at": "2026-04-13T22:00:51.187632-04:00"
     },
@@ -6169,7 +6367,7 @@
       "from_change_id": "733a00e6-5582-4e7e-a241-b67742711c03",
       "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "AppView backfill/r/ingest operations implemented",
       "created_at": "2026-04-13T22:00:51.311614-04:00"
     },
@@ -6180,7 +6378,7 @@
       "from_change_id": "afe44759-a82f-4b78-a280-c56fc9a816e5",
       "to_change_id": "1371c239-407a-4c66-9ff0-eda7738031f8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLC per-service auth middleware implemented",
       "created_at": "2026-04-13T22:00:51.340061-04:00"
     },
@@ -6191,7 +6389,7 @@
       "from_change_id": "c2a32604-24f4-4c8d-9751-59e5be924572",
       "to_change_id": "6d66b86d-9041-4513-94bb-39c7aa68cb5a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Follow-up to complete E2E demo with working record creation",
       "created_at": "2026-04-13T22:30:20.947026-04:00"
     },
@@ -6202,7 +6400,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "dc7a9fad-d40e-4847-8ef6-99d62bd10a15",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T17:46:11.208989-04:00"
     },
@@ -6213,7 +6411,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "3e7c41a8-2eef-4a0b-87da-0a55fbedafdc",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T17:46:11.227253-04:00"
     },
@@ -6224,7 +6422,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "86efa00c-53ef-4d68-b2ea-03f4c70aca91",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T17:46:11.243939-04:00"
     },
@@ -6235,7 +6433,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "a1518f79-6d26-407b-b973-35c9c9af8dd8",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T17:46:11.258362-04:00"
     },
@@ -6246,7 +6444,7 @@
       "from_change_id": "9e398e24-89f4-4241-aef0-67fac453a4fb",
       "to_change_id": "7a857804-6dd3-44b2-847a-3d7231be8223",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T21:30:51.274677-04:00"
     },
@@ -6257,7 +6455,7 @@
       "from_change_id": "9e398e24-89f4-4241-aef0-67fac453a4fb",
       "to_change_id": "4b1c16a1-dc61-43d8-8345-3c6f921d7935",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T21:30:51.289385-04:00"
     },
@@ -6268,7 +6466,7 @@
       "from_change_id": "9e398e24-89f4-4241-aef0-67fac453a4fb",
       "to_change_id": "703b7419-5789-432a-b3b0-6240107bd084",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T21:30:51.300471-04:00"
     },
@@ -6279,7 +6477,7 @@
       "from_change_id": "9e398e24-89f4-4241-aef0-67fac453a4fb",
       "to_change_id": "2b1caf42-18d1-4263-85e4-315ee8d039b3",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T21:30:51.309698-04:00"
     },
@@ -6290,7 +6488,7 @@
       "from_change_id": "9e398e24-89f4-4241-aef0-67fac453a4fb",
       "to_change_id": "b38a9037-878f-4d9a-abfa-f6dc4b973159",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-14T21:30:58.078391-04:00"
     },
@@ -6301,7 +6499,7 @@
       "from_change_id": "3a743801-ecbc-4db5-b37e-d6f7cd508947",
       "to_change_id": "ce1da8f4-5523-4c6d-8c49-0cd3528534df",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Root cause directly leads to targeted import fix",
       "created_at": "2026-04-14T22:15:06.925728-04:00"
     },
@@ -6312,7 +6510,7 @@
       "from_change_id": "ee09c756-ff12-4701-801c-dc08a6ef77ac",
       "to_change_id": "232d5a2d-3e86-4a60-9eaf-eb44c18aca13",
       "edge_type": "chosen",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Legacy ATProtoPDS alias removed to prevent path aliasing and keep build graph canonical on Garazyk.",
       "created_at": "2026-04-14T22:37:46.379626-04:00"
     },
@@ -6323,7 +6521,7 @@
       "from_change_id": "ee09c756-ff12-4701-801c-dc08a6ef77ac",
       "to_change_id": "1241efcc-ca2b-4c53-a802-e73b451140ca",
       "edge_type": "rejected",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Keeping alias path retained duplicate-source ambiguity and was incompatible with recovery clean-baseline goals.",
       "created_at": "2026-04-14T22:37:54.416141-04:00"
     },
@@ -6334,7 +6532,7 @@
       "from_change_id": "153446d2-ba57-4498-9216-89f860ffd756",
       "to_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Build-gate success enables proceeding to remaining runtime and Docker/compose validation.",
       "created_at": "2026-04-14T22:38:37.677625-04:00"
     },
@@ -6345,7 +6543,7 @@
       "from_change_id": "fb4aa52c-4656-4452-9480-908c4c877dc9",
       "to_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Partial matrix completion requires a final comprehensive validation pass before closure.",
       "created_at": "2026-04-14T22:38:46.606476-04:00"
     },
@@ -6356,7 +6554,7 @@
       "from_change_id": "93b509c8-e573-477e-b4c3-9089b394fb2d",
       "to_change_id": "23c6bb85-2e7d-4b45-b852-2e4b8ab6de16",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Alias-path observation drove removal and canonicalization action.",
       "created_at": "2026-04-14T22:38:52.415008-04:00"
     },
@@ -6367,7 +6565,7 @@
       "from_change_id": "23c6bb85-2e7d-4b45-b852-2e4b8ab6de16",
       "to_change_id": "153446d2-ba57-4498-9216-89f860ffd756",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Canonicalized paths and dedupe exclusions resolved duplicate-link build failures.",
       "created_at": "2026-04-14T22:38:56.122299-04:00"
     },
@@ -6378,7 +6576,7 @@
       "from_change_id": "ee09c756-ff12-4701-801c-dc08a6ef77ac",
       "to_change_id": "23c6bb85-2e7d-4b45-b852-2e4b8ab6de16",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Clean-baseline recovery decision required applying the symlink removal/canonicalization action.",
       "created_at": "2026-04-14T22:39:01.989826-04:00"
     },
@@ -6389,7 +6587,7 @@
       "from_change_id": "d90867d7-e093-47ef-9911-57b92d4f2552",
       "to_change_id": "f01f72ea-0cf7-4122-b4ae-ee02c3715d17",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Deferral decision required explicit status correction to remove active-work signal.",
       "created_at": "2026-04-14T22:39:24.485561-04:00"
     },
@@ -6400,7 +6598,7 @@
       "from_change_id": "d90867d7-e093-47ef-9911-57b92d4f2552",
       "to_change_id": "7a857804-6dd3-44b2-847a-3d7231be8223",
       "edge_type": "blocks",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Datetime implementation remains blocked until dedicated follow-up after recovery matrix completion.",
       "created_at": "2026-04-14T22:39:26.603071-04:00"
     },
@@ -6411,7 +6609,7 @@
       "from_change_id": "ce1da8f4-5523-4c6d-8c49-0cd3528534df",
       "to_change_id": "153446d2-ba57-4498-9216-89f860ffd756",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PDSLogger import fix removed unresolved logging symbols that previously blocked successful build completion.",
       "created_at": "2026-04-14T22:39:36.928061-04:00"
     },
@@ -6422,7 +6620,7 @@
       "from_change_id": "04327a7b-9d58-48f5-a634-c9c4d7212094",
       "to_change_id": "fd1fc28d-8a70-4d2b-9c88-a39b517ca488",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Observed missing Linux symbols drove link-closure adjustment in CMake.",
       "created_at": "2026-04-14T22:53:56.973320-04:00"
     },
@@ -6433,7 +6631,7 @@
       "from_change_id": "fd1fc28d-8a70-4d2b-9c88-a39b517ca488",
       "to_change_id": "17215925-bea7-4b0a-bb9f-1af9f3bd75df",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Core-link closure fix unblocked Docker runtime build and compose demo validation.",
       "created_at": "2026-04-14T22:53:59.311034-04:00"
     },
@@ -6444,7 +6642,7 @@
       "from_change_id": "aca190b8-b79c-46fe-a7aa-f0ce17de3831",
       "to_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "edge_type": "blocks",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Full matrix cannot be marked complete while AllTests runtime exits 139 with unresolved suite failures.",
       "created_at": "2026-04-14T22:54:03.816195-04:00"
     },
@@ -6455,7 +6653,7 @@
       "from_change_id": "aa777a66-f6cd-4009-966e-84725bdb989b",
       "to_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "edge_type": "blocks",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Unsandboxed reproduction confirms runtime test gate is still a hard blocker for full matrix closure.",
       "created_at": "2026-04-14T23:01:18.895910-04:00"
     },
@@ -6466,7 +6664,7 @@
       "from_change_id": "aa777a66-f6cd-4009-966e-84725bdb989b",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Reproduced failures define the next triage action scope.",
       "created_at": "2026-04-14T23:01:22.580357-04:00"
     },
@@ -6477,7 +6675,7 @@
       "from_change_id": "6cbf492a-0803-476f-ac08-87b119224b46",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.718752-04:00"
     },
@@ -6488,7 +6686,7 @@
       "from_change_id": "bc79edb6-651b-4a8f-8e5a-5deb24e3dc5d",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.754025-04:00"
     },
@@ -6499,7 +6697,7 @@
       "from_change_id": "d9a6eb26-960b-4828-a36b-073e51f8b1cd",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.770790-04:00"
     },
@@ -6510,7 +6708,7 @@
       "from_change_id": "bd54e1d3-0239-4aba-956a-a01f428bcf19",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.791592-04:00"
     },
@@ -6521,7 +6719,7 @@
       "from_change_id": "0fb9c8df-59d9-4dd1-a44f-3964cec0038e",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.807108-04:00"
     },
@@ -6532,7 +6730,7 @@
       "from_change_id": "c32ca63b-e1d8-4acb-baa5-731d6b399362",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.829610-04:00"
     },
@@ -6543,7 +6741,7 @@
       "from_change_id": "0e28bb48-1646-4fcf-a954-8c2614cc7121",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.858015-04:00"
     },
@@ -6554,7 +6752,7 @@
       "from_change_id": "e7966c60-6e1d-4007-84e9-706987e681c0",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.891371-04:00"
     },
@@ -6565,7 +6763,7 @@
       "from_change_id": "ebb19e92-28cb-4dfd-9913-fcee8c9cf05e",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Class-scoped first failure captured before source changes.",
       "created_at": "2026-04-15T03:24:31.907170-04:00"
     },
@@ -6576,7 +6774,7 @@
       "from_change_id": "6cfeb485-b87e-4a99-b34e-6cb9b27080c2",
       "to_change_id": "d03b8043-d154-4eb8-a844-efa93a371fb1",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.788485-04:00"
     },
@@ -6587,7 +6785,7 @@
       "from_change_id": "c2928e93-bd3f-4c2f-aea4-fd8eea09a6e7",
       "to_change_id": "281ac113-1775-4f73-be41-c986c8f8007d",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.795804-04:00"
     },
@@ -6598,7 +6796,7 @@
       "from_change_id": "441c578a-0c2e-4a34-859f-05e99b02dfa9",
       "to_change_id": "e1080a9b-c49c-474c-8942-c20c0c9a3eec",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.802385-04:00"
     },
@@ -6609,7 +6807,7 @@
       "from_change_id": "a67b56c6-c147-4edd-aa4d-15d0d0f96eaf",
       "to_change_id": "27d71a0f-9c31-40f8-a95b-66718d05b519",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.811560-04:00"
     },
@@ -6620,7 +6818,7 @@
       "from_change_id": "ac56a925-9ae2-484b-8e8d-a6cb06f73867",
       "to_change_id": "7cb98b53-91ea-4ca1-8c2b-2c053a9b66c1",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.818475-04:00"
     },
@@ -6631,7 +6829,7 @@
       "from_change_id": "d03b8043-d154-4eb8-a844-efa93a371fb1",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.824849-04:00"
     },
@@ -6642,7 +6840,7 @@
       "from_change_id": "281ac113-1775-4f73-be41-c986c8f8007d",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.831337-04:00"
     },
@@ -6653,7 +6851,7 @@
       "from_change_id": "e1080a9b-c49c-474c-8942-c20c0c9a3eec",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.837720-04:00"
     },
@@ -6664,7 +6862,7 @@
       "from_change_id": "27d71a0f-9c31-40f8-a95b-66718d05b519",
       "to_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.844221-04:00"
     },
@@ -6675,7 +6873,7 @@
       "from_change_id": "7cb98b53-91ea-4ca1-8c2b-2c053a9b66c1",
       "to_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.850681-04:00"
     },
@@ -6686,7 +6884,7 @@
       "from_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "to_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.857049-04:00"
     },
@@ -6697,7 +6895,7 @@
       "from_change_id": "4b6a37dd-0315-4db2-aa50-f9233eca105a",
       "to_change_id": "244f501c-7aa4-42c3-8e46-2c943da2c257",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:27:50.863164-04:00"
     },
@@ -6708,7 +6906,7 @@
       "from_change_id": "14109b23-0a65-4ccd-a571-f4e49a63b1ea",
       "to_change_id": "7c36face-8594-4b04-a5fe-25fc03c13ef1",
       "edge_type": "rejected",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:28:17.548303-04:00"
     },
@@ -6719,7 +6917,7 @@
       "from_change_id": "14109b23-0a65-4ccd-a571-f4e49a63b1ea",
       "to_change_id": "4e7a695f-8c1b-42ab-8fb4-c0d75f09e332",
       "edge_type": "chosen",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:28:17.556902-04:00"
     },
@@ -6730,7 +6928,7 @@
       "from_change_id": "4e7a695f-8c1b-42ab-8fb4-c0d75f09e332",
       "to_change_id": "e275fa1b-2676-4f14-81bf-994484381497",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-15T07:28:17.563878-04:00"
     },
@@ -6741,7 +6939,7 @@
       "from_change_id": "244f501c-7aa4-42c3-8e46-2c943da2c257",
       "to_change_id": "f48a8527-c301-4a26-a730-dc17c7df9682",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Post-recovery baseline enabled skill-hardening follow-up work.",
       "created_at": "2026-04-15T10:24:08.762763-04:00"
     },
@@ -6752,7 +6950,7 @@
       "from_change_id": "f48a8527-c301-4a26-a730-dc17c7df9682",
       "to_change_id": "813e609b-5f00-48da-8ca2-3f3fb648c3f2",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Doc placement and header-contract scope required scanner policy/rule updates.",
       "created_at": "2026-04-15T10:24:12.579985-04:00"
     },
@@ -6763,7 +6961,7 @@
       "from_change_id": "813e609b-5f00-48da-8ca2-3f3fb648c3f2",
       "to_change_id": "ff3aa990-794e-4eb6-9ae8-6d9bae98636e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Skill update lands only when rewrite-skill PR merges to main.",
       "created_at": "2026-04-15T10:24:14.572795-04:00"
     },
@@ -6774,7 +6972,7 @@
       "from_change_id": "ff3aa990-794e-4eb6-9ae8-6d9bae98636e",
       "to_change_id": "0ce57b7a-1600-4184-aed7-c01966c7d253",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Cappuccino hardening branch starts only after rewrite-skill merge completes.",
       "created_at": "2026-04-15T10:24:16.526091-04:00"
     },
@@ -6785,7 +6983,7 @@
       "from_change_id": "0ce57b7a-1600-4184-aed7-c01966c7d253",
       "to_change_id": "a9fb9e7f-6175-46ae-81b6-9533e3074399",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "First UI hardening slice consumes the existing pending warning/error cleanup node.",
       "created_at": "2026-04-15T10:24:18.584143-04:00"
     },
@@ -6796,7 +6994,7 @@
       "from_change_id": "6402546b-5980-4978-b00a-632ab5a03a7e",
       "to_change_id": "42b1a3fa-d715-4d02-9f38-1ad0052ef7e2",
       "edge_type": "requires",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "The docs refresh depends on first auditing canonical entrypoints and stale references.",
       "created_at": "2026-04-15T10:34:21.340167-04:00"
     },
@@ -6807,7 +7005,7 @@
       "from_change_id": "42b1a3fa-d715-4d02-9f38-1ad0052ef7e2",
       "to_change_id": "865dc1b2-2446-4331-8b24-5439ff628857",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "The audit determines which docs need rewriting and crosslinks.",
       "created_at": "2026-04-15T10:34:21.378657-04:00"
     },
@@ -6818,7 +7016,7 @@
       "from_change_id": "0ce57b7a-1600-4184-aed7-c01966c7d253",
       "to_change_id": "8fb1e131-9da7-4954-b3d5-937113e8b23e",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Started active UI hardening slice with concrete blocker discovery.",
       "created_at": "2026-04-15T10:41:23.572582-04:00"
     },
@@ -6829,7 +7027,7 @@
       "from_change_id": "8fb1e131-9da7-4954-b3d5-937113e8b23e",
       "to_change_id": "1f9f918a-b9ba-42e5-a0a2-c7db48b85e23",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Observed blockers drove the targeted controller fixes.",
       "created_at": "2026-04-15T10:41:23.590638-04:00"
     },
@@ -6840,7 +7038,7 @@
       "from_change_id": "1f9f918a-b9ba-42e5-a0a2-c7db48b85e23",
       "to_change_id": "14369e9f-f4a1-405c-b577-d2bdfe5b71ad",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Applying controller fixes restored build/test gates for this slice.",
       "created_at": "2026-04-15T10:41:23.605585-04:00"
     },
@@ -6851,7 +7049,7 @@
       "from_change_id": "865dc1b2-2446-4331-8b24-5439ff628857",
       "to_change_id": "6decc691-f021-4572-aee6-7e665d706b45",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "The rewrite action produced the final docs refresh outcome.",
       "created_at": "2026-04-15T10:42:25.859193-04:00"
     },
@@ -6862,7 +7060,7 @@
       "from_change_id": "afe44759-a82f-4b78-a280-c56fc9a816e5",
       "to_change_id": "5d1ab055-e007-4296-a4e4-29f48ebaeb1a",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLC operations phase surfaced a transport contract mismatch between UI helper and PLC controllers.",
       "created_at": "2026-04-15T15:22:52.792420-04:00"
     },
@@ -6873,7 +7071,7 @@
       "from_change_id": "5d1ab055-e007-4296-a4e4-29f48ebaeb1a",
       "to_change_id": "7541bf67-15db-43ce-91f9-30798b4bc023",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Observation required adapter fix to restore PLC UI data flow.",
       "created_at": "2026-04-15T15:22:55.111379-04:00"
     },
@@ -6884,7 +7082,7 @@
       "from_change_id": "afe44759-a82f-4b78-a280-c56fc9a816e5",
       "to_change_id": "add282f4-1257-4399-8c68-5d27f18a3735",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "PLC timeline needed metadata-aware log path and entry normalization for accurate rendering.",
       "created_at": "2026-04-15T15:23:00.204314-04:00"
     },
@@ -6895,7 +7093,7 @@
       "from_change_id": "733a00e6-5582-4e7e-a241-b67742711c03",
       "to_change_id": "a5230765-477c-4d91-b3e4-9da8819da8c0",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "AppView phase exposed queue payload shape and encoded DID contract drift.",
       "created_at": "2026-04-15T15:23:04.319190-04:00"
     },
@@ -6906,7 +7104,7 @@
       "from_change_id": "a5230765-477c-4d91-b3e4-9da8819da8c0",
       "to_change_id": "03494ec6-f650-4fd2-ada0-6969117eeb5c",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Queue contract mismatch led directly to UI/controller and route extraction alignment changes.",
       "created_at": "2026-04-15T15:23:06.861380-04:00"
     },
@@ -6917,7 +7115,7 @@
       "from_change_id": "7541bf67-15db-43ce-91f9-30798b4bc023",
       "to_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fetch adapter fix restores payload delivery into PLC views and unblocks successful UI state rendering.",
       "created_at": "2026-04-15T15:23:11.339952-04:00"
     },
@@ -6928,7 +7126,7 @@
       "from_change_id": "03494ec6-f650-4fd2-ada0-6969117eeb5c",
       "to_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "AppView queue/retry contract alignment enables queue tables and repo controls to operate on real backend data.",
       "created_at": "2026-04-15T15:23:13.721841-04:00"
     },
@@ -6939,7 +7137,7 @@
       "from_change_id": "add282f4-1257-4399-8c68-5d27f18a3735",
       "to_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Timeline normalization against audit-log metadata enables real timestamped PLC operation rendering.",
       "created_at": "2026-04-15T15:23:16.475380-04:00"
     },
@@ -6950,7 +7148,7 @@
       "from_change_id": "69100b03-fe44-4dc6-8514-5486d08c67ec",
       "to_change_id": "638d7a51-83dc-47b5-b98a-81db36033955",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Once stale runtime was identified, compose image rebuild/recreate became the immediate remediation.",
       "created_at": "2026-04-15T15:40:45.142516-04:00"
     },
@@ -6961,7 +7159,7 @@
       "from_change_id": "638d7a51-83dc-47b5-b98a-81db36033955",
       "to_change_id": "c4f0c491-deb3-4377-9abd-7c3c40a3bcee",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Fresh runtime restored route registration and live data responses.",
       "created_at": "2026-04-15T15:40:45.150946-04:00"
     },
@@ -6972,7 +7170,7 @@
       "from_change_id": "1fba13c5-8f00-45c4-ae02-222fa5da6f9c",
       "to_change_id": "c4f0c491-deb3-4377-9abd-7c3c40a3bcee",
       "edge_type": "enables",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Cache controls and favicon fallback reduce stale-load and console noise while validating live wiring.",
       "created_at": "2026-04-15T15:40:45.169353-04:00"
     },
@@ -6983,7 +7181,7 @@
       "from_change_id": "83e37120-1e4d-4b51-a983-b3acd50137d3",
       "to_change_id": "c4f0c491-deb3-4377-9abd-7c3c40a3bcee",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "UI wiring hardening was validated end-to-end after runtime refresh and shell hardening.",
       "created_at": "2026-04-15T15:40:45.179828-04:00"
     },
@@ -6994,7 +7192,7 @@
       "from_change_id": "85a0a8a5-9908-4752-9954-423d068cc7c2",
       "to_change_id": "6e719dce-49a6-4b40-a7d5-6e270ecac493",
       "edge_type": "requires",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Cappuccino UI goal required shell/data-path hardening to stop runtime crashes and stale profile routing",
       "created_at": "2026-04-15T23:04:55.067222-04:00"
     },
@@ -7005,7 +7203,7 @@
       "from_change_id": "b0699a23-0d7c-4800-858a-e58ef6ac0e5d",
       "to_change_id": "6e719dce-49a6-4b40-a7d5-6e270ecac493",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Proxy/WebSocket discrepancy informed guardrails and verification scope",
       "created_at": "2026-04-15T23:04:55.078125-04:00"
     },
@@ -7016,64 +7214,97 @@
       "from_change_id": "6e719dce-49a6-4b40-a7d5-6e270ecac493",
       "to_change_id": "8b89e7f7-7bca-4bbb-b9a8-71dfae90d120",
       "edge_type": "leads_to",
-      "weight": 1,
+      "weight": 1.0,
       "rationale": "Hardening changes produced clean asset/status/API behavior across all service hosts",
       "created_at": "2026-04-15T23:04:55.086235-04:00"
     },
     {
       "id": 317,
       "from_node_id": 317,
-      "to_node_id": 318,
+      "to_node_id": 320,
       "from_change_id": "8b89e7f7-7bca-4bbb-b9a8-71dfae90d120",
-      "to_change_id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "to_change_id": "2cfdf40b-0469-465c-b7a8-fbfa87161e47",
       "edge_type": "leads_to",
-      "weight": 1,
-      "rationale": "Decision needed on robustness approach",
-      "created_at": "2026-04-16T00:20:00.000000-04:00"
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:20:45.078576-04:00"
     },
     {
       "id": 318,
-      "from_node_id": 318,
-      "to_node_id": 319,
-      "from_change_id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-      "to_change_id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7",
+      "from_node_id": 135,
+      "to_node_id": 321,
+      "from_change_id": "ec7f734c-24b6-4815-a957-90a6f539d4f3",
+      "to_change_id": "ac6cd041-660e-4550-90ea-375b4a215aa0",
       "edge_type": "leads_to",
-      "weight": 1,
-      "rationale": "Proceed with polling fallback + proxy investigation",
-      "created_at": "2026-04-16T00:20:00.000000-04:00"
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:20:45.088102-04:00"
     },
     {
       "id": 319,
-      "from_node_id": 319,
-      "to_node_id": 320,
-      "from_change_id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7",
-      "to_change_id": "c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8",
+      "from_node_id": 160,
+      "to_node_id": 322,
+      "from_change_id": "008d7abf-df13-4726-a9b6-10990c6a0d75",
+      "to_change_id": "5763cb1f-6c97-410c-b6e6-40aafafe405d",
       "edge_type": "leads_to",
-      "weight": 1,
-      "rationale": "Implement polling fallback for immediate UX relief",
-      "created_at": "2026-04-16T00:20:00.000000-04:00"
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:20:45.095341-04:00"
     },
     {
       "id": 320,
-      "from_node_id": 319,
-      "to_node_id": 321,
-      "from_change_id": "b2c3d4e5-6f7a-8b9c-0d1e-2f3a4b5c6d7",
-      "to_change_id": "d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9",
+      "from_node_id": 322,
+      "to_node_id": 323,
+      "from_change_id": "5763cb1f-6c97-410c-b6e6-40aafafe405d",
+      "to_change_id": "cd549b46-0d65-4187-8abe-99fccae23dc4",
       "edge_type": "leads_to",
-      "weight": 1,
-      "rationale": "Investigate proxy compatibility as follow-up",
-      "created_at": "2026-04-16T00:20:00.000000-04:00"
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:20:45.103330-04:00"
     },
     {
       "id": 321,
-      "from_node_id": 320,
-      "to_node_id": 322,
-      "from_change_id": "c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8",
-      "to_change_id": "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0",
+      "from_node_id": 322,
+      "to_node_id": 324,
+      "from_change_id": "5763cb1f-6c97-410c-b6e6-40aafafe405d",
+      "to_change_id": "26d7b402-1658-44c6-8ce5-edf07c0c9c13",
       "edge_type": "leads_to",
-      "weight": 1,
-      "rationale": "Polling fallback complete and verified",
-      "created_at": "2026-04-16T00:20:00.000000-04:00"
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:20:45.110782-04:00"
+    },
+    {
+      "id": 322,
+      "from_node_id": 323,
+      "to_node_id": 325,
+      "from_change_id": "cd549b46-0d65-4187-8abe-99fccae23dc4",
+      "to_change_id": "147a9d25-8685-41a0-b933-abf690f1f312",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:20:45.118846-04:00"
+    },
+    {
+      "id": 323,
+      "from_node_id": 324,
+      "to_node_id": 325,
+      "from_change_id": "26d7b402-1658-44c6-8ce5-edf07c0c9c13",
+      "to_change_id": "147a9d25-8685-41a0-b933-abf690f1f312",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:20:45.126110-04:00"
+    },
+    {
+      "id": 324,
+      "from_node_id": 325,
+      "to_node_id": 326,
+      "from_change_id": "147a9d25-8685-41a0-b933-abf690f1f312",
+      "to_change_id": "bf634293-3351-458f-ada7-e76bdf3eedf2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-16T17:32:28.439296-04:00"
     }
   ],
   "documents": [
@@ -7378,22 +7609,6 @@
       "description": "Docker compose and config scratchpad",
       "description_source": "manual",
       "attached_at": "2026-04-10T01:51:17.778618-04:00",
-      "attached_by": null,
-      "detached_at": null
-    },
-    {
-      "id": 20,
-      "change_id": "orbstack-ws-investigation-1776309693229",
-      "node_id": 321,
-      "node_change_id": "d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9",
-      "content_hash": "placeholder",
-      "original_filename": "2026-04-16-orbstack-websocket-proxy.md",
-      "storage_filename": "2026-04-16-orbstack-websocket-proxy.md",
-      "mime_type": "text/markdown",
-      "file_size": 4500,
-      "description": "OrbStack WebSocket proxy investigation and polling fallback solution",
-      "description_source": "manual",
-      "attached_at": "2026-04-16T03:21:33.229Z",
       "attached_by": null,
       "detached_at": null
     }

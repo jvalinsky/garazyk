@@ -1,27 +1,19 @@
 [
   {
-    "hash": "scratchpad-mo0wxi1u",
-    "short_hash": "scratchpad",
-    "author": "Investigation",
-    "date": "2026-04-16-04:00",
-    "message": "scratchpad: OrbStack WebSocket proxy investigation - polling fallback as solution",
-    "files_changed": 1
+    "hash": "c74f4d8bff03494f19433102e935263b4bebc3ad",
+    "short_hash": "c74f4d8",
+    "author": "Security Bot",
+    "date": "2026-04-16T17:19:37-04:00",
+    "message": "feat(appview): enable standalone materialization and XRPC query support\n\n- Add records and blocks tables to AppViewDatabase schema.\n- Implement materialization of firehose events in AppViewIngestEngine.\n- Refactor Feed, Actor, Graph, and Notification services to use PDSQueryDatabase protocol.\n- Register app.bsky.* XRPC query routes in AppViewRuntime via AppViewXRpcRoutePack.\n- Fix standalone AppView (syrena) build with corrected include paths.",
+    "files_changed": 27
   },
   {
-    "hash": "9ca665285711e180f28a91da818b083c5b60d0d2",
-    "short_hash": "9ca6652",
+    "hash": "0856a2d53b7afe46791762da5d8aa70d0537e4d7",
+    "short_hash": "0856a2d",
     "author": "Security Bot",
-    "date": "2026-04-15T23:07:59-04:00",
-    "message": "Harden Cappuccino UI wiring across local-network services",
-    "files_changed": 13
-  },
-  {
-    "hash": "8822c762d96a584d5107a5109fb6fadfd88f18b0",
-    "short_hash": "8822c76",
-    "author": "Security Bot",
-    "date": "2026-04-15T10:30:54-04:00",
-    "message": "deciduous: close rewrite merge gate and activate UI handoff",
-    "files_changed": 2
+    "date": "2026-04-15T23:43:22-04:00",
+    "message": "feat: add XRPC endpoints to relay (listRepos, getHead, getRepo, subscribeRepos)\n\n- Create RelayXrpcRoutePack for XRPC registration on relay\n- Implement listRepos using RelayRepoStateManager\n- Implement getHead and getRepo endpoints\n- Wire up WebSocket subscribeRepos on relay\n- Add repoStateManager to RelayDownstreamHandler to track repo state\n- State updates on commit events from upstream\n\nNote: listRepos returns [] because relay has no upstream data yet.\nsubscribeRepos returns 101 on localhost, 404 on OrbStack HTTPS (known issue).",
+    "files_changed": 5
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",
