@@ -17,13 +17,12 @@ relays:
   - "https://bsky.network"
 
 # PLC Directory Configuration
-# For local development, set plc_url to a local PLC server or use "mock" for testing
+# For local development, set plc_url to a local PLC server
 plc:
   # URL of the PLC directory server
   # - Use "https://plc.directory" for production
-  # - Use "http://localhost:5002" for local PLC server
-  # - Use "mock" to skip actual PLC operations (generates stubbed DIDs)
-  url: "mock"
+  # - Use "http://localhost:2582" for local PLC server
+  url: "http://localhost:2582"
 
   # Operation retry settings
   retry_count: 3
@@ -31,10 +30,6 @@ plc:
 
 # Debug Settings
 debug:
-  # When true, skips all PLC directory operations
-  # Generates did:plc: identifiers locally without registration
-  skip_plc_operations: true
-
   # When true, logs verbose debug information
   verbose_logging: true
 

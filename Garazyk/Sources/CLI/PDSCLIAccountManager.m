@@ -330,16 +330,12 @@
     // 4. Generate DID (Derive from genesis data)
     NSString *did = [PLCOperation calculateDIDForData:opData];
     
+    // 5. POST genesis operation to PLC Server
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: config.plcURL;
-    BOOL shouldPostToPlc = (!config.debugSkipPlcOperations &&
-                            plcUrl.length > 0 &&
-                            ![plcUrl isEqualToString:@"mock"]);
-    if (!shouldPostToPlc) {
-        return did;
+    if (plcUrl.length == 0 || [plcUrl isEqualToString:@"mock"]) {
+        plcUrl = @"http://127.0.0.1:2582";
     }
-
-    // 5. POST genesis operation to PLC Server
     NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
     
     // Encode and sign the operation

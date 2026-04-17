@@ -78,8 +78,5 @@
     "ip_window": 60,
     "blob_limit": 1000,
     "blob_window": 3600
-  },
-  "debug": {
-    "skip_plc_operations": false
   }
 }

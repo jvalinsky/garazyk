@@ -65,7 +65,6 @@ fi
 
 echo "Starting PDS server on port 2583..."
 export PDS_PLC_URL="http://127.0.0.1:2582"
-export PDS_DEBUG_SKIP_PLC="0"
 export PDS_ISSUER="http://localhost:2583"
 export PDS_LOG_LEVEL="debug"
 # Note: we pass a fake config file to ensure CLI arg for data-dir is respected

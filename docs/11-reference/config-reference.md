@@ -53,7 +53,6 @@ Related env overrides:
 
 | Key | Purpose |
 | --- | --- |
-| `debug.skip_plc_operations` | bypass PLC work for local or test scenarios |
 | `debug.verbose_logging` | verbose debug logging toggle |
 | `debug.in_memory_databases` | use in-memory DBs |
 | `debug.reset_on_startup` | reset state at startup |
@@ -152,9 +151,7 @@ This `appview` block is the current loader shape. Older camelCase examples such 
 
 | Runtime default | Why it exists | Production implication |
 | --- | --- | --- |
-| `plc.url = "mock"` | easy local and test bootstrap | never use this in production |
 | `invite_code_required = NO` | friction-free local setup | do not copy into production docs |
-| `debug.skip_plc_operations = YES` | local iteration convenience | disable in production |
 | `server.port = 8080` in config object | class-level default before CLI overrides | `kaszlak serve` still defaults to 2583 |
 
 Use runtime defaults to understand the code. Use deployment docs to understand the safe operational baseline.

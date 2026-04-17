@@ -144,7 +144,6 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _plcReplicaBindAddress = nil;
     _plcReplicaDataDir = nil;
 
-    _debugSkipPlcOperations = YES;
     _debugVerboseLogging = YES;
     _debugInMemoryDatabases = NO;
     _debugResetOnStartup = NO;
@@ -412,10 +411,6 @@ static BOOL PDSConfigRunningUnderTests(void) {
   NSDictionary *debug = config[@"debug"];
   if (debug) {
     // Use objectForKey: != nil checks instead of if(value) since @NO is falsy
-    if (debug[@"skip_plc_operations"] != nil)
-      _debugSkipPlcOperations =
-          [self boolFromEnv:@"PDS_DEBUG_SKIP_PLC"
-                    default:[debug[@"skip_plc_operations"] boolValue]];
     if (debug[@"verbose_logging"] != nil)
       _debugVerboseLogging =
           [self boolFromEnv:@"PDS_DEBUG_VERBOSE"
@@ -432,14 +427,6 @@ static BOOL PDSConfigRunningUnderTests(void) {
       _useNewRepositoryImplementation =
           [self boolFromEnv:@"PDS_USE_NEW_REPO"
                     default:[debug[@"use_new_repository"] boolValue]];
-  }
-
-  // Allow env overrides even when debug section is missing.
-  NSString *envSkipPlc =
-      [[NSProcessInfo processInfo] environment][@"PDS_DEBUG_SKIP_PLC"];
-  if (envSkipPlc.length > 0) {
-    _debugSkipPlcOperations = [self boolFromEnv:@"PDS_DEBUG_SKIP_PLC"
-                                        default:_debugSkipPlcOperations];
   }
 
   NSDictionary *database = config[@"database"];

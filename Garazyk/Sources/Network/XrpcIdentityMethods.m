@@ -525,7 +525,7 @@
         }
         opToSubmit[@"did"] = did;
 
-        if (configuration.debugSkipPlcOperations || [configuration.plcURL isEqualToString:@"mock"]) {
+        if ([configuration.plcURL isEqualToString:@"mock"]) {
             PDS_LOG_INFO(@"Skipping PLC submission (mock mode) for DID %@", did);
             response.statusCode = HttpStatusOK;
             [response setJsonBody:@{}];
@@ -687,7 +687,7 @@
 
             // 3. Identity Update / Validation
             PDS_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
-            if (configuration.debugSkipPlcOperations || [configuration.plcURL isEqualToString:@"mock"]) {
+            if ([configuration.plcURL isEqualToString:@"mock"]) {
                 PDS_LOG_DB_DEBUG(@"Skipping PLC handle update (mock mode) for DID %@", did);
             } else if ([did hasPrefix:@"did:plc:"]) {
                 NSString *plcUrl = configuration.plcURL;
