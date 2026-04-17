@@ -30,8 +30,8 @@ typedef struct MSTWalkerStatusDone {
  */
 typedef struct MSTWalkerStatusProgress {
     BOOL done;
-    MSTNodeEntry * _Nullable curr;
-    MSTNode * _Nullable walking;
+    __unsafe_unretained MSTNodeEntry * _Nullable curr;
+    __unsafe_unretained MSTNode * _Nullable walking;
     NSUInteger index;
     BOOL isTreeNode;
 } MSTWalkerStatusProgress;
