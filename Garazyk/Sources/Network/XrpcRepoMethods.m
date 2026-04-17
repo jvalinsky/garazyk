@@ -19,6 +19,8 @@
 #import "Auth/JWT.h"
 #import "App/PDSConfiguration.h"
 #import "Repository/CAR.h"
+#import "Lexicon/ATProtoLexiconValidator.h"
+#import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Repository/CBOR.h"
 #import "Repository/RepoCommit.h"
 #import "Core/ATProtoCBORSerialization.h"
@@ -718,6 +720,67 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         }
 
         NSArray<PDSDatabaseRecord *> *records = importRepoExtractRecords(commit.dataCID.bytes, did, reader, commit.rev ?: @"");
+
+        // Lexicon validation for imported records
+        // Per spec: records must conform to their declared lexicon type
+        ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
+            initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+
+        NSMutableArray<PDSDatabaseRecord *> *validatedRecords = [NSMutableArray arrayWithCapacity:records.count];
+        for (PDSDatabaseRecord *record in records) {
+            // Parse record value to extract $type
+            NSData *valueData = [record.value dataUsingEncoding:NSUTF8StringEncoding];
+            if (!valueData) {
+                PDS_LOG_DEBUG(@"[importRepo] Skipping record with invalid value encoding: %@", record.uri);
+                continue;
+            }
+
+            NSError *parseError = nil;
+            NSDictionary *recordValue = [NSJSONSerialization JSONObjectWithData:valueData
+                                                                        options:0
+                                                                          error:&parseError];
+            if (!recordValue || ![recordValue isKindOfClass:[NSDictionary class]]) {
+                PDS_LOG_DEBUG(@"[importRepo] Skipping record with invalid JSON: %@ - %@",
+                              record.uri, parseError.localizedDescription);
+                continue;
+            }
+
+            NSString *recordType = recordValue[@"$type"];
+            if (![recordType isKindOfClass:[NSString class]]) {
+                // No $type - this may be a raw CBOR-style record without lexicon
+                // Accept it but log warning
+                PDS_LOG_DEBUG(@"[importRepo] Record missing $type: %@", record.uri);
+                [validatedRecords addObject:record];
+                continue;
+            }
+
+            // Validate record against lexicon
+            // Use ATProtoValidationModeOptimistic: validate if lexicon known, accept if unknown
+            NSError *validationError = nil;
+            if (![validator validateRecord:recordValue
+                                 collection:recordType
+                                       mode:ATProtoValidationModeOptimistic
+                                      error:&validationError]) {
+                PDS_LOG_WARN(@"[importRepo] Lexicon validation failed for %@: %@",
+                             record.uri, validationError.localizedDescription);
+                // For import: reject records that fail validation for known lexicons
+                // This prevents importing malformed data
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{
+                    @"error": @"InvalidRecord",
+                    @"message": [NSString stringWithFormat:
+                                 @"Record %@ failed lexicon validation: %@",
+                                 record.uri, validationError.localizedDescription]
+                }];
+                return;
+            }
+
+            [validatedRecords addObject:record];
+        }
+
+        PDS_LOG_DEBUG(@"[importRepo] Validated %lu/%lu records",
+                      (unsigned long)validatedRecords.count, (unsigned long)records.count);
+
         PDSDatabasePool *databasePool = recordService.databasePool;
         if (!databasePool) {
             response.statusCode = HttpStatusInternalServerError;
@@ -742,7 +805,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             if (blocks.count > 0 && ![transactor putBlocks:blocks forDid:did error:error]) {
                 return;
             }
-            if (records.count > 0 && ![transactor putRecords:records forDid:did error:error]) {
+            if (validatedRecords.count > 0 && ![transactor putRecords:validatedRecords forDid:did error:error]) {
                 return;
             }
             if (![transactor updateRepoRoot:did rootCid:reader.rootCID.bytes rev:(commit.rev ?: @"") error:error]) {
@@ -764,7 +827,8 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         [response setJsonBody:@{
             @"rootCid": reader.rootCID.stringValue ?: @"",
             @"rev": commit.rev ?: @"",
-            @"recordCount": @(records.count)
+            @"recordCount": @(validatedRecords.count),
+            @"skippedCount": @((NSInteger)records.count - (NSInteger)validatedRecords.count)
         }];
     }];
 
