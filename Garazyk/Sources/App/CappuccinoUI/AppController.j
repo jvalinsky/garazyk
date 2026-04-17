@@ -703,4 +703,19 @@
     }, 1000);
 }
 
+- (void)stopStatusClock
+{
+    if (_clockTimer && window && window.clearInterval)
+    {
+        window.clearInterval(_clockTimer);
+        _clockTimer = nil;
+    }
+}
+
+- (void)dealloc
+{
+    [self stopStatusClock];
+    [super dealloc];
+}
+
 @end
