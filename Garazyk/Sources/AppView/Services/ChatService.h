@@ -76,6 +76,19 @@ NS_ASSUME_NONNULL_BEGIN
                  memberDid:(NSString *)memberDid
                      error:(NSError **)error;
 
+// Conversation locking
+- (BOOL)lockConversation:(NSString *)convoId
+                  error:(NSError **)error;
+
+- (BOOL)unlockConversation:(NSString *)convoId
+                     error:(NSError **)error;
+
+// Batch operations
+- (nullable NSArray<NSDictionary *> *)sendMessageBatch:(NSString *)convoId
+                                            senderDid:(NSString *)senderDid
+                                             messages:(NSArray<NSDictionary *> *)messages
+                                                error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
