@@ -426,6 +426,78 @@
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
+#pragma mark - Setting Tests
+
+- (void)testUpsertOptionSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.setting.upsertOption"
+                                                      body:@{
+                                                          @"key": @"max_takedown_requests",
+                                                          @"value": @"1000",
+                                                          @"scope": @"global"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"key"], @"max_takedown_requests");
+    XCTAssertEqualObjects(response.jsonBody[@"value"], @"1000");
+    XCTAssertEqualObjects(response.jsonBody[@"scope"], @"global");
+}
+
+- (void)testUpsertOptionRequiresKey {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.setting.upsertOption"
+                                                      body:@{
+                                                          @"value": @"1000",
+                                                          @"scope": @"global"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testUpsertOptionRequiresValue {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.setting.upsertOption"
+                                                      body:@{
+                                                          @"key": @"max_takedown_requests",
+                                                          @"scope": @"global"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testListOptionsSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.setting.listOptions"
+                                             queryString:@"scope=global"
+                                             queryParams:@{@"scope": @"global"}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"options"]);
+    XCTAssertIsInstance(response.jsonBody[@"options"], [NSArray class]);
+}
+
+- (void)testRemoveOptionsSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.setting.removeOptions"
+                                                      body:@{
+                                                          @"keys": @[@"max_takedown_requests", @"min_confidence_score"]
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+}
+
+- (void)testRemoveOptionsRequiresKeys {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.setting.removeOptions"
+                                                      body:@{}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
 #pragma mark - Server Config Tests
 
 - (void)testGetServerConfigSuccessfully {
