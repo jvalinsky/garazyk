@@ -203,13 +203,8 @@
 
   // Register default route LAST (must be after all specific routes)
   if (self.enableCappuccinoUIDefault) {
-    // Cutover: Objective-J UI is the default entrypoint at `/`.
-    CappuccinoUIHandler *defaultUIHandler = [CappuccinoUIHandler sharedHandler];
-    [server addRoute:@"GET"
-                path:@"/"
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               [defaultUIHandler handleRequest:request response:response];
-             }];
+    // Cutover: Objective-J UI is the default entrypoint.
+    // PDSHttpCappuccinoUIRoutePack already registered / and /ui.
   } else if (self.enableExploreUI && exploreHandler) {
     // Legacy fallback: keep ExploreHandler as the default.
     [server addRoute:@"GET"

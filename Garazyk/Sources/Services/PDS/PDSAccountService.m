@@ -579,9 +579,11 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
     if (!unsignedCBOR) return nil;
     
-    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Prepared unsigned PLC operation (%lu bytes)",
-                       (unsigned long)unsignedCBOR.length);
+    fprintf(stderr, "[PDS ACCOUNT] Unsigned CBOR hex: %s\n", [[CryptoUtils hexStringFromData:unsignedCBOR] UTF8String]);
+
     NSData *hash = [CID rawSha256:unsignedCBOR];
+    fprintf(stderr, "[PDS ACCOUNT] Unsigned operation hash (SHA-256): %s\n", [[CryptoUtils hexStringFromData:hash] UTF8String]);
+    
     NSData *sig = nil;
     if (![keyManager signHash:hash result:&sig error:error]) {
         return nil;
@@ -592,13 +594,14 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSMutableDictionary *signedData = [unsignedData mutableCopy];
     signedData[@"sig"] = [CryptoUtils base64URLEncode:sig];
     
-    // Step 4: Calculate DID from the SIGNED operation
-    NSString *did = [PLCOperation calculateDIDForData:signedData];
+    // Step 4: Calculate DID from the UNSIGNED operation
+    NSString *did = [PLCOperation calculateDIDForData:unsignedData];
+    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for unsigned data: %@", did, unsignedData);
     
     // Step 5: Create operation object for submission
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = did;
-    op.data = [signedData copy];
+    op.data = [unsignedData copy];
     op.sig = signedData[@"sig"];
     op.prev = nil;
     

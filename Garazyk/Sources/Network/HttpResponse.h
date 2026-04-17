@@ -93,6 +93,9 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 /*! Applies security headers to a headers dictionary. */
 + (void)applySecurityHeaders:(NSMutableDictionary *)headers;
 
+/*! Returns the default status message for a given status code. */
++ (NSString *)defaultMessageForCode:(HttpStatusCode)code;
+
 @property (class, nonatomic, copy, readonly) NSString *xContentTypeOptions;
 @property (class, nonatomic, copy, readonly) NSString *xFrameOptions;
 @property (class, nonatomic, copy, readonly) NSString *contentSecurityPolicy;
