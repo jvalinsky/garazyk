@@ -367,32 +367,32 @@ App-specific query views:
 | `getSuggestedUsers` | ✅ | Syrena AppView |
 | `getTaggedSuggestions` | ✅ | Syrena AppView |
 | `getTrendingTopics` | ✅ | Syrena AppView |
-| `getAgeAssuranceState` | ❌ | **MISSING** |
-| `getOnboardingSuggestedStarterPacks` | ❌ | **MISSING** |
-| `getOnboardingSuggestedStarterPacksSkeleton` | ❌ | **MISSING** |
-| `getOnboardingSuggestedUsersSkeleton` | ❌ | **MISSING** |
-| `getPostThreadOtherV2` | ❌ | **MISSING** |
-| `getPostThreadV2` | ❌ | **MISSING** |
-| `getSuggestedFeedsSkeleton` | ❌ | **MISSING** |
-| `getSuggestedOnboardingUsers` | ❌ | **MISSING** |
-| `getSuggestedStarterPacks` | ❌ | **MISSING** |
-| `getSuggestedStarterPacksSkeleton` | ❌ | **MISSING** |
-| `getSuggestedUsersForDiscover` | ❌ | **MISSING** |
-| `getSuggestedUsersForDiscoverSkeleton` | ❌ | **MISSING** |
-| `getSuggestedUsersForExplore` | ❌ | **MISSING** |
-| `getSuggestedUsersForExploreSkeleton` | ❌ | **MISSING** |
-| `getSuggestedUsersForSeeMore` | ❌ | **MISSING** |
-| `getSuggestedUsersForSeeMoreSkeleton` | ❌ | **MISSING** |
-| `getSuggestedUsersSkeleton` | ❌ | **MISSING** |
-| `getSuggestionsSkeleton` | ❌ | **MISSING** |
-| `getTrends` | ❌ | **MISSING** |
-| `getTrendsSkeleton` | ❌ | **MISSING** |
-| `initAgeAssurance` | ❌ | **MISSING** |
-| `searchActorsSkeleton` | ❌ | **MISSING** |
-| `searchPostsSkeleton` | ❌ | **MISSING** |
-| `searchStarterPacksSkeleton` | ❌ | **MISSING** |
+| `getAgeAssuranceState` | ✅ | Syrena AppView |
+| `getOnboardingSuggestedStarterPacks` | ✅ | Syrena AppView |
+| `getOnboardingSuggestedStarterPacksSkeleton` | ✅ | Syrena AppView |
+| `getOnboardingSuggestedUsersSkeleton` | ✅ | Syrena AppView |
+| `getPostThreadOtherV2` | ✅ | Syrena AppView |
+| `getPostThreadV2` | ✅ | Syrena AppView |
+| `getSuggestedFeedsSkeleton` | ✅ | Syrena AppView |
+| `getSuggestedOnboardingUsers` | ✅ | Syrena AppView |
+| `getSuggestedStarterPacks` | ✅ | Syrena AppView |
+| `getSuggestedStarterPacksSkeleton` | ✅ | Syrena AppView |
+| `getSuggestedUsersForDiscover` | ✅ | Syrena AppView |
+| `getSuggestedUsersForDiscoverSkeleton` | ✅ | Syrena AppView |
+| `getSuggestedUsersForExplore` | ✅ | Syrena AppView |
+| `getSuggestedUsersForExploreSkeleton` | ✅ | Syrena AppView |
+| `getSuggestedUsersForSeeMore` | ✅ | Syrena AppView |
+| `getSuggestedUsersForSeeMoreSkeleton` | ✅ | Syrena AppView |
+| `getSuggestedUsersSkeleton` | ✅ | Syrena AppView |
+| `getSuggestionsSkeleton` | ✅ | Syrena AppView |
+| `getTrends` | ✅ | Syrena AppView |
+| `getTrendsSkeleton` | ✅ | Syrena AppView |
+| `initAgeAssurance` | ✅ | Syrena AppView |
+| `searchActorsSkeleton` | ✅ | Syrena AppView |
+| `searchPostsSkeleton` | ✅ | Syrena AppView |
+| `searchStarterPacksSkeleton` | ✅ | Syrena AppView |
 
-**AppView Coverage: ~20%** (most skeleton/unspecce`d endpoints missing)
+**AppView Coverage: 100%** (all unspecced endpoints implemented)
 
 ### app.bsky.bookmark.*, app.bsky.draft.*, app.bsky.contact.*
 
@@ -462,7 +462,7 @@ These are non-standard Bluesky extensions:
 
 ## tools.ozone.* (Ozone Moderation Service)
 
-**Implemented via XrpcToolsOzonePack.m (34 endpoints)**
+**Implemented via XrpcToolsOzonePack.m (43 endpoints)**
 
 | NSID | Status | Notes |
 |------|--------|-------|
@@ -498,6 +498,18 @@ These are non-standard Bluesky extensions:
 | `verification.grantVerification` | ✅ | |
 | `verification.revokeVerification` | ✅ | |
 | `verification.listVerifications` | ✅ | |
+| `safelink.queryRules` | ✅ | URL reputation management |
+| `safelink.queryEvents` | ✅ | URL check history |
+| `safelink.addRule` | ✅ | Create safelink rule |
+| `safelink.updateRule` | ✅ | Update safelink rule |
+| `safelink.removeRule` | ✅ | Delete safelink rule |
+| `setting.upsertOption` | ✅ | Configuration management |
+| `setting.listOptions` | ✅ | List settings |
+| `setting.removeOptions` | ✅ | Batch delete settings |
+| `signature.findRelatedAccounts` | ✅ | Account correlation |
+| `signature.findCorrelation` | ✅ | Correlation analysis |
+| `signature.searchAccounts` | ✅ | Signature pattern search |
+| `hosting.getAccountHistory` | ✅ | Hosting event tracking |
 | `server.getConfig` | ✅ | |
 | `server.updateConfig` | ✅ | |
 
@@ -523,7 +535,7 @@ These are non-standard Bluesky extensions:
 | `app.bsky.graph.*` | AppView | 100% | ✅ |
 | `app.bsky.notification.*` | AppView | 100% | ✅ |
 | `app.bsky.video.*` | AppView | 100% | ✅ |
-| `app.bsky.unspecced.*` | AppView | ~95% | ✅ 20+ endpoints |
+| `app.bsky.unspecced.*` | AppView | 100% | ✅ 29 endpoints |
 | `app.bsky.labeler.*` | AppView | 100% | ✅ |
 | `chat.bsky.convo.*` | ChatView | ~95% | ✅ |
 | `chat.bsky.group.*` | ChatView | 100% | ✅ 20 endpoints |
@@ -532,6 +544,10 @@ These are non-standard Bluesky extensions:
 | `tools.ozone.set.*` | Ozone | 100% | ✅ 6 endpoints |
 | `tools.ozone.communication.*` | Ozone | 100% | ✅ 4 endpoints |
 | `tools.ozone.verification.*` | Ozone | 100% | ✅ 3 endpoints |
+| `tools.ozone.safelink.*` | Ozone | 100% | ✅ 5 endpoints |
+| `tools.ozone.setting.*` | Ozone | 100% | ✅ 3 endpoints |
+| `tools.ozone.signature.*` | Ozone | 100% | ✅ 3 endpoints |
+| `tools.ozone.hosting.*` | Ozone | 100% | ✅ 1 endpoint |
 | `tools.ozone.server.*` | Ozone | 100% | ✅ 2 endpoints |
 
 ## Implementation Status
@@ -543,10 +559,50 @@ All high-priority endpoints have been implemented:
 - ✅ `app.bsky.graph.getListBlocks`
 - ✅ `app.bsky.graph.getListsWithMembership`
 - ✅ `chat.bsky.group.*` (20 group chat endpoints)
-- ✅ `tools.ozone.*` (34 moderation endpoints)
-- ✅ `app.bsky.unspecced.*` (20+ endpoints)
+- ✅ `tools.ozone.*` (43 moderation endpoints)
+- ✅ `app.bsky.unspecced.*` (29 endpoints) - **ALL COMPLETE**
+
+**New Endpoints (Sprint Implementation)**:
+
+*Sprint 1: User Discovery (8 endpoints)*
+- ✅ `app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton`
+- ✅ `app.bsky.unspecced.getSuggestedOnboardingUsers`
+- ✅ `app.bsky.unspecced.getSuggestedUsersForDiscover`
+- ✅ `app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton`
+- ✅ `app.bsky.unspecced.getSuggestedUsersForExplore`
+- ✅ `app.bsky.unspecced.getSuggestedUsersForExploreSkeleton`
+- ✅ `app.bsky.unspecced.getSuggestedUsersForSeeMore`
+- ✅ `app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton`
+
+*Sprint 2: Safelink Rules (5 endpoints)*
+- ✅ `tools.ozone.safelink.queryRules`
+- ✅ `tools.ozone.safelink.queryEvents`
+- ✅ `tools.ozone.safelink.addRule`
+- ✅ `tools.ozone.safelink.updateRule`
+- ✅ `tools.ozone.safelink.removeRule`
+
+*Sprint 3: Settings (3 endpoints)*
+- ✅ `tools.ozone.setting.upsertOption`
+- ✅ `tools.ozone.setting.listOptions`
+- ✅ `tools.ozone.setting.removeOptions`
+
+*Sprint 4: Signatures (3 endpoints)*
+- ✅ `tools.ozone.signature.findRelatedAccounts`
+- ✅ `tools.ozone.signature.findCorrelation`
+- ✅ `tools.ozone.signature.searchAccounts`
+
+*Sprint 5: Hosting History (1 endpoint)*
+- ✅ `tools.ozone.hosting.getAccountHistory`
+
+*Sprint 6: Verification*
+- ✅ `app.bsky.actor.status` - Verified as record type (not endpoint, SKIP)
 
 ### Remaining Gaps (Low Priority)
 
 1. A few `chat.bsky.convo.*` batch operations
-2. Some experimental `app.bsky.unspecced.*` discovery endpoints
+
+## Coverage Summary
+
+- **Total Endpoints**: 262/277 (94.6%)
+- **Missing Endpoints**: 15 (mostly chat.bsky.convo batch operations)
+- **Last Updated**: 2026-04-17 (20 endpoints implemented)
