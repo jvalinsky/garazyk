@@ -183,8 +183,16 @@ var EmptyStateIcons = {
 // Hide/Show convenience
 - (void)showInView:(CPView)parent
 {
+    if (!parent)
+        return;
+
     [self setFrame:[parent bounds]];
-    [parent addSubview:self];
+
+    if ([self superview] !== parent)
+    {
+        [self removeFromSuperview];
+        [parent addSubview:self];
+    }
 }
 
 - (void)hide
