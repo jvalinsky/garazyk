@@ -229,6 +229,56 @@
                            @"verifiedAt": [NSNull null]
                        }];
                      }];
+
+#pragma mark - User Discovery (Onboarding & Discovery Pages)
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedOnboardingUsers"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForDiscover"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForExplore"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForSeeMore"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"actors" : @[]}];
+                     }];
 }
 
 @end
