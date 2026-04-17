@@ -194,6 +194,58 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)incrementRepoCommits;
 
+#pragma mark - WebSocket Metrics
+
+/**
+ * @brief Counter: Total backpressure warning events.
+ *
+ * Incremented each time a WebSocket connection reaches the warning threshold.
+ */
+@property (nonatomic, assign) NSInteger websocketBackpressureWarningsTotal;
+
+/**
+ * @brief Counter: Total backpressure critical events.
+ *
+ * Incremented each time a WebSocket connection reaches the critical threshold.
+ */
+@property (nonatomic, assign) NSInteger websocketBackpressureCriticalTotal;
+
+/**
+ * @brief Counter: Total connections closed due to queue overflow.
+ *
+ * Incremented each time a connection is forcibly closed due to queue overflow.
+ */
+@property (nonatomic, assign) NSInteger websocketQueueOverflowClosuresTotal;
+
+/**
+ * @brief Gauge: Current number of connections under backpressure.
+ *
+ * Tracks the number of active connections currently experiencing backpressure.
+ */
+@property (nonatomic, assign) NSInteger websocketConnectionsUnderBackpressure;
+
+/**
+ * @brief Records a WebSocket backpressure warning event.
+ */
+- (void)recordWebSocketBackpressureWarning;
+
+/**
+ * @brief Records a WebSocket backpressure critical event.
+ */
+- (void)recordWebSocketBackpressureCritical;
+
+/**
+ * @brief Records a WebSocket queue overflow closure event.
+ */
+- (void)recordWebSocketQueueOverflowClosure;
+
+/**
+ * @brief Updates the count of connections under backpressure.
+ *
+ * @param isUnderBackpressure YES to increment, NO to decrement.
+ */
+- (void)recordWebSocketBackpressureStateChange:(BOOL)isUnderBackpressure;
+
 /**
  * @brief Exports all metrics in Prometheus text format.
  *

@@ -68,6 +68,10 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
         _rateLimitRejectionsByType = [NSMutableDictionary dictionary];
         _authFailuresByReason = [NSMutableDictionary dictionary];
         _oauthGrantsByType = [NSMutableDictionary dictionary];
+        _websocketBackpressureWarningsTotal = 0;
+        _websocketBackpressureCriticalTotal = 0;
+        _websocketQueueOverflowClosuresTotal = 0;
+        _websocketConnectionsUnderBackpressure = 0;
     }
     return self;
 }
@@ -210,6 +214,38 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
     });
 }
 
+#pragma mark - WebSocket Backpressure Metrics
+
+- (void)recordWebSocketBackpressureWarning {
+    dispatch_sync(_metricsQueue, ^{
+        self.websocketBackpressureWarningsTotal++;
+    });
+}
+
+- (void)recordWebSocketBackpressureCritical {
+    dispatch_sync(_metricsQueue, ^{
+        self.websocketBackpressureCriticalTotal++;
+    });
+}
+
+- (void)recordWebSocketQueueOverflowClosure {
+    dispatch_sync(_metricsQueue, ^{
+        self.websocketQueueOverflowClosuresTotal++;
+    });
+}
+
+- (void)recordWebSocketBackpressureStateChange:(BOOL)isUnderBackpressure {
+    dispatch_sync(_metricsQueue, ^{
+        if (isUnderBackpressure) {
+            self.websocketConnectionsUnderBackpressure++;
+        } else {
+            if (self.websocketConnectionsUnderBackpressure > 0) {
+                self.websocketConnectionsUnderBackpressure--;
+            }
+        }
+    });
+}
+
 - (NSString *)exportPrometheus {
     __block NSDictionary *methodsSnap;
     __block NSDictionary *endpointsSnap;
@@ -231,6 +267,10 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
     __block NSDictionary *authFailuresSnap;
     __block NSDictionary *oauthGrantsSnap;
     __block NSInteger authSessions;
+    __block NSInteger websocketBackpressureWarnings;
+    __block NSInteger websocketBackpressureCriticals;
+    __block NSInteger websocketQueueOverflows;
+    __block NSInteger websocketConnectionsUnderBp;
 
     dispatch_sync(_metricsQueue, ^{
         methodsSnap = [_httpRequestsByMethod copy];
@@ -250,6 +290,10 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
         authFailuresSnap = [_authFailuresByReason copy];
         oauthGrantsSnap = [_oauthGrantsByType copy];
         authSessions = _activeAuthSessions;
+        websocketBackpressureWarnings = self.websocketBackpressureWarningsTotal;
+        websocketBackpressureCriticals = self.websocketBackpressureCriticalTotal;
+        websocketQueueOverflows = self.websocketQueueOverflowClosuresTotal;
+        websocketConnectionsUnderBp = self.websocketConnectionsUnderBackpressure;
 
         NSMutableDictionary *bucketsCopy = [NSMutableDictionary dictionaryWithCapacity:_histogramBuckets.count];
         for (NSString *key in _histogramBuckets) {
@@ -354,6 +398,22 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
     [output appendString:@"\n# HELP pds_auth_sessions_active Current active auth sessions\n"];
     [output appendString:@"# TYPE pds_auth_sessions_active gauge\n"];
     [output appendFormat:@"pds_auth_sessions_active %ld\n", (long)authSessions];
+
+    [output appendString:@"\n# HELP pds_websocket_backpressure_warnings_total Total WebSocket backpressure warning events\n"];
+    [output appendString:@"# TYPE pds_websocket_backpressure_warnings_total counter\n"];
+    [output appendFormat:@"pds_websocket_backpressure_warnings_total %ld\n", (long)websocketBackpressureWarnings];
+
+    [output appendString:@"\n# HELP pds_websocket_backpressure_critical_total Total WebSocket backpressure critical events\n"];
+    [output appendString:@"# TYPE pds_websocket_backpressure_critical_total counter\n"];
+    [output appendFormat:@"pds_websocket_backpressure_critical_total %ld\n", (long)websocketBackpressureCriticals];
+
+    [output appendString:@"\n# HELP pds_websocket_queue_overflow_closures_total Total WebSocket queue overflow connection closures\n"];
+    [output appendString:@"# TYPE pds_websocket_queue_overflow_closures_total counter\n"];
+    [output appendFormat:@"pds_websocket_queue_overflow_closures_total %ld\n", (long)websocketQueueOverflows];
+
+    [output appendString:@"\n# HELP pds_websocket_connections_under_backpressure Current WebSocket connections under backpressure\n"];
+    [output appendString:@"# TYPE pds_websocket_connections_under_backpressure gauge\n"];
+    [output appendFormat:@"pds_websocket_connections_under_backpressure %ld\n", (long)websocketConnectionsUnderBp];
 
     if (histBucketsSnap.count > 0) {
         [output appendString:@"\n# HELP pds_http_request_duration_seconds HTTP request latency in seconds\n"];
