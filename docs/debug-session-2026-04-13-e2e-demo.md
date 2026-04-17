@@ -101,7 +101,7 @@ POST /did:plc:enfkfvcvgs3rwpscctmf7rin, status 400
 
 **Root Cause:** Unknown - PLCAuditor validation failing but no specific error message.
 
-**Temporary Workaround:** Use `skip_plc_operations: true` in config (defeats the purpose for full E2E).
+**Temporary Workaround:** ~~Use `skip_plc_operations: true` in config (defeats the purpose for full E2E).~~ **UPDATE 2026-04-17:** The `skip_plc_operations` feature has been removed. Account creation now requires actual PLC registration.
 
 ---
 
@@ -250,7 +250,7 @@ Then verify in AppView:
 ## Files Modified During Session
 
 1. `docker/local-network/docker-compose.yml` - Added keys volume mount
-2. `docker/local-network/pds-config.json` - debug skip_plc_operations (temporary)
+2. `docker/local-network/pds-config.json` - debug skip_plc_operations (temporary, **removed 2026-04-17**)
 3. `Garazyk/Sources/PLC/PLCRotationKeyManager.m` - Added HOME env fallback
 
 ---
