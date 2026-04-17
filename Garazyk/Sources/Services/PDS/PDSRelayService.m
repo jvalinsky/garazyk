@@ -92,10 +92,13 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
                             dispatch_time(DISPATCH_TIME_NOW, delayNanos),
                             DISPATCH_TIME_FOREVER, 100 * MSEC_PER_SEC);
 
+  __weak typeof(self) weakSelf = self;
   dispatch_source_set_event_handler(self.timer, ^{
-    [self processPendingNotifications];
-    dispatch_source_cancel(self.timer);
-    self.timer = nil;
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf) return;
+    [strongSelf processPendingNotifications];
+    dispatch_source_cancel(strongSelf.timer);
+    strongSelf.timer = nil;
   });
 
   dispatch_resume(self.timer);
