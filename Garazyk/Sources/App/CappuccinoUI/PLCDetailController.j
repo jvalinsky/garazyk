@@ -10,6 +10,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 
 @implementation PLCDetailController : CPObject
 {
@@ -18,6 +19,7 @@
     CPView _rootView;
 
     CPTextField _statusLabel;
+    EmptyStateView _emptyState;
     CPTextField _didLabel;
     CPScrollView _contentScrollView;
     CPView _contentView;
@@ -98,18 +100,20 @@
     _currentDID = did;
     [_didLabel setStringValue:did];
     [_statusLabel setStringValue:@"Loading..."];
+    [self hideEmptyState];
 
-    // Clear content
+    // Clear content (iterate in reverse for safety)
     var subviews = [_contentView subviews];
-    for (var i = 0; i < subviews.length; i++) {
+    for (var i = subviews.length - 1; i >= 0; i--) {
         [subviews[i] removeFromSuperview];
     }
 
     // Fetch DID document and operation log in parallel
     var pending = 2;
+    var errorOccurred = NO;
     var checkComplete = function() {
         pending--;
-        if (pending === 0) {
+        if (pending === 0 && !errorOccurred) {
             [self renderDocument];
         }
     };
@@ -117,6 +121,9 @@
     [_apiClient fetch:@"GET" path:@"/" + did params:nil completion:function(response, error) {
         if (error) {
             [_statusLabel setStringValue:@"Error loading DID: " + error.localizedDescription];
+            errorOccurred = YES;
+            [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                  message:@"Could not reach PLC for " + did + ". " + error.localizedDescription];
             return;
         }
         _didDocument = response;
@@ -131,6 +138,37 @@
         }
         checkComplete();
     }];
+}
+
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+        _emptyState = [[EmptyStateView alloc] initWithFrame:[_contentScrollView bounds]
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Try Again"
+                                                actionHandler:function() { [self loadDID:_currentDID]; }];
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+
+    var frame = [_rootView bounds];
+    if (_contentScrollView)
+        frame = [_contentScrollView frame];
+        
+    [_emptyState setFrame:frame];
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
 }
 
 - (void)renderDocument
