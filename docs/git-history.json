@@ -1,19 +1,19 @@
 [
   {
+    "hash": "c6d9a02556856d0f84dfbeeb2f3b9fe7af33df2d",
+    "short_hash": "c6d9a02",
+    "author": "Security Bot",
+    "date": "2026-04-17T15:51:23-04:00",
+    "message": "docs: link Phase 5 test outcome to Sprint 2",
+    "files_changed": 2
+  },
+  {
     "hash": "5434591b505b08f48d630f709121543a22b4db72",
     "short_hash": "5434591",
     "author": "Security Bot",
     "date": "2026-04-17T15:51:11-04:00",
     "message": "test(websocket): add comprehensive backpressure threshold tests\n\nSprint 2 Phase 5: WebSocket backpressure test coverage\n\nUpdates to WebSocketStateCharacterizationTests:\n\n1. Enhanced MockStateWebSocketDelegate:\n   - Added tracking for backpressure warning/critical/cleared/overflow\n   - Stores fill percentages and byte counts for assertions\n   - Properties to verify delegate callbacks were invoked\n\n2. Updated existing test:\n   - testOutboundQueueBackpressure → testOutboundQueueOverflow\n   - Updated to use 10MB default instead of 16MB\n   - Verifies queue overflow delegate notification\n\n3. Added 4 new comprehensive tests:\n   - testConfigurableQueueLimit: Custom 5MB limit\n   - testBackpressureWarningThreshold: 70% threshold\n   - testBackpressureCriticalThreshold: 90% threshold\n   - testBackpressureWarningNotDuplicateNotified: No duplicate warnings\n\nTest coverage includes:\n- Configurable limits are respected\n- Thresholds trigger at correct percentages\n- Delegate methods are invoked with correct parameters\n- Backpressure state transitions properly\n- No duplicate notifications on multi-frame sends\n\nAll tests use proper async handling with XCTestExpectation\nfor dispatch queue operations.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 1
-  },
-  {
-    "hash": "dd4e82450b6b8ca48d6c87d1c0429c4f405e9017",
-    "short_hash": "dd4e824",
-    "author": "Security Bot",
-    "date": "2026-04-17T15:48:33-04:00",
-    "message": "docs: link Phase 3 metrics outcome to decision graph",
-    "files_changed": 2
   },
   {
     "hash": "3820b21daa8d4f4cf8f473f3209fd644236639b1",
@@ -32,12 +32,12 @@
     "files_changed": 2
   },
   {
-    "hash": "c3ba36e17383a7783ee696aa89249d1033777b91",
-    "short_hash": "c3ba36e",
+    "hash": "8e54ecb3bc4482b85c09197faff984a036171508",
+    "short_hash": "8e54ecb",
     "author": "Security Bot",
-    "date": "2026-04-17T10:47:08-04:00",
-    "message": "decision: skip non-existent P0/P1 bugs, proceed with Sprint 2 reliability improvements\n\nCode review findings:\n- Password KDF: Correctly uses UTF-8 byte length (not UTF-16 char count)\n- Base64URL padding: Proper calculation with edge case handling\n- Backup script: Already uses correct service.db naming\n- Admin auth: No selector mismatch found in method registry\n\nInstead of pursuing hypothetical bugs, prioritizing concrete reliability work:\n\nSprint 2: Reliability improvements\n- WebSocket backpressure: Queue byte cap (10MB), backpressure signals\n- Test environment: Graceful fallback for restricted environments\n\nUpdated deciduous nodes:\n- Node 375: Decision on production readiness phase focus\n- Node 376: Option to skip P0/P1 bugs\n- Node 377: WebSocket backpressure action\n- Node 378: Test environment robustness action\n- Node 379: Sprint 2 goal\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
-    "files_changed": 4
+    "date": "2026-04-17T15:43:51-04:00",
+    "message": "feat(websocket): implement configurable backpressure handling\n\nSprint 2: Phase 1-4 WebSocket backpressure implementation\n\nPhases completed:\n1. Configuration Properties:\n   - Added maxOutboundQueueBytes (default: 10MB)\n   - Added backpressureWarningThreshold (default: 70%)\n   - Added backpressureCriticalThreshold (default: 90%)\n\n2. Delegate Notifications:\n   - Added 4 new optional delegate methods:\n     * didReachBackpressureWarning:queueBytes:\n     * didReachBackpressureCritical:queueBytes:\n     * webSocketConnectionDidClearBackpressure:\n     * willCloseForQueueOverflow:limit:\n   - Added backpressure state tracking (isUnderBackpressure)\n   - Threshold checking in sendFrame: method\n   - Backpressure cleared detection in writeData: completion\n\n4. Enhanced Logging:\n   - Added PDS_LOG_SYNC_WARN for warning and critical thresholds\n   - Added PDS_LOG_SYNC_INFO for backpressure cleared\n   - Added PDS_LOG_SYNC_ERROR for queue overflow\n   - All logs include remote address and queue fill percentage\n\nBenefits:\n- Configurable limits allow tuning for different deployments\n- Delegate notifications decouple detection from response\n- Logging provides visibility into backpressure events\n- Graceful threshold system (warning/critical/overflow)\n- Backward compatible with default values\n\nRemaining:\n- Phase 3: Metrics tracking (PDSMetrics)\n- Phase 5: Test updates (unit/integration tests)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
   },
   {
     "hash": "c3ba36e17383a7783ee696aa89249d1033777b91",
