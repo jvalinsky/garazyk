@@ -361,4 +361,75 @@
                                                  error:error];
 }
 
+#pragma mark - Conversation Locking
+
+- (BOOL)lockConversation:(NSString *)convoId
+                  error:(NSError **)error {
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+    NSString *query = @"UPDATE conversations SET locked = 1, updated_at = ? WHERE id = ?";
+    return [(PDSDatabase *)self.database executeUpdate:query
+                                            withParams:@[now, convoId]
+                                                 error:error];
+}
+
+- (BOOL)unlockConversation:(NSString *)convoId
+                     error:(NSError **)error {
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+    NSString *query = @"UPDATE conversations SET locked = 0, updated_at = ? WHERE id = ?";
+    return [(PDSDatabase *)self.database executeUpdate:query
+                                            withParams:@[now, convoId]
+                                                 error:error];
+}
+
+#pragma mark - Batch Operations
+
+- (nullable NSArray<NSDictionary *> *)sendMessageBatch:(NSString *)convoId
+                                            senderDid:(NSString *)senderDid
+                                             messages:(NSArray<NSDictionary *> *)messages
+                                                error:(NSError **)error {
+    if (messages.count == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ChatService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"messages array cannot be empty"}];
+        return nil;
+    }
+
+    // Check if conversation is locked
+    NSString *checkQuery = @"SELECT locked FROM conversations WHERE id = ?";
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:checkQuery
+                                                                      params:@[convoId]
+                                                                       error:error];
+    if (!rows || rows.count == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ChatService" code:404
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Conversation not found"}];
+        return nil;
+    }
+
+    NSInteger locked = [rows[0][@"locked"] integerValue];
+    if (locked) {
+        if (error) *error = [NSError errorWithDomain:@"ChatService" code:403
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Conversation is locked"}];
+        return nil;
+    }
+
+    // Send all messages
+    NSMutableArray *sentMessages = [NSMutableArray array];
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+
+    for (NSDictionary *msgData in messages) {
+        NSString *text = msgData[@"text"];
+        NSString *embedJson = msgData[@"embedJson"];
+
+        NSDictionary *sentMsg = [self sendMessage:convoId
+                                       senderDid:senderDid
+                                            text:text
+                                       embedJson:embedJson
+                                           error:error];
+        if (!sentMsg) return nil;
+
+        [sentMessages addObject:sentMsg];
+    }
+
+    return sentMessages;
+}
+
 @end
