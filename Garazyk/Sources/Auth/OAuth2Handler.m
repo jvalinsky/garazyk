@@ -1520,6 +1520,14 @@ static dispatch_once_t sClientCacheOnceToken;
                  [self handlePARRequest:request response:response];
                }];
 
+  // Phase 5: Add /oauth/introspect endpoint for token introspection (RFC 7662)
+  [httpServer addRoute:@"POST"
+                  path:@"/oauth/introspect"
+               handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self setCorsHeaders:response forRequest:request];
+                 [self handleIntrospectRequest:request response:response];
+               }];
+
   // CORS preflight handlers for ATProto OAuth client compatibility
   void (^corsPreflightHandler)(HttpRequest *, HttpResponse *) =
       ^(HttpRequest *req, HttpResponse *resp) {
