@@ -44,6 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
     - POST /oauth/token - Token endpoint
     - POST /oauth/revoke - Token revocation
     - POST /oauth/par - Pushed Authorization Requests
+    - POST /oauth/introspect - Token introspection (RFC 7662)
 
     Thread Safety: Each request is handled independently. The underlying
     OAuth2Server uses appropriate synchronization for shared state.
@@ -103,6 +104,7 @@ NS_ASSUME_NONNULL_BEGIN
     - POST /oauth/token
     - POST /oauth/revoke
     - POST /oauth/par
+    - POST /oauth/introspect
  */
 - (void)registerRoutesWithServer:(HttpServer *)httpServer;
 
@@ -177,6 +179,20 @@ NS_ASSUME_NONNULL_BEGIN
  for use in the authorization request.
  */
 - (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
+
+/*!
+ @method handleIntrospectRequest:response:
+
+ @abstract Handles token introspection requests (RFC 7662).
+
+ @param request The HTTP request containing the token to introspect.
+ @param response The HTTP response to populate with introspection result.
+
+ @discussion Verifies the token and returns RFC 7662 compliant introspection
+ response with token metadata (subject, client, expiration, scope, DPoP binding).
+ Invalid tokens return {"active": false} without error.
+ */
+- (void)handleIntrospectRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end
 
