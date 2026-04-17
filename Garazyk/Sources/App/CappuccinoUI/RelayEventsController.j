@@ -9,6 +9,7 @@
 @import <AppKit/AppKit.j>
 @import "SessionState.j"
 @import "UIAPIClient.j"
+@import "EmptyStateView.j"
 
 @implementation RelayEventsController : CPObject
 {
@@ -18,6 +19,7 @@
     CPDictionary _endpointBases;
 
     CPTextField _statusLabel;
+    EmptyStateView _emptyState;
     CPTableView _eventsTable;
     CPTextView _eventDetailTextView;
     CPPopUpButton _filterTypePopup;
@@ -265,6 +267,8 @@
     if (_webSocket)
         return;
 
+    [self hideEmptyState];
+
     // Build WebSocket URL - use standard firehose endpoint
     var protocol = (window.location.protocol === "https:") ? "wss:" : "ws:";
     var host = window.location.host;
@@ -285,12 +289,15 @@
             [_statusLabel setStringValue:@"Connected (real-time)"];
             [_connectButton setTitle:@"Disconnect"];
             [_pauseButton setEnabled:YES];
+            [self hideEmptyState];
         };
 
         _webSocket.onmessage = function(event)
         {
             if (_isPaused)
                 return;
+
+            [self hideEmptyState];
 
             try
             {
@@ -316,6 +323,8 @@
             else
             {
                 [_statusLabel setStringValue:@"Disconnected (code: " + event.code + ")"];
+                [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                      message:@"WebSocket disconnected. Code: " + event.code];
             }
             [_connectButton setTitle:@"Connect"];
             [_pauseButton setEnabled:NO];
@@ -334,6 +343,8 @@
     catch (e)
     {
         [_statusLabel setStringValue:@"Failed to create WebSocket: " + String(e)];
+        [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                              message:@"Failed to create WebSocket: " + String(e)];
     }
 }
 
@@ -351,6 +362,7 @@
     [_connectButton setTitle:@"Connect"];
     [_pauseButton setEnabled:NO];
     [_statusLabel setStringValue:@"Disconnected"];
+    [self hideEmptyState];
 }
 
 #pragma mark - Polling Fallback
@@ -367,8 +379,8 @@
 
     [self pollOnce];
 
-    var self = this;
-    _pollTimer = setInterval(function() { [self pollOnce]; }, 5000);
+    var controller = self;
+    _pollTimer = setInterval(function() { [controller pollOnce]; }, 5000);
 }
 
 - (void)stopPolling
@@ -400,7 +412,7 @@
     xhr.open("GET", url, true);
     xhr.setRequestHeader("Accept", "application/json");
 
-    var self = this;
+    var controller = self;
     xhr.onload = function()
     {
         if (xhr.status === 200)
@@ -410,10 +422,11 @@
                 var data = JSON.parse(xhr.responseText);
                 if (data.repos && data.repos.length > 0)
                 {
+                    [controller hideEmptyState];
                     for (var i = 0; i < data.repos.length; i++)
                     {
                         var repo = data.repos[i];
-                        [self addEvent:{type: "repo", repo: repo.did, seq: repo.rev, ops: [], summary: "repo: " + (repo.did ? repo.did.substring(0, 12) : "?")}];
+                        [controller addEvent:{type: "repo", repo: repo.did, seq: repo.rev, ops: [], summary: "repo: " + (repo.did ? repo.did.substring(0, 12) : "?")}];
                     }
                     _pollCursor = data.cursor;
                 }
@@ -421,20 +434,71 @@
                 {
                     _pollCursor = data.cursor;
                 }
+                
+                if (_events.length === 0) {
+                    [controller showEmptyStateWithIcon:EmptyStateIconInbox
+                                                message:@"No events received yet. The relay is idle."];
+                }
             }
             catch (e)
             {
                 // Ignore parse errors
             }
         }
+        else
+        {
+            [controller showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                        message:@"Polling fallback failed (" + xhr.status + "). Relay API unreachable."];
+        }
+    };
+
+    xhr.onerror = function()
+    {
+        [controller showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                    message:@"Network error during polling fallback."];
     };
 
     xhr.send();
 }
 
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+        _emptyState = [[EmptyStateView alloc] initWithFrame:[_rootView bounds]
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Connect"
+                                                actionHandler:function() { [self connect]; }];
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+
+    var frame = [_rootView bounds];
+    if (_eventsTable && [_eventsTable superview])
+    {
+        var scroll = [[_eventsTable superview] superview];
+        if (scroll) frame = [scroll frame];
+    }
+    
+    [_emptyState setFrame:frame];
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
+}
+
 - (void)dealloc
 {
     [self disconnect];
+    [super dealloc];
 }
 
 #pragma mark - Event Handling
@@ -613,7 +677,7 @@
 
 - (int)numberOfRowsInTableView:(CPTableView)tableView
 {
-    return _filteredEvents.length;
+    return _filteredEvents ? _filteredEvents.length : 0;
 }
 
 - (id)tableView:(CPTableView)tableView objectValueForTableColumn:(CPTableColumn)tableColumn row:(int)row
