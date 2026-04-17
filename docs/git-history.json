@@ -1,19 +1,43 @@
 [
   {
-    "hash": "c74f4d8bff03494f19433102e935263b4bebc3ad",
-    "short_hash": "c74f4d8",
+    "hash": "3e05609cfb90a1118d5490c49410d4f202af3ea0",
+    "short_hash": "3e05609",
     "author": "Security Bot",
-    "date": "2026-04-16T17:19:37-04:00",
-    "message": "feat(appview): enable standalone materialization and XRPC query support\n\n- Add records and blocks tables to AppViewDatabase schema.\n- Implement materialization of firehose events in AppViewIngestEngine.\n- Refactor Feed, Actor, Graph, and Notification services to use PDSQueryDatabase protocol.\n- Register app.bsky.* XRPC query routes in AppViewRuntime via AppViewXRpcRoutePack.\n- Fix standalone AppView (syrena) build with corrected include paths.",
-    "files_changed": 27
+    "date": "2026-04-17T00:28:02-04:00",
+    "message": "docs: add implementation plan for missing XRPC endpoints\n\nPhased approach:\n- Phase 1 (HIGH): graph.getListMutes, getListBlocks, getListsWithMembership, actor.status\n- Phase 2 (MEDIUM): chat.bsky.convo.* 15 endpoints\n- Phase 3 (LOWER): chat.bsky.group.* group chat\n- Phase 4 (LOW): unspecced skeleton endpoints\n- Phase 5 (DEFERRED): tools.ozone.* 67 endpoints\n\nEach endpoint has detailed implementation steps with database, auth, and testing.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
   },
   {
-    "hash": "0856a2d53b7afe46791762da5d8aa70d0537e4d7",
-    "short_hash": "0856a2d",
+    "hash": "aa933f415143c3db0cdba6c9e13c5b45a80c7be2",
+    "short_hash": "aa933f4",
     "author": "Security Bot",
-    "date": "2026-04-15T23:43:22-04:00",
-    "message": "feat: add XRPC endpoints to relay (listRepos, getHead, getRepo, subscribeRepos)\n\n- Create RelayXrpcRoutePack for XRPC registration on relay\n- Implement listRepos using RelayRepoStateManager\n- Implement getHead and getRepo endpoints\n- Wire up WebSocket subscribeRepos on relay\n- Add repoStateManager to RelayDownstreamHandler to track repo state\n- State updates on commit events from upstream\n\nNote: listRepos returns [] because relay has no upstream data yet.\nsubscribeRepos returns 101 on localhost, 404 on OrbStack HTTPS (known issue).",
-    "files_changed": 5
+    "date": "2026-04-17T00:15:55-04:00",
+    "message": "docs: add XRPC endpoint coverage analysis\n\nComprehensive audit of XRPC methods across all services:\n- PDS (kaszlak): 100% coverage on core namespaces\n- AppView (syrena): ~85% on app.bsky.* (missing some graph/graph methods)\n- Chat: ~25% on chat.bsky.convo.*\n- Ozone: 0% (deferred)\n\nKey findings:\n- com.atproto.*: Full coverage\n- app.bsky.feed.*, app.bsky.notification.*: Full coverage\n- app.bsky.graph.*: Missing getListMutes, getListBlocks, getListsWithMembership\n- app.bsky.unspecced.*: Only 20% (skeleton/experimental endpoints missing)\n- chat.bsky.*: Basic convo implemented, groups missing\n- tools.ozone.*: Not implemented (deferred)\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "aa933f415143c3db0cdba6c9e13c5b45a80c7be2",
+    "short_hash": "aa933f4",
+    "author": "Security Bot",
+    "date": "2026-04-17T00:15:55-04:00",
+    "message": "docs: add XRPC endpoint coverage analysis\n\nComprehensive audit of XRPC methods across all services:\n- PDS (kaszlak): 100% coverage on core namespaces\n- AppView (syrena): ~85% on app.bsky.* (missing some graph/graph methods)\n- Chat: ~25% on chat.bsky.convo.*\n- Ozone: 0% (deferred)\n\nKey findings:\n- com.atproto.*: Full coverage\n- app.bsky.feed.*, app.bsky.notification.*: Full coverage\n- app.bsky.graph.*: Missing getListMutes, getListBlocks, getListsWithMembership\n- app.bsky.unspecced.*: Only 20% (skeleton/experimental endpoints missing)\n- chat.bsky.*: Basic convo implemented, groups missing\n- tools.ozone.*: Not implemented (deferred)\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "326f66e34a4bd20d3c03276b74d3880dacd604b3",
+    "short_hash": "326f66e",
+    "author": "Security Bot",
+    "date": "2026-04-16T23:44:54-04:00",
+    "message": "refactor: remove skip_plc_operations feature\n\nThis debug feature allowed bypassing PLC registration, but it's\nimportant to verify PLC operations against a local server instead.\n\nChanges:\n- Remove debugSkipPlcOperations property from PDSConfiguration\n- Remove conditional PLC skipping in PDSAccountService and PDSCLIAccountManager\n- Remove generatePlcIdentifier() helper (no longer needed)\n- Update all config files to remove skip_plc_operations setting\n- Update docs and validation scripts\n\nAccount creation now always requires actual PLC registration.\nFor local dev, use local PLC server (campagnola) or did:web.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 18
+  },
+  {
+    "hash": "76301c0cb04fb0e8c9132dd70662126f7a57a974",
+    "short_hash": "76301c0",
+    "author": "Security Bot",
+    "date": "2026-04-16T20:26:17-04:00",
+    "message": "chore(docs): sync deciduous decision graph with CappuccinoUI hardening nodes\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
   },
   {
     "hash": "2c99414dc26daf2e2e0f33c5b3ffd4236d8d8ea5",

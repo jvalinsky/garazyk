@@ -46,6 +46,10 @@ extern NSString * const kPDSActorPreferencesTableName;
 extern NSString * const kPDSActorMutesTableName;
 extern NSString * const kPDSBookmarkTableName;
 extern NSString * const kPDSStarterPackTableName;
+extern NSString * const kPDSConversationsTableName;
+extern NSString * const kPDSConversationMembersTableName;
+extern NSString * const kPDSMessagesTableName;
+extern NSString * const kPDSMessageReactionsTableName;
 
 extern NSString * const kPDSAccountTableCreateSQL;
 extern NSString * const kPDSRepoTableCreateSQL;
@@ -66,6 +70,14 @@ extern NSString * const kPDSActorPreferencesTableCreateSQL;
 extern NSString * const kPDSActorMutesTableCreateSQL;
 extern NSString * const kPDSBookmarkTableCreateSQL;
 extern NSString * const kPDSStarterPackTableCreateSQL;
+extern NSString * const kPDSConversationsTableCreateSQL;
+extern NSString * const kPDSConversationMembersTableCreateSQL;
+extern NSString * const kPDSMessagesTableCreateSQL;
+extern NSString * const kPDSMessageReactionsTableCreateSQL;
+extern NSString * const kPDSIndexConversationMembersConvoSQL;
+extern NSString * const kPDSIndexConversationMembersActorSQL;
+extern NSString * const kPDSIndexMessagesConvoSQL;
+extern NSString * const kPDSIndexMessagesCreatedSQL;
 
 extern NSString * const kPDSIndexBlocksRepoDidSQL;
 extern NSString * const kPDSIndexBlobsDidSQL;

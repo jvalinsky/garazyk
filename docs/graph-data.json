@@ -3805,6 +3805,28 @@
       "created_at": "2026-04-16T23:51:05.333156-04:00",
       "updated_at": "2026-04-16T23:51:05.333156-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"326f66e3\"}"
+    },
+    {
+      "id": 347,
+      "change_id": "2922d67c-b380-4dd1-a1e7-4e2bce8490f6",
+      "node_type": "action",
+      "title": "Completed XRPC endpoint coverage analysis - PDS 100%, AppView ~85%, Chat ~25%, Ozone deferred",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-17T00:17:25.498857-04:00",
+      "updated_at": "2026-04-17T00:17:25.498857-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"aa933f41\"}"
+    },
+    {
+      "id": 348,
+      "change_id": "ebea597b-13b0-48bf-8219-f5066d740dae",
+      "node_type": "action",
+      "title": "Created implementation plan for XRPC coverage gaps - 5 phases prioritized by impact",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-17T00:29:03.892875-04:00",
+      "updated_at": "2026-04-17T00:29:03.892875-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3e05609c\"}"
     }
   ],
   "edges": [
