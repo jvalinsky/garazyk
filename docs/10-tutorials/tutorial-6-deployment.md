@@ -87,7 +87,6 @@ These are the settings that contributors should reason about first when reading 
 | --- | --- | --- |
 | `session.invite_code_required` | `true` | avoids open registration and abuse |
 | `plc.url` | `https://plc.directory` | keeps the PDS interoperable with the network |
-| `debug.skip_plc_operations` | `false` | prevents development bypasses in production |
 | `server.issuer` | public HTTPS issuer | determines discovery and token expectations |
 | `PDS_TRUST_PROXY_HEADERS` | enabled behind nginx | preserves correct upstream client context |
 
@@ -204,8 +203,7 @@ That is the deployment story contributors should preserve when they touch docs o
     "available_user_domains": ["example.com"]
   },
   "session": { "invite_code_required": true },
-  "plc": { "url": "https://plc.directory" },
-  "debug": { "skip_plc_operations": false }
+  "plc": { "url": "https://plc.directory" }
 }
 ```
 

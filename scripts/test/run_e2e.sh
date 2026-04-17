@@ -8,7 +8,7 @@ PDS_LOG="${LOG_DIR}/pds.log"
 PLC_LOG="${LOG_DIR}/plc.log"
 
 cat > "${CONFIG_PATH}" <<EOF
-{"server":{"data_dir":"${DATA_DIR}","host":"localhost"},"plc":{"url":"http://localhost:2582"},"debug":{"skip_plc_operations":false}}
+{"server":{"data_dir":"${DATA_DIR}","host":"localhost"},"plc":{"url":"http://localhost:2582"}}
 EOF
 
 # Disable biometric/keychain for headless tests

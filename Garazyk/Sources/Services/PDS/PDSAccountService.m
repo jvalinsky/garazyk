@@ -164,9 +164,6 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                                              did:(nullable NSString *)did
                                           error:(NSError **)error {
 
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    BOOL debugMode = config.debugSkipPlcOperations;
-
     // Validate Handle
     if (![ATProtoHandleValidator validateHandle:handle error:error]) {
         return nil;
@@ -182,8 +179,6 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 
     if (did) {
         resolvedDid = did;
-    } else if (debugMode) {
-        resolvedDid = [self generatePlcIdentifier];
     } else {
         resolvedDid = [self _registerDIDWithPLCWithHandle:handle
                                                signingKey:userKeyPair
@@ -476,16 +471,6 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 }
 
 #pragma mark - Private Helpers
-
-- (NSString *)generatePlcIdentifier {
-    static NSString *const kBase32Chars = @"abcdefghijklmnopqrstuvwxyz234567";
-    NSMutableString *str = [NSMutableString stringWithCapacity:24];
-    for (int i = 0; i < 24; i++) {
-        uint32_t idx = arc4random_uniform((uint32_t)kBase32Chars.length);
-        [str appendFormat:@"%C", [kBase32Chars characterAtIndex:idx]];
-    }
-    return [NSString stringWithFormat:@"did:plc:%@", str];
-}
 
 - (NSData *)generateSalt {
     NSMutableData *salt = [NSMutableData dataWithLength:32];

@@ -306,7 +306,6 @@ cat > "${CONFIG_PATH}" <<EOF
     "retry_delay_ms": 1000
   },
   "debug": {
-    "skip_plc_operations": false,
     "verbose_logging": true,
     "in_memory_databases": false,
     "reset_on_startup": false
@@ -325,7 +324,6 @@ echo "Log: ${LOG_FILE}"
 
 export PDS_LISTEN_HOST="${LISTEN_HOST}"
 export PDS_PLC_URL="${PLC_URL}"
-export PDS_DEBUG_SKIP_PLC="0"
 export PDS_ISSUER="${ISSUER}"
 export PDS_LOG_LEVEL="${LOG_LEVEL}"
 export PDS_EXPLORE_CACHE_DIR="${PDS_EXPLORE_CACHE_DIR:-/tmp/pds-explore-cache}"
