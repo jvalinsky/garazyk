@@ -461,6 +461,254 @@
                                                 error:error];
 }
 
+- (BOOL)rejectJoinRequest:(NSString *)requestId
+            rejectingDid:(NSString *)rejectingDid
+                  error:(NSError **)error {
+    if (!requestId) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Request ID is required"}];
+        return NO;
+    }
+
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+
+    NSString *updateQuery = @"UPDATE group_join_requests SET status = 'rejected', responded_at = ?, responded_by = ? WHERE id = ?";
+    return [(PDSDatabase *)self.database executeUpdate:updateQuery
+                                           withParams:@[now, rejectingDid, requestId]
+                                                error:error];
+}
+
+- (nullable NSArray<NSDictionary *> *)listJoinRequestsForGroup:(NSString *)groupUri
+                                                         error:(NSError **)error {
+    if (!groupUri) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+        return nil;
+    }
+
+    NSString *query = @"SELECT id, requester_did, status, requested_at, responded_at FROM group_join_requests "
+                     @"WHERE group_uri = ? AND status = 'pending' ORDER BY requested_at ASC";
+
+    NSError *queryError = nil;
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+                                                                      params:@[groupUri]
+                                                                       error:&queryError];
+    if (queryError) {
+        if (error) *error = queryError;
+        return nil;
+    }
+
+    NSMutableArray *requests = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        [requests addObject:@{
+            @"id": row[@"id"],
+            @"requesterDid": row[@"requester_did"],
+            @"status": row[@"status"],
+            @"requestedAt": row[@"requested_at"]
+        }];
+    }
+
+    return requests;
+}
+
+- (BOOL)leaveGroup:(NSString *)groupUri
+         memberDid:(NSString *)memberDid
+             error:(NSError **)error {
+    if (!groupUri || !memberDid) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI and member DID are required"}];
+        return NO;
+    }
+
+    // Prevent creator from leaving (would orphan the group)
+    NSString *creatorQuery = @"SELECT creator_did FROM groups WHERE uri = ?";
+    NSError *queryError = nil;
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:creatorQuery
+                                                                      params:@[groupUri]
+                                                                       error:&queryError];
+    if (queryError) {
+        if (error) *error = queryError;
+        return NO;
+    }
+
+    if (rows.count > 0 && [rows[0][@"creator_did"] isEqualToString:memberDid]) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:403
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Creator cannot leave group"}];
+        return NO;
+    }
+
+    NSString *deleteQuery = @"DELETE FROM group_members WHERE group_uri = ? AND member_did = ?";
+    return [(PDSDatabase *)self.database executeUpdate:deleteQuery
+                                           withParams:@[groupUri, memberDid]
+                                                error:error];
+}
+
+#pragma mark - Group Messaging
+
+- (nullable NSString *)sendMessageToGroup:(NSString *)groupUri
+                                senderDid:(NSString *)senderDid
+                                    text:(NSString *)text
+                                   embed:(nullable NSString *)embed
+                                   error:(NSError **)error {
+    if (!groupUri || !senderDid || !text || text.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI, sender DID, and text are required"}];
+        return nil;
+    }
+
+    // Verify sender is a member
+    BOOL isMember = [self isUserMember:senderDid inGroup:groupUri error:error];
+    if (!isMember) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:403
+                                             userInfo:@{NSLocalizedDescriptionKey: @"User is not a member of this group"}];
+        return nil;
+    }
+
+    NSString *messageId = [NSString stringWithFormat:@"msg/%@", [[NSUUID UUID] UUIDString]];
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+
+    NSString *insertQuery = @"INSERT INTO group_messages (id, group_uri, sender_did, text, embed_json, created_at) "
+                           @"VALUES (?, ?, ?, ?, ?, ?)";
+
+    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
+                                                   withParams:@[messageId, groupUri, senderDid, text,
+                                                               embed ?: @"", now]
+                                                        error:error];
+    if (!success) return nil;
+
+    return messageId;
+}
+
+- (nullable NSArray<NSDictionary *> *)getMessagesForGroup:(NSString *)groupUri
+                                                    limit:(NSInteger)limit
+                                                  cursor:(nullable NSString *)cursor
+                                                   error:(NSError **)error {
+    if (!groupUri) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+        return nil;
+    }
+
+    if (limit <= 0) limit = 50;
+    if (limit > 100) limit = 100;
+
+    NSString *query = @"SELECT id, sender_did, text, embed_json, created_at FROM group_messages "
+                     @"WHERE group_uri = ? ORDER BY created_at DESC LIMIT ?";
+
+    NSError *queryError = nil;
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+                                                                      params:@[groupUri, @(limit + 1)]
+                                                                       error:&queryError];
+    if (queryError) {
+        if (error) *error = queryError;
+        return nil;
+    }
+
+    NSMutableArray *messages = [NSMutableArray array];
+    NSInteger count = MIN((NSInteger)rows.count, limit);
+    for (NSInteger i = 0; i < count; i++) {
+        NSDictionary *row = rows[i];
+        [messages addObject:@{
+            @"id": row[@"id"],
+            @"senderDid": row[@"sender_did"],
+            @"text": row[@"text"],
+            @"embed": row[@"embed_json"] ?: @"",
+            @"createdAt": row[@"created_at"]
+        }];
+    }
+
+    return messages;
+}
+
+- (BOOL)addReactionToGroupMessage:(NSString *)messageId
+                       actorDid:(NSString *)actorDid
+                         emoji:(NSString *)emoji
+                         error:(NSError **)error {
+    if (!messageId || !actorDid || !emoji) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Message ID, actor DID, and emoji are required"}];
+        return NO;
+    }
+
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+
+    NSString *insertQuery = @"INSERT OR REPLACE INTO group_message_reactions (message_id, actor_did, emoji, created_at) "
+                           @"VALUES (?, ?, ?, ?)";
+
+    return [(PDSDatabase *)self.database executeUpdate:insertQuery
+                                           withParams:@[messageId, actorDid, emoji, now]
+                                                error:error];
+}
+
+- (BOOL)removeReactionFromGroupMessage:(NSString *)messageId
+                            actorDid:(NSString *)actorDid
+                              emoji:(NSString *)emoji
+                              error:(NSError **)error {
+    if (!messageId || !actorDid || !emoji) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Message ID, actor DID, and emoji are required"}];
+        return NO;
+    }
+
+    NSString *deleteQuery = @"DELETE FROM group_message_reactions WHERE message_id = ? AND actor_did = ? AND emoji = ?";
+    return [(PDSDatabase *)self.database executeUpdate:deleteQuery
+                                           withParams:@[messageId, actorDid, emoji]
+                                                error:error];
+}
+
+- (BOOL)deleteGroupMessageForSelf:(NSString *)messageId
+                        memberDid:(NSString *)memberDid
+                            error:(NSError **)error {
+    if (!messageId || !memberDid) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Message ID and member DID are required"}];
+        return NO;
+    }
+
+    // Get current deleted_for list
+    NSString *query = @"SELECT deleted_for_json FROM group_messages WHERE id = ?";
+    NSError *queryError = nil;
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+                                                                      params:@[messageId]
+                                                                       error:&queryError];
+    if (queryError) {
+        if (error) *error = queryError;
+        return NO;
+    }
+
+    if (rows.count == 0) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:404
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Message not found"}];
+        return NO;
+    }
+
+    // Parse JSON and add member
+    NSMutableArray *deletedFor = [NSMutableArray array];
+    NSString *deletedForJson = rows[0][@"deleted_for_json"];
+    if (deletedForJson && deletedForJson.length > 0) {
+        NSError *parseError = nil;
+        id parsed = [NSJSONSerialization JSONObjectWithData:[deletedForJson dataUsingEncoding:NSUTF8StringEncoding]
+                                                    options:0 error:&parseError];
+        if (parsed && [parsed isKindOfClass:[NSArray class]]) {
+            [deletedFor addObjectsFromArray:(NSArray *)parsed];
+        }
+    }
+
+    if (![deletedFor containsObject:memberDid]) {
+        [deletedFor addObject:memberDid];
+    }
+
+    // Update with new JSON
+    NSError *serializeError = nil;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:deletedFor options:0 error:&serializeError];
+    NSString *newDeletedForJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+    NSString *updateQuery = @"UPDATE group_messages SET deleted_for_json = ? WHERE id = ?";
+    return [(PDSDatabase *)self.database executeUpdate:updateQuery
+                                           withParams:@[newDeletedForJson, messageId]
+                                                error:error];
+}
+
 #pragma mark - Permission Checks
 
 - (BOOL)isUserAdmin:(NSString *)userDid

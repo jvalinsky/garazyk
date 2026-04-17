@@ -36,6 +36,8 @@ NSString * const kPDSGroupsTableName = @"groups";
 NSString * const kPDSGroupMembersTableName = @"group_members";
 NSString * const kPDSGroupInviteLinksTableName = @"group_invite_links";
 NSString * const kPDSGroupJoinRequestsTableName = @"group_join_requests";
+NSString * const kPDSGroupMessagesTableName = @"group_messages";
+NSString * const kPDSGroupMessageReactionsTableName = @"group_message_reactions";
 
 NSString * const kPDSAccountTableCreateSQL = 
     @"CREATE TABLE IF NOT EXISTS accounts ("
@@ -480,6 +482,34 @@ NSString * const kPDSIndexGroupJoinRequestsGroupSQL =
 
 NSString * const kPDSIndexGroupJoinRequestsRequesterSQL =
     @"CREATE INDEX IF NOT EXISTS idx_group_join_requests_requester ON group_join_requests(requester_did)";
+
+NSString * const kPDSGroupMessagesTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS group_messages ("
+    @"id TEXT PRIMARY KEY,"
+    @"group_uri TEXT NOT NULL,"
+    @"sender_did TEXT NOT NULL,"
+    @"text TEXT,"
+    @"embed_json TEXT,"
+    @"created_at TEXT NOT NULL,"
+    @"deleted_for_json TEXT,"
+    @"FOREIGN KEY (group_uri) REFERENCES groups(uri)"
+    @")";
+
+NSString * const kPDSGroupMessageReactionsTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS group_message_reactions ("
+    @"message_id TEXT NOT NULL,"
+    @"actor_did TEXT NOT NULL,"
+    @"emoji TEXT NOT NULL,"
+    @"created_at TEXT NOT NULL,"
+    @"PRIMARY KEY (message_id, actor_did, emoji),"
+    @"FOREIGN KEY (message_id) REFERENCES group_messages(id)"
+    @")";
+
+NSString * const kPDSIndexGroupMessagesGroupSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_group_messages_group ON group_messages(group_uri)";
+
+NSString * const kPDSIndexGroupMessagesCreatedSQL =
+    @"CREATE INDEX IF NOT EXISTS idx_group_messages_created ON group_messages(created_at)";
 
 #pragma mark - Video Jobs
 
