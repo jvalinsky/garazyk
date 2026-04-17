@@ -1,6 +1,7 @@
 #import "PLC/PLCServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/PDSHttpCappuccinoUIRoutePack.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCMetrics.h"
 #import "App/CappuccinoUI/CappuccinoUIHandler.h"
@@ -348,7 +349,6 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 - (void)setupRoutes {
     __weak typeof(self) weakSelf = self;
     CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
-    [cappuccinoUIHandler setServiceProfile:@"plc"];
     
     [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *req, HttpResponse *resp) {
         [[PLCMetrics sharedMetrics] recordRequest];
@@ -378,96 +378,36 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [resp setBodyString:metrics];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/ui" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [cappuccinoUIHandler handleRequest:req response:resp];
-    }];
-
-    [self.httpServer addRoute:@"GET" path:@"/ui/*" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [cappuccinoUIHandler handleRequest:req response:resp];
-    }];
-
     [self.httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *resp) {
         resp.statusCode = HttpStatusNoContent;
         resp.contentType = @"image/x-icon";
         [resp setBodyData:[NSData data]];
     }];
 
-    // Objective-J service UI at root
-    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [cappuccinoUIHandler handleRequest:req response:resp];
-    }];
+    // Objective-J service UI (/, /ui, /Frameworks/*, etc.)
+    [PDSHttpCappuccinoUIRoutePack registerRoutesWithServer:self.httpServer
+                                             dataDirectory:nil
+                                                controller:nil
+                                            serviceProfile:@"plc"];
 
     // Legacy static PLC UI (for backwards compatibility)
-    [self.httpServer addRoute:@"GET" path:@"/static" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:nil path:@"/static" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf serveStaticFile:@"index.html" response:resp];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/css/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:nil path:@"/css/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
         NSString *file = req.pathParameters[@"file"];
         [weakSelf serveStaticFile:[NSString stringWithFormat:@"css/%@", file] response:resp];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/css/fonts/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:nil path:@"/css/fonts/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
         NSString *file = req.pathParameters[@"file"];
         [weakSelf serveStaticFile:[NSString stringWithFormat:@"css/fonts/%@", file] response:resp];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/js/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
+    [self.httpServer addRoute:nil path:@"/js/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
         NSString *file = req.pathParameters[@"file"];
         [weakSelf serveStaticFile:[NSString stringWithFormat:@"js/%@", file] response:resp];
-    }];
-    
-    [self.httpServer addRoute:@"GET" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [[PLCMetrics sharedMetrics] recordRequest];
-        NSString *did = req.pathParameters[@"did"];
-        if ([did hasPrefix:@"did:plc:"]) {
-            [weakSelf handleGetDID:req response:resp];
-        } else {
-            // Fallback to static files if it doesn't look like a DID
-            [weakSelf serveStaticFile:did response:resp];
-        }
-    }];
-    
-    [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [weakSelf handleGetLog:req response:resp includeNullified:NO includeMetadata:NO];
-    }];
-    
-    [self.httpServer addRoute:@"GET" path:@"/:did/log/audit" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [weakSelf handleGetLog:req response:resp includeNullified:YES includeMetadata:YES];
-    }];
-
-    // Admin routes (protected)
-    [self.httpServer addRoute:@"GET" path:@"/_admin/capabilities" handler:^(HttpRequest *req, HttpResponse *resp) {
-        if (![weakSelf validateAuth:req response:resp]) return;
-        resp.statusCode = HttpStatusOK;
-        [resp setJsonBody:@{
-            @"success": @YES,
-            @"capabilities": @{
-                @"write_operation": @YES,
-                @"rebuild_audit": @YES,
-                @"export_data": @YES
-            },
-            @"version": @"1.0.0"
-        }];
-    }];
-
-    [self.httpServer addRoute:@"GET" path:@"/_admin/export" handler:^(HttpRequest *req, HttpResponse *resp) {
-        if (![weakSelf validateAuth:req response:resp]) return;
-        NSError *error = nil;
-        NSArray *dids = [weakSelf.store getAllDIDsWithError:&error];
-        if (error) {
-            resp.statusCode = HttpStatusInternalServerError;
-            [resp setJsonBody:@{@"error": error.localizedDescription}];
-        } else {
-            resp.statusCode = HttpStatusOK;
-            [resp setJsonBody:@{@"success": @YES, @"dids": dids, @"total": @(dids.count)}];
-        }
-    }];
-
-    [self.httpServer addRoute:@"POST" path:@"/_admin/audit/rebuild" handler:^(HttpRequest *req, HttpResponse *resp) {
-        if (![weakSelf validateAuth:req response:resp]) return;
-        resp.statusCode = HttpStatusOK;
-        [resp setJsonBody:@{@"success": @YES, @"message": @"Audit rebuilt"}];
     }];
     
     [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {
@@ -485,6 +425,18 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     [self.httpServer addRoute:@"POST" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
         [[PLCMetrics sharedMetrics] recordRequest];
         [weakSelf handlePostDID:req response:resp];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
+        NSString *did = req.pathParameters[@"did"];
+        if ([did hasPrefix:@"did:plc:"]) {
+            [[PLCMetrics sharedMetrics] recordRequest];
+            [weakSelf handleGetDID:req response:resp];
+        } else {
+            // No fallback here, let other routes match or 404
+            resp.statusCode = HttpStatusNotFound;
+            resp.statusMessage = [HttpResponse defaultMessageForCode:HttpStatusNotFound];
+        }
     }];
 }
 
@@ -642,6 +594,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         }
         NSString *expectedDid = [PLCOperation calculateDIDForData:op.data];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
+            PDS_LOG_CORE_ERROR(@"PLC genesis DID mismatch for %@: expected %@", did, expectedDid);
             [[PLCMetrics sharedMetrics] recordError];
             resp.statusCode = HttpStatusBadRequest;
             [resp setJsonBody:@{@"error": @"Genesis operation does not match DID"}];

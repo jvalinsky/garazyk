@@ -28,7 +28,13 @@
       "Bash(git commit:*)",
       "Bash(git verify-commit:*)",
       "Bash(deciduous sync:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git diff:*)",
+      "WebFetch(domain:www.cappuccino.dev)",
+      "WebFetch(domain:cappuccino.dev)",
+      "Bash(git reset:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker compose build:*)"
     ]
   }
 }

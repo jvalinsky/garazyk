@@ -403,9 +403,14 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     NSError *error = nil;
     NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
     if (!cbor) {
+        NSLog(@"PLCAuditor: Failed to encode unsigned data to CBOR: %@", error);
         return nil;
     }
-    return [CryptoUtils sha256:cbor];
+    NSLog(@"PLCAuditor: Unsigned data for hash: %@", data);
+    NSLog(@"PLCAuditor: Unsigned CBOR bytes: %@", [CryptoUtils hexStringFromData:cbor]);
+    NSData *hash = [CryptoUtils sha256:cbor];
+    NSLog(@"PLCAuditor: Calculated hash: %@", [CryptoUtils hexStringFromData:hash]);
+    return hash;
 }
 
 - (BOOL)isTombstoneOperation:(PLCOperation *)op {
@@ -538,11 +543,18 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 
 - (NSDictionary *)unsignedDataForOperation:(PLCOperation *)op {
     NSMutableDictionary *data = [op.data mutableCopy] ?: [NSMutableDictionary dictionary];
-    if (op.prev != nil) {
-        data[@"prev"] = op.prev;
-    } else if (!data[@"prev"]) {
+    
+    // Explicitly handle 'prev' field normalization for genesis operations
+    id prev = op.prev ?: data[@"prev"];
+    if (prev == nil || prev == [NSNull null]) {
         data[@"prev"] = [NSNull null];
+    } else {
+        data[@"prev"] = prev;
     }
+    
+    // Ensure all required fields are present in the reconstruction
+    if (!data[@"type"]) data[@"type"] = @"plc_operation";
+    
     return [data copy];
 }
 

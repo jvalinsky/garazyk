@@ -71,6 +71,8 @@
                                                        id _Nonnull obj2) {
           NSString *s1 = (NSString *)obj1;
           NSString *s2 = (NSString *)obj2;
+          if (s1.length < s2.length) return NSOrderedAscending;
+          if (s1.length > s2.length) return NSOrderedDescending;
           return [s1 compare:s2 options:NSLiteralSearch];
         }];
 

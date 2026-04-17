@@ -201,10 +201,12 @@
   for (NSString *candidate in candidates) {
     BOOL isDir = NO;
     if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+      PDS_LOG_DEBUG(@"CappuccinoUIHandler found assets at %@", candidate);
       return candidate;
     }
   }
 
+  PDS_LOG_ERROR(@"CappuccinoUIHandler could not find any valid assets path in candidates: %@", candidates);
   return nil;
 }
 
