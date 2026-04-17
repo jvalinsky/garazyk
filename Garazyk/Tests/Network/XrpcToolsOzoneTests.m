@@ -498,6 +498,87 @@
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
+#pragma mark - Signature Tests
+
+- (void)testFindRelatedAccountsSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.signature.findRelatedAccounts"
+                                                      body:@{
+                                                          @"did": self.userDid,
+                                                          @"limit": @"50"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"accounts"]);
+    XCTAssertIsInstance(response.jsonBody[@"accounts"], [NSArray class]);
+}
+
+- (void)testFindRelatedAccountsRequiresDid {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.signature.findRelatedAccounts"
+                                                      body:@{@"limit": @"50"}
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testFindCorrelationSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.signature.findCorrelation"
+                                                      body:@{
+                                                          @"did1": self.userDid,
+                                                          @"did2": @"did:plc:another_user_did"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"correlation"]);
+    XCTAssertNotNil(response.jsonBody[@"confidence"]);
+    XCTAssertIsInstance(response.jsonBody[@"confidence"], [NSNumber class]);
+}
+
+- (void)testFindCorrelationRequiresDid1 {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.signature.findCorrelation"
+                                                      body:@{
+                                                          @"did2": @"did:plc:another_user_did"
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testFindCorrelationRequiresDid2 {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.signature.findCorrelation"
+                                                      body:@{
+                                                          @"did1": self.userDid
+                                                      }
+                                                   headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
+- (void)testSearchAccountsSuccessfully {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.signature.searchAccounts"
+                                             queryString:@"query=ip_hash&limit=50"
+                                             queryParams:@{@"query": @"ip_hash", @"limit": @"50"}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"accounts"]);
+    XCTAssertIsInstance(response.jsonBody[@"accounts"], [NSArray class]);
+}
+
+- (void)testSearchAccountsRequiresQuery {
+    NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.signature.searchAccounts"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{@"authorization": adminAuthHeader}];
+    XCTAssertEqual(response.statusCode, 400);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
+}
+
 #pragma mark - Server Config Tests
 
 - (void)testGetServerConfigSuccessfully {
