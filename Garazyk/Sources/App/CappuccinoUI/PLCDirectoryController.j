@@ -24,6 +24,7 @@
     CPTextField _searchField;
     CPTextField _statusLabel;
     CPTextField _countLabel;
+    EmptyStateView _emptyState;
 
     id _delegate;
 }
@@ -155,10 +156,13 @@
 - (void)loadDirectory
 {
     [_statusLabel setStringValue:@"Loading directory..."];
+    [self hideEmptyState];
 
     [_apiClient fetch:@"GET" path:@"/_list" params:nil completion:function(response, error) {
         if (error) {
-            [_statusLabel setStringValue:@"Error: " + error.localizedDescription];
+            [self setErrorStatus:error.localizedDescription];
+            [self showEmptyStateWithIcon:EmptyStateIconCloudOff
+                                  message:@"Could not reach PLC directory. " + error.localizedDescription];
             return;
         }
 
@@ -175,8 +179,51 @@
         _filteredDids = _dids;
         [_didTable reloadData];
         [self updateCountLabel];
-        [_statusLabel setStringValue:@"Loaded " + _dids.length + " identities"];
+
+        if (_dids.length === 0) {
+            [self showEmptyStateWithIcon:EmptyStateIconInbox
+                                  message:@"No identities found in PLC directory. New accounts may take a moment to register."];
+            [self setSuccessStatus:@"PLC directory is empty"];
+        } else {
+            [self setSuccessStatus:@"Loaded " + _dids.length + " identities"];
+        }
     }];
+}
+
+#pragma mark - Empty State Helpers
+
+- (void)showEmptyStateWithIcon:(CPString)icon message:(CPString)message
+{
+    if (!_rootView)
+        return;
+
+    if (!_emptyState)
+        _emptyState = [[EmptyStateView alloc] initWithFrame:[_rootView bounds]
+                                                        icon:icon
+                                                     message:message
+                                                  actionTitle:@"Try Again"
+                                                actionHandler:function() { [self loadDirectory]; }];
+
+    [_emptyState setIcon:icon];
+    [_emptyState setMessage:message];
+
+    // Position it over the table area if possible
+    var frame = [_rootView bounds];
+    if (_didTable && [_didTable superview])
+    {
+        var scroll = [[_didTable superview] superview];
+        if (scroll && [scroll isKindOfClass:[CPScrollView class]])
+            frame = [scroll frame];
+    }
+    
+    [_emptyState setFrame:frame];
+    [_emptyState showInView:_rootView];
+}
+
+- (void)hideEmptyState
+{
+    if (_emptyState)
+        [_emptyState hide];
 }
 
 - (void)updateCountLabel
@@ -224,7 +271,7 @@
 
 - (CPInteger)numberOfRowsInTableView:(CPTableView)tableView
 {
-    return _filteredDids.length;
+    return _filteredDids ? _filteredDids.length : 0;
 }
 
 - (id)tableView:(CPTableView)tableView objectValueForTableColumn:(CPTableColumn)column row:(CPInteger)row
