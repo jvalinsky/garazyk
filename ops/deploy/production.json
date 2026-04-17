@@ -10,7 +10,6 @@
     "retry_delay_ms": 2000
   },
   "debug": {
-    "skip_plc_operations": false,
     "verbose_logging": false,
     "in_memory_databases": false,
     "reset_on_startup": false,
