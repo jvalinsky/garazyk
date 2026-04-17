@@ -1,6 +1,5 @@
 #import "GroupService.h"
 #import "Database/PDSDatabase.h"
-#import "Core/NSURL+Extensions.h"
 #import "Debug/PDSLogger.h"
 
 @interface GroupService ()
@@ -38,8 +37,8 @@
     // Create group
     NSString *insertQuery = @"INSERT INTO groups (uri, creator_did, name, description, privacy, joinability, created_at, updated_at) "
                            @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                   withParams:@[groupUri, creatorDid, name, description ?: @"",
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                   params:@[groupUri, creatorDid, name, description ?: @"",
                                                                privacy, joinability, now, now]
                                                         error:error];
     if (!success) return nil;
@@ -47,8 +46,8 @@
     // Add creator as admin
     NSString *memberQuery = @"INSERT INTO group_members (group_uri, member_did, role, status, joined_at) "
                            @"VALUES (?, ?, ?, ?, ?)";
-    success = [(PDSDatabase *)self.database executeUpdate:memberQuery
-                                              withParams:@[groupUri, creatorDid, @"admin", @"accepted", now]
+    success = [(PDSDatabase *)self.database executeParameterizedUpdate:memberQuery
+                                              params:@[groupUri, creatorDid, @"admin", @"accepted", now]
                                                    error:error];
     if (!success) return nil;
 
@@ -96,7 +95,7 @@
     NSString *updateQuery = [NSString stringWithFormat:@"UPDATE groups SET %@ WHERE uri = ?",
                             [updates componentsJoinedByString:@", "]];
 
-    return [(PDSDatabase *)self.database executeUpdate:updateQuery withParams:params error:error];
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:params error:error];
 }
 
 - (nullable NSDictionary *)getGroupPublicInfo:(NSString *)groupUri
@@ -163,8 +162,8 @@
     for (NSString *memberDid in memberDids) {
         NSString *insertQuery = @"INSERT OR IGNORE INTO group_members (group_uri, member_did, role, status, invited_by, joined_at) "
                                @"VALUES (?, ?, ?, ?, ?, ?)";
-        BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                       withParams:@[groupUri, memberDid, @"member", @"accepted",
+        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                       params:@[groupUri, memberDid, @"member", @"accepted",
                                                                    inviterDid, now]
                                                             error:error];
         if (!success) return NO;
@@ -185,8 +184,8 @@
     // Remove each member
     for (NSString *memberDid in memberDids) {
         NSString *deleteQuery = @"DELETE FROM group_members WHERE group_uri = ? AND member_did = ?";
-        BOOL success = [(PDSDatabase *)self.database executeUpdate:deleteQuery
-                                                       withParams:@[groupUri, memberDid]
+        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:deleteQuery
+                                                       params:@[groupUri, memberDid]
                                                             error:error];
         if (!success) return NO;
     }
@@ -255,8 +254,8 @@
     NSString *insertQuery = @"INSERT INTO group_invite_links (id, group_uri, created_by, created_at, expires_at, max_uses, uses, enabled) "
                            @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                   withParams:@[linkId, groupUri, createdByDid, now,
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                   params:@[linkId, groupUri, createdByDid, now,
                                                                expiresAt ?: @"", maxUses ?: @0, @0, @1]
                                                         error:error];
     if (!success) return nil;
@@ -300,7 +299,7 @@
     NSString *updateQuery = [NSString stringWithFormat:@"UPDATE group_invite_links SET %@ WHERE id = ?",
                             [updates componentsJoinedByString:@", "]];
 
-    return [(PDSDatabase *)self.database executeUpdate:updateQuery withParams:params error:error];
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:params error:error];
 }
 
 - (BOOL)disableInviteLink:(NSString *)linkId
@@ -312,7 +311,7 @@
     }
 
     NSString *updateQuery = @"UPDATE group_invite_links SET enabled = 0 WHERE id = ?";
-    return [(PDSDatabase *)self.database executeUpdate:updateQuery withParams:@[linkId] error:error];
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:@[linkId] error:error];
 }
 
 - (nullable NSDictionary *)validateAndUseInviteLink:(NSString *)linkId
@@ -377,14 +376,14 @@
 
     NSString *insertQuery = @"INSERT OR IGNORE INTO group_members (group_uri, member_did, role, status, joined_at) "
                            @"VALUES (?, ?, ?, ?, ?)";
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                   withParams:@[groupUri, memberDid, @"member", @"accepted", now]
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                   params:@[groupUri, memberDid, @"member", @"accepted", now]
                                                         error:error];
     if (!success) return nil;
 
     // Increment uses
     NSString *updateQuery = @"UPDATE group_invite_links SET uses = uses + 1 WHERE id = ?";
-    [(PDSDatabase *)self.database executeUpdate:updateQuery withParams:@[linkId] error:nil];
+    [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:@[linkId] error:nil];
 
     return @{@"groupUri": groupUri, @"status": @"success"};
 }
@@ -406,8 +405,8 @@
     NSString *insertQuery = @"INSERT OR IGNORE INTO group_join_requests (id, group_uri, requester_did, status, requested_at) "
                            @"VALUES (?, ?, ?, ?, ?)";
 
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                   withParams:@[requestId, groupUri, requesterDid, @"pending", now]
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                   params:@[requestId, groupUri, requesterDid, @"pending", now]
                                                         error:error];
     if (!success) return nil;
 
@@ -448,16 +447,16 @@
     // Add member to group
     NSString *insertQuery = @"INSERT OR IGNORE INTO group_members (group_uri, member_did, role, status, invited_by, joined_at) "
                            @"VALUES (?, ?, ?, ?, ?, ?)";
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                   withParams:@[groupUri, requesterDid, @"member", @"accepted",
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                   params:@[groupUri, requesterDid, @"member", @"accepted",
                                                                approvingDid, now]
                                                         error:error];
     if (!success) return NO;
 
     // Update request status
     NSString *updateQuery = @"UPDATE group_join_requests SET status = 'approved', responded_at = ?, responded_by = ? WHERE id = ?";
-    return [(PDSDatabase *)self.database executeUpdate:updateQuery
-                                           withParams:@[now, approvingDid, requestId]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+                                           params:@[now, approvingDid, requestId]
                                                 error:error];
 }
 
@@ -473,8 +472,8 @@
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
 
     NSString *updateQuery = @"UPDATE group_join_requests SET status = 'rejected', responded_at = ?, responded_by = ? WHERE id = ?";
-    return [(PDSDatabase *)self.database executeUpdate:updateQuery
-                                           withParams:@[now, rejectingDid, requestId]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+                                           params:@[now, rejectingDid, requestId]
                                                 error:error];
 }
 
@@ -538,8 +537,8 @@
     }
 
     NSString *deleteQuery = @"DELETE FROM group_members WHERE group_uri = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeUpdate:deleteQuery
-                                           withParams:@[groupUri, memberDid]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:deleteQuery
+                                           params:@[groupUri, memberDid]
                                                 error:error];
 }
 
@@ -570,8 +569,8 @@
     NSString *insertQuery = @"INSERT INTO group_messages (id, group_uri, sender_did, text, embed_json, created_at) "
                            @"VALUES (?, ?, ?, ?, ?, ?)";
 
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                   withParams:@[messageId, groupUri, senderDid, text,
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                   params:@[messageId, groupUri, senderDid, text,
                                                                embed ?: @"", now]
                                                         error:error];
     if (!success) return nil;
@@ -635,8 +634,8 @@
     NSString *insertQuery = @"INSERT OR REPLACE INTO group_message_reactions (message_id, actor_did, emoji, created_at) "
                            @"VALUES (?, ?, ?, ?)";
 
-    return [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                           withParams:@[messageId, actorDid, emoji, now]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                           params:@[messageId, actorDid, emoji, now]
                                                 error:error];
 }
 
@@ -651,8 +650,8 @@
     }
 
     NSString *deleteQuery = @"DELETE FROM group_message_reactions WHERE message_id = ? AND actor_did = ? AND emoji = ?";
-    return [(PDSDatabase *)self.database executeUpdate:deleteQuery
-                                           withParams:@[messageId, actorDid, emoji]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:deleteQuery
+                                           params:@[messageId, actorDid, emoji]
                                                 error:error];
 }
 
@@ -704,8 +703,8 @@
     NSString *newDeletedForJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 
     NSString *updateQuery = @"UPDATE group_messages SET deleted_for_json = ? WHERE id = ?";
-    return [(PDSDatabase *)self.database executeUpdate:updateQuery
-                                           withParams:@[newDeletedForJson, messageId]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+                                           params:@[newDeletedForJson, messageId]
                                                 error:error];
 }
 

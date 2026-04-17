@@ -41,8 +41,8 @@
     NSString *insertQuery = @"INSERT OR IGNORE INTO admin_audit_log (id, action, subjectDid, reason, createdBy, createdAt, details) "
                            @"VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                   withParams:@[eventId, @"MODERATION_EVENT", adminDid ?: @"",
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                   params:@[eventId, @"MODERATION_EVENT", adminDid ?: @"",
                                                                event[@"reason"] ?: @"", adminDid, now, eventJson]
                                                         error:error];
 

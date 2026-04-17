@@ -1,6 +1,5 @@
 #import "ChatService.h"
 #import "Database/PDSDatabase.h"
-#import "Core/NSURL+Extensions.h"
 #import "Debug/PDSLogger.h"
 
 @interface ChatService ()
@@ -33,16 +32,16 @@
 
     // Create conversation
     NSString *insertQuery = @"INSERT INTO conversations (id, created_at, updated_at) VALUES (?, ?, ?)";
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:insertQuery
-                                                    withParams:@[convoId, now, now]
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
+                                                    params:@[convoId, now, now]
                                                          error:error];
     if (!success) return nil;
 
     // Add members
     for (NSString *memberDid in memberDids) {
         NSString *memberQuery = @"INSERT INTO conversation_members (convo_id, member_did, status, joined_at) VALUES (?, ?, ?, ?)";
-        success = [(PDSDatabase *)self.database executeUpdate:memberQuery
-                                                   withParams:@[convoId, memberDid, @"pending", now]
+        success = [(PDSDatabase *)self.database executeParameterizedUpdate:memberQuery
+                                                   params:@[convoId, memberDid, @"pending", now]
                                                         error:error];
         if (!success) return nil;
     }
@@ -167,8 +166,8 @@
                  memberDid:(NSString *)memberDid
                      error:(NSError **)error {
     NSString *query = @"UPDATE conversation_members SET status = ? WHERE convo_id = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[@"accepted", convoId, memberDid]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[@"accepted", convoId, memberDid]
                                                  error:error];
 }
 
@@ -176,8 +175,8 @@
                 memberDid:(NSString *)memberDid
                    error:(NSError **)error {
     NSString *query = @"UPDATE conversation_members SET status = ? WHERE convo_id = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[@"left", convoId, memberDid]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[@"left", convoId, memberDid]
                                                  error:error];
 }
 
@@ -217,14 +216,14 @@
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
 
     NSString *query = @"INSERT INTO messages (id, convo_id, sender_did, text, embed_json, created_at) VALUES (?, ?, ?, ?, ?, ?)";
-    BOOL success = [(PDSDatabase *)self.database executeUpdate:query
-                                                    withParams:@[messageId, convoId, senderDid, text ?: [NSNull null], embedJson ?: [NSNull null], now]
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                                    params:@[messageId, convoId, senderDid, text ?: [NSNull null], embedJson ?: [NSNull null], now]
                                                          error:error];
     if (!success) return nil;
 
     // Update conversation updated_at
     NSString *updateQuery = @"UPDATE conversations SET updated_at = ? WHERE id = ?";
-    [(PDSDatabase *)self.database executeUpdate:updateQuery withParams:@[now, convoId] error:nil];
+    [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:@[now, convoId] error:nil];
 
     return @{
         @"id": messageId,
@@ -303,8 +302,8 @@
     NSString *newJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 
     NSString *updateQuery = @"UPDATE messages SET deleted_for_json = ? WHERE id = ?";
-    return [(PDSDatabase *)self.database executeUpdate:updateQuery
-                                            withParams:@[newJson, messageId]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery
+                                            params:@[newJson, messageId]
                                                  error:error];
 }
 
@@ -313,8 +312,8 @@
                     messageId:(NSString *)messageId
                         error:(NSError **)error {
     NSString *query = @"UPDATE conversation_members SET last_read_id = ? WHERE convo_id = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[messageId, convoId, memberDid]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[messageId, convoId, memberDid]
                                                  error:error];
 }
 
@@ -326,8 +325,8 @@
                error:(NSError **)error {
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
     NSString *query = @"INSERT OR REPLACE INTO message_reactions (message_id, actor_did, emoji, created_at) VALUES (?, ?, ?, ?)";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[messageId, actorDid, emoji, now]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[messageId, actorDid, emoji, now]
                                                  error:error];
 }
 
@@ -336,8 +335,8 @@
                  emoji:(NSString *)emoji
                  error:(NSError **)error {
     NSString *query = @"DELETE FROM message_reactions WHERE message_id = ? AND actor_did = ? AND emoji = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[messageId, actorDid, emoji]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[messageId, actorDid, emoji]
                                                  error:error];
 }
 
@@ -347,8 +346,8 @@
               memberDid:(NSString *)memberDid
                   error:(NSError **)error {
     NSString *query = @"UPDATE conversation_members SET muted = 1 WHERE convo_id = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[convoId, memberDid]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[convoId, memberDid]
                                                  error:error];
 }
 
@@ -356,8 +355,8 @@
                  memberDid:(NSString *)memberDid
                      error:(NSError **)error {
     NSString *query = @"UPDATE conversation_members SET muted = 0 WHERE convo_id = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[convoId, memberDid]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[convoId, memberDid]
                                                  error:error];
 }
 
@@ -367,8 +366,8 @@
                   error:(NSError **)error {
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
     NSString *query = @"UPDATE conversations SET locked = 1, updated_at = ? WHERE id = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[now, convoId]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[now, convoId]
                                                  error:error];
 }
 
@@ -376,8 +375,8 @@
                      error:(NSError **)error {
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
     NSString *query = @"UPDATE conversations SET locked = 0, updated_at = ? WHERE id = ?";
-    return [(PDSDatabase *)self.database executeUpdate:query
-                                            withParams:@[now, convoId]
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[now, convoId]
                                                  error:error];
 }
 
