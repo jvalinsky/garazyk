@@ -153,53 +153,91 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
         }
         return nil;
     }
-    
-    // Handle did:plc with PLC directory resolution and local fallback
-    if ([did hasPrefix:@"did:plc:"]) {
-        NSString *plcUrl = configuration.plcURL;
-        if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
-            plcUrl = @"http://127.0.0.1:2582";
-        }
-        
-        DIDPLCResolver *resolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
-        resolver.timeout = 10.0;
-        
-        NSError *plcError = nil;
-        NSDictionary *doc = [resolver resolveDID:did error:&plcError];
-        if (doc) {
-            return doc;
-        }
-        
-        // PLC unreachable or DID not found there — try local account as fallback
-        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
-        if (account && account.handle.length > 0) {
-            NSString *serviceEndpoint = [configuration canonicalIssuerWithPortHint:0];
-            return @{
-                @"@context": @[@"https://www.w3.org/ns/did/v1"],
-                @"id": did,
-                @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", account.handle]],
-                @"service": @[
-                    @{
-                        @"id": @"#atproto_pds",
-                        @"type": @"AtprotoPersonalDataServer",
-                        @"serviceEndpoint": serviceEndpoint
-                    }
-                ]
-            };
-        }
-        
+
+    // Parse DID method
+    NSArray<NSString *> *components = [did componentsSeparatedByString:@":"];
+    if (components.count < 3) {
         if (error) {
-            *error = plcError;
+            *error = [NSError errorWithDomain:@"com.atproto.identity"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID format"}];
         }
         return nil;
     }
-    
-    // Unsupported DID method
+
+    NSString *method = components[1];
+
+    // AT Protocol only supports did:plc and did:web
+    if (![method isEqualToString:@"plc"] && ![method isEqualToString:@"web"]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.identity"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                         [NSString stringWithFormat:@"Unsupported DID method: %@ (AT Protocol only supports did:plc and did:web)", did]}];
+        }
+        return nil;
+    }
+
+    // First try local account as fast path (for hosted DIDs)
+    PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
+    if (account && account.handle.length > 0) {
+        NSString *serviceEndpoint = [configuration canonicalIssuerWithPortHint:0];
+        NSDictionary *localDoc = @{
+            @"@context": @[@"https://www.w3.org/ns/did/v1"],
+            @"id": did,
+            @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", account.handle]],
+            @"service": @[
+                @{
+                    @"id": @"#atproto_pds",
+                    @"type": @"AtprotoPersonalDataServer",
+                    @"serviceEndpoint": serviceEndpoint
+                }
+            ]
+        };
+
+        // For did:plc, prefer fresh data from PLC directory
+        if ([method isEqualToString:@"plc"]) {
+            NSString *plcUrl = configuration.plcURL;
+            if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
+                plcUrl = @"http://127.0.0.1:2582";
+            }
+
+            DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+            plcResolver.timeout = 10.0;
+
+            NSError *plcError = nil;
+            NSDictionary *doc = [plcResolver resolveDID:did error:&plcError];
+            if (doc) {
+                return doc;
+            }
+        }
+
+        // For did:web, try external resolution via DIDResolver
+        if ([method isEqualToString:@"web"]) {
+            DIDResolver *didResolver = [DIDResolver sharedResolver];
+            NSError *resolveError = nil;
+            DIDDocument *doc = [didResolver resolveDIDSync:did error:&resolveError];
+            if (doc) {
+                return doc.jsonDictionary;
+            }
+        }
+
+        // Return local account data if external resolution fails
+        return localDoc;
+    }
+
+    // No local account - use DIDResolver for external resolution
+    // DIDResolver supports both did:plc and did:web
+    DIDResolver *didResolver = [DIDResolver sharedResolver];
+    NSError *resolveError = nil;
+    DIDDocument *doc = [didResolver resolveDIDSync:did error:&resolveError];
+
+    if (doc) {
+        return doc.jsonDictionary;
+    }
+
     if (error) {
-        *error = [NSError errorWithDomain:@"com.atproto.identity"
-                                     code:1
-                                 userInfo:@{NSLocalizedDescriptionKey:
-                                     [NSString stringWithFormat:@"Unsupported DID method: %@", did]}];
+        *error = resolveError;
     }
     return nil;
 }
