@@ -4168,6 +4168,17 @@
       "created_at": "2026-04-17T10:46:52.052266-04:00",
       "updated_at": "2026-04-17T10:46:52.052266-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 380,
+      "change_id": "aff825bb-9f34-4eba-a555-11e4e1cd19af",
+      "node_type": "outcome",
+      "title": "Code review verified P0/P1 bugs don't exist - KDF, padding, backup script, admin auth all correct. Proceeding with Sprint 2 reliability work.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-17T10:47:14.374729-04:00",
+      "updated_at": "2026-04-17T10:47:14.374729-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"c3ba36e1\"}"
     }
   ],
   "edges": [
@@ -7888,6 +7899,39 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-17T10:10:47.252199-04:00"
+    },
+    {
+      "id": 339,
+      "from_node_id": 375,
+      "to_node_id": 380,
+      "from_change_id": "a863f18c-19a6-4111-985d-81bfded6f0c4",
+      "to_change_id": "aff825bb-9f34-4eba-a555-11e4e1cd19af",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Decision resolved by code review findings",
+      "created_at": "2026-04-17T10:47:18.671731-04:00"
+    },
+    {
+      "id": 340,
+      "from_node_id": 377,
+      "to_node_id": 379,
+      "from_change_id": "5f10a50c-46eb-40a3-ae88-e38c2f3bdf42",
+      "to_change_id": "6bbe64c0-348d-4ca7-a4c3-2756f794f57a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Part of Sprint 2 goal",
+      "created_at": "2026-04-17T10:47:18.788814-04:00"
+    },
+    {
+      "id": 341,
+      "from_node_id": 378,
+      "to_node_id": 379,
+      "from_change_id": "3c9b9841-8200-415e-be46-ee481a741c91",
+      "to_change_id": "6bbe64c0-348d-4ca7-a4c3-2756f794f57a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Part of Sprint 2 goal",
+      "created_at": "2026-04-17T10:47:18.910372-04:00"
     }
   ],
   "documents": [

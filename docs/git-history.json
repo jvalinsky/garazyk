@@ -1,11 +1,19 @@
 [
   {
-    "hash": "176d37b73dac9b325b2604483e7adfd64895d192",
-    "short_hash": "176d37b",
+    "hash": "c3ba36e17383a7783ee696aa89249d1033777b91",
+    "short_hash": "c3ba36e",
     "author": "Security Bot",
-    "date": "2026-04-17T10:02:39-04:00",
-    "message": "feat(xrpc): add tools.ozone.hosting endpoint\n\nImplement account hosting history tracking endpoint:\n- getAccountHistory: Retrieve hosting events for an account\n  (migrations, moves, suspensions, etc.)\n\nReturns chronological list of hosting events with pagination support.\nAdds new ModerationService method for hosting history queries.\nIncludes 2 test cases covering success and validation.\n\nCoverage: 262/277 endpoints (94.6%)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "date": "2026-04-17T10:47:08-04:00",
+    "message": "decision: skip non-existent P0/P1 bugs, proceed with Sprint 2 reliability improvements\n\nCode review findings:\n- Password KDF: Correctly uses UTF-8 byte length (not UTF-16 char count)\n- Base64URL padding: Proper calculation with edge case handling\n- Backup script: Already uses correct service.db naming\n- Admin auth: No selector mismatch found in method registry\n\nInstead of pursuing hypothetical bugs, prioritizing concrete reliability work:\n\nSprint 2: Reliability improvements\n- WebSocket backpressure: Queue byte cap (10MB), backpressure signals\n- Test environment: Graceful fallback for restricted environments\n\nUpdated deciduous nodes:\n- Node 375: Decision on production readiness phase focus\n- Node 376: Option to skip P0/P1 bugs\n- Node 377: WebSocket backpressure action\n- Node 378: Test environment robustness action\n- Node 379: Sprint 2 goal\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 4
+  },
+  {
+    "hash": "0371eb3ea23ee569975ac77079e0a43ce1c638f7",
+    "short_hash": "0371eb3",
+    "author": "Security Bot",
+    "date": "2026-04-17T10:04:00-04:00",
+    "message": "docs: update XRPC coverage analysis with completed endpoints\n\nCoverage increased from 242/277 (87.4%) to 262/277 (94.6%) by implementing:\n- Sprint 1: 8 app.bsky.unspecced user discovery endpoints\n- Sprint 2: 5 tools.ozone.safelink endpoints\n- Sprint 3: 3 tools.ozone.setting endpoints\n- Sprint 4: 3 tools.ozone.signature endpoints\n- Sprint 5: 1 tools.ozone.hosting endpoint\n\nUpdated endpoint count and coverage percentages:\n- app.bsky.unspecced: 100% coverage (29 endpoints)\n- tools.ozone: 100% coverage (43 endpoints)\n- Overall: 94.6% coverage (262 of 277 endpoints)\n\nRemaining gaps: 15 endpoints (mostly chat.bsky.convo batch operations)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1
   },
   {
     "hash": "7b65ac29558f4c4cf60e63b7484f34b3af39efd3",
@@ -24,12 +32,12 @@
     "files_changed": 1
   },
   {
-    "hash": "beaf429fd68a10d9b2cc495b517e0d1653f3d9ab",
-    "short_hash": "beaf429",
+    "hash": "3f17111001753858ffe71bc93ba4a568f4cfabf1",
+    "short_hash": "3f17111",
     "author": "Security Bot",
-    "date": "2026-04-17T07:30:01-04:00",
-    "message": "feat(mst): implement walker-based diff algorithm (spec-aligned)\n\nReplace the simplified recursive diff with a two-walker parallel\ntraversal algorithm that matches the TypeScript reference\nimplementation at bluesky-social/atproto.\n\nKey changes:\n- Add MSTWalker class for depth-first MST traversal in key order\n- Add MSTInternal.h for private property access during traversal\n- Rewrite diffFrom: to use two-walker parallel traversal\n- Handle layer mismatches, subtree comparisons, and CID equality\n\nThe previous implementation had a critical bug at line 1173 where\nit passed nil for oldNode instead of finding the matching entry,\nproducing incorrect diff operations during repo sync.\n\nSpec reference:\nhttps://github.com/bluesky-social/atproto/blob/main/packages/repo/src/mst/diff.ts\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
-    "files_changed": 4
+    "date": "2026-04-17T07:31:00-04:00",
+    "message": "fix(appview): use correct PDSDatabase method names\n\nChatService, GroupService, and ModerationService were using\nincorrect method names executeUpdate:withParams: instead of\nthe correct executeParameterizedUpdate:params:.\n\nAlso removed unused Core/NSURL+Extensions.h imports from\nChatService and GroupService.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 3
   },
   {
     "hash": "aafe47cee96a9deaa2c34db0779bccd1299bd584",
