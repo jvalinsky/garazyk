@@ -554,10 +554,20 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
 - (BOOL)startWithError:(NSError **)error {
     PDS_LOG_CORE_INFO(@"Starting PDSApplication...");
-    
+
+    // TODO (Sprint 4 Phase 2): Integrate PDSReadinessCheck before accepting traffic
+    // Uncomment when PDSReadinessCheck is fully integrated:
+    //
+    // NSError *readinessError = nil;
+    // if (![PDSReadinessCheck performReadinessChecksWithConfig:_configuration error:&readinessError]) {
+    //     PDS_LOG_CORE_ERROR(@"Server failed readiness checks: %@", readinessError);
+    //     if (error) *error = readinessError;
+    //     return NO;
+    // }
+
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
-    
+
     // Build and configure HTTP server
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:_configuration];
     builder.port = self.httpPort;
