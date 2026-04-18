@@ -6,7 +6,7 @@ title: "Tutorial 1: Hello PDS"
 
 ## Overview
 
-This tutorial is the shortest path to understanding how September boots and exposes its first useful protocol surface. It does not try to turn the whole server into a toy standalone lab. Instead, it walks the real repository path from CLI startup to the `describeServer` response.
+This tutorial is the shortest path to understanding how Garazyk boots and exposes its first useful protocol surface. It does not try to turn the whole server into a toy standalone lab. Instead, it walks the real repository path from CLI startup to the `describeServer` response.
 
 That makes it a better first tutorial for contributors because the important question is not "how do I rewrite a tiny HTTP server?" It is "how does this codebase actually start, register routes, and answer discovery?"
 
@@ -76,7 +76,7 @@ For this tutorial, the most useful files are:
 - `Garazyk/Sources/Network/PDSHttpServerBuilder.m`
 - `Garazyk/Sources/Network/HttpServer.m`
 
-The design reason is straightforward: September wants server boot to be centrally composed rather than scattered across unrelated handlers.
+The design reason is straightforward: Garazyk wants server boot to be centrally composed rather than scattered across unrelated handlers.
 
 ## Step 3: Identify Where `describeServer` Comes From
 
@@ -131,7 +131,7 @@ Those tests tell you which invariants the project already considers worth protec
 
 ## Summary
 
-The "hello world" of September is not a toy socket server. It is the real boot path:
+The "hello world" of Garazyk is not a toy socket server. It is the real boot path:
 
 - CLI command,
 - configuration load,

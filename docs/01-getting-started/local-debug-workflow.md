@@ -28,7 +28,7 @@ flowchart TD
 
 ## Why This Workflow Beats Random Grepping
 
-September has enough layers that a blind search often finds a related file before it finds the owning file. The faster workflow is:
+Garazyk has enough layers that a blind search often finds a related file before it finds the owning file. The faster workflow is:
 
 1. classify the surface,
 2. follow the runtime path,

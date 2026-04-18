@@ -6,7 +6,7 @@ title: Request Lifecycle
 
 ## Overview
 
-A useful mental model for September is: transport first, protocol second, service logic third, persistence last. When you debug a bug, you are usually finding the stage where that chain stopped behaving as expected.
+A useful mental model for Garazyk is: transport first, protocol second, service logic third, persistence last. When you debug a bug, you are usually finding the stage where that chain stopped behaving as expected.
 
 This page describes the normal flow for a request that enters the PDS and the places contributors most often need to inspect.
 

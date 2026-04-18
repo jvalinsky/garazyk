@@ -6,7 +6,7 @@ title: Firehose Overview
 
 ## Overview
 
-The firehose is September's `com.atproto.sync.subscribeRepos` stream. It is how
+The firehose is Garazyk's `com.atproto.sync.subscribeRepos` stream. It is how
 the server turns repository and identity changes into an ordered stream that
 other consumers can follow.
 

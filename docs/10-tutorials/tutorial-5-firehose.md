@@ -6,7 +6,7 @@ title: "Tutorial 5: Firehose"
 
 ## Overview
 
-The firehose is where September stops feeling like a request-response server and starts behaving like a continuously synchronized protocol participant. Contributors working here need to think about ordering, upgrades, connection lifecycle, and replay semantics, not just a single endpoint handler.
+The firehose is where Garazyk stops feeling like a request-response server and starts behaving like a continuously synchronized protocol participant. Contributors working here need to think about ordering, upgrades, connection lifecycle, and replay semantics, not just a single endpoint handler.
 
 This tutorial therefore focuses on the real flow from WebSocket upgrade to `subscribeRepos` behavior instead of trying to inline a full reimplementation.
 

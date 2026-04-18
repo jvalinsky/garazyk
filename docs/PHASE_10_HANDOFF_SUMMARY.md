@@ -113,7 +113,7 @@ Created comprehensive monitoring guide covering:
 - Historical reference
 
 **README Updates**:
-- Changed documentation URLs from `jvalinsky.github.io/September` to `pds.garazyk.xyz/docs`
+- Changed documentation URLs from `jvalinsky.github.io/Garazyk` to `pds.garazyk.xyz/docs`
 - Updated all quick links (Getting Started, Architecture, API Reference, Troubleshooting)
 - Updated all advanced topics links (Security, Performance, Operations, Database, Blob, Identity)
 - Removed `.html` extensions from all URLs

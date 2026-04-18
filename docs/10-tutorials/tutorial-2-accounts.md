@@ -6,7 +6,7 @@ title: "Tutorial 2: Account Management"
 
 ## Overview
 
-This tutorial explains how September turns a running server into a multi-user system. The important contributor story is not "here is a pile of account code." It is how account creation, identity policy, and session issuance fit together across configuration, services, and protocol methods.
+This tutorial explains how Garazyk turns a running server into a multi-user system. The important contributor story is not "here is a pile of account code." It is how account creation, identity policy, and session issuance fit together across configuration, services, and protocol methods.
 
 That is also where a lot of mistakes happen. New contributors often treat account creation as a single endpoint problem when it is really a system boundary problem involving handles, invite policy, PLC behavior, token issuance, and shared service data.
 
@@ -148,7 +148,7 @@ That keeps the tutorial accurate instead of pretending one command sequence work
 
 ## Summary
 
-Account management in September is a layered system:
+Account management in Garazyk is a layered system:
 
 - service-level rules,
 - config-driven registration policy,

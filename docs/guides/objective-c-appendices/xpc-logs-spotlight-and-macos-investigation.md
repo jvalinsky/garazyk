@@ -75,7 +75,7 @@ If you touch old macOS tooling or UI helpers:
 This is where old AppKit guidance and current macOS investigation need to be
 used together.
 
-## What this means in September
+## What this means in Garazyk
 
 This appendix is most useful when you are:
 

@@ -6,7 +6,7 @@ title: "Tutorial 8: Endpoint Workflow"
 
 ## Overview
 
-This tutorial explains the contributor workflow for adding or modifying an endpoint in September. The goal is not to dump every method signature on one page. The goal is to teach the sequence of decisions that keeps endpoint work coherent:
+This tutorial explains the contributor workflow for adding or modifying an endpoint in Garazyk. The goal is not to dump every method signature on one page. The goal is to teach the sequence of decisions that keeps endpoint work coherent:
 
 - choose the right surface,
 - change the right layer,
@@ -129,7 +129,7 @@ Payload examples are useful, but only after those questions are answered.
 
 ## Summary
 
-Endpoint work in September is most reliable when you treat it as a chain:
+Endpoint work in Garazyk is most reliable when you treat it as a chain:
 
 - surface choice,
 - registration,

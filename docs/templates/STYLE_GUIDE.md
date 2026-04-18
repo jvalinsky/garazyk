@@ -4,7 +4,7 @@ title: Documentation Style Guide
 
 # Documentation Style Guide
 
-This guide defines the writing style, formatting conventions, and best practices for September PDS documentation.
+This guide defines the writing style, formatting conventions, and best practices for Garazyk PDS documentation.
 
 ## Table of Contents
 

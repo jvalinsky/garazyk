@@ -6,7 +6,7 @@ title: SQLite Architecture
 
 ## Overview
 
-September uses SQLite as an application-level storage system rather than as one monolithic database file. Shared operational data lives in service databases, while per-actor repository data lives in isolated actor stores opened through the database pool.
+Garazyk uses SQLite as an application-level storage system rather than as one monolithic database file. Shared operational data lives in service databases, while per-actor repository data lives in isolated actor stores opened through the database pool.
 
 ## Why SQLite Fits This Repo
 

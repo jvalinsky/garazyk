@@ -6,7 +6,7 @@ title: OAuth 2.0 with DPoP
 
 ## Overview
 
-September supports ATProto-style OAuth with DPoP-bound access tokens. The important contributor fact is that this is not one class or one check. The guarantee is split across authorization handling, token issuance, session persistence, and request-time proof verification.
+Garazyk supports ATProto-style OAuth with DPoP-bound access tokens. The important contributor fact is that this is not one class or one check. The guarantee is split across authorization handling, token issuance, session persistence, and request-time proof verification.
 
 ## What The Current Implementation Guarantees
 
