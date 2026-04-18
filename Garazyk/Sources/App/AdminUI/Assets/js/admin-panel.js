@@ -211,7 +211,7 @@ async function disableInviteCodes(codes) {
     return resp.json();
 }
 
-export const AdminPanel = {
+export export const AdminPanel = {
     getToken,
     setToken,
     clearToken,
@@ -265,6 +265,36 @@ export const AdminPanel = {
             body: JSON.stringify({ convoId })
         });
         if (!resp.ok) throw new Error('Failed to unlock conversation');
+        return resp.json();
+    },
+
+    async deleteGroup(groupUri) {
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.group.deleteGroup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ groupUri })
+        });
+        if (!resp.ok) throw new Error('Failed to delete group');
+        return resp.json();
+    },
+
+    async revokeInviteLink(linkId) {
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.group.disableJoinLink', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linkId })
+        });
+        if (!resp.ok) throw new Error('Failed to revoke invite link');
+        return resp.json();
+    },
+
+    async removeMemberFromGroup(groupUri, did) {
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.group.removeMembers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ groupUri, members: [did] })
+        });
+        if (!resp.ok) throw new Error('Failed to remove member');
         return resp.json();
     },
 
