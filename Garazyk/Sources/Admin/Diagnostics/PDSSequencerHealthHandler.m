@@ -1,6 +1,5 @@
 #import "PDSSequencerHealthHandler.h"
 #import "Analytics/PDSSequencerAnalyticsCollector.h"
-#import "Foundation/NSError+JSON.h"
 
 @interface PDSSequencerHealthHandler ()
 @property (nonatomic, strong) PDSSequencerAnalyticsCollector *analyticsCollector;
@@ -75,7 +74,7 @@
     NSDictionary *response = @{
         @"dataPoints": @[],
         @"hours": @(hours),
-        @"startTime": [NSNumber numberWithLongLong:(long long)[[NSDate date] timeIntervalSince1970] - (hours * 3600]
+        @"startTime": [NSNumber numberWithLongLong:((long long)[[NSDate date] timeIntervalSince1970] - (hours * 3600))]
     };
 
     NSError *error = nil;
