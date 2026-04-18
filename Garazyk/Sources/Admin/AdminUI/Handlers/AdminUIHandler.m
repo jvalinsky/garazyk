@@ -52,7 +52,8 @@ NS_ASSUME_NONNULL_BEGIN
 
     // Static asset fallback (without /assets prefix for compatibility)
     if ([path hasPrefix:@"/admin/css/"] || [path hasPrefix:@"/admin/js/"]) {
-        NSString *adjustedPath = [@"/admin/assets" stringByAppendingString:path.substringFromIndex:6];
+        NSString *remainingPath = [path substringWithRange:NSMakeRange(6, path.length - 6)];
+        NSString *adjustedPath = [@"/admin/assets" stringByAppendingString:remainingPath];
         return [self handleStaticAssetPath:adjustedPath statusCode:statusCode contentType:contentType];
     }
 
@@ -137,7 +138,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSRange queryStart = [url rangeOfString:@"?"];
 
     if (queryStart.location != NSNotFound) {
-        NSString *queryString = [url substringFromIndex:queryStart.location + 1];
+        NSString *queryString = [url substringWithRange:NSMakeRange(queryStart.location + 1, url.length - queryStart.location - 1)];
         NSArray *pairs = [queryString componentsSeparatedByString:@"&"];
 
         for (NSString *pair in pairs) {
