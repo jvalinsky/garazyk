@@ -235,6 +235,16 @@
         return [self renderStatsPartial:adminHandler headers:headers body:body];
     }
 
+    // Blobs partial
+    if ([partialName isEqualToString:@"blobs"]) {
+        return [self renderBlobsPartial:adminHandler headers:headers body:body];
+    }
+
+    // Identity partial
+    if ([partialName isEqualToString:@"identity"]) {
+        return [self renderIdentityPartial:adminHandler headers:headers body:body];
+    }
+
     PDS_LOG_WARN(@"Unknown partial: %@", partialName);
     return nil;
 }
@@ -338,6 +348,42 @@
     context[@"section"] = @"pds";
 
     return [self renderPartialWithTemplate:@"stats" context:context];
+}
+
+- (nullable NSString *)renderBlobsPartial:(PDSAdminHandler *)adminHandler
+                                   headers:(NSDictionary *)headers
+                                      body:(nullable NSData *)body {
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                              path:@"/admin/blobs"
+                                                           headers:headers
+                                                              body:body];
+    if (!jsonResponse) {
+        return nil;
+    }
+
+    NSData *jsonData = [jsonResponse dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *error = nil;
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
+    if (!data) {
+        return nil;
+    }
+
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
+    context[@"title"] = @"Blob Storage";
+    context[@"section"] = @"pds";
+
+    return [self renderPartialWithTemplate:@"blobs" context:context];
+}
+
+- (nullable NSString *)renderIdentityPartial:(PDSAdminHandler *)adminHandler
+                                     headers:(NSDictionary *)headers
+                                        body:(nullable NSData *)body {
+    NSMutableDictionary *context = [NSMutableDictionary dictionary];
+    context[@"title"] = @"Identity";
+    context[@"section"] = @"pds";
+    context[@"recent_ops"] = @[];
+
+    return [self renderPartialWithTemplate:@"identity" context:context];
 }
 
 @end
