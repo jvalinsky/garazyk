@@ -1,19 +1,19 @@
 [
   {
-    "hash": "0d9fecde6d329fbbe60ce68f5d88ecad9a0c9684",
-    "short_hash": "0d9fecd",
+    "hash": "1fc4332f15c4c9a39be908a9e1966d93716ef2fb",
+    "short_hash": "1fc4332",
     "author": "Security Bot",
-    "date": "2026-04-18T11:24:16-04:00",
-    "message": "docs: sync deciduous graph for web ui enhancements",
-    "files_changed": 1
+    "date": "2026-04-18T11:39:32-04:00",
+    "message": "docs: sync deciduous graph for chat wiring",
+    "files_changed": 2
   },
   {
-    "hash": "4c88ffbb9d8904f926d85b3ed3373d041583c460",
-    "short_hash": "4c88ffb",
+    "hash": "248a439049ffdba0970d73d65d852111274366e0",
+    "short_hash": "248a439",
     "author": "Security Bot",
-    "date": "2026-04-18T11:01:09-04:00",
-    "message": "web ui: fix segfault from race condition, update CSP for htmx, migrate to ozone moderation\n\n- Fix race condition in AdminUIHandler mimeTypes initialization (segfault fix)\n- Update Content-Security-Policy to allow unpkg.com for htmx\n- Migrate Admin UI moderation to tools.ozone.moderation lexicons\n- Wire up real-time metrics to admin health API\n- Implement blob fetching in ExploreHandler\n- Link progress in deciduous nodes 430-434",
-    "files_changed": 7
+    "date": "2026-04-18T11:05:49-04:00",
+    "message": "web ui: wire up remaining admin routes and partials\n\n- Register all PLC, Relay, and AppView paths in HttpAdminRoutePack\n- Implement shell rendering for all top-level admin paths in AdminUIHandler\n- Implement partial rendering for PLC, Relay, and AppView sections\n- Fix HTMX hx-get attributes in index.html to use partials prefix\n- Add delegation from AdminPartialHandler to AdminUIHandler for new partials",
+    "files_changed": 4
   },
   {
     "hash": "5f5b220b421ca01686c7e6b5efd3e6b6c39a0ffb",
