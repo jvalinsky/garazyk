@@ -1,0 +1,34 @@
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Last Updated</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each templates}}
+      <tr>
+        <td><strong>{{name}}</strong></td>
+        <td class="text-xs">{{updated_at}}</td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-xs" data-action="ozone-template-edit" data-id="{{id}}">Edit</button>
+            <button class="btn btn-xs btn-destructive" data-action="ozone-template-delete" data-id="{{id}}">Delete</button>
+          </div>
+        </td>
+      </tr>
+      {{/each}}
+      {{#if templates.length}}
+      {{else}}
+      <tr>
+        <td colspan="3" class="text-center text-secondary">No templates found.</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</div>
+<div class="mt-lg">
+  <button class="btn btn-primary" data-action="ozone-template-create">Create Template</button>
+</div>
