@@ -15,7 +15,10 @@
   NSArray *adminPaths = @[
     @"/admin", @"/admin/login", @"/admin/logout", @"/admin/users",
     @"/admin/invites", @"/admin/invites/disable", @"/admin/blobs",
-    @"/admin/metrics", @"/admin/health", @"/admin/stats", @"/admin/audit-log"
+    @"/admin/metrics", @"/admin/health", @"/admin/stats", @"/admin/audit-log",
+    @"/admin/plc/lookup", @"/admin/plc/export", @"/admin/plc/metrics",
+    @"/admin/relay/upstreams", @"/admin/relay/events", @"/admin/relay/crawl",
+    @"/admin/appview/backfill", @"/admin/appview/index", @"/admin/appview/metrics"
   ];
 
   for (NSString *path in adminPaths) {
