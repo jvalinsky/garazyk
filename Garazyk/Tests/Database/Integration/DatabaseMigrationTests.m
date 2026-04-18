@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Database/Integration/PDSDatabaseIntegrationTestUtilities.h"
-#import "Database/Migration/PDSMigrationManager.h"
+#import "Database/Migrations/PDSMigrationManager.h"
 #import <sqlite3.h>
 
 @interface DatabaseMigrationTests : XCTestCase

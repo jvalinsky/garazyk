@@ -1,5 +1,8 @@
 #import "PDSMigrationManager.h"
 #import "Database/Schema/PDSSchemaManager.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Database/PDSDatabase.h"
+#import "Database/PDSBlock.h"
 #import "Debug/PDSLogger.h"
 #import <sqlite3.h>
 
@@ -107,9 +110,28 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 @interface PDSMigrationManager ()
 @property (nonatomic, strong) NSMutableArray<id<PDSMigration>> *migrations;
 @property (nonatomic, strong) dispatch_queue_t queue;
+
+// Monolithic migration helpers
+- (NSArray<NSString *> *)queryAllDIDsFromDatabase:(sqlite3 *)db error:(NSError **)error;
+- (NSString *)actorStoreDirectoryForDID:(NSString *)did inBaseDirectory:(NSString *)baseDir;
+- (BOOL)migrateAccountForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error;
+- (BOOL)migrateReposForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error;
+- (BOOL)migrateRecordsForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error;
+- (BOOL)migrateBlocksForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error;
+- (NSData *)convertCIDStringToData:(NSString *)cidString;
+- (NSString *)convertUnixTimestampToISO8601:(NSTimeInterval)timestamp;
 @end
 
 @implementation PDSMigrationManager
+
++ (instancetype)sharedManager {
+    static PDSMigrationManager *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [[PDSMigrationManager alloc] init];
+    });
+    return sharedInstance;
+}
 
 - (instancetype)init {
     if ((self = [super init])) {
@@ -315,6 +337,175 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     return YES;
 }
 
+#pragma mark - Monolithic Migration
+
+- (NSUInteger)estimatedMigrateTimeWithSourcePath:(NSString *)sourcePath {
+    NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:sourcePath error:nil];
+    unsigned long long fileSize = [attrs fileSize];
+    // Estimate based on file size in MiB (1 minute per MiB)
+    return (NSUInteger)(fileSize / (1024 * 1024));
+}
+
+- (BOOL)migrateFromMonolithicDatabase:(NSString *)sourcePath
+               toSingleTenantDirectory:(NSString *)destinationDirectory
+                                 error:(NSError **)error {
+    PDS_LOG_DB_INFO(@"Starting monolithic migration from %@ to %@", sourcePath, destinationDirectory);
+
+    // Validate source file exists
+    if (![[NSFileManager defaultManager] fileExistsAtPath:sourcePath]) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorSourceNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Source database file not found"}];
+        }
+        return NO;
+    }
+
+    // Check for cancellation
+    if (self.cancelBlock && self.cancelBlock()) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorCancelled
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Migration cancelled"}];
+        }
+        return NO;
+    }
+
+    if (self.progressBlock) self.progressBlock(0.05, @"Opening source database...");
+
+    // Open source database
+    sqlite3 *sourceDb = NULL;
+    int rc = sqlite3_open([sourcePath UTF8String], &sourceDb);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open source database"}];
+        }
+        if (sourceDb) sqlite3_close(sourceDb);
+        return NO;
+    }
+
+    // Query all DIDs from accounts table
+    if (self.progressBlock) self.progressBlock(0.1, @"Querying accounts...");
+
+    NSArray<NSString *> *dids = [self queryAllDIDsFromDatabase:sourceDb error:error];
+    if (!dids) {
+        sqlite3_close(sourceDb);
+        return NO;
+    }
+
+    NSInteger totalDIDs = dids.count;
+    if (totalDIDs == 0) {
+        PDS_LOG_DB_INFO(@"No accounts to migrate");
+        sqlite3_close(sourceDb);
+        if (self.progressBlock) self.progressBlock(1.0, @"Migration complete");
+        return YES;
+    }
+
+    // Ensure destination directory exists
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (![fm createDirectoryAtPath:destinationDirectory withIntermediateDirectories:YES attributes:nil error:error]) {
+        sqlite3_close(sourceDb);
+        return NO;
+    }
+
+    // Migrate each DID's data
+    NSInteger currentDID = 0;
+    for (NSString *did in dids) {
+        // Check for cancellation
+        if (self.cancelBlock && self.cancelBlock()) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorCancelled
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Migration cancelled"}];
+            }
+            sqlite3_close(sourceDb);
+            return NO;
+        }
+
+        // Create ActorStore directory for this DID
+        NSString *actorDir = [self actorStoreDirectoryForDID:did inBaseDirectory:destinationDirectory];
+        if (![fm createDirectoryAtPath:actorDir withIntermediateDirectories:YES attributes:nil error:error]) {
+            sqlite3_close(sourceDb);
+            return NO;
+        }
+
+        // Create ActorStore database path
+        NSString *actorDbPath = [actorDir stringByAppendingPathComponent:@"actorstore.db"];
+
+        // Create and open ActorStore
+        NSError *storeError = nil;
+        PDSActorStore *store = [PDSActorStore storeWithDid:did dbPath:actorDbPath error:&storeError];
+        if (!store || ![store openWithError:&storeError]) {
+            if (error) *error = storeError;
+            sqlite3_close(sourceDb);
+            return NO;
+        }
+
+        // Migrate data in transaction
+        __block BOOL transactionSuccess = YES;
+        __block NSError *transactionError = nil;
+
+        [store transactWithBlock:^(id<PDSActorStoreTransactor> txn, NSError **txnError) {
+            if (![self migrateAccountForDID:did from:sourceDb to:txn error:txnError]) {
+                transactionSuccess = NO;
+                return;
+            }
+            if (![self migrateReposForDID:did from:sourceDb to:txn error:txnError]) {
+                transactionSuccess = NO;
+                return;
+            }
+            if (![self migrateRecordsForDID:did from:sourceDb to:txn error:txnError]) {
+                transactionSuccess = NO;
+                return;
+            }
+            if (![self migrateBlocksForDID:did from:sourceDb to:txn error:txnError]) {
+                transactionSuccess = NO;
+                return;
+            }
+        } error:&transactionError];
+
+        [store close];
+
+        if (!transactionSuccess || transactionError) {
+            if (error) *error = transactionError;
+            sqlite3_close(sourceDb);
+            return NO;
+        }
+
+        // Update progress
+        currentDID++;
+        double progress = 0.1 + (0.9 * (double)currentDID / totalDIDs);
+        if (self.progressBlock) {
+            self.progressBlock(progress, [NSString stringWithFormat:@"Migrated %@ (%ld/%ld)", did, (long)currentDID, (long)totalDIDs]);
+        }
+    }
+
+    sqlite3_close(sourceDb);
+
+    if (self.progressBlock) self.progressBlock(1.0, @"Migration completed successfully");
+    PDS_LOG_DB_INFO(@"Monolithic migration completed successfully");
+
+    return YES;
+}
+
+- (void)migrateFromMonolithicDatabaseAsync:(NSString *)sourcePath
+                    toSingleTenantDirectory:(NSString *)destinationDirectory
+                                 completion:(void (^)(NSError * _Nullable error))completion {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSError *error = nil;
+        [self migrateFromMonolithicDatabase:sourcePath 
+                    toSingleTenantDirectory:destinationDirectory 
+                                      error:&error];
+        if (completion) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(error);
+            });
+        }
+    });
+}
+
 #pragma mark - Migration Registration
 
 - (void)registerMigration:(id<PDSMigration>)migration {
@@ -472,6 +663,333 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     }
 
     return success;
+}
+
+#pragma mark - Monolithic Migration Helpers
+
+- (NSArray<NSString *> *)queryAllDIDsFromDatabase:(sqlite3 *)db error:(NSError **)error {
+    const char *sql = "SELECT DISTINCT did FROM accounts ORDER BY did";
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to query DIDs"}];
+        }
+        return nil;
+    }
+
+    NSMutableArray<NSString *> *dids = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *didStr = (const char *)sqlite3_column_text(stmt, 0);
+        if (didStr) {
+            [dids addObject:[NSString stringWithUTF8String:didStr]];
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return [dids copy];
+}
+
+- (NSString *)actorStoreDirectoryForDID:(NSString *)did inBaseDirectory:(NSString *)baseDir {
+    // Directory structure: {baseDir}/{did}/
+    return [baseDir stringByAppendingPathComponent:did];
+}
+
+- (BOOL)migrateAccountForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error {
+    const char *sql = "SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at FROM accounts WHERE did = ? LIMIT 1";
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to query account"}];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+    BOOL found = NO;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        found = YES;
+        PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
+        account.did = did;
+
+        // Handle
+        const char *handleStr = (const char *)sqlite3_column_text(stmt, 1);
+        if (handleStr) {
+            account.handle = [NSString stringWithUTF8String:handleStr];
+        }
+
+        // Email
+        const char *emailStr = (const char *)sqlite3_column_text(stmt, 2);
+        if (emailStr) {
+            account.email = [NSString stringWithUTF8String:emailStr];
+        }
+
+        // Password hash
+        if (sqlite3_column_type(stmt, 3) == SQLITE_BLOB) {
+            const void *hashBytes = sqlite3_column_blob(stmt, 3);
+            int hashLen = sqlite3_column_bytes(stmt, 3);
+            if (hashBytes && hashLen > 0) {
+                account.passwordHash = [NSData dataWithBytes:hashBytes length:hashLen];
+            }
+        }
+
+        // Password salt
+        if (sqlite3_column_type(stmt, 4) == SQLITE_BLOB) {
+            const void *saltBytes = sqlite3_column_blob(stmt, 4);
+            int saltLen = sqlite3_column_bytes(stmt, 4);
+            if (saltBytes && saltLen > 0) {
+                account.passwordSalt = [NSData dataWithBytes:saltBytes length:saltLen];
+            }
+        }
+
+        // Access JWT
+        if (sqlite3_column_type(stmt, 5) == SQLITE_BLOB) {
+            const void *jwtBytes = sqlite3_column_blob(stmt, 5);
+            int jwtLen = sqlite3_column_bytes(stmt, 5);
+            if (jwtBytes && jwtLen > 0) {
+                account.accessJwt = [NSData dataWithBytes:jwtBytes length:jwtLen];
+            }
+        }
+
+        // Refresh JWT
+        if (sqlite3_column_type(stmt, 6) == SQLITE_BLOB) {
+            const void *refreshBytes = sqlite3_column_blob(stmt, 6);
+            int refreshLen = sqlite3_column_bytes(stmt, 6);
+            if (refreshBytes && refreshLen > 0) {
+                account.refreshJwt = [NSData dataWithBytes:refreshBytes length:refreshLen];
+            }
+        }
+
+        // Timestamps
+        account.createdAt = sqlite3_column_double(stmt, 7);
+        account.updatedAt = sqlite3_column_double(stmt, 8);
+
+        if (![txn createAccount:account error:error]) {
+            sqlite3_finalize(stmt);
+            return NO;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return found;
+}
+
+- (BOOL)migrateReposForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error {
+    const char *sql = "SELECT owner_did, root_cid, collection_data, created_at, updated_at FROM repos WHERE owner_did = ?";
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to query repos"}];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        PDSDatabaseRepo *repo = [[PDSDatabaseRepo alloc] init];
+        repo.ownerDid = did;
+
+        // Root CID
+        if (sqlite3_column_type(stmt, 1) == SQLITE_BLOB) {
+            const void *cidBytes = sqlite3_column_blob(stmt, 1);
+            int cidLen = sqlite3_column_bytes(stmt, 1);
+            if (cidBytes && cidLen > 0) {
+                repo.rootCid = [NSData dataWithBytes:cidBytes length:cidLen];
+            }
+        }
+
+        // Collection data
+        if (sqlite3_column_type(stmt, 2) == SQLITE_BLOB) {
+            const void *collBytes = sqlite3_column_blob(stmt, 2);
+            int collLen = sqlite3_column_bytes(stmt, 2);
+            if (collBytes && collLen > 0) {
+                repo.collectionData = [NSData dataWithBytes:collBytes length:collLen];
+            }
+        }
+
+        // Timestamps
+        NSTimeInterval createdTime = sqlite3_column_double(stmt, 3);
+        NSTimeInterval updatedTime = sqlite3_column_double(stmt, 4);
+        repo.createdAt = [NSDate dateWithTimeIntervalSince1970:createdTime];
+        repo.updatedAt = [NSDate dateWithTimeIntervalSince1970:updatedTime];
+
+        if (![txn createRepo:repo error:error]) {
+            sqlite3_finalize(stmt);
+            return NO;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return YES;
+}
+
+- (BOOL)migrateRecordsForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error {
+    const char *sql = "SELECT uri, did, collection, rkey, cid, created_at FROM records WHERE did = ?";
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to query records"}];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+    NSMutableArray<PDSDatabaseRecord *> *records = [NSMutableArray array];
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+
+        // URI
+        const char *uriStr = (const char *)sqlite3_column_text(stmt, 0);
+        if (uriStr) {
+            record.uri = [NSString stringWithUTF8String:uriStr];
+        }
+
+        // DID
+        const char *didStr = (const char *)sqlite3_column_text(stmt, 1);
+        if (didStr) {
+            record.did = [NSString stringWithUTF8String:didStr];
+        }
+
+        // Collection
+        const char *collStr = (const char *)sqlite3_column_text(stmt, 2);
+        if (collStr) {
+            record.collection = [NSString stringWithUTF8String:collStr];
+        }
+
+        // RKey
+        const char *rkeyStr = (const char *)sqlite3_column_text(stmt, 3);
+        if (rkeyStr) {
+            record.rkey = [NSString stringWithUTF8String:rkeyStr];
+        }
+
+        // CID (kept as string in PDSDatabaseRecord)
+        const char *cidStr = (const char *)sqlite3_column_text(stmt, 4);
+        if (cidStr) {
+            record.cid = [NSString stringWithUTF8String:cidStr];
+        }
+
+        // Timestamp
+        NSTimeInterval createdTime = sqlite3_column_double(stmt, 5);
+        record.createdAt = [NSDate dateWithTimeIntervalSince1970:createdTime];
+
+        // No indexed_at, rev, value, subject_did in source - set reasonable defaults
+        record.rev = nil;
+
+        [records addObject:record];
+    }
+
+    sqlite3_finalize(stmt);
+
+    // Batch insert records for performance
+    if (records.count > 0) {
+        if (![txn putRecords:records forDid:did error:error]) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
+- (BOOL)migrateBlocksForDID:(NSString *)did from:(sqlite3 *)sourceDb to:(id<PDSActorStoreTransactor>)txn error:(NSError **)error {
+    const char *sql = "SELECT cid, repo_did, block_data, content_type, size, created_at FROM blocks WHERE repo_did = ?";
+    sqlite3_stmt *stmt = NULL;
+
+    if (sqlite3_prepare_v2(sourceDb, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to query blocks"}];
+        }
+        return NO;
+    }
+
+    sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+    NSMutableArray<PDSDatabaseBlock *> *blocks = [NSMutableArray array];
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+
+        // CID (already BLOB in source, store as-is)
+        if (sqlite3_column_type(stmt, 0) == SQLITE_BLOB) {
+            const void *cidBytes = sqlite3_column_blob(stmt, 0);
+            int cidLen = sqlite3_column_bytes(stmt, 0);
+            if (cidBytes && cidLen > 0) {
+                block.cid = [NSData dataWithBytes:cidBytes length:cidLen];
+            }
+        }
+
+        // Repo DID
+        const char *repoDidStr = (const char *)sqlite3_column_text(stmt, 1);
+        if (repoDidStr) {
+            block.repoDid = [NSString stringWithUTF8String:repoDidStr];
+        }
+
+        // Block data
+        if (sqlite3_column_type(stmt, 2) == SQLITE_BLOB) {
+            const void *dataBytes = sqlite3_column_blob(stmt, 2);
+            int dataLen = sqlite3_column_bytes(stmt, 2);
+            if (dataBytes && dataLen > 0) {
+                block.blockData = [NSData dataWithBytes:dataBytes length:dataLen];
+            }
+        }
+
+        // Content type
+        const char *contentTypeStr = (const char *)sqlite3_column_text(stmt, 3);
+        if (contentTypeStr) {
+            block.contentType = [NSString stringWithUTF8String:contentTypeStr];
+        }
+
+        // Size
+        block.size = sqlite3_column_int64(stmt, 4);
+
+        // Created at timestamp
+        NSTimeInterval createdTime = sqlite3_column_double(stmt, 5);
+        block.createdAt = [NSDate dateWithTimeIntervalSince1970:createdTime];
+
+        // No rev in source
+        block.rev = nil;
+
+        [blocks addObject:block];
+    }
+
+    sqlite3_finalize(stmt);
+
+    // Batch insert blocks for performance
+    if (blocks.count > 0) {
+        if (![txn putBlocks:blocks forDid:did error:error]) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
+- (NSData *)convertCIDStringToData:(NSString *)cidString {
+    // For now, treat the CID string as UTF8 bytes
+    // In a real implementation, this might decode base32/base58 CIDs
+    return [cidString dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (NSString *)convertUnixTimestampToISO8601:(NSTimeInterval)timestamp {
+    NSDate *date = [NSDate dateWithTimeIntervalSince1970:timestamp];
+    NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
+    return [formatter stringFromDate:date];
 }
 
 @end

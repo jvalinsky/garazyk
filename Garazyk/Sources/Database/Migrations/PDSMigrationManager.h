@@ -26,7 +26,7 @@
 
 #import <Foundation/Foundation.h>
 #import <sqlite3.h>
-#import "Database/Migrations/PDSMigration.h"
+#import "PDSMigration.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -49,6 +49,27 @@ NS_ASSUME_NONNULL_BEGIN
  - No legacy support: Databases without _migrations table are errors
  */
 @interface PDSMigrationManager : NSObject
+
+/*!
+ @method sharedManager
+ 
+ @abstract Returns the shared migration manager instance.
+ 
+ @return The shared PDSMigrationManager instance.
+ */
++ (instancetype)sharedManager;
+
+/*!
+ @property progressBlock
+ @abstract Block called with progress updates during long-running migrations.
+ */
+@property (nonatomic, copy, nullable) void (^progressBlock)(double progress, NSString *status);
+
+/*!
+ @property cancelBlock
+ @abstract Block called periodically to check if migration should be cancelled.
+ */
+@property (nonatomic, copy, nullable) BOOL (^cancelBlock)(void);
 
 #pragma mark - Initialization
 
@@ -147,6 +168,45 @@ NS_ASSUME_NONNULL_BEGIN
                  version:(NSInteger)version
                    error:(NSError **)error;
 
+#pragma mark - Monolithic Migration
+
+/*!
+ @method migrateFromMonolithicDatabase:toSingleTenantDirectory:error:
+ 
+ @abstract Migrates data from an old monolithic SQLite database to the new single-tenant directory structure.
+ 
+ @param sourcePath Path to the monolithic .sqlite file.
+ @param destinationDirectory Root directory for the new multi-tenant structure.
+ @param error Output error parameter.
+ @return YES if migration succeeded, NO otherwise.
+ */
+- (BOOL)migrateFromMonolithicDatabase:(NSString *)sourcePath
+               toSingleTenantDirectory:(NSString *)destinationDirectory
+                                 error:(NSError **)error;
+
+/*!
+ @method migrateFromMonolithicDatabaseAsync:toSingleTenantDirectory:completion:
+ 
+ @abstract Asynchronously migrates data from a monolithic database.
+ 
+ @param sourcePath Path to the monolithic .sqlite file.
+ @param destinationDirectory Root directory for the new multi-tenant structure.
+ @param completion Block called on completion.
+ */
+- (void)migrateFromMonolithicDatabaseAsync:(NSString *)sourcePath
+                    toSingleTenantDirectory:(NSString *)destinationDirectory
+                                 completion:(void (^ _Nullable)(NSError * _Nullable error))completion;
+
+/*!
+ @method estimatedMigrateTimeWithSourcePath:
+ 
+ @abstract Estimates the time (in seconds) required to migrate the specified monolithic database.
+ 
+ @param sourcePath Path to the monolithic .sqlite file.
+ @return Estimated time in seconds.
+ */
+- (NSUInteger)estimatedMigrateTimeWithSourcePath:(NSString *)sourcePath;
+
 #pragma mark - Migration Registration
 
 /*!
@@ -226,6 +286,8 @@ typedef NS_ENUM(NSInteger, PDSMigrationErrorCode) {
     PDSMigrationErrorRollbackFailed = -4,
     PDSMigrationErrorInvalidVersion = -5,
     PDSMigrationErrorLegacyDatabase = -6,
+    PDSMigrationErrorSourceNotFound = -7,
+    PDSMigrationErrorCancelled = -8,
 };
 
 NS_ASSUME_NONNULL_END
