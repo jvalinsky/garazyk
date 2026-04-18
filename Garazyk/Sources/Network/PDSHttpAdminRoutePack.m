@@ -19,7 +19,8 @@
     @"/admin/plc/lookup", @"/admin/plc/export", @"/admin/plc/metrics",
     @"/admin/relay/upstreams", @"/admin/relay/events", @"/admin/relay/crawl",
     @"/admin/appview/backfill", @"/admin/appview/index", @"/admin/appview/metrics",
-    @"/admin/chat/convos", @"/admin/chat/messages", @"/admin/chat/reports"
+    @"/admin/chat/convos", @"/admin/chat/messages", @"/admin/chat/reports",
+    @"/admin/ozone/events", @"/admin/ozone/statuses", @"/admin/ozone/team", @"/admin/ozone/templates"
   ];
 
   for (NSString *path in adminPaths) {
