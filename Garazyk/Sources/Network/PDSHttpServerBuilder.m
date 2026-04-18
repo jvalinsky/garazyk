@@ -7,13 +7,11 @@
  */
 
 #import "PDSHttpServerBuilder.h"
-#import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "App/Explore/ExploreHandler.h"
 #import "App/PDSApplication.h"
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
 #import "Network/PDSHttpAdminRoutePack.h"
-#import "Network/PDSHttpCappuccinoUIRoutePack.h"
 #import "Network/PDSHttpExploreRoutePack.h"
 #import "Network/PDSHttpMetricsRoutePack.h"
 #import "Network/PDSHttpMSTViewerRoutePack.h"
@@ -46,7 +44,6 @@
     _enableOAuthDemo = YES;
     _enableMSTViewer = YES;
     _enableNodeInfo = YES;
-    _enableCappuccinoUIDefault = YES;
   }
   return self;
 }
@@ -156,10 +153,8 @@
                                              controller:self.controller];
   }
 
-  [PDSHttpCappuccinoUIRoutePack registerRoutesWithServer:server
-                                           dataDirectory:self.dataDirectory
-                                              controller:self.controller
-                                          serviceProfile:@"pds"];
+  // Register Admin UI routes (new HTML5/HTMX admin interface)
+  // Admin routes are registered in PDSHttpAdminRoutePack
 
   if (self.enableMSTViewer) {
     [PDSHttpMSTViewerRoutePack registerRoutesWithServer:server
@@ -202,11 +197,8 @@
            }];
 
   // Register default route LAST (must be after all specific routes)
-  if (self.enableCappuccinoUIDefault) {
-    // Cutover: Objective-J UI is the default entrypoint.
-    // PDSHttpCappuccinoUIRoutePack already registered / and /ui.
-  } else if (self.enableExploreUI && exploreHandler) {
-    // Legacy fallback: keep ExploreHandler as the default.
+  // Admin UI is served at /admin-ui/ - default route falls through to Explore
+  if (self.enableExploreUI && exploreHandler) {
     [server addRoute:@"GET"
                 path:@"/*"
              handler:^(HttpRequest *request, HttpResponse *response) {

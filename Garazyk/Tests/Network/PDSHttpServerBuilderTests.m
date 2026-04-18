@@ -841,7 +841,7 @@
     [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
 }
 
-- (void)testXrpcDescribeServerPrefersXrpcRoutesOverCappuccinoWildcard {
+- (void)testXrpcDescribeServerPrefersXrpcRoutesOverExploreWildcard {
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir
                                                            serviceMaxSize:10
@@ -852,11 +852,10 @@
     builder.port = 0;
     builder.enableXrpc = YES;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
+    builder.enableExploreUI = YES;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    builder.enableCappuccinoUIDefault = YES;
 
     NSError *buildError = nil;
     HttpServer *server = [builder buildWithError:&buildError];
