@@ -58,7 +58,8 @@ NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     // Attempt to acquire connection from service pool
     @try {
         PDSServiceDatabases *serviceDatabases = [PDSServiceDatabases sharedInstance];
-        PDSDatabase *db = [serviceDatabases serviceDatabase];
+        NSError *dbError = nil;
+        PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
 
         if (!db || !db.isOpen) {
             if (error) {
@@ -70,7 +71,7 @@ NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
         }
 
         // Test query to verify database is responsive
-        NSArray *result = [db executeQuery:@"SELECT 1" params:@[] error:error];
+        NSArray *result = [db executeParameterizedQuery:@"SELECT 1" params:@[] error:error];
         if (!result) {
             return NO;
         }
@@ -90,7 +91,7 @@ NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 + (BOOL)checkPLCDirectory:(PDSConfiguration *)config error:(NSError **)error {
     // Attempt to resolve a well-known DID (bsky.app)
     NSString *testURL = [NSString stringWithFormat:@"%@/did:plc:z72i7hdynmk6r22z27h6tvur",
-                        config.plcDirectoryURL];
+                        config.plcURL];
 
     NSURL *url = [NSURL URLWithString:testURL];
     if (!url) {
@@ -130,7 +131,19 @@ NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
 + (BOOL)checkSigningKeys:(PDSConfiguration *)config error:(NSError **)error {
     @try {
-        id<PDSKeyManager> keyManager = [PDSKeyManagerFactory keyManagerWithConfiguration:config];
+        PDSServiceDatabases *serviceDatabases = [PDSServiceDatabases sharedInstance];
+        NSError *dbError = nil;
+        PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
+        if (!db) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSReadinessErrorDomain
+                                             code:PDSReadinessErrorSigningKeyUnavailable
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Service database not available"}];
+            }
+            return NO;
+        }
+
+        id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:db];
         if (!keyManager) {
             if (error) {
                 *error = [NSError errorWithDomain:PDSReadinessErrorDomain
@@ -140,18 +153,18 @@ NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
             return NO;
         }
 
-        // Attempt to get signing key (verifies key is accessible)
-        SecKeyRef privateKey = [keyManager getPrivateKeyWithError:error];
-        if (!privateKey) {
+        id<PDSKeyPair> keyPair = [keyManager getActiveKeyPair:error];
+        if (!keyPair) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:PDSReadinessErrorDomain
                                              code:PDSReadinessErrorSigningKeyUnavailable
-                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT signing key not available"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: @"No active signing key available"}];
             }
             return NO;
         }
 
-        CFRelease(privateKey);
+        PDS_LOG_CORE_DEBUG(@"Signing key check passed");
+        return YES;
         PDS_LOG_CORE_DEBUG(@"Signing key check passed");
         return YES;
     } @catch (NSException *exception) {

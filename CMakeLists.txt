@@ -1084,24 +1084,6 @@ if(BUILD_FUZZERS)
 endif()
 
 #=============================
-# Frontend (Objective-J)
-#=============================
-option(BUILD_CAPPUCCINO_UI "Build Cappuccino Objective-J UI assets" OFF)
-if(BUILD_CAPPUCCINO_UI)
-  find_program(NPM_EXECUTABLE npm)
-  if(NOT NPM_EXECUTABLE)
-    message(FATAL_ERROR "BUILD_CAPPUCCINO_UI=ON requires npm in PATH")
-  endif()
-
-  add_custom_target(cappuccino-ui-build
-    COMMAND "${CMAKE_SOURCE_DIR}/scripts/build_cappuccino_ui.sh" Release
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    COMMENT "Building Cappuccino Objective-J UI"
-    VERBATIM
-  )
-endif()
-
-#=============================
 # Convenience Scripts
 #=============================
 
@@ -1272,6 +1254,5 @@ message(STATUS "")
 message(STATUS "Options:")
 message(STATUS "  -DBUILD_FUZZERS=ON   - Build fuzzing targets")
 message(STATUS "  -DBUILD_TESTS=ON     - Build test targets")
-message(STATUS "  -DBUILD_CAPPUCCINO_UI=ON - Build Objective-J/Cappuccino UI assets")
 message(STATUS "  -DCMAKE_BUILD_TYPE=  - Debug|Release")
 message(STATUS "===========================================")

@@ -21,7 +21,6 @@
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/NotificationService.h"
 #import "Network/AppViewXRpcRoutePack.h"
-#import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -151,17 +150,9 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     // Build HTTP server for query API + admin
     _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
-    CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
-    [cappuccinoUIHandler setDataDirectory:config.dataDirectory];
-    [cappuccinoUIHandler setServiceProfile:@"appview"];
 
-    // Root serves Objective-J UI
+    // Root serves info endpoint
     [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
-        [cappuccinoUIHandler handleRequest:req response:res];
-    }];
-
-    // JSON info endpoint
-    [_httpServer addRoute:@"GET" path:@"/info" handler:^(HttpRequest *req, HttpResponse *res) {
         NSDictionary *info = @{
             @"service": @"syrena",
             @"version": @"1.0.0",
@@ -171,14 +162,6 @@ static AppViewRuntime *_sharedRuntime = nil;
         [res setHeader:@"application/json" forKey:@"Content-Type"];
         res.statusCode = 200;
         [res setBody:json];
-    }];
-
-    [_httpServer addRoute:@"GET" path:@"/ui" handler:^(HttpRequest *req, HttpResponse *res) {
-        [cappuccinoUIHandler handleRequest:req response:res];
-    }];
-
-    [_httpServer addRoute:@"GET" path:@"/ui/*" handler:^(HttpRequest *req, HttpResponse *res) {
-        [cappuccinoUIHandler handleRequest:req response:res];
     }];
 
     [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *res) {
