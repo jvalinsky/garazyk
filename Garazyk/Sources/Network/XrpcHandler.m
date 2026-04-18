@@ -3,6 +3,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
 #import "Network/XrpcProxyHandler.h"
+#import "Network/XrpcMiddleware.h"
 #import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
 #import "App/PDSConfiguration.h"
@@ -34,6 +35,33 @@
 
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler {
     self.methodHandlers[methodId] = [handler copy];
+}
+
+- (void)registerMethod:(NSString *)methodId
+           middlewares:(NSArray<id<XrpcMiddleware>> *)middlewares
+               handler:(XrpcMethodHandler)handler {
+    if (!middlewares || middlewares.count == 0) {
+        // No middleware, just register the handler directly
+        [self registerMethod:methodId handler:handler];
+        return;
+    }
+    
+    // Create a wrapped handler that executes middleware chain first
+    XrpcMethodHandler wrappedHandler = ^(HttpRequest *request, HttpResponse *response) {
+        // Execute middleware chain
+        XrpcMiddlewareChain *chain = [[XrpcMiddlewareChain alloc] init];
+        [chain addMiddlewares:middlewares];
+        NSError *middlewareError = nil;
+        BOOL passed = [chain handleRequest:request response:response error:&middlewareError];
+        
+        if (passed) {
+            // All middleware passed, execute the actual handler
+            handler(request, response);
+        }
+        // If middleware failed, response was already set by the failing middleware
+    };
+    
+    [self registerMethod:methodId handler:wrappedHandler];
 }
 
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
