@@ -98,6 +98,36 @@
     return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:params error:error];
 }
 
+- (BOOL)deleteGroup:(NSString *)groupUri
+              error:(NSError **)error {
+    if (!groupUri) {
+        if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+        return NO;
+    }
+
+    // Delete members, invite links, join requests, reactions, messages, and the group itself
+    // In a real implementation we might use a transaction or foreign key cascading.
+    // Assuming cascading is not enabled/guaranteed for all SQLite builds here, we do it manually.
+    
+    NSArray *queries = @[
+        @"DELETE FROM group_message_reactions WHERE message_id IN (SELECT id FROM group_messages WHERE group_uri = ?)",
+        @"DELETE FROM group_messages WHERE group_uri = ?",
+        @"DELETE FROM group_join_requests WHERE group_uri = ?",
+        @"DELETE FROM group_invite_links WHERE group_uri = ?",
+        @"DELETE FROM group_members WHERE group_uri = ?",
+        @"DELETE FROM groups WHERE uri = ?"
+    ];
+
+    for (NSString *query in queries) {
+        if (![(PDSDatabase *)self.database executeParameterizedUpdate:query params:@[groupUri] error:error]) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
 - (nullable NSDictionary *)getGroupPublicInfo:(NSString *)groupUri
                                        error:(NSError **)error {
     if (!groupUri) {
@@ -235,6 +265,54 @@
     return members;
 }
 
+- (nullable NSArray<NSDictionary *> *)listAllGroupsWithLimit:(NSInteger)limit
+                                                      cursor:(nullable NSString *)cursor
+                                                       query:(nullable NSString *)query
+                                                       error:(NSError **)error {
+    if (limit <= 0) limit = 50;
+    
+    NSString *sql = @"SELECT uri, name, creator_did, created_at, updated_at FROM groups";
+    NSMutableArray *params = [NSMutableArray array];
+    
+    if (query || cursor) {
+        sql = [sql stringByAppendingString:@" WHERE"];
+        BOOL needsAnd = NO;
+        if (query) {
+            sql = [sql stringByAppendingString:@" (name LIKE ? OR uri LIKE ? OR creator_did LIKE ?)"];
+            NSString *likePattern = [NSString stringWithFormat:@"%%%@%%", query];
+            [params addObject:likePattern];
+            [params addObject:likePattern];
+            [params addObject:likePattern];
+            needsAnd = YES;
+        }
+        if (cursor) {
+            if (needsAnd) sql = [sql stringByAppendingString:@" AND"];
+            sql = [sql stringByAppendingString:@" uri < ?"];
+            [params addObject:cursor];
+        }
+    }
+    
+    sql = [sql stringByAppendingString:@" ORDER BY updated_at DESC LIMIT ?"];
+    [params addObject:@(limit)];
+
+    NSError *queryError = nil;
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql
+                                                                      params:params
+                                                                       error:&queryError];
+    if (queryError) {
+        if (error) *error = queryError;
+        return nil;
+    }
+
+    NSMutableArray *groups = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSDictionary *groupInfo = [self getGroupPublicInfo:row[@"uri"] error:nil];
+        if (groupInfo) [groups addObject:groupInfo];
+    }
+
+    return groups;
+}
+
 #pragma mark - Invite Links
 
 - (nullable NSString *)createInviteLinkForGroup:(NSString *)groupUri
@@ -312,6 +390,48 @@
 
     NSString *updateQuery = @"UPDATE group_invite_links SET enabled = 0 WHERE id = ?";
     return [(PDSDatabase *)self.database executeParameterizedUpdate:updateQuery params:@[linkId] error:error];
+}
+
+- (nullable NSArray<NSDictionary *> *)listAllInviteLinksWithLimit:(NSInteger)limit
+                                                           cursor:(nullable NSString *)cursor
+                                                            query:(nullable NSString *)query
+                                                            error:(NSError **)error {
+    if (limit <= 0) limit = 50;
+    
+    NSString *sql = @"SELECT id, group_uri, created_by, created_at, expires_at, max_uses, uses, enabled FROM group_invite_links";
+    NSMutableArray *params = [NSMutableArray array];
+    
+    if (query || cursor) {
+        sql = [sql stringByAppendingString:@" WHERE"];
+        BOOL needsAnd = NO;
+        if (query) {
+            sql = [sql stringByAppendingString:@" (id LIKE ? OR group_uri LIKE ? OR created_by LIKE ?)"];
+            NSString *likePattern = [NSString stringWithFormat:@"%%%@%%", query];
+            [params addObject:likePattern];
+            [params addObject:likePattern];
+            [params addObject:likePattern];
+            needsAnd = YES;
+        }
+        if (cursor) {
+            if (needsAnd) sql = [sql stringByAppendingString:@" AND"];
+            sql = [sql stringByAppendingString:@" id < ?"];
+            [params addObject:cursor];
+        }
+    }
+    
+    sql = [sql stringByAppendingString:@" ORDER BY created_at DESC LIMIT ?"];
+    [params addObject:@(limit)];
+
+    NSError *queryError = nil;
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql
+                                                                      params:params
+                                                                       error:&queryError];
+    if (queryError) {
+        if (error) *error = queryError;
+        return nil;
+    }
+
+    return rows;
 }
 
 - (nullable NSDictionary *)validateAndUseInviteLink:(NSString *)linkId

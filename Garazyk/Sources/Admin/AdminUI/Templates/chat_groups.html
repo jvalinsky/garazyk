@@ -1,0 +1,22 @@
+<div class="content-header">
+  <h2>Chat Groups</h2>
+  <p class="text-secondary mt-sm">Monitor and manage group chat definitions.</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Filter Groups</h3>
+  </div>
+  <div class="card-body">
+    <form class="form flex gap-md" hx-get="/admin/partials/chat/groups/search" hx-target="#group-list-container">
+      <div class="form-group flex-1">
+        <input type="text" name="q" class="form-input" placeholder="Search by URI or Name...">
+      </div>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+
+<div id="group-list-container" hx-get="/admin/partials/chat/groups/list" hx-trigger="load">
+  <p class="text-secondary p-md">Loading groups...</p>
+</div>

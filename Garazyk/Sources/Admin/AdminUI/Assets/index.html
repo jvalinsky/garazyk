@@ -167,6 +167,12 @@
             <button class="sidebar-item" hx-get="/admin/partials/chat/convos" hx-target="#content-pane" hx-push-url="/admin/chat/convos">
               Conversations
             </button>
+            <button class="sidebar-item" hx-get="/admin/partials/chat/groups" hx-target="#content-pane" hx-push-url="/admin/chat/groups">
+              Groups
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/chat/invite-links" hx-target="#content-pane" hx-push-url="/admin/chat/invite-links">
+              Invite Links
+            </button>
             <button class="sidebar-item" hx-get="/admin/partials/chat/messages" hx-target="#content-pane" hx-push-url="/admin/chat/messages">
               Messages
             </button>
@@ -224,6 +230,6 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

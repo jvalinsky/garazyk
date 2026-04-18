@@ -1,0 +1,22 @@
+<div class="content-header">
+  <h2>Group Invite Links</h2>
+  <p class="text-secondary mt-sm">Audit and revoke active group join links across the server.</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Filter Links</h3>
+  </div>
+  <div class="card-body">
+    <form class="form flex gap-md" hx-get="/admin/partials/chat/invite-links/search" hx-target="#link-list-container">
+      <div class="form-group flex-1">
+        <input type="text" name="q" class="form-input" placeholder="Search by ID or Group URI...">
+      </div>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+
+<div id="link-list-container" hx-get="/admin/partials/chat/invite-links/list" hx-trigger="load">
+  <p class="text-secondary p-md">Loading invite links...</p>
+</div>

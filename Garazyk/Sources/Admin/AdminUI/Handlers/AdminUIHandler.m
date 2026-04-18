@@ -184,6 +184,19 @@ NS_ASSUME_NONNULL_BEGIN
     } else if ([partial isEqualToString:@"chat/convos/search"]) {
         NSString *query = params[@"q"] ?: @"";
         return [self renderChatConvosSearchWithQuery:query statusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/groups"]) {
+        return [self renderChatGroupsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/groups/search"]) {
+        NSString *query = params[@"q"] ?: @"";
+        return [self renderChatGroupsSearchWithQuery:query statusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/groups/detail"]) {
+        NSString *groupUri = params[@"groupUri"];
+        return [self renderChatGroupDetailPartialWithGroupUri:groupUri statusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/invite-links"]) {
+        return [self renderChatInviteLinksPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/invite-links/search"]) {
+        NSString *query = params[@"q"] ?: @"";
+        return [self renderChatInviteLinksSearchWithQuery:query statusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"chat/messages"]) {
         return [self renderChatMessagesPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"chat/reports"]) {
@@ -751,6 +764,70 @@ NS_ASSUME_NONNULL_BEGIN
     
     // This partial is meant to be called by HTMX for searching/filtering
     return [self renderChatConvosPartialWithStatusCode:statusCode contentType:contentType];
+}
+
+- (NSString *)renderChatGroupsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                      contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Chat Groups</h2>"
+           @"<p class=\"text-secondary\">Monitor and manage group chat definitions.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div hx-get=\"/admin/partials/chat/groups/list\" hx-trigger=\"load\">"
+           @"<p class=\"text-secondary\">Loading groups...</p>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderChatGroupsSearchWithQuery:(NSString *)query
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return [self renderChatGroupsPartialWithStatusCode:statusCode contentType:contentType];
+}
+
+- (NSString *)renderChatGroupDetailPartialWithGroupUri:(NSString *)groupUri
+                                          statusCode:(nullable NSInteger *)statusCode
+                                         contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    return [NSString stringWithFormat:
+           @"<div class=\"mb-md\"><button class=\"btn\" hx-get=\"/admin/partials/chat/groups\" hx-target=\"#content-pane\">◀ Back to Groups</button></div>"
+           @"<div class=\"card\"><div class=\"card-header\"><h3>Group Detail: %@</h3></div>"
+           @"<div class=\"card-body\">"
+           @"<div hx-get=\"/admin/partials/chat/groups/data?groupUri=%@\" hx-trigger=\"load\">Loading...</div>"
+           @"</div></div>", groupUri, [groupUri stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+}
+
+- (NSString *)renderChatInviteLinksPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                           contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Group Invite Links</h2>"
+           @"<p class=\"text-secondary\">Audit and revoke active group join links.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div hx-get=\"/admin/partials/chat/invite-links/list\" hx-trigger=\"load\">"
+           @"<p class=\"text-secondary\">Loading invite links...</p>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderChatInviteLinksSearchWithQuery:(NSString *)query
+                                    statusCode:(nullable NSInteger *)statusCode
+                                   contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return [self renderChatInviteLinksPartialWithStatusCode:statusCode contentType:contentType];
 }
 
 - (NSString *)renderChatMessagesPartialWithStatusCode:(nullable NSInteger *)statusCode

@@ -29,23 +29,59 @@ function renderConversations() {
 async function handleConvoAction(event) {
     const btn = event.currentTarget;
     const action = btn.dataset.action;
-    const convoId = btn.dataset.convoId;
     
     try {
         if (action === 'lock') {
+            const convoId = btn.dataset.convoId;
             await AdminPanel.lockConversation(convoId);
             window.AdminUI.showSuccess('Conversation locked');
         } else if (action === 'unlock') {
+            const convoId = btn.dataset.convoId;
             await AdminPanel.unlockConversation(convoId);
             window.AdminUI.showSuccess('Conversation unlocked');
+        } else if (action === 'delete-group') {
+            const uri = btn.dataset.uri;
+            if (confirm('Are you sure you want to delete this group? This action is IRREVERSIBLE.')) {
+                // We need to implement deleteGroup API in admin-panel.js
+                await AdminPanel.deleteGroup(uri);
+                window.AdminUI.showSuccess('Group deleted');
+                document.getElementById('group-list-container')?.dispatchEvent(new Event('load'));
+            }
+        } else if (action === 'revoke-link') {
+            const linkId = btn.dataset.id;
+            await AdminPanel.revokeInviteLink(linkId);
+            window.AdminUI.showSuccess('Invite link revoked');
+            document.getElementById('link-list-container')?.dispatchEvent(new Event('load'));
+        } else if (action === 'remove-member') {
+            const uri = btn.dataset.group;
+            const did = btn.dataset.did;
+            if (confirm('Remove ' + did + ' from group?')) {
+                await AdminPanel.removeMemberFromGroup(uri, did);
+                window.AdminUI.showSuccess('Member removed');
+                // Reload detail view
+                document.getElementById('content-pane')?.dispatchEvent(new Event('load'));
+            }
         }
-        loadConversations();
+        
+        if (action === 'lock' || action === 'unlock') {
+            loadConversations();
+        }
     } catch (err) {
         window.AdminUI.showError(err.message);
     }
 }
 
+export function init() {
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (btn && ['lock', 'unlock', 'delete-group', 'revoke-link', 'remove-member'].includes(btn.dataset.action)) {
+            handleConvoAction(e);
+        }
+    });
+}
+
 export const AdminChat = {
+    init,
     loadConversations,
     handleConvoAction
 };
