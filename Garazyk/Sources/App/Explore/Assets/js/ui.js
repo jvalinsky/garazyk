@@ -1644,18 +1644,11 @@ const AdminAPI = {
 
     async generateInviteCode() {
         const resultEl = document.getElementById('invite-result');
-        // Need a forAccount DID. Use the first account or admin DID.
-        let forAccount = sessionAdminDids[0] || '';
-        if (!forAccount) {
-            resultEl.innerHTML = '<div style="color: red;">No admin DID available. Cannot create invite code.</div>';
-            return;
-        }
-
         try {
-            const resp = await this.adminFetch('/admin/invites', {
+            const resp = await this.adminFetch('/xrpc/com.atproto.server.createInviteCode', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ forAccount, usesAvailable: 1 })
+                body: JSON.stringify({ useCount: 1 })
             });
             const data = await resp.json();
             if (data.code) {

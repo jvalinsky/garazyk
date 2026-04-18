@@ -1065,13 +1065,15 @@
         return;
     }
     
-    NSData *blobData = [self fetchBlob:cid mimeType:nil];
+    NSString *mimeType = nil;
+    NSData *blobData = [self fetchBlob:cid mimeType:&mimeType];
     if (blobData) {
         response.statusCode = 200;
-        [response setHeader:@"application/octet-stream" forKey:@"Content-Type"];
+        [response setHeader:mimeType ?: @"application/octet-stream" forKey:@"Content-Type"];
         [response setHeader:[NSString stringWithFormat:@"attachment; filename=\"%@\"", cid] forKey:@"Content-Disposition"];
         [response setBody:blobData];
     } else {
+        response.statusCode = 404;
         [response setJsonBody:@{@"error": @"Blob not found"}];
     }
 }
@@ -1925,8 +1927,29 @@
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
 
-- (NSData *)fetchBlob:(NSString *)cid mimeType:(NSString **)outMimeType {
-    return nil;
+- (NSData *)fetchBlob:(NSString *)cidString mimeType:(NSString **)outMimeType {
+    if (!cidString) return nil;
+    
+    CID *cid = [CID cidFromString:cidString];
+    if (!cid) return nil;
+    
+    NSError *error = nil;
+    PDSDatabase *db = [self.controller serviceDatabaseWithError:&error];
+    if (!db) {
+        PDS_LOG_EXPLORE_ERROR(@"Failed to get service database for blob fetch: %@", error);
+        return nil;
+    }
+    
+    PDSDatabaseBlob *blobMetadata = [db getBlobWithCid:cid.bytes error:&error];
+    if (!blobMetadata) {
+        if (error) PDS_LOG_EXPLORE_ERROR(@"Failed to query blob metadata for %@: %@", cidString, error);
+        return nil;
+    }
+    
+    if (outMimeType) *outMimeType = blobMetadata.mimeType;
+    
+    // Use PDSBlobService to get the actual data
+    return [self.controller getBlob:cid.bytes forDid:blobMetadata.did error:&error];
 }
 
 - (NSDictionary *)decodeCid:(NSString *)cid {
