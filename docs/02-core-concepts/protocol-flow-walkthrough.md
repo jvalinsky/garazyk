@@ -7,7 +7,7 @@ title: Protocol Flow Walkthrough
 ## Overview
 
 [AT Protocol Basics](./atproto-basics) gives the mental model. This page shows
-what that model looks like when it passes through September's code.
+what that model looks like when it passes through Garazyk's code.
 
 The goal is not to document every endpoint. The goal is to make the recurring
 shape of an ATProto request obvious enough that new contributors can trace a

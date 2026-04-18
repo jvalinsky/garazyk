@@ -7,7 +7,7 @@ title: PLC Operation Walkthrough
 ## Overview
 
 [PLC Directory](./plc-directory) explains why PLC exists. This page shows what a
-PLC operation looks like as data and how it moves through September's
+PLC operation looks like as data and how it moves through Garazyk's
 validation, storage, and replay path.
 
 The important contributor fact is that a PLC DID is the result of replaying

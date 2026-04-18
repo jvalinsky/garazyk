@@ -20,7 +20,7 @@ runtime headers, or macOS-specific research.
 - Use the blog sources for mental models, debugging strategy, and edge cases.
 - Treat every pre-ARC, pre-64-bit, or retired-framework article as something to
   translate before applying.
-- Map every external idea back into September code and tests before changing
+- Map every external idea back into Garazyk code and tests before changing
   architecture.
 
 ## Evidence tags
@@ -42,7 +42,7 @@ runtime headers, or macOS-specific research.
 
 ## Why these topics made the cut
 
-These are the places where external research gives September contributors
+These are the places where external research gives Garazyk contributors
 something we do not already get from normal code search:
 
 - runtime dispatch edge cases that only make sense once you understand the

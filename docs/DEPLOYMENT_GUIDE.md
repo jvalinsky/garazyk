@@ -146,8 +146,8 @@ Located at `docker/docs/Dockerfile`:
 ### docker-compose.yml
 
 Located at `docker/docs/docker-compose.yml`:
-- Service name: `september-docs`
-- Container name: `september-docs`
+- Service name: `garazyk-docs`
+- Container name: `garazyk-docs`
 - Port mapping: `8080:80`
 - Volume mount: `docs/.vitepress/dist` → `/var/www/docs` (read-only)
 
@@ -285,7 +285,7 @@ npm run docs:build
 
 ```bash
 # Check logs
-docker compose logs september-docs
+docker compose logs garazyk-docs
 
 # Rebuild from scratch
 docker compose down
@@ -362,13 +362,9 @@ curl -f http://localhost:8080/docs/ || echo "Health check failed"
 
 ```bash
 # View Docker logs
-docker compose logs -f september-docs
-
-# View nginx access logs
-docker exec september-docs tail -f /var/log/nginx/access.log
-
-# View nginx error logs
-docker exec september-docs tail -f /var/log/nginx/error.log
+docker compose logs -f garazyk-docs
+docker exec garazyk-docs tail -f /var/log/nginx/access.log
+docker exec garazyk-docs tail -f /var/log/nginx/error.log
 ```
 
 ## Security Considerations

@@ -4,17 +4,17 @@ title: PLC Failover and Redundancy
 
 # PLC Failover and Redundancy
 
-This guide covers redundancy strategies and fallback mechanisms for PLC directory integration in September PDS.
+This guide covers redundancy strategies and fallback mechanisms for PLC directory integration in Garazyk PDS.
 
 ## Overview
 
-The PLC (Public Ledger of Credentials) directory is a critical dependency for DID resolution. September implements several strategies to maintain availability and reliability when interacting with PLC servers.
+The PLC (Public Ledger of Credentials) directory is a critical dependency for DID resolution. Garazyk implements several strategies to maintain availability and reliability when interacting with PLC servers.
 
 ## Retry Policy
 
 ### Automatic Retry Logic
 
-September uses `HttpRetryPolicy` to automatically retry transient failures when communicating with PLC servers:
+Garazyk uses `HttpRetryPolicy` to automatically retry transient failures when communicating with PLC servers:
 
 ```objective-c
 @interface HttpRetryPolicy : NSObject
@@ -128,7 +128,7 @@ resolver.timeout = 10.0;  // Increase for slow networks
 
 ### Security Measure
 
-September blocks HTTP redirects to prevent potential security issues:
+Garazyk blocks HTTP redirects to prevent potential security issues:
 
 ```objective-c
 - (void)URLSession:(NSURLSession *)session 
@@ -149,7 +149,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 
 ### Multiple PLC Server Configuration
 
-While September's `DIDPLCResolver` currently supports a single PLC URL, you can implement redundancy at the application level:
+While Garazyk's `DIDPLCResolver` currently supports a single PLC URL, you can implement redundancy at the application level:
 
 #### Strategy 1: Primary/Fallback Pattern
 
@@ -422,7 +422,7 @@ When PLC is unavailable, consider these degradation strategies:
 
 ### Mock PLC for Testing
 
-For integration tests, use September's built-in PLC server (campagnola):
+For integration tests, use Garazyk's built-in PLC server (campagnola):
 
 ```bash
 # Start mock PLC server

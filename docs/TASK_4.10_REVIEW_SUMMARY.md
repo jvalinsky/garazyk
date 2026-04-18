@@ -155,7 +155,7 @@ All expanded content demonstrates:
 
 The documentation successfully transforms from basic reference material into
 a comprehensive, book-quality technical resource suitable for learning and
-implementing the September PDS system.
+implementing the Garazyk PDS system.
 
 ## Artifacts Generated
 

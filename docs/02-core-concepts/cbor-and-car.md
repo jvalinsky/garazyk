@@ -6,7 +6,7 @@ title: CBOR and CAR
 
 ## Overview
 
-CBOR and CAR are the two data formats that make September's repository story
+CBOR and CAR are the two data formats that make Garazyk's repository story
 portable and verifiable.
 
 - DAG-CBOR gives records, commits, and other structured values deterministic
@@ -19,7 +19,7 @@ through the system without losing its identity."
 
 ## Why CBOR Exists In This Repo
 
-September cannot hash arbitrary Objective-C objects directly. It needs a stable
+Garazyk cannot hash arbitrary Objective-C objects directly. It needs a stable
 byte representation first.
 
 That is the job of DAG-CBOR in this tree:
@@ -46,7 +46,7 @@ CAR is the transport and archive format for that job:
 CAR is not "just a binary blob." It is the format that preserves the
 content-addressed structure while data is in motion.
 
-## How September Uses Both Together
+## How Garazyk Uses Both Together
 
 The common flow is:
 

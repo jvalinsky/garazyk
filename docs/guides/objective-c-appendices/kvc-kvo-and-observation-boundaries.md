@@ -56,7 +56,7 @@ proxy family:
 
 These matter because they can generate detailed ordered and unordered collection
 change notifications. That is useful in controller-heavy Cocoa code, but it is
-far more machinery than September usually wants.
+far more machinery than Garazyk usually wants.
 
 Use them as research material when you inherit old Cocoa code, not as the first
 tool for new infrastructure.
@@ -78,7 +78,7 @@ For that last case, the associated-objects guidance in
 [Appendix: Runtime Mutation, Associated Objects, Swizzling, and Direct Methods](./runtime-mutation-associated-objects-swizzling-and-direct-methods)
 is the right companion reading.
 
-## What this means in September
+## What this means in Garazyk
 
 This repository should not drift toward stringly typed control flow just because
 Foundation makes it possible.

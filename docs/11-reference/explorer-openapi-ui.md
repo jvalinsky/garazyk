@@ -6,7 +6,7 @@ title: Explorer, OpenAPI, and UI
 
 ## Overview
 
-September exposes several contributor-facing browser tools in addition to its protocol endpoints. These tools exist to make the runtime inspectable without writing a separate client app.
+Garazyk exposes several contributor-facing browser tools in addition to its protocol endpoints. These tools exist to make the runtime inspectable without writing a separate client app.
 
 The key distinction is:
 

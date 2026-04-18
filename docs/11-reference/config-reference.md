@@ -14,7 +14,7 @@ The most important rule is simple:
 
 ## Two Sources of Truth
 
-September configuration comes from:
+Garazyk configuration comes from:
 
 - JSON config files loaded through `PDSConfiguration`
 - environment variables that override config-file values

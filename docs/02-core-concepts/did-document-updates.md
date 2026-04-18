@@ -10,14 +10,14 @@ In ATProto, a DID document update is an identity update, not a profile edit.
 Changing it can alter which server is authoritative, which keys can sign future
 operations, and which handle is associated with the DID.
 
-That is why September handles DID updates cautiously and why the docs need to
+That is why Garazyk handles DID updates cautiously and why the docs need to
 describe the actual update path rather than a generic "PATCH the DID document"
 story.
 
 ## `did:plc` Updates Are Operation-Based
 
 For `did:plc`, the current DID document is the replayed result of PLC
-operations. September therefore updates DID state by constructing and submitting
+operations. Garazyk therefore updates DID state by constructing and submitting
 new PLC operations, not by editing one stored JSON document in place.
 
 Those operations carry the fields that define identity state:
@@ -31,7 +31,7 @@ Those operations carry the fields that define identity state:
 
 That structure is why PLC updates feel more like append-only history than CRUD.
 
-## What September Preserves During Updates
+## What Garazyk Preserves During Updates
 
 When the server updates DID state, it tries to preserve the identity fields that
 should remain stable unless the caller is intentionally changing them.
@@ -58,7 +58,7 @@ application state together.
 
 ## `did:web` Is Different
 
-September also supports `did:web`, but the update model is different. `did:web`
+Garazyk also supports `did:web`, but the update model is different. `did:web`
 state is resolved from the web-hosted DID document rather than from PLC
 operations.
 

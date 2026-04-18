@@ -5,7 +5,7 @@ title: AT Protocol PDS Refactor & Spec Compliance Plan
 # AT Protocol PDS Refactor & Spec Compliance Plan
 
 **Generated:** 2026-02-24T13:48:25Z
-**Repository:** github.com/jvalinsky/september
+**Repository:** github.com/jvalinsky/garazyk
 
 ## Execution Order (least impact → most impact)
 

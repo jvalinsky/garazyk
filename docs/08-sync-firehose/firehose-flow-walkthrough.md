@@ -10,7 +10,7 @@ title: Firehose Flow Walkthrough
 page walks through the actual runtime path: route registration, subscriber
 startup, replay, live delivery, and backpressure enforcement.
 
-The important point is that September's firehose is not one monolithic
+The important point is that Garazyk's firehose is not one monolithic
 "broadcast" method. It is a sequence of transport, replay, persistence, and
 queueing steps.
 
@@ -72,7 +72,7 @@ an optional extra feature layered on later.
 
 ## No Cursor Means "Replay Current State, Then Go Live"
 
-September uses a no-cursor connection to seed the consumer with current repo
+Garazyk uses a no-cursor connection to seed the consumer with current repo
 state before the client joins live delivery.
 
 ```objc

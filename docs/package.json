@@ -1,7 +1,7 @@
 {
-  "name": "september-pds-docs",
+  "name": "garazyk-pds-docs",
   "version": "1.0.0",
-  "description": "Contributor documentation for the September AT Protocol PDS implementation in Objective-C",
+  "description": "Contributor documentation for the Garazyk AT Protocol PDS implementation in Objective-C",
   "type": "module",
   "scripts": {
     "docs:dev": "vitepress dev",
@@ -30,7 +30,7 @@
     "vitepress",
     "objective-c"
   ],
-  "author": "September PDS Team",
+  "author": "Garazyk Team",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.19.35",

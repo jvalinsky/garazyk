@@ -1,4 +1,4 @@
-# Contributing to September PDS
+# Contributing to Garazyk
 
 This repository expects contributors to work from the current contributor docs, not from stale copied examples.
 

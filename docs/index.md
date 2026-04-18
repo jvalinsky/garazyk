@@ -1,10 +1,10 @@
 ---
-title: September PDS Contributor Guide
+title: Garazyk Contributor Guide
 ---
 
-# September PDS Contributor Guide
+# Garazyk Contributor Guide
 
-This site is the canonical documentation set for contributors working on September PDS. It is written to explain how the repository actually works today, not to preserve every historical note or every large example inline.
+This site is the canonical documentation set for contributors working on Garazyk. It is written to explain how the repository actually works today, not to preserve every historical note or every large example inline.
 
 If the docs and the code disagree, trust the code and fix the docs.
 
@@ -28,7 +28,7 @@ The contributor docs favor:
 - repo-grounded tutorials instead of toy standalone labs,
 - and small inline examples, with longer material moved to appendices.
 
-That is especially important in a codebase like September, where the interesting work usually happens at the seam between configuration, routing, service composition, storage, and protocol rules.
+That is especially important in a codebase like Garazyk, where the interesting work usually happens at the seam between configuration, routing, service composition, storage, and protocol rules.
 
 ## Recommended Learning Paths
 
