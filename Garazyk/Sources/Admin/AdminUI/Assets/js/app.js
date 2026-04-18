@@ -8,7 +8,7 @@
   // ============================================================================
 
   const CONFIG = {
-    services: ['pds', 'plc', 'relay', 'appview', 'chat'],
+    services: ['pds', 'plc', 'relay', 'appview', 'chat', 'ozone'],
     activeServiceKey: 'adminui_active_service',
     sidebarCollapsePrefix: 'sidebar_collapsed_',
   };

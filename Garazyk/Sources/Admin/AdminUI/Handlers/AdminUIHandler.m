@@ -190,6 +190,14 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderChatReportsPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"chat/reports/list"]) {
         return [self renderChatReportsListWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/events"]) {
+        return [self renderOzoneEventsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/statuses"]) {
+        return [self renderOzoneStatusesPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/team"]) {
+        return [self renderOzoneTeamPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/templates"]) {
+        return [self renderOzoneTemplatesPartialWithStatusCode:statusCode contentType:contentType];
     }
 
     if (statusCode) *statusCode = 404;
@@ -270,6 +278,10 @@ NS_ASSUME_NONNULL_BEGIN
            @"<div class=\"card\">"
            @"<div class=\"card-header\"><h3 class=\"card-title\">Chat Service</h3></div>"
            @"<div class=\"card-body\"><p>Monitor active conversations and audit message history.</p></div>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-header\"><h3 class=\"card-title\">Ozone</h3></div>"
+           @"<div class=\"card-body\"><p>Enterprise moderation tools, team management, and event auditing.</p></div>"
            @"</div>"
            @"</div>";
 }
@@ -781,6 +793,86 @@ NS_ASSUME_NONNULL_BEGIN
            @"<thead><tr><th>Report ID</th><th>Subject</th><th>Reporter</th><th>Reason</th><th>Status</th></tr></thead>"
            @"<tbody><tr><td colspan=\"5\" class=\"text-secondary text-center\">No active chat reports.</td></tr></tbody>"
            @"</table>"
+           @"</div>";
+}
+
+- (NSString *)renderOzoneEventsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                         contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Moderation Events</h2>"
+           @"<p class=\"text-secondary\">Audit log of all moderation actions taken via Ozone.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Event ID</th><th>Type</th><th>Subject</th><th>Created By</th><th>Timestamp</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"5\" class=\"text-secondary text-center\">No moderation events recorded.</td></tr></tbody>"
+           @"</table>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderOzoneStatusesPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                           contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Subject Statuses</h2>"
+           @"<p class=\"text-secondary\">Current moderation state of actors and records.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Subject</th><th>Review State</th><th>Actions</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"3\" class=\"text-secondary text-center\">No subject statuses found.</td></tr></tbody>"
+           @"</table>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderOzoneTeamPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                       contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Ozone Team</h2>"
+           @"<p class=\"text-secondary\">Manage members of the moderation team.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Email</th><th>Role</th><th>Actions</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"3\" class=\"text-secondary text-center\">No team members configured.</td></tr></tbody>"
+           @"</table>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderOzoneTemplatesPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                            contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Communication Templates</h2>"
+           @"<p class=\"text-secondary\">Standardized responses for user outreach.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Name</th><th>Last Updated</th><th>Actions</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"3\" class=\"text-secondary text-center\">No templates found.</td></tr></tbody>"
+           @"</table>"
+           @"</div>"
+           @"</div>"
            @"</div>";
 }
 
