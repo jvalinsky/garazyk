@@ -1,0 +1,93 @@
+<div class="content-header">
+  <h2>Crawl Queue</h2>
+  <p class="text-secondary">Manage repository crawl requests and retry failed crawls.</p>
+</div>
+
+<!-- Queue Stats -->
+<div class="grid-4 mb-lg" hx-get="/admin/relay/crawl/stats" hx-trigger="load, every 30s" hx-swap="outerHTML">
+  <div class="stat-card">
+    <div class="stat-label">Pending</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">In Progress</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Failed</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Completed</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+</div>
+
+<!-- Retry Failed Crawls -->
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Failed Crawls</h3>
+    <button
+      type="button"
+      class="btn btn-sm btn-secondary"
+      hx-post="/admin/relay/crawl/retry-failed"
+      hx-confirm="Retry all failed crawls?">
+      Retry All
+    </button>
+  </div>
+  <div class="card-body">
+    <p class="text-secondary mb-md">
+      Retry crawls that encountered errors. This will re-queue failed crawl requests.
+    </p>
+  </div>
+</div>
+
+<!-- Queue Table -->
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Repository</th>
+        <th>DID</th>
+        <th>Status</th>
+        <th>Attempts</th>
+        <th>Last Error</th>
+        <th>Queued</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody hx-get="/admin/relay/crawl/queue" hx-trigger="load, every 15s" hx-swap="innerHTML">
+      <tr>
+        <td colspan="7" class="text-secondary text-center p-lg">
+          <div class="loading-indicator" style="margin: 0 auto;"></div>
+          <p class="mt-sm">Loading crawl queue...</p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Manual Crawl Request -->
+<div class="card mt-lg">
+  <div class="card-header">
+    <h3 class="card-title">Request Crawl</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/admin/relay/crawl/request" hx-target="#request-result">
+      <div class="form-group">
+        <label class="form-label required">Repository (DID)</label>
+        <input
+          type="text"
+          name="did"
+          class="form-input"
+          placeholder="did:plc:..."
+          required>
+        <div class="form-help">DID of the repository to crawl.</div>
+      </div>
+      <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Request Crawl</button>
+      </div>
+    </form>
+    <div id="request-result" class="mt-md"></div>
+  </div>
+</div>

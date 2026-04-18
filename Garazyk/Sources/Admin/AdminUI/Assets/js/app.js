@@ -1,280 +1,402 @@
-/**
- * AT Protocol Admin UI - Main Application Script
- *
- * Handles:
- * - Service segment switching (PDS, PLC, Relay, AppView, Chat)
- * - Sidebar section collapse/expand
- * - HTMX event handling
- * - Keyboard navigation
- * - Status bar updates
- */
+// AT Protocol Admin UI - Client-side interactivity
 
 (function() {
   'use strict';
 
-  // ============================================
-  // Service Segment Control
-  // ============================================
+  // ============================================================================
+  // Configuration
+  // ============================================================================
 
-  const services = ['pds', 'plc', 'relay', 'appview', 'chat'];
-  let activeService = 'pds';
+  const CONFIG = {
+    services: ['pds', 'plc', 'relay', 'appview', 'chat'],
+    activeServiceKey: 'adminui_active_service',
+    sidebarCollapsePrefix: 'sidebar_collapsed_',
+  };
 
-  function switchService(service) {
-    if (!services.includes(service)) return;
+  // ============================================================================
+  // Service Switching
+  // ============================================================================
 
-    activeService = service;
+  function initServiceSwitching() {
+    const serviceSegments = document.querySelectorAll('.service-segment');
+    const sidebar = document.getElementById('sidebar');
+    const contentPane = document.getElementById('content-pane');
 
-    // Update segment buttons
-    document.querySelectorAll('.service-segment').forEach(btn => {
-      const isActive = btn.dataset.service === service;
-      btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    });
-
-    // Show/hide sidebar sections
-    document.querySelectorAll('.sidebar-section').forEach(section => {
-      const sectionService = section.dataset.service;
-      const isCurrentService = sectionService === service;
-
-      // Show section for current service, hide others
-      section.style.display = isCurrentService ? 'block' : 'none';
-
-      // Expand current service section
-      if (isCurrentService) {
-        const items = section.querySelector('.sidebar-items');
-        const toggle = section.querySelector('.sidebar-section-toggle');
-        if (items && toggle) {
-          items.classList.remove('hidden');
-          toggle.setAttribute('aria-expanded', 'true');
-        }
-      }
-    });
-
-    // Load default content for service
-    const defaultRoutes = {
-      pds: '/admin/users',
-      plc: '/admin/plc/lookup',
-      relay: '/admin/relay/upstreams',
-      appview: '/admin/appview/backfill',
-      chat: '/admin/chat'
-    };
-
-    if (defaultRoutes[service]) {
-      htmx.ajax('GET', defaultRoutes[service], {
-        target: '#content-pane',
-        pushUrl: true
+    serviceSegments.forEach((segment) => {
+      segment.addEventListener('click', (e) => {
+        e.preventDefault();
+        const service = segment.dataset.service;
+        switchToService(service);
       });
-    }
+    });
 
-    // Update URL
-    const url = new URL(window.location);
-    url.searchParams.set('service', service);
-    window.history.replaceState({}, '', url);
+    // Restore previously selected service
+    const savedService = localStorage.getItem(CONFIG.activeServiceKey) || 'pds';
+    switchToService(savedService);
   }
 
-  // Service segment click handlers
-  document.querySelectorAll('.service-segment').forEach(btn => {
-    btn.addEventListener('click', () => {
-      switchService(btn.dataset.service);
-    });
-  });
+  function switchToService(service) {
+    if (!CONFIG.services.includes(service)) return;
 
-  // ============================================
+    // Update service segments
+    document.querySelectorAll('.service-segment').forEach((seg) => {
+      seg.classList.remove('active');
+      seg.setAttribute('aria-selected', 'false');
+    });
+    document.querySelector(`.service-segment[data-service="${service}"]`).classList.add('active');
+    document.querySelector(`.service-segment[data-service="${service}"]`).setAttribute('aria-selected', 'true');
+
+    // Show/hide sidebar sections
+    document.querySelectorAll('.sidebar-section').forEach((section) => {
+      const sectionService = section.dataset.service;
+      if (sectionService === service) {
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
+    });
+
+    // Save preference
+    localStorage.setItem(CONFIG.activeServiceKey, service);
+  }
+
+  // ============================================================================
   // Sidebar Section Collapse/Expand
-  // ============================================
+  // ============================================================================
 
-  document.querySelectorAll('.sidebar-section-title').forEach(title => {
-    title.addEventListener('click', (e) => {
-      const section = title.closest('.sidebar-section');
-      const items = section.querySelector('.sidebar-items');
-      const toggle = title.querySelector('.sidebar-section-toggle');
+  function initSidebarSections() {
+    const sectionTitles = document.querySelectorAll('.sidebar-section-title');
 
-      if (items) {
-        const isHidden = items.classList.contains('hidden');
-        items.classList.toggle('hidden');
-        toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-      }
-    });
-  });
+    sectionTitles.forEach((title) => {
+      title.addEventListener('click', (e) => {
+        e.preventDefault();
+        const controlsId = title.getAttribute('aria-controls');
+        const itemsDiv = document.getElementById(controlsId);
+        const isExpanded = title.getAttribute('aria-expanded') === 'true';
 
-  // Sidebar item click - mark active
-  document.querySelectorAll('.sidebar-item').forEach(item => {
-    item.addEventListener('click', () => {
-      document.querySelectorAll('.sidebar-item').forEach(i => {
-        i.classList.remove('active');
-      });
-      item.classList.add('active');
-    });
-  });
-
-  // ============================================
-  // HTMX Event Handlers
-  // ============================================
-
-  // Before request - show loading indicator
-  document.body.addEventListener('htmx:beforeRequest', (e) => {
-    const target = e.detail.target;
-    if (target && target.id === 'content-pane') {
-      target.classList.add('loading');
-    }
-  });
-
-  // After request - hide loading indicator
-  document.body.addEventListener('htmx:afterRequest', (e) => {
-    const target = e.detail.target;
-    if (target && target.id === 'content-pane') {
-      target.classList.remove('loading');
-    }
-  });
-
-  // After swap - update active sidebar item based on URL
-  document.body.addEventListener('htmx:afterSwap', (e) => {
-    // Re-apply event handlers to new content
-    initializeContentHandlers();
-  });
-
-  // Response error handling
-  document.body.addEventListener('htmx:responseError', (e) => {
-    console.error('HTMX response error:', e.detail);
-    const target = e.detail.target;
-    if (target && target.id === 'content-pane') {
-      target.innerHTML = `
-        <div class="content-header">
-          <h1>Error</h1>
-        </div>
-        <div class="alert alert-destructive">
-          <div>
-            <div class="alert-title">Request Failed</div>
-            <div class="alert-message">
-              HTTP ${e.detail.xhr?.status || 'Unknown'}: ${e.detail.error || 'An error occurred'}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-  });
-
-  // ============================================
-  // Keyboard Navigation
-  // ============================================
-
-  document.addEventListener('keydown', (e) => {
-    // Cmd/Ctrl + 1-5 to switch services
-    if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '5') {
-      e.preventDefault();
-      const index = parseInt(e.key) - 1;
-      if (services[index]) {
-        switchService(services[index]);
-      }
-    }
-
-    // Escape to close dialogs
-    if (e.key === 'Escape') {
-      const dialogs = document.querySelectorAll('dialog[open]');
-      dialogs.forEach(dialog => dialog.close());
-    }
-  });
-
-  // ============================================
-  // Content Area Handlers
-  // ============================================
-
-  function initializeContentHandlers() {
-    // Table row click handlers
-    document.querySelectorAll('.table tbody tr[data-action]').forEach(row => {
-      row.addEventListener('click', () => {
-        const action = row.dataset.action;
-        if (action) {
-          htmx.ajax('GET', action, {
-            target: '#detail-panel',
-            swap: 'innerHTML'
-          });
+        if (itemsDiv) {
+          if (isExpanded) {
+            itemsDiv.classList.add('hidden');
+            title.setAttribute('aria-expanded', 'false');
+            localStorage.setItem(CONFIG.sidebarCollapsePrefix + controlsId, 'true');
+          } else {
+            itemsDiv.classList.remove('hidden');
+            title.setAttribute('aria-expanded', 'true');
+            localStorage.removeItem(CONFIG.sidebarCollapsePrefix + controlsId);
+          }
         }
       });
     });
 
-    // Form submit handlers
-    document.querySelectorAll('form[data-ajax]').forEach(form => {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const action = form.action;
-        const method = form.method || 'POST';
-        const formData = new FormData(form);
+    // Restore collapse state
+    document.querySelectorAll('.sidebar-items').forEach((items) => {
+      const id = items.id;
+      if (localStorage.getItem(CONFIG.sidebarCollapsePrefix + id)) {
+        items.classList.add('hidden');
+        const title = document.querySelector(`[aria-controls="${id}"]`);
+        if (title) {
+          title.setAttribute('aria-expanded', 'false');
+        }
+      }
+    });
+  }
 
-        htmx.ajax(method, action, {
-          target: form.dataset.target || '#content-pane',
-          values: Object.fromEntries(formData)
+  // ============================================================================
+  // Navigation Toggle
+  // ============================================================================
+
+  function initNavToggle() {
+    const navToggle = document.getElementById('nav-toggle');
+    const sidebar = document.querySelector('aside[role="complementary"]');
+
+    if (navToggle) {
+      navToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        sidebar.classList.toggle('hidden');
+      });
+    }
+  }
+
+  // ============================================================================
+  // Sidebar Active State
+  // ============================================================================
+
+  function initSidebarActive() {
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+    sidebarItems.forEach((item) => {
+      item.addEventListener('click', function() {
+        // Remove active from all items in same group
+        const parent = this.closest('.sidebar-items');
+        if (parent) {
+          parent.querySelectorAll('.sidebar-item').forEach((i) => {
+            i.classList.remove('active');
+          });
+        }
+        this.classList.add('active');
+      });
+
+      // Auto-activate based on URL
+      const href = item.getAttribute('hx-push-url');
+      if (href && window.location.pathname === href) {
+        item.classList.add('active');
+      }
+    });
+  }
+
+  // ============================================================================
+  // HTMX Event Handlers
+  // ============================================================================
+
+  function initHTMXHandlers() {
+    // Show loading indicator before request
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+      const target = document.querySelector(evt.detail.target);
+      if (target) {
+        const spinner = document.createElement('div');
+        spinner.className = 'loading-indicator';
+        target.parentElement.appendChild(spinner);
+      }
+    });
+
+    // Hide loading indicator after request
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+      const spinner = document.querySelector('.loading-indicator');
+      if (spinner) {
+        spinner.remove();
+      }
+    });
+
+    // Initialize new content after swap
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      // Re-bind event handlers for newly loaded content
+      initSidebarActive();
+    });
+
+    // Handle errors
+    document.body.addEventListener('htmx:responseError', function(evt) {
+      showErrorNotification(`Error: ${evt.detail.xhr.status} ${evt.detail.xhr.statusText}`);
+    });
+
+    // Handle network errors
+    document.body.addEventListener('htmx:sendError', function(evt) {
+      showErrorNotification('Network error: Could not reach server');
+    });
+  }
+
+  // ============================================================================
+  // Notifications
+  // ============================================================================
+
+  function showErrorNotification(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-destructive';
+    alert.innerHTML = `
+      <span>${message}</span>
+      <button onclick="this.parentElement.remove()" aria-label="Close" style="background: none; border: none; color: inherit; cursor: pointer; font-weight: bold;">×</button>
+    `;
+
+    const contentPane = document.getElementById('content-pane');
+    if (contentPane) {
+      contentPane.insertBefore(alert, contentPane.firstChild);
+      setTimeout(() => alert.remove(), 5000);
+    }
+  }
+
+  function showSuccessNotification(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success';
+    alert.innerHTML = `
+      <span>${message}</span>
+      <button onclick="this.parentElement.remove()" aria-label="Close" style="background: none; border: none; color: inherit; cursor: pointer; font-weight: bold;">×</button>
+    `;
+
+    const contentPane = document.getElementById('content-pane');
+    if (contentPane) {
+      contentPane.insertBefore(alert, contentPane.firstChild);
+      setTimeout(() => alert.remove(), 3000);
+    }
+  }
+
+  // ============================================================================
+  // Keyboard Navigation
+  // ============================================================================
+
+  function initKeyboardNavigation() {
+    document.addEventListener('keydown', function(evt) {
+      // Command/Ctrl + Number to switch services
+      if ((evt.metaKey || evt.ctrlKey) && !evt.shiftKey && !evt.altKey) {
+        const num = parseInt(evt.key);
+        if (num >= 1 && num <= CONFIG.services.length) {
+          evt.preventDefault();
+          switchToService(CONFIG.services[num - 1]);
+        }
+      }
+
+      // Cmd/Ctrl+F to focus search (if available)
+      if ((evt.metaKey || evt.ctrlKey) && evt.key === 'f') {
+        const searchInput = document.querySelector('input[type="search"], input[placeholder*="search" i]');
+        if (searchInput) {
+          evt.preventDefault();
+          searchInput.focus();
+        }
+      }
+    });
+  }
+
+  // ============================================================================
+  // Status Bar Updates
+  // ============================================================================
+
+  function initStatusBar() {
+    updateLastSync();
+    setInterval(updateLastSync, 60000); // Update every minute
+  }
+
+  function updateLastSync() {
+    const lastSyncEl = document.getElementById('last-sync');
+    if (lastSyncEl) {
+      const now = new Date();
+      lastSyncEl.textContent = now.toLocaleTimeString();
+    }
+  }
+
+  // ============================================================================
+  // Form Handling
+  // ============================================================================
+
+  function initFormHandlers() {
+    // Auto-trim whitespace on form inputs
+    document.addEventListener('htmx:afterSwap', function() {
+      document.querySelectorAll('.form-input').forEach((input) => {
+        input.addEventListener('blur', function() {
+          this.value = this.value.trim();
         });
       });
     });
 
-    // Confirm dialog for destructive actions
-    document.querySelectorAll('[data-confirm]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        const message = el.dataset.confirm;
-        if (!confirm(message)) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
+    // Handle form submissions with validation
+    document.addEventListener('submit', function(evt) {
+      const form = evt.target;
+      if (form.classList.contains('form')) {
+        // Add client-side validation if needed
+        const requiredInputs = form.querySelectorAll('[required]');
+        let valid = true;
+
+        requiredInputs.forEach((input) => {
+          if (!input.value.trim()) {
+            valid = false;
+            input.focus();
+          }
+        });
+
+        if (!valid) {
+          evt.preventDefault();
+          showErrorNotification('Please fill in all required fields');
         }
+      }
+    });
+  }
+
+  // ============================================================================
+  // Table Interactions
+  // ============================================================================
+
+  function initTableHandlers() {
+    document.addEventListener('htmx:afterSwap', function() {
+      // Make table rows clickable if they have data attributes
+      document.querySelectorAll('.table tbody tr').forEach((row) => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function(evt) {
+          // Don't trigger if clicking a button
+          if (evt.target.closest('button')) return;
+
+          // Look for an action button to trigger
+          const actionBtn = this.querySelector('[hx-get], [hx-post], [hx-put], [hx-delete]');
+          if (actionBtn) {
+            actionBtn.click();
+          }
+        });
       });
     });
   }
 
-  // ============================================
-  // Status Bar
-  // ============================================
+  // ============================================================================
+  // Dialog Management
+  // ============================================================================
 
-  function updateLastSync() {
-    const el = document.getElementById('last-sync');
-    if (el) {
-      const now = new Date();
-      el.textContent = now.toLocaleTimeString();
-    }
-  }
+  function initDialogHandlers() {
+    document.addEventListener('htmx:afterSwap', function() {
+      document.querySelectorAll('dialog').forEach((dialog) => {
+        // Close button handling
+        const closeBtn = dialog.querySelector('button[type="button"]');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            dialog.close();
+          });
+        }
 
-  // Update last sync time every minute
-  setInterval(updateLastSync, 60000);
-  updateLastSync();
+        // Close on backdrop click
+        dialog.addEventListener('click', (evt) => {
+          if (evt.target === dialog) {
+            dialog.close();
+          }
+        });
 
-  // ============================================
-  // Navigation Toggle (Mobile)
-  // ============================================
-
-  const navToggle = document.getElementById('nav-toggle');
-  const sidebar = document.getElementById('sidebar');
-
-  if (navToggle && sidebar) {
-    navToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
+        // Escape key to close
+        dialog.addEventListener('keydown', (evt) => {
+          if (evt.key === 'Escape') {
+            dialog.close();
+          }
+        });
+      });
     });
   }
 
-  // ============================================
+  // ============================================================================
+  // Debounced Search
+  // ============================================================================
+
+  function initSearchHandlers() {
+    let searchTimeout;
+
+    document.addEventListener('htmx:beforeRequest', function(evt) {
+      const input = evt.detail.xhr.searchParams?.get('q');
+      if (input) {
+        // Clear previous timeout
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+      }
+    });
+  }
+
+  // ============================================================================
   // Initialization
-  // ============================================
+  // ============================================================================
 
-  function init() {
-    // Check URL for service param
-    const params = new URLSearchParams(window.location.search);
-    const service = params.get('service');
-    if (service && services.includes(service)) {
-      switchService(service);
-    } else {
-      // Default to PDS
-      switchService('pds');
-    }
+  document.addEventListener('DOMContentLoaded', function() {
+    initServiceSwitching();
+    initSidebarSections();
+    initNavToggle();
+    initSidebarActive();
+    initHTMXHandlers();
+    initKeyboardNavigation();
+    initStatusBar();
+    initFormHandlers();
+    initTableHandlers();
+    initDialogHandlers();
+    initSearchHandlers();
+  });
 
-    // Initialize content handlers
-    initializeContentHandlers();
+  // ============================================================================
+  // Global Utilities
+  // ============================================================================
 
-    console.log('AT Protocol Admin UI initialized');
-  }
-
-  // Run when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-
+  // Export for use in templates
+  window.AdminUI = {
+    showError: showErrorNotification,
+    showSuccess: showSuccessNotification,
+    switchService: switchToService,
+  };
 })();
