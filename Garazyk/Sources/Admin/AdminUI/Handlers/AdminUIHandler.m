@@ -146,7 +146,9 @@ NS_ASSUME_NONNULL_BEGIN
     // Parse query parameters from path
     NSDictionary *params = [self parseQueryString:path];
 
-    if ([partial isEqualToString:@"users"]) {
+    if ([partial isEqualToString:@"overview"]) {
+        return [self renderOverviewPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"users"]) {
         return [self renderUsersPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"users/search"]) {
         NSString *query = params[@"q"] ?: @"";
@@ -177,6 +179,17 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderAppViewIndexPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"appview/metrics"]) {
         return [self renderAppViewMetricsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/convos"]) {
+        return [self renderChatConvosPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/convos/search"]) {
+        NSString *query = params[@"q"] ?: @"";
+        return [self renderChatConvosSearchWithQuery:query statusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/messages"]) {
+        return [self renderChatMessagesPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/reports"]) {
+        return [self renderChatReportsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"chat/reports/list"]) {
+        return [self renderChatReportsListWithStatusCode:statusCode contentType:contentType];
     }
 
     if (statusCode) *statusCode = 404;
@@ -227,6 +240,39 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 #pragma mark - Partial Template Rendering
+
+- (NSString *)renderOverviewPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                     contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    return @"<div class=\"content-header\">"
+           @"<h1>Welcome to AT Protocol Admin</h1>"
+           @"<p class=\"text-secondary mt-sm\">Select a service from the sidebar to get started.</p>"
+           @"</div>"
+           @"<div class=\"grid-3\">"
+           @"<div class=\"card\">"
+           @"<div class=\"card-header\"><h3 class=\"card-title\">Personal Data Server</h3></div>"
+           @"<div class=\"card-body\"><p>Manage users, invites, blobs, identity, and server health.</p></div>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-header\"><h3 class=\"card-title\">PLC Directory</h3></div>"
+           @"<div class=\"card-body\"><p>Lookup DIDs, manage exports, and view metrics.</p></div>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-header\"><h3 class=\"card-title\">Relay (BGS)</h3></div>"
+           @"<div class=\"card-body\"><p>Monitor upstreams, event streams, and crawl queue.</p></div>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-header\"><h3 class=\"card-title\">AppView</h3></div>"
+           @"<div class=\"card-body\"><p>Track backfill progress, index status, and metrics.</p></div>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-header\"><h3 class=\"card-title\">Chat Service</h3></div>"
+           @"<div class=\"card-body\"><p>Monitor active conversations and audit message history.</p></div>"
+           @"</div>"
+           @"</div>";
+}
 
 - (NSString *)renderUsersPartialWithStatusCode:(nullable NSInteger *)statusCode
                                   contentType:(NSString * _Nullable * _Nullable)contentType {
@@ -666,6 +712,75 @@ NS_ASSUME_NONNULL_BEGIN
            @"<div class=\"grid-2\">"
            @"<div class=\"card\"><h4>Query Latency (p99)</h4><div class=\"stat-value\">12ms</div></div>"
            @"<div class=\"card\"><h4>Index Throughput</h4><div class=\"stat-value\">450 ev/s</div></div>"
+           @"</div>";
+}
+
+- (NSString *)renderChatConvosPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                      contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Chat Conversations</h2>"
+           @"<p class=\"text-secondary\">Monitor and manage active direct message conversations.</p>"
+           @"</div>"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>ID</th><th>Members</th><th>Last Message</th><th>Actions</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"4\" class=\"text-secondary text-center\">No active conversations.</td></tr></tbody>"
+           @"</table>"
+           @"</div>";
+}
+
+- (NSString *)renderChatConvosSearchWithQuery:(NSString *)query
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    // This partial is meant to be called by HTMX for searching/filtering
+    return [self renderChatConvosPartialWithStatusCode:statusCode contentType:contentType];
+}
+
+- (NSString *)renderChatMessagesPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                        contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Chat Messages</h2>"
+           @"<p class=\"text-secondary\">Audit recent messages across all conversations.</p>"
+           @"</div>"
+           @"<div class=\"terminal-window\"><div class=\"terminal-content\" id=\"message-log\">Awaiting message stream...</div></div>";
+}
+
+- (NSString *)renderChatReportsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                       contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Chat Reports</h2>"
+           @"<p class=\"text-secondary\">Review and resolve user reports for chat content.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-header\"><h3 class=\"card-title\">Active Reports</h3></div>"
+           @"<div class=\"card-body\">"
+           @"<div hx-get=\"/admin/partials/chat/reports/list\" hx-trigger=\"load\">"
+           @"<p class=\"text-secondary\">Loading reports...</p>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderChatReportsListWithStatusCode:(nullable NSInteger *)statusCode
+                                     contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    // In a real app, this would fetch from ChatService
+    return @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Report ID</th><th>Subject</th><th>Reporter</th><th>Reason</th><th>Status</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"5\" class=\"text-secondary text-center\">No active chat reports.</td></tr></tbody>"
+           @"</table>"
            @"</div>";
 }
 
