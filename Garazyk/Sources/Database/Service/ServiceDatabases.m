@@ -1021,6 +1021,11 @@ static NSString *appPasswordGenerateSecret(void) {
     return db;
 }
 
+- (nullable sqlite3 *)serviceDatabase {
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
+    return store ? store.db : NULL;
+}
+
 - (void)closeAll {
     [self.servicePool closeAll];
     [self.didCachePool closeAll];

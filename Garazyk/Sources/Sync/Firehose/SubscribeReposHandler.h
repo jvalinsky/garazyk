@@ -63,6 +63,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Formats events for transmission. */
 @property (nonatomic, readonly) EventFormatter *eventFormatter;
 
+/*! Current WebSocket connections. */
+@property (nonatomic, readonly) NSSet<WebSocketConnection *> *attachedConnections;
+
 /*! The service databases for event persistence. */
 @property (nonatomic, readonly) PDSServiceDatabases *serviceDatabases;
 

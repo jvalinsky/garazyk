@@ -30,6 +30,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) double progress;
 
 /**
+ * @brief Whether the operation is running in dry-run mode.
+ */
+@property (nonatomic, readonly) BOOL dryRun;
+
+/**
  * @brief Operation results as a dictionary.
  */
 @property (nonatomic, strong, nullable, readonly) NSDictionary *results;

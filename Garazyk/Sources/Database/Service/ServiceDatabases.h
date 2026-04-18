@@ -80,13 +80,22 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 
 /*!
  @method serviceDatabaseWithError:
-
+ 
  @abstract Get service database connection from pool.
-
+ 
  @param error Error pointer for connection failures.
  @return PDSDatabase instance or nil on failure.
  */
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error;
+
+/*!
+ @method serviceDatabase
+ 
+ @abstract Get raw service database connection from pool.
+ 
+ @return Raw sqlite3 handle or NULL on failure.
+ */
+- (nullable sqlite3 *)serviceDatabase;
 
 /*!
  @method initWithDirectory:serviceMaxSize:didCacheMaxSize:sequencerMaxSize:

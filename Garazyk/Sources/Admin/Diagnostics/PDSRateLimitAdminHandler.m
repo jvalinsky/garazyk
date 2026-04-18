@@ -1,7 +1,6 @@
 #import "PDSRateLimitAdminHandler.h"
 #import "Network/RateLimiter.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Foundation/NSError+JSON.h"
 #import <sqlite3.h>
 
 @interface PDSRateLimitAdminHandler ()
