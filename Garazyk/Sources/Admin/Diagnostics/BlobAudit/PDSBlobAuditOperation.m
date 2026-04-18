@@ -1,4 +1,5 @@
 #import "PDSBlobAuditOperation.h"
+#import "PDSBlobAuditOperation_Protected.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Blob/BlobStorage.h"
 #import "Debug/PDSLogger.h"
@@ -7,12 +8,14 @@
 @interface PDSBlobAuditOperation ()
 @property (nonatomic, copy, readwrite) NSString *jobId;
 @property (nonatomic, copy, readwrite) NSString *auditType;
-@property (nonatomic, strong) BlobStorage *blobStorage;
-@property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
+// Redeclare protected properties as readwrite for internal use
+@property (nonatomic, strong, readwrite) BlobStorage *blobStorage;
+@property (nonatomic, strong, readwrite) PDSServiceDatabases *serviceDatabases;
+@property (nonatomic, strong, readwrite) dispatch_queue_t queue;
+// Redeclare readonly properties as readwrite for internal use
 @property (nonatomic, readwrite) double progress;
 @property (nonatomic, strong, readwrite, nullable) NSDictionary *results;
 @property (nonatomic, strong, readwrite, nullable) NSError *operationError;
-@property (nonatomic, strong) dispatch_queue_t queue;
 @end
 
 @implementation PDSBlobAuditOperation

@@ -468,4 +468,21 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
   return @[value];
 }
 
+#pragma mark - Middleware Context
+
+- (NSMutableDictionary *)middlewareContext {
+  if (!_middlewareContext) {
+    _middlewareContext = [NSMutableDictionary dictionary];
+  }
+  return _middlewareContext;
+}
+
+- (NSString *)authenticatedDid {
+  return self.middlewareContext[@"authenticatedDid"];
+}
+
+- (void)setAuthenticatedDid:(NSString *)did {
+  self.middlewareContext[@"authenticatedDid"] = did;
+}
+
 @end
