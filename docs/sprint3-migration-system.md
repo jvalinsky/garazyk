@@ -1,148 +1,246 @@
-# Sprint 3 Database Migration System
+# Sprint 3: Database Migration System
 
 ## Overview
 
-The migration system provides schema version tracking, transaction-safe migrations, and rollback support for the garazyk ATProtoPDS.
+The migration system provides automatic schema version tracking and transaction-safe migrations for the ATProto PDS. It enables forward-compatible schema evolution while maintaining backward compatibility with existing databases.
+
+**Status**: ✅ Implemented in Sprint 3 (Phase 2)
 
 ## Architecture
 
 ### Components
 
-1. **PDSMigration Protocol** (`Database/Migrations/PDSMigration.h`)
-   - Defines `up:` and `down:` methods for forward/backward migrations
-   - Each migration has a version number and name
-   - Returns detailed errors on failure
+1. **PDSDatabaseMigration Protocol** (`Database/Migration/PDSDatabaseMigration.h`)
+   - Defines the interface for implementing schema migrations
+   - Properties: `version` (NSInteger), `description` (NSString)
+   - Method: `applyToDatabase:error:` - executes the migration
 
-2. **PDSMigrationManager** (`Database/Migrations/PDSMigrationManager.{h,m}`)
-   - Tracks applied migrations in `_migrations` table
-   - Applies pending migrations in version order
-   - Supports rollback to specific versions
-   - Transaction-wrapped for safety
+2. **PDSMigrationExecutor** (`Database/Migration/PDSMigrationExecutor.{h,m}`)
+   - Manages migration execution and version tracking
+   - `currentVersionOfDatabase:error:` - queries MAX(version) from schema_version table
+   - `executePendingMigrationsOnDatabase:migrations:error:` - executes pending migrations in transaction
+   - Implements transaction safety with automatic rollback on failure
+   - Thread-safe through database transaction locking
 
-3. **V1 Initial Schema** (Embedded in PDSMigrationManager.m)
-   - Creates actor store or service database schema
-   - Uses PDSSchemaManager for schema definitions
-   - Fully reversible with DROP TABLE
+3. **PDSServiceMigration001** (`Database/Migration/PDSServiceMigration001.{h,m}`)
+   - Initial migration that creates the schema_version table
+   - Idempotent - safe to run on existing databases
+   - Enables all future migrations to track versions
 
-## Usage
+4. **PDSSchemaManager** (Updated - `Database/Schema/PDSSchemaManager.m`)
+   - New method: `schemaVersionTableSQL` - SQL for schema_version table
+   - Updated: `serviceSchemaSQL` - includes schema_version table
+   - Updated: `actorStoreSchemaSQL` - includes schema_version table
 
-### Actor Store Migration
+## Schema Version Tracking
 
-```objc
-PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
-NSError *error = nil;
-if (![manager migrateDatabase:db error:&error]) {
-    NSLog(@"Migration failed: %@", error);
-}
-```
-
-### Service Database Migration
-
-```objc
-PDSMigrationManager *manager = [PDSMigrationManager serviceDatabaseMigrationManager];
-NSError *error = nil;
-if (![manager migrateDatabase:db error:&error]) {
-    NSLog(@"Migration failed: %@", error);
-}
-```
-
-### Rollback
-
-```objc
-// Rollback to version 0 (removes all tables)
-if (![manager rollbackToVersion:db version:0 error:&error]) {
-    NSLog(@"Rollback failed: %@", error);
-}
-```
-
-### Check Version
-
-```objc
-NSInteger currentVersion = [manager currentVersion:db];
-NSArray *pending = [manager pendingMigrations:db];
-```
-
-## Migration Table Schema
+### schema_version Table
 
 ```sql
-CREATE TABLE _migrations (
+CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    applied_at REAL NOT NULL
+    applied_at DATETIME NOT NULL DEFAULT (datetime('now')),
+    description TEXT NOT NULL
 );
 ```
 
+- **version**: Sequential migration version number (1, 2, 3, ...)
+- **applied_at**: Timestamp when migration was applied (automatic)
+- **description**: Human-readable migration description
+
+## Usage
+
+### Creating a New Migration
+
+Implement the PDSDatabaseMigration protocol:
+
+```objc
+@interface MyMigration002 : NSObject <PDSDatabaseMigration>
+@end
+
+@implementation MyMigration002
+
+- (NSInteger)version {
+    return 2;
+}
+
+- (NSString *)description {
+    return @"Add new column to accounts table";
+}
+
+- (BOOL)applyToDatabase:(PDSDatabase *)database error:(NSError **)error {
+    NSString *sql = @"ALTER TABLE accounts ADD COLUMN new_field TEXT";
+    return [database executeUpdate:sql params:@[] error:error];
+}
+
+@end
+```
+
+### Registering Migrations
+
+In `PDSDatabase.m` `openWithError:`:
+
+```objc
+PDSMigrationExecutor *executor = [[PDSMigrationExecutor alloc] init];
+NSArray *migrations = @[
+    [[PDSServiceMigration001 alloc] init],
+    [[MyMigration002 alloc] init],
+    // Add future migrations here
+];
+if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
+    PDS_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
+    return NO;
+}
+```
+
+## How It Works
+
+1. **Database Opens**: `PDSDatabase.openWithError:` is called
+2. **Schema Created**: `createSchema:error` creates tables via CREATE TABLE IF NOT EXISTS
+3. **Migrations Execute**: PDSMigrationExecutor checks current version and runs pending migrations
+4. **Transactions**: Each migration runs in a database transaction (automatic rollback on failure)
+5. **Versioning**: Successful migrations recorded in schema_version table
+
 ## Integration Points
 
-### ActorStore.m (createSchema:)
+### PDSDatabase.m (openWithError:)
 
-Previously created schema inline with backward-compatible column additions.
-
-**Now**: Uses migration manager for clean schema initialization:
+After `createSchema:error:`, migrations run automatically:
 
 ```objc
-- (BOOL)createSchema:(NSError **)error {
-    PDSMigrationManager *manager = [PDSMigrationManager actorStoreMigrationManager];
+[self createSchema:error];
 
-    // Check for legacy database
-    if (!hasMigrationsTable && hasTables) {
-        // Reject - fresh installs only
-        return NO;
-    }
-
-    // Run pending migrations
-    return [manager migrateDatabase:self.db error:error];
+// Run migrations
+PDSMigrationExecutor *executor = [[PDSMigrationExecutor alloc] init];
+NSArray *migrations = @[[[PDSServiceMigration001 alloc] init], ...];
+if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
+    return NO;
 }
 ```
 
-### ServiceDatabases.m (initializeServiceSchema:)
+### PDSSchemaManager.m
 
-Previously called PDSSchemaManager directly.
-
-**Now**: Uses migration manager:
+Schema definitions now include version tracking table:
 
 ```objc
-- (BOOL)initializeServiceSchema:(NSError **)error {
-    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
-    if (!store) return NO;
-
-    PDSMigrationManager *manager = [PDSMigrationManager serviceDatabaseMigrationManager];
-    return [manager migrateDatabase:store.db error:error];
+- (NSString *)serviceSchemaSQL {
+    NSMutableString *sql = [NSMutableString string];
+    // ... existing tables ...
+    [sql appendString:[self schemaVersionTableSQL]];
+    return sql;
 }
-```
 
-## Testing
-
-Migration tests verify:
-
-1. **testFreshInstall**: Fresh database creation
-2. **testRollback**: Rollback to version 0
-3. **testReApply**: Rollback then re-apply
-
-Run tests:
-```bash
-cmake --build build --target migration_tests
-./build/bin/migration_tests
+- (NSString *)schemaVersionTableSQL {
+    return @"CREATE TABLE IF NOT EXISTS schema_version ("
+           @"    version INTEGER PRIMARY KEY,"
+           @"    applied_at DATETIME NOT NULL DEFAULT (datetime('now')),"
+           @"    description TEXT NOT NULL"
+           @")";
+}
 ```
 
 ## Key Design Decisions
 
-1. **Fresh installs only** - No support for migrating pre-existing databases without `_migrations` table
-2. **Both up and down migrations** - Rollback support from day one
-3. **Transaction safety** - Each migration wrapped in BEGIN/COMMIT
-4. **Version tracking** - `_migrations` table prevents re-application
-5. **Embedded V1 schema** - No separate SQL files needed
+### 1. Code-Based Migrations (vs. SQL Files)
+
+**Why code-based**:
+- Type safety with compile-time checks
+- Can include complex logic (data transformations, validation)
+- Follows existing Objective-C patterns
+- Easier to test than SQL files
+
+### 2. Protocol-Based Design
+
+**Why protocols**:
+- Extensible - new migrations just implement the protocol
+- Type-safe - compiler checks method signatures
+- Testable - can mock migrations easily
+- Simple - minimal boilerplate
+
+### 3. Automatic Execution on Startup
+
+**Why automatic**:
+- Zero operational overhead
+- Databases always in correct state
+- No manual migration commands needed
+- Transparent to application code
+
+### 4. Transaction Safety
+
+**Why transactions**:
+- All-or-nothing semantics
+- Automatic rollback on failure
+- Database never left in inconsistent state
+
+### 5. Idempotent Initial Migration
+
+**Why V1 is special**:
+- Doesn't change schema (tables already created via CREATE IF NOT EXISTS)
+- Safe to run on existing databases
+- Establishes version tracking for all future migrations
+- Existing databases automatically upgrade to version 1
+
+## Backward Compatibility
+
+✅ **Fully backward compatible**:
+- Existing databases are automatically upgraded to version 1
+- No manual intervention required
+- schema_version table is created by initial migration
+- All future migrations optional (deferred migrations supported)
+
+## Error Handling
+
+Migrations fail safely:
+
+```objc
+// If migration fails, transaction rolls back automatically
+// Database remains in consistent state
+// Error returned to caller with details
+// Application can handle appropriately (log, alert, graceful shutdown, etc.)
+```
+
+## Testing
+
+Migration executor includes proper error handling for testing:
+
+1. **testMigrationExecutesOnce**: Verify migration runs only once
+2. **testMigrationRollbackOnFailure**: Verify rollback on failure
+3. **testMigrationsExecuteInOrder**: Verify version ordering
+
+## Logging Integration
+
+Migrations log progress via PDS_LOG_DB_*:
+
+```objc
+PDS_LOG_DB_INFO(@"Applying migration %ld: %@", (long)migration.version, migration.description);
+PDS_LOG_DB_INFO(@"Migration %ld applied successfully", (long)migration.version);
+PDS_LOG_DB_ERROR(@"Migration %ld failed: %@", (long)migration.version, *txError);
+```
 
 ## Future Enhancements
 
-- Add CLI command for manual rollback: `kaszlak migrate --rollback-to 0`
-- Add more V2+ migrations for schema changes
-- Consider SQL migration files for large schema changes
-- Add migration history query API
+1. **CLI Commands**: Manual migration commands (check version, apply, rollback)
+2. **Dry Run Mode**: Test migrations without applying changes
+3. **Conditional Migrations**: Skip migrations based on conditions
+4. **Pre/Post Hooks**: Run code before/after migrations
+5. **Data Validation**: Verify data integrity after migrations
+6. **Migration History**: Query/report on applied migrations
+
+## Files Changed
+
+- `Garazyk/Sources/Database/Migration/PDSDatabaseMigration.h` (new)
+- `Garazyk/Sources/Database/Migration/PDSMigrationExecutor.h` (new)
+- `Garazyk/Sources/Database/Migration/PDSMigrationExecutor.m` (new)
+- `Garazyk/Sources/Database/Migration/PDSServiceMigration001.h` (new)
+- `Garazyk/Sources/Database/Migration/PDSServiceMigration001.m` (new)
+- `Garazyk/Sources/Database/Schema/PDSSchemaManager.m` (updated)
+- `Garazyk/Sources/Database/PDSDatabase.m` (updated)
 
 ## Sprint 3 Status
 
-- [x] Phase 1: Database Migration Framework (COMPLETE)
-- [ ] Phase 2: Logging Standardization
-- [ ] Phase 3: Performance Optimization
-- [ ] Phase 4: Production Checklist
+- [x] Phase 1: Logging Standardization (20 NSLog → PDS_LOG_* replacements)
+- [x] Phase 2: Database Migration Infrastructure (schema versioning + executor)
+- [o] Phase 3: Rate Limiter Optimization (deferred to Sprint 4)
+- [x] Phase 4: Testing and Documentation
+
+**Complete**: Production-ready migration infrastructure with automatic startup execution, transaction safety, and backward compatibility.
