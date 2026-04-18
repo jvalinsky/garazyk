@@ -21,10 +21,19 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface CryptoUtils : NSObject
 
-/*! Computes HMAC-SHA1 of data with key. */
+/*! Computes HMAC-SHA1 of data with key.
+    Retained for TOTP (RFC 6238) compatibility. SHA1 is specified by RFC 6238
+    as the standard HMAC algorithm for TOTP. Do not use for new cryptographic
+    operations - prefer hmacSHA256WithKey:data: instead.
+    @param key The HMAC key (nonnull).
+    @param data The data to authenticate (nonnull).
+    @return The HMAC-SHA1 digest (20 bytes), or nil if key or data is nil. */
 + (nullable NSData *)hmacSHA1WithKey:(NSData *)key data:(NSData *)data;
 
-/*! Computes HMAC-SHA256 of data with key. */
+/*! Computes HMAC-SHA256 of data with key. Preferred for new code.
+    @param key The HMAC key (nonnull).
+    @param data The data to authenticate (nonnull).
+    @return The HMAC-SHA256 digest (32 bytes), or nil if key or data is nil. */
 + (nullable NSData *)hmacSHA256WithKey:(NSData *)key data:(NSData *)data;
 
 /*! Computes SHA-256 hash of data. */
@@ -67,8 +76,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Derives a key from a password and salt using PBKDF2-SHA256.
     Uses 100,000 iterations and produces a 32-byte key.
-    @param password The password/secret string.
-    @param salt The salt data.
+    Note: Uses 100,000 iterations for encryption key derivation (balance of security and
+    performance). See implementation for details on OWASP recommendations.
+    @param password The password/secret string (nonnull).
+    @param salt The salt data, typically 16+ bytes (nonnull).
     @return Derived 32-byte key, or nil on failure. */
 + (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt;
 
