@@ -327,6 +327,9 @@
     PDS_LOG_DEBUG_C(PDSLogComponentExplore, @"ExploreHandler handleRequest: %@", path);
 
     if ([path isEqualToString:@"/"] || [path isEqualToString:@""]) {
+        [self servePortal:response];
+    }
+    else if ([path isEqualToString:@"/explore"] || [path isEqualToString:@"/explore/"] || [path isEqualToString:@"/explore/index.html"]) {
         [self serveIndex:response];
     }
     else if ([path hasPrefix:@"/css/"]) {
@@ -354,6 +357,29 @@
 }
 
 #pragma mark - Static Files
+
+- (void)servePortal:(HttpResponse *)response {
+    NSString *portalPath = [self staticFilePath:@"portal.html"];
+    
+    if (!portalPath) {
+        // If portal not found, fallback to index
+        [self serveIndex:response];
+        return;
+    }
+    
+    NSError *error = nil;
+    NSString *html = [NSString stringWithContentsOfFile:portalPath encoding:NSUTF8StringEncoding error:&error];
+    
+    if (error || !html) {
+        [self serveIndex:response];
+        return;
+    }
+    
+    response.statusCode = 200;
+    response.contentType = @"text/html; charset=utf-8";
+    response.keepAlive = NO;
+    [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
+}
 
 - (void)serveIndex:(HttpResponse *)response {
     NSString *indexPath = [self staticFilePath:@"index.html"];
