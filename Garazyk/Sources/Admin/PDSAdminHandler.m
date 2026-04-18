@@ -417,18 +417,27 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 }
 
 - (NSDictionary *)handleAdminHealth:(NSDictionary *)headers body:(NSData *)body {
+    PDSMetrics *metrics = [PDSMetrics sharedMetrics];
+    NSTimeInterval uptime = [[NSDate date] timeIntervalSince1970] - metrics.serverStartTime;
+    
     return [self jsonResponseWithStatus:200 body:@{
         @"status": @"ok",
+        @"uptime_seconds": @(uptime),
         @"checks": @{
             @"database": @{
                 @"status": @"ok",
-                @"latency_ms": @5
+                @"size_bytes": @(metrics.databaseSizeBytes),
+                @"latency_ms": @2 // Mock latency for now
             },
             @"storage": @{
-                @"status": @"ok"
+                @"status": @"ok",
+                @"blob_count": @(metrics.blobCount),
+                @"blob_size_bytes": @(metrics.blobStorageBytes)
             },
-            @"memory": @{
-                @"status": @"ok"
+            @"network": @{
+                @"status": @"ok",
+                @"active_connections": @(metrics.activeConnections),
+                @"total_requests": @(metrics.httpRequestsTotal)
             }
         }
     }];
