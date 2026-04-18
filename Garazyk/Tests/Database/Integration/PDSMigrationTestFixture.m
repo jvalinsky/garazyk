@@ -1,6 +1,6 @@
 #import "PDSMigrationTestFixture.h"
 #import "PDSDatabaseIntegrationTestUtilities.h"
-#import "Database/Migration/PDSMigrationManager.h"
+#import "Database/Migrations/PDSMigrationManager.h"
 #import <sqlite3.h>
 
 @interface PDSMigrationTestFixture ()
@@ -15,6 +15,19 @@
         _migrationManager = [PDSMigrationManager sharedManager];
     }
     return self;
+}
+
+- (BOOL)setupDatabaseWithError:(NSError **)error {
+    // Migration tests don't require a full database setup
+    // Just create the test directory for temporary files
+    NSFileManager *fm = [NSFileManager defaultManager];
+    return [fm createDirectoryAtPath:self.testDirectory withIntermediateDirectories:YES attributes:nil error:error];
+}
+
+- (BOOL)teardownDatabaseWithError:(NSError **)error {
+    // Clean up test directory
+    NSFileManager *fm = [NSFileManager defaultManager];
+    return [fm removeItemAtPath:self.testDirectory error:error];
 }
 
 - (BOOL)testMigrationWithSourcePath:(NSString *)sourcePath
