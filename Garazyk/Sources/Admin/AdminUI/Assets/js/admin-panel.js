@@ -211,7 +211,7 @@ async function disableInviteCodes(codes) {
     return resp.json();
 }
 
-export export const AdminPanel = {
+export const AdminPanel = {
     getToken,
     setToken,
     clearToken,
