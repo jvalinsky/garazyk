@@ -16,7 +16,6 @@
 
 - (nullable NSString *)renderPartialWithTemplate:(NSString *)templateName
                                           context:(NSDictionary *)context {
-    // Simple template rendering - find {{key}} and replace with values
     NSString *templatePath = [self templatePathForName:templateName];
     if (!templatePath) {
         PDS_LOG_WARN(@"Template not found: %@", templateName);
@@ -32,20 +31,14 @@
         return nil;
     }
 
-    // Replace {{key}} with context values
-    for (NSString *key in context) {
-        NSString *placeholder = [NSString stringWithFormat:@"{{%@}}", key];
-        id value = context[key];
-        NSString *stringValue = [self stringFromValue:value];
-        template = [template stringByReplacingOccurrencesOfString:placeholder
-                                                       withString:stringValue];
-    }
-
     // Handle loops with {{#each items}}...{{/each}}
     template = [self processLoops:template context:context];
 
-    // Handle conditionals with {{#if key}}...{{/if}}
+    // Handle conditionals with {{#if key}}...{{else}}...{{/if}}
     template = [self processConditionals:template context:context];
+
+    // Replace {{key.path}} with context values
+    template = [self renderPartialContent:template context:context];
 
     // Clean up unreplaced placeholders
     template = [template stringByReplacingOccurrencesOfString:@"{{[^}]+}}"
@@ -54,6 +47,29 @@
                                                         range:NSMakeRange(0, template.length)];
 
     return template;
+}
+
+- (id)valueForKeyPath:(NSString *)keyPath inContext:(NSDictionary *)context {
+    if ([keyPath isEqualToString:@"."]) {
+        return context;
+    }
+    
+    NSArray *parts = [keyPath componentsSeparatedByString:@"."];
+    id current = context;
+    
+    for (NSString *part in parts) {
+        if ([current isKindOfClass:[NSDictionary class]]) {
+            current = current[part];
+        } else {
+            return nil;
+        }
+        
+        if (!current || current == [NSNull null]) {
+            return nil;
+        }
+    }
+    
+    return current;
 }
 
 - (NSString *)stringFromValue:(id)value {
@@ -83,23 +99,21 @@
 }
 
 - (NSString *)processLoops:(NSString *)template context:(NSDictionary *)context {
-    // Simple {{#each key}}...{{/each}} loop processing
     NSError *error = nil;
     NSRegularExpression *regex = [NSRegularExpression
-        regularExpressionWithPattern:@"\\{\\{#each\\s+(\\w+)\\}\\}([\\s\\S]*?)\\{\\{/each\\}\\}"
+        regularExpressionWithPattern:@"\\{\\{#each\\s+([\\w.]+)\\}\\}([\\s\\S]*?)\\{\\{/each\\}\\}"
                                options:0
                                  error:&error];
 
     NSArray *matches = [regex matchesInString:template options:0
-                                        range:NSMakeRange(0, template.length)];
+                                         range:NSMakeRange(0, template.length)];
 
     for (NSTextCheckingResult *match in [matches reverseObjectEnumerator]) {
         NSString *listKey = [template substringWithRange:[match rangeAtIndex:1]];
         NSString *loopBody = [template substringWithRange:[match rangeAtIndex:2]];
 
-        id listValue = context[listKey];
+        id listValue = [self valueForKeyPath:listKey inContext:context];
         if (![listValue isKindOfClass:[NSArray class]]) {
-            // Remove the loop block entirely if not an array
             template = [template stringByReplacingCharactersInRange:match.range
                                                          withString:@""];
             continue;
@@ -110,26 +124,15 @@
 
         for (NSUInteger i = 0; i < items.count; i++) {
             id item = items[i];
-            NSString *itemBody = loopBody;
-
-            // Replace {{.}} with item value (for simple arrays)
-            if ([item isKindOfClass:[NSString class]] || [item isKindOfClass:[NSNumber class]]) {
-                itemBody = [itemBody stringByReplacingOccurrencesOfString:@"{{.}}"
-                                                              withString:[self stringFromValue:item]];
-            } else if ([item isKindOfClass:[NSDictionary class]]) {
-                // Replace {{key}} with item[key] for object arrays
-                NSDictionary *itemDict = item;
-                for (NSString *key in itemDict) {
-                    NSString *placeholder = [NSString stringWithFormat:@"{{%@}}", key];
-                    itemBody = [itemBody stringByReplacingOccurrencesOfString:placeholder
-                                                                    withString:[self stringFromValue:itemDict[key]]];
-                }
-                // Replace {{@index}} with index
-                itemBody = [itemBody stringByReplacingOccurrencesOfString:@"{{@index}}"
-                                                              withString:[@(i) stringValue]];
+            NSDictionary *itemContext;
+            if ([item isKindOfClass:[NSDictionary class]]) {
+                itemContext = item;
+            } else {
+                itemContext = @{@".": item};
             }
-
-            [result appendString:itemBody];
+            
+            NSString *renderedItem = [self renderPartialContent:loopBody context:itemContext];
+            [result appendString:renderedItem];
         }
 
         template = [template stringByReplacingCharactersInRange:match.range
@@ -139,22 +142,42 @@
     return template;
 }
 
+- (NSString *)renderPartialContent:(NSString *)content context:(NSDictionary *)context {
+    NSError *error = nil;
+    NSRegularExpression *placeholderRegex = [NSRegularExpression
+        regularExpressionWithPattern:@"\\{\\{([\\w.]+)\\}\\}"
+                               options:0
+                                 error:&error];
+    
+    NSArray *matches = [placeholderRegex matchesInString:content options:0
+                                                   range:NSMakeRange(0, content.length)];
+    
+    for (NSTextCheckingResult *match in [matches reverseObjectEnumerator]) {
+        NSString *keyPath = [content substringWithRange:[match rangeAtIndex:1]];
+        id value = [self valueForKeyPath:keyPath inContext:context];
+        NSString *stringValue = [self stringFromValue:value];
+        content = [content stringByReplacingCharactersInRange:match.range
+                                                   withString:stringValue];
+    }
+    
+    return content;
+}
+
 - (NSString *)processConditionals:(NSString *)template context:(NSDictionary *)context {
-    // Simple {{#if key}}...{{/if}} conditional processing
     NSError *error = nil;
     NSRegularExpression *regex = [NSRegularExpression
-        regularExpressionWithPattern:@"\\{\\{#if\\s+(\\w+)\\}\\}([\\s\\S]*?)\\{\\{/if\\}\\}"
+        regularExpressionWithPattern:@"\\{\\{#if\\s+([\\w.]+)\\}\\}([\\s\\S]*?)\\{\\{/if\\}\\}"
                                options:0
                                  error:&error];
 
     NSArray *matches = [regex matchesInString:template options:0
-                                        range:NSMakeRange(0, template.length)];
+                                         range:NSMakeRange(0, template.length)];
 
     for (NSTextCheckingResult *match in [matches reverseObjectEnumerator]) {
         NSString *condKey = [template substringWithRange:[match rangeAtIndex:1]];
         NSString *condBody = [template substringWithRange:[match rangeAtIndex:2]];
 
-        id condValue = context[condKey];
+        id condValue = [self valueForKeyPath:condKey inContext:context];
         BOOL isTruthy = NO;
 
         if ([condValue isKindOfClass:[NSNumber class]]) {
@@ -167,8 +190,19 @@
             isTruthy = YES;
         }
 
+        NSString *resultContent = @"";
+        NSRange elseRange = [condBody rangeOfString:@"{{else}}"];
+        
+        if (elseRange.location != NSNotFound) {
+            NSString *ifContent = [condBody substringToIndex:elseRange.location];
+            NSString *elseContent = [condBody substringFromIndex:elseRange.location + elseRange.length];
+            resultContent = isTruthy ? ifContent : elseContent;
+        } else {
+            resultContent = isTruthy ? condBody : @"";
+        }
+
         template = [template stringByReplacingCharactersInRange:match.range
-                                                     withString:isTruthy ? condBody : @""];
+                                                     withString:resultContent];
     }
 
     return template;
@@ -198,8 +232,7 @@
 
 - (nullable NSString *)handlePartialRequestWithPath:(NSString *)path
                                            headers:(NSDictionary<NSString *, NSString *> *)headers
-                                              body:(nullable NSData *)body {
-    // Route to appropriate partial handler based on path
+                                               body:(nullable NSData *)body {
     PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
 
     if ([path hasPrefix:@"/admin/partials/"]) {
@@ -214,39 +247,25 @@
                                  headers:(NSDictionary<NSString *, NSString *> *)headers
                                     body:(nullable NSData *)body
                             adminHandler:(PDSAdminHandler *)adminHandler {
-    // Map partial names to templates and data
-
-    // Users partial
     if ([partialName isEqualToString:@"users"]) {
         return [self renderUsersPartial:adminHandler headers:headers body:body];
     }
-
-    // Invites partial
     if ([partialName isEqualToString:@"invites"]) {
         return [self renderInvitesPartial:adminHandler headers:headers body:body];
     }
-
-    // Health partial
     if ([partialName isEqualToString:@"health"]) {
         return [self renderHealthPartial:adminHandler headers:headers body:body];
     }
-
-    // Stats partial
     if ([partialName isEqualToString:@"stats"]) {
         return [self renderStatsPartial:adminHandler headers:headers body:body];
     }
-
-    // Blobs partial
     if ([partialName isEqualToString:@"blobs"]) {
         return [self renderBlobsPartial:adminHandler headers:headers body:body];
     }
-
-    // Identity partial
     if ([partialName isEqualToString:@"identity"]) {
         return [self renderIdentityPartial:adminHandler headers:headers body:body];
     }
 
-    // Default to delegating to AdminUIHandler if no template-based partial is found
     NSInteger statusCode = 200;
     NSString *contentType = nil;
     NSString *result = [[AdminUIHandler sharedHandler] handleRequestWithMethod:AdminUIHTTPMethodGET
@@ -263,24 +282,31 @@
     return nil;
 }
 
+- (NSDictionary *)dictionaryFromPacket:(id)packet {
+    if (![packet isKindOfClass:[NSDictionary class]]) return nil;
+    
+    id data = packet[@"body"];
+    if ([data isKindOfClass:[NSDictionary class]]) {
+        return data;
+    }
+    
+    if ([data isKindOfClass:[NSString class]]) {
+        NSData *jsonData = [data dataUsingEncoding:NSUTF8StringEncoding];
+        NSError *error = nil;
+        NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
+        if (!error && [dict isKindOfClass:[NSDictionary class]]) {
+            return dict;
+        }
+    }
+    
+    return nil;
+}
+
 - (nullable NSString *)renderUsersPartial:(PDSAdminHandler *)adminHandler
                                    headers:(NSDictionary *)headers
                                       body:(nullable NSData *)body {
-    // Get users data from admin handler
-    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
-                                                              path:@"/admin/users"
-                                                           headers:headers
-                                                              body:body];
-    if (!jsonResponse) {
-        return nil;
-    }
-
-    NSData *jsonData = [jsonResponse dataUsingEncoding:NSUTF8StringEncoding];
-    NSError *error = nil;
-    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    if (!data) {
-        return nil;
-    }
+    NSDictionary *data = [self dictionaryFromPacket:[adminHandler getUsersData]];
+    if (!data) return nil;
 
     NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
     context[@"title"] = @"Users";
@@ -292,20 +318,8 @@
 - (nullable NSString *)renderInvitesPartial:(PDSAdminHandler *)adminHandler
                                      headers:(NSDictionary *)headers
                                         body:(nullable NSData *)body {
-    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
-                                                              path:@"/admin/invites"
-                                                           headers:headers
-                                                              body:body];
-    if (!jsonResponse) {
-        return nil;
-    }
-
-    NSData *jsonData = [jsonResponse dataUsingEncoding:NSUTF8StringEncoding];
-    NSError *error = nil;
-    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    if (!data) {
-        return nil;
-    }
+    NSDictionary *data = [self dictionaryFromPacket:[adminHandler getInvitesData]];
+    if (!data) return nil;
 
     NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
     context[@"title"] = @"Invite Codes";
@@ -317,20 +331,8 @@
 - (nullable NSString *)renderHealthPartial:(PDSAdminHandler *)adminHandler
                                    headers:(NSDictionary *)headers
                                       body:(nullable NSData *)body {
-    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
-                                                              path:@"/admin/health"
-                                                           headers:headers
-                                                              body:body];
-    if (!jsonResponse) {
-        return nil;
-    }
-
-    NSData *jsonData = [jsonResponse dataUsingEncoding:NSUTF8StringEncoding];
-    NSError *error = nil;
-    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    if (!data) {
-        return nil;
-    }
+    NSDictionary *data = [self dictionaryFromPacket:[adminHandler getHealthData]];
+    if (!data) return nil;
 
     NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
     context[@"title"] = @"Server Health";
@@ -342,20 +344,8 @@
 - (nullable NSString *)renderStatsPartial:(PDSAdminHandler *)adminHandler
                                    headers:(NSDictionary *)headers
                                       body:(nullable NSData *)body {
-    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
-                                                              path:@"/admin/stats"
-                                                           headers:headers
-                                                              body:body];
-    if (!jsonResponse) {
-        return nil;
-    }
-
-    NSData *jsonData = [jsonResponse dataUsingEncoding:NSUTF8StringEncoding];
-    NSError *error = nil;
-    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    if (!data) {
-        return nil;
-    }
+    NSDictionary *data = [self dictionaryFromPacket:[adminHandler getStatsData]];
+    if (!data) return nil;
 
     NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
     context[@"title"] = @"Server Statistics";
@@ -367,20 +357,8 @@
 - (nullable NSString *)renderBlobsPartial:(PDSAdminHandler *)adminHandler
                                    headers:(NSDictionary *)headers
                                       body:(nullable NSData *)body {
-    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
-                                                              path:@"/admin/blobs"
-                                                           headers:headers
-                                                              body:body];
-    if (!jsonResponse) {
-        return nil;
-    }
-
-    NSData *jsonData = [jsonResponse dataUsingEncoding:NSUTF8StringEncoding];
-    NSError *error = nil;
-    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    if (!data) {
-        return nil;
-    }
+    NSDictionary *data = [self dictionaryFromPacket:[adminHandler getBlobsData]];
+    if (!data) return nil;
 
     NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
     context[@"title"] = @"Blob Storage";
