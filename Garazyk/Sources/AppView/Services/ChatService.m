@@ -108,21 +108,25 @@
                                                                              error:nil] ?: @[];
 
     NSMutableArray *members = [NSMutableArray array];
+    NSMutableArray *memberDids = [NSMutableArray array];
     for (NSDictionary *memberRow in memberRows) {
+        NSString *did = memberRow[@"member_did"];
         [members addObject:@{
-            @"did": memberRow[@"member_did"],
+            @"did": did,
             @"status": memberRow[@"status"],
             @"muted": memberRow[@"muted"],
             @"lastReadId": memberRow[@"last_read_id"] ?: [NSNull null],
             @"joinedAt": memberRow[@"joined_at"]
         }];
+        [memberDids addObject:did];
     }
 
     return @{
         @"id": convoRow[@"id"],
         @"createdAt": convoRow[@"created_at"],
         @"updatedAt": convoRow[@"updated_at"],
-        @"members": members
+        @"members": members,
+        @"memberList": [memberDids componentsJoinedByString:@", "]
     };
 }
 
@@ -155,6 +159,37 @@
     NSMutableArray *conversations = [NSMutableArray array];
     for (NSDictionary *row in rows) {
         if (conversations.count >= (NSUInteger)limit) break;
+        NSDictionary *convo = [self getConversationWithId:row[@"id"] error:nil];
+        if (convo) [conversations addObject:convo];
+    }
+
+    return conversations;
+}
+
+- (nullable NSArray<NSDictionary *> *)listAllConversationsWithLimit:(NSInteger)limit
+                                                             cursor:(nullable NSString *)cursor
+                                                              error:(NSError **)error {
+    NSString *query = @"SELECT id, created_at, updated_at FROM conversations";
+    if (cursor) {
+        query = [query stringByAppendingString:@" WHERE id < ?"];
+    }
+    query = [query stringByAppendingString:@" ORDER BY updated_at DESC LIMIT ?"];
+
+    NSMutableArray *params = [NSMutableArray array];
+    if (cursor) [params addObject:cursor];
+    [params addObject:@(limit)];
+
+    NSError *queryError = nil;
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+                                                                      params:params
+                                                                       error:&queryError];
+    if (queryError) {
+        if (error) *error = queryError;
+        return nil;
+    }
+
+    NSMutableArray *conversations = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
         NSDictionary *convo = [self getConversationWithId:row[@"id"] error:nil];
         if (convo) [conversations addObject:convo];
     }
