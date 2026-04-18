@@ -97,10 +97,6 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Whether to register NodeInfo routes (default: YES). */
 @property (nonatomic, assign) BOOL enableNodeInfo;
 
-/*! Whether `GET /` serves the Objective-J/Cappuccino UI by default (default: YES).
-    When NO, `GET /` falls back to the legacy ExploreHandler. */
-@property (nonatomic, assign) BOOL enableCappuccinoUIDefault;
-
 #pragma mark - Initialization
 
 /*!

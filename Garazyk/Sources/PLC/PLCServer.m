@@ -1,10 +1,8 @@
 #import "PLC/PLCServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/PDSHttpCappuccinoUIRoutePack.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCMetrics.h"
-#import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
@@ -348,8 +346,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 
 - (void)setupRoutes {
     __weak typeof(self) weakSelf = self;
-    CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
-    
+
     [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *req, HttpResponse *resp) {
         [[PLCMetrics sharedMetrics] recordRequest];
         resp.statusCode = HttpStatusOK;
@@ -383,12 +380,6 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         resp.contentType = @"image/x-icon";
         [resp setBodyData:[NSData data]];
     }];
-
-    // Objective-J service UI (/, /ui, /Frameworks/*, etc.)
-    [PDSHttpCappuccinoUIRoutePack registerRoutesWithServer:self.httpServer
-                                             dataDirectory:nil
-                                                controller:nil
-                                            serviceProfile:@"plc"];
 
     // Legacy static PLC UI (for backwards compatibility)
     [self.httpServer addRoute:nil path:@"/static" handler:^(HttpRequest *req, HttpResponse *resp) {
