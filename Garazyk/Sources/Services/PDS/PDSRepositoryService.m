@@ -1281,10 +1281,10 @@
         return NO;
     }
 
-    NSLog(@"[forceReinitializeRepoForDid] Clearing repo_root for DID: %@", did);
-    
+    PDS_LOG_SERVICE_DEBUG(@"Clearing repo_root for DID: %@", did);
+
     if (![store clearRepoRootWithError:error]) {
-        NSLog(@"[forceReinitializeRepoForDid] Failed to clear repo_root: %@", error ? *error : @"unknown");
+        PDS_LOG_SERVICE_ERROR(@"Failed to clear repo_root: %@", error ? *error : @"unknown");
         return NO;
     }
 

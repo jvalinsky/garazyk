@@ -701,7 +701,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         }
         return NO;
     }
-    NSLog(@"[clearRepoRoot] Cleared repo_root table");
+    PDS_LOG_DB_DEBUG(@"Cleared repo_root table");
     return YES;
 }
 
