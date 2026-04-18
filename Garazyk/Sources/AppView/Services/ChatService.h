@@ -24,6 +24,10 @@ NS_ASSUME_NONNULL_BEGIN
                                                          cursor:(nullable NSString *)cursor
                                                           error:(NSError **)error;
 
+- (nullable NSArray<NSDictionary *> *)listAllConversationsWithLimit:(NSInteger)limit
+                                                             cursor:(nullable NSString *)cursor
+                                                              error:(NSError **)error;
+
 - (BOOL)acceptConversation:(NSString *)convoId
                   memberDid:(NSString *)memberDid
                       error:(NSError **)error;
