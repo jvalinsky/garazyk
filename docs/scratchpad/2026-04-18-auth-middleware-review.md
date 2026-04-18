@@ -1,13 +1,57 @@
 # Auth Middleware Review & Implementation
 
 **Date:** 2026-04-18
-**Decision Graph Nodes:** 456, 457
-**Commit:** b13149f2
+**Decision Graph Nodes:** 456, 457, 458, 459
+**Commits:** b13149f2, c52a9a3
 **Plan:** [[~/.letta/plans/2026-04-18-auth-middleware-review.md]]
 
 ## Summary
 
-Reviewed authentication middleware architecture and implemented declarative middleware system for XRPC endpoints.
+Implemented declarative middleware system for XRPC endpoints with Express.js-style chains.
+
+## Usage Examples
+
+### Protected Endpoint (auth required)
+```objc
+// Simple auth-required endpoint
+NSArray *middlewares = [XrpcMiddlewarePresets protectedEndpointWithController:controller
+                                                                    rateLimit:100];
+[dispatcher registerMethod:@"com.atproto.repo.createRecord"
+              middlewares:middlewares
+                  handler:^(HttpRequest *req, HttpResponse *res) {
+    NSString *did = req.authenticatedDid; // Set by AuthMiddleware
+    // Handler logic - already authenticated
+}];
+```
+
+### Admin Endpoint
+```objc
+NSArray *middlewares = [XrpcMiddlewarePresets adminEndpointWithController:controller
+                                                            serviceDatabases:serviceDatabases];
+[dispatcher registerMethod:@"com.atproto.admin.getAccountInfo"
+              middlewares:middlewares
+                  handler:handler];
+```
+
+### Public Endpoint with Rate Limiting
+```objc
+NSArray *middlewares = [XrpcMiddlewarePresets publicEndpointWithRateLimit:300];
+[dispatcher registerMethod:@"com.atproto.sync.getRepo"
+              middlewares:middlewares
+                  handler:handler];
+```
+
+### Custom Chain
+```objc
+NSArray *middlewares = @[
+    [AuthMiddleware userAuthWithController:controller],
+    [RateLimitMiddleware perUser:50 perWindow:60.0],
+    [ResourceOwnershipMiddleware ownsRepoFromParam:@"repo" fromBody:NO]
+];
+[dispatcher registerMethod:@"com.atproto.repo.deleteRecord"
+              middlewares:middlewares
+                  handler:handler];
+```
 
 ## Key Findings
 
