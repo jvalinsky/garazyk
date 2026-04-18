@@ -172,6 +172,7 @@ int main(int argc, char *argv[]) {
       @"PDSCLIServiceStubTests",
       @"ActorStoreTests",
       @"DatabasePoolTests",
+      @"DatabaseMigrationTests",
       @"PDSMigrationManagerTests",
       @"PDSDatabaseLRUTests",
       @"PDSControllerTests",
