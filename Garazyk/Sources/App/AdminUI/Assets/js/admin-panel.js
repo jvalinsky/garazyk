@@ -168,6 +168,19 @@ export const AdminPanel = {
     resolveReport,
     getUsers,
     disableAccount,
+
+    closeModal(el) {
+        const modal = el.closest('.admin-modal');
+        if (modal) modal.style.display = 'none';
+    },
+
+    initEventDelegation() {
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action="close-modal"]');
+            if (btn) this.closeModal(btn);
+        });
+    },
+
     enableAccount,
     escapeHtml,
     

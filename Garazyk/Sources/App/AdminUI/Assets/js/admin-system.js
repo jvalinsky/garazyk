@@ -132,7 +132,7 @@ function createAuditModal() {
     modal.className = 'admin-modal';
     modal.innerHTML = 
         '<div class="admin-modal-content">' +
-        '<div class="title-bar"><span class="title">Audit Log</span><button class="close" onclick="this.closest(\'.admin-modal\').style.display=\'none\'"><span>Close</span></button></div>' +
+        '<div class="title-bar"><span class="title">Audit Log</span><button class="close" data-action="close-modal"><span>Close</span></button></div>' +
         '<div class="admin-modal-body">' +
         '<div class="admin-audit-filters">' +
         '<select id="audit-filter-action"><option value="">All Actions</option>' +

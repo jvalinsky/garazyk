@@ -36,6 +36,38 @@ const PLC_BASE = (function() {
 
 console.log('ui.js loading...');
 
+const StateManager = {
+    state: {
+        currentDid: null,
+        currentHandle: null,
+        currentCollection: null,
+        session: null,
+        isAdmin: false
+    },
+    listeners: [],
+    
+    get(key) {
+        return key ? this.state[key] : { ...this.state };
+    },
+    
+    set(updates) {
+        const prev = this.state;
+        this.state = { ...this.state, ...updates };
+        this.listeners.forEach(fn => fn(this.state, prev));
+    },
+    
+    subscribe(listener) {
+        this.listeners.push(listener);
+        return () => {
+            this.listeners = this.listeners.filter(fn => fn !== listener);
+        };
+    },
+    
+    reset() {
+        this.state = { currentDid: null, currentHandle: null, currentCollection: null, session: null, isAdmin: false };
+    }
+};
+
 let currentDid = null;
 let currentHandle = null;
 let currentCollection = null;
@@ -43,6 +75,7 @@ let currentCollection = null;
 window.viewCollection = (collection) => {
     console.log('window.viewCollection called for collection:', collection);
     currentCollection = collection;
+    StateManager.set({ currentCollection: collection });
     showRecords(collection);
 };
 
@@ -155,6 +188,23 @@ function init() {
     // MST Viewer
     MSTViewer.init();
 
+    // Event delegation for dynamic buttons
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        e.preventDefault();
+        const action = btn.dataset.action;
+        if (action === 'view-collection') {
+            window.viewCollection(btn.dataset.collection);
+        } else if (action === 'view-record') {
+            window.viewRecordDetail(btn.dataset.uri);
+        } else if (action === 'open-window') {
+            window.openWindow(btn.dataset.window);
+        } else if (action === 'close-window') {
+            window.closeWindow(btn.dataset.window);
+        }
+    });
+
     // Session management (OAuth, login/logout, poster)
     initSession();
 
@@ -200,6 +250,8 @@ async function selectAccount(account) {
 
     currentDid = account.did;
     currentHandle = account.handle || '';
+    
+    StateManager.set({ currentDid: account.did, currentHandle: account.handle || '' });
 
     MSTViewer.setDID(account.did);
 
@@ -251,6 +303,7 @@ async function handleLookup() {
     }
 
     currentDid = result.did;
+    StateManager.set({ currentDid: result.did });
 
     // Highlight if it's in our list
     document.querySelectorAll('.account-item').forEach(li => {
@@ -269,21 +322,27 @@ async function showDidDocument(did) {
     const plcContent = document.getElementById('plc-content');
     const collectionsContent = document.getElementById('collections-content');
 
-    // Parallel API calls
-    const [doc, ops, describe] = await Promise.all([
-        API.getDidDocument(did),
-        API.getPlcLog(did),
-        API.getRepoDescribe(did)
-    ]);
+    try {
+        const [doc, ops, describe] = await Promise.all([
+            API.getDidDocument(did),
+            API.getPlcLog(did),
+            API.getRepoDescribe(did)
+        ]);
 
-    if (doc.error) {
-        didContent.innerHTML = `<p class="error">${escapeHtml(doc.error)}</p>`;
-    } else {
-        didContent.innerHTML = renderDidSummary(doc);
+        if (doc.error) {
+            didContent.innerHTML = `<p class="error">${escapeHtml(doc.error)}</p>`;
+        } else {
+            didContent.innerHTML = renderDidSummary(doc);
+        }
+
+        plcContent.innerHTML = renderPlcOperations(ops);
+        renderCollections(describe);
+    } catch (error) {
+        console.error('showDidDocument failed:', error);
+        ErrorBoundary.showError('did-content', error.message, () => showDidDocument(did));
+        ErrorBoundary.showError('plc-content', error.message, () => showDidDocument(did));
+        ErrorBoundary.showError('collections-content', error.message, () => showDidDocument(did));
     }
-
-    plcContent.innerHTML = renderPlcOperations(ops);
-    renderCollections(describe);
 }
 
 function renderCollections(describe) {
@@ -316,7 +375,7 @@ function renderCollections(describe) {
         html += `
             <tr>
                 <td><code>${escapeHtml(collection)}</code></td>
-                <td><button class="btn-secondary" onclick="window.viewCollection('${escapeHtml(collection)}')">View Records</button></td>
+                <td><button class="btn-secondary" data-action="view-collection" data-collection="${escapeHtml(collection)}">View Records</button></td>
             </tr>
         `;
     }
@@ -374,7 +433,7 @@ function renderRecordsList(records, collection) {
             <tr>
                 <td><code>${escapeHtml(record.rkey)}</code></td>
                 <td><code title="${escapeHtml(record.cid || '')}">${escapeHtml(displayCid)}</code></td>
-                <td><button class="btn-secondary" onclick="window.viewRecordDetail('${escapeHtml(record.uri)}')">View Detail</button></td>
+                <td><button class="btn-secondary" data-action="view-record" data-uri="${escapeHtml(record.uri)}">View Detail</button></td>
             </tr>
         `;
     }
@@ -1783,6 +1842,36 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+const ErrorBoundary = {
+    showError(containerId, message, retryFn = null) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        let html = `<div class="error" role="alert">`;
+        html += `<p>${escapeHtml(message)}</p>`;
+        if (retryFn) {
+            html += `<button class="btn btn-secondary" data-action="retry">Retry</button>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        if (retryFn) {
+            container.querySelector('[data-action="retry"]')?.addEventListener('click', retryFn);
+        }
+    },
+    
+    async withErrorBoundary(containerId, asyncFn, retryFn) {
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = '<p class="loading">Loading...</p>';
+        try {
+            return await asyncFn();
+        } catch (error) {
+            console.error('Error in', asyncFn.name || 'asyncFn:', error);
+            this.showError(containerId, error.message, retryFn);
+            return null;
+        }
+    }
+};
+
 
 let zCounter = 100;
 
@@ -1824,3 +1913,5 @@ function makeDraggable(win) {
         return false;
     };
 }
+
+export { init, StateManager, ErrorBoundary };
