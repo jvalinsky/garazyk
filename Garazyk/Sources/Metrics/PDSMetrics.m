@@ -246,6 +246,41 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
     });
 }
 
+- (unsigned long long)residentMemoryBytes {
+    unsigned long long residentBytes = 0;
+#ifdef __APPLE__
+    struct mach_task_basic_info info;
+    mach_msg_type_number_t infoCount = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO,
+                  (task_info_t)&info, &infoCount) == KERN_SUCCESS) {
+        residentBytes = info.resident_size;
+    }
+#else
+    FILE *f = fopen("/proc/self/statm", "r");
+    if (f) {
+        unsigned long pages = 0;
+        if (fscanf(f, "%*lu %lu", &pages) == 1) {
+            residentBytes = (unsigned long long)pages * sysconf(_SC_PAGESIZE);
+        }
+        fclose(f);
+    }
+#endif
+    return residentBytes;
+}
+
+- (unsigned long long)totalSystemMemoryBytes {
+#ifdef __APPLE__
+    uint64_t mem = 0;
+    size_t len = sizeof(mem);
+    sysctlbyname("hw.memsize", &mem, &len, NULL, 0);
+    return mem;
+#else
+    long pages = sysconf(_SC_PHYS_PAGES);
+    long page_size = sysconf(_SC_PAGESIZE);
+    return (unsigned long long)pages * page_size;
+#endif
+}
+
 - (NSString *)exportPrometheus {
     __block NSDictionary *methodsSnap;
     __block NSDictionary *endpointsSnap;
