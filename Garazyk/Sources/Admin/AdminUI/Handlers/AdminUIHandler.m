@@ -24,7 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *baseDir = [executablePath stringByDeletingLastPathComponent];
 
     // Try in the build directory structure first (for development)
-    NSString *buildAssetsPath = [baseDir stringByAppendingPathComponent:@"../../../Garazyk/Sources/Admin/AdminUI/Assets"];
+    // From build/bin: go up 2 levels to reach garazyk root, then find Garazyk/Sources/Admin/AdminUI/Assets
+    NSString *buildAssetsPath = [baseDir stringByAppendingPathComponent:@"../../Garazyk/Sources/Admin/AdminUI/Assets"];
     NSString *resolvedPath = [buildAssetsPath stringByResolvingSymlinksInPath];
     if ([[NSFileManager defaultManager] fileExistsAtPath:resolvedPath]) {
         return resolvedPath;
@@ -41,7 +42,8 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *baseDir = [executablePath stringByDeletingLastPathComponent];
 
     // Try in the build directory structure first (for development)
-    NSString *buildTemplatesPath = [baseDir stringByAppendingPathComponent:@"../../../Garazyk/Sources/Admin/AdminUI/Templates"];
+    // From build/bin: go up 2 levels to reach garazyk root, then find Garazyk/Sources/Admin/AdminUI/Templates
+    NSString *buildTemplatesPath = [baseDir stringByAppendingPathComponent:@"../../Garazyk/Sources/Admin/AdminUI/Templates"];
     NSString *resolvedPath = [buildTemplatesPath stringByResolvingSymlinksInPath];
     if ([[NSFileManager defaultManager] fileExistsAtPath:resolvedPath]) {
         return resolvedPath;
