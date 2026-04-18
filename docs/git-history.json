@@ -1,19 +1,19 @@
 [
   {
-    "hash": "0830a1ae8fb38828c7239548f48c6894f95dc32f",
-    "short_hash": "0830a1a",
+    "hash": "0536c637506db530aabcb0cd8baa2928425ef555",
+    "short_hash": "0536c63",
     "author": "Security Bot",
-    "date": "2026-04-18T11:01:14-04:00",
-    "message": "docs: sync deciduous graph for web ui wiring",
-    "files_changed": 2
+    "date": "2026-04-18T11:05:54-04:00",
+    "message": "docs: sync deciduous graph for full admin ui wiring",
+    "files_changed": 1
   },
   {
-    "hash": "46793cc77ed617b34a1a795ca3bb72fa0dcfc501",
-    "short_hash": "46793cc",
+    "hash": "8fcd7d886367167bd0b2437272eafbc7e798f604",
+    "short_hash": "8fcd7d8",
     "author": "Security Bot",
-    "date": "2026-04-18T08:58:46-04:00",
-    "message": "test: Add DatabaseMigrationTests registration and expand OAuth tests\n\n- Register DatabaseMigrationTests in test suite\n- Add OAuth2IntrospectionTests coverage for token validation\n- Update DeploymentReadinessTests",
-    "files_changed": 3
+    "date": "2026-04-18T09:31:26-04:00",
+    "message": "web ui: fix xss from inline onclick, add state manager, error boundaries, aria\n\n- Replace inline onclick with data attributes + event delegation\n- Add StateManager class for centralized state with subscribers\n- Add ErrorBoundary with retry for failed API calls\n- Add aria-labels to close buttons and menu items\n- Fix XSS in ui.js, did.js, admin-system.js, viewer.js",
+    "files_changed": 6
   },
   {
     "hash": "5f5b220b421ca01686c7e6b5efd3e6b6c39a0ffb",
