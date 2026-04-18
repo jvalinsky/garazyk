@@ -1,0 +1,72 @@
+<div class="content-header">
+  <h1>Events</h1>
+  <p class="text-secondary mt-sm">Real-time firehose event stream from connected PDS instances.</p>
+</div>
+
+<div class="flex items-center justify-between mb-lg">
+  <div class="btn-group">
+    <button class="btn btn-sm" 
+            hx-get="/admin/relay/events?filter=all" 
+            hx-target="#events-list"
+            hx-swap="innerHTML">
+      All
+    </button>
+    <button class="btn btn-sm" 
+            hx-get="/admin/relay/events?filter=commits" 
+            hx-target="#events-list"
+            hx-swap="innerHTML">
+      Commits
+    </button>
+    <button class="btn btn-sm" 
+            hx-get="/admin/relay/events?filter=accounts" 
+            hx-target="#events-list"
+            hx-swap="innerHTML">
+      Accounts
+    </button>
+  </div>
+  <div class="flex items-center gap-md">
+    <label class="flex items-center gap-sm">
+      <input type="checkbox" id="auto-refresh" checked>
+      <span>Auto-refresh</span>
+    </label>
+    <button class="btn btn-secondary btn-sm" id="pause-events">Pause</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Event Stream</h3>
+  </div>
+  <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+    <div id="events-list" 
+         hx-ext="sse" 
+         sse-connect="/xrpc/com.atproto.sync.subscribeRepos" 
+         sse-swap="message">
+      <ul class="event-list">
+        {{#each events}}
+        <li class="event-item">
+          <span class="event-type badge badge-{{type}}">{{type}}</span>
+          <span class="event-did text-secondary">{{did}}</span>
+          <span class="event-time text-xs text-secondary">{{time}}</span>
+        </li>
+        {{/each}}
+      </ul>
+      <p class="text-secondary text-sm">Connecting to event stream...</p>
+    </div>
+  </div>
+</div>
+
+<div class="grid-3 mt-lg">
+  <div class="stat-card">
+    <div class="stat-label">Total Events</div>
+    <div class="stat-value">{{total_events}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Events/sec</div>
+    <div class="stat-value">{{events_per_sec}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Dropped</div>
+    <div class="stat-value">{{dropped}}</div>
+  </div>
+</div>
