@@ -1,0 +1,76 @@
+<div class="content-header">
+  <h1>Export</h1>
+  <p class="text-secondary mt-sm">Export PLC Directory operations.</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Trigger Export</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-get="/export" hx-target="#export-status">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label" for="export-count">Operation Count</label>
+          <input type="number" class="form-input" id="export-count" name="count" 
+                 value="1000" min="1" max="100000">
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label" for="export-after">After Operation</label>
+          <input type="text" class="form-input" id="export-after" name="after" 
+                 placeholder="optional seq number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">&nbsp;</label>
+          <button type="submit" class="btn btn-primary">Start Export</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Export Status</h3>
+  </div>
+  <div class="card-body">
+    <div id="export-status">
+      <div class="stat-card">
+        <div class="stat-label">Last Export</div>
+        <div class="stat-value">{{last_export}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Operations Exported</div>
+        <div class="stat-value">{{operations_exported}}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Status</div>
+        <div class="stat-value">
+          {{#if exporting}}
+          <span class="badge badge-info">Exporting</span>
+          {{else}}
+          <span class="badge badge-success">Idle</span>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Stream Events</h3>
+  </div>
+  <div class="card-body">
+    <p class="text-secondary mb-md">Connect to server-sent events for real-time operation updates:</p>
+    <button class="btn btn-secondary" 
+            hx-ext="sse" 
+            sse-connect="/export/stream" 
+            sse-swap="message">
+      Connect to Stream
+    </button>
+    <div class="mt-md" id="stream-events">
+      <p class="text-secondary text-sm">No active stream connection.</p>
+    </div>
+  </div>
+</div>

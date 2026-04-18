@@ -1,0 +1,98 @@
+<div class="content-header">
+  <h1>Backfill</h1>
+  <p class="text-secondary mt-sm">Manage repository backfill operations for AppView indexing.</p>
+</div>
+
+<div class="grid-4 mb-lg">
+  <div class="stat-card">
+    <div class="stat-label">Queued</div>
+    <div class="stat-value">{{queued}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">In Progress</div>
+    <div class="stat-value">{{in_progress}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Completed</div>
+    <div class="stat-value">{{completed}}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Failed</div>
+    <div class="stat-value">{{failed}}</div>
+  </div>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Backfill Queue</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>DID</th>
+            <th>Collections</th>
+            <th>Status</th>
+            <th>Retries</th>
+            <th>Added</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each queue}}
+          <tr>
+            <td><code class="text-xs">{{did}}</code></td>
+            <td>{{collections}}</td>
+            <td>
+              {{#if_eq status "pending"}}
+              <span class="badge">Pending</span>
+              {{else_eq status "running"}}
+              <span class="badge badge-info">Running</span>
+              {{else_eq status "completed"}}
+              <span class="badge badge-success">Completed</span>
+              {{else_eq status "failed"}}
+              <span class="badge badge-destructive">Failed</span>
+              {{/if_eq}}
+            </td>
+            <td>{{retries}}</td>
+            <td class="text-secondary text-xs">{{added_at}}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm"
+                      hx-post="/admin/appview/backfill/retry/{{id}}">
+                Retry
+              </button>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Add to Queue</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/admin/appview/backfill/add">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label" for="backfill-did">DID</label>
+          <input type="text" class="form-input" id="backfill-did" name="did" 
+                 placeholder="did:plc:...">
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label" for="backfill-collections">Collections</label>
+          <input type="text" class="form-input" id="backfill-collections" name="collections" 
+                 placeholder="app.bsky.feed.post,app.bsky.graph.follow">
+        </div>
+        <div class="form-group">
+          <label class="form-label">&nbsp;</label>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
