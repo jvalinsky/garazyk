@@ -113,6 +113,9 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 @property(nonatomic, strong) CID *value;
 @property(nonatomic, strong, nullable) CID *tree;
 
+/*! @abstract The full key reconstructed from prefix length and suffix. */
+@property(nonatomic, copy, readonly) NSString *fullKey;
+
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
                              value:(CID *)value
@@ -158,6 +161,7 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
  */
 @interface MST : NSObject
 
+@property(nonatomic, strong, readonly, nullable) MSTNode *root;
 @property(nonatomic, strong, readonly, nullable) CID *rootCID;
 @property(nonatomic, strong, readonly) NSData *emptyTreeHash;
 

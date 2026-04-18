@@ -177,8 +177,8 @@
     // Set custom 5MB limit
     self.connection.maxOutboundQueueBytes = 5 * 1024 * 1024;
 
-    NSData *frame4MB = [NSData dataWithLength:4 * 1024 * 1024];
-    NSData *frame2MB = [NSData dataWithLength:2 * 1024 * 1024];
+    NSData *frame4MB = [NSMutableData dataWithLength:4 * 1024 * 1024];
+    NSData *frame2MB = [NSMutableData dataWithLength:2 * 1024 * 1024];
 
     // First frame should succeed
     [self.connection sendFrame:frame4MB];
@@ -204,7 +204,7 @@
     self.connection.backpressureWarningThreshold = 0.7; // 70%
 
     // Send 8MB (80% of 10MB) - should trigger warning
-    NSData *frame8MB = [NSData dataWithLength:8 * 1024 * 1024];
+    NSData *frame8MB = [NSMutableData dataWithLength:8 * 1024 * 1024];
     [self.connection sendFrame:frame8MB];
 
     // Wait for main queue to process delegate callback
@@ -215,7 +215,7 @@
     [self waitForExpectations:@[exp] timeout:1.0];
 
     XCTAssertTrue(self.delegate.didReceiveBackpressureWarning, @"Should notify delegate of warning");
-    XCTAssertGreaterThanOrEqual(self.delegate.lastWarningFillPercentage, 0.8, @"Fill percentage should be ~80%");
+    XCTAssertGreaterThanOrEqual(self.delegate.lastWarningFillPercentage, 0.8, @"Fill percentage should be ~80%%");
     XCTAssertEqual(self.delegate.lastWarningQueueBytes, 8 * 1024 * 1024, @"Queue bytes should be 8MB");
 }
 
@@ -236,7 +236,7 @@
     [self waitForExpectations:@[exp] timeout:1.0];
 
     XCTAssertTrue(self.delegate.didReceiveBackpressureCritical, @"Should notify delegate of critical");
-    XCTAssertGreaterThanOrEqual(self.delegate.lastCriticalFillPercentage, 0.9, @"Fill percentage should be ~95%");
+    XCTAssertGreaterThanOrEqual(self.delegate.lastCriticalFillPercentage, 0.9, @"Fill percentage should be ~95%%");
 }
 
 - (void)testBackpressureWarningNotDuplicateNotified {
@@ -244,7 +244,7 @@
     self.connection.maxOutboundQueueBytes = 10 * 1024 * 1024;
     self.connection.backpressureWarningThreshold = 0.7;
 
-    NSData *frame8MB = [NSData dataWithLength:8 * 1024 * 1024];
+    NSData *frame8MB = [NSMutableData dataWithLength:8 * 1024 * 1024];
     [self.connection sendFrame:frame8MB]; // First warning
 
     // Wait for callback
@@ -255,7 +255,7 @@
     NSInteger warningCount = self.delegate.didReceiveBackpressureWarning ? 1 : 0;
 
     // Send another small frame - should NOT trigger another warning
-    NSData *frame1MB = [NSData dataWithLength:1 * 1024 * 1024];
+    NSData *frame1MB = [NSMutableData dataWithLength:1 * 1024 * 1024];
     [self.connection sendFrame:frame1MB];
 
     XCTestExpectation *exp2 = [self expectationWithDescription:@"No duplicate warning"];
