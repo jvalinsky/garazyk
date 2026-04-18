@@ -2,6 +2,7 @@
 
 #import "Admin/PDSAdminHandler.h"
 #import "Admin/AdminPartialHandler.h"
+#import "Admin/AdminUI/Handlers/AdminUIHandler.h"
 #import "Debug/PDSLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -20,7 +21,9 @@
     @"/admin/relay/upstreams", @"/admin/relay/events", @"/admin/relay/crawl",
     @"/admin/appview/backfill", @"/admin/appview/index", @"/admin/appview/metrics",
     @"/admin/chat/convos", @"/admin/chat/messages", @"/admin/chat/reports",
-    @"/admin/ozone/events", @"/admin/ozone/statuses", @"/admin/ozone/team", @"/admin/ozone/templates"
+    @"/admin/ozone/events", @"/admin/ozone/statuses", @"/admin/ozone/team", @"/admin/ozone/templates",
+    @"/admin/ozone/sets", @"/admin/ozone/correlations", @"/admin/ozone/verification",
+    @"/admin/security/sessions", @"/admin/security/app-passwords"
   ];
 
   for (NSString *path in adminPaths) {
@@ -85,14 +88,31 @@
 
   [server addRoute:@"GET"
               path:@"/admin/partials/*"
-           handler:^(HttpRequest *request, HttpResponse *response) {
-             NSString *partial = [request.path substringFromIndex:@"/admin/partials/".length];
+            handler:^(HttpRequest *request, HttpResponse *response) {
+             AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
              NSString *html = [partialHandler handlePartialRequestWithPath:request.path
                                                                   headers:request.headers
                                                                      body:request.body];
              if (html) {
                response.statusCode = 200;
                [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
+               [response setBodyString:html];
+               return;
+             }
+             
+             // Fallback to AdminUIHandler
+             AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
+             NSInteger statusCode = 200;
+             NSString *contentType = @"text/html";
+             html = [uiHandler handleRequestWithMethod:AdminUIHTTPMethodGET
+                                                  path:request.path
+                                               headers:request.headers
+                                                  body:request.body
+                                            statusCode:&statusCode
+                                           contentType:&contentType];
+             if (html) {
+               response.statusCode = statusCode;
+               [response setHeader:contentType ?: @"text/html; charset=utf-8" forKey:@"Content-Type"];
                [response setBodyString:html];
              } else {
                response.statusCode = 404;

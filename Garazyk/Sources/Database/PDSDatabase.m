@@ -2796,4 +2796,31 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     return dict;
 }
 
+#pragma mark - Sessions & Security
+
+- (NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"SELECT token, created_at, expires_at FROM refresh_tokens WHERE account_did = ? ORDER BY created_at DESC";
+    return [self executeParameterizedQuery:sql params:@[did] error:error];
+}
+
+- (BOOL)revokeSession:(NSString *)token error:(NSError **)error {
+    NSString *sql = @"DELETE FROM refresh_tokens WHERE token = ?";
+    return [self executeParameterizedUpdate:sql params:@[token] error:error];
+}
+
+- (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
+    return [self executeParameterizedUpdate:sql params:@[did] error:error];
+}
+
+- (NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"SELECT id, name, privileged, created_at FROM app_passwords WHERE account_did = ? ORDER BY created_at DESC";
+    return [self executeParameterizedQuery:sql params:@[did] error:error];
+}
+
+- (BOOL)revokeAppPassword:(NSString *)passwordId forDid:(NSString *)did error:(NSError **)error {
+    NSString *sql = @"DELETE FROM app_passwords WHERE id = ? AND account_did = ?";
+    return [self executeParameterizedUpdate:sql params:@[passwordId, did] error:error];
+}
+
 @end

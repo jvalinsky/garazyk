@@ -907,6 +907,15 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                           signCount:(uint32_t)signCount
                              error:(NSError **)error;
 
+#pragma mark - Sessions & Security
+
+- (NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error;
+- (BOOL)revokeSession:(NSString *)token error:(NSError **)error;
+- (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error;
+
+- (NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error;
+- (BOOL)revokeAppPassword:(NSString *)passwordId forDid:(NSString *)did error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

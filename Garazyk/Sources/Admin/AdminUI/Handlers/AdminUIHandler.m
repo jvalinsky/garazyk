@@ -140,8 +140,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSString *)handlePartialPath:(NSString *)path
                               statusCode:(nullable NSInteger *)statusCode
                              contentType:(NSString * _Nullable * _Nullable)contentType {
-    NSString *partial = [path stringByReplacingOccurrencesOfString:@"/admin/partials/"
+    NSString *partialPath = [path stringByReplacingOccurrencesOfString:@"/admin/partials/"
                                                          withString:@""];
+    
+    // Split partial name and query string
+    NSString *partial = partialPath;
+    NSRange queryRange = [partialPath rangeOfString:@"?"];
+    if (queryRange.location != NSNotFound) {
+        partial = [partialPath substringToIndex:queryRange.location];
+    }
 
     // Parse query parameters from path
     NSDictionary *params = [self parseQueryString:path];
@@ -211,6 +218,16 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderOzoneTeamPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/templates"]) {
         return [self renderOzoneTemplatesPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"security/sessions"]) {
+        return [self renderSecuritySessionsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"security/app-passwords"]) {
+        return [self renderSecurityAppPasswordsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/sets"]) {
+        return [self renderOzoneSetsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/correlations"]) {
+        return [self renderOzoneCorrelationsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/verification"]) {
+        return [self renderOzoneVerificationPartialWithStatusCode:statusCode contentType:contentType];
     }
 
     if (statusCode) *statusCode = 404;
@@ -943,14 +960,143 @@ NS_ASSUME_NONNULL_BEGIN
            @"</div>"
            @"<div class=\"card\">"
            @"<div class=\"card-body\">"
+           @"<div hx-get=\"/admin/partials/ozone/templates/list\" hx-trigger=\"load\">"
+           @"<p class=\"text-secondary text-center\">Loading templates...</p>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderSecuritySessionsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                              contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Active Sessions</h2>"
+           @"<p class=\"text-secondary\">Monitor and revoke active user sessions and refresh tokens.</p>"
+           @"</div>"
+           @"<div class=\"card mb-lg\">"
+           @"<div class=\"card-body\">"
+           @"<form class=\"form flex gap-md\" hx-get=\"/admin/partials/security/sessions/list\" hx-target=\"#session-list-container\">"
+           @"<div class=\"form-group flex-1\">"
+           @"<input type=\"text\" name=\"did\" class=\"form-input\" placeholder=\"Enter DID (did:plc:...)\" required />"
+           @"</div>"
+           @"<button type=\"submit\" class=\"btn btn-primary\">List Sessions</button>"
+           @"</form>"
+           @"</div>"
+           @"</div>"
+           @"<div id=\"session-list-container\"></div>";
+}
+
+- (NSString *)renderSecurityAppPasswordsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                                 contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Application Passwords</h2>"
+           @"<p class=\"text-secondary\">Audit and manage application passwords for user accounts.</p>"
+           @"</div>"
+           @"<div class=\"card mb-lg\">"
+           @"<div class=\"card-body\">"
+           @"<form class=\"form flex gap-md\" hx-get=\"/admin/partials/security/app-passwords/list\" hx-target=\"#app-password-list-container\">"
+           @"<div class=\"form-group flex-1\">"
+           @"<input type=\"text\" name=\"did\" class=\"form-input\" placeholder=\"Enter DID (did:plc:...)\" required />"
+           @"</div>"
+           @"<button type=\"submit\" class=\"btn btn-primary\">List Passwords</button>"
+           @"</form>"
+           @"</div>"
+           @"</div>"
+           @"<div id=\"app-password-list-container\"></div>";
+}
+
+- (NSString *)renderOzoneSetsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                       contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Moderation Sets</h2>"
+           @"<p class=\"text-secondary\">Group subjects together for bulk moderation actions.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div hx-get=\"/admin/partials/ozone/sets/list\" hx-trigger=\"load\">"
+           @"<p class=\"text-secondary text-center\">Loading sets...</p>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderOzoneCorrelationsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                               contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Account Correlations</h2>"
+           @"<p class=\"text-secondary\">Detect sybil accounts using shared metadata signatures.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<form class=\"form\" hx-get=\"/admin/partials/ozone/correlations/search\" hx-target=\"#correlation-results\">"
+           @"<div class=\"form-group\">"
+           @"<label class=\"form-label\">Subject DID</label>"
+           @"<input type=\"text\" name=\"did\" class=\"form-input\" placeholder=\"did:plc:...\" required />"
+           @"</div>"
+           @"<button type=\"submit\" class=\"btn btn-primary\">Find Related Accounts</button>"
+           @"</form>"
+           @"<div id=\"correlation-results\" class=\"mt-lg\"></div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderOzoneVerificationPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                               contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Verification Status</h2>"
+           @"<p class=\"text-secondary\">Manage account verification badges and authenticity.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
            @"<div class=\"table-wrapper\">"
            @"<table class=\"table\">"
-           @"<thead><tr><th>Name</th><th>Last Updated</th><th>Actions</th></tr></thead>"
-           @"<tbody><tr><td colspan=\"3\" class=\"text-secondary text-center\">No templates found.</td></tr></tbody>"
+           @"<thead><tr><th>Account</th><th>Verified Since</th><th>Actions</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"3\" class=\"text-secondary text-center\">No verified accounts found.</td></tr></tbody>"
            @"</table>"
            @"</div>"
            @"</div>"
            @"</div>";
+}
+
+- (NSString *)renderSecuritySessionsListPartialWithParams:(NSDictionary *)params
+                                              statusCode:(nullable NSInteger *)statusCode
+                                             contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<p>Security sessions list data should be handled by template handler</p>";
+}
+
+- (NSString *)renderSecurityAppPasswordsListPartialWithParams:(NSDictionary *)params
+                                                 statusCode:(nullable NSInteger *)statusCode
+                                                contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<p>App passwords list data should be handled by template handler</p>";
+}
+
+- (NSString *)renderOzoneCorrelationsSearchWithDid:(NSString *)did
+                                         statusCode:(nullable NSInteger *)statusCode
+                                        contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    if (!did) return @"<p class=\"text-error\">Missing DID</p>";
+    
+    // In a real app, this would query tools.ozone.signature.findRelatedAccounts
+    return [NSString stringWithFormat:
+           @"<div class=\"alert alert-info\">No exact correlations found for <code>%@</code></div>"
+           @"<div class=\"mt-md\"><h4>Heuristic Matches</h4>"
+           @"<ul class=\"list-group\"><li class=\"list-item text-secondary\">No other accounts found sharing IP or metadata.</li></ul></div>", did];
 }
 
 - (NSString *)contentTypeForExtension:(NSString *)extension {

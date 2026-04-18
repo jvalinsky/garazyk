@@ -50,6 +50,9 @@
           <button class="service-segment" data-service="ozone" role="tab" aria-selected="false">
             Ozone
           </button>
+          <button class="service-segment" data-service="security" role="tab" aria-selected="false">
+            Security
+          </button>
         </div>
       </div>
 
@@ -195,11 +198,36 @@
             <button class="sidebar-item" hx-get="/admin/partials/ozone/statuses" hx-target="#content-pane" hx-push-url="/admin/ozone/statuses">
               Subject Status
             </button>
+            <button class="sidebar-item" hx-get="/admin/partials/ozone/sets" hx-target="#content-pane" hx-push-url="/admin/ozone/sets">
+              Moderation Sets
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/ozone/correlations" hx-target="#content-pane" hx-push-url="/admin/ozone/correlations">
+              Correlations
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/ozone/verification" hx-target="#content-pane" hx-push-url="/admin/ozone/verification">
+              Verification
+            </button>
             <button class="sidebar-item" hx-get="/admin/partials/ozone/team" hx-target="#content-pane" hx-push-url="/admin/ozone/team">
               Team
             </button>
             <button class="sidebar-item" hx-get="/admin/partials/ozone/templates" hx-target="#content-pane" hx-push-url="/admin/ozone/templates">
               Templates
+            </button>
+          </div>
+        </div>
+
+        <!-- Security Section -->
+        <div class="sidebar-section" data-service="security">
+          <button class="sidebar-section-title" aria-expanded="false" aria-controls="security-items">
+            <span>Security</span>
+            <span class="sidebar-section-toggle">▶</span>
+          </button>
+          <div class="sidebar-items hidden" id="security-items">
+            <button class="sidebar-item" hx-get="/admin/partials/security/sessions" hx-target="#content-pane" hx-push-url="/admin/security/sessions">
+              Active Sessions
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/security/app-passwords" hx-target="#content-pane" hx-push-url="/admin/security/app-passwords">
+              App Passwords
             </button>
           </div>
         </div>

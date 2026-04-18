@@ -1015,6 +1015,53 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     }
 }
 
+#pragma mark - Security Administration
+
+- (nullable NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error {
+    return [self.database listSessionsForDid:did error:error];
+}
+
+- (BOOL)revokeSession:(NSString *)token error:(NSError **)error {
+    // Revoke in memory if present
+    dispatch_sync(self.sessionQueue, ^{
+        NSString *foundSessionId = nil;
+        for (Session *session in self.activeSessions.allValues) {
+            if ([session.refreshToken isEqualToString:token]) {
+                foundSessionId = session.sessionID;
+                break;
+            }
+        }
+        if (foundSessionId) {
+            [self.activeSessions removeObjectForKey:foundSessionId];
+        }
+    });
+
+    return [self.database revokeSession:token error:error];
+}
+
+- (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error {
+    // Revoke in memory
+    dispatch_sync(self.sessionQueue, ^{
+        NSMutableArray *toRemove = [NSMutableArray array];
+        for (Session *session in self.activeSessions.allValues) {
+            if ([session.did isEqualToString:did]) {
+                [toRemove addObject:session.sessionID];
+            }
+        }
+        [self.activeSessions removeObjectsForKeys:toRemove];
+    });
+
+    return [self.database revokeAllSessionsForDid:did error:error];
+}
+
+- (nullable NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error {
+    return [self.database listAppPasswordsForDid:did error:error];
+}
+
+- (BOOL)revokeAppPassword:(NSString *)passwordId forDid:(NSString *)did error:(NSError **)error {
+    return [self.database revokeAppPassword:passwordId forDid:did error:error];
+}
+
 #pragma mark - ATProto Identity Resolution
 
 - (nullable NSString *)resolveIdentity:(NSString *)identity error:(NSError **)error {
