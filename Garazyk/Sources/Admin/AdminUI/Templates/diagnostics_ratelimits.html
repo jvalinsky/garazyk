@@ -1,0 +1,86 @@
+<div class="content-header">
+  <h1>Rate Limit Management</h1>
+  <p class="text-secondary mt-sm">Query and manage rate limits for DIDs and IP addresses.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Query Rate Limit</h2>
+  </div>
+  <div class="card-body">
+    <form id="queryForm" class="form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="identifier">DID or IP Address</label>
+          <input type="text" id="identifier" name="identifier" placeholder="did:plc:... or 192.168.1.1" required>
+        </div>
+        <div class="form-group">
+          <label for="type">Type</label>
+          <select id="type" name="type" required>
+            <option value="did">DID (authenticated requests)</option>
+            <option value="ip">IP (unauthenticated requests)</option>
+            <option value="blob">Blob Uploads</option>
+          </select>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+          <button type="submit" class="btn btn-primary">Query</button>
+        </div>
+      </div>
+    </form>
+
+    <div id="queryResults" style="display: none;" class="mt-lg">
+      <div class="metric-row">
+        <div class="metric">
+          <div class="metric-label">Current Usage</div>
+          <div class="metric-value" id="currentCount">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Limit</div>
+          <div class="metric-value" id="limit">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Remaining</div>
+          <div class="metric-value" id="remaining">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Reset In</div>
+          <div class="metric-value" id="resetTime">-</div>
+        </div>
+      </div>
+      <button id="clearBtn" class="btn btn-danger mt-md" style="display: none;">Clear Limit</button>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Top Rate-Limited Users</h2>
+  </div>
+  <div class="card-body">
+    <table id="topUsersTable">
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Type</th>
+          <th>Usage</th>
+          <th>% of Limit</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="6" class="text-secondary">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.DiagnosticsRateLimits && window.DiagnosticsRateLimits.init) {
+    window.DiagnosticsRateLimits.init();
+  }
+});
+</script>

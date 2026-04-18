@@ -181,6 +181,18 @@ typedef NS_ENUM(NSInteger, AdminUIHTTPMethod) {
                                                  statusCode:(nullable NSInteger *)statusCode
                                                 contentType:(NSString * _Nullable * _Nullable)contentType;
 
+- (NSString *)renderDiagnosticsOverviewPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                               contentType:(NSString * _Nullable * _Nullable)contentType;
+
+- (NSString *)renderDiagnosticsSequencerPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                                 contentType:(NSString * _Nullable * _Nullable)contentType;
+
+- (NSString *)renderDiagnosticsBlobsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                             contentType:(NSString * _Nullable * _Nullable)contentType;
+
+- (NSString *)renderDiagnosticsRateLimitsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                                  contentType:(NSString * _Nullable * _Nullable)contentType;
+
 @end
 
 NS_ASSUME_NONNULL_END

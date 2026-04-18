@@ -132,6 +132,35 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)serviceActorPreferencesTableSchema;
 
 /*!
+ @method sequencerAnalyticsTableSchema
+ @abstract Schema for sequencer_analytics table (time-series metrics).
+ @return CREATE TABLE SQL for sequencer analytics.
+ */
+- (NSString *)sequencerAnalyticsTableSchema;
+
+/*!
+ @method blobAuditJobsTableSchema
+ @abstract Schema for blob_audit_jobs table (background job tracking).
+ @return CREATE TABLE SQL for blob audit jobs.
+ */
+- (NSString *)blobAuditJobsTableSchema;
+
+/*!
+ @method rateLimitHistoryTableSchema
+ @abstract Schema for rate_limit_history table (admin action audit trail).
+ @return CREATE TABLE SQL for rate limit history.
+ */
+- (NSString *)rateLimitHistoryTableSchema;
+
+#pragma mark - Ozone Moderation Schemas
+
+- (NSString *)ozoneEventsTableSchema;
+- (NSString *)ozoneSetsTableSchema;
+- (NSString *)ozoneSetMembersTableSchema;
+- (NSString *)ozoneTemplatesTableSchema;
+- (NSString *)ozoneTeamTableSchema;
+
+/*!
  @method serviceSchemaSQL
 
  @abstract Complete SQL for all service database tables.
