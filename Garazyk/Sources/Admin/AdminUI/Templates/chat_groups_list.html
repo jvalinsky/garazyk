@@ -1,0 +1,37 @@
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>URI</th>
+        <th>Creator</th>
+        <th>Privacy</th>
+        <th>Members</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each groups}}
+      <tr>
+        <td><strong>{{name}}</strong></td>
+        <td><code>{{uri}}</code></td>
+        <td class="text-xs">{{creator}}</td>
+        <td><span class="badge">{{privacy}}</span></td>
+        <td>{{memberCount}}</td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-xs" hx-get="/admin/partials/chat/groups/detail?groupUri={{uri}}" hx-target="#content-pane">Details</button>
+            <button class="btn btn-xs btn-destructive" data-action="delete-group" data-uri="{{uri}}">Delete</button>
+          </div>
+        </td>
+      </tr>
+      {{/each}}
+      {{#if groups.length}}
+      {{else}}
+      <tr>
+        <td colspan="6" class="text-center text-secondary">No groups found.</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</div>

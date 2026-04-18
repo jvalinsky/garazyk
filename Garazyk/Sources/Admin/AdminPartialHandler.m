@@ -307,6 +307,21 @@
     if ([partialName isEqualToString:@"chat/messages"]) {
         return [self renderChatMessagesPartial:adminHandler headers:headers body:body params:params];
     }
+    if ([partialName isEqualToString:@"chat/groups/list"]) {
+        return [self renderChatGroupsListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"chat/groups/search"]) {
+        return [self renderChatGroupsListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"chat/invite-links/list"]) {
+        return [self renderChatInviteLinksListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"chat/invite-links/search"]) {
+        return [self renderChatInviteLinksListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"chat/groups/data"]) {
+        return [self renderChatGroupDataPartial:adminHandler headers:headers body:body params:params];
+    }
 
     NSInteger statusCode = 200;
     NSString *contentType = nil;
@@ -466,6 +481,91 @@
     context[@"convoId"] = convoId ?: @"";
 
     return [self renderPartialWithTemplate:@"chat_messages" context:context];
+}
+
+- (nullable NSString *)renderChatGroupsListPartial:(PDSAdminHandler *)adminHandler
+                                          headers:(NSDictionary *)headers
+                                             body:(nullable NSData *)body
+                                           params:(NSDictionary *)params {
+    NSString *query = params[@"q"];
+    NSString *path = @"/xrpc/chat.bsky.group.listGroups";
+    if (query) {
+        path = [path stringByAppendingFormat:@"?q=%@", [query stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    }
+    
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:path
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    if (!data) return nil;
+
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
+    context[@"section"] = @"chat";
+
+    return [self renderPartialWithTemplate:@"chat_groups_list" context:context];
+}
+
+- (nullable NSString *)renderChatInviteLinksListPartial:(PDSAdminHandler *)adminHandler
+                                              headers:(NSDictionary *)headers
+                                                 body:(nullable NSData *)body
+                                               params:(NSDictionary *)params {
+    NSString *query = params[@"q"];
+    NSString *path = @"/xrpc/chat.bsky.group.listInviteLinks";
+    if (query) {
+        path = [path stringByAppendingFormat:@"?q=%@", [query stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    }
+
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:path
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    if (!data) return nil;
+
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
+    context[@"section"] = @"chat";
+
+    return [self renderPartialWithTemplate:@"chat_invite_links_list" context:context];
+}
+
+- (nullable NSString *)renderChatGroupDataPartial:(PDSAdminHandler *)adminHandler
+                                         headers:(NSDictionary *)headers
+                                            body:(nullable NSData *)body
+                                          params:(NSDictionary *)params {
+    NSString *groupUri = params[@"groupUri"];
+    if (!groupUri) return nil;
+
+    NSString *path = [NSString stringWithFormat:@"/xrpc/chat.bsky.group.getGroupPublicInfo?groupUri=%@", [groupUri stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:path
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+
+    NSDictionary *packet = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    NSDictionary *group = packet[@"group"];
+    if (!group) return nil;
+
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:group];
+    
+    // Fetch members too
+    NSString *memberPath = [NSString stringWithFormat:@"/xrpc/chat.bsky.group.listMembers?groupUri=%@", [groupUri stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    NSString *memberResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                                 path:memberPath
+                                                              headers:headers
+                                                                 body:body];
+    if (memberResponse) {
+        NSDictionary *memberPacket = [NSJSONSerialization JSONObjectWithData:[memberResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        context[@"members"] = memberPacket[@"members"] ?: @[];
+    }
+
+    return [self renderPartialWithTemplate:@"chat_group_detail" context:context];
 }
 
 @end
