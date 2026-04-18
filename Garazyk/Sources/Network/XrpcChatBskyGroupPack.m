@@ -9,6 +9,7 @@
 #import "AppView/Services/GroupService.h"
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
+#import "Admin/PDSAdminAuth.h"
 
 @implementation XrpcChatBskyGroupPack
 
@@ -56,6 +57,40 @@
 
         response.statusCode = 200;
         [response setJsonBody:@{@"group": group ?: @{}}];
+    }];
+
+    // chat.bsky.group.deleteGroup - Delete group (Admin only)
+    [dispatcher registerMethod:@"chat.bsky.group.deleteGroup"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        NSString *groupUri = body[@"groupUri"];
+
+        if (!groupUri) {
+            [XrpcErrorHelper setValidationError:response message:@"groupUri is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        if (![groupService deleteGroup:groupUri error:&error]) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"success": @YES}];
     }];
 
     // chat.bsky.group.editGroup - Edit group metadata
@@ -244,6 +279,70 @@
 
         response.statusCode = 200;
         [response setJsonBody:@{@"members": members ?: @[]}];
+    }];
+
+    // chat.bsky.group.listGroups - List all groups (Admin only)
+    [dispatcher registerMethod:@"chat.bsky.group.listGroups"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+            return;
+        }
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSString *query = [request queryParamForKey:@"q"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+
+        NSError *error = nil;
+        NSArray *groups = [groupService listAllGroupsWithLimit:limit cursor:cursor query:query error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"groups": groups ?: @[]}];
+    }];
+
+    // chat.bsky.group.listInviteLinks - List all invite links (Admin only)
+    [dispatcher registerMethod:@"chat.bsky.group.listInviteLinks"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Admin privileges required"];
+            return;
+        }
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSString *query = [request queryParamForKey:@"q"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+
+        NSError *error = nil;
+        NSArray *links = [groupService listAllInviteLinksWithLimit:limit cursor:cursor query:query error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"links": links ?: @[]}];
     }];
 
     // chat.bsky.group.createJoinLink - Create invite link
