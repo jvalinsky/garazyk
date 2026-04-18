@@ -433,14 +433,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // H3: Give PDSAdminAuth access to data directory so logout survives restarts
     [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;
 
-    // H4: Warn if admin password is stored as plain text
-    NSDictionary *startupEnv = [[NSProcessInfo processInfo] environment];
-    NSString *adminPassword = startupEnv[@"PDS_ADMIN_PASSWORD"];
-    if (adminPassword.length > 0 && ![adminPassword hasPrefix:@"pbkdf2:"]) {
-        PDS_LOG_WARN(@"Auth", @"PDS_ADMIN_PASSWORD is stored as plain text. Hash it with PBKDF2 (pbkdf2:<iterations>:<salt>:<hash>) for production use.");
-    }
+    // H4: Validate admin password format (enforce in production mode)
+    [self validateAdminPasswordWithConfiguration:_configuration];
 
     // H5: Warn if X-Admin-Token legacy header is active in production
+    NSDictionary *startupEnv = [[NSProcessInfo processInfo] environment];
     BOOL isProductionEnv = [[startupEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"];
     BOOL xAdminTokenDisabled = [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"1"] ||
                                 [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"true"];
@@ -519,6 +516,38 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     }
     
     return paths.array;
+}
+
+#pragma mark - Configuration Validation
+
+- (void)validateAdminPasswordWithConfiguration:(PDSConfiguration *)configuration {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSString *adminPassword = env[@"PDS_ADMIN_PASSWORD"];
+
+    if (!adminPassword || adminPassword.length == 0) {
+        // No admin password set is OK (admin auth may be disabled)
+        return;
+    }
+
+    // Check if password is hashed with pbkdf2 format
+    if (![adminPassword hasPrefix:@"pbkdf2:"]) {
+        // Check if in production mode
+        NSString *envMode = [env[@"PDS_ENV"] lowercaseString];
+        if ([envMode isEqualToString:@"production"]) {
+            // FAIL in production mode - plaintext passwords not allowed
+            PDS_LOG_AUTH_ERROR(@"CRITICAL: Admin password must use pbkdf2 format in production mode. "
+                              @"Plaintext passwords are not permitted for security reasons. "
+                              @"To generate a hashed password, use: scripts/ops/hash_admin_password.sh");
+            // Exit with error rather than silently continuing
+            NSString *errorMsg = @"Admin password must be hashed with pbkdf2 in production mode";
+            fprintf(stderr, "FATAL: %s\n", errorMsg.UTF8String);
+            exit(1);
+        } else {
+            // WARN in development mode - allow but strongly encourage hashing
+            PDS_LOG_AUTH_WARN(@"Admin password is stored as plain text. "
+                             @"For production use, hash it with PBKDF2: pbkdf2:600000:<salt>:<hash>");
+        }
+    }
 }
 
 #pragma mark - Lifecycle
