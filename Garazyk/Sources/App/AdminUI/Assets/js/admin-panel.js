@@ -227,6 +227,47 @@ export const AdminPanel = {
     enableAccount,
     createInviteCode,
     disableInviteCodes,
+    
+    // Chat APIs
+    async listConversations(limit = 50, cursor = null) {
+        const params = new URLSearchParams();
+        if (limit) params.set('limit', limit);
+        if (cursor) params.set('cursor', cursor);
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.convo.listConvos?' + params.toString());
+        if (!resp.ok) throw new Error('Failed to list conversations');
+        return resp.json();
+    },
+
+    async getConversationMessages(convoId, limit = 50, cursor = null) {
+        const params = new URLSearchParams();
+        params.set('convoId', convoId);
+        if (limit) params.set('limit', limit);
+        if (cursor) params.set('cursor', cursor);
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.convo.getMessages?' + params.toString());
+        if (!resp.ok) throw new Error('Failed to get messages');
+        return resp.json();
+    },
+
+    async lockConversation(convoId) {
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.convo.lockConvo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ convoId })
+        });
+        if (!resp.ok) throw new Error('Failed to lock conversation');
+        return resp.json();
+    },
+
+    async unlockConversation(convoId) {
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.convo.unlockConvo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ convoId })
+        });
+        if (!resp.ok) throw new Error('Failed to unlock conversation');
+        return resp.json();
+    },
+
     escapeHtml,
     
     getCurrentTab() {
