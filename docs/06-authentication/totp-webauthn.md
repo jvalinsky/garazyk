@@ -6,7 +6,7 @@ title: TOTP and WebAuthn
 
 ## Overview
 
-September contains both TOTP and WebAuthn support, but they are not at the same maturity level in the runtime. TOTP is part of a live authentication path. WebAuthn currently exists as verifier logic and tests that can support higher-level enrollment or assertion flows, but it is not the same thing as a fully surfaced account-management feature set.
+Garazyk contains both TOTP and WebAuthn support, but they are not at the same maturity level in the runtime. TOTP is part of a live authentication path. WebAuthn currently exists as verifier logic and tests that can support higher-level enrollment or assertion flows, but it is not the same thing as a fully surfaced account-management feature set.
 
 ## Full Flow
 

@@ -10,7 +10,7 @@ title: Runtime Flow Walkthrough
 shows how that split is wired at runtime, from process startup through an
 incoming request.
 
-The main point is that September has a composition root. The service graph is
+The main point is that Garazyk has a composition root. The service graph is
 not accidental. `PDSApplication` builds it deliberately, then
 `PDSHttpServerBuilder` exposes it through HTTP, XRPC, and WebSocket routes.
 

@@ -6,7 +6,7 @@ title: Blob Storage
 
 ## Overview
 
-Blob storage in September is intentionally smaller than the surrounding
+Blob storage in Garazyk is intentionally smaller than the surrounding
 repository protocol. The server needs a reliable way to accept binary data,
 address it by CID, and hand it back to sync and explorer surfaces. It does not
 yet try to solve every long-term lifecycle problem such as quotas, garbage
@@ -31,7 +31,7 @@ ATProto response shapes.
 
 ## Content Addressing
 
-September stores blobs by CID rather than by user-chosen filename. The storage
+Garazyk stores blobs by CID rather than by user-chosen filename. The storage
 layer computes a CIDv1 using the raw codec and SHA-256. That gives the server a
 stable identity for the content before it writes metadata or returns a blob
 reference to the client.

@@ -83,7 +83,7 @@ The multicodec table is the shared registry that makes those codes meaningful.
 
 ## The Practical Contributor Takeaway
 
-When you see a CID in September, do not ask only "what bytes did this hash?"
+When you see a CID in Garazyk, do not ask only "what bytes did this hash?"
 Also ask:
 
 - what codec was this addressing?

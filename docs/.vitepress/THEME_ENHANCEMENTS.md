@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the custom theme enhancements implemented for the September PDS documentation.
+This document summarizes the custom theme enhancements implemented for the Garazyk PDS documentation.
 
 ## Files Modified
 
@@ -13,7 +13,7 @@ This document summarizes the custom theme enhancements implemented for the Septe
 
 ### 1. Custom Branding Colors
 
-The theme uses a custom blue color scheme that matches the September PDS brand:
+The theme uses a custom blue color scheme that matches the Garazyk PDS brand:
 
 - **Brand Primary**: `#5f67ee` (vibrant blue)
 - **Brand Hover**: `#4850d6` (darker blue)
@@ -69,7 +69,7 @@ Enhanced support for both themes:
 - Inline code with white transparency overlay
 - GitHub Dark syntax highlighting
 
-### 4. September PDS Specific Styling
+### 4. Garazyk PDS Specific Styling
 
 #### Code Blocks
 - Rounded corners (8px)

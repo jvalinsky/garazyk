@@ -6,7 +6,7 @@ title: Logging Strategy
 
 ## Overview
 
-September uses a centralized logger because the server has enough cross-cutting
+Garazyk uses a centralized logger because the server has enough cross-cutting
 behavior that ad hoc `NSLog` debugging stops scaling quickly. Auth, sync,
 storage, and admin code all need to emit messages that can be filtered,
 formatted, and correlated consistently.

@@ -6,7 +6,7 @@ title: "Tutorial 4: Authentication"
 
 ## Overview
 
-Authentication in September is where the repo’s contributor story becomes security-sensitive. This tutorial is therefore organized around trust boundaries, not around long code listings.
+Authentication in Garazyk is where the repo’s contributor story becomes security-sensitive. This tutorial is therefore organized around trust boundaries, not around long code listings.
 
 The real system combines:
 
@@ -146,7 +146,7 @@ That means auth work is never just an internal crypto concern. It changes what c
 
 ## Summary
 
-Authentication in September is a layered trust system:
+Authentication in Garazyk is a layered trust system:
 
 - configuration defines identity and policy,
 - JWT and DPoP define token semantics,

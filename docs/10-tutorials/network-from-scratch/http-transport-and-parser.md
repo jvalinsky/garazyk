@@ -1,6 +1,6 @@
 ---
 title: "Part 1: HTTP Transport and Parser"
-description: How September accepts connections, tracks per-connection state, and parses HTTP/1.1 request bytes
+description: How Garazyk accepts connections, tracks per-connection state, and parses HTTP/1.1 request bytes
 outline: deep
 ---
 
@@ -15,7 +15,7 @@ answer to three lower-level questions:
 2. How do those bytes become one `HttpRequest` instead of "some buffer"?
 3. How does the server avoid stalling or overcommitting memory while waiting?
 
-September answers those questions in three layers:
+Garazyk answers those questions in three layers:
 
 - a platform transport abstraction,
 - a per-connection HTTP state object,
@@ -56,7 +56,7 @@ That toy sketch captures the shape that matters:
 - parsing is incremental,
 - and dispatch only happens after a complete request or a terminal parse error.
 
-## How September implements it
+## How Garazyk implements it
 
 ### 1. Platform transport stays below HTTP semantics
 
@@ -66,14 +66,14 @@ That toy sketch captures the shape that matters:
 - connections send and receive `NSData`,
 - and state change callbacks expose readiness, failure, and cancellation.
 
-On macOS, September uses the Network framework through
+On macOS, Garazyk uses the Network framework through
 [`nw_listener_start`](https://developer.apple.com/documentation/network/nw_listener_start),
 [`nw_connection_receive`](https://developer.apple.com/documentation/network/nw_connection_receive),
 and
 [`nw_parameters_create_secure_tcp`](https://developer.apple.com/documentation/network/nw_parameters_create_secure_tcp).
 That code lives in `PDSNetworkTransportMac.m`.
 
-On Linux, September uses non-blocking BSD sockets plus dispatch sources. The
+On Linux, Garazyk uses non-blocking BSD sockets plus dispatch sources. The
 implementation in `PDSNetworkTransportLinux.m` resolves addresses with
 [`getaddrinfo(3)`](https://man7.org/linux/man-pages/man3/getaddrinfo.3.html),
 creates sockets with [`socket(2)`](https://man7.org/linux/man-pages/man2/socket.2.html),
@@ -99,7 +99,7 @@ That state object owns:
 - the header-start timestamp used for timeout enforcement,
 - and a dedicated `transportQueue`.
 
-This matters because September needs connection-local memory for:
+This matters because Garazyk needs connection-local memory for:
 
 - partial headers,
 - partially read request bodies,
@@ -276,7 +276,7 @@ These prove the exact mechanics this part described:
 - [socket(2)](https://man7.org/linux/man-pages/man2/socket.2.html)
 - [fcntl(2)](https://man7.org/linux/man-pages/man2/fcntl.2.html)
 
-### September reference pages
+### Garazyk reference pages
 
 - [HTTP Server](../../04-network-layer/http-server)
 - [Platform-Specific Network Transport](../../09-platform-compatibility/network-transport)

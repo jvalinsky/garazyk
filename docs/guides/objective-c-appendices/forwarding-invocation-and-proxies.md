@@ -75,7 +75,7 @@ normal everyday base class.
 If that last case is plausible, also read
 [Appendix: Runtime Mutation, Associated Objects, Swizzling, and Direct Methods](./runtime-mutation-associated-objects-swizzling-and-direct-methods).
 
-## What this means in September
+## What this means in Garazyk
 
 In this repository, explicit route registration, explicit services, and
 straight-line method calls should still win most of the time. This appendix is
@@ -86,7 +86,7 @@ useful mainly when you are:
 - figuring out whether a proxy or invocation layer is justified at all
 
 The right question is usually not "can Objective-C do this?" but "why is this
-better than an explicit object graph in September?"
+better than an explicit object graph in Garazyk?"
 
 ## Research trail
 

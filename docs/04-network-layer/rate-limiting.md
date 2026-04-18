@@ -6,7 +6,7 @@ title: Rate Limiting
 
 ## Overview
 
-September uses rate limiting as a shared safety layer around a few abuse-prone paths. The important contributor fact is not the textbook algorithm. It is where the limiter is actually wired into the runtime, which identifiers it tracks, and which requests can still reach business logic before any deeper validation happens.
+Garazyk uses rate limiting as a shared safety layer around a few abuse-prone paths. The important contributor fact is not the textbook algorithm. It is where the limiter is actually wired into the runtime, which identifiers it tracks, and which requests can still reach business logic before any deeper validation happens.
 
 ## Full Flow
 
