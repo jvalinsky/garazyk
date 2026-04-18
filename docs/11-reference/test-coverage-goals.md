@@ -4,7 +4,7 @@ title: Test Coverage Goals
 
 # Test Coverage Goals
 
-September PDS maintains comprehensive test coverage with over 1,017 tests across all layers. This document outlines coverage targets, critical paths that must be tested, and known gaps.
+Garazyk PDS maintains comprehensive test coverage with over 1,017 tests across all layers. This document outlines coverage targets, critical paths that must be tested, and known gaps.
 
 ## Current Test Coverage
 
@@ -340,7 +340,7 @@ Skipped Tests: 3 (platform-specific)
 
 ### Flaky Test Policy
 
-September has a zero-tolerance policy for flaky tests:
+Garazyk has a zero-tolerance policy for flaky tests:
 
 - Flaky tests must be fixed immediately or disabled
 - Root cause must be identified and documented

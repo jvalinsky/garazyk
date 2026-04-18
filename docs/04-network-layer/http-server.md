@@ -6,7 +6,7 @@ title: HTTP Server
 
 ## Overview
 
-`HttpServer` is the transport boundary for September. It accepts HTTP/1.1 requests, enforces request-size and timing limits, handles keep-alive behavior, and performs WebSocket upgrade handoff. It is the first runtime component in the request path, but it is not the place where ATProto semantics are decided.
+`HttpServer` is the transport boundary for Garazyk. It accepts HTTP/1.1 requests, enforces request-size and timing limits, handles keep-alive behavior, and performs WebSocket upgrade handoff. It is the first runtime component in the request path, but it is not the place where ATProto semantics are decided.
 
 ## What This Layer Owns
 

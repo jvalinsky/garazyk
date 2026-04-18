@@ -1,6 +1,6 @@
 ---
 title: WebSocket Server
-description: Reference page for September's production WebSocket upgrade path and the firehose connection runtime
+description: Reference page for Garazyk's production WebSocket upgrade path and the firehose connection runtime
 outline: deep
 ---
 
@@ -8,7 +8,7 @@ outline: deep
 
 ## Overview
 
-September's firehose does **not** primarily run through a standalone listener in
+Garazyk's firehose does **not** primarily run through a standalone listener in
 the normal server path. The production path is:
 
 ```text

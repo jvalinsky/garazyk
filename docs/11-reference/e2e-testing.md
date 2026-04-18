@@ -4,13 +4,13 @@ title: End-to-End Testing
 
 # End-to-End Testing
 
-September PDS uses end-to-end (E2E) testing to validate complete workflows across the entire system. E2E tests exercise the full stack from HTTP requests through to database persistence, ensuring all components work together correctly.
+Garazyk PDS uses end-to-end (E2E) testing to validate complete workflows across the entire system. E2E tests exercise the full stack from HTTP requests through to database persistence, ensuring all components work together correctly.
 
 ## E2E Testing Strategy
 
 ### Test Levels
 
-September employs a multi-level testing strategy:
+Garazyk employs a multi-level testing strategy:
 
 1. **Unit Tests** - Test individual components in isolation (~800 tests)
 2. **Integration Tests** - Test multiple components together (~150 tests)
@@ -19,7 +19,7 @@ September employs a multi-level testing strategy:
 
 ### E2E Test Characteristics
 
-E2E tests in September:
+E2E tests in Garazyk:
 - Start a real HTTP server
 - Use real databases (SQLite in temporary directories)
 - Make actual HTTP requests
@@ -240,7 +240,7 @@ Tests the complete firehose subscription workflow:
 
 ## PLC Integration Tests
 
-September includes dedicated PLC (Public Ledger of Credentials) integration tests that run against a real PLC server:
+Garazyk includes dedicated PLC (Public Ledger of Credentials) integration tests that run against a real PLC server:
 
 ### PLC Test Environment
 
@@ -300,7 +300,7 @@ docker compose down
 
 ### GitHub Actions Workflows
 
-September uses GitHub Actions for continuous integration:
+Garazyk uses GitHub Actions for continuous integration:
 
 #### Main CI Workflow (`.github/workflows/ci.yml`)
 
@@ -354,7 +354,7 @@ jobs:
       
       - name: Build (GNUstep)
         run: |
-          cmake --build build-linux --parallel 4 --target september AllTests
+          cmake --build build-linux --parallel 4 --target kaszlak AllTests
       
       - name: Run Tests (GNUstep)
         run: |

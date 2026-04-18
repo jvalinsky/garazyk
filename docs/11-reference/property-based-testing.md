@@ -4,11 +4,11 @@ title: Property-Based Testing
 
 # Property-Based Testing
 
-September PDS uses property-based testing (PBT) principles to validate correctness properties across a wide range of inputs. While the project doesn't use a formal PBT framework like QuickCheck or Hypothesis, it employs randomized testing, fuzzing, and invariant checking to achieve similar goals.
+Garazyk PDS uses property-based testing (PBT) principles to validate correctness properties across a wide range of inputs. While the project doesn't use a formal PBT framework like QuickCheck or Hypothesis, it employs randomized testing, fuzzing, and invariant checking to achieve similar goals.
 
 ## Testing Philosophy
 
-Property-based testing focuses on specifying properties that should hold for all valid inputs, rather than testing specific examples. September validates:
+Property-based testing focuses on specifying properties that should hold for all valid inputs, rather than testing specific examples. Garazyk validates:
 
 1. **Correctness Properties** - Invariants that must always hold
 2. **Round-Trip Properties** - Encode/decode cycles preserve data
@@ -19,7 +19,7 @@ Property-based testing focuses on specifying properties that should hold for all
 
 ### Random Data Generation
 
-September uses cryptographically secure random generation for test data:
+Garazyk uses cryptographically secure random generation for test data:
 
 ```objective-c
 // Generate random bytes
@@ -64,7 +64,7 @@ Tests generate random data to explore edge cases:
 
 ## Fuzz Testing
 
-September includes a comprehensive fuzzing infrastructure in `fuzzing/`:
+Garazyk includes a comprehensive fuzzing infrastructure in `fuzzing/`:
 
 ### Fuzzer Targets
 
@@ -401,7 +401,7 @@ Tests verify compliance with AT Protocol specifications:
 
 ## Limitations
 
-September's testing approach has some limitations compared to formal PBT frameworks:
+Garazyk's testing approach has some limitations compared to formal PBT frameworks:
 
 - No automatic shrinking of failing test cases
 - Manual test data generation (no built-in generators)

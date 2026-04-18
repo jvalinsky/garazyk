@@ -6,7 +6,7 @@ title: "Tutorial 3: Records"
 
 ## Overview
 
-This tutorial explains how record writes move through September. For contributors, record behavior is where the application stops being "a server with accounts" and becomes "a repository system with protocol invariants."
+This tutorial explains how record writes move through Garazyk. For contributors, record behavior is where the application stops being "a server with accounts" and becomes "a repository system with protocol invariants."
 
 That matters because record work almost never belongs to one file. A single change can touch:
 
@@ -145,7 +145,7 @@ That can be checked with a small request plus repository inspection tooling.
 
 ## Summary
 
-Record work in September is the bridge between application logic and repository correctness. The key contributor habit is to read it as a chain:
+Record work in Garazyk is the bridge between application logic and repository correctness. The key contributor habit is to read it as a chain:
 
 - endpoint,
 - service,

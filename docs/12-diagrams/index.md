@@ -1,12 +1,12 @@
 ---
 title: Diagram Reference
-description: Complete reference of all diagrams in the September PDS documentation
+description: Complete reference of all diagrams in the Garazyk PDS documentation
 outline: deep
 ---
 
 # Diagram Reference
 
-This page provides a comprehensive index of all diagrams used throughout the September PDS documentation. Each diagram is designed to illustrate key architectural concepts, data flows, and system interactions.
+This page provides a comprehensive index of all diagrams used throughout the Garazyk PDS documentation. Each diagram is designed to illustrate key architectural concepts, data flows, and system interactions.
 
 ## Architecture Diagrams
 
@@ -14,7 +14,7 @@ This page provides a comprehensive index of all diagrams used throughout the Sep
 
 ![System Architecture](system-architecture.svg)
 
-**Description:** Complete overview of the September PDS system architecture, showing all major components and their interactions.
+**Description:** Complete overview of the Garazyk PDS system architecture, showing all major components and their interactions.
 
 **Used in:**
 - [Architecture Overview](../01-getting-started/architecture-overview.md)

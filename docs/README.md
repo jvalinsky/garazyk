@@ -4,7 +4,7 @@ title: Docs Workspace Guide
 
 # Docs Workspace Guide
 
-`docs/` is the canonical documentation workspace for September PDS.
+`docs/` is the canonical documentation workspace for Garazyk.
 
 For contributor-facing guidance, start with the numbered VitePress sections and the site home page:
 

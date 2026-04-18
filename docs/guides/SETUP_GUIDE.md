@@ -27,8 +27,8 @@ This guide covers building, installing, and running the ATProto PDS server.
 
 ```bash
 # Clone repository
-git clone https://github.com/jvalinsky/September.git
-cd September
+git clone https://github.com/jvalinsky/Garazyk.git
+cd Garazyk
 
 # Generate the Xcode project
 xcodegen generate

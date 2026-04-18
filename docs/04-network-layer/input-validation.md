@@ -4,7 +4,7 @@ title: Input Validation
 
 # Input Validation
 
-Input validation is a critical security layer that prevents malicious data from entering the system. September PDS implements comprehensive validation strategies at multiple levels to protect against injection attacks, data corruption, and protocol violations.
+Input validation is a critical security layer that prevents malicious data from entering the system. Garazyk PDS implements comprehensive validation strategies at multiple levels to protect against injection attacks, data corruption, and protocol violations.
 
 ## Overview
 
@@ -418,7 +418,7 @@ Sanitization removes sensitive or internal-only data before external transmissio
 
 ### SQL Injection Prevention
 
-September PDS uses parameterized queries exclusively to prevent SQL injection:
+Garazyk PDS uses parameterized queries exclusively to prevent SQL injection:
 
 ```objc
 // Safe: Parameterized query

@@ -6,7 +6,7 @@ title: Email and Verification
 
 ## Overview
 
-Account creation in September is not just "accept email and password." The implementation combines registration policy, handle/domain rules, optional email delivery, and optional verification providers.
+Account creation in Garazyk is not just "accept email and password." The implementation combines registration policy, handle/domain rules, optional email delivery, and optional verification providers.
 
 The important contributor distinction is this:
 

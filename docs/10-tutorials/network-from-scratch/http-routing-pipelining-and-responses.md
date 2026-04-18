@@ -1,6 +1,6 @@
 ---
 title: "Part 2: Routing, Pipelining, and Responses"
-description: How September matches HTTP routes, limits concurrent work, and flushes ordered responses
+description: How Garazyk matches HTTP routes, limits concurrent work, and flushes ordered responses
 outline: deep
 ---
 
@@ -16,7 +16,7 @@ The server no longer asks "do I have a valid request?" It asks:
 - what happens if multiple requests arrive on one connection,
 - and how do I send the right response without reordering pipelined traffic.
 
-Those are separate concerns, and September keeps them separate on purpose.
+Those are separate concerns, and Garazyk keeps them separate on purpose.
 
 ## Minimal mental model
 
@@ -49,9 +49,9 @@ flowchart TD
   Send --> Continue["Read next request on same socket"]
 ```
 
-## How September implements it
+## How Garazyk implements it
 
-### 1. September uses two routing mechanisms on purpose
+### 1. Garazyk uses two routing mechanisms on purpose
 
 `HttpServer` resolves handlers in this order:
 
@@ -104,7 +104,7 @@ socket.
 That is why `HttpServer` can parse request B while request A is still being
 processed, but still keep a bounded per-connection request backlog.
 
-### 4. September dispatches requests concurrently, but bounds that concurrency
+### 4. Garazyk dispatches requests concurrently, but bounds that concurrency
 
 Route handlers do not run on the connection's serial transport queue. Instead,
 `HttpServer` dispatches request work onto a global concurrent queue and protects
@@ -132,7 +132,7 @@ That queue ensures:
 - and large or generated bodies can stream without blocking unrelated
   connections.
 
-This is the key HTTP/1.1 tradeoff in September:
+This is the key HTTP/1.1 tradeoff in Garazyk:
 
 - cross-connection concurrency is allowed,
 - in-connection byte ordering is preserved.
@@ -157,7 +157,7 @@ That abstraction matters because some endpoints send:
 The per-connection output queue has a byte budget. In `HttpServer.m`, the queue
 high-water mark is `10 MB`.
 
-If the queue grows past that limit, September drops older queued responses for
+If the queue grows past that limit, Garazyk drops older queued responses for
 that connection and cleans up any temporary files that those responses owned.
 
 This is a transport-level safety valve. It keeps one slow client from turning a
@@ -217,7 +217,7 @@ Without that queue, HTTP/1.1 pipelining would corrupt response order.
 
 This is an important operational edge case. Once headers are already on the
 wire, later file-read or producer failures cannot be converted into a clean
-"normal" HTTP error body. September handles those cases by logging the failure
+"normal" HTTP error body. Garazyk handles those cases by logging the failure
 and cancelling the connection.
 
 ### Queue trimming is a deliberate tradeoff
@@ -250,7 +250,7 @@ These tests cover the exact mechanics discussed here:
 - [DispatchSource](https://developer.apple.com/documentation/dispatch/dispatchsource)
 - [dispatch_semaphore_create](https://developer.apple.com/documentation/dispatch/dispatch_semaphore_create)
 
-### September reference pages
+### Garazyk reference pages
 
 - [HTTP Server](../../04-network-layer/http-server)
 - [HTTP Request and Route Pipeline](../../04-network-layer/http-request-and-route-pipeline)

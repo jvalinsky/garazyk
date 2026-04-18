@@ -1,0 +1,108 @@
+<div class="content-header">
+  <h1>Users</h1>
+  <p class="text-secondary mt-sm">Manage registered accounts on this PDS instance.</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Search Users</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" id="user-search-form">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <input type="text" class="form-input" placeholder="Search by DID, handle, or email..."
+                 name="q" id="user-search-input"
+                 hx-get="/admin/partials/users"
+                 hx-trigger="input changed debounce:300ms"
+                 hx-target="#user-list"
+                 hx-indicator="#loading-users">
+        </div>
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="flex items-center justify-between mb-md">
+  <div class="text-secondary">
+    <span id="loading-users" class="loading-indicator hidden"></span>
+    <strong>{{total}}</strong> user(s) found
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-secondary btn-sm">Export CSV</button>
+  </div>
+</div>
+
+<div class="table-wrapper" id="user-list">
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="sortable" data-sort="handle">Handle</th>
+        <th class="sortable" data-sort="did">DID</th>
+        <th class="sortable" data-sort="email">Email</th>
+        <th class="sortable" data-sort="created_at">Created</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each users}}
+      <tr data-did="{{did}}">
+        <td>
+          <strong>{{handle}}</strong>
+        </td>
+        <td>
+          <code class="text-xs">{{did}}</code>
+        </td>
+        <td>{{email}}</td>
+        <td class="text-secondary text-xs">{{created_at}}</td>
+        <td>
+          {{#if deactivated}}
+          <span class="badge badge-warning">Deactivated</span>
+          {{else}}
+          <span class="badge badge-success">Active</span>
+          {{/if}}
+          {{#if invite_enabled}}
+          <span class="badge badge-primary">Invite</span>
+          {{/if}}
+        </td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-secondary btn-sm"
+                    hx-get="/admin/users/{{did}}/detail"
+                    hx-target="#detail-panel"
+                    title="View details">
+              View
+            </button>
+            <button class="btn btn-secondary btn-sm"
+                    hx-post="/admin/users/{{did}}/deactivate"
+                    hx-confirm="Deactivate this user?"
+                    title="Deactivate user">
+              Disable
+            </button>
+          </div>
+        </td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+
+{{#if users}}
+<div class="text-secondary text-sm mt-md">
+  Showing {{users.count}} of {{total}} users
+</div>
+{{else}}
+<div class="alert alert-info mt-lg">
+  <div>
+    <div class="alert-title">No Users Found</div>
+    <div class="alert-message">No users match your search criteria.</div>
+  </div>
+</div>
+{{/if}}
+
+<!-- Detail panel (initially empty, populated via HTMX) -->
+<div id="detail-panel"></div>

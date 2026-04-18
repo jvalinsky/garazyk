@@ -6,7 +6,7 @@ title: Performance Monitoring
 
 ## Overview
 
-Performance work in September starts with the runtime signals the server already
+Performance work in Garazyk starts with the runtime signals the server already
 exports. That matters because this codebase has enough moving parts that
 "profile everything" is usually the slowest way to debug a regression.
 
@@ -106,7 +106,7 @@ has.
 
 ## What This Page Does Not Promise
 
-September does not currently ship a full tracing stack or a built-in distributed
+Garazyk does not currently ship a full tracing stack or a built-in distributed
 performance analysis system. The observability model today is metrics plus
 component logs plus targeted code inspection.
 

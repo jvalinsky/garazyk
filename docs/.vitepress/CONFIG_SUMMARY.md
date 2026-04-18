@@ -2,19 +2,19 @@
 
 ## Task 1.2: Base VitePress Configuration - COMPLETED
 
-This document summarizes the VitePress configuration implemented for the September PDS documentation migration.
+This document summarizes the VitePress configuration implemented for the Garazyk PDS documentation migration.
 
 ## Configuration Overview
 
 ### Site Metadata ✅
-- **Title**: September PDS Documentation
+- **Title**: Garazyk PDS Documentation
 - **Description**: Comprehensive guide for implementing an ATProto Personal Data Server in Objective-C
 - **Base URL**: `/docs` (for deployment at pds.garazyk.xyz/docs)
 - **Language**: en-US
 
 ### Theme Settings ✅
 - **Logo**: `/logo.svg`
-- **Site Title**: September PDS
+- **Site Title**: Garazyk PDS
 - **Appearance**: Dark mode by default with user toggle support
 - **Colors**: Theme color `#5f67ee` configured in meta tags
 

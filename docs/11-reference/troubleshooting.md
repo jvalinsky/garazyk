@@ -6,7 +6,7 @@ title: Troubleshooting
 
 ## Overview
 
-The fastest way to troubleshoot September is to start from the failing surface,
+The fastest way to troubleshoot Garazyk is to start from the failing surface,
 not from the whole codebase. A request failure, a relay problem, and a PLC
 resolution issue all look similar to a user, but they live in different parts
 of the runtime.

@@ -6,7 +6,7 @@ title: JWT Tokens
 
 ## Overview
 
-September uses JWTs for access tokens and refresh-token-adjacent session flows, with optional DPoP binding layered on top. The important contributor detail is that token handling is not purely stateless in this repo: session persistence remains part of the contract.
+Garazyk uses JWTs for access tokens and refresh-token-adjacent session flows, with optional DPoP binding layered on top. The important contributor detail is that token handling is not purely stateless in this repo: session persistence remains part of the contract.
 
 ## Token Families In Practice
 

@@ -6,7 +6,7 @@ title: Test Organization
 
 ## Overview
 
-September's test suite is broad enough that a raw directory listing is not a good onboarding experience on its own. This page explains how the suite is organized and why the structure matters. Use [Testing Map](./testing-map) first when you need a practical "what should I run?" answer.
+Garazyk's test suite is broad enough that a raw directory listing is not a good onboarding experience on its own. This page explains how the suite is organized and why the structure matters. Use [Testing Map](./testing-map) first when you need a practical "what should I run?" answer.
 
 ## The Organizing Principle
 

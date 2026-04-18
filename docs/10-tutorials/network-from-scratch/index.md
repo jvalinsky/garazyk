@@ -1,6 +1,6 @@
 ---
 title: "Subguide: HTTP + WebSocket from Scratch"
-description: Advanced tutorial track for September's HTTP server, WebSocket upgrade path, and firehose handoff
+description: Advanced tutorial track for Garazyk's HTTP server, WebSocket upgrade path, and firehose handoff
 outline: deep
 ---
 
@@ -8,12 +8,12 @@ outline: deep
 
 ## Overview
 
-This subguide is the advanced internals track for September's network stack. It
+This subguide is the advanced internals track for Garazyk's network stack. It
 starts from first principles, but it stays grounded in the real code under
 `Garazyk/Sources/`.
 
 The goal is not to build a toy server next to the repository. The goal is to
-understand how September actually:
+understand how Garazyk actually:
 
 - accepts connections on macOS and Linux,
 - parses and frames HTTP/1.1 requests,
@@ -45,9 +45,9 @@ flowchart LR
 This subguide follows four rules:
 
 - It is **hybrid**. Each part starts with a small first-principles snippet or
-  diagram, then maps that idea to September's actual classes.
+  diagram, then maps that idea to Garazyk's actual classes.
 - It is **repo-grounded**. Runtime files and tests are the source of truth for
-  September behavior.
+  Garazyk behavior.
 - It is **illustrative, not copy-paste**. Small snippets explain ideas. They do
   not claim to be a standalone buildable mini-project.
 - It is **citation-heavy where it matters**. Normative claims cite standards or
@@ -114,14 +114,14 @@ Use these evidence categories throughout the subguide:
   [`getaddrinfo(3)`](https://man7.org/linux/man-pages/man3/getaddrinfo.3.html),
   [`socket(2)`](https://man7.org/linux/man-pages/man2/socket.2.html), and
   [`fcntl(2)`](https://man7.org/linux/man-pages/man2/fcntl.2.html)
-- **Repo**: current September implementation under `Garazyk/Sources/`
+- **Repo**: current Garazyk implementation under `Garazyk/Sources/`
 - **Tests**: executable proof under `Garazyk/Tests/`
 
 ## What this guide is not
 
 This guide does **not** do the following:
 
-- It does not present a second, independent sample server next to September.
+- It does not present a second, independent sample server next to Garazyk.
 - It does not duplicate every source file inline.
 - It does not treat the deprecated standalone `WebSocketServer` as the primary
   production path.

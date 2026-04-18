@@ -15,7 +15,7 @@ The useful question is not "which algorithm names appear in the tree?" It is
 
 ## The Three Main Crypto Paths
 
-September's crypto work falls into three broad paths:
+Garazyk's crypto work falls into three broad paths:
 
 - content addressing with SHA-256 and CIDs
 - request authentication with JWT and DPoP

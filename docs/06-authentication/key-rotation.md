@@ -6,7 +6,7 @@ title: Key Rotation
 
 ## Overview
 
-In September, "key rotation" mainly means PLC rotation keys and the actor-scoped signing material that participates in identity updates. This is not a general scheduler that periodically rolls every secret in the system. It is a narrower set of repo-grounded flows for generating, storing, selecting, and using keys when the server signs PLC operations.
+In Garazyk, "key rotation" mainly means PLC rotation keys and the actor-scoped signing material that participates in identity updates. This is not a general scheduler that periodically rolls every secret in the system. It is a narrower set of repo-grounded flows for generating, storing, selecting, and using keys when the server signs PLC operations.
 
 ## Full Flow
 

@@ -6,7 +6,7 @@ title: Cryptography
 
 ## Overview
 
-September uses cryptography for a small number of concrete jobs:
+Garazyk uses cryptography for a small number of concrete jobs:
 
 - identify content by hash
 - sign and verify tokens

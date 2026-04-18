@@ -1,6 +1,6 @@
 ---
 title: Objective-C Research Map
-description: Contributor-facing lookup guide for obscure Objective-C, Cocoa, runtime, and macOS questions in September PDS
+description: Contributor-facing lookup guide for obscure Objective-C, Cocoa, runtime, and macOS questions in Garazyk PDS
 outline: deep
 ---
 
@@ -8,7 +8,7 @@ outline: deep
 
 ## Why this exists
 
-When a September change lands in the "I know this is an Objective-C or Cocoa
+When a Garazyk change lands in the "I know this is an Objective-C or Cocoa
 thing, but I do not remember where to look" category, normal code search is not
 enough. The repository has strong tests and explicit architecture, but niche
 questions about `KVO`, `NSInvocation`, message forwarding, associated objects,
@@ -26,7 +26,7 @@ Use sources in this order unless you have a reason not to:
    semantics.
 2. Apple archive docs for older Cocoa conceptual writing that still explains
    contracts better than modern API references.
-3. September code and tests for what the repository actually does today.
+3. Garazyk code and tests for what the repository actually does today.
 4. Mike Ash, Cocoa with Love, objc.io, NSHipster, Cocoa Is My Girlfriend, and
    Chris Eidhof for mental models, edge cases, and niche techniques.
 5. Eclectic Light for current macOS behavior, logs, Spotlight, metadata, and
@@ -81,7 +81,7 @@ site:eclecticlight.co logs Spotlight metadata macOS
 If you already know the category, jump straight to the deep guide cluster and
 reuse its search recipes rather than starting from a blank browser tab.
 
-## Go deeper in September docs
+## Go deeper in Garazyk docs
 
 Use these pages together:
 

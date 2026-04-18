@@ -4,7 +4,7 @@ title: Security Best Practices
 
 # Security Best Practices
 
-This document outlines security best practices for September PDS, focusing on defense in depth, least privilege, and secure development patterns. These principles should guide all security-related decisions and implementations.
+This document outlines security best practices for Garazyk PDS, focusing on defense in depth, least privilege, and secure development patterns. These principles should guide all security-related decisions and implementations.
 
 ## Core Security Principles
 
@@ -12,7 +12,7 @@ This document outlines security best practices for September PDS, focusing on de
 
 Defense in depth means implementing multiple layers of security controls so that if one layer fails, others continue to provide protection.
 
-**September PDS implements defense in depth through:**
+**Garazyk PDS implements defense in depth through:**
 
 #### Layer 1: Network Perimeter
 - TLS/HTTPS for all external communication

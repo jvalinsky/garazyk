@@ -4,7 +4,7 @@ title: VitePress Documentation Maintenance Guide
 
 # VitePress Documentation Maintenance Guide
 
-This guide provides comprehensive instructions for maintaining and updating the September PDS VitePress documentation.
+This guide provides comprehensive instructions for maintaining and updating the Garazyk PDS VitePress documentation.
 
 ## Table of Contents
 
@@ -280,7 +280,7 @@ npm run verify:deployment
 
 # Or manually check:
 curl -I https://pds.garazyk.xyz/docs/
-curl https://pds.garazyk.xyz/docs/index.html | grep "September PDS"
+curl https://pds.garazyk.xyz/docs/index.html | grep "Garazyk PDS"
 ```
 
 ## Troubleshooting Guide

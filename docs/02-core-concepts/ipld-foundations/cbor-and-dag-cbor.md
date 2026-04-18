@@ -18,7 +18,7 @@ bytes, not just logically similar objects.
 ```mermaid
 flowchart TD
   RFC["RFC 8949 CBOR"] --> DAG["DAG-CBOR restrictions"]
-  DAG --> Atproto["ATProto and September interoperability subset"]
+  DAG --> Atproto["ATProto and Garazyk interoperability subset"]
 ```
 
 ## What Plain CBOR Gives You
@@ -75,7 +75,7 @@ more constrained encoding environment than generic IPLD:
 - no application-visible freedom to swap encodings casually
 - no floats in the current ATProto data model
 
-September's codebase still talks in DAG-CBOR terms because the local
+Garazyk's codebase still talks in DAG-CBOR terms because the local
 implementation, the CID codec values, and the repository/CAR machinery are all
 part of that IPLD lineage.
 

@@ -6,7 +6,7 @@ title: Merkle Search Trees
 
 ## Overview
 
-The Merkle Search Tree, or MST, is the repository index that lets September be
+The Merkle Search Tree, or MST, is the repository index that lets Garazyk be
 both ordered and verifiable at the same time.
 
 It solves three problems together:
@@ -46,7 +46,7 @@ That is where the MST earns its keep:
 The firehose, export, and `getRecord` paths all depend on this idea, even when
 they are not explicitly named "MST" in the calling code.
 
-## How September Implements The Shape
+## How Garazyk Implements The Shape
 
 The current `MST` implementation in this repo is built around:
 

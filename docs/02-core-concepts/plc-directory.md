@@ -13,9 +13,9 @@ association, handle, or authorized keys evolve over time.
 That is the "why" that matters. PLC is not just another metadata service. It is
 the durable history behind `did:plc` identity.
 
-## What September Supports
+## What Garazyk Supports
 
-September supports two DID methods in its validator and resolver story:
+Garazyk supports two DID methods in its validator and resolver story:
 
 - `did:plc`
 - `did:web`
@@ -40,7 +40,7 @@ not just with the final resolved document.
 
 ## Validation Matters More Than Storage
 
-September's PLC stack is built around the idea that stored history without
+Garazyk's PLC stack is built around the idea that stored history without
 strong validation is not useful identity infrastructure.
 
 `PLCAuditor` verifies operation shape, signature authority, recovery and

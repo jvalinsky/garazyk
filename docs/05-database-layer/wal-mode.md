@@ -6,7 +6,7 @@ title: WAL Mode
 
 ## Overview
 
-September enables SQLite WAL mode so reads can continue while writes are being staged. That is an important performance and concurrency choice, but it is only one part of the storage story.
+Garazyk enables SQLite WAL mode so reads can continue while writes are being staged. That is an important performance and concurrency choice, but it is only one part of the storage story.
 
 ## What WAL Gives The Runtime
 

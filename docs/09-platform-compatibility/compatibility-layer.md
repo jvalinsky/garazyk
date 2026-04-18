@@ -6,7 +6,7 @@ title: Compatibility Layer
 
 ## Overview
 
-September's compatibility layer is intentionally small. It is not a second SDK that hides every Apple or GNUstep difference. It is a narrow set of headers, macros, and test shims that keep shared Objective-C code buildable while still allowing the repo to use true platform-specific implementations where that is the right tradeoff.
+Garazyk's compatibility layer is intentionally small. It is not a second SDK that hides every Apple or GNUstep difference. It is a narrow set of headers, macros, and test shims that keep shared Objective-C code buildable while still allowing the repo to use true platform-specific implementations where that is the right tradeoff.
 
 ## Full Flow
 

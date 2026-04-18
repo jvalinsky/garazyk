@@ -6,7 +6,7 @@ title: Metrics Collection
 
 ## Overview
 
-Metrics collection in September is implemented, integrated, and worth trusting.
+Metrics collection in Garazyk is implemented, integrated, and worth trusting.
 Older versions of this page treated metrics as partial scaffolding. That is no
 longer an accurate description of the tree.
 

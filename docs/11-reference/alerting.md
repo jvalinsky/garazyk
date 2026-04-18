@@ -4,7 +4,7 @@ title: Alerting
 
 # Alerting
 
-This guide covers alerting strategies for September PDS, including alert rules, thresholds, notification channels, and best practices for production monitoring.
+This guide covers alerting strategies for Garazyk PDS, including alert rules, thresholds, notification channels, and best practices for production monitoring.
 
 ## Overview
 
@@ -77,7 +77,7 @@ Noteworthy events that don't require action:
 
 ## Prometheus Alert Rules
 
-September PDS exports metrics in Prometheus format. Configure alerts in Prometheus:
+Garazyk PDS exports metrics in Prometheus format. Configure alerts in Prometheus:
 
 ### Service Availability
 
@@ -87,7 +87,7 @@ groups:
     interval: 30s
     rules:
       - alert: PDSDown
-        expr: up{job="september-pds"} == 0
+        expr: up{job="garazyk-pds"} == 0
         for: 1m
         labels:
           severity: critical

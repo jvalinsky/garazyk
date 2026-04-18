@@ -32,7 +32,7 @@ If a request reaches the right handler and the result is still wrong, the bug us
 
 ## Why NSID Mapping Matters
 
-In September, contributors often interact with the codebase by endpoint name first. That makes dispatch and registration the fastest way to answer:
+In Garazyk, contributors often interact with the codebase by endpoint name first. That makes dispatch and registration the fastest way to answer:
 
 - is this endpoint even exposed?
 - which module registered it?

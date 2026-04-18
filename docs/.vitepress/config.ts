@@ -3,8 +3,8 @@ import { sidebarConfig } from './sidebar'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: 'September PDS Documentation',
-  description: 'Contributor documentation for the September AT Protocol PDS implementation in Objective-C',
+  title: 'Garazyk Documentation',
+  description: 'Contributor documentation for the Garazyk AT Protocol implementation in Objective-C',
   base: '/docs/',
   lang: 'en-US',
   
@@ -14,7 +14,7 @@ export default defineConfig({
   // Theme configuration
   themeConfig: {
     logo: '/logo.svg',
-    siteTitle: 'September PDS',
+    siteTitle: 'Garazyk',
     
     // Navigation
     nav: [
@@ -89,7 +89,7 @@ export default defineConfig({
     // Footer
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024-present September PDS Team'
+      copyright: 'Copyright © 2024-present Garazyk Team'
     },
     
     // Last updated
@@ -149,13 +149,13 @@ export default defineConfig({
     ['meta', { name: 'viewport', content: 'width=device-width, initial-scale=1.0' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:locale', content: 'en' }],
-    ['meta', { property: 'og:title', content: 'September PDS Documentation' }],
-    ['meta', { property: 'og:description', content: 'Contributor documentation for the September AT Protocol PDS implementation in Objective-C' }],
-    ['meta', { property: 'og:site_name', content: 'September PDS' }],
+    ['meta', { property: 'og:title', content: 'Garazyk Documentation' }],
+    ['meta', { property: 'og:description', content: 'Contributor documentation for the Garazyk AT Protocol implementation in Objective-C' }],
+    ['meta', { property: 'og:site_name', content: 'Garazyk' }],
     ['meta', { property: 'og:url', content: 'https://pds.garazyk.xyz/docs/' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: 'September PDS Documentation' }],
-    ['meta', { name: 'twitter:description', content: 'Contributor documentation for the September AT Protocol PDS implementation in Objective-C' }]
+    ['meta', { name: 'twitter:title', content: 'Garazyk Documentation' }],
+    ['meta', { name: 'twitter:description', content: 'Contributor documentation for the Garazyk AT Protocol implementation in Objective-C' }]
   ],
   
   // Build configuration

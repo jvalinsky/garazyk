@@ -6,7 +6,7 @@ title: PLC Server Operations
 
 ## Overview
 
-September ships a standalone PLC server alongside the PDS. Its job is narrower
+Garazyk ships a standalone PLC server alongside the PDS. Its job is narrower
 than the PDS job: accept PLC operations, validate them, store history, and
 serve current DID documents plus audit logs.
 

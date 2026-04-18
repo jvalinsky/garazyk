@@ -18,7 +18,7 @@ This series exists to explain that borrowed stack directly:
 - where ATProto follows those specs closely
 - where ATProto intentionally constrains them further
 
-The goal is not to turn September contributors into generic IPFS experts. The
+The goal is not to turn Garazyk contributors into generic IPFS experts. The
 goal is to make the borrowed pieces legible enough that repository, sync, and
 CID behavior stop feeling magical.
 
@@ -41,9 +41,9 @@ flowchart TD
 That order moves from abstract model to concrete wire and storage formats, then
 back up to the ATProto-specific subset.
 
-## How This Connects Back To September
+## How This Connects Back To Garazyk
 
-In September's codebase, these ideas show up most clearly in:
+In Garazyk's codebase, these ideas show up most clearly in:
 
 - repository records and MST nodes encoded as DAG-CBOR-like blocks
 - CIDs created from canonical block bytes

@@ -1,6 +1,6 @@
 ---
 title: "Part 3: WebSocket Upgrade, Codec, and Firehose"
-description: How September upgrades subscribeRepos to WebSocket, parses frames, and attaches the socket to the firehose
+description: How Garazyk upgrades subscribeRepos to WebSocket, parses frames, and attaches the socket to the firehose
 outline: deep
 ---
 
@@ -47,7 +47,7 @@ flowchart TD
   Replay --> Live["Live firehose delivery"]
 ```
 
-## How September implements it
+## How Garazyk implements it
 
 ### 1. The production path is the main HTTP port, not the legacy standalone listener
 
@@ -280,7 +280,7 @@ Together they cover:
 - [Network framework `nw_listener_start`](https://developer.apple.com/documentation/network/nw_listener_start)
 - [DispatchSource](https://developer.apple.com/documentation/dispatch/dispatchsource)
 
-### September reference pages
+### Garazyk reference pages
 
 - [WebSocket Server](../../08-sync-firehose/websocket-server)
 - [Firehose Overview](../../08-sync-firehose/firehose-overview)

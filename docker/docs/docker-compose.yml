@@ -3,7 +3,7 @@ services:
     build:
       context: ../../docs
       dockerfile: ../docker/docs/Dockerfile
-    container_name: september-docs
+    container_name: garazyk-docs
     ports:
       - "8080:80"
     restart: unless-stopped
@@ -13,8 +13,8 @@ services:
       - NGINX_HOST=localhost
       - NGINX_PORT=80
     labels:
-      - "com.september.service=documentation"
-      - "com.september.version=1.0"
+      - "com.garazyk.service=documentation"
+      - "com.garazyk.version=1.0"
 
 networks:
   docs-network:

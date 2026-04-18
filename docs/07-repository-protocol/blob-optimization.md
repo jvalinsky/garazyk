@@ -14,7 +14,7 @@ already present in the code, and why were they chosen?
 
 ## Optimization In The Current Tree
 
-September currently optimizes blob handling in four practical ways:
+Garazyk currently optimizes blob handling in four practical ways:
 
 - reject obviously bad requests early
 - avoid rewriting provider data when the same CID already exists

@@ -67,9 +67,9 @@ So contributors will see both vocabularies:
 That is not a contradiction. It is the result of ATProto evolving a narrower
 application profile out of earlier IPLD building blocks.
 
-## Why September Still Uses The Older Terms In Code
+## Why Garazyk Still Uses The Older Terms In Code
 
-September's code and docs still use DAG-CBOR terminology in many places because
+Garazyk's code and docs still use DAG-CBOR terminology in many places because
 that is the immediate implementation surface:
 
 - serializer classes are DAG-CBOR-oriented
@@ -80,7 +80,7 @@ So if you are reading the current codebase, think of the relationship this way:
 
 - IPLD and multiformats provide the original mechanisms
 - ATProto constrains them
-- September implements that constrained world using DAG-CBOR-era names and
+- Garazyk implements that constrained world using DAG-CBOR-era names and
   repository machinery
 
 ## What This Means For Contributors

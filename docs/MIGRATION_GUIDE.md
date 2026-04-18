@@ -4,7 +4,7 @@ title: Documentation Migration Guide
 
 # Documentation Migration Guide
 
-**September PDS Documentation has migrated from Jekyll to VitePress!**
+**Garazyk PDS Documentation has migrated from Jekyll to VitePress!**
 
 This guide helps you navigate the changes and update your bookmarks and references.
 
@@ -362,6 +362,6 @@ Please share your feedback by:
 
 ## Thank You
 
-Thank you for using September PDS documentation! We hope the new VitePress system provides a better experience for learning and reference.
+Thank you for using Garazyk PDS documentation! We hope the new VitePress system provides a better experience for learning and reference.
 
 Happy coding! 🚀

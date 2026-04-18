@@ -4,7 +4,7 @@ title: Secrets Management
 
 # Secrets Management
 
-This guide covers secrets management in September PDS, including key storage, rotation strategies, and platform-specific security features.
+This guide covers secrets management in Garazyk PDS, including key storage, rotation strategies, and platform-specific security features.
 
 ## Overview
 
@@ -12,7 +12,7 @@ This guide covers secrets management in September PDS, including key storage, ro
 
 *Secure storage and retrieval of sensitive configuration data with platform-specific implementations*
 
-September PDS manages several types of secrets:
+Garazyk PDS manages several types of secrets:
 
 - **Signing keys**: secp256k1 private keys for AT Protocol signing
 - **JWT secrets**: Keys for minting and verifying tokens
@@ -24,7 +24,7 @@ September PDS manages several types of secrets:
 
 ### macOS: Keychain Integration
 
-On macOS, September PDS uses the system Keychain for secure key storage:
+On macOS, Garazyk PDS uses the system Keychain for secure key storage:
 
 ```objc
 - (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error {
@@ -173,7 +173,7 @@ Ensure this directory:
 
 ### Generating Signing Keys
 
-September PDS uses secp256k1 keys for AT Protocol signing:
+Garazyk PDS uses secp256k1 keys for AT Protocol signing:
 
 ```objc
 - (BOOL)generateSigningKeyWithError:(NSError **)error {
@@ -433,7 +433,7 @@ Use Docker secrets for containerized deployments:
 # docker-compose.yml
 services:
   pds:
-    image: september-pds:latest
+    image: garazyk-pds:latest
     secrets:
       - smtp_password
       - admin_token
@@ -474,7 +474,7 @@ metadata:
 spec:
   containers:
   - name: pds
-    image: september-pds:latest
+    image: garazyk-pds:latest
     env:
     - name: SMTP_PASSWORD
       valueFrom:

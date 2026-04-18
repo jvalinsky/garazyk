@@ -6,7 +6,7 @@ title: Services Overview
 
 ## Overview
 
-The service layer is where September turns protocol requests into application
+The service layer is where Garazyk turns protocol requests into application
 work. New contributors should understand this layer early because it explains
 why the codebase is not organized around one giant controller anymore.
 

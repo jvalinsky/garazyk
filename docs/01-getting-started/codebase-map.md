@@ -6,7 +6,7 @@ title: Codebase Map
 
 ## Overview
 
-September is easiest to understand when you stop thinking about it as one monolith and start reading it as a set of collaborating subsystems. The project has four contributor surfaces:
+Garazyk is easiest to understand when you stop thinking about it as one monolith and start reading it as a set of collaborating subsystems. The project has four contributor surfaces:
 
 - Runtime code in `Garazyk/Sources/`
 - Tests in `Garazyk/Tests/`

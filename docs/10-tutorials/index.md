@@ -6,7 +6,7 @@ title: Tutorials Overview
 
 ## Overview
 
-The tutorial track is for contributors who want to understand how September is put together, not for readers who want a sequence of standalone toy projects.
+The tutorial track is for contributors who want to understand how Garazyk is put together, not for readers who want a sequence of standalone toy projects.
 
 That distinction is deliberate. Earlier tutorial drafts implied "copy this code and it compiles as written," but the repository itself is a richer, more interconnected system than that framing allowed. The tutorials now focus on:
 
@@ -35,7 +35,7 @@ If you want the network internals immediately after the firehose walkthrough, ta
 
 - [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/)
 
-That subguide sits between [Tutorial 5: Firehose](./tutorial-5-firehose) and [Tutorial 6: Deployment](./tutorial-6-deployment). It is the place to study how September actually accepts sockets, parses HTTP/1.1, upgrades to WebSocket, and hands the connection to `subscribeRepos`.
+That subguide sits between [Tutorial 5: Firehose](./tutorial-5-firehose) and [Tutorial 6: Deployment](./tutorial-6-deployment). It is the place to study how Garazyk actually accepts sockets, parses HTTP/1.1, upgrades to WebSocket, and hands the connection to `subscribeRepos`.
 
 ## What the Tutorials Optimize For
 

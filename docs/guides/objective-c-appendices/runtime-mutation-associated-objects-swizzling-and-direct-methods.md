@@ -38,7 +38,7 @@ The best historical swizzling guidance still holds:
 - treat the change as process-wide global state
 
 Even when technically correct, swizzling raises debugging cost because callers
-cannot see the real control flow from the type signature alone. In September,
+cannot see the real control flow from the type signature alone. In Garazyk,
 that usually makes it the wrong tool.
 
 ## Direct methods change the rules
@@ -70,7 +70,7 @@ not cargo-cult them:
 
 They are good research, but they are not a green light for repository design.
 
-## September decision rule
+## Garazyk decision rule
 
 If a technique depends on hidden runtime state, invisible category storage,
 process-wide method replacement, or dispatch behavior the caller cannot infer,

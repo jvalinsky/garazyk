@@ -1,8 +1,8 @@
-# September PDS
+# Garazyk
 
-Standards-oriented AT Protocol Personal Data Server implementation in Objective-C for macOS and Linux/GNUstep.
+Standards-oriented AT Protocol implementation in Objective-C for macOS and Linux/GNUstep.
 
-September is a production-style repository, not a toy protocol demo. The fastest way to understand it is to treat the codebase as a set of layers:
+Garazyk is a production-style repository, not a toy protocol demo. The fastest way to understand it is to treat the codebase as a set of layers:
 
 - transport and route registration
 - XRPC dispatch and auth
@@ -28,8 +28,8 @@ Older collections such as [`docs/guides/`](docs/guides/README.md), [`docs/archit
 ### macOS contributor path
 
 ```bash
-git clone https://github.com/jvalinsky/September.git
-cd September
+git clone https://github.com/jvalinsky/garazyk.git
+cd garazyk
 xcodegen generate
 xcodebuild -scheme kaszlak build
 ./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
@@ -38,8 +38,8 @@ xcodebuild -scheme kaszlak build
 ### Linux and GNUstep contributor path
 
 ```bash
-git clone https://github.com/jvalinsky/September.git
-cd September
+git clone https://github.com/jvalinsky/garazyk.git
+cd garazyk
 cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-linux -j
 ./build-linux/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground

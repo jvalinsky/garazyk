@@ -15,7 +15,7 @@ Mike Ash's ARC article is still the right starting point for a common mistake:
 ARC is compiler-inserted retain and release logic, not a general resource
 manager.
 
-That distinction matters in September because many bugs are not "object was
+That distinction matters in Garazyk because many bugs are not "object was
 overreleased" bugs. They are:
 
 - callback kept `self` alive too long
@@ -76,7 +76,7 @@ That is especially relevant in server and parser code. If memory rises during a
 streaming or import path, the missing fix is often not "add less allocation",
 but "drain temporaries sooner."
 
-## What this means for CF, SQLite, and September resource cleanup
+## What this means for CF, SQLite, and Garazyk resource cleanup
 
 These source-backed rules map directly onto repository work:
 
@@ -89,7 +89,7 @@ These source-backed rules map directly onto repository work:
 - ARC does not keep queues, sources, or callbacks alive unless the owning object
   graph does.
 
-In September, this usually becomes a checklist:
+In Garazyk, this usually becomes a checklist:
 
 - strong queue ownership is explicit
 - blocks use weak/strong capture where appropriate

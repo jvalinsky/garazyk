@@ -6,7 +6,7 @@ title: ATProto Basics
 
 ## Overview
 
-AT Protocol can look abstract until you map it onto a running server. September
+AT Protocol can look abstract until you map it onto a running server. Garazyk
 becomes much easier to understand once you keep five ideas straight:
 
 - identity is DID-first
@@ -23,7 +23,7 @@ repository.
 Accounts are anchored by DIDs. Handles are human-friendly names that resolve to
 or are associated with those DIDs.
 
-In September today, the supported DID methods are:
+In Garazyk today, the supported DID methods are:
 
 - `did:plc`
 - `did:web`
@@ -86,7 +86,7 @@ primarily as:
 These are related concepts, but they are not the same subsystem. A relay crawl
 hint is not the same thing as a firehose stream.
 
-## How September Maps The Model
+## How Garazyk Maps The Model
 
 The current codebase is structured so the protocol model maps cleanly to
 implementation seams:

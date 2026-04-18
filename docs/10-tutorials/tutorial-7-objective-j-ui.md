@@ -6,7 +6,7 @@ title: "Tutorial 7: Building the Objective-J PDS Web UI"
 
 ## Overview
 
-This tutorial explains how to build and evolve the Objective-J web UI for September PDS without inventing new backend APIs. The focus is practical: controller structure, rendering patterns, endpoint wiring, and a repeatable dev loop that works with Docker.
+This tutorial explains how to build and evolve the Objective-J web UI for Garazyk PDS without inventing new backend APIs. The focus is practical: controller structure, rendering patterns, endpoint wiring, and a repeatable dev loop that works with Docker.
 
 You will use the real app layout in this repository (`/ui`, `CappuccinoUIHandler`, `ExplorerController`, `UIAPIClient`) and build feature slices that are easy to test.
 
@@ -243,7 +243,7 @@ When reading or writing Objective-J in this repo, use this checklist:
 
 ### Cappuccino API Map For This Repo
 
-The official API index is large. For September's UI, start with the Foundation and AppKit classes that appear repeatedly in `Garazyk/Sources/App/CappuccinoUI/`.
+The official API index is large. For Garazyk's UI, start with the Foundation and AppKit classes that appear repeatedly in `Garazyk/Sources/App/CappuccinoUI/`.
 
 | Area | Primary APIs | Why they matter here |
 | --- | --- | --- |
@@ -296,7 +296,7 @@ When reading the official APIs, focus on:
 - `contentView`, `bounds`, and `frame` for geometry,
 - `addSubview:` and `setAutoresizingMask:` for composition and resizing.
 
-This is the Cappuccino equivalent of the browser's layout tree. Most UI work in September starts by composing `CPView` containers and then dropping controls into them.
+This is the Cappuccino equivalent of the browser's layout tree. Most UI work in Garazyk starts by composing `CPView` containers and then dropping controls into them.
 
 #### `CPTextField`, `CPButton`, and `CPPopUpButton`: Input and Actions
 
@@ -321,7 +321,7 @@ APIs worth learning early:
 - `CPButton`: `setTitle:`, `setTarget:`, `setAction:`
 - `CPPopUpButton`: `addItemsWithTitles:`, selection APIs for mode toggles
 
-If a September screen has a button, search field, or rendered-vs-JSON toggle, you are almost certainly in this part of AppKit.
+If a Garazyk screen has a button, search field, or rendered-vs-JSON toggle, you are almost certainly in this part of AppKit.
 
 #### `CPTabView`: High-Level Navigation
 
@@ -334,7 +334,7 @@ var item = [[CPTabViewItem alloc] initWithIdentifier:label];
 [tabView addTabViewItem:item];
 ```
 
-The important thing about the API is conceptual: `CPTabView` is the main way this UI segments large feature areas without routing through separate browser pages. In September it holds:
+The important thing about the API is conceptual: `CPTabView` is the main way this UI segments large feature areas without routing through separate browser pages. In Garazyk it holds:
 
 - the top-level `Explorer`, `Admin`, `MST`, and `OAuth Demo` tabs,
 - the nested DID / PLC / Records / Feed / Graph / Profile / MST detail panes.
@@ -361,11 +361,11 @@ Read the official `CPTableView` API with these repo patterns in mind:
 - header labels are configured through `headerView`,
 - row changes do not repaint automatically, so `reloadData` is part of the normal update loop.
 
-Also note one practical detail from the Cappuccino docs and this codebase: the table itself is not the scroll container. September wraps tables in `CPScrollView` so large datasets remain usable.
+Also note one practical detail from the Cappuccino docs and this codebase: the table itself is not the scroll container. Garazyk wraps tables in `CPScrollView` so large datasets remain usable.
 
 #### `CPTextView`: Raw Payload and Debug Surfaces
 
-Where a rendered table would be too limiting, September falls back to `CPTextView` for raw JSON or multi-line detail output.
+Where a rendered table would be too limiting, Garazyk falls back to `CPTextView` for raw JSON or multi-line detail output.
 
 ```objectivec
 var textView = [[CPTextView alloc] initWithFrame:CGRectMake(0.0, 0.0, frame.size.width, frame.size.height)];
@@ -393,7 +393,7 @@ If you are adding a new view and are unsure how to render a payload cleanly, `CP
 
 ### `CPApplication` and Startup Lifecycle
 
-Cappuccino applications have a formal startup lifecycle, and September follows the standard path:
+Cappuccino applications have a formal startup lifecycle, and Garazyk follows the standard path:
 
 1. `main.j` calls `CPApplicationMain(args, namedArgs)`.
 2. Cappuccino creates the shared application object.
@@ -435,7 +435,7 @@ _collections = [];
 _plcOpRows = [];
 ```
 
-That is normal Objective-J style. The Cappuccino docs describe `CPMutableArray` as mostly a source-compatibility alias because array behavior is backed by JavaScript arrays. In practice, September relies on that fact and uses JavaScript array literals freely.
+That is normal Objective-J style. The Cappuccino docs describe `CPMutableArray` as mostly a source-compatibility alias because array behavior is backed by JavaScript arrays. In practice, Garazyk relies on that fact and uses JavaScript array literals freely.
 
 #### Dictionaries
 
@@ -468,7 +468,7 @@ The [`CPString`](https://www.cappuccino.dev/learn/documentation/interface_c_p_st
 
 #### Practical Rule
 
-Use this rule of thumb in September's UI:
+Use this rule of thumb in Garazyk's UI:
 
 - use Objective-C-style methods when the value is clearly a Cappuccino object,
 - use JavaScript syntax when the runtime shape is easier to express that way,
@@ -478,7 +478,7 @@ That mixed style is not a smell in Objective-J. It is the language model.
 
 ### Delegates, Data Sources, and Table Contracts
 
-Cappuccino leans heavily on Cocoa's delegation model. September uses that directly rather than introducing a custom component abstraction layer.
+Cappuccino leans heavily on Cocoa's delegation model. Garazyk uses that directly rather than introducing a custom component abstraction layer.
 
 The most visible case is `CPTableView`:
 
@@ -503,7 +503,7 @@ That maps directly to the pattern used throughout `ExplorerController`, `AdminCo
 
 This is a core Cappuccino mental model: views do not own the truth. Controllers own the truth, and delegate/datasource methods project that truth into widgets.
 
-That is also why September's controllers keep so many parallel ivars:
+That is also why Garazyk's controllers keep so many parallel ivars:
 
 - raw payload ivars like `_currentPLCPayload`,
 - normalized row arrays like `_plcOpRows`,
@@ -513,7 +513,7 @@ Those are not arbitrary layers. They correspond to different responsibilities in
 
 ### `CPScrollView` and Why Tables Never Stand Alone
 
-One easy mistake for people coming from raw HTML tables is to think the table widget handles scrolling itself. Cappuccino's table docs explicitly note that `CPTableView` does not contain its own scroll view. September follows that rule everywhere:
+One easy mistake for people coming from raw HTML tables is to think the table widget handles scrolling itself. Cappuccino's table docs explicitly note that `CPTableView` does not contain its own scroll view. Garazyk follows that rule everywhere:
 
 ```objectivec
 var accountsScroll = [[CPScrollView alloc] initWithFrame:CGRectMake(20.0, 130.0, 260.0, 540.0)];
@@ -538,7 +538,7 @@ If a new contributor skips the `CPScrollView` wrapper, the UI will usually still
 
 Cappuccino includes Foundation-style request/connection APIs such as [`CPURLConnection`](https://www.cappuccino.dev/learn/documentation/interface_c_p_u_r_l_connection.html), and Cappuccino's own blog documentation explains the usual pairing of `CPURLRequest` with `CPURLConnection` for higher-level request handling.
 
-September uses a hybrid model instead:
+Garazyk uses a hybrid model instead:
 
 - `UIAPIClient` builds `CPURLRequest` objects in helper methods when a Foundation-style request object is convenient,
 - but the actual JSON fetch path uses `XMLHttpRequest` directly.
@@ -570,11 +570,11 @@ Why do this?
 - it avoids adding another delegate protocol layer for simple request/response flows,
 - and it matches the rest of the UI's JavaScript-friendly style.
 
-This is an important guide-level point: Cappuccino gives you Cocoa-style network abstractions, but Objective-J does not require you to hide the browser. September uses the browser runtime directly when that is simpler.
+This is an important guide-level point: Cappuccino gives you Cocoa-style network abstractions, but Objective-J does not require you to hide the browser. Garazyk uses the browser runtime directly when that is simpler.
 
 ### Protocols, Categories, and Other Objective-J Features You Will See Elsewhere
 
-The official [Learning Objective-J](https://www.cappuccino.dev/learn/objective-j.html) guide covers more language surface area than September's current UI happens to use day to day.
+The official [Learning Objective-J](https://www.cappuccino.dev/learn/objective-j.html) guide covers more language surface area than Garazyk's current UI happens to use day to day.
 
 Two features worth knowing in advance:
 
@@ -585,7 +585,7 @@ Those are standard Objective-C ideas, and Objective-J keeps them. They matter be
 
 For example, Cappuccino networking and widget APIs often describe delegate contracts in protocol-style terms, even when you mostly discover the required methods from the class reference. Likewise, categories are part of why Cappuccino's API reference sometimes shows extra behavior as "Provided by category ...".
 
-In September specifically:
+In Garazyk specifically:
 
 - you will see selectors and informal delegate contracts constantly,
 - you will see `@accessors` frequently,
@@ -593,7 +593,7 @@ In September specifically:
 
 That does not mean the features are irrelevant. It means the current codebase is using a deliberately narrow subset of Objective-J so the control flow stays easy to trace.
 
-### What September Uses From Cappuccino, and What It Deliberately Does Not
+### What Garazyk Uses From Cappuccino, and What It Deliberately Does Not
 
 Cappuccino can support more than what you see in this repo:
 
@@ -603,7 +603,7 @@ Cappuccino can support more than what you see in this repo:
 - broader Foundation APIs,
 - more Cocoa-like networking abstractions.
 
-September deliberately keeps the UI narrower:
+Garazyk deliberately keeps the UI narrower:
 
 - views are built programmatically,
 - controller state lives in explicit ivars,
@@ -817,7 +817,7 @@ For posts, let the server generate proper TID-like rkeys unless you have a stric
 
 ## Summary
 
-You now have a practical pattern for building the September PDS Objective-J UI:
+You now have a practical pattern for building the Garazyk PDS Objective-J UI:
 
 - Keep backend contracts stable and reuse existing endpoints.
 - Build table-first rendered views with JSON fallback.
