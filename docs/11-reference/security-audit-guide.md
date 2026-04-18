@@ -4,11 +4,11 @@ title: Security Audit Guide
 
 # Security Audit Guide
 
-This guide explains how to use September PDS's security audit skills to identify and remediate common vulnerabilities in Objective-C code. The repository includes specialized audit tools in `.opencode/skills/` that automate vulnerability detection.
+This guide explains how to use Garazyk PDS's security audit skills to identify and remediate common vulnerabilities in Objective-C code. The repository includes specialized audit tools in `.opencode/skills/` that automate vulnerability detection.
 
 ## Overview
 
-September PDS includes 12 security-focused audit skills that scan for specific vulnerability classes:
+Garazyk PDS includes 12 security-focused audit skills that scan for specific vulnerability classes:
 
 1. **Cryptographic Security** — Weak algorithms, hardcoded keys, timing attacks
 2. **SQL Injection** — Dynamic SQL construction, unsafe query building

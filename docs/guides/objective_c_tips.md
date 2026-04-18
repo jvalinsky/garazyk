@@ -1,6 +1,6 @@
 ---
 title: Objective-C Research Patterns & Techniques
-description: Repo-grounded guide to obscure Objective-C, Cocoa, runtime, and macOS research for September PDS contributors
+description: Repo-grounded guide to obscure Objective-C, Cocoa, runtime, and macOS research for Garazyk PDS contributors
 outline: deep
 ---
 
@@ -44,9 +44,9 @@ Use these when you need a deeper dive than the cluster summaries on this page:
 
 ## Runtime and messaging
 
-### Why it matters in September
+### Why it matters in Garazyk
 
-September mostly prefers explicit routing, explicit service boundaries, and
+Garazyk mostly prefers explicit routing, explicit service boundaries, and
 explicit protocol registration. That is a strength. But when request handling,
 selector dispatch, `NSInvocation`, message forwarding, or runtime inspection
 behaves unexpectedly, you need a reliable way to reason about the Objective-C
@@ -64,7 +64,7 @@ trick is justified at all.
 - Prefer read-only inspection first: `respondsToSelector:`,
   `conformsToProtocol:`, `isKindOfClass:`, selector names, and type encodings.
 - Treat method swizzling and associated objects as last-resort adaptation tools.
-  In September, explicit hooks, delegation, or composition should usually win.
+  In Garazyk, explicit hooks, delegation, or composition should usually win.
 - Use runtime knowledge to debug, not to hide architecture. If a design only
   works because `isa` tricks or swizzles are invisible to the caller, it is
   usually the wrong fit for this repository.
@@ -102,9 +102,9 @@ site:developer.apple.com "Objective-C runtime" method_getTypeEncoding
 
 ## Memory and object lifetimes
 
-### Why it matters in September
+### Why it matters in Garazyk
 
-This is the most immediately useful research cluster for September. Many real
+This is the most immediately useful research cluster for Garazyk. Many real
 bugs in the repository sit at the seam between ARC-managed Objective-C objects
 and non-Objective-C resources such as dispatch queues, SQLite statements,
 CoreFoundation objects, sockets, and long-lived callbacks.
@@ -117,7 +117,7 @@ with lifetime reasoning.
 
 - In callbacks, use weak/strong capture for `self`. Do not use
   `__unsafe_unretained` in asynchronous blocks.
-- `dispatch_queue_t` storage should be owned strongly. In September code, keep
+- `dispatch_queue_t` storage should be owned strongly. In Garazyk code, keep
   queue properties explicit and strongly retained, and prefer the existing
   queue-property conventions over ad hoc storage.
 - When closing a SQLite handle, finalize any remaining prepared statements first.
@@ -173,9 +173,9 @@ site:chris.eidhof.nl "value objects" "objective c"
 
 ## Cocoa dynamism: KVC, KVO, bindings, and invocation
 
-### Why it matters in September
+### Why it matters in Garazyk
 
-September does not revolve around KVO or Cocoa bindings, but contributors still
+Garazyk does not revolve around KVO or Cocoa bindings, but contributors still
 run into these mechanics when debugging older macOS tooling, test harnesses,
 desktop helper code, or Foundation APIs that lean on conventions instead of
 explicit interfaces.
@@ -188,7 +188,7 @@ or in supporting tooling.
 
 - For `KVC` and `KVO`, read the lookup and compliance rules before changing
   accessors. Many observer bugs are really compliance bugs.
-- Prefer explicit APIs over KVC/KVO when you control the design. In September,
+- Prefer explicit APIs over KVC/KVO when you control the design. In Garazyk,
   these mechanisms are usually research tools or compatibility surfaces, not the
   preferred first implementation strategy.
 - Use `NSInvocation` only when explicit method calls or blocks are not enough.
@@ -235,9 +235,9 @@ site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaBin
 
 ## Concurrency and orchestration
 
-### Why it matters in September
+### Why it matters in Garazyk
 
-September relies heavily on dispatch queues, asynchronous callbacks, request
+Garazyk relies heavily on dispatch queues, asynchronous callbacks, request
 lifecycles, firehose delivery, and shutdown/teardown correctness. Bugs in this
 area often show up as flakiness, hangs, slow shutdown, reordered behavior, or
 tests that pass until load or timing changes.
@@ -252,7 +252,7 @@ generic "thread safety" advice.
   structure, document the contract or refactor the ownership boundary.
 - Queue lifetime is part of correctness. If a queue is stored weakly or not
   retained, the failure mode looks random.
-- Separate "listener stopped" from "all async work drained." September teardown
+- Separate "listener stopped" from "all async work drained." Garazyk teardown
   paths should wait for both state transition and task completion.
 - Use incremental parsing for streamed input. `receive`-style APIs may deliver
   arbitrarily fragmented data, so buffer until a complete protocol unit exists.
@@ -291,9 +291,9 @@ site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithr
 
 ## Data and model layers
 
-### Why it matters in September
+### Why it matters in Garazyk
 
-September does not use Core Data as a primary storage layer, but contributors
+Garazyk does not use Core Data as a primary storage layer, but contributors
 still benefit from the research around model boundaries, collection behavior,
 value semantics, predicates, serialization, and object-graph reasoning. This is
 the cluster to use when Foundation model objects or serialized state become
@@ -313,7 +313,7 @@ NSDictionary values" is turning into an implicit model layer.
 - Be careful when archiving or serializing object graphs. Identity and lifecycle
   rules can leak across encoding boundaries in surprising ways.
 - Core Data articles are still useful as reading about graph identity, faulting,
-  and fetch behavior even if September stores its data differently.
+  and fetch behavior even if Garazyk stores its data differently.
 
 ### Annotated external sources
 
@@ -348,9 +348,9 @@ site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Predicat
 
 ## macOS-specific internals: AppKit, XPC, logs, and system behavior
 
-### Why it matters in September
+### Why it matters in Garazyk
 
-Even though September is primarily a server, contributors still debug it on
+Even though Garazyk is primarily a server, contributors still debug it on
 macOS, use macOS-native tooling, and occasionally need to understand AppKit,
 `NSXPCConnection`, logging behavior, or current platform quirks. This cluster is
 for the problems that are not "Objective-C syntax" problems at all, but
@@ -403,7 +403,7 @@ site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaVie
 site:developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CocoaBindings NSArrayController NSController
 ```
 
-## September-specific follow-through
+## Garazyk-specific follow-through
 
 After you find the right external explanation, map it back into the repository
 instead of stopping at "now I understand the article."

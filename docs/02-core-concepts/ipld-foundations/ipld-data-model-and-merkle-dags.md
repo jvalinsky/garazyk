@@ -63,15 +63,15 @@ flowchart TD
   Record --> Blob["blob CIDs"]
 ```
 
-In practical September terms:
+In practical Garazyk terms:
 
 - `RepoCommit` is an IPLD-shaped object with CID-linked fields
 - `MST` builds a Merkle Search Tree out of CID-linked nodes
 - sync methods serialize slices of that graph into CAR responses
 
-## Why IPLD Is Useful Even If September Does Not Expose "Generic IPLD APIs"
+## Why IPLD Is Useful Even If Garazyk Does Not Expose "Generic IPLD APIs"
 
-September is not trying to be a general-purpose IPLD toolkit. But the IPLD
+Garazyk is not trying to be a general-purpose IPLD toolkit. But the IPLD
 model still helps contributors reason correctly about the implementation:
 
 - a block is identified by what it contains, not where it lives

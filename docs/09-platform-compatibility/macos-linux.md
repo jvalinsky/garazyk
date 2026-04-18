@@ -6,7 +6,7 @@ title: macOS and Linux Compatibility
 
 ## Overview
 
-September targets both macOS and Linux/GNUstep, but it does not get there by pretending both environments behave the same. Shared code sits on top of compat headers and platform abstractions, while crypto, key storage, networking, and some Foundation behavior still diverge in meaningful ways.
+Garazyk targets both macOS and Linux/GNUstep, but it does not get there by pretending both environments behave the same. Shared code sits on top of compat headers and platform abstractions, while crypto, key storage, networking, and some Foundation behavior still diverge in meaningful ways.
 
 ## Full Flow
 

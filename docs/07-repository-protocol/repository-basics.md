@@ -6,7 +6,7 @@ title: Repository Basics
 
 ## Overview
 
-An ATProto repository in September is the actor-owned bundle of records, stored blocks, commit state, and blob references that make one DID's data portable and syncable.
+An ATProto repository in Garazyk is the actor-owned bundle of records, stored blocks, commit state, and blob references that make one DID's data portable and syncable.
 
 ## Repository Shape
 

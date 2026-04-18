@@ -1,6 +1,7 @@
 #import "Network/PDSHttpAdminRoutePack.h"
 
 #import "Admin/PDSAdminHandler.h"
+#import "Admin/AdminPartialHandler.h"
 #import "Debug/PDSLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -67,8 +68,34 @@
              }];
   }
 
+  [self registerPartialRoutesWithServer:server adminHandler:adminHandler];
   [self registerAdminUIRoutesWithServer:server];
   PDS_LOG_DEBUG(@"PDSHttpAdminRoutePack: Admin routes registered");
+}
+
++ (void)registerPartialRoutesWithServer:(HttpServer *)server
+                           adminHandler:(PDSAdminHandler *)adminHandler {
+  // Register partial routes for HTMX
+  AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
+
+  [server addRoute:@"GET"
+              path:@"/admin/partials/*"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             NSString *partial = [request.path substringFromIndex:@"/admin/partials/".length];
+             NSString *html = [partialHandler handlePartialRequestWithPath:request.path
+                                                                  headers:request.headers
+                                                                     body:request.body];
+             if (html) {
+               response.statusCode = 200;
+               [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
+               [response setBodyString:html];
+             } else {
+               response.statusCode = 404;
+               [response setJsonBody:@{@"error" : @"Partial not found", @"path" : request.path}];
+             }
+           }];
+
+  PDS_LOG_DEBUG(@"PDSHttpAdminRoutePack: Partial routes registered");
 }
 
 + (void)registerAdminUIRoutesWithServer:(HttpServer *)server {
@@ -81,7 +108,12 @@
     [[NSBundle bundleForClass:[self class]].resourcePath
         stringByAppendingPathComponent:@"AdminUI/Assets"],
     [[fm currentDirectoryPath]
+        stringByAppendingPathComponent:@"Garazyk/Sources/Admin/AdminUI/Assets"],
+    [[fm currentDirectoryPath]
         stringByAppendingPathComponent:@"Garazyk/Sources/App/AdminUI/Assets"],
+    [[[fm currentDirectoryPath]
+        stringByAppendingPathComponent:@"../Garazyk/Sources/Admin/AdminUI/Assets"]
+        stringByStandardizingPath],
     [[[fm currentDirectoryPath]
         stringByAppendingPathComponent:@"../Garazyk/Sources/App/AdminUI/Assets"]
         stringByStandardizingPath],

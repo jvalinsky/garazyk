@@ -7,7 +7,7 @@ title: Repository Data Structures Walkthrough
 ## Overview
 
 [CBOR and CAR](./cbor-and-car) and [Merkle Search Trees](./mst-trees) explain
-the concepts. This page shows how those concepts connect in September's
+the concepts. This page shows how those concepts connect in Garazyk's
 implementation.
 
 The useful mental model is:
@@ -27,7 +27,7 @@ flowchart LR
   CAR --> Sync["Sync and export responses"]
 ```
 
-## Step 1: September Normalizes Structured Values Into DAG-CBOR
+## Step 1: Garazyk Normalizes Structured Values Into DAG-CBOR
 
 At the handler and service boundary, many values still look JSON-shaped. Before
 they can become repository data, the repo has to normalize them into
@@ -72,7 +72,7 @@ from object identity or database row identity.
 
 ## Step 3: The Tree Keeps Ordered Paths, Not Just Unordered Keys
 
-September's `MST` uses repository paths such as `collection/rkey` as keys. The
+Garazyk's `MST` uses repository paths such as `collection/rkey` as keys. The
 tree then uses hashed key depth and deterministic ordering to place those
 entries.
 

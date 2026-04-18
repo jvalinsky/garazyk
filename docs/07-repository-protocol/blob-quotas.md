@@ -6,7 +6,7 @@ title: Blob Quotas
 
 ## Overview
 
-September PDS does not currently implement a full per-account storage quota
+Garazyk PDS does not currently implement a full per-account storage quota
 system. The shipped protection model is narrower and easier to reason about:
 reject obviously bad uploads early, limit how quickly a DID can create blob
 pressure, and expose enough metrics for operators to watch overall capacity.
@@ -140,6 +140,6 @@ real feature instead of a hypothetical one.
 
 ## Summary
 
-Current blob protection in September PDS is implemented as validation, rate
+Current blob protection in Garazyk PDS is implemented as validation, rate
 limiting, and observability. It is not a full quota subsystem yet, and operators
 should run the server with that smaller mental model.

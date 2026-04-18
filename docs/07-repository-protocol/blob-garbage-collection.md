@@ -6,7 +6,7 @@ title: Blob Garbage Collection
 
 ## Overview
 
-September PDS does not currently ship an automated garbage collector for
+Garazyk PDS does not currently ship an automated garbage collector for
 orphaned blobs. The implemented blob lifecycle is simpler:
 - uploads store blob data plus metadata
 - sync and service surfaces can list blobs for a DID
@@ -104,4 +104,4 @@ something operators can actually run.
 
 Today the safe mental model is simple: explicit delete, no automatic sweep.
 Treat older references to `PDSCLIGCCommand.m` or `kaszlak gc blobs` as
-historical design notes, not part of the shipped September PDS toolchain.
+historical design notes, not part of the shipped Garazyk PDS toolchain.

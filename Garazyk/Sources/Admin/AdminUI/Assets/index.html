@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>AT Protocol Admin UI</title>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/system.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/utilities.css">
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+</head>
+<body>
+  <!-- Header / Toolbar -->
+  <header role="banner">
+    <nav role="navigation" aria-label="Service navigation" class="toolbar">
+      <div class="toolbar-section">
+        <button class="btn-secondary btn-sm" id="nav-toggle" aria-label="Toggle navigation">
+          ≡
+        </button>
+      </div>
+
+      <div class="toolbar-section">
+        <div class="service-segments" id="service-segments" role="tablist">
+          <button class="service-segment active" data-service="pds" role="tab" aria-selected="true">
+            PDS
+          </button>
+          <button class="service-segment" data-service="plc" role="tab" aria-selected="false">
+            PLC
+          </button>
+          <button class="service-segment" data-service="relay" role="tab" aria-selected="false">
+            Relay
+          </button>
+          <button class="service-segment" data-service="appview" role="tab" aria-selected="false">
+            AppView
+          </button>
+          <button class="service-segment" data-service="chat" role="tab" aria-selected="false">
+            Chat
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar-section">
+        <button class="btn-secondary btn-sm" aria-label="Help" title="Help">
+          ?
+        </button>
+        <button class="btn-secondary btn-sm" aria-label="Settings" title="Settings">
+          ⚙
+        </button>
+        <button class="btn-secondary btn-sm" aria-label="User menu" title="User">
+          👤
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main layout -->
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside role="complementary" aria-label="Section navigation">
+      <div class="sidebar" id="sidebar">
+        <!-- PDS Section -->
+        <div class="sidebar-section" data-service="pds">
+          <button class="sidebar-section-title" aria-expanded="true" aria-controls="pds-items">
+            <span>PDS</span>
+            <span class="sidebar-section-toggle">▶</span>
+          </button>
+          <div class="sidebar-items" id="pds-items">
+            <button class="sidebar-item" hx-get="/admin/partials/users" hx-target="#content-pane" hx-push-url="/admin/users">
+              Users
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/invites" hx-target="#content-pane" hx-push-url="/admin/invites">
+              Invites
+            </button>
+            <button class="sidebar-item" hx-get="/admin/blobs" hx-target="#content-pane" hx-push-url="/admin/blobs">
+              Blobs
+            </button>
+            <button class="sidebar-item" hx-get="/admin/identity" hx-target="#content-pane" hx-push-url="/admin/identity">
+              Identity
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/health" hx-target="#content-pane" hx-push-url="/admin/health">
+              Health
+            </button>
+          </div>
+        </div>
+
+        <!-- PLC Section -->
+        <div class="sidebar-section" data-service="plc">
+          <button class="sidebar-section-title" aria-expanded="false" aria-controls="plc-items">
+            <span>PLC</span>
+            <span class="sidebar-section-toggle">▶</span>
+          </button>
+          <div class="sidebar-items hidden" id="plc-items">
+            <button class="sidebar-item" hx-get="/admin/plc/lookup" hx-target="#content-pane" hx-push-url="/admin/plc/lookup">
+              DID Lookup
+            </button>
+            <button class="sidebar-item" hx-get="/admin/plc/export" hx-target="#content-pane" hx-push-url="/admin/plc/export">
+              Export
+            </button>
+            <button class="sidebar-item" hx-get="/admin/plc/metrics" hx-target="#content-pane" hx-push-url="/admin/plc/metrics">
+              Metrics
+            </button>
+          </div>
+        </div>
+
+        <!-- Relay Section -->
+        <div class="sidebar-section" data-service="relay">
+          <button class="sidebar-section-title" aria-expanded="false" aria-controls="relay-items">
+            <span>Relay</span>
+            <span class="sidebar-section-toggle">▶</span>
+          </button>
+          <div class="sidebar-items hidden" id="relay-items">
+            <button class="sidebar-item" hx-get="/admin/relay/upstreams" hx-target="#content-pane" hx-push-url="/admin/relay/upstreams">
+              Upstreams
+            </button>
+            <button class="sidebar-item" hx-get="/admin/relay/events" hx-target="#content-pane" hx-push-url="/admin/relay/events">
+              Events
+            </button>
+            <button class="sidebar-item" hx-get="/admin/relay/crawl" hx-target="#content-pane" hx-push-url="/admin/relay/crawl">
+              Crawl Queue
+            </button>
+          </div>
+        </div>
+
+        <!-- AppView Section -->
+        <div class="sidebar-section" data-service="appview">
+          <button class="sidebar-section-title" aria-expanded="false" aria-controls="appview-items">
+            <span>AppView</span>
+            <span class="sidebar-section-toggle">▶</span>
+          </button>
+          <div class="sidebar-items hidden" id="appview-items">
+            <button class="sidebar-item" hx-get="/admin/appview/backfill" hx-target="#content-pane" hx-push-url="/admin/appview/backfill">
+              Backfill
+            </button>
+            <button class="sidebar-item" hx-get="/admin/appview/index" hx-target="#content-pane" hx-push-url="/admin/appview/index">
+              Index
+            </button>
+            <button class="sidebar-item" hx-get="/admin/appview/metrics" hx-target="#content-pane" hx-push-url="/admin/appview/metrics">
+              Metrics
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content area -->
+    <main role="main" aria-label="Content area">
+      <div class="content-pane" id="content-pane">
+        <!-- Welcome screen -->
+        <div class="content-header">
+          <h1>Welcome to AT Protocol Admin</h1>
+          <p class="text-secondary mt-sm">
+            Select a service from the sidebar to get started.
+          </p>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Personal Data Server</h3>
+            </div>
+            <div class="card-body">
+              <p>Manage users, invites, blobs, identity, and server health.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">PLC Directory</h3>
+            </div>
+            <div class="card-body">
+              <p>Lookup DIDs, manage exports, and view metrics.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Relay (BGS)</h3>
+            </div>
+            <div class="card-body">
+              <p>Monitor upstreams, event streams, and crawl queue.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">AppView</h3>
+            </div>
+            <div class="card-body">
+              <p>Track backfill progress, index status, and metrics.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Chat Service</h3>
+            </div>
+            <div class="card-body">
+              <p>Future: Message moderation and chat status.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer / Status bar -->
+  <footer role="contentinfo">
+    <div class="status-bar-item">
+      <span class="status-indicator connected"></span>
+      <span>Connected</span>
+    </div>
+    <div class="status-bar-item">
+      <span>Last sync: <span id="last-sync">--:--:--</span></span>
+    </div>
+    <div class="status-bar-item text-secondary">
+      <small>AT Protocol Admin v1.0.0</small>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -16,7 +16,7 @@ title: OAuth2 Testing Plan
 
 ### Phase 1: Build and Run Local PDS
 
-- [ ] Build September PDS locally
+- [ ] Build Garazyk PDS locally
   - [ ] Run `xcodegen generate` to regenerate Xcode project
   - [ ] Build CLI: `xcodebuild -scheme ATProtoPDS-CLI build`
   - [ ] Verify binary exists at `./build/bin/kaszlak`

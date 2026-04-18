@@ -4,9 +4,9 @@ title: Getting Started with PDS
 
 # Getting Started with PDS
 
-## What September Is
+## What Garazyk Is
 
-September is an Objective-C Personal Data Server for the AT Protocol. It serves ATProto endpoints, stores per-account repositories, exposes a firehose stream, and ships contributor tooling such as Explorer and the browser UI.
+Garazyk is an Objective-C Personal Data Server for the AT Protocol. It serves ATProto endpoints, stores per-account repositories, exposes a firehose stream, and ships contributor tooling such as Explorer and the browser UI.
 
 This guide is organized for contributors, not just operators. The summary pages explain what each subsystem is for, and the companion deep dives show one real path through the codebase.
 

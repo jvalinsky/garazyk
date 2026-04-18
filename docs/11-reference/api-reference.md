@@ -8,7 +8,7 @@ title: API Reference
 
 This page is a map to the runtime API surface, not a giant payload dump. The useful contributor question is usually not "what does one response example look like?" It is "which surface am I changing, and where do I verify it?"
 
-September exposes several HTTP surfaces with different owners:
+Garazyk exposes several HTTP surfaces with different owners:
 
 | Surface | Role |
 | --- | --- |

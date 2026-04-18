@@ -6,7 +6,7 @@ title: Blob Lifecycle
 
 ## Overview
 
-The blob lifecycle in September is explicit and short:
+The blob lifecycle in Garazyk is explicit and short:
 
 1. upload bytes
 2. receive a blob reference
@@ -24,7 +24,7 @@ has to stabilize the binary object before a record can point at it. The upload
 endpoint therefore exists to turn raw bytes into a validated, addressable blob
 object.
 
-In September, `com.atproto.repo.uploadBlob` is the main entry point for this
+In Garazyk, `com.atproto.repo.uploadBlob` is the main entry point for this
 step. The request path applies basic payload guardrails, then `PDSBlobService`
 and `BlobStorage` compute the CID and store the metadata needed for later
 lookup.

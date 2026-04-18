@@ -6,7 +6,7 @@ title: macOS vs GNUstep Boundary
 
 ## Goal
 
-Read this page when you are touching code that crosses the platform boundary. The objective is to show where September uses compatibility shims, where it uses true platform-specific implementations, and which runtime differences contributors must keep in mind before they ship a change that works only on one side.
+Read this page when you are touching code that crosses the platform boundary. The objective is to show where Garazyk uses compatibility shims, where it uses true platform-specific implementations, and which runtime differences contributors must keep in mind before they ship a change that works only on one side.
 
 ## Full Flow
 

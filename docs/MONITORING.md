@@ -4,7 +4,7 @@ title: Documentation Monitoring Guide
 
 # Documentation Monitoring Guide
 
-This guide describes the monitoring setup for the September PDS VitePress documentation system.
+This guide describes the monitoring setup for the Garazyk PDS VitePress documentation system.
 
 ## Table of Contents
 

@@ -11,7 +11,7 @@ title: VitePress Documentation Migration - Project Summary
 **Completion Date**: March 2025  
 **Status**: ✅ Complete  
 
-This project successfully migrated the September PDS documentation from Jekyll to VitePress, transforming ~100+ Markdown files into a comprehensive, book-quality technical resource with enhanced features and improved user experience.
+This project successfully migrated the Garazyk PDS documentation from Jekyll to VitePress, transforming ~100+ Markdown files into a comprehensive, book-quality technical resource with enhanced features and improved user experience.
 
 ## Executive Summary
 
