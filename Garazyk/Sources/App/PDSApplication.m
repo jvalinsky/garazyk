@@ -29,6 +29,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/RateLimiter.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.h"
 #import "Core/PDSServiceContainer.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/PDSLogger.h"
@@ -102,6 +103,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
 @implementation PDSApplication {
     SubscribeReposHandler *_subscribeReposHandler;
+    PDSSequencerAnalyticsCollector *_analyticsCollector;
     XrpcDispatcher *_xrpcDispatcher;
 }
 
@@ -122,6 +124,10 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
 - (SubscribeReposHandler *)subscribeReposHandler {
     return _subscribeReposHandler;
+}
+
+- (PDSSequencerAnalyticsCollector *)analyticsCollector {
+    return _analyticsCollector;
 }
 
 #pragma mark - Initialization
@@ -449,6 +455,12 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     if (!_subscribeReposHandler) {
         _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
     }
+
+    // Initialize Sequencer Analytics Collector for system diagnostics
+    if (!_analyticsCollector) {
+        _analyticsCollector = [[PDSSequencerAnalyticsCollector alloc] initWithServiceDatabases:_serviceDatabases
+                                                                              subscribeHandler:_subscribeReposHandler];
+    }
 }
 
 - (void)loadLexicons {
@@ -602,6 +614,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     _running = YES;
     [_relayService start];
+
+    // Start analytics collection for diagnostics dashboard
+    [_analyticsCollector startCollecting];
+    PDS_LOG_CORE_INFO(@"Sequencer analytics collector started");
+
     PDS_LOG_CORE_INFO(@"PDSApplication started successfully");
     return YES;
 }
@@ -617,7 +634,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _subscribeReposHandler = nil;
     
     [_relayService stop];
-    
+
+    // Stop analytics collection
+    [_analyticsCollector stopCollecting];
+    _analyticsCollector = nil;
+
     // Close databases
     [_userDatabasePool closeAll];
     [_serviceDatabases closeAll];

@@ -228,6 +228,14 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderOzoneCorrelationsPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/verification"]) {
         return [self renderOzoneVerificationPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"diagnostics/overview"]) {
+        return [self renderDiagnosticsOverviewPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"diagnostics/sequencer"]) {
+        return [self renderDiagnosticsSequencerPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"diagnostics/blobs"]) {
+        return [self renderDiagnosticsBlobsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"diagnostics/ratelimits"]) {
+        return [self renderDiagnosticsRateLimitsPartialWithStatusCode:statusCode contentType:contentType];
     }
 
     if (statusCode) *statusCode = 404;
@@ -1122,6 +1130,61 @@ NS_ASSUME_NONNULL_BEGIN
     });
 
     return mimeTypes[extension.lowercaseString] ?: @"application/octet-stream";
+}
+
+#pragma mark - Diagnostics Partials
+
+- (NSString *)renderDiagnosticsOverviewPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                               contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSString *html = [NSString stringWithFormat:@"%@%@%@%@",
+        @"<div class=\"content-header\">",
+        @"<h1>System Diagnostics</h1>",
+        @"<p class=\"text-secondary mt-sm\">Monitor sequencer health, blob storage, and rate limits.</p>",
+        @"</div>"
+    ];
+    return html;
+}
+
+- (NSString *)renderDiagnosticsSequencerPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                                 contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSString *html = [NSString stringWithFormat:@"%@%@%@",
+        @"<div class=\"content-header\"><h2>Sequencer Health</h2></div>",
+        @"<div class=\"card\">",
+        @"<p>Sequencer health dashboard - loading...</p></div>"
+    ];
+    return html;
+}
+
+- (NSString *)renderDiagnosticsBlobsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                             contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSString *html = [NSString stringWithFormat:@"%@%@%@",
+        @"<div class=\"content-header\"><h2>Blob Audits</h2></div>",
+        @"<div class=\"card\">",
+        @"<p>Blob audit dashboard - loading...</p></div>"
+    ];
+    return html;
+}
+
+- (NSString *)renderDiagnosticsRateLimitsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSString *html = [NSString stringWithFormat:@"%@%@%@",
+        @"<div class=\"content-header\"><h2>Rate Limit Management</h2></div>",
+        @"<div class=\"card\">",
+        @"<p>Rate limit management dashboard - loading...</p></div>"
+    ];
+    return html;
 }
 
 @end

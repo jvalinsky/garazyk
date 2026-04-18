@@ -1,0 +1,79 @@
+<div class="content-header">
+  <h1>Sequencer Health</h1>
+  <p class="text-secondary mt-sm">Real-time and historical metrics for the event sequencer.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Current Status</h2>
+  </div>
+  <div class="card-body">
+    <div class="grid-4">
+      <div class="metric">
+        <div class="metric-label">Current Sequence</div>
+        <div class="metric-value" id="currentSeq">-</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Events/Second</div>
+        <div class="metric-value" id="eventsPerSecond">-</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Subscribers</div>
+        <div class="metric-value" id="subscriberCount">-</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Health</div>
+        <div class="metric-value" id="healthStatus">-</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Events/Second (24h)</h2>
+  </div>
+  <div class="card-body">
+    <canvas id="eventsPerSecondChart" style="max-height: 300px;"></canvas>
+  </div>
+</div>
+
+<div class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Subscribers (24h)</h2>
+  </div>
+  <div class="card-body">
+    <canvas id="subscribersChart" style="max-height: 300px;"></canvas>
+  </div>
+</div>
+
+<div class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Backpressure Events</h2>
+  </div>
+  <div class="card-body">
+    <div class="grid-3">
+      <div class="metric">
+        <div class="metric-label">Warnings</div>
+        <div class="metric-value" id="backpressureWarnings">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Critical</div>
+        <div class="metric-value" id="backpressureCritical">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Queue Overflows</div>
+        <div class="metric-value" id="queueOverflows">0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Sequencer stats will be loaded by admin-diagnostics.js
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.DiagnosticsSequencer && window.DiagnosticsSequencer.init) {
+    window.DiagnosticsSequencer.init();
+  }
+});
+</script>

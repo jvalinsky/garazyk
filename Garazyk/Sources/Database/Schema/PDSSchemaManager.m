@@ -142,6 +142,102 @@
            @")";
 }
 
+- (NSString *)sequencerAnalyticsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS sequencer_analytics ("
+           @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           @"    timestamp INTEGER NOT NULL,"
+           @"    seq_number INTEGER NOT NULL,"
+           @"    events_per_second REAL,"
+           @"    subscriber_count INTEGER,"
+           @"    backpressure_warnings INTEGER,"
+           @"    backpressure_critical INTEGER,"
+           @"    queue_overflows INTEGER,"
+           @"    event_type_distribution TEXT,"
+           @"    created_at INTEGER NOT NULL"
+           @")";
+}
+
+- (NSString *)blobAuditJobsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS blob_audit_jobs ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    job_type TEXT NOT NULL,"
+           @"    status TEXT NOT NULL,"
+           @"    started_at INTEGER,"
+           @"    completed_at INTEGER,"
+           @"    progress REAL DEFAULT 0.0,"
+           @"    results TEXT,"
+           @"    error TEXT,"
+           @"    created_at INTEGER NOT NULL"
+           @")";
+}
+
+- (NSString *)rateLimitHistoryTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS rate_limit_history ("
+           @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           @"    identifier TEXT NOT NULL,"
+           @"    type TEXT NOT NULL,"
+           @"    action TEXT NOT NULL,"
+           @"    admin_did TEXT,"
+           @"    reason TEXT,"
+           @"    timestamp INTEGER NOT NULL"
+           @")";
+}
+
+#pragma mark - Ozone Moderation Schemas
+
+- (NSString *)ozoneEventsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_events ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    action TEXT NOT NULL,"
+           @"    subject_did TEXT NOT NULL,"
+           @"    subject_type TEXT NOT NULL,"
+           @"    reason TEXT,"
+           @"    created_by TEXT NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    details_json TEXT"
+           @")";
+}
+
+- (NSString *)ozoneSetsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_sets ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    name TEXT NOT NULL,"
+           @"    description TEXT,"
+           @"    created_by TEXT NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    updated_at REAL NOT NULL"
+           @")";
+}
+
+- (NSString *)ozoneSetMembersTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_set_members ("
+           @"    set_id TEXT NOT NULL,"
+           @"    did TEXT NOT NULL,"
+           @"    added_at REAL NOT NULL,"
+           @"    PRIMARY KEY (set_id, did),"
+           @"    FOREIGN KEY (set_id) REFERENCES moderation_sets(id) ON DELETE CASCADE"
+           @")";
+}
+
+- (NSString *)ozoneTemplatesTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_templates ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    name TEXT NOT NULL,"
+           @"    text TEXT NOT NULL,"
+           @"    created_by TEXT NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    updated_at REAL NOT NULL"
+           @")";
+}
+
+- (NSString *)ozoneTeamTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_team ("
+           @"    did TEXT PRIMARY KEY,"
+           @"    role TEXT NOT NULL,"
+           @"    joined_at REAL NOT NULL"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self serviceAccountsTableSchema]];
@@ -164,6 +260,22 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceActorMutesTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self sequencerAnalyticsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self blobAuditJobsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self rateLimitHistoryTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneEventsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneSetsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneSetMembersTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneTemplatesTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneTeamTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_invite_codes_code ON invite_codes(code);"];
@@ -179,6 +291,20 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_events_seq ON events(seq);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_sequencer_analytics_timestamp ON sequencer_analytics(timestamp);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blob_audit_jobs_status ON blob_audit_jobs(status);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_rate_limit_history_identifier ON rate_limit_history(identifier);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_rate_limit_history_timestamp ON rate_limit_history(timestamp);"];
+    [sql appendString:@";\n\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_events_subject ON moderation_events(subject_did, subject_type);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_events_created ON moderation_events(created_at);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did);"];
     [sql appendString:@";\n\n"];
     [sql appendString:[self schemaVersionTableSQL]];
     return sql;

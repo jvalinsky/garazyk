@@ -103,6 +103,28 @@
           </div>
         </div>
 
+        <!-- Diagnostics Section -->
+        <div class="sidebar-section" data-service="pds">
+          <button class="sidebar-section-title" aria-expanded="false" aria-controls="diagnostics-items">
+            <span>Diagnostics</span>
+            <span class="sidebar-section-toggle">▶</span>
+          </button>
+          <div class="sidebar-items hidden" id="diagnostics-items">
+            <button class="sidebar-item" hx-get="/admin/partials/diagnostics/overview" hx-target="#content-pane" hx-push-url="/admin/diagnostics">
+              Overview
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/diagnostics/sequencer" hx-target="#content-pane" hx-push-url="/admin/diagnostics/sequencer">
+              Sequencer Health
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/diagnostics/blobs" hx-target="#content-pane" hx-push-url="/admin/diagnostics/blobs">
+              Blob Audits
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/diagnostics/ratelimits" hx-target="#content-pane" hx-push-url="/admin/diagnostics/ratelimits">
+              Rate Limits
+            </button>
+          </div>
+        </div>
+
         <!-- PLC Section -->
         <div class="sidebar-section" data-service="plc">
           <button class="sidebar-section-title" aria-expanded="false" aria-controls="plc-items">
