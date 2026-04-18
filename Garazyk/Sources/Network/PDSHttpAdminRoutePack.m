@@ -99,68 +99,102 @@
 }
 
 + (void)registerAdminUIRoutesWithServer:(HttpServer *)server {
-  NSFileManager *fm = [NSFileManager defaultManager];
-  NSString *assetsPath = nil;
+  PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
 
-  NSArray *candidates = @[
-    [[[NSBundle mainBundle] resourcePath]
-        stringByAppendingPathComponent:@"AdminUI/Assets"],
-    [[NSBundle bundleForClass:[self class]].resourcePath
-        stringByAppendingPathComponent:@"AdminUI/Assets"],
-    [[fm currentDirectoryPath]
-        stringByAppendingPathComponent:@"Garazyk/Sources/Admin/AdminUI/Assets"],
-    [[fm currentDirectoryPath]
-        stringByAppendingPathComponent:@"Garazyk/Sources/App/AdminUI/Assets"],
-    [[[fm currentDirectoryPath]
-        stringByAppendingPathComponent:@"../Garazyk/Sources/Admin/AdminUI/Assets"]
-        stringByStandardizingPath],
-    [[[fm currentDirectoryPath]
-        stringByAppendingPathComponent:@"../Garazyk/Sources/App/AdminUI/Assets"]
-        stringByStandardizingPath],
-    @"/usr/share/atprotopds/assets/AdminUI",
-    @"/usr/local/share/atprotopds/assets/AdminUI"
-  ];
-
-  for (NSString *candidate in candidates) {
-    if ([fm fileExistsAtPath:candidate]) {
-      assetsPath = candidate;
-      break;
-    }
-  }
-
-  if (!assetsPath) {
-    PDS_LOG_WARN(@"PDSHttpAdminRoutePack: Admin UI assets not found");
-    return;
-  }
-  PDS_LOG_INFO(@"PDSHttpAdminRoutePack: Admin UI assets found at %@",
-               assetsPath);
-
+  // Register /admin/ui entry point
   [server addRoute:@"GET"
-              path:@"/admin-ui/*"
+              path:@"/admin/ui"
            handler:^(HttpRequest *request, HttpResponse *response) {
-             NSString *filePath = [request.path
-                 stringByReplacingOccurrencesOfString:@"/admin-ui/"
-                                           withString:@""];
-             if ([filePath containsString:@".."]) {
-               response.statusCode = 403;
-               [response setJsonBody:@{@"error" : @"Forbidden"}];
-               return;
-             }
-
-             NSString *fullPath =
-                 [assetsPath stringByAppendingPathComponent:filePath];
-             NSData *data = [NSData dataWithContentsOfFile:fullPath];
-             if (data) {
-               response.statusCode = 200;
-               if ([filePath hasSuffix:@".js"]) {
-                 [response setHeader:@"application/javascript"
-                              forKey:@"Content-Type"];
-               } else if ([filePath hasSuffix:@".css"]) {
-                 [response setHeader:@"text/css" forKey:@"Content-Type"];
-               } else if ([filePath hasSuffix:@".html"]) {
-                 [response setHeader:@"text/html" forKey:@"Content-Type"];
+             NSInteger statusCode = 200;
+             NSString *contentType = nil;
+             NSString *result =
+                 [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                  path:@"/admin/ui"
+                                               headers:request.headers
+                                                  body:request.body
+                                            statusCode:&statusCode
+                                           contentType:&contentType];
+             if (result) {
+               response.statusCode = statusCode;
+               if (contentType.length > 0) {
+                 [response setHeader:contentType forKey:@"Content-Type"];
                }
-               [response setBodyData:data];
+               [response setBodyString:result];
+             } else {
+               response.statusCode = 404;
+               [response setJsonBody:@{@"error" : @"Not Found"}];
+             }
+           }];
+
+  // Register /admin/assets/* for static assets
+  [server addRoute:@"GET"
+              path:@"/admin/assets/*"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             NSInteger statusCode = 200;
+             NSString *contentType = nil;
+             NSString *result =
+                 [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                  path:request.path
+                                               headers:request.headers
+                                                  body:request.body
+                                            statusCode:&statusCode
+                                           contentType:&contentType];
+             if (result) {
+               response.statusCode = statusCode;
+               if (contentType.length > 0) {
+                 [response setHeader:contentType forKey:@"Content-Type"];
+               }
+               [response setBodyString:result];
+             } else {
+               response.statusCode = 404;
+               [response setJsonBody:@{@"error" : @"Not Found"}];
+             }
+           }];
+
+  // Register /admin/css/* for CSS files
+  [server addRoute:@"GET"
+              path:@"/admin/css/*"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             NSInteger statusCode = 200;
+             NSString *contentType = nil;
+             NSString *result =
+                 [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                  path:request.path
+                                               headers:request.headers
+                                                  body:request.body
+                                            statusCode:&statusCode
+                                           contentType:&contentType];
+             if (result) {
+               response.statusCode = statusCode;
+               if (contentType.length > 0) {
+                 [response setHeader:contentType forKey:@"Content-Type"];
+               }
+               [response setBodyString:result];
+             } else {
+               response.statusCode = 404;
+               [response setJsonBody:@{@"error" : @"Not Found"}];
+             }
+           }];
+
+  // Register /admin/js/* for JavaScript files
+  [server addRoute:@"GET"
+              path:@"/admin/js/*"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             NSInteger statusCode = 200;
+             NSString *contentType = nil;
+             NSString *result =
+                 [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                  path:request.path
+                                               headers:request.headers
+                                                  body:request.body
+                                            statusCode:&statusCode
+                                           contentType:&contentType];
+             if (result) {
+               response.statusCode = statusCode;
+               if (contentType.length > 0) {
+                 [response setHeader:contentType forKey:@"Content-Type"];
+               }
+               [response setBodyString:result];
              } else {
                response.statusCode = 404;
                [response setJsonBody:@{@"error" : @"Not Found"}];
