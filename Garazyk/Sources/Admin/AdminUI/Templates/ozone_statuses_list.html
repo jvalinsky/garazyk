@@ -1,0 +1,32 @@
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Subject</th>
+        <th>State</th>
+        <th>Last Action</th>
+        <th>Updated At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each statuses}}
+      <tr>
+        <td class="text-xs"><code>{{subject.did}}</code></td>
+        <td><span class="badge">{{reviewState}}</span></td>
+        <td class="text-xs">{{lastEvent.action}}</td>
+        <td class="text-xs">{{updatedAt}}</td>
+        <td>
+          <button class="btn btn-xs" data-action="ozone-audit" data-did="{{subject.did}}">Audit</button>
+        </td>
+      </tr>
+      {{/each}}
+      {{#if statuses.length}}
+      {{else}}
+      <tr>
+        <td colspan="5" class="text-center text-secondary">No subject statuses found.</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</div>
