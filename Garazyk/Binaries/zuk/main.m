@@ -20,7 +20,6 @@
 #import "Sync/Relay/RelayDownstreamHandler.h"
 #import "Sync/Relay/RelayRepoStateManager.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
-#import "App/CappuccinoUI/CappuccinoUIHandler.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -318,8 +317,6 @@ int main(int argc, const char * argv[]) {
 
         // Create HTTP server
         HttpServer *server = [HttpServer serverWithPort:port];
-        CappuccinoUIHandler *cappuccinoUIHandler = [CappuccinoUIHandler sharedHandler];
-        [cappuccinoUIHandler setServiceProfile:@"relay"];
 
         // Root info endpoint
         [server addRoute:@"GET"
@@ -335,25 +332,6 @@ int main(int argc, const char * argv[]) {
                      response.statusCode = 200;
                      [response setBody:json];
                  }];
-
-// Objective-J service UI
-        [server addRoute:@"GET"
-                    path:@"/"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-                      [cappuccinoUIHandler handleRequest:request response:response];
-                  }];
-
-        [server addRoute:@"GET"
-                    path:@"/ui"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-                      [cappuccinoUIHandler handleRequest:request response:response];
-                  }];
-
-        [server addRoute:@"GET"
-                    path:@"/ui/*"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-                      [cappuccinoUIHandler handleRequest:request response:response];
-                  }];
 
         [server addRoute:@"GET"
                     path:@"/favicon.ico"

@@ -2029,6 +2029,51 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     return YES;
 }
 
+- (BOOL)transactWithBlock:(void (^)(NSError **error))block error:(NSError **)error {
+    if (!block) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
+                                          code:PDSDatabaseErrorQueryFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Block cannot be nil"}];
+        }
+        return NO;
+    }
+
+    NSError *beginError = nil;
+    if (![self beginTransactionWithError:&beginError]) {
+        if (error) *error = beginError;
+        return NO;
+    }
+
+    @try {
+        NSError *blockError = nil;
+        block(&blockError);
+
+        if (blockError) {
+            [self rollbackTransactionWithError:nil];
+            if (error) *error = blockError;
+            return NO;
+        }
+
+        NSError *commitError = nil;
+        if (![self commitTransactionWithError:&commitError]) {
+            [self rollbackTransactionWithError:nil];
+            if (error) *error = commitError;
+            return NO;
+        }
+
+        return YES;
+    } @catch (NSException *exception) {
+        [self rollbackTransactionWithError:nil];
+        if (error) {
+            *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
+                                          code:PDSDatabaseErrorQueryFailed
+                                      userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Transaction failed"}];
+        }
+        return NO;
+    }
+}
+
 #pragma mark - Helpers
 
 - (void)bindData:(nullable NSData *)data toStatement:(sqlite3_stmt *)stmt index:(int)index {
