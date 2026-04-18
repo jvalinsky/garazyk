@@ -791,6 +791,22 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  */
 - (BOOL)rollbackTransactionWithError:(NSError **)error;
 
+/*!
+ @method transactWithBlock:error:
+
+ @abstract Executes a block within a transaction.
+
+ @discussion Begins a transaction, executes the block, and commits if the block
+ returns without error. If the block sets the error pointer or throws an exception,
+ the transaction is rolled back.
+
+ @param block The block to execute within the transaction. The block receives an
+ error pointer to set if an error occurs.
+ @param error On return, contains an error if the transaction failed.
+ @return YES if the transaction committed successfully, NO otherwise.
+ */
+- (BOOL)transactWithBlock:(void (^)(NSError **error))block error:(NSError **)error;
+
 @end
 
 /*!

@@ -9,7 +9,7 @@
     // Query MAX(version) from schema_version table
     NSString *sql = @"SELECT MAX(version) as max_version FROM schema_version";
 
-    NSArray *result = [database executeQuery:sql params:@[] error:error];
+    NSArray *result = [database executeParameterizedQuery:sql params:@[] error:error];
     if (!result || result.count == 0) {
         return 0; // No version table or no migrations yet
     }
@@ -52,9 +52,7 @@
 
             // Record migration in schema_version table
             NSString *insertSQL = @"INSERT INTO schema_version (version, description) VALUES (?, ?)";
-            [database executeUpdate:insertSQL params:@[@(migration.version), migration.description] error:txError];
-
-            if (txError && *txError) {
+            if (![database executeParameterizedUpdate:insertSQL params:@[@(migration.version), migration.description] error:txError]) {
                 PDS_LOG_DB_ERROR(@"Failed to record migration %ld: %@", (long)migration.version, *txError);
                 success = NO;
                 return;

@@ -183,7 +183,7 @@
         [[fm currentDirectoryPath]
             stringByAppendingPathComponent:[NSString stringWithFormat:@"Garazyk/Sources/Admin/AdminUI/Templates/%@.html", name]],
         [[[fm currentDirectoryPath]
-            stringByAppendingPathComponent:@"../Garazyk/Sources/Admin/AdminUI/Templates/%@.html", name]
+            stringByAppendingPathComponent:[NSString stringWithFormat:@"../Garazyk/Sources/Admin/AdminUI/Templates/%@.html", name]]
             stringByStandardizingPath]
     ];
 
