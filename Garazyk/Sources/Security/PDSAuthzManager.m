@@ -150,9 +150,15 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
 }
 
 - (BOOL)isAuthorizedForAdminOperation:(NSString *)requestingDID error:(NSError **)error {
+    // Admin access is granted only from JWT scope validation in XrpcMethodRegistry.
+    // This method validates the requesting DID exists, but authorization must be verified
+    // through the JWT scope claim ("admin") to prevent privilege escalation.
+
     if (!requestingDID) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorAdminRequired userInfo:@{NSLocalizedDescriptionKey: @"Admin authentication required"}];
+            *error = [NSError errorWithDomain:PDSAuthzErrorDomain
+                                         code:PDSAuthzErrorAdminRequired
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Admin authentication required"}];
         }
         return NO;
     }
@@ -160,21 +166,22 @@ static NSSet<NSString *> *kNonNamespaceAdminMethods = nil;
     PDSDatabaseAccount *account = [self.database getAccountByDid:requestingDID error:nil];
     if (!account) {
         if (error) {
-            *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorUnauthorized userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+            *error = [NSError errorWithDomain:PDSAuthzErrorDomain
+                                         code:PDSAuthzErrorUnauthorized
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
         }
         return NO;
     }
 
-    // Legacy handle/DID prefix-based escalation was removed.
-    // Admin access is granted only from JWT scope validation in XrpcMethodRegistry.
-    // Keep this path deny-by-default to avoid accidental bypass.
-    
+    // Account exists. Authorization is verified through JWT scope validation.
+    // Caller must check JWT "admin" scope before calling this method.
+    // Deny-by-default to prevent accidental privilege escalation.
     if (error) {
-        *error = [NSError errorWithDomain:PDSAuthzErrorDomain code:PDSAuthzErrorAdminRequired userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (check JWT scope)"}];
+        *error = [NSError errorWithDomain:PDSAuthzErrorDomain
+                                     code:PDSAuthzErrorAdminRequired
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Admin privileges required (verify JWT 'admin' scope)"}];
     }
     return NO;
-
-    return YES;
 }
 
 - (BOOL)validateWriteAccess:(NSString *)repoDID
