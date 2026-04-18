@@ -5,13 +5,15 @@
 
   import { AdminPanel } from './admin-panel.js';
   import { AdminChat } from './admin-chat.js';
+  import { AdminOzone } from './admin-ozone.js';
+  import { AdminSecurity } from './admin-security.js';
 
   // ============================================================================
   // Configuration
   // ============================================================================
 
   const CONFIG = {
-    services: ['pds', 'plc', 'relay', 'appview', 'chat', 'ozone'],
+    services: ['pds', 'plc', 'relay', 'appview', 'chat', 'ozone', 'security'],
     activeServiceKey: 'adminui_active_service',
     sidebarCollapsePrefix: 'sidebar_collapsed_',
   };
@@ -393,6 +395,8 @@
     
     // Feature Initializations
     AdminChat.init();
+    AdminOzone.init();
+    AdminSecurity.init();
   });
 
   // ============================================================================

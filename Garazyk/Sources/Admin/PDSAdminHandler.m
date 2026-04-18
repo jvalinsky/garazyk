@@ -6,6 +6,7 @@
 #import "App/PDSController.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Admin/AdminUI/Handlers/AdminUIHandler.h"
+#import "Admin/AdminPartialHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -174,17 +175,28 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 
     // AdminUI partials require authentication
     if ([path hasPrefix:@"/admin/partials/"]) {
+        AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
+        NSString *response = [partialHandler handlePartialRequestWithPath:path
+                                                                 headers:headers
+                                                                    body:body];
+
+        if (response) {
+            // Assume 200 for partials from template handler for now
+            return [self htmlResponseWithStatus:200 contentType:@"text/html" body:response];
+        }
+        
+        // Fallback to AdminUIHandler if template handler didn't return anything
         AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
         AdminUIHTTPMethod uiMethod = (AdminUIHTTPMethod)method;
         NSInteger statusCode = 200;
         NSString *contentType = @"text/html";
 
-        NSString *response = [uiHandler handleRequestWithMethod:uiMethod
-                                                           path:path
-                                                        headers:headers
-                                                           body:body
-                                                     statusCode:&statusCode
-                                                    contentType:&contentType];
+        response = [uiHandler handleRequestWithMethod:uiMethod
+                                                 path:path
+                                              headers:headers
+                                                 body:body
+                                           statusCode:&statusCode
+                                          contentType:&contentType];
 
         if (response) {
             return [self htmlResponseWithStatus:statusCode contentType:contentType body:response];
@@ -213,6 +225,10 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         return [self handleAdminStats:headers body:body];
     } else if ([path isEqualToString:@"/admin/audit-log"]) {
         return [self handleAdminAuditLog:headers body:body];
+    } else if ([path hasPrefix:@"/admin/security/sessions"]) {
+        return [self handleAdminSecuritySessions:headers body:body method:method path:path];
+    } else if ([path hasPrefix:@"/admin/security/app-passwords"]) {
+        return [self handleAdminSecurityAppPasswords:headers body:body method:method path:path];
     }
 
     return nil;
@@ -531,6 +547,92 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     }
     
     return [self jsonResponseWithStatus:200 body:result];
+}
+
+#pragma mark - Security Handlers
+
+- (NSDictionary *)handleAdminSecuritySessions:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method path:(NSString *)path {
+    if (method == PDSHTTPMethodGET) {
+        NSDictionary *params = [self parseQueryString:path];
+        NSString *did = params[@"did"];
+        if (!did) {
+            return [self jsonResponseWithStatus:200 body:@{@"sessions": @[]}];
+        }
+        NSError *error = nil;
+        NSArray *sessions = [self.database listSessionsForDid:did error:&error];
+        
+        // Clean up token display (only show prefix)
+        NSMutableArray *cleaned = [NSMutableArray array];
+        for (NSDictionary *s in sessions) {
+            NSMutableDictionary *m = [s mutableCopy];
+            NSString *token = m[@"token"];
+            if (token.length > 8) {
+                m[@"token"] = [token substringToIndex:8];
+            }
+            [cleaned addObject:m];
+        }
+        return [self jsonResponseWithStatus:200 body:@{@"sessions": cleaned}];
+    } else if (method == PDSHTTPMethodPOST) {
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:nil];
+        NSString *action = json[@"action"];
+        if ([action isEqualToString:@"revoke"]) {
+            NSString *token = json[@"token"];
+            if (token) {
+                [self.database revokeSession:token error:nil];
+                return [self jsonResponseWithStatus:200 body:@{@"success": @YES}];
+            }
+        } else if ([action isEqualToString:@"revokeAll"]) {
+            NSString *did = json[@"did"];
+            if (did) {
+                [self.database revokeAllSessionsForDid:did error:nil];
+                return [self jsonResponseWithStatus:200 body:@{@"success": @YES}];
+            }
+        }
+    }
+    return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid request"}];
+}
+
+- (NSDictionary *)handleAdminSecurityAppPasswords:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method path:(NSString *)path {
+    if (method == PDSHTTPMethodGET) {
+        NSDictionary *params = [self parseQueryString:path];
+        NSString *did = params[@"did"];
+        if (!did) {
+            return [self jsonResponseWithStatus:200 body:@{@"app_passwords": @[]}];
+        }
+        NSError *error = nil;
+        NSArray *passwords = [self.database listAppPasswordsForDid:did error:&error];
+        return [self jsonResponseWithStatus:200 body:@{@"app_passwords": passwords ?: @[]}];
+    } else if (method == PDSHTTPMethodPOST) {
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:nil];
+        NSString *action = json[@"action"];
+        if ([action isEqualToString:@"revoke"]) {
+            NSString *did = json[@"did"];
+            NSString *passwordId = json[@"id"];
+            if (did && passwordId) {
+                [self.database revokeAppPassword:passwordId forDid:did error:nil];
+                return [self jsonResponseWithStatus:200 body:@{@"success": @YES}];
+            }
+        }
+    }
+    return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid request"}];
+}
+
+- (NSDictionary *)parseQueryString:(NSString *)url {
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    NSRange queryStart = [url rangeOfString:@"?"];
+    if (queryStart.location != NSNotFound) {
+        NSString *queryString = [url substringFromIndex:queryStart.location + 1];
+        NSArray *pairs = [queryString componentsSeparatedByString:@"&"];
+        for (NSString *pair in pairs) {
+            NSArray *components = [pair componentsSeparatedByString:@"="];
+            if (components.count == 2) {
+                NSString *key = [components[0] stringByRemovingPercentEncoding];
+                NSString *value = [components[1] stringByRemovingPercentEncoding];
+                params[key] = value;
+            }
+        }
+    }
+    return [params copy];
 }
 
 - (NSDictionary *)packetWithStatus:(NSInteger)status

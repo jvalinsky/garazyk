@@ -517,6 +517,15 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
                    dpopJWK:(nullable NSDictionary *)dpopJWK
                 completion:(OAuth2RefreshCompletion)completion;
 
+#pragma mark - Security Administration
+
+- (nullable NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error;
+- (BOOL)revokeSession:(NSString *)token error:(NSError **)error;
+- (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error;
+
+- (nullable NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error;
+- (BOOL)revokeAppPassword:(NSString *)passwordId forDid:(NSString *)did error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
