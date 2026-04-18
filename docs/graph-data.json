@@ -4795,6 +4795,61 @@
       "created_at": "2026-04-18T11:42:19.654225-04:00",
       "updated_at": "2026-04-18T11:42:19.670471-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/Admin/AdminUI/Handlers/AdminUIHandler.m\"],\"prompt\":\"Add Ozone sidebar section, implement moderation views, and add global chat monitoring to Admin UI.\"}"
+    },
+    {
+      "id": 437,
+      "change_id": "bfe6e8ea-4a54-4eef-82b7-07f553e5a1bb",
+      "node_type": "goal",
+      "title": "Implement Advanced Admin UI Controls",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-18T11:45:51.951118-04:00",
+      "updated_at": "2026-04-18T11:45:51.951118-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"docs/plans/2026-04-18-admin-chat-groups.md\",\"docs/plans/2026-04-18-admin-ozone-advanced.md\",\"docs/plans/2026-04-18-admin-security-sessions.md\",\"docs/plans/2026-04-18-admin-diagnostics.md\"],\"prompt\":\"Expose unexposed backend APIs (Groups, Ozone, Security, Diagnostics) in the Admin Center.\"}"
+    },
+    {
+      "id": 438,
+      "change_id": "aeb876c9-c338-451b-aa8f-c9ccb82a3f00",
+      "node_type": "action",
+      "title": "Chat Group Administration UI",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T11:45:51.989089-04:00",
+      "updated_at": "2026-04-18T11:53:01.772686-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"docs/plans/2026-04-18-admin-chat-groups.md\"],\"prompt\":\"Implement UI for managing chat groups, members, and invite links.\"}"
+    },
+    {
+      "id": 439,
+      "change_id": "b9f8f074-4aa4-4502-9b23-3d33814d87de",
+      "node_type": "action",
+      "title": "Ozone Advanced Operations UI",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-18T11:45:52.026212-04:00",
+      "updated_at": "2026-04-18T11:45:52.026212-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"docs/plans/2026-04-18-admin-ozone-advanced.md\"],\"prompt\":\"Implement UI for moderation sets, account correlations, and verification status.\"}"
+    },
+    {
+      "id": 440,
+      "change_id": "ea6f54af-9b89-497d-be2f-57f182e2a31d",
+      "node_type": "action",
+      "title": "Security & Session Dashboard",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-18T11:45:52.063365-04:00",
+      "updated_at": "2026-04-18T11:45:52.063365-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"docs/plans/2026-04-18-admin-security-sessions.md\"],\"prompt\":\"Implement UI for auditing active user sessions and managing app passwords.\"}"
+    },
+    {
+      "id": 441,
+      "change_id": "fcb26495-a517-4d29-ae65-531cce862610",
+      "node_type": "action",
+      "title": "System Diagnostics Dashboard",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-18T11:45:52.100273-04:00",
+      "updated_at": "2026-04-18T11:45:52.100273-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"docs/plans/2026-04-18-admin-diagnostics.md\"],\"prompt\":\"Implement UI for sequencer monitoring, blob integrity audits, and rate limit visibility.\"}"
     }
   ],
   "edges": [
@@ -9120,6 +9175,50 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-18T11:42:19.662479-04:00"
+    },
+    {
+      "id": 394,
+      "from_node_id": 437,
+      "to_node_id": 438,
+      "from_change_id": "bfe6e8ea-4a54-4eef-82b7-07f553e5a1bb",
+      "to_change_id": "aeb876c9-c338-451b-aa8f-c9ccb82a3f00",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T11:45:57.318201-04:00"
+    },
+    {
+      "id": 395,
+      "from_node_id": 437,
+      "to_node_id": 439,
+      "from_change_id": "bfe6e8ea-4a54-4eef-82b7-07f553e5a1bb",
+      "to_change_id": "b9f8f074-4aa4-4502-9b23-3d33814d87de",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T11:45:57.330059-04:00"
+    },
+    {
+      "id": 396,
+      "from_node_id": 437,
+      "to_node_id": 440,
+      "from_change_id": "bfe6e8ea-4a54-4eef-82b7-07f553e5a1bb",
+      "to_change_id": "ea6f54af-9b89-497d-be2f-57f182e2a31d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T11:45:57.340687-04:00"
+    },
+    {
+      "id": 397,
+      "from_node_id": 437,
+      "to_node_id": 441,
+      "from_change_id": "bfe6e8ea-4a54-4eef-82b7-07f553e5a1bb",
+      "to_change_id": "fcb26495-a517-4d29-ae65-531cce862610",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T11:45:57.349850-04:00"
     }
   ],
   "documents": [
