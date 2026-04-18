@@ -19,11 +19,35 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NSString *)assetsDirectoryPath {
+    // For command-line tools, look for AdminUI relative to executable location
+    NSString *executablePath = [[NSBundle mainBundle] executablePath];
+    NSString *baseDir = [executablePath stringByDeletingLastPathComponent];
+
+    // Try in the build directory structure first (for development)
+    NSString *buildAssetsPath = [baseDir stringByAppendingPathComponent:@"../../../Garazyk/Sources/Admin/AdminUI/Assets"];
+    NSString *resolvedPath = [buildAssetsPath stringByResolvingSymlinksInPath];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:resolvedPath]) {
+        return resolvedPath;
+    }
+
+    // Fallback to bundle path (for deployed app)
     NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
     return [bundlePath stringByAppendingPathComponent:@"AdminUI/Assets"];
 }
 
 - (NSString *)templatesDirectoryPath {
+    // For command-line tools, look for AdminUI relative to executable location
+    NSString *executablePath = [[NSBundle mainBundle] executablePath];
+    NSString *baseDir = [executablePath stringByDeletingLastPathComponent];
+
+    // Try in the build directory structure first (for development)
+    NSString *buildTemplatesPath = [baseDir stringByAppendingPathComponent:@"../../../Garazyk/Sources/Admin/AdminUI/Templates"];
+    NSString *resolvedPath = [buildTemplatesPath stringByResolvingSymlinksInPath];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:resolvedPath]) {
+        return resolvedPath;
+    }
+
+    // Fallback to bundle path (for deployed app)
     NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
     return [bundlePath stringByAppendingPathComponent:@"AdminUI/Templates"];
 }
