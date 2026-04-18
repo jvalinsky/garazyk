@@ -23,6 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
         newPrivacy:(nullable NSString *)privacy
              error:(NSError **)error;
 
+- (BOOL)deleteGroup:(NSString *)groupUri
+              error:(NSError **)error;
+
 - (nullable NSDictionary *)getGroupPublicInfo:(NSString *)groupUri
                                        error:(NSError **)error;
 
@@ -41,12 +44,22 @@ NS_ASSUME_NONNULL_BEGIN
                                                 cursor:(nullable NSString *)cursor
                                                  error:(NSError **)error;
 
+- (nullable NSArray<NSDictionary *> *)listAllGroupsWithLimit:(NSInteger)limit
+                                                      cursor:(nullable NSString *)cursor
+                                                       query:(nullable NSString *)query
+                                                       error:(NSError **)error;
+
 // Invite links
 - (nullable NSString *)createInviteLinkForGroup:(NSString *)groupUri
                                       createdBy:(NSString *)createdByDid
                                        expiresAt:(nullable NSString *)expiresAt
                                         maxUses:(nullable NSNumber *)maxUses
                                           error:(NSError **)error;
+
+- (nullable NSArray<NSDictionary *> *)listAllInviteLinksWithLimit:(NSInteger)limit
+                                                           cursor:(nullable NSString *)cursor
+                                                            query:(nullable NSString *)query
+                                                            error:(NSError **)error;
 
 - (BOOL)editInviteLink:(NSString *)linkId
               enabled:(NSNumber *)enabled

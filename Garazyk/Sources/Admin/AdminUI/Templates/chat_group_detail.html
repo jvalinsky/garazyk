@@ -1,0 +1,49 @@
+<div class="group-header mb-lg">
+  <h3>{{name}}</h3>
+  <p class="text-secondary">{{description}}</p>
+  <div class="mt-md">
+    <span class="badge">{{privacy}}</span>
+    <span class="badge">{{joinability}}</span>
+    <span class="text-xs ml-md text-tertiary">Created: {{createdAt}}</span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h4>Members ({{memberCount}})</h4></div>
+    <div class="card-body">
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>DID</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each members}}
+            <tr>
+              <td class="text-xs"><code>{{did}}</code></td>
+              <td>{{role}}</td>
+              <td>
+                <button class="btn btn-xs btn-destructive" data-action="remove-member" data-did="{{did}}" data-group="{{../uri}}">Remove</button>
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h4>Advanced Actions</h4></div>
+    <div class="card-body">
+      <div class="btn-group-vertical">
+        <button class="btn btn-destructive" data-action="delete-group" data-uri="{{uri}}">Delete Group Permanently</button>
+        <button class="btn" hx-get="/admin/partials/chat/messages?groupUri={{uri}}" hx-target="#content-pane">Audit Messages</button>
+      </div>
+    </div>
+  </div>
+</div>

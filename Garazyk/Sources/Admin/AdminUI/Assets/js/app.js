@@ -3,6 +3,9 @@
 (function() {
   'use strict';
 
+  import { AdminPanel } from './admin-panel.js';
+  import { AdminChat } from './admin-chat.js';
+
   // ============================================================================
   // Configuration
   // ============================================================================
@@ -387,6 +390,9 @@
     initTableHandlers();
     initDialogHandlers();
     initSearchHandlers();
+    
+    // Feature Initializations
+    AdminChat.init();
   });
 
   // ============================================================================

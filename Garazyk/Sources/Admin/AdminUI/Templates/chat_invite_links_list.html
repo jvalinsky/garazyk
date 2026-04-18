@@ -1,0 +1,44 @@
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Group</th>
+        <th>Created By</th>
+        <th>Uses</th>
+        <th>Max</th>
+        <th>Enabled</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each links}}
+      <tr>
+        <td><code>{{id}}</code></td>
+        <td class="text-xs">{{group_uri}}</td>
+        <td class="text-xs">{{created_by}}</td>
+        <td>{{uses}}</td>
+        <td>{{#if max_uses}}{{max_uses}}{{else}}∞{{/if}}</td>
+        <td>
+          {{#if enabled}}
+          <span class="badge badge-success">Active</span>
+          {{else}}
+          <span class="badge badge-secondary">Disabled</span>
+          {{/if}}
+        </td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-xs btn-destructive" data-action="revoke-link" data-id="{{id}}">Revoke</button>
+          </div>
+        </td>
+      </tr>
+      {{/each}}
+      {{#if links.length}}
+      {{else}}
+      <tr>
+        <td colspan="7" class="text-center text-secondary">No invite links found.</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</div>
