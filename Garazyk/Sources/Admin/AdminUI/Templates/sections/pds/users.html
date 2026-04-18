@@ -1,0 +1,51 @@
+<div class="content-header">
+  <h2>Users</h2>
+  <p class="text-secondary">Manage user accounts, deactivate, and delete users.</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Search Users</h3>
+  </div>
+  <div class="card-body">
+    <form class="form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">DID or Handle</label>
+          <input
+            type="text"
+            name="q"
+            class="form-input"
+            placeholder="did:plc:... or user@domain"
+            hx-get="/admin/partials/users/search"
+            hx-trigger="input changed debounce:500ms"
+            hx-target="#users-list"
+            autocomplete="off">
+        </div>
+      </div>
+      <div class="form-help">Enter a DID or handle to search for users.</div>
+    </form>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>DID</th>
+        <th>Handle</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="users-list">
+      <tr>
+        <td colspan="6" class="text-secondary text-center p-lg">
+          Enter a search query to load users.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

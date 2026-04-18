@@ -1,0 +1,77 @@
+<div class="content-header">
+  <h2>Export Operations</h2>
+  <p class="text-secondary">Export PLC directory operations in JSONL format for backup or analysis.</p>
+</div>
+
+<div class="grid-2 mb-lg">
+  <!-- Export Form -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Export Configuration</h3>
+    </div>
+    <div class="card-body">
+      <form class="form" hx-get="/plc/export" hx-target="#export-status" hx-swap="innerHTML">
+        <div class="form-group">
+          <label class="form-label">Count</label>
+          <input
+            type="number"
+            name="count"
+            class="form-input"
+            value="1000"
+            min="1"
+            max="100000">
+          <div class="form-help">Number of operations to export.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Starting After</label>
+          <input
+            type="text"
+            name="after"
+            class="form-input"
+            placeholder="Operation CID (optional)">
+          <div class="form-help">Continue export after this operation.</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Start Export</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Export Status -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Export Status</h3>
+    </div>
+    <div class="card-body">
+      <div id="export-status" class="text-secondary">
+        <p>No export in progress.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Streaming Export -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Live Stream Export</h3>
+  </div>
+  <div class="card-body">
+    <p class="text-secondary mb-md">
+      Stream new operations as they occur in the PLC directory.
+    </p>
+    <button
+      type="button"
+      class="btn btn-primary"
+      hx-ext="sse"
+      sse-connect="/plc/export/stream"
+      sse-swap="message"
+      hx-target="#operation-stream">
+      Start Streaming
+    </button>
+    <ul
+      id="operation-stream"
+      class="list mt-md"
+      style="max-height: 400px; overflow-y: auto;">
+      <li class="list-item text-secondary">Waiting for stream connection...</li>
+    </ul>
+  </div>
+</div>
