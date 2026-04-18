@@ -5,6 +5,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpRequest;
 @class HttpResponse;
 @class JWTMinter;
+@protocol XrpcMiddleware;
 
 /*!
  @header XrpcHandler.h
@@ -386,6 +387,24 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 
 /*! Registers handler for com.atproto.admin.resolveReport. */
 - (void)registerComAtprotoAdminResolveReport:(XrpcMethodHandler)handler;
+
+// MARK: - Middleware Support
+
+/*!
+ @method registerMethod:middlewares:handler:
+ 
+ @abstract Registers a handler with middleware chain.
+ 
+ @discussion The middleware chain is executed before the handler. If any middleware
+ returns NO, the chain stops and the response is returned immediately.
+ 
+ @param methodId The method NSID.
+ @param middlewares Array of middleware to execute before handler (can be nil).
+ @param handler The handler to invoke if all middleware pass.
+ */
+- (void)registerMethod:(NSString *)methodId
+           middlewares:(nullable NSArray<id<XrpcMiddleware>> *)middlewares
+               handler:(XrpcMethodHandler)handler;
 
 // MARK: - Label Methods
 
