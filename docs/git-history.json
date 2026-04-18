@@ -1,11 +1,19 @@
 [
   {
-    "hash": "8f900a43b655ca3291d6776aef698738c4b4aed1",
-    "short_hash": "8f900a4",
+    "hash": "e5e5ddfdd06076cd551bb9f76fe22e7fe96ab8e4",
+    "short_hash": "e5e5ddf",
     "author": "Security Bot",
-    "date": "2026-04-18T09:01:29-04:00",
-    "message": "docs: Update git history and graph data\n\n- Add recent commits to git-history.json\n- Update graph-data.json with new decision/action nodes",
+    "date": "2026-04-18T09:32:02-04:00",
+    "message": "docs: update git history and graph data from deciduous sync",
     "files_changed": 2
+  },
+  {
+    "hash": "8ce21b6acfa973e1c82ec81b1b47b4051f700a1f",
+    "short_hash": "8ce21b6",
+    "author": "Security Bot",
+    "date": "2026-04-18T08:57:57-04:00",
+    "message": "feat(database): Add PDSMigrationManager for schema migration management\n\n- Add PDSMigrationManager.h/m with migration tracking and execution\n- Implement schema_version table tracking\n- Add migration executor with transaction support\n- Update test fixtures and tests for migration framework",
+    "files_changed": 6
   },
   {
     "hash": "5f5b220b421ca01686c7e6b5efd3e6b6c39a0ffb",
@@ -14,14 +22,6 @@
     "date": "2026-04-18T08:47:14-04:00",
     "message": "fix(adminui): Set correct content-type using response.contentType property\n\nFixed issue where /admin/ui and static assets were returning with\nincorrect content-type header (application/json instead of text/html).\n\nThe problem was using setHeader:forKey: which only sets headers in the\nheaders dictionary, but the actual response content-type is controlled\nby the response.contentType property.\n\nChanges:\n- Set response.contentType = @\"text/html; charset=utf-8\" for /admin/ui\n- Set response.contentType = @\"text/css; charset=utf-8\" for /admin/css/*\n- Set response.contentType = @\"application/javascript; charset=utf-8\" for /admin/js/*\n- Set response.contentType based on handler return for /admin/assets/*\n\nAdminUI now loads with correct HTTP headers and proper content-type.\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 1
-  },
-  {
-    "hash": "b9c9e41d292fb48697d583fbd81dc7ace1b5ac11",
-    "short_hash": "b9c9e41",
-    "author": "Security Bot",
-    "date": "2026-04-18T08:41:35-04:00",
-    "message": "fix(adminui): Fix routing and asset path resolution\n\nFixed two critical issues with AdminUI integration:\n\n1. **AdminUI Route Registration** (PDSHttpAdminRoutePack.m):\n   - Added missing HTTP route handlers for /admin/ui, /admin/assets/*, /admin/css/*, and /admin/js/*\n   - Routes were defined in PDSAdminHandler but not registered with the HTTP server\n   - Now all AdminUI requests are properly dispatched to the HTTP handlers\n\n2. **Asset Path Resolution** (AdminUIHandler.m):\n   - Fixed off-by-one error in path resolution from build/bin to source tree\n   - Changed from ../../../../ to ../../ to correctly resolve source tree locations\n   - Assets now load correctly from both development and production environments\n\nTesting confirms AdminUI is now fully functional at /admin/ui with HTTP 200 status.\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
-    "files_changed": 3
   },
   {
     "hash": "b9c9e41d292fb48697d583fbd81dc7ace1b5ac11",

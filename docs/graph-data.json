@@ -4718,6 +4718,61 @@
       "created_at": "2026-04-18T08:50:42.688201-04:00",
       "updated_at": "2026-04-18T08:51:17.317890-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5f5b220b\",\"confidence\":95}"
+    },
+    {
+      "id": 430,
+      "change_id": "899eb05e-ed50-4ae2-b200-540d1890f011",
+      "node_type": "goal",
+      "title": "Web UI API Wiring",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T09:38:08.886078-04:00",
+      "updated_at": "2026-04-18T09:42:53.440986-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"docs/scratchpad/2026-04-18-web-ui-api-wiring.md\"],\"prompt\":\"Fully wire up the remaining Web UI APIs, migrate Admin UI to Ozone, and implement real-time health checks.\"}"
+    },
+    {
+      "id": 431,
+      "change_id": "4e1b34ca-62c4-4f3a-a587-7d2f9435a768",
+      "node_type": "action",
+      "title": "Phase 1: Moderation Frontend Migration (Ozone)",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T09:38:08.923026-04:00",
+      "updated_at": "2026-04-18T09:42:53.449185-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/App/AdminUI/Assets/js/admin-panel.js\"],\"prompt\":\"Update AdminPanel.js to use tools.ozone.moderation endpoints instead of deprecated com.atproto.admin ones.\"}"
+    },
+    {
+      "id": 432,
+      "change_id": "e387ed09-22b7-4115-81ca-16d33eeac3c6",
+      "node_type": "action",
+      "title": "Phase 2: Real-Time Health & Metrics Wiring",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T09:38:08.958673-04:00",
+      "updated_at": "2026-04-18T09:42:53.456505-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/Admin/PDSAdminHandler.m\"],\"prompt\":\"Enhance PDSAdminHandler.m to query PDSMetrics for actual system data and update the Health API.\"}"
+    },
+    {
+      "id": 433,
+      "change_id": "c2c50e27-6b6a-4f65-899c-b50a712936a4",
+      "node_type": "action",
+      "title": "Phase 3: Invite Code Management Reconciliation",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T09:38:08.995293-04:00",
+      "updated_at": "2026-04-18T09:42:53.463627-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Unify backend handlers and frontend calls to exclusively use XRPC paths for invite codes.\"}"
+    },
+    {
+      "id": 434,
+      "change_id": "e5012d61-77a5-4fb6-a11d-6d136efc40c7",
+      "node_type": "action",
+      "title": "Phase 4: Explore UI Edge-Case Verification",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T09:38:09.030046-04:00",
+      "updated_at": "2026-04-18T09:42:53.472884-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/App/Explore/ExploreHandler.m\"],\"prompt\":\"Verify blob streaming and identity cache resilience in ExploreHandler.m.\"}"
     }
   ],
   "edges": [
@@ -8977,6 +9032,50 @@
       "weight": 1.0,
       "rationale": "Implemented decision by completing AdminUI debugging and integration",
       "created_at": "2026-04-18T08:51:07.410910-04:00"
+    },
+    {
+      "id": 388,
+      "from_node_id": 430,
+      "to_node_id": 431,
+      "from_change_id": "899eb05e-ed50-4ae2-b200-540d1890f011",
+      "to_change_id": "4e1b34ca-62c4-4f3a-a587-7d2f9435a768",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T09:38:12.316740-04:00"
+    },
+    {
+      "id": 389,
+      "from_node_id": 430,
+      "to_node_id": 432,
+      "from_change_id": "899eb05e-ed50-4ae2-b200-540d1890f011",
+      "to_change_id": "e387ed09-22b7-4115-81ca-16d33eeac3c6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T09:38:12.329145-04:00"
+    },
+    {
+      "id": 390,
+      "from_node_id": 430,
+      "to_node_id": 433,
+      "from_change_id": "899eb05e-ed50-4ae2-b200-540d1890f011",
+      "to_change_id": "c2c50e27-6b6a-4f65-899c-b50a712936a4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T09:38:12.339675-04:00"
+    },
+    {
+      "id": 391,
+      "from_node_id": 430,
+      "to_node_id": 434,
+      "from_change_id": "899eb05e-ed50-4ae2-b200-540d1890f011",
+      "to_change_id": "e5012d61-77a5-4fb6-a11d-6d136efc40c7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T09:38:12.349046-04:00"
     }
   ],
   "documents": [
