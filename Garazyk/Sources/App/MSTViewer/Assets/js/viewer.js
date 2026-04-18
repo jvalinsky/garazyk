@@ -81,6 +81,14 @@ class MSTViewer {
                 this.renderAccountList();
             }
         });
+
+        // Event delegation for account list items
+        this.accountListEl.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-action="select-account"]');
+            if (item) {
+                this.selectAccount(item.dataset.did);
+            }
+        });
     }
 
     /**
@@ -137,7 +145,7 @@ class MSTViewer {
         this.accountListEl.innerHTML = filteredAccounts
             .map(account => `
                 <li class="account-item ${this.currentAccount === account.did ? 'active' : ''}"
-                    onclick="viewer.selectAccount('${this.escapeHtml(account.did)}')">
+                    data-action="select-account" data-did="${this.escapeHtml(account.did)}">
                     <div>${this.escapeHtml(account.handle)}</div>
                     <div class="account-item-did">${this.escapeHtml(account.did.substring(0, 30))}...</div>
                 </li>
