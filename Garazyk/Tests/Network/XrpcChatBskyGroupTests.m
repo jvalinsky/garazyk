@@ -1,5 +1,11 @@
 #import "AdminAuthXrpcTestBase.h"
 
+// Define XCTAssertIsInstance macro if not available
+#ifndef XCTAssertIsInstance
+#define XCTAssertIsInstance(expr, classExpr) \
+    XCTAssertTrue([(expr) isKindOfClass:(classExpr)], @"Expected %@ to be instance of %@", (expr), (classExpr))
+#endif
+
 @interface XrpcChatBskyGroupTests : AdminAuthXrpcTestBase
 @property (nonatomic, copy) NSString *secondUserDid;
 @property (nonatomic, copy) NSString *secondUserJwt;

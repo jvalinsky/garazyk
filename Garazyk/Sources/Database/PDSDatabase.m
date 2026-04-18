@@ -98,6 +98,10 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         return NO;
     }
 
+    // Mark database as open immediately so subsequent operations (including migrations)
+    // can execute. This must be set before running migrations that use executeParameterizedUpdate.
+    self.isOpen = YES;
+
     [self setPerformanceOptimizations:error];
     [self setWalMode:error];
     [self createSchema:error];
@@ -110,10 +114,10 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     ];
     if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
         PDS_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
+        [self close];  // Clean up on failure
         return NO;
     }
 
-    self.isOpen = (rc == SQLITE_OK);
     return self.isOpen;
 }
 

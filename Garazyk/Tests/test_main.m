@@ -6,6 +6,12 @@
 #else
 #import "Compat/XCTest/XCTest.h"
 #endif
+
+// Define XCTAssertIsInstance macro if not available
+#ifndef XCTAssertIsInstance
+#define XCTAssertIsInstance(expr, classExpr) \
+    XCTAssertTrue([(expr) isKindOfClass:(classExpr)], @"Expected %@ to be instance of %@", (expr), (classExpr))
+#endif
 #import "App/PDSConfiguration.h"
 #import "Auth/OAuthConformanceTests.h"
 #import "Auth/OAuthPublicClientTests.h"
