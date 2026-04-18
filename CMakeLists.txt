@@ -179,6 +179,10 @@ if(APPLE)
     find_library(COREGRAPHICS CoreGraphics REQUIRED)
     find_library(LOCALAUTH LocalAuthentication REQUIRED)
 
+    # Find XCTest framework (only on macOS, not GNUstep/Linux)
+    set(XCTEST_SEARCH_PATHS "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks")
+    find_library(XCTEST XCTest PATHS ${XCTEST_SEARCH_PATHS} NO_DEFAULT_PATH)
+
     # Find readline for REPL
     find_library(READLINE_LIBRARY NAMES readline libedit REQUIRED)
 
@@ -956,6 +960,12 @@ if(BUILD_TESTS)
   # Exclude top-level Integration tests only, except our new PLC integration test
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/comprehensive_tests.m")
+  # Exclude standalone test files with their own main() - they have separate executable targets
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ConnectionPoolTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/RecordCacheTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/MigrationTests.m")
+  # Exclude duplicate SecurityHardeningTests - keep only the Security/ one
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SecurityHardeningTests.m")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   # Phase 1: Enabled Core Logic & Crypto Tests
@@ -1025,7 +1035,9 @@ if(BUILD_TESTS)
   )
   
   if(APPLE)
-    target_link_libraries(AllTests PRIVATE ${XCTest})
+    target_link_libraries(AllTests PRIVATE "-framework XCTest")
+    target_compile_options(AllTests PRIVATE "-F${XCTEST_SEARCH_PATHS}")
+    target_link_options(AllTests PRIVATE "-F${XCTEST_SEARCH_PATHS}")
     # Critical: Load all Objective-C categories from static libraries
     # Without -ObjC, category methods (like PDSActorStore+Account) are not linked
     set_target_properties(AllTests PROPERTIES
