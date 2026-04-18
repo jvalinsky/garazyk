@@ -247,6 +247,16 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordWebSocketBackpressureStateChange:(BOOL)isUnderBackpressure;
 
 /**
+ * @brief Current resident memory usage of the process in bytes.
+ */
+@property (nonatomic, assign, readonly) unsigned long long residentMemoryBytes;
+
+/**
+ * @brief Total physical memory available on the system in bytes.
+ */
+@property (nonatomic, assign, readonly) unsigned long long totalSystemMemoryBytes;
+
+/**
  * @brief Exports all metrics in Prometheus text format.
  *
  * This method generates a Prometheus-compatible metrics exposition format

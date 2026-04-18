@@ -44,6 +44,16 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
  */
 + (instancetype)sharedHandler;
 
+#pragma mark - Internal Data Access (Direct Dictionaries)
+
+- (NSDictionary *)getHealthData;
+- (NSDictionary *)getStatsData;
+- (NSDictionary *)getUsersData;
+- (NSDictionary *)getInvitesData;
+- (NSDictionary *)getBlobsData;
+
+#pragma mark - Request Handling
+
 /**
  * @brief Processes an admin API HTTP request.
  *

@@ -102,6 +102,28 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     return packet[@"body"];
 }
 
+#pragma mark - Internal Data Access (Direct Dictionaries)
+
+- (NSDictionary *)getHealthData {
+    return [self handleAdminHealth:@{} body:nil];
+}
+
+- (NSDictionary *)getStatsData {
+    return [self handleAdminStats:@{} body:nil];
+}
+
+- (NSDictionary *)getUsersData {
+    return [self handleAdminUsers:@{} body:nil method:PDSHTTPMethodGET];
+}
+
+- (NSDictionary *)getInvitesData {
+    return [self handleAdminInvites:@{} body:nil method:PDSHTTPMethodGET];
+}
+
+- (NSDictionary *)getBlobsData {
+    return [self handleAdminBlobs:@{} body:nil];
+}
+
 - (nullable NSDictionary *)handleRequestPacketWithMethod:(PDSHTTPMethod)method
                                                     path:(NSString *)path
                                                  headers:(NSDictionary<NSString *, NSString *> *)headers
@@ -420,14 +442,27 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     PDSMetrics *metrics = [PDSMetrics sharedMetrics];
     NSTimeInterval uptime = [[NSDate date] timeIntervalSince1970] - metrics.serverStartTime;
     
+    // Format uptime into human-readable string
+    NSInteger days = (NSInteger)(uptime / 86400);
+    NSInteger hours = (NSInteger)((uptime - (days * 86400)) / 3600);
+    NSInteger minutes = (NSInteger)((uptime - (days * 86400) - (hours * 3600)) / 60);
+    NSString *uptimeStr = [NSString stringWithFormat:@"%ldd %ldh %ldm", (long)days, (long)hours, (long)minutes];
+
+    unsigned long long usedMem = [metrics residentMemoryBytes];
+    unsigned long long totalMem = [metrics totalSystemMemoryBytes];
+    double memPercent = totalMem > 0 ? ((double)usedMem / (double)totalMem) * 100.0 : 0;
+
     return [self jsonResponseWithStatus:200 body:@{
         @"status": @"ok",
         @"uptime_seconds": @(uptime),
         @"checks": @{
+            @"uptime": uptimeStr,
+            @"version": @"0.1.0-alpha", // Placeholder for actual version
             @"database": @{
                 @"status": @"ok",
                 @"size_bytes": @(metrics.databaseSizeBytes),
-                @"latency_ms": @2 // Mock latency for now
+                @"message": [NSString stringWithFormat:@"SQLite %llu KB", metrics.databaseSizeBytes / 1024],
+                @"latency_ms": @2
             },
             @"storage": @{
                 @"status": @"ok",
@@ -438,6 +473,11 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                 @"status": @"ok",
                 @"active_connections": @(metrics.activeConnections),
                 @"total_requests": @(metrics.httpRequestsTotal)
+            },
+            @"memory": @{
+                @"used": [NSString stringWithFormat:@"%.1f MB", usedMem / (1024.0 * 1024.0)],
+                @"total": [NSString stringWithFormat:@"%.1f GB", totalMem / (1024.0 * 1024.0 * 1024.0)],
+                @"percent": @(memPercent)
             }
         }
     }];
