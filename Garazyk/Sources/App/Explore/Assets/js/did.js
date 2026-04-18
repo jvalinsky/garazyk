@@ -125,8 +125,8 @@ export function renderDidSummary(doc) {
         
         <h3 class="see-also">See Also</h3>
         <ul class="see-also-links">
-            <li><a href="#" onclick="window.openWindow('plc-ops'); return false;">PLC Operations</a></li>
-            <li><a href="#" onclick="window.openWindow('collections'); return false;">Collections</a></li>
+            <li><a href="#" data-action="open-window" data-window="plc-ops">PLC Operations</a></li>
+            <li><a href="#" data-action="open-window" data-window="collections">Collections</a></li>
             <li><a href="https://atproto.com/specs/did" target="_blank">ATProto DID Specification</a></li>
         </ul>
     `;
