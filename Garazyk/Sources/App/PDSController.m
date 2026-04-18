@@ -421,44 +421,42 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                            error:error];
   if (!success)
     return nil;
-  NSLog(@"[PDSController] Service call success, calculating record CID...");
+  PDS_LOG_CORE_DEBUG(@"Service call success, calculating record CID");
 
   // Use DAG-CBOR for record CID calculation
   NSError *cborError = nil;
-  NSLog(@"[PDSController] Encoding record with CBOR...");
+  PDS_LOG_CORE_DEBUG(@"Encoding record with CBOR");
   NSData *recordData =
       [ATProtoCBORSerialization encodeDataWithJSONObject:record
                                                    error:&cborError];
 
   if (!recordData) {
-    NSLog(@"[PDSController] CBOR encoding failed, falling back to JSON...");
+    PDS_LOG_CORE_WARN(@"CBOR encoding failed, falling back to JSON: %@", cborError);
     // Fallback to JSON if CBOR fails (shouldn't happen for valid JSON types)
     recordData =
         [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
   }
 
   if (!recordData) {
-    NSLog(@"[PDSController] CRITICAL: Record data is NIL after fallback!");
+    PDS_LOG_CORE_ERROR(@"Record data is NIL after fallback");
   } else {
-    NSLog(@"[PDSController] Record data length: %lu",
-          (unsigned long)recordData.length);
+    PDS_LOG_CORE_DEBUG(@"Record data length: %lu bytes", (unsigned long)recordData.length);
   }
 
-  NSLog(@"[PDSController] Calculating SHA-256 digest...");
+  PDS_LOG_CORE_DEBUG(@"Calculating SHA-256 digest");
   NSData *digest = [CID sha256Digest:recordData];
-  NSLog(@"[PDSController] Digest calculated: %@",
-        digest ? [digest description] : @"NIL");
+  PDS_LOG_CORE_DEBUG(@"Digest calculated: %@", digest ?: @"NIL");
 
-  NSLog(@"[PDSController] Creating CID object...");
+  PDS_LOG_CORE_DEBUG(@"Creating CID with dag-cbor codec");
   CID *cid = [CID cidWithDigest:digest codec:0x71]; // Use dag-cbor codec
-  NSLog(@"[PDSController] CID string value: %@", cid.stringValue);
+  PDS_LOG_CORE_DEBUG(@"CID created: %@", cid.stringValue);
 
   NSDictionary *result = @{
     @"uri" :
         [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey],
     @"cid" : cid.stringValue ?: @"bafkreiplaceholder"
   };
-  NSLog(@"[PDSController] Returning result: %@", result);
+  PDS_LOG_CORE_DEBUG(@"Returning result for URI: %@", result[@"uri"]);
   return result;
 }
 

@@ -356,7 +356,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         }];
     }
 
-    NSLog(@"[PDSRecordService] putRecord finishing with success: %d", success);
+    PDS_LOG_SERVICE_DEBUG(@"putRecord finishing with success: %d", success);
     return success;
 }
 

@@ -249,7 +249,11 @@
       "Bash(deciduous link 366 367)",
       "Bash(cmake --build build --target kaszlak 2>&1 | tail -20)",
       "Bash(deciduous add action \"Fix GNUstep Docker build: ARC struct field ownership qualifiers\" --commit HEAD)",
-      "Bash(deciduous add outcome \"Docker build now compiles MSTWalker with ARC-compatible struct fields; local-network stack healthy\")"
+      "Bash(deciduous add outcome \"Docker build now compiles MSTWalker with ARC-compatible struct fields; local-network stack healthy\")",
+      "Bash(cmake --build build --target migration_tests 2>&1)",
+      "Bash(./build/bin/migration_tests)",
+      "Bash(cmake --build build --target migration_tests && ./build/bin/migration_tests)",
+      "Bash(cmake --build build --target connection_pool_tests && ./build/bin/connection_pool_tests)"
     ]
   }
 }

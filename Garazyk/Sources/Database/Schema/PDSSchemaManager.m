@@ -179,6 +179,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_events_seq ON events(seq);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);"];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self schemaVersionTableSQL]];
     return sql;
 }
 
@@ -302,7 +304,19 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blobs_did ON blobs(did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_blobs_cid ON blobs(cid);"];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self schemaVersionTableSQL]];
     return sql;
+}
+
+#pragma mark - Schema Version Tracking
+
+- (NSString *)schemaVersionTableSQL {
+    return @"CREATE TABLE IF NOT EXISTS schema_version ("
+           @"    version INTEGER PRIMARY KEY,"
+           @"    applied_at DATETIME NOT NULL DEFAULT (datetime('now')),"
+           @"    description TEXT NOT NULL"
+           @")";
 }
 
 #pragma mark - Common

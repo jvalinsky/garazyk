@@ -837,6 +837,49 @@ set_target_properties(connection_pool_tests PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
+# Record Cache Tests (standalone, no XCTest)
+add_executable(record_cache_tests
+  Garazyk/Tests/Database/RecordCacheTests.m
+)
+
+target_include_directories(record_cache_tests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(record_cache_tests PRIVATE
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoCore
+    ATProtoRuntime
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+  )
+else()
+  target_link_libraries(record_cache_tests PRIVATE
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoCore
+    ${OBJC_LIBRARY}
+    ${GNUSTEP_LIBRARIES}
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+  )
+endif()
+
+target_compile_definitions(record_cache_tests PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(record_cache_tests PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
 #=============================
 # Fuzzer Targets
 #=============================

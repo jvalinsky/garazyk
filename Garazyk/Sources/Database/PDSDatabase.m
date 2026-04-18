@@ -5,6 +5,8 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "Debug/PDSLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Database/Migration/PDSMigrationExecutor.h"
+#import "Database/Migration/PDSServiceMigration001.h"
 #if !defined(__linux__) && !defined(__GNUstep__)
 #import <Security/Security.h>
 #endif
@@ -99,6 +101,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     [self setPerformanceOptimizations:error];
     [self setWalMode:error];
     [self createSchema:error];
+
+    // Run pending migrations
+    PDSMigrationExecutor *executor = [[PDSMigrationExecutor alloc] init];
+    NSArray *migrations = @[
+        [[PDSServiceMigration001 alloc] init],
+        // Future migrations go here
+    ];
+    if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
+        PDS_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
+        return NO;
+    }
 
     self.isOpen = (rc == SQLITE_OK);
     return self.isOpen;
