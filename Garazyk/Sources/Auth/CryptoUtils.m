@@ -24,12 +24,16 @@
 
  @abstract Computes HMAC-SHA1 digest for data authentication.
 
- @discussion HMAC-SHA1 is provided for legacy compatibility. For new
- implementations, prefer hmacSHA256WithKey:data: which uses SHA-256.
+ @discussion HMAC-SHA1 is retained for RFC 6238 TOTP (Time-based One-Time Password)
+ compatibility. SHA-1 is the standard algorithm specified by RFC 6238 for TOTP.
+
+ NOTE: SHA-1 is cryptographically broken and should not be used for new cryptographic
+ operations. This method should only be used for TOTP generation. For all other use
+ cases, prefer hmacSHA256WithKey:data: instead.
 
  @param key The secret key for HMAC computation (nonnull).
  @param data The data to authenticate (nonnull).
- @return The HMAC-SHA1 digest, or nil if key or data is nil.
+ @return The HMAC-SHA1 digest (20 bytes), or nil if key or data is nil.
  */
 + (nullable NSData *)hmacSHA1WithKey:(NSData *)key data:(NSData *)data {
     if (!key || !data) return nil;
@@ -237,6 +241,27 @@
     return plainData;
 }
 
+/*!
+ @method deriveKeyFromPassword:salt:
+
+ @abstract Derives a 32-byte encryption key from a password and salt using PBKDF2-HMAC-SHA256.
+
+ @discussion Uses PBKDF2 with the following parameters:
+ - Algorithm: HMAC-SHA256
+ - Iterations: 100,000 (OWASP 2023 minimum recommendation is 600,000)
+ - Output length: 32 bytes (256 bits)
+
+ Note: This method uses 100,000 iterations for encryption key derivation to balance
+ security with performance for frequently-executed operations. This is higher than
+ legacy recommendations but lower than the current OWASP guideline of 600,000 for
+ password hashing. For password hashing (PDSAccountService), 600,000 iterations are used.
+
+ Consider increasing iterations to 600,000 in a future version if performance allows.
+
+ @param password The password string (nonnull, converted to UTF-8).
+ @param salt The salt data (nonnull, typically 16+ bytes).
+ @return A 32-byte derived key, or nil on failure.
+ */
 + (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt {
     NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
     NSMutableData *derivedKey = [NSMutableData dataWithLength:32];
