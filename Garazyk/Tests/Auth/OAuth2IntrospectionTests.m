@@ -7,7 +7,6 @@
 #import "Auth/OAuth2Handler.h"
 #import "Auth/OAuth2.h"
 #import "Auth/JWT.h"
-#import "Auth/JWTPayload.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/Session.h"
 #import "Network/HttpRequest.h"
@@ -27,7 +26,9 @@
     [super setUp];
 
     NSError *dbError = nil;
-    self.database = [[PDSDatabase alloc] initWithPath:@":memory:" error:&dbError];
+    NSURL *dbURL = [NSURL fileURLWithPath:@":memory:"];
+    self.database = [PDSDatabase databaseAtURL:dbURL];
+    [self.database openWithError:&dbError];
     XCTAssertNil(dbError);
     XCTAssertNotNil(self.database);
 
@@ -47,15 +48,22 @@
 #pragma mark - Helper Methods
 
 - (HttpRequest *)introspectionRequestWithToken:(NSString *)token clientID:(nullable NSString *)clientID {
-    HttpRequest *request = [[HttpRequest alloc] init];
-
-    NSMutableString *body = [NSMutableString stringWithFormat:@"token=%@",
+    NSMutableString *bodyStr = [NSMutableString stringWithFormat:@"token=%@",
                             [self urlEncodeString:token]];
     if (clientID) {
-        [body appendFormat:@"&client_id=%@", [self urlEncodeString:clientID]];
+        [bodyStr appendFormat:@"&client_id=%@", [self urlEncodeString:clientID]];
     }
 
-    request.body = [body dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *bodyData = [bodyStr dataUsingEncoding:NSUTF8StringEncoding];
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/introspect"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:bodyData
+                                                 remoteAddress:@"127.0.0.1"];
     return request;
 }
 
@@ -103,8 +111,15 @@
 #pragma mark - Test Cases: Missing Parameters
 
 - (void)testIntrospectMissingTokenParameter {
-    HttpRequest *request = [[HttpRequest alloc] init];
-    request.body = [@"" dataUsingEncoding:NSUTF8StringEncoding];
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/introspect"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[@"" dataUsingEncoding:NSUTF8StringEncoding]
+                                                 remoteAddress:@"127.0.0.1"];
 
     HttpResponse *response = [[HttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
@@ -116,8 +131,15 @@
 }
 
 - (void)testIntrospectMissingRequestBody {
-    HttpRequest *request = [[HttpRequest alloc] init];
-    request.body = nil;
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/introspect"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{}
+                                                          body:nil
+                                                 remoteAddress:@"127.0.0.1"];
 
     HttpResponse *response = [[HttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request response:response];
@@ -154,8 +176,15 @@
     XCTAssertEqual(response1.statusCode, 200);
 
     // Missing token should return 400 (missing parameter, not introspection)
-    HttpRequest *request2 = [[HttpRequest alloc] init];
-    request2.body = [@"" dataUsingEncoding:NSUTF8StringEncoding];
+    HttpRequest *request2 = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/oauth/introspect"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"HTTP/1.1"
+                                                       headers:@{@"Content-Type": @"application/x-www-form-urlencoded"}
+                                                          body:[@"" dataUsingEncoding:NSUTF8StringEncoding]
+                                                 remoteAddress:@"127.0.0.1"];
     HttpResponse *response2 = [[HttpResponse alloc] init];
     [self.handler handleIntrospectRequest:request2 response:response2];
     XCTAssertEqual(response2.statusCode, 400);

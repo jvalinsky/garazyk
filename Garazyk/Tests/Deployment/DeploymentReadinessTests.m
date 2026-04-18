@@ -9,7 +9,7 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "PDSConfiguration.h"
+#import "App/PDSConfiguration.h"
 #import "App/PDSReadinessCheck.h"
 
 @interface DeploymentReadinessTests : XCTestCase
