@@ -322,20 +322,29 @@
     if ([partialName isEqualToString:@"chat/groups/data"]) {
         return [self renderChatGroupDataPartial:adminHandler headers:headers body:body params:params];
     }
-
-    NSInteger statusCode = 200;
-    NSString *contentType = nil;
-    NSString *result = [[AdminUIHandler sharedHandler] handleRequestWithMethod:AdminUIHTTPMethodGET
-                                                                           path:[@"/admin/partials/" stringByAppendingString:partialName]
-                                                                        headers:headers
-                                                                           body:body
-                                                                     statusCode:&statusCode
-                                                                    contentType:&contentType];
-    if (result) {
-        return result;
+    if ([partialName isEqualToString:@"ozone/events/list"]) {
+        return [self renderOzoneEventsListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"ozone/statuses/list"]) {
+        return [self renderOzoneStatusesListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"ozone/team/list"]) {
+        return [self renderOzoneTeamListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"ozone/templates/list"]) {
+        return [self renderOzoneTemplatesListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"ozone/sets/list"]) {
+        return [self renderOzoneSetsListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"security/sessions/list"]) {
+        return [self renderSecuritySessionsListPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"security/app-passwords/list"]) {
+        return [self renderSecurityAppPasswordsListPartial:adminHandler headers:headers body:body params:params];
     }
 
-    PDS_LOG_WARN(@"Unknown partial: %@", partialName);
+    PDS_LOG_WARN(@"Partial not handled by template handler: %@", partialName);
     return nil;
 }
 
@@ -566,6 +575,117 @@
     }
 
     return [self renderPartialWithTemplate:@"chat_group_detail" context:context];
+}
+
+- (nullable NSString *)renderOzoneEventsListPartial:(PDSAdminHandler *)adminHandler
+                                           headers:(NSDictionary *)headers
+                                              body:(nullable NSData *)body
+                                            params:(NSDictionary *)params {
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:@"/xrpc/tools.ozone.moderation.queryEvents"
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    return [self renderPartialWithTemplate:@"ozone_events_list" context:data ?: @{}];
+}
+
+- (nullable NSString *)renderOzoneStatusesListPartial:(PDSAdminHandler *)adminHandler
+                                             headers:(NSDictionary *)headers
+                                                body:(nullable NSData *)body
+                                              params:(NSDictionary *)params {
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:@"/xrpc/tools.ozone.moderation.queryStatuses"
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    return [self renderPartialWithTemplate:@"ozone_statuses_list" context:data ?: @{}];
+}
+
+- (nullable NSString *)renderOzoneTeamListPartial:(PDSAdminHandler *)adminHandler
+                                         headers:(NSDictionary *)headers
+                                            body:(nullable NSData *)body
+                                          params:(NSDictionary *)params {
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:@"/xrpc/tools.ozone.team.listMembers"
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    return [self renderPartialWithTemplate:@"ozone_team_list" context:data ?: @{}];
+}
+
+- (nullable NSString *)renderOzoneTemplatesListPartial:(PDSAdminHandler *)adminHandler
+                                              headers:(NSDictionary *)headers
+                                                 body:(nullable NSData *)body
+                                               params:(NSDictionary *)params {
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:@"/xrpc/tools.ozone.communication.listTemplates"
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    return [self renderPartialWithTemplate:@"ozone_templates_list" context:data ?: @{}];
+}
+
+- (nullable NSString *)renderOzoneSetsListPartial:(PDSAdminHandler *)adminHandler
+                                         headers:(NSDictionary *)headers
+                                            body:(nullable NSData *)body
+                                          params:(NSDictionary *)params {
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:@"/xrpc/tools.ozone.set.list"
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    return [self renderPartialWithTemplate:@"ozone_sets_list" context:data ?: @{}];
+}
+
+- (nullable NSString *)renderSecuritySessionsListPartial:(PDSAdminHandler *)adminHandler
+                                                headers:(NSDictionary *)headers
+                                                   body:(nullable NSData *)body
+                                                 params:(NSDictionary *)params {
+    NSString *did = params[@"did"];
+    if (!did) return nil;
+
+    NSString *path = [NSString stringWithFormat:@"/admin/security/sessions?did=%@", [did stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:path
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+    
+    NSDictionary *packet = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    NSDictionary *data = [self dictionaryFromPacket:packet];
+    
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data ?: @{}];
+    context[@"did"] = did;
+    
+    return [self renderPartialWithTemplate:@"security_sessions_list" context:context];
+}
+
+- (nullable NSString *)renderSecurityAppPasswordsListPartial:(PDSAdminHandler *)adminHandler
+                                                     headers:(NSDictionary *)headers
+                                                        body:(nullable NSData *)body
+                                                      params:(NSDictionary *)params {
+    NSString *did = params[@"did"];
+    if (!did) return nil;
+
+    NSString *path = [NSString stringWithFormat:@"/admin/security/app-passwords?did=%@", [did stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:path
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+    
+    NSDictionary *packet = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    NSDictionary *data = [self dictionaryFromPacket:packet];
+    
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data ?: @{}];
+    context[@"did"] = did;
+    
+    return [self renderPartialWithTemplate:@"security_app_passwords_list" context:context];
 }
 
 @end
