@@ -1,0 +1,69 @@
+<div class="content-header">
+  <h2>Upstreams</h2>
+  <p class="text-secondary">Monitor subscribed PDS instances and their connection status.</p>
+</div>
+
+<!-- Upstream Stats -->
+<div class="grid-3 mb-lg" hx-get="/admin/relay/upstreams/stats" hx-trigger="load, every 30s" hx-swap="outerHTML">
+  <div class="stat-card">
+    <div class="stat-label">Connected PDS</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Events</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Avg Latency</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+</div>
+
+<!-- Upstream Hosts Table -->
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Host</th>
+        <th>Status</th>
+        <th>Events/sec</th>
+        <th>Cursor</th>
+        <th>Last Seen</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody hx-get="/xrpc/com.atproto.sync.listHosts" hx-trigger="load, every 60s" hx-swap="innerHTML">
+      <tr>
+        <td colspan="6" class="text-secondary text-center p-lg">
+          <div class="loading-indicator" style="margin: 0 auto;"></div>
+          <p class="mt-sm">Loading upstreams...</p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Request Crawl Form -->
+<div class="card mt-lg">
+  <div class="card-header">
+    <h3 class="card-title">Request Crawl</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/xrpc/com.atproto.sync.requestCrawl" hx-target="#crawl-result">
+      <div class="form-group">
+        <label class="form-label required">PDS Host</label>
+        <input
+          type="url"
+          name="host"
+          class="form-input"
+          placeholder="https://pds.example.com"
+          required>
+        <div class="form-help">Request crawl of a specific PDS instance.</div>
+      </div>
+      <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Request Crawl</button>
+      </div>
+    </form>
+    <div id="crawl-result" class="mt-md"></div>
+  </div>
+</div>

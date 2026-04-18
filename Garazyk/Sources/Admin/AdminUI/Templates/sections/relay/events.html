@@ -1,0 +1,77 @@
+<div class="content-header">
+  <h2>Event Stream</h2>
+  <p class="text-secondary">Monitor real-time events from the aggregated firehose.</p>
+</div>
+
+<!-- Event Controls -->
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Stream Controls</h3>
+    <div class="btn-group">
+      <button type="button" class="btn btn-sm btn-primary" id="stream-start" onclick="document.getElementById('event-stream').focus()">
+        ▶ Start
+      </button>
+      <button type="button" class="btn btn-sm btn-secondary" id="stream-pause" hx-pause="#event-stream">
+        ⏸ Pause
+      </button>
+      <button type="button" class="btn btn-sm btn-secondary" id="stream-clear" onclick="document.getElementById('event-stream').innerHTML = ''">
+        🗑 Clear
+      </button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Filter by Action</label>
+        <select class="form-input" onchange="htmx.ajax('GET', '/admin/relay/events?action=' + this.value, '#event-stream')">
+          <option value="">All Events</option>
+          <option value="create">Create</option>
+          <option value="update">Update</option>
+          <option value="delete">Delete</option>
+          <option value="repost">Repost</option>
+          <option value="like">Like</option>
+          <option value="follow">Follow</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Event Stream (SSE) -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Live Events</h3>
+  </div>
+  <div class="card-body">
+    <ul
+      id="event-stream"
+      class="list"
+      hx-ext="sse"
+      sse-connect="/xrpc/com.atproto.sync.subscribeRepos"
+      sse-swap="message"
+      style="max-height: 600px; overflow-y: auto;">
+      <li class="list-item text-secondary">
+        <div class="flex-row items-center gap-sm">
+          <div class="loading-indicator"></div>
+          <span>Connecting to event stream...</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- Event Stats -->
+<div class="grid-3 mt-lg">
+  <div class="stat-card">
+    <div class="stat-label">Total Events</div>
+    <div class="stat-value" id="event-count">0</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Events/sec</div>
+    <div class="stat-value" id="event-rate">--</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Last Event</div>
+    <div class="stat-value text-sm" id="last-event">--:--:--</div>
+  </div>
+</div>

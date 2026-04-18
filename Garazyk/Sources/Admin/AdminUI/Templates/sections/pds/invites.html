@@ -1,0 +1,63 @@
+<div class="content-header">
+  <h2>Invite Codes</h2>
+  <p class="text-secondary">Create and manage invite codes for user registration.</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Create Invite Code</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/admin/invites" hx-swap="beforeend:#invites-list">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label required">Uses</label>
+          <input
+            type="number"
+            name="uses"
+            class="form-input"
+            value="1"
+            min="1"
+            max="100"
+            required>
+          <div class="form-help">Number of times this code can be used.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">For User</label>
+          <input
+            type="text"
+            name="for_user"
+            class="form-input"
+            placeholder="Leave blank for public invite">
+          <div class="form-help">Optional: restrict invite to a specific user.</div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Create Invite</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Uses Remaining</th>
+        <th>For User</th>
+        <th>Disabled</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="invites-list">
+      <tr>
+        <td colspan="6" class="text-secondary text-center p-lg">
+          <div class="loading-indicator" style="margin: 0 auto;"></div>
+          <p class="mt-sm">Loading invites...</p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,61 @@
+<div class="content-header">
+  <h2>Blob Storage</h2>
+  <p class="text-secondary">Monitor blob storage and manage cleanup operations.</p>
+</div>
+
+<div class="grid-3 mb-lg">
+  <div class="stat-card" hx-get="/admin/blobs/metrics" hx-trigger="load, every 60s" hx-swap="outerHTML">
+    <div class="stat-label">Total Blobs</div>
+    <div class="stat-value">--</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Storage</div>
+    <div class="stat-value">--</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Average Size</div>
+    <div class="stat-value">--</div>
+  </div>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Cleanup Operations</h3>
+    <button
+      type="button"
+      class="btn btn-sm btn-secondary"
+      hx-post="/admin/blobs/cleanup"
+      hx-confirm="This will remove unused blobs. Continue?"
+      hx-swap="none">
+      Run Cleanup
+    </button>
+  </div>
+  <div class="card-body">
+    <p class="text-secondary">
+      Remove blobs that are no longer referenced by any repository.
+    </p>
+  </div>
+</div>
+
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Blob CID</th>
+        <th>Size</th>
+        <th>MIME Type</th>
+        <th>Created</th>
+        <th>Last Used</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td colspan="6" class="text-secondary text-center p-lg">
+          <div class="loading-indicator" style="margin: 0 auto;"></div>
+          <p class="mt-sm">Loading blobs...</p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,34 @@
+<tr>
+  <td><code style="font-size: 11px;">{{code}}</code></td>
+  <td>{{usesRemaining}} / {{totalUses}}</td>
+  <td>{{forUser}}</td>
+  <td>
+    {{#if disabled}}
+      <span class="badge badge-secondary">Disabled</span>
+    {{else}}
+      <span class="badge badge-success">Active</span>
+    {{/if}}
+  </td>
+  <td><small>{{createdAt}}</small></td>
+  <td>
+    <div class="btn-group">
+      {{#if !disabled}}
+        <button
+          type="button"
+          class="btn btn-sm btn-destructive"
+          hx-post="/admin/invites/disable"
+          hx-vals='{"code":"{{code}}"}'
+          hx-confirm="Disable this invite code?"
+          hx-swap="swap:outerHTML">
+          Disable
+        </button>
+      {{/if}}
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        onclick="navigator.clipboard.writeText('{{code}}')">
+        Copy
+      </button>
+    </div>
+  </td>
+</tr>
