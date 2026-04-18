@@ -153,66 +153,33 @@
             </button>
           </div>
         </div>
+
+        <!-- Chat Section -->
+        <div class="sidebar-section" data-service="chat">
+          <button class="sidebar-section-title" aria-expanded="false" aria-controls="chat-items">
+            <span>Chat</span>
+            <span class="sidebar-section-toggle">▶</span>
+          </button>
+          <div class="sidebar-items hidden" id="chat-items">
+            <button class="sidebar-item" hx-get="/admin/partials/chat/convos" hx-target="#content-pane" hx-push-url="/admin/chat/convos">
+              Conversations
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/chat/messages" hx-target="#content-pane" hx-push-url="/admin/chat/messages">
+              Messages
+            </button>
+            <button class="sidebar-item" hx-get="/admin/partials/chat/reports" hx-target="#content-pane" hx-push-url="/admin/chat/reports">
+              Reports
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
 
     <!-- Main content area -->
     <main role="main" aria-label="Content area">
-      <div class="content-pane" id="content-pane">
-        <!-- Welcome screen -->
-        <div class="content-header">
-          <h1>Welcome to AT Protocol Admin</h1>
-          <p class="text-secondary mt-sm">
-            Select a service from the sidebar to get started.
-          </p>
-        </div>
-
-        <div class="grid-3">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Personal Data Server</h3>
-            </div>
-            <div class="card-body">
-              <p>Manage users, invites, blobs, identity, and server health.</p>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">PLC Directory</h3>
-            </div>
-            <div class="card-body">
-              <p>Lookup DIDs, manage exports, and view metrics.</p>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Relay (BGS)</h3>
-            </div>
-            <div class="card-body">
-              <p>Monitor upstreams, event streams, and crawl queue.</p>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">AppView</h3>
-            </div>
-            <div class="card-body">
-              <p>Track backfill progress, index status, and metrics.</p>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Chat Service</h3>
-            </div>
-            <div class="card-body">
-              <p>Future: Message moderation and chat status.</p>
-            </div>
-          </div>
-        </div>
+      <div class="content-pane" id="content-pane" hx-get="/admin/partials/overview" hx-trigger="load">
+        <!-- Will be replaced by overview partial -->
+        <div class="p-lg text-secondary text-center">Loading dashboard...</div>
       </div>
     </main>
   </div>

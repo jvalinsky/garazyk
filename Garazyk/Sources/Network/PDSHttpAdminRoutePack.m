@@ -18,7 +18,8 @@
     @"/admin/metrics", @"/admin/health", @"/admin/stats", @"/admin/audit-log",
     @"/admin/plc/lookup", @"/admin/plc/export", @"/admin/plc/metrics",
     @"/admin/relay/upstreams", @"/admin/relay/events", @"/admin/relay/crawl",
-    @"/admin/appview/backfill", @"/admin/appview/index", @"/admin/appview/metrics"
+    @"/admin/appview/backfill", @"/admin/appview/index", @"/admin/appview/metrics",
+    @"/admin/chat/convos", @"/admin/chat/messages", @"/admin/chat/reports"
   ];
 
   for (NSString *path in adminPaths) {

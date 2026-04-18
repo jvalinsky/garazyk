@@ -100,39 +100,43 @@
 
 - (NSString *)processLoops:(NSString *)template context:(NSDictionary *)context {
     NSError *error = nil;
+    // Regex to match INNERMOST loops first
     NSRegularExpression *regex = [NSRegularExpression
-        regularExpressionWithPattern:@"\\{\\{#each\\s+([\\w.]+)\\}\\}([\\s\\S]*?)\\{\\{/each\\}\\}"
+        regularExpressionWithPattern:@"\\{\\{#each\\s+([\\w.]+)\\}\\}((?:(?!\\{\\{#each)[\\s\\S])*?)\\{\\{/each\\}\\}"
                                options:0
                                  error:&error];
 
-    NSArray *matches = [regex matchesInString:template options:0
-                                         range:NSMakeRange(0, template.length)];
+    BOOL found = YES;
+    while (found) {
+        NSArray *matches = [regex matchesInString:template options:0
+                                             range:NSMakeRange(0, template.length)];
+        if (matches.count == 0) {
+            found = NO;
+            break;
+        }
 
-    for (NSTextCheckingResult *match in [matches reverseObjectEnumerator]) {
+        // Process only the first match to keep it simple and handle nested loops correctly in the loop
+        NSTextCheckingResult *match = matches[0];
         NSString *listKey = [template substringWithRange:[match rangeAtIndex:1]];
         NSString *loopBody = [template substringWithRange:[match rangeAtIndex:2]];
 
         id listValue = [self valueForKeyPath:listKey inContext:context];
-        if (![listValue isKindOfClass:[NSArray class]]) {
-            template = [template stringByReplacingCharactersInRange:match.range
-                                                         withString:@""];
-            continue;
-        }
-
-        NSArray *items = listValue;
         NSMutableString *result = [NSMutableString string];
 
-        for (NSUInteger i = 0; i < items.count; i++) {
-            id item = items[i];
-            NSDictionary *itemContext;
-            if ([item isKindOfClass:[NSDictionary class]]) {
-                itemContext = item;
-            } else {
-                itemContext = @{@".": item};
+        if ([listValue isKindOfClass:[NSArray class]]) {
+            NSArray *items = listValue;
+            for (NSUInteger i = 0; i < items.count; i++) {
+                id item = items[i];
+                NSDictionary *itemContext;
+                if ([item isKindOfClass:[NSDictionary class]]) {
+                    itemContext = item;
+                } else {
+                    itemContext = @{@".": item};
+                }
+                
+                NSString *renderedItem = [self renderPartialContent:loopBody context:itemContext];
+                [result appendString:renderedItem];
             }
-            
-            NSString *renderedItem = [self renderPartialContent:loopBody context:itemContext];
-            [result appendString:renderedItem];
         }
 
         template = [template stringByReplacingCharactersInRange:match.range
@@ -236,17 +240,49 @@
     PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
 
     if ([path hasPrefix:@"/admin/partials/"]) {
-        NSString *partialName = [path substringFromIndex:@"/admin/partials/".length];
-        return [self handlePartialNamed:partialName headers:headers body:body adminHandler:adminHandler];
+        NSString *partialPath = [path substringFromIndex:@"/admin/partials/".length];
+        
+        // Split partial name and query string
+        NSString *partialName = partialPath;
+        NSDictionary *params = @{};
+        NSRange queryRange = [partialPath rangeOfString:@"?"];
+        if (queryRange.location != NSNotFound) {
+            partialName = [partialPath substringToIndex:queryRange.location];
+            params = [self parseQueryString:partialPath];
+        }
+
+        return [self handlePartialNamed:partialName headers:headers body:body adminHandler:adminHandler params:params];
     }
 
     return nil;
 }
 
+- (NSDictionary *)parseQueryString:(NSString *)url {
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    NSRange queryStart = [url rangeOfString:@"?"];
+
+    if (queryStart.location != NSNotFound) {
+        NSString *queryString = [url substringWithRange:NSMakeRange(queryStart.location + 1, url.length - queryStart.location - 1)];
+        NSArray *pairs = [queryString componentsSeparatedByString:@"&"];
+
+        for (NSString *pair in pairs) {
+            NSArray *components = [pair componentsSeparatedByString:@"="];
+            if (components.count == 2) {
+                NSString *key = [components[0] stringByRemovingPercentEncoding];
+                NSString *value = [components[1] stringByRemovingPercentEncoding];
+                params[key] = value;
+            }
+        }
+    }
+
+    return [params copy];
+}
+
 - (nullable NSString *)handlePartialNamed:(NSString *)partialName
                                  headers:(NSDictionary<NSString *, NSString *> *)headers
                                     body:(nullable NSData *)body
-                            adminHandler:(PDSAdminHandler *)adminHandler {
+                            adminHandler:(PDSAdminHandler *)adminHandler
+                                  params:(NSDictionary *)params {
     if ([partialName isEqualToString:@"users"]) {
         return [self renderUsersPartial:adminHandler headers:headers body:body];
     }
@@ -264,6 +300,12 @@
     }
     if ([partialName isEqualToString:@"identity"]) {
         return [self renderIdentityPartial:adminHandler headers:headers body:body];
+    }
+    if ([partialName isEqualToString:@"chat/convos"]) {
+        return [self renderChatConvosPartial:adminHandler headers:headers body:body params:params];
+    }
+    if ([partialName isEqualToString:@"chat/messages"]) {
+        return [self renderChatMessagesPartial:adminHandler headers:headers body:body params:params];
     }
 
     NSInteger statusCode = 200;
@@ -376,6 +418,54 @@
     context[@"recent_ops"] = @[];
 
     return [self renderPartialWithTemplate:@"identity" context:context];
+}
+
+- (nullable NSString *)renderChatConvosPartial:(PDSAdminHandler *)adminHandler
+                                      headers:(NSDictionary *)headers
+                                         body:(nullable NSData *)body
+                                       params:(NSDictionary *)params {
+    // Standard PDS admin fetch
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:@"/xrpc/chat.bsky.convo.listConvos"
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    if (!data) return nil;
+
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
+    context[@"title"] = @"Chat Conversations";
+    context[@"section"] = @"chat";
+
+    return [self renderPartialWithTemplate:@"chat_convos" context:context];
+}
+
+- (nullable NSString *)renderChatMessagesPartial:(PDSAdminHandler *)adminHandler
+                                        headers:(NSDictionary *)headers
+                                           body:(nullable NSData *)body
+                                         params:(NSDictionary *)params {
+    NSString *convoId = params[@"convoId"];
+    NSString *path = @"/xrpc/chat.bsky.convo.getMessages";
+    if (convoId) {
+        path = [path stringByAppendingFormat:@"?convoId=%@", [convoId stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    }
+
+    NSString *jsonResponse = [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
+                                                               path:path
+                                                            headers:headers
+                                                               body:body];
+    if (!jsonResponse) return nil;
+
+    NSDictionary *data = [NSJSONSerialization JSONObjectWithData:[jsonResponse dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    if (!data) return nil;
+
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:data];
+    context[@"title"] = @"Chat Messages";
+    context[@"section"] = @"chat";
+    context[@"convoId"] = convoId ?: @"";
+
+    return [self renderPartialWithTemplate:@"chat_messages" context:context];
 }
 
 @end

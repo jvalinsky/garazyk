@@ -9,6 +9,7 @@
 #import "AppView/Services/ChatService.h"
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
+#import "Admin/PDSAdminAuth.h"
 
 @implementation XrpcChatBskyConvoPack
 
@@ -491,6 +492,138 @@
 
         response.statusCode = 200;
         [response setJsonBody:@{@"messages": sentMessages}];
+    }];
+
+    // chat.bsky.convo.listConvos - List conversations
+    [dispatcher registerMethod:@"chat.bsky.convo.listConvos"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+
+        NSError *error = nil;
+        NSArray *convos = nil;
+        
+        // If admin, they can see all conversations
+        if ([[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
+            convos = [chatService listAllConversationsWithLimit:limit cursor:cursor error:&error];
+        } else {
+            convos = [chatService listConversationsForActor:actorDID limit:limit cursor:cursor error:&error];
+        }
+        
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"convos": convos ?: @[]}];
+    }];
+
+    // chat.bsky.convo.getMessages - Get messages for a conversation
+    [dispatcher registerMethod:@"chat.bsky.convo.getMessages"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        NSString *convoId = [request queryParamForKey:@"convoId"];
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        if (!convoId) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            return;
+        }
+
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
+        NSError *error = nil;
+        NSArray *messages = [chatService getMessagesForConversation:convoId limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"messages": messages ?: @[]}];
+    }];
+
+    // chat.bsky.convo.sendMessage - Send a single message
+    [dispatcher registerMethod:@"chat.bsky.convo.sendMessage"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *convoId = body[@"convoId"];
+        NSDictionary *message = body[@"message"];
+
+        if (!convoId || !message) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
+            return;
+        }
+
+        NSString *text = message[@"text"];
+        // embedJson could be passed too
+
+        NSError *error = nil;
+        NSDictionary *sentMessage = [chatService sendMessage:convoId senderDid:actorDID text:text embedJson:nil error:&error];
+        if (error || !sentMessage) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message"];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:sentMessage];
+    }];
+
+    // chat.bsky.convo.getConvo - Get conversation details
+    [dispatcher registerMethod:@"chat.bsky.convo.getConvo"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        NSString *convoId = [request queryParamForKey:@"convoId"];
+        if (!convoId) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+        if (!convo) {
+            [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"convo": convo}];
     }];
 
     PDS_LOG_INFO(@"Registered chat.bsky.convo.* endpoints (core + features)");
