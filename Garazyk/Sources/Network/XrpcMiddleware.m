@@ -373,3 +373,39 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 }
 
 @end
+
+#pragma mark - XrpcMiddlewarePresets
+
+@implementation XrpcMiddlewarePresets
+
++ (NSArray<id<XrpcMiddleware>> *)protectedEndpointWithController:(PDSController *)controller
+                                                       rateLimit:(NSInteger)rateLimit {
+    NSMutableArray<id<XrpcMiddleware>> *middlewares = [NSMutableArray array];
+    
+    // Auth required
+    [middlewares addObject:[AuthMiddleware userAuthWithController:controller]];
+    
+    // Optional rate limit
+    if (rateLimit > 0) {
+        NSTimeInterval window = 60.0; // 1 minute window
+        [middlewares addObject:[RateLimitMiddleware perUser:rateLimit perWindow:window]];
+    }
+    
+    return [middlewares copy];
+}
+
++ (NSArray<id<XrpcMiddleware>> *)adminEndpointWithController:(PDSController *)controller
+                                             serviceDatabases:(id)serviceDatabases {
+    return @[[AuthMiddleware adminAuthWithController:controller
+                                     serviceDatabases:serviceDatabases]];
+}
+
++ (NSArray<id<XrpcMiddleware>> *)publicEndpointWithRateLimit:(NSInteger)limit {
+    if (limit <= 0) {
+        return @[];
+    }
+    NSTimeInterval window = 60.0; // 1 minute window
+    return @[[RateLimitMiddleware perIP:limit perWindow:window]];
+}
+
+@end

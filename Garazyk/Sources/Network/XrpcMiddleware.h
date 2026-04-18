@@ -204,4 +204,43 @@ typedef NS_ENUM(NSInteger, XrpcMiddlewareError) {
     XrpcMiddlewareErrorInternal = 1005,          // Internal error
 };
 
+#pragma mark - Middleware Presets
+
+/**
+ * Factory for common middleware chain presets.
+ *
+ * Provides pre-configured middleware chains for typical endpoint patterns.
+ */
+@interface XrpcMiddlewarePresets : NSObject
+
+/**
+ * Protected endpoint: user authentication with optional rate limiting.
+ *
+ * @param controller PDS controller
+ * @param rateLimit Requests per minute per user (0 = no rate limit)
+ * @return Array of middleware for protected endpoint
+ */
++ (NSArray<id<XrpcMiddleware>> *)protectedEndpointWithController:(PDSController *)controller
+                                                       rateLimit:(NSInteger)rateLimit;
+
+/**
+ * Admin endpoint: admin authentication required.
+ *
+ * @param controller PDS controller
+ * @param serviceDatabases Service databases for account lookups
+ * @return Array of middleware for admin endpoint
+ */
++ (NSArray<id<XrpcMiddleware>> *)adminEndpointWithController:(PDSController *)controller
+                                             serviceDatabases:(id)serviceDatabases;
+
+/**
+ * Public endpoint with rate limiting.
+ *
+ * @param limit Requests per minute per IP
+ * @return Array of middleware for public endpoint with rate limiting
+ */
++ (NSArray<id<XrpcMiddleware>> *)publicEndpointWithRateLimit:(NSInteger)limit;
+
+@end
+
 NS_ASSUME_NONNULL_END
