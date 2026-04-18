@@ -116,9 +116,7 @@
                                            contentType:&contentType];
              if (result) {
                response.statusCode = statusCode;
-               if (contentType.length > 0) {
-                 [response setHeader:contentType forKey:@"Content-Type"];
-               }
+               response.contentType = @"text/html; charset=utf-8";
                [response setBodyString:result];
              } else {
                response.statusCode = 404;
@@ -141,9 +139,7 @@
                                            contentType:&contentType];
              if (result) {
                response.statusCode = statusCode;
-               if (contentType.length > 0) {
-                 [response setHeader:contentType forKey:@"Content-Type"];
-               }
+               response.contentType = (contentType && contentType.length > 0) ? contentType : @"application/octet-stream";
                [response setBodyString:result];
              } else {
                response.statusCode = 404;
@@ -166,9 +162,7 @@
                                            contentType:&contentType];
              if (result) {
                response.statusCode = statusCode;
-               if (contentType.length > 0) {
-                 [response setHeader:contentType forKey:@"Content-Type"];
-               }
+               response.contentType = @"text/css; charset=utf-8";
                [response setBodyString:result];
              } else {
                response.statusCode = 404;
@@ -191,9 +185,7 @@
                                            contentType:&contentType];
              if (result) {
                response.statusCode = statusCode;
-               if (contentType.length > 0) {
-                 [response setHeader:contentType forKey:@"Content-Type"];
-               }
+               response.contentType = @"application/javascript; charset=utf-8";
                [response setBodyString:result];
              } else {
                response.statusCode = 404;
