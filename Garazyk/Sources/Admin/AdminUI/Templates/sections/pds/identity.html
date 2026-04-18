@@ -1,0 +1,86 @@
+<div class="content-header">
+  <h2>Identity Management</h2>
+  <p class="text-secondary">Resolve DIDs, lookup handles, and manage identity operations.</p>
+</div>
+
+<div class="grid-2 mb-lg">
+  <!-- DID Resolution -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Resolve DID</h3>
+    </div>
+    <div class="card-body">
+      <form class="form" hx-get="/xrpc/com.atproto.identity.resolveDid" hx-target="#did-result" hx-swap="innerHTML">
+        <div class="form-group">
+          <label class="form-label required">DID</label>
+          <input
+            type="text"
+            name="did"
+            class="form-input"
+            placeholder="did:plc:..."
+            required>
+          <div class="form-help">Enter a DID to resolve.</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Resolve</button>
+      </form>
+      <div id="did-result" class="mt-md"></div>
+    </div>
+  </div>
+
+  <!-- Handle Lookup -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Resolve Handle</h3>
+    </div>
+    <div class="card-body">
+      <form class="form" hx-get="/xrpc/com.atproto.identity.resolveHandle" hx-target="#handle-result" hx-swap="innerHTML">
+        <div class="form-group">
+          <label class="form-label required">Handle</label>
+          <input
+            type="text"
+            name="handle"
+            class="form-input"
+            placeholder="user.bsky.social"
+            required>
+          <div class="form-help">Enter a handle to lookup.</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full">Lookup</button>
+      </form>
+      <div id="handle-result" class="mt-md"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Update Handle</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/xrpc/com.atproto.identity.updateHandle" hx-target="#update-result" hx-swap="innerHTML">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label required">DID</label>
+          <input
+            type="text"
+            name="did"
+            class="form-input"
+            placeholder="did:plc:..."
+            required>
+        </div>
+        <div class="form-group">
+          <label class="form-label required">New Handle</label>
+          <input
+            type="text"
+            name="handle"
+            class="form-input"
+            placeholder="newhandle.bsky.social"
+            required>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Update Handle</button>
+      </div>
+    </form>
+    <div id="update-result" class="mt-md"></div>
+  </div>
+</div>

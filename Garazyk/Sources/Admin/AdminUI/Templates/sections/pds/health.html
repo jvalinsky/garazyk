@@ -1,0 +1,108 @@
+<div class="content-header">
+  <h2>Server Health</h2>
+  <p class="text-secondary">Monitor server status, metrics, and performance.</p>
+</div>
+
+<!-- Health Status Cards -->
+<div class="grid-3 mb-lg" hx-get="/admin/partials/health/status" hx-trigger="load, every 30s" hx-swap="outerHTML">
+  <div class="stat-card">
+    <div class="stat-label">Server Status</div>
+    <div class="stat-value">
+      <span class="status-indicator connected" style="display: inline-block; margin-right: 8px;"></span>
+      Online
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Uptime</div>
+    <div class="stat-value">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Database</div>
+    <div class="stat-value">
+      <span class="status-indicator connected" style="display: inline-block; margin-right: 8px;"></span>
+      Connected
+    </div>
+  </div>
+</div>
+
+<!-- Resource Utilization -->
+<div class="grid-2 mb-lg">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Memory Usage</h3>
+    </div>
+    <div class="card-body">
+      <div class="progress mb-md">
+        <div class="progress-bar" style="width: 65%;"></div>
+      </div>
+      <div class="flex-row justify-between text-xs">
+        <span>4.2 GB / 8 GB</span>
+        <span class="text-secondary">65%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Disk Usage</h3>
+    </div>
+    <div class="card-body">
+      <div class="progress mb-md">
+        <div class="progress-bar" style="width: 42%;"></div>
+      </div>
+      <div class="flex-row justify-between text-xs">
+        <span>840 GB / 2 TB</span>
+        <span class="text-secondary">42%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Metrics and Health Checks -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Health Checks</h3>
+  </div>
+  <div class="card-body">
+    <div class="list">
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>Database Connectivity</span>
+          <span class="badge badge-success">OK</span>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>Firehose Subscription</span>
+          <span class="badge badge-success">Connected</span>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>Repository Sync</span>
+          <span class="badge badge-warning">Syncing</span>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>Blob Storage</span>
+          <span class="badge badge-success">Healthy</span>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>XRPC Endpoints</span>
+          <span class="badge badge-success">Responsive</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Prometheus Link -->
+<div class="alert alert-info mt-lg">
+  <span>
+    <strong>Advanced Metrics:</strong>
+    View detailed Prometheus metrics at <a href="/metrics" target="_blank">/metrics</a>
+  </span>
+</div>

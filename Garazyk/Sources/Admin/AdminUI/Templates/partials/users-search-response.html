@@ -1,0 +1,44 @@
+{{#each users}}
+<tr>
+  <td><code style="font-size: 11px;">{{did}}</code></td>
+  <td>{{handle}}</td>
+  <td>{{email}}</td>
+  <td>
+    {{#if active}}
+      <span class="badge badge-success">Active</span>
+    {{else}}
+      <span class="badge badge-secondary">Inactive</span>
+    {{/if}}
+  </td>
+  <td><small>{{createdAt}}</small></td>
+  <td>
+    <div class="btn-group">
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        hx-get="/admin/users/{{did}}"
+        hx-target="#detail-modal"
+        hx-on="htmx:afterSettle: document.getElementById('detail-modal').showModal()">
+        View
+      </button>
+      {{#if active}}
+        <button
+          type="button"
+          class="btn btn-sm btn-destructive"
+          hx-post="/admin/users/{{did}}/deactivate"
+          hx-confirm="Deactivate this user?"
+          hx-swap="swap:outerHTML">
+          Deactivate
+        </button>
+      {{/if}}
+    </div>
+  </td>
+</tr>
+{{/each}}
+{{#if !users}}
+<tr>
+  <td colspan="6" class="text-secondary text-center p-lg">
+    No users found. Try a different search query.
+  </td>
+</tr>
+{{/if}}
