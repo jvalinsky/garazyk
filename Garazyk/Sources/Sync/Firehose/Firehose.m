@@ -238,7 +238,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 3002;
     id message = [ATProtoDagCBOR decodeData:data error:&error];
 
     if (error || ![message isKindOfClass:[NSDictionary class]]) {
-        NSLog(@"Failed to decode DAG-CBOR frame: %@", error);
+        PDS_LOG_SYNC_ERROR(@"Failed to decode DAG-CBOR frame: %@", error);
         return;
     }
 

@@ -5,6 +5,7 @@
 #import "Repository/CAR.h"
 #import "Auth/Secp256k1.h"
 #import "Core/ATProtoDagCBOR.h"
+#import "Debug/PDSLogger.h"
 
 NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
 
@@ -54,7 +55,7 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     NSError *error = nil;
     NSData *encoded = [ATProtoDagCBOR encodeObject:commitDict error:&error];
     if (!encoded) {
-        NSLog(@"Failed to encode commit: %@", error);
+        PDS_LOG_CORE_ERROR(@"Failed to encode commit: %@", error);
         return nil;
     }
     return encoded;
