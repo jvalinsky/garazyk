@@ -9,7 +9,6 @@
 @property (nonatomic, copy, readwrite) NSString *auditType;
 @property (nonatomic, strong) BlobStorage *blobStorage;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
-@property (nonatomic) BOOL dryRun;
 @property (nonatomic, readwrite) double progress;
 @property (nonatomic, strong, readwrite, nullable) NSDictionary *results;
 @property (nonatomic, strong, readwrite, nullable) NSError *operationError;

@@ -1,6 +1,5 @@
 #import "PDSBlobAuditHandler.h"
 #import "BlobAudit/PDSBlobAuditManager.h"
-#import "Foundation/NSError+JSON.h"
 
 @interface PDSBlobAuditHandler ()
 @property (nonatomic, strong) PDSBlobAuditManager *auditManager;
