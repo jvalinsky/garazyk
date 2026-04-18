@@ -158,9 +158,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
 
   NSSet<WebSocketConnection *> *attachedSnapshot = nil;
-  @synchronized(self.attachedConnections) {
-    attachedSnapshot = [self.attachedConnections copy];
-    [self.attachedConnections removeAllObjects];
+  @synchronized(_attachedConnections) {
+    attachedSnapshot = [_attachedConnections copy];
+    [_attachedConnections removeAllObjects];
   }
   for (WebSocketConnection *connection in attachedSnapshot) {
     [connection close];
@@ -187,10 +187,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     webSocketConnection.remoteAddress = request.remoteAddress;
   }
   webSocketConnection.delegate = self;
-  @synchronized(self.attachedConnections) {
-    [self.attachedConnections addObject:webSocketConnection];
+  @synchronized(_attachedConnections) {
+    [_attachedConnections addObject:webSocketConnection];
   }
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)self.attachedConnections.count];
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
 
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didAcceptConnection:)]) {
@@ -212,10 +212,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       @"[%@] Accepted new WebSocket connection for subscribeRepos",
       connection.remoteAddress);
 
-  @synchronized(self.attachedConnections) {
-    [self.attachedConnections addObject:connection];
+  @synchronized(_attachedConnections) {
+    [_attachedConnections addObject:connection];
   }
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)self.attachedConnections.count];
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
 
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didAcceptConnection:)]) {
@@ -936,10 +936,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)detachConnection:(WebSocketConnection *)connection {
-  @synchronized(self.attachedConnections) {
-    [self.attachedConnections removeObject:connection];
+  @synchronized(_attachedConnections) {
+    [_attachedConnections removeObject:connection];
   }
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)self.attachedConnections.count];
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
 }
 
 - (BOOL)sendEventData:(NSData *)eventData
