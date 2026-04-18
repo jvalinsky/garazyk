@@ -4850,6 +4850,149 @@
       "created_at": "2026-04-18T11:45:52.100273-04:00",
       "updated_at": "2026-04-18T11:45:52.100273-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"docs/plans/2026-04-18-admin-diagnostics.md\"],\"prompt\":\"Implement UI for sequencer monitoring, blob integrity audits, and rate limit visibility.\"}"
+    },
+    {
+      "id": 442,
+      "change_id": "3824ca10-8b5d-4854-8ac1-3fc59211c50a",
+      "node_type": "outcome",
+      "title": "System Diagnostics Dashboard fully implemented with sequencer health monitoring, blob audits, and rate limit management",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-18T12:47:36.722249-04:00",
+      "updated_at": "2026-04-18T12:47:36.722249-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"b65192e1\",\"confidence\":95}"
+    },
+    {
+      "id": 443,
+      "change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "node_type": "goal",
+      "title": "Fix compilation errors in Admin/Diagnostics modules",
+      "description": "Address build failures caused by missing headers, private properties, and missing methods in recent Admin UI diagnostic additions.",
+      "status": "completed",
+      "created_at": "2026-04-18T12:53:49.361552-04:00",
+      "updated_at": "2026-04-18T12:54:46.983143-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 444,
+      "change_id": "824dee12-b9e5-464c-ba1b-e6d6a31aa2df",
+      "node_type": "action",
+      "title": "Expose dryRun in PDSBlobAuditOperation.h",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T12:53:49.401112-04:00",
+      "updated_at": "2026-04-18T12:54:09.060831-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 445,
+      "change_id": "d30b5236-44e4-4348-bbc3-f1d75d66a540",
+      "node_type": "action",
+      "title": "Add serviceDatabase method to PDSServiceDatabases.h/.m",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T12:53:49.436722-04:00",
+      "updated_at": "2026-04-18T12:54:20.832470-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 446,
+      "change_id": "818c91e9-4728-4a44-af34-cfab7df881dd",
+      "node_type": "action",
+      "title": "Expose attachedConnections in SubscribeReposHandler.h",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T12:53:49.475332-04:00",
+      "updated_at": "2026-04-18T12:54:30.867440-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 447,
+      "change_id": "d7200609-e741-45ff-80a5-20e429a7543f",
+      "node_type": "action",
+      "title": "Remove missing NSError+JSON.h imports",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T12:53:49.509348-04:00",
+      "updated_at": "2026-04-18T12:54:44.140451-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 448,
+      "change_id": "3152242a-5411-4dc9-b4ff-4b56c12709f7",
+      "node_type": "action",
+      "title": "Fix mutation access to attachedConnections in SubscribeReposHandler.m",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T12:55:06.589771-04:00",
+      "updated_at": "2026-04-18T12:55:34.362648-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 449,
+      "change_id": "74763cd4-3210-4819-943d-4e521a7d4166",
+      "node_type": "action",
+      "title": "Fix syntax error in PDSSequencerHealthHandler.m",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T12:55:06.632262-04:00",
+      "updated_at": "2026-04-18T12:55:50.465980-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 450,
+      "change_id": "b660bb01-20a3-4d0f-a891-eeae3470de66",
+      "node_type": "outcome",
+      "title": "Build succeeded after fixing diagnostics module dependencies and syntax errors",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T12:56:02.280272-04:00",
+      "updated_at": "2026-04-18T12:56:02.296177-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 451,
+      "change_id": "06da9a71-9cbb-4c74-b8ce-9ee951423828",
+      "node_type": "goal",
+      "title": "Fix Admin UI sidebar and horizontal tabs",
+      "description": "Resolve issues where horizontal tabs are unresponsive and sidebar sections are misaligned/misstyled.",
+      "status": "completed",
+      "created_at": "2026-04-18T13:00:42.531482-04:00",
+      "updated_at": "2026-04-18T13:00:42.698337-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 452,
+      "change_id": "717bdf25-9bff-4fca-946e-76629223723e",
+      "node_type": "action",
+      "title": "Fix ES module import syntax error in app.js",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T13:00:42.569919-04:00",
+      "updated_at": "2026-04-18T13:00:42.675365-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 453,
+      "change_id": "a1a5ee14-2667-4767-9c61-aeed8d6061ec",
+      "node_type": "action",
+      "title": "Consolidate AdminUI JS assets and remove duplicates",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T13:00:42.605060-04:00",
+      "updated_at": "2026-04-18T13:00:42.683014-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
+      "id": 454,
+      "change_id": "26abff67-1c13-4042-82f2-5f3b63c2910c",
+      "node_type": "action",
+      "title": "Fix sidebar section title CSS styling",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T13:00:42.642418-04:00",
+      "updated_at": "2026-04-18T13:00:42.690931-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
     }
   ],
   "edges": [
@@ -9219,6 +9362,127 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-18T11:45:57.349850-04:00"
+    },
+    {
+      "id": 398,
+      "from_node_id": 441,
+      "to_node_id": 442,
+      "from_change_id": "fcb26495-a517-4d29-ae65-531cce862610",
+      "to_change_id": "3824ca10-8b5d-4854-8ac1-3fc59211c50a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete - all three features delivered with full test coverage and documentation",
+      "created_at": "2026-04-18T12:47:41.577627-04:00"
+    },
+    {
+      "id": 399,
+      "from_node_id": 443,
+      "to_node_id": 444,
+      "from_change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "to_change_id": "824dee12-b9e5-464c-ba1b-e6d6a31aa2df",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T12:53:52.893009-04:00"
+    },
+    {
+      "id": 400,
+      "from_node_id": 443,
+      "to_node_id": 445,
+      "from_change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "to_change_id": "d30b5236-44e4-4348-bbc3-f1d75d66a540",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T12:53:52.908406-04:00"
+    },
+    {
+      "id": 401,
+      "from_node_id": 443,
+      "to_node_id": 446,
+      "from_change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "to_change_id": "818c91e9-4728-4a44-af34-cfab7df881dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T12:53:52.920903-04:00"
+    },
+    {
+      "id": 402,
+      "from_node_id": 443,
+      "to_node_id": 447,
+      "from_change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "to_change_id": "d7200609-e741-45ff-80a5-20e429a7543f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T12:53:52.931666-04:00"
+    },
+    {
+      "id": 403,
+      "from_node_id": 443,
+      "to_node_id": 448,
+      "from_change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "to_change_id": "3152242a-5411-4dc9-b4ff-4b56c12709f7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T12:55:06.642031-04:00"
+    },
+    {
+      "id": 404,
+      "from_node_id": 443,
+      "to_node_id": 449,
+      "from_change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "to_change_id": "74763cd4-3210-4819-943d-4e521a7d4166",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T12:55:06.651584-04:00"
+    },
+    {
+      "id": 405,
+      "from_node_id": 443,
+      "to_node_id": 450,
+      "from_change_id": "8b863fe9-565e-44e5-b5af-464cf26fd7b6",
+      "to_change_id": "b660bb01-20a3-4d0f-a891-eeae3470de66",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T12:56:02.288389-04:00"
+    },
+    {
+      "id": 406,
+      "from_node_id": 451,
+      "to_node_id": 452,
+      "from_change_id": "06da9a71-9cbb-4c74-b8ce-9ee951423828",
+      "to_change_id": "717bdf25-9bff-4fca-946e-76629223723e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T13:00:42.651431-04:00"
+    },
+    {
+      "id": 407,
+      "from_node_id": 451,
+      "to_node_id": 453,
+      "from_change_id": "06da9a71-9cbb-4c74-b8ce-9ee951423828",
+      "to_change_id": "a1a5ee14-2667-4767-9c61-aeed8d6061ec",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T13:00:42.659634-04:00"
+    },
+    {
+      "id": 408,
+      "from_node_id": 451,
+      "to_node_id": 454,
+      "from_change_id": "06da9a71-9cbb-4c74-b8ce-9ee951423828",
+      "to_change_id": "26abff67-1c13-4042-82f2-5f3b63c2910c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T13:00:42.667527-04:00"
     }
   ],
   "documents": [
