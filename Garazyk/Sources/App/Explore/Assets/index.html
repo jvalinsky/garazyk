@@ -48,23 +48,23 @@
         <li role="menu-item" tabindex="0" aria-haspopup="true">
             View
             <ul role="menu">
-                <li role="menu-item"><a href="#" onclick="openWindow('did-doc')">DID Document</a></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('plc-ops')">PLC Operations</a></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('collections')">Repo Collections</a></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('graph-follows')">Social Graph</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="did-doc">DID Document</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="plc-ops">PLC Operations</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="collections">Repo Collections</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="graph-follows">Social Graph</a></li>
                 <li role="menu-item" class="divider"></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('feed-posts')">Feed Posts</a></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('feed-likes')">Feed Likes</a></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('feed-reposts')">Feed Reposts</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="feed-posts">Feed Posts</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="feed-likes">Feed Likes</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="feed-reposts">Feed Reposts</a></li>
                 <li role="menu-item" class="divider"></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('actor-profile')">Actor Profile</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="actor-profile">Actor Profile</a></li>
             </ul>
         </li>
         <li role="menu-item" tabindex="0" aria-haspopup="true">
             Utilities
             <ul role="menu">
-                <li role="menu-item"><a href="#" onclick="openWindow('cid-decode')">CID Decoder</a></li>
-                <li role="menu-item"><a href="#" onclick="openWindow('mst-viewer')">MST Viewer</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="cid-decode">CID Decoder</a></li>
+                <li role="menu-item"><a href="#" data-action="open-window" data-window="mst-viewer">MST Viewer</a></li>
             </ul>
         </li>
         <li role="menu-item" tabindex="0" aria-haspopup="true" id="menu-admin-group" style="display:none;">
@@ -86,7 +86,7 @@
         <div class="window" id="win-accounts">
             <div class="title-bar">
                 <span class="title">Accounts</span>
-                <button class="close" onclick="closeWindow('win-accounts')"><span>Close</span></button>
+                <button class="close" data-action="close-window" data-window="win-accounts" aria-label="Close window"><span>Close</span></button>
             </div>
             <div class="window-body">
                 <div class="field-row">
@@ -101,7 +101,7 @@
         <!-- Main Content Window -->
         <div class="window" id="win-content">
             <div class="title-bar">
-                <button class="close" onclick="closeWindow('win-content')"><span>Close</span></button>
+                <button class="close" data-action="close-window" data-window="win-content" aria-label="Close window"><span>Close</span></button>
                 <span class="title" id="content-title">DID Document</span>
                 <button class="resize"><span>Resize</span></button>
             </div>
@@ -186,7 +186,7 @@
         <div class="window" id="win-cid-decode" style="display: none;">
             <div class="title-bar">
                 <span class="title">CID Decoder</span>
-                <button class="close" onclick="closeWindow('win-cid-decode')"><span>Close</span></button>
+                <button class="close" data-action="close-window" data-window="win-cid-decode" aria-label="Close window"><span>Close</span></button>
             </div>
             <div class="window-body">
                 <div class="field-row-stacked">
@@ -207,7 +207,7 @@
         <div class="window" id="win-mst-viewer" style="display: none; width: 600px; top: 40px; left: 100px;">
             <div class="title-bar">
                 <span class="title">MST Viewer</span>
-                <button class="close" onclick="closeWindow('win-mst-viewer')"><span>Close</span></button>
+                <button class="close" data-action="close-window" data-window="win-mst-viewer" aria-label="Close window"><span>Close</span></button>
             </div>
             <div class="window-body">
                 <div class="field-row" style="margin-bottom: 8px;">
@@ -236,7 +236,7 @@
             style="display: none; width: 320px; position: absolute; top: 120px; left: 50%; margin-left: -160px; z-index: 100;">
             <div class="title-bar">
                 <span class="title">Login</span>
-                <button class="close" onclick="closeWindow('win-login')"><span>Close</span></button>
+                <button class="close" data-action="close-window" data-window="win-login" aria-label="Close window"><span>Close</span></button>
             </div>
             <div class="window-body">
                 <div style="text-align: center; margin-bottom: 12px;">
@@ -249,7 +249,7 @@
                 <div id="login-resolve-status"
                     style="font-size: 11px; color: #666; min-height: 1.2em; margin-bottom: 8px;"></div>
                 <div class="field-row" style="justify-content: flex-end;">
-                    <button class="btn" onclick="closeWindow('win-login')">Cancel</button>
+                    <button class="btn" data-action="close-window" data-window="win-login">Cancel</button>
                     <button id="login-btn" class="btn btn-default" style="margin-left: 6px;">Login</button>
                 </div>
             </div>
@@ -259,7 +259,7 @@
         <div class="window" id="win-poster" style="display: none; width: 380px; top: 60px; left: 40px;">
             <div class="title-bar">
                 <span class="title">New Post</span>
-                <button class="close" onclick="closeWindow('win-poster')"><span>Close</span></button>
+                <button class="close" data-action="close-window" data-window="win-poster" aria-label="Close window"><span>Close</span></button>
             </div>
             <div class="window-body">
                 <div style="border: 1px solid #000; padding: 6px; margin-bottom: 8px; background: #fff;">
@@ -299,19 +299,16 @@
             style="display: none; width: 320px; position: absolute; top: 140px; left: 50%; margin-left: -160px; z-index: 101;">
             <div class="title-bar">
                 <span class="title">Admin Login</span>
-                <button class="close" onclick="closeWindow('win-admin-login')"><span>Close</span></button>
+<button class="close" data-action="close-window" data-window="win-admin-login" aria-label="Close window"><span>Close</span></button>
+                <span class="title">Admin Login</span>
             </div>
             <div class="window-body">
-                <div style="text-align: center; margin-bottom: 12px;">
-                    <p style="margin: 0;">Enter the admin password to access management tools.</p>
-                </div>
-                <div class="field-row-stacked" style="margin-bottom: 8px;">
+                <div class="field-row">
                     <label for="admin-password">Password:</label>
-                    <input type="password" id="admin-password" placeholder="••••••••" style="width: 100%;">
+                    <input type="password" id="admin-password" style="width: 180px;">
                 </div>
-                <div id="admin-login-error" style="color: #ff0000; font-size: 11px; min-height: 1.2em; margin-bottom: 8px;"></div>
-                <div class="field-row" style="justify-content: flex-end;">
-                    <button class="btn" onclick="closeWindow('win-admin-login')">Cancel</button>
+                <div class="field-row">
+                    <button class="btn" data-action="close-window" data-window="win-admin-login">Cancel</button>
                     <button id="admin-login-btn" class="btn btn-default" style="margin-left: 6px;">Login</button>
                 </div>
             </div>
@@ -321,7 +318,7 @@
         <div class="window" id="win-invite-codes" style="display: none; width: 560px; top: 40px; left: 80px;">
             <div class="title-bar">
                 <span class="title">Invite Codes</span>
-                <button class="close" onclick="closeWindow('win-invite-codes')"><span>Close</span></button>
+                <button class="close" data-action="close-window" data-window="win-invite-codes" aria-label="Close window"><span>Close</span></button>
             </div>
             <div class="window-body">
                 <div class="field-row" style="justify-content: space-between; margin-bottom: 8px;">
@@ -352,37 +349,16 @@
         <div class="window" id="win-moderation" style="display: none; width: 560px; top: 60px; left: 120px;">
             <div class="title-bar">
                 <span class="title">Moderation</span>
-                <button class="close" onclick="closeWindow('win-moderation')"><span>Close</span></button>
-            </div>
-            <div class="window-body">
-                <div style="margin-bottom: 8px;">
-                    <span id="moderation-count" style="color: #666;">Loading...</span>
-                </div>
-                <div id="moderation-list" style="max-height: 400px; overflow-y: auto; border: 1.5px solid #000;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: #c0c0c0;">
-                                <th style="text-align: left; padding: 4px;">Handle</th>
-                                <th style="text-align: left; padding: 4px;">DID</th>
-                                <th style="text-align: left; padding: 4px;">Email</th>
-                                <th style="text-align: center; padding: 4px;">Status</th>
-                                <th style="text-align: center; padding: 4px;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="moderation-table-body">
-                            <tr><td colspan="5" style="padding: 8px; text-align: center;">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="moderation-result" style="margin-top: 8px;"></div>
+<button class="close" data-action="close-window" data-window="win-moderation" aria-label="Close window"><span>Close</span></button>
+                <span class="title">Moderation</span>
             </div>
         </div>
 
-        <!-- Admin Control Panel Window -->
-        <div class="window admin-panel-window" id="win-admin-panel" style="display: none; width: 750px; top: 30px; left: 50px;">
+        <!-- Admin Panel Window -->
+        <div class="window" id="win-admin-panel">
             <div class="title-bar">
-                <span class="title">Admin Control Panel</span>
-                <button class="close" onclick="closeWindow('win-admin-panel')"><span>Close</span></button>
+                <span class="title">Admin Panel</span>
+                <button class="close" data-action="close-window" data-window="win-admin-panel" aria-label="Close window"><span>Close</span></button>
             </div>
             <div class="window-body" style="padding: 0; display: flex; flex-direction: column; height: 450px;">
                 <div class="admin-tab-bar">
