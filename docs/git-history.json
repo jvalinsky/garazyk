@@ -1,19 +1,19 @@
 [
   {
-    "hash": "fb066e0315b0832fe94302da4c2932d418fd6878",
-    "short_hash": "fb066e0",
+    "hash": "f0d48d38e83cf06a44988685ced5a229a56d68a6",
+    "short_hash": "f0d48d3",
     "author": "Security Bot",
-    "date": "2026-04-18T11:42:29-04:00",
-    "message": "docs: sync deciduous graph for ozone and chat enhancements",
+    "date": "2026-04-18T11:53:11-04:00",
+    "message": "docs: sync deciduous graph for chat group admin",
     "files_changed": 2
   },
   {
-    "hash": "ab3400cabef1c6d01911b61185d99bc23f9104a2",
-    "short_hash": "ab3400c",
+    "hash": "e69fcd37ded41f437c543857493594076f719dd3",
+    "short_hash": "e69fcd3",
     "author": "Security Bot",
-    "date": "2026-04-18T11:24:10-04:00",
-    "message": "web ui: enhance template engine, fix health metrics, and add root portal\n\n- Fix AdminPartialHandler to support nested key paths ({{checks.uptime}}) and {{else}} blocks\n- Unwrap JSON body strings in partial renderer to fix empty values\n- Add direct data accessors to PDSAdminHandler bypassing internal auth for partials\n- Implement resident memory and system memory metrics in PDSMetrics\n- Update health API with real uptime, memory, and database size\n- Add beautiful portal page at / to choose between PDS Explorer and Admin Center\n- Move PDS Explorer to /explore and update cross-links\n- Fix HTMX hx-get paths in Admin UI to use partials prefix",
-    "files_changed": 9
+    "date": "2026-04-18T11:39:27-04:00",
+    "message": "web ui: fully wire up chat apis and add chat management to admin ui\n\n- Register missing chat.bsky.convo.* endpoints (listConvos, getMessages, sendMessage, getConvo)\n- Implement listAllConversations in ChatService for administrative monitoring\n- Add 'Chat' section to Admin UI sidebar with Conversations and Messages views\n- Add chat_convos.html and chat_messages.html templates\n- Update template engine to handle complex nested paths and improved conditionals\n- Fix various wiring gaps in AppView and Admin routes",
+    "files_changed": 12
   },
   {
     "hash": "5f5b220b421ca01686c7e6b5efd3e6b6c39a0ffb",
