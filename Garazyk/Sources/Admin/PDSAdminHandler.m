@@ -5,6 +5,7 @@
 #import "Services/Core/PDSAdminService.h"
 #import "App/PDSController.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Admin/AdminUI/Handlers/AdminUIHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -105,10 +106,67 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                                     path:(NSString *)path
                                                  headers:(NSDictionary<NSString *, NSString *> *)headers
                                                     body:(nullable NSData *)body {
+    // AdminUI static assets don't require authentication
+    if ([path hasPrefix:@"/admin/assets/"] || [path hasPrefix:@"/admin/css/"] || [path hasPrefix:@"/admin/js/"]) {
+        AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
+        AdminUIHTTPMethod uiMethod = (AdminUIHTTPMethod)method;
+        NSInteger statusCode = 200;
+        NSString *contentType = @"text/html";
+
+        NSString *response = [uiHandler handleRequestWithMethod:uiMethod
+                                                           path:path
+                                                        headers:headers
+                                                           body:body
+                                                     statusCode:&statusCode
+                                                    contentType:&contentType];
+
+        if (response) {
+            return [self htmlResponseWithStatus:statusCode contentType:contentType body:response];
+        }
+    }
+
+    // AdminUI entry point (serves index.html)
+    if ([path isEqualToString:@"/admin/ui"] || [path isEqualToString:@"/admin/ui/"]) {
+        AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
+        AdminUIHTTPMethod uiMethod = (AdminUIHTTPMethod)method;
+        NSInteger statusCode = 200;
+        NSString *contentType = @"text/html; charset=utf-8";
+
+        NSString *response = [uiHandler handleRequestWithMethod:uiMethod
+                                                           path:path
+                                                        headers:headers
+                                                           body:body
+                                                     statusCode:&statusCode
+                                                    contentType:&contentType];
+
+        if (response) {
+            return [self htmlResponseWithStatus:statusCode contentType:contentType body:response];
+        }
+    }
+
     PDSAdminAuth *auth = [PDSAdminAuth sharedAuth];
 
-    if (![path isEqualToString:@"/admin/login"] && ![auth isAuthenticatedWithRequest:headers]) {
+    if (![path isEqualToString:@"/admin/login"] && ![path hasPrefix:@"/admin/assets/"] && ![path hasPrefix:@"/admin/css/"] && ![path hasPrefix:@"/admin/js/"] && ![auth isAuthenticatedWithRequest:headers]) {
         return [self jsonResponseWithStatus:401 body:@{@"error": @"Unauthorized"}];
+    }
+
+    // AdminUI partials require authentication
+    if ([path hasPrefix:@"/admin/partials/"]) {
+        AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
+        AdminUIHTTPMethod uiMethod = (AdminUIHTTPMethod)method;
+        NSInteger statusCode = 200;
+        NSString *contentType = @"text/html";
+
+        NSString *response = [uiHandler handleRequestWithMethod:uiMethod
+                                                           path:path
+                                                        headers:headers
+                                                           body:body
+                                                     statusCode:&statusCode
+                                                    contentType:&contentType];
+
+        if (response) {
+            return [self htmlResponseWithStatus:statusCode contentType:contentType body:response];
+        }
     }
 
     if ([path isEqualToString:@"/admin"]) {
@@ -448,6 +506,14 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 
 - (NSDictionary *)textResponseWithStatus:(NSInteger)status body:(NSString *)body {
     return [self packetWithStatus:status contentType:@"text/plain; charset=utf-8" body:(body ?: @"")];
+}
+
+- (NSDictionary *)htmlResponseWithStatus:(NSInteger)status
+                             contentType:(NSString *)contentType
+                                   body:(NSString *)body {
+    return [self packetWithStatus:status
+                     contentType:(contentType ?: @"text/html; charset=utf-8")
+                            body:(body ?: @"")];
 }
 
 @end
