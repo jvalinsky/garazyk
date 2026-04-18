@@ -40,7 +40,8 @@
       "Bash(cat:*)",
       "Bash(for dir in /Users/jack/Software/garazyk/Garazyk/Resources/lexicons/app/bsky/feed /Users/jack/Software/garazyk/Garazyk/Resources/lexicons/app/bsky/graph)",
       "Bash(do find \"$dir\" -name \"*.json\" -exec sh -c 'if grep -q \"\"\\\\\"\"type\\\\\"\".*\\\\\"\"record\\\\\"\"\"\" \"\"$1\"\"; then basename \"\"$1\"\" .json; fi' _ {} ;)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git push:*)"
     ]
   }
 }
