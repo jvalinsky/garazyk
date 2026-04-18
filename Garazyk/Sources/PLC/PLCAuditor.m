@@ -403,13 +403,13 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     NSError *error = nil;
     NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
     if (!cbor) {
-        NSLog(@"PLCAuditor: Failed to encode unsigned data to CBOR: %@", error);
+        PDS_LOG_CORE_ERROR(@"Failed to encode unsigned data to CBOR: %@", error);
         return nil;
     }
-    NSLog(@"PLCAuditor: Unsigned data for hash: %@", data);
-    NSLog(@"PLCAuditor: Unsigned CBOR bytes: %@", [CryptoUtils hexStringFromData:cbor]);
+    PDS_LOG_CORE_DEBUG(@"Unsigned data for hash: %@", data);
+    PDS_LOG_CORE_DEBUG(@"Unsigned CBOR bytes: %@", [CryptoUtils hexStringFromData:cbor]);
     NSData *hash = [CryptoUtils sha256:cbor];
-    NSLog(@"PLCAuditor: Calculated hash: %@", [CryptoUtils hexStringFromData:hash]);
+    PDS_LOG_CORE_DEBUG(@"Calculated hash: %@", [CryptoUtils hexStringFromData:hash]);
     return hash;
 }
 
