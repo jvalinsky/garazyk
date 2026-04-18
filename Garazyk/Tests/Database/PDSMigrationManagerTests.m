@@ -4,7 +4,7 @@
 #import "Compat/XCTest/XCTest.h"
 #endif
 
-#import "Database/Migration/PDSMigrationManager.h"
+#import "Database/Migrations/PDSMigrationManager.h"
 #import <sqlite3.h>
 
 @interface PDSMigrationManagerTests : XCTestCase
