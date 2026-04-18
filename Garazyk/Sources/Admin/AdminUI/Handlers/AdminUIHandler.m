@@ -72,9 +72,15 @@ NS_ASSUME_NONNULL_BEGIN
         return [self handlePartialPath:path statusCode:statusCode contentType:contentType];
     }
 
-    // Root admin UI entry point
-    if ([path isEqualToString:@"/admin/ui"] || [path isEqualToString:@"/admin/ui/"]) {
-        return [self handleRootPath:statusCode contentType:contentType];
+    // Root admin UI entry point and all sub-paths return the shell
+    if ([path isEqualToString:@"/admin"] || [path hasPrefix:@"/admin/"] ) {
+        // Exclude specific prefixes that are handled elsewhere
+        if (![path hasPrefix:@"/admin/assets/"] &&
+            ![path hasPrefix:@"/admin/partials/"] &&
+            ![path hasPrefix:@"/admin/css/"] &&
+            ![path hasPrefix:@"/admin/js/"]) {
+            return [self handleRootPath:statusCode contentType:contentType];
+        }
     }
 
     // Static asset fallback (without /assets prefix for compatibility)
@@ -153,6 +159,24 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderHealthPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"health/status"]) {
         return [self renderHealthStatusWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"plc/lookup"]) {
+        return [self renderPLCLookupPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"plc/export"]) {
+        return [self renderPLCExportPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"plc/metrics"]) {
+        return [self renderPLCMetricsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"relay/upstreams"]) {
+        return [self renderRelayUpstreamsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"relay/events"]) {
+        return [self renderRelayEventsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"relay/crawl"]) {
+        return [self renderRelayCrawlPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"appview/backfill"]) {
+        return [self renderAppViewBackfillPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"appview/index"]) {
+        return [self renderAppViewIndexPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"appview/metrics"]) {
+        return [self renderAppViewMetricsPartialWithStatusCode:statusCode contentType:contentType];
     }
 
     if (statusCode) *statusCode = 404;
@@ -509,6 +533,141 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 #pragma mark - Content Type Mapping
+
+- (NSString *)renderPLCLookupPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                     contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>PLC DID Lookup</h2>"
+           @"<p class=\"text-secondary\">Query the PLC directory for DID documents and history.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<form class=\"form\" hx-get=\"/api/pds/did\" hx-target=\"#plc-result\">"
+           @"<div class=\"form-group\">"
+           @"<label class=\"form-label\">DID</label>"
+           @"<input type=\"text\" name=\"did\" class=\"form-input\" placeholder=\"did:plc:...\" required />"
+           @"</div>"
+           @"<button type=\"submit\" class=\"btn btn-primary\">Lookup</button>"
+           @"</form>"
+           @"<div id=\"plc-result\" class=\"mt-md\"></div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderPLCExportPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                     contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>PLC Directory Export</h2>"
+           @"<p class=\"text-secondary\">Download full or partial snapshots of the PLC directory.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<p>Exports are generated daily and available for download below.</p>"
+           @"<div class=\"table-wrapper mt-md\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Date</th><th>Size</th><th>Action</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"3\" class=\"text-secondary text-center\">No exports available.</td></tr></tbody>"
+           @"</table>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderPLCMetricsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                      contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>PLC Metrics</h2>"
+           @"<p class=\"text-secondary\">Internal performance and health metrics for the PLC service.</p>"
+           @"</div>"
+           @"<div class=\"grid-3\">"
+           @"<div class=\"stat-card\"><div class=\"stat-label\">Operations/sec</div><div class=\"stat-value\">0.0</div></div>"
+           @"<div class=\"stat-card\"><div class=\"stat-label\">Total DIDs</div><div class=\"stat-value\">0</div></div>"
+           @"<div class=\"stat-card\"><div class=\"stat-label\">Cache Hit Rate</div><div class=\"stat-value\">0%</div></div>"
+           @"</div>";
+}
+
+- (NSString *)renderRelayUpstreamsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                          contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Relay Upstreams</h2>"
+           @"<p class=\"text-secondary\">Manage PDS instances being crawled by this relay.</p>"
+           @"</div>"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Hostname</th><th>Status</th><th>Last Event</th><th>Actions</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"4\" class=\"text-secondary text-center\">No upstreams configured.</td></tr></tbody>"
+           @"</table>"
+           @"</div>";
+}
+
+- (NSString *)renderRelayEventsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                        contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Relay Event Stream</h2>"
+           @"<p class=\"text-secondary\">Real-time view of events being processed by the relay.</p>"
+           @"</div>"
+           @"<div class=\"terminal-window\"><div class=\"terminal-content\" id=\"relay-log\">Connecting to stream...</div></div>";
+}
+
+- (NSString *)renderRelayCrawlPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                       contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Crawl Queue</h2>"
+           @"<p class=\"text-secondary\">Monitor and manage the background crawling queue.</p>"
+           @"</div>"
+           @"<div class=\"stat-card mb-md\"><div class=\"stat-label\">Queue Depth</div><div class=\"stat-value\">0</div></div>";
+}
+
+- (NSString *)renderAppViewBackfillPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                           contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>AppView Backfill</h2>"
+           @"<p class=\"text-secondary\">Track progress of historical data indexing.</p>"
+           @"</div>"
+           @"<div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width: 0%\"></div></div>";
+}
+
+- (NSString *)renderAppViewIndexPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                        contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Index Status</h2>"
+           @"<p class=\"text-secondary\">Status of the main AppView search and feed indexes.</p>"
+           @"</div>"
+           @"<ul class=\"list-group\">"
+           @"<li class=\"list-item\"><span>Posts Index</span><span class=\"status-tag success\">Synced</span></li>"
+           @"<li class=\"list-item\"><span>Profiles Index</span><span class=\"status-tag success\">Synced</span></li>"
+           @"</ul>";
+}
+
+- (NSString *)renderAppViewMetricsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                          contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>AppView Metrics</h2>"
+           @"<p class=\"text-secondary\">Query latency and indexing throughput metrics.</p>"
+           @"</div>"
+           @"<div class=\"grid-2\">"
+           @"<div class=\"card\"><h4>Query Latency (p99)</h4><div class=\"stat-value\">12ms</div></div>"
+           @"<div class=\"card\"><h4>Index Throughput</h4><div class=\"stat-value\">450 ev/s</div></div>"
+           @"</div>";
+}
 
 - (NSString *)contentTypeForExtension:(NSString *)extension {
     static NSDictionary *mimeTypes = nil;

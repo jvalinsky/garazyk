@@ -1,5 +1,6 @@
 #import "Admin/AdminPartialHandler.h"
 #import "Admin/PDSAdminHandler.h"
+#import "Admin/AdminUI/Handlers/AdminUIHandler.h"
 #import "Debug/PDSLogger.h"
 
 @implementation AdminPartialHandler
@@ -243,6 +244,19 @@
     // Identity partial
     if ([partialName isEqualToString:@"identity"]) {
         return [self renderIdentityPartial:adminHandler headers:headers body:body];
+    }
+
+    // Default to delegating to AdminUIHandler if no template-based partial is found
+    NSInteger statusCode = 200;
+    NSString *contentType = nil;
+    NSString *result = [[AdminUIHandler sharedHandler] handleRequestWithMethod:AdminUIHTTPMethodGET
+                                                                           path:[@"/admin/partials/" stringByAppendingString:partialName]
+                                                                        headers:headers
+                                                                           body:body
+                                                                     statusCode:&statusCode
+                                                                    contentType:&contentType];
+    if (result) {
+        return result;
     }
 
     PDS_LOG_WARN(@"Unknown partial: %@", partialName);
