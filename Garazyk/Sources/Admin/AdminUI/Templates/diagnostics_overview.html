@@ -1,0 +1,36 @@
+<div class="content-header">
+  <h1>System Diagnostics</h1>
+  <p class="text-secondary mt-sm">Monitor sequencer health, blob storage integrity, and rate limit usage.</p>
+</div>
+
+<div class="grid-3">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Sequencer Health</h3>
+    </div>
+    <div class="card-body">
+      <p>Monitor event queue status, subscriber count, and backpressure metrics.</p>
+      <button class="btn btn-primary mt-md" onclick="navigateTo('/admin/diagnostics/sequencer')">View Details</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Blob Audits</h3>
+    </div>
+    <div class="card-body">
+      <p>Run deep integrity checks, orphan detection, and consistency verification.</p>
+      <button class="btn btn-primary mt-md" onclick="navigateTo('/admin/diagnostics/blobs')">View Details</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Rate Limits</h3>
+    </div>
+    <div class="card-body">
+      <p>Query quota usage, view top-limited users, and manage admin overrides.</p>
+      <button class="btn btn-primary mt-md" onclick="navigateTo('/admin/diagnostics/ratelimits')">View Details</button>
+    </div>
+  </div>
+</div>

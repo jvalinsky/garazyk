@@ -8,6 +8,122 @@
 
 NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
+#pragma mark - V2 Ozone Schema Migration
+
+@interface V2OzoneSchema : NSObject <PDSMigration>
+@end
+
+@implementation V2OzoneSchema
+
+- (NSInteger)version {
+    return 2;
+}
+
+- (NSString *)name {
+    return @"ozone_moderation_schema";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    PDSSchemaManager *sm = [PDSSchemaManager sharedManager];
+    NSArray *schemas = @[
+        [sm ozoneEventsTableSchema],
+        [sm ozoneSetsTableSchema],
+        [sm ozoneSetMembersTableSchema],
+        [sm ozoneTemplatesTableSchema],
+        [sm ozoneTeamTableSchema],
+        @"CREATE INDEX IF NOT EXISTS idx_mod_events_subject ON moderation_events(subject_did, subject_type)",
+        @"CREATE INDEX IF NOT EXISTS idx_mod_events_created ON moderation_events(created_at)",
+        @"CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did)"
+    ];
+
+    for (NSString *sql in schemas) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V2 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    NSArray *tables = @[
+        @"moderation_events", @"moderation_sets", @"moderation_set_members",
+        @"moderation_templates", @"moderation_team"
+    ];
+    for (NSString *table in tables) {
+        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+        sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+    }
+    return YES;
+}
+
+@end
+
+#pragma mark - V3 Diagnostics Schema Migration
+
+@interface V3DiagnosticsSchema : NSObject <PDSMigration>
+@end
+
+@implementation V3DiagnosticsSchema
+
+- (NSInteger)version {
+    return 3;
+}
+
+- (NSString *)name {
+    return @"diagnostics_schema";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    PDSSchemaManager *sm = [PDSSchemaManager sharedManager];
+    NSArray *schemas = @[
+        [sm sequencerAnalyticsTableSchema],
+        [sm blobAuditJobsTableSchema],
+        [sm rateLimitHistoryTableSchema],
+        @"CREATE INDEX IF NOT EXISTS idx_sequencer_analytics_timestamp ON sequencer_analytics(timestamp)",
+        @"CREATE INDEX IF NOT EXISTS idx_blob_audit_jobs_status ON blob_audit_jobs(status)",
+        @"CREATE INDEX IF NOT EXISTS idx_rate_limit_history_identifier ON rate_limit_history(identifier)",
+        @"CREATE INDEX IF NOT EXISTS idx_rate_limit_history_timestamp ON rate_limit_history(timestamp)"
+    ];
+
+    for (NSString *sql in schemas) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V3 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    NSArray *tables = @[
+        @"sequencer_analytics", @"blob_audit_jobs", @"rate_limit_history"
+    ];
+    for (NSString *table in tables) {
+        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+        sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+    }
+    return YES;
+}
+
+@end
+
 #pragma mark - V1 Initial Schema Migration
 
 @interface V1InitialSchema : NSObject <PDSMigration>
@@ -1001,6 +1117,8 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 + (instancetype)serviceDatabaseMigrationManager {
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
     [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"service"]];
+    [manager registerMigration:[[V2OzoneSchema alloc] init]];
+    [manager registerMigration:[[V3DiagnosticsSchema alloc] init]];
     return manager;
 }
 

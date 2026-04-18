@@ -1,0 +1,75 @@
+<div class="content-header">
+  <h1>Blob Audits</h1>
+  <p class="text-secondary mt-sm">Run comprehensive integrity checks on blob storage.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Start New Audit</h2>
+  </div>
+  <div class="card-body">
+    <form id="auditForm" class="form">
+      <div class="form-group">
+        <label for="auditType">Audit Type</label>
+        <select id="auditType" name="auditType" required>
+          <option value="orphans">Orphan Detection (find blobs without DB metadata)</option>
+          <option value="cid_verify">CID Verification (verify blob integrity)</option>
+          <option value="consistency">Consistency Check (find broken references)</option>
+          <option value="references">Reference Scanning (find unreferenced blobs)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="dryRun" name="dryRun" checked>
+          Dry Run (preview without making changes)
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Start Audit</button>
+    </form>
+  </div>
+</div>
+
+<div class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Active Audits</h2>
+  </div>
+  <div class="card-body">
+    <div id="activeAudits">
+      <p class="text-secondary">No active audits</p>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Recent Audits</h2>
+  </div>
+  <div class="card-body">
+    <table id="auditHistory">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Progress</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="5" class="text-secondary">No recent audits</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.DiagnosticsBlobs && window.DiagnosticsBlobs.init) {
+    window.DiagnosticsBlobs.init();
+  }
+});
+</script>
