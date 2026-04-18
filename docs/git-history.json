@@ -1,5 +1,21 @@
 [
   {
+    "hash": "9c46fe0ffcb910aae3f43063cb1bc6496428bbee",
+    "short_hash": "9c46fe0",
+    "author": "Security Bot",
+    "date": "2026-04-17T22:31:53-04:00",
+    "message": "Add PDS Blobs and Identity section templates\n\n- Add blobs.html and identity.html partial templates\n- Update AdminPartialHandler to render blobs and identity partials\n- Fix index.html sidebar to use /admin/partials/identity route",
+    "files_changed": 4
+  },
+  {
+    "hash": "88a6beea163c37863a6e7e8a240374a4f7581cc3",
+    "short_hash": "88a6bee",
+    "author": "Security Bot",
+    "date": "2026-04-17T21:41:34-04:00",
+    "message": "chore: rename September to Garazyk across docs and config\n\n- Update README.md, CONTRIBUTING.md to use Garazyk\n- Rename VitePress site title and metadata from 'September PDS' to 'Garazyk'\n- Update git clone URLs from jvalinsky/September to jvalinsky/garazyk\n- Update docker container names (september-docs -> garazyk-docs)\n- Update docker image references and Prometheus job names\n- Update build target references (september -> kaszlak)\n- Update service binary names in docs (campagnola, zuk, syrena)\n- Update GitHub links in VitePress config\n- Delete .kiro directory (no longer needed)",
+    "files_changed": 180
+  },
+  {
     "hash": "889e4b1801aab6d26b2dbf6b531ba8c354c84967",
     "short_hash": "889e4b1",
     "author": "Security Bot",
@@ -16,12 +32,12 @@
     "files_changed": 2
   },
   {
-    "hash": "0cbe0eb53bc9a2848285870d12a8764922b2d6de",
-    "short_hash": "0cbe0eb",
+    "hash": "42369799c53617441f55f713bb897fea6ef4dfb3",
+    "short_hash": "4236979",
     "author": "Security Bot",
-    "date": "2026-04-17T21:01:33-04:00",
-    "message": "test(sprint-4): Phase 3 - Add security hardening and deployment readiness tests\n\nAdd comprehensive test suites for Sprint 4 security and deployment improvements.\n\nSecurityHardeningTests.m:\n- Admin authorization code path verification (no unreachable code)\n- HMAC-SHA1 RFC 6238 TOTP compatibility testing\n- HMAC-SHA256 preferred usage verification\n- Key derivation correctness (PBKDF2)\n- Key derivation determinism (same input = same output)\n- Admin password validation behavior documentation\n\nDeploymentReadinessTests.m:\n- Configuration validation API existence checks\n- Readiness check error codes and domain\n- Graceful shutdown signal handling (SIGTERM, SIGINT)\n- Shutdown sequence verification\n- Connection draining with timeout\n- Database pool cleanup\n- Integration test flow\n- Disaster recovery documentation verification\n- Backup verification script availability\n\nTests are comprehensive but focus on API contracts and critical paths.\nFull implementation of individual checks left for integration testing.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
-    "files_changed": 2
+    "date": "2026-04-17T21:00:43-04:00",
+    "message": "deployment(sprint-4): Phase 2 - Add production deployment infrastructure\n\nAdd startup readiness checks and disaster recovery procedures.\n\nNew components:\n1. PDSReadinessCheck - Pre-flight verification before accepting traffic\n   - Database pool connectivity test\n   - PLC directory reachability check\n   - JWT signing key availability\n   - Blob storage accessibility\n   - Disk space validation (>= 1GB)\n   - Non-fatal warnings for minor issues\n\n2. Disaster Recovery Playbook (DISASTER_RECOVERY.md)\n   - RTO/RPO targets (30 min, 4 hours)\n   - Three recovery scenarios:\n     * Database corruption (5-10 mins)\n     * Complete data loss (15-30 mins)\n     * Point-in-time recovery (15-30 mins)\n   - Automated backup verification\n   - Post-recovery verification checklist\n   - Monthly DR drill schedule\n   - Emergency contacts and runbook\n\n3. Backup verification script (verify_backup.sh)\n   - Checks backup recency (< 24 hours)\n   - Verifies tar.gz archive integrity\n   - Validates all SQLite databases\n   - Provides detailed status reporting\n   - Suitable for automated scheduling (cron)\n\nAll components integrate with existing logging and error handling.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 4
   },
   {
     "hash": "42369799c53617441f55f713bb897fea6ef4dfb3",
@@ -46,14 +62,6 @@
     "date": "2026-04-17T20:56:07-04:00",
     "message": "security(sprint-4): Phase 1 - Security hardening\n\nAddress P0 security issues:\n\n1. Fix unreachable authorization code in PDSAuthzManager\n   - Removed unreachable `return YES;` after `return NO;`\n   - Clarified deny-by-default authorization logic\n   - Added comments explaining JWT scope validation requirement\n\n2. Document HMAC-SHA1 usage and deprecate for non-TOTP operations\n   - HMAC-SHA1 retained for RFC 6238 TOTP compatibility only\n   - Added detailed documentation explaining this is RFC 6238 standard\n   - Marked as deprecated for other cryptographic operations\n   - Recommend HMAC-SHA256 for new code\n\n3. Enforce admin password pbkdf2 format in production mode\n   - Added validateAdminPasswordWithConfiguration method\n   - Fails fast with exit(1) if plaintext password in production\n   - Warns (but allows) plaintext passwords in development mode\n   - Logs error messages directing to hash_admin_password.sh script\n\n4. Document encryption key derivation iterations\n   - Added comprehensive documentation for deriveKeyFromPassword\n   - Notes 100,000 iterations is for encryption (not password hashing)\n   - Documents OWASP 2023 recommendation of 600,000 for passwords\n   - Suggests future increase to 600,000 with migration path\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 5
-  },
-  {
-    "hash": "87224ac1f9538ab2a5e465d930f8b9da8f920d80",
-    "short_hash": "87224ac",
-    "author": "Security Bot",
-    "date": "2026-04-17T20:40:33-04:00",
-    "message": "feat(sprint-3): logging standardization and migration infrastructure\n\n## Phase 1: Logging Standardization\n- Replace 20 NSLog calls with PDS_LOG_* macros in 7 production files\n- Standardize to component-specific logging (PDS_LOG_CORE_*, PDS_LOG_SERVICE_*, PDS_LOG_DB_*, PDS_LOG_SYNC_*)\n- Remove redundant manual [ModuleName] prefixes\n- Add PDSLogger import to RepoCommit.m\n- Files: PDSController.m, PDSRecordService.m, PDSRepositoryService.m, ActorStore.m, PLCAuditor.m, Firehose.m, RepoCommit.m\n\n## Phase 2: Database Migration Infrastructure\n- Add schema_version table to track database migrations\n- Create PDSDatabaseMigration protocol for implementing migrations\n- Create PDSMigrationExecutor for executing pending migrations\n- Create PDSServiceMigration001 as initial migration (version 1)\n- Integrate migration execution into database startup (PDSDatabase.openWithError:)\n- Automatic migration execution on database open with transaction support\n- Backward compatible: existing databases seamlessly upgrade to version 1\n\nBenefits:\n✅ Production-grade logging observability\n✅ Foundation for future schema evolution\n✅ Automatic migration execution with rollback support\n✅ Version tracking for all databases\n✅ Backward compatible with existing deployments\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
-    "files_changed": 22
   },
   {
     "hash": "87224ac1f9538ab2a5e465d930f8b9da8f920d80",
