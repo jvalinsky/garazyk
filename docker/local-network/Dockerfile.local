@@ -1,0 +1,36 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    libcurl4 \
+    libffi8 \
+    libicu70 \
+    libqrencode4 \
+    libreadline8 \
+    libsqlite3-0 \
+    libssl3 \
+    libxml2 \
+    libxslt1.1 \
+    tzdata \
+    zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY staging/bin/kaszlak /usr/local/bin/kaszlak
+COPY staging/bin/campagnola /usr/local/bin/campagnola
+COPY staging/bin/zuk /usr/local/bin/zuk
+COPY staging/bin/syrena /usr/local/bin/syrena
+
+COPY staging/lexicons /usr/share/atprotopds/lexicons
+COPY staging/PLC-assets /usr/share/atprotopds/assets/PLC
+
+RUN mkdir -p /var/lib/atprotopds
+RUN useradd -r -s /usr/sbin/nologin pds && chown -R pds:pds /var/lib/atprotopds
+USER pds
+WORKDIR /var/lib/atprotopds
+
+ENTRYPOINT ["kaszlak"]
+CMD ["serve"]
