@@ -1,19 +1,19 @@
 [
   {
-    "hash": "0536c637506db530aabcb0cd8baa2928425ef555",
-    "short_hash": "0536c63",
+    "hash": "0d9fecde6d329fbbe60ce68f5d88ecad9a0c9684",
+    "short_hash": "0d9fecd",
     "author": "Security Bot",
-    "date": "2026-04-18T11:05:54-04:00",
-    "message": "docs: sync deciduous graph for full admin ui wiring",
+    "date": "2026-04-18T11:24:16-04:00",
+    "message": "docs: sync deciduous graph for web ui enhancements",
     "files_changed": 1
   },
   {
-    "hash": "8fcd7d886367167bd0b2437272eafbc7e798f604",
-    "short_hash": "8fcd7d8",
+    "hash": "4c88ffbb9d8904f926d85b3ed3373d041583c460",
+    "short_hash": "4c88ffb",
     "author": "Security Bot",
-    "date": "2026-04-18T09:31:26-04:00",
-    "message": "web ui: fix xss from inline onclick, add state manager, error boundaries, aria\n\n- Replace inline onclick with data attributes + event delegation\n- Add StateManager class for centralized state with subscribers\n- Add ErrorBoundary with retry for failed API calls\n- Add aria-labels to close buttons and menu items\n- Fix XSS in ui.js, did.js, admin-system.js, viewer.js",
-    "files_changed": 6
+    "date": "2026-04-18T11:01:09-04:00",
+    "message": "web ui: fix segfault from race condition, update CSP for htmx, migrate to ozone moderation\n\n- Fix race condition in AdminUIHandler mimeTypes initialization (segfault fix)\n- Update Content-Security-Policy to allow unpkg.com for htmx\n- Migrate Admin UI moderation to tools.ozone.moderation lexicons\n- Wire up real-time metrics to admin health API\n- Implement blob fetching in ExploreHandler\n- Link progress in deciduous nodes 430-434",
+    "files_changed": 7
   },
   {
     "hash": "5f5b220b421ca01686c7e6b5efd3e6b6c39a0ffb",

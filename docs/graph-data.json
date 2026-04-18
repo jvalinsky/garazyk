@@ -4773,6 +4773,17 @@
       "created_at": "2026-04-18T09:38:09.030046-04:00",
       "updated_at": "2026-04-18T09:42:53.472884-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/App/Explore/ExploreHandler.m\"],\"prompt\":\"Verify blob streaming and identity cache resilience in ExploreHandler.m.\"}"
+    },
+    {
+      "id": 435,
+      "change_id": "3f8835c8-0217-4480-8764-05081824767f",
+      "node_type": "action",
+      "title": "Phase 5: Chat API Wiring & Admin UI Integration",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-18T11:38:51.735331-04:00",
+      "updated_at": "2026-04-18T11:39:22.922813-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/Network/XrpcChatBskyConvoPack.m\"],\"prompt\":\"Register missing chat endpoints and implement Chat monitoring in Admin UI.\"}"
     }
   ],
   "edges": [
@@ -9076,6 +9087,17 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-18T09:38:12.349046-04:00"
+    },
+    {
+      "id": 392,
+      "from_node_id": 430,
+      "to_node_id": 435,
+      "from_change_id": "899eb05e-ed50-4ae2-b200-540d1890f011",
+      "to_change_id": "3f8835c8-0217-4480-8764-05081824767f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-18T11:39:22.913044-04:00"
     }
   ],
   "documents": [
