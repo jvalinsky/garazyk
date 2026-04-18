@@ -113,4 +113,43 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     return [dirURL URLByAppendingPathComponent:fileName];
 }
 
+- (nullable NSArray<CID *> *)listAllCIDsWithError:(NSError **)error {
+    NSMutableArray *cids = [NSMutableArray array];
+    
+    // Disk storage is sharded: /storage/aa/bbccddeeff
+    // We need to iterate over all 2-char directories
+    NSArray *dirEntries = [_fileManager contentsOfDirectoryAtURL:_storageDirectory
+                                     includingPropertiesForKeys:nil
+                                                        options:0
+                                                          error:error];
+    if (!dirEntries) return nil;
+    
+    for (NSURL *dirURL in dirEntries) {
+        BOOL isDir = NO;
+        if ([_fileManager fileExistsAtPath:dirURL.path isDirectory:&isDir] && isDir) {
+            NSArray *fileEntries = [_fileManager contentsOfDirectoryAtURL:dirURL
+                                             includingPropertiesForKeys:nil
+                                                                options:0
+                                                                  error:nil];
+            if (!fileEntries) continue;
+            
+            for (NSURL *fileURL in fileEntries) {
+                NSString *dirName = dirURL.lastPathComponent;
+                NSString *fileName = fileURL.lastPathComponent;
+                
+                // Only treat 2-char directory as sharded part
+                if (dirName.length != 2) continue;
+                
+                NSString *cidString = [dirName stringByAppendingString:fileName];
+                CID *cid = [CID cidFromString:cidString];
+                if (cid) {
+                    [cids addObject:cid];
+                }
+            }
+        }
+    }
+    
+    return cids;
+}
+
 @end

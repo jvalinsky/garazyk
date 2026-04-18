@@ -112,6 +112,20 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
 /*! Returns the value of a query parameter. */
 - (NSString *)queryParamForKey:(NSString *)key;
 
+/*!
+ * Mutable context for middleware to inject values.
+ *
+ * Middleware chains can use this to pass data to downstream handlers.
+ * For example, AuthMiddleware injects "authenticatedDid" here.
+ */
+@property (nonatomic, strong, nullable) NSMutableDictionary *middlewareContext;
+
+/*! Convenience: Returns the authenticated DID from middleware context. */
+- (nullable NSString *)authenticatedDid;
+
+/*! Convenience: Sets the authenticated DID in middleware context. */
+- (void)setAuthenticatedDid:(NSString *)did;
+
 @end
 
 NS_ASSUME_NONNULL_END

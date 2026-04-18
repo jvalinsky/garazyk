@@ -1,4 +1,5 @@
 #import "PDSBlobReferenceScanOperation.h"
+#import "PDSBlobAuditOperation_Protected.h"
 #import "Blob/BlobStorage.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
