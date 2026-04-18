@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "AdminUIHandler.h"
+#import "Metrics/PDSMetrics.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -397,7 +398,17 @@ NS_ASSUME_NONNULL_BEGIN
     if (statusCode) *statusCode = 200;
     if (contentType) *contentType = @"text/html";
 
-    return @"<div class=\"stat-card\">"
+    PDSMetrics *metrics = [PDSMetrics sharedMetrics];
+    NSTimeInterval uptime = [[NSDate date] timeIntervalSince1970] - metrics.serverStartTime;
+    
+    NSInteger days = (NSInteger)(uptime / 86400);
+    NSInteger hours = (NSInteger)((uptime - (days * 86400)) / 3600);
+    NSInteger minutes = (NSInteger)((uptime - (days * 86400) - (hours * 3600)) / 60);
+    
+    NSString *uptimeStr = [NSString stringWithFormat:@"%ldd %ldh %ldm", (long)days, (long)hours, (long)minutes];
+
+    return [NSString stringWithFormat:
+           @"<div class=\"stat-card\">"
            @"<div class=\"stat-label\">Server Status</div>"
            @"<div class=\"stat-value\">"
            @"<span class=\"status-indicator connected\" style=\"display: inline-block; margin-right: 8px;\"></span>"
@@ -406,15 +417,15 @@ NS_ASSUME_NONNULL_BEGIN
            @"</div>"
            @"<div class=\"stat-card\">"
            @"<div class=\"stat-label\">Uptime</div>"
-           @"<div class=\"stat-value\">24d 5h 32m</div>"
+           @"<div class=\"stat-value\">%@</div>"
            @"</div>"
            @"<div class=\"stat-card\">"
            @"<div class=\"stat-label\">Database</div>"
            @"<div class=\"stat-value\">"
            @"<span class=\"status-indicator connected\" style=\"display: inline-block; margin-right: 8px;\"></span>"
-           @"Connected"
+           @"%@.0 KB"
            @"</div>"
-           @"</div>";
+           @"</div>", uptimeStr, @(metrics.databaseSizeBytes / 1024)];
 }
 
 - (NSString *)renderEmptyStateWithMessage:(NSString *)message suggestion:(NSString *)suggestion {
@@ -501,7 +512,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)contentTypeForExtension:(NSString *)extension {
     static NSDictionary *mimeTypes = nil;
-    if (!mimeTypes) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
         mimeTypes = @{
             @"html": @"text/html; charset=utf-8",
             @"css": @"text/css",
@@ -518,7 +530,7 @@ NS_ASSUME_NONNULL_BEGIN
             @"ttf": @"font/ttf",
             @"txt": @"text/plain",
         };
-    }
+    });
 
     return mimeTypes[extension.lowercaseString] ?: @"application/octet-stream";
 }
