@@ -63,6 +63,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable NSURL *)blobFileURLForCID:(CID *)cid error:(NSError **)error;
 
+/*!
+ @method listAllCIDsWithError:
+ @abstract Lists all CIDs currently stored by the provider.
+ @param error Output error if operation fails.
+ @return Array of CID objects, or nil on failure.
+ */
+- (nullable NSArray<CID *> *)listAllCIDsWithError:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

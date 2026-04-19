@@ -479,6 +479,7 @@ static void registerMethodsWithDispatcherUsingServices(
     id<PDSAccountService> accountService, PDSRecordService *recordService,
     PDSBlobService *blobService, PDSRepositoryService *repositoryService,
     PDSRelayService *relayService, id<PDSAdminController> adminController,
+    PDSBlobAuditManager *blobAuditManager,
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
     JWTMinter *jwtMinter, PDSConfiguration *config,
     id<PDSEmailProvider> emailProvider,
@@ -542,7 +543,9 @@ static void registerMethodsWithDispatcherUsingServices(
   [XrpcAdminMethods registerWithDispatcher:dispatcher
                           serviceDatabases:serviceDatabases
                                  jwtMinter:jwtMinter
-                           adminController:adminController];
+                           adminController:adminController
+                         repositoryService:repositoryService
+                              auditManager:blobAuditManager];
 
   [XrpcLabelMethods registerWithDispatcher:dispatcher
                           serviceDatabases:serviceDatabases
@@ -566,6 +569,7 @@ static void registerMethodsWithDispatcherUsingServices(
       self, dispatcher, controller.accountService, controller.recordService,
       controller.blobService, controller.repositoryService,
       controller.relayService, controller.adminController,
+      controller.application.blobAuditManager,
       controller.serviceDatabases, controller.userDatabasePool,
       controller.jwtMinter, config, nil,
       controller.subscribeReposHandler);
@@ -580,6 +584,7 @@ static void registerMethodsWithDispatcherUsingServices(
       self, dispatcher, application.accountService, application.recordService,
       application.blobService, application.repositoryService,
       application.relayService, application.adminController,
+      application.blobAuditManager,
       application.serviceDatabases, application.userDatabasePool,
       application.jwtMinter, application.configuration,
       application.emailProvider,

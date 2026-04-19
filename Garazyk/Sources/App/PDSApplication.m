@@ -14,6 +14,7 @@
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
+#import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSRepositoryFactory.h"
@@ -56,6 +57,7 @@
 @property (nonatomic, strong, readwrite) PDSRepositoryService *repositoryService;
 @property (nonatomic, strong, readwrite, nullable) id<PDSEmailProvider> emailProvider;
 @property (nonatomic, strong, readwrite) id<PDSAdminController> adminController;
+@property (nonatomic, strong, readwrite) PDSBlobAuditManager *blobAuditManager;
 @property (nonatomic, strong, readwrite) PDSController *legacyController;
 @property (nonatomic, assign, readwrite, getter=isRunning) BOOL running;
 @property (nonatomic, assign) NSUInteger servicePoolSizeOverride;
@@ -435,6 +437,10 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _adminController = [[PDSAdminController alloc] initWithServiceDatabases:_serviceDatabases
                                                              accountService:_accountService];
     [container registerInstance:_adminController forProtocol:@protocol(PDSAdminController)];
+
+    // Initialize Blob Audit Manager
+    _blobAuditManager = [[PDSBlobAuditManager alloc] initWithBlobStorage:_blobService.blobStorage
+                                                        serviceDatabases:_serviceDatabases];
 
     // H3: Give PDSAdminAuth access to data directory so logout survives restarts
     [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;
