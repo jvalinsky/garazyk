@@ -2708,10 +2708,69 @@
                                                         operationId:@"getBlob"
                                                                tags:@[@"Content"]
                                                           parameters:@[blobDidParam, blobCidParam]
-                                                          responses:@[
-                                                              blobResponse,
-                                                              error400, error404
-                                                          ]]];
+                                                           responses:@[
+                                                               blobResponse,
+                                                               error400, error404
+                                                           ]]];
+
+    APIResponseDescriptor *postsArrayResponse = [[APIResponseDescriptor alloc] init];
+    postsArrayResponse.statusCode = @"200";
+    postsArrayResponse.responseDescription = @"Array of post objects";
+    postsArrayResponse.arrayItemRef = @"#/components/schemas/Post";
+
+    APIResponseDescriptor *actorsArrayResponse = [[APIResponseDescriptor alloc] init];
+    actorsArrayResponse.statusCode = @"200";
+    actorsArrayResponse.responseDescription = @"Array of actor objects";
+    actorsArrayResponse.arrayItemRef = @"#/components/schemas/Actor";
+
+    APIParameterDescriptor *limitParamFeed = [self paramWithName:@"limit" in:@"query" type:@"integer" description:@"Maximum number of results (default 20, max 100)" required:NO];
+    APIParameterDescriptor *cursorParam = [self paramWithName:@"cursor" in:@"query" type:@"string" description:@"Pagination cursor" required:NO];
+    APIParameterDescriptor *directionParam = [self paramWithName:@"direction" in:@"query" type:@"string" description:@"Direction for graph queries (follower/following)" required:NO];
+
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/feed-posts"
+                                                          method:@"get"
+                                                         summary:@"Get feed posts for an account"
+                                                    endpointName:@"feed-posts"
+                                                    operationId:@"getFeedPosts"
+                                                           tags:@[@"Feed"]
+                                                     parameters:@[didParam, limitParamFeed, cursorParam]
+                                                     responses:@[postsArrayResponse, error400, error404, errorResponse]]];
+
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/feed-likes"
+                                                          method:@"get"
+                                                         summary:@"Get likes for an account"
+                                                    endpointName:@"feed-likes"
+                                                    operationId:@"getFeedLikes"
+                                                           tags:@[@"Feed"]
+                                                     parameters:@[didParam, limitParamFeed, cursorParam]
+                                                     responses:@[postsArrayResponse, error400, error404, errorResponse]]];
+
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/feed-reposts"
+                                                          method:@"get"
+                                                         summary:@"Get reposts for an account"
+                                                    endpointName:@"feed-reposts"
+                                                    operationId:@"getFeedReposts"
+                                                           tags:@[@"Feed"]
+                                                     parameters:@[didParam, limitParamFeed, cursorParam]
+                                                     responses:@[postsArrayResponse, error400, error404, errorResponse]]];
+
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/graph-follows"
+                                                          method:@"get"
+                                                         summary:@"Get social graph follows for an account"
+                                                    endpointName:@"graph-follows"
+                                                    operationId:@"getFollows"
+                                                           tags:@[@"Graph"]
+                                                     parameters:@[didParam, limitParamFeed, directionParam]
+                                                     responses:@[actorsArrayResponse, error400, error404, errorResponse]]];
+
+    [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/actor-profile"
+                                                          method:@"get"
+                                                         summary:@"Get actor profile"
+                                                    endpointName:@"actor-profile"
+                                                    operationId:@"getActorProfile"
+                                                           tags:@[@"Actors"]
+                                                     parameters:@[didParam]
+                                                     responses:@[postsArrayResponse, error400, error404, errorResponse]]];
 
     APIResponseDescriptor *openapiSpecResponse = [self responseWithStatusCode:@"200" description:@"OpenAPI specification (JSON or YAML)"];
     [descriptors addObject:[APIEndpointDescriptor descriptorWithPath:@"/api/pds/openapi.json"
