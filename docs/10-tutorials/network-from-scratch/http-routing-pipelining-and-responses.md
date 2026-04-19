@@ -258,4 +258,4 @@ These tests cover the exact mechanics discussed here:
 
 ## Next step
 
-Continue to [Part 3: WebSocket upgrade, codec, and firehose](./websocket-upgrade-codec-and-firehose).
+Continue to [Part 3: WebSocket upgrade, codec, and firehose](./websocket-upgrade-codec-and-firehose).\n\n## Related\n\n- [Documentation Map](../../11-reference/documentation-map.md)\n- [Contributor Guide](../../index.md)\n- [Repository Documentation Index](../../repo-index/index.md)\n\n

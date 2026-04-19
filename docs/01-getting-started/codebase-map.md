@@ -109,4 +109,4 @@ When you add or rewrite contributor-facing docs, link to those areas deliberatel
 - [Architecture Overview](./architecture-overview)
 - [API Reference](../11-reference/api-reference)
 - [Testing Map](../11-reference/testing-map)
-- [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui)
+- [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

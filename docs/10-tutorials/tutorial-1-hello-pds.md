@@ -150,4 +150,4 @@ xcodegen generate
 xcodebuild -scheme kaszlak build
 ./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
-```
+```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

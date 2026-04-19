@@ -165,4 +165,4 @@ When a UI looks broken, always ask whether the failure is:
 - [Services Overview](../03-application-layer/services-overview)
 - [HTTP Server](../04-network-layer/http-server)
 - [XRPC Dispatch](../04-network-layer/xrpc-dispatch)
-- [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui)
+- [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

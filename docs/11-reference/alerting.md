@@ -646,4 +646,4 @@ Regularly test alert response:
 - [Prometheus Alerting](https://prometheus.io/docs/alerting/latest/overview/)
 - [Alertmanager Documentation](https://prometheus.io/docs/alerting/latest/alertmanager/)
 - [Google SRE Book - Monitoring](https://sre.google/sre-book/monitoring-distributed-systems/)
-- [My Philosophy on Alerting](https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/edit)
+- [My Philosophy on Alerting](https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/edit)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

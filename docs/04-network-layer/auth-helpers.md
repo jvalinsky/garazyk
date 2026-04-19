@@ -91,4 +91,4 @@ Most auth debugging becomes straightforward once those questions are answered.
 - [Error Handling](./error-handling)
 - [ATProto Basics](../02-core-concepts/atproto-basics)
 - [Cryptography](../02-core-concepts/cryptography)
-- [Troubleshooting](../11-reference/troubleshooting)
+- [Troubleshooting](../11-reference/troubleshooting)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

@@ -479,4 +479,4 @@ response.body = blobData;
 - [XRPC Dispatch](xrpc-dispatch)
 - [Method Registry](method-registry)
 - [Auth Helpers](auth-helpers)
-- [Error Handling](error-handling)
+- [Error Handling](error-handling)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

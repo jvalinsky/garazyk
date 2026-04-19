@@ -21,6 +21,7 @@ export default defineConfig({
       { text: 'Guide', link: '/01-getting-started/overview' },
       { text: 'Tutorials', link: '/10-tutorials/tutorial-1-hello-pds' },
       { text: 'Reference', link: '/11-reference/api-reference' },
+      { text: 'Docs Map', link: '/11-reference/documentation-map' },
       { text: 'Glossary', link: '/GLOSSARY' },
       { text: 'GitHub', link: 'https://github.com/jvalinsky/garazyk' }
     ],
@@ -164,7 +165,7 @@ export default defineConfig({
   cacheDir: '.vitepress/cache',
   
   // Exclude directories from build
-  srcExclude: ['plans/**', 'node_modules/**'],
+  srcExclude: ['plans/**', 'scratchpad/**', 'node_modules/**'],
   
   // Clean URLs (remove .html extension)
   cleanUrls: true,

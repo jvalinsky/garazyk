@@ -57,4 +57,4 @@ The old version of this page mixed protocol explanation with long code excerpts.
 - [JWT Tokens](./jwt-tokens)
 - [Auth Helpers](../04-network-layer/auth-helpers)
 - [Security Best Practices](./security-best-practices)
-- [Troubleshooting](../11-reference/troubleshooting)
+- [Troubleshooting](../11-reference/troubleshooting)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

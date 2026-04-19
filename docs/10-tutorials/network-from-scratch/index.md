@@ -136,4 +136,4 @@ first. If you need the firehose semantics after the upgrade succeeds, read
 
 ## Next step
 
-Continue to [Part 1: HTTP transport and parser](./http-transport-and-parser).
+Continue to [Part 1: HTTP transport and parser](./http-transport-and-parser).\n\n## Related\n\n- [Documentation Map](../../11-reference/documentation-map.md)\n- [Contributor Guide](../../index.md)\n- [Repository Documentation Index](../../repo-index/index.md)\n\n

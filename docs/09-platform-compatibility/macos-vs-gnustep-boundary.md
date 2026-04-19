@@ -73,4 +73,4 @@ Those questions catch most accidental regressions.
 
 ### Practical rule
 
-If a change touches crypto, networking, CoreFoundation bridging, or compatibility macros, assume it needs explicit cross-platform review even if it passes on macOS first.
+If a change touches crypto, networking, CoreFoundation bridging, or compatibility macros, assume it needs explicit cross-platform review even if it passes on macOS first.\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

@@ -209,4 +209,4 @@ GET /xrpc/com.atproto.repo.listRecords?cursor=abc123
 
 - [Configuration Reference](config-reference) for config keys that shape API behavior
 - [CLI Reference](cli-reference) for local inspection paths
-- [Troubleshooting](troubleshooting) for common failure modes
+- [Troubleshooting](troubleshooting) for common failure modes\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

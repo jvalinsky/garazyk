@@ -106,4 +106,4 @@ interoperability regressions.
 - [Cryptography In Practice](./cryptography-in-practice)
 - [PLC Directory](./plc-directory)
 - [DID Document Updates](./did-document-updates)
-- [Auth Helpers](../04-network-layer/auth-helpers)
+- [Auth Helpers](../04-network-layer/auth-helpers)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

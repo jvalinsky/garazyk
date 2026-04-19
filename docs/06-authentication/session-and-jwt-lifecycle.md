@@ -96,4 +96,4 @@ When this happens, do not start by changing JWT parsing. Start by confirming the
 
 1. Was the session row created at all?
 2. Is the request using the right token family for this route?
-3. Did refresh or revocation leave the store in a surprising state?
+3. Did refresh or revocation leave the store in a surprising state?\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

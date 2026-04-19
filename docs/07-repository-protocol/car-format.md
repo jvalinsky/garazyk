@@ -238,4 +238,4 @@ if (!success) {
 
 - [CBOR Serialization](cbor-serialization)
 - [CID and Hashing](cid-and-hashing)
-- [Repository Basics](repository-basics)
+- [Repository Basics](repository-basics)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

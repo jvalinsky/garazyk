@@ -600,4 +600,4 @@ static const NSTimeInterval WS_STALL_TIMEOUT = 60.0;  // 60 seconds
 - **[Backpressure](backpressure)** — Backpressure mechanisms
 - **[WebSocket Server](websocket-server)** — WebSocket implementation
 - **[Commit Broadcasting](commit-broadcasting)** — Event broadcasting
-- **[Request Throttling](../04-network-layer/request-throttling)** — HTTP throttling
+- **[Request Throttling](../04-network-layer/request-throttling)** — HTTP throttling\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

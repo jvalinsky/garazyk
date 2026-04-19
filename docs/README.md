@@ -12,6 +12,7 @@ For contributor-facing guidance, start with the numbered VitePress sections and 
 - [Getting Started](01-getting-started/overview)
 - [Tutorials Overview](10-tutorials/index)
 - [Reference](11-reference/api-reference)
+- [Documentation Map](11-reference/documentation-map)
 
 ## What Lives Here
 
@@ -39,3 +40,4 @@ Use those when you need a catalog or historical detail that would be too dense f
 - [Contributing Guide](../CONTRIBUTING)
 - [Documentation and Comment Style Guide](../DOCUMENTATION)
 - [Agent Instructions (AGENTS.md)](../AGENTS)
+- [Repository Documentation Index](repo-index/index)\n\n## Related\n\n- [Documentation Map](11-reference/documentation-map.md)\n- [Contributor Guide](index.md)\n- [Repository Documentation Index](repo-index/index.md)\n\n

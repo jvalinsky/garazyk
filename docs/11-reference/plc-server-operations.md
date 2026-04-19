@@ -117,4 +117,4 @@ curl -sS http://127.0.0.1:2582/_health | jq .
 
 ```bash
 curl -sS http://127.0.0.1:2582/_metrics | head
-```
+```\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

@@ -865,4 +865,4 @@ int main(int argc, const char *argv[]) {
 - **[Services Overview](services-overview)** — Service architecture
 - **[Account Service](account-service)** — Account management
 - **[Record Service](record-service)** — Record operations
-- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC
+- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

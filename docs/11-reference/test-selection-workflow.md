@@ -70,4 +70,4 @@ If you forget that step, a test can compile and still never run. Any test-select
 1. run the closest targeted suite
 2. run the adjacent integration seam
 3. do the smallest manual smoke check that matches the user-facing surface
-4. run `AllTests` last
+4. run `AllTests` last\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

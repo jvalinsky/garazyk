@@ -163,4 +163,4 @@ That is the frame that keeps record changes safe.
 ./build/bin/kaszlak repo list did:plc:example
 ./build/bin/kaszlak repo root did:plc:example
 curl -sS "http://127.0.0.1:2583/xrpc/com.atproto.repo.listRecords?repo=did:plc:example&collection=app.bsky.feed.post" | jq .
-```
+```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

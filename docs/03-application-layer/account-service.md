@@ -673,4 +673,4 @@ if (session) {
 - [PDSApplication](pds-application) - Application-level integration
 - [OAuth 2.0 with DPoP](../06-authentication/oauth2-dpop) - Advanced authentication flows
 - [Security Best Practices](../06-authentication/security-best-practices) - Comprehensive security guidance
-- [PLC Directory](../02-core-concepts/plc-directory) - DID registration and resolution
+- [PLC Directory](../02-core-concepts/plc-directory) - DID registration and resolution\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

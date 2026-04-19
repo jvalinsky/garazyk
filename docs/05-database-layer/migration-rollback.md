@@ -827,5 +827,4 @@ Keep multiple backup generations:
 - [Data Integrity](data-integrity) — Verification and consistency checks
 - [Zero-Downtime Migrations](zero-downtime-migrations) — Online migration strategies
 - [WAL Mode](wal-mode) — Write-Ahead Logging benefits
-- [SQLite Architecture](sqlite-architecture) — Database design patterns
-
+- [SQLite Architecture](sqlite-architecture) — Database design patterns\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

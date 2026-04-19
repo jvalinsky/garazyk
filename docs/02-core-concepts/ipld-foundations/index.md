@@ -75,4 +75,4 @@ useful.
 - [CAR v1 Specification](https://ipld.io/specs/transport/car/carv1/)
 - [CID Specification](https://github.com/multiformats/cid)
 - [AT Protocol Data Model](https://atproto.com/specs/data-model)
-- [AT Protocol Repository Specification](https://atproto.com/specs/repository)
+- [AT Protocol Repository Specification](https://atproto.com/specs/repository)\n\n## Related\n\n- [Documentation Map](../../11-reference/documentation-map.md)\n- [Contributor Guide](../../index.md)\n- [Repository Documentation Index](../../repo-index/index.md)\n\n
