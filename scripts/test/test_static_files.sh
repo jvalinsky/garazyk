@@ -91,13 +91,13 @@ test_url() {
 test_url "$BASE_URL/explore" "text/html" "HTML page" || exit 1
 
 # Test CSS file
-test_url "$BASE_URL/explore/css/style.css" "text/css" "CSS file" || exit 1
+test_url "$BASE_URL/css/explore.css" "text/css" "CSS file" || exit 1
 
 # Test JS file
-test_url "$BASE_URL/explore/js/ui.js" "application/javascript" "JavaScript file" || exit 1
+test_url "$BASE_URL/js/ui.js" "application/javascript" "JavaScript file" || exit 1
 
 # Test API endpoint
-test_url "$BASE_URL/explore/api/accounts" "application/json" "API endpoint" || exit 1
+test_url "$BASE_URL/api/pds/accounts" "application/json" "API endpoint" || exit 1
 
 # Test 404
 echo -e "${YELLOW}Testing 404 handling...${NC}"
