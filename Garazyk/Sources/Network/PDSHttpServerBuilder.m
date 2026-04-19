@@ -24,6 +24,55 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import <Foundation/Foundation.h>
+
+static NSString *PDSDesignSystemRootPath(void) {
+  NSFileManager *fm = [NSFileManager defaultManager];
+
+  NSString *bundlePath =
+      [[NSBundle mainBundle] pathForResource:@"Shared/DesignSystem" ofType:@""];
+  if (bundlePath.length > 0 && [fm fileExistsAtPath:bundlePath]) {
+    return bundlePath;
+  }
+
+  NSString *cwd = [fm currentDirectoryPath];
+  NSArray<NSString *> *candidates = @[
+    [cwd stringByAppendingPathComponent:@"Garazyk/Sources/Shared/DesignSystem"],
+    [cwd stringByAppendingPathComponent:@"Sources/Shared/DesignSystem"],
+    [[cwd stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:@"Garazyk/Sources/Shared/DesignSystem"],
+    [[[cwd stringByDeletingLastPathComponent] stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:@"Garazyk/Sources/Shared/DesignSystem"]
+  ];
+
+  for (NSString *candidate in candidates) {
+    BOOL isDir = NO;
+    if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+      return candidate;
+    }
+  }
+
+  return nil;
+}
+
+static NSString *PDSContentTypeForAssetPath(NSString *path) {
+  NSString *ext = path.pathExtension.lowercaseString;
+  if ([ext isEqualToString:@"html"])
+    return @"text/html; charset=utf-8";
+  if ([ext isEqualToString:@"css"])
+    return @"text/css; charset=utf-8";
+  if ([ext isEqualToString:@"js"])
+    return @"application/javascript; charset=utf-8";
+  if ([ext isEqualToString:@"json"])
+    return @"application/json; charset=utf-8";
+  if ([ext isEqualToString:@"svg"])
+    return @"image/svg+xml";
+  if ([ext isEqualToString:@"woff2"])
+    return @"font/woff2";
+  if ([ext isEqualToString:@"woff"])
+    return @"font/woff";
+  return @"application/octet-stream";
+}
 
 @interface PDSHttpServerBuilder ()
 @property(nonatomic, strong, nullable) PDSConfiguration *configuration;
@@ -185,6 +234,72 @@
 
   [PDSHttpMetricsRoutePack registerRoutesWithServer:server];
   [PDSHttpAdminRoutePack registerAdminRoutesWithServer:server];
+
+  void (^serveDesignSystemAsset)(NSString *, HttpResponse *) =
+      ^(NSString *relativePath, HttpResponse *response) {
+        if (relativePath.length == 0 || [relativePath hasPrefix:@"/"] ||
+            [relativePath containsString:@".."]) {
+          response.statusCode = HttpStatusNotFound;
+          [response setJsonBody:@{@"error" : @"Invalid design-system path"}];
+          return;
+        }
+
+        NSString *rootPath = PDSDesignSystemRootPath();
+        if (!rootPath) {
+          response.statusCode = HttpStatusNotFound;
+          [response setJsonBody:@{
+            @"error" : @"Design system assets not found"
+          }];
+          return;
+        }
+
+        NSString *fullPath =
+            [[rootPath stringByAppendingPathComponent:relativePath]
+                stringByStandardizingPath];
+        NSString *basePath = [rootPath stringByStandardizingPath];
+        if (![fullPath hasPrefix:[basePath stringByAppendingString:@"/"]] &&
+            ![fullPath isEqualToString:basePath]) {
+          response.statusCode = HttpStatusNotFound;
+          [response setJsonBody:@{@"error" : @"Invalid asset path"}];
+          return;
+        }
+
+        NSData *data = [NSData dataWithContentsOfFile:fullPath];
+        if (!data) {
+          response.statusCode = HttpStatusNotFound;
+          [response setJsonBody:@{
+            @"error" : @"Design system asset not found",
+            @"path" : relativePath ?: @""
+          }];
+          return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        response.contentType = PDSContentTypeForAssetPath(relativePath);
+        [response setBodyData:data];
+      };
+
+  [server addRoute:@"GET"
+              path:@"/design-system"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             serveDesignSystemAsset(@"index.html", response);
+           }];
+
+  [server addRoute:@"GET"
+              path:@"/design-system/"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             serveDesignSystemAsset(@"index.html", response);
+           }];
+
+  [server addRoute:@"GET"
+              path:@"/design-system/css/*"
+           handler:^(HttpRequest *request, HttpResponse *response) {
+             NSString *prefix = @"/design-system/";
+             NSString *relativePath = [request.path hasPrefix:prefix]
+                                          ? [request.path substringFromIndex:prefix.length]
+                                          : @"";
+             serveDesignSystemAsset(relativePath, response);
+           }];
 
   // Suppress browser console noise for favicon probes when no icon asset is
   // shipped with the current runtime bundle.
