@@ -61,41 +61,76 @@
   return [json isKindOfClass:[NSDictionary class]] ? json : nil;
 }
 
-- (void)testRegistersOnlyImplementedAdminRoutes {
+- (void)testRegistersAdminRoutesForAllSupportedMethods {
   NSArray<NSString *> *implementedPaths = @[
     @"/admin",
     @"/admin/login",
     @"/admin/logout",
     @"/admin/users",
+    @"/admin/users/bulk/takedown",
+    @"/admin/users/bulk/delete",
     @"/admin/invites",
     @"/admin/invites/disable",
     @"/admin/blobs",
     @"/admin/metrics",
     @"/admin/health",
     @"/admin/stats",
-    @"/admin/audit-log"
+    @"/admin/audit-log",
+    @"/admin/plc/lookup",
+    @"/admin/plc/export",
+    @"/admin/plc/metrics",
+    @"/admin/plc/operations",
+    @"/admin/chat/convos",
+    @"/admin/chat/messages",
+    @"/admin/chat/reports",
+    @"/admin/ozone/events",
+    @"/admin/ozone/statuses",
+    @"/admin/ozone/team",
+    @"/admin/ozone/templates",
+    @"/admin/ozone/sets",
+    @"/admin/ozone/correlations",
+    @"/admin/ozone/verification",
+    @"/admin/ozone/scheduled",
+    @"/admin/ozone/safelinks",
+    @"/admin/ozone/config",
+    @"/admin/relay/operators",
+    @"/admin/security/sessions",
+    @"/admin/security/app-passwords"
   ];
 
+  NSArray<NSString *> *methods = @[ @"GET", @"POST", @"PUT", @"DELETE" ];
   for (NSString *path in implementedPaths) {
-    RequestHandler getHandler =
-        [self.server handlerForRoute:path method:@"GET" parameters:nil];
-    XCTAssertNotNil(getHandler, @"Expected GET handler for %@", path);
+    for (NSString *method in methods) {
+      RequestHandler handler =
+          [self.server handlerForRoute:path method:method parameters:nil];
+      XCTAssertNotNil(handler, @"Expected %@ handler for %@", method, path);
+    }
+  }
 
-    RequestHandler postHandler =
-        [self.server handlerForRoute:path method:@"POST" parameters:nil];
-    XCTAssertNotNil(postHandler, @"Expected POST handler for %@", path);
+  for (NSString *method in methods) {
+    RequestHandler userWildcard =
+        [self.server handlerForRoute:@"/admin/users/did:plc:test/edit-email"
+                              method:method
+                          parameters:nil];
+    XCTAssertNotNil(userWildcard,
+                    @"Expected %@ handler for /admin/users/*", method);
+
+    RequestHandler partialWildcard =
+        [self.server handlerForRoute:@"/admin/partials/users/search"
+                              method:method
+                          parameters:nil];
+    XCTAssertNotNil(partialWildcard,
+                    @"Expected %@ handler for /admin/partials/*", method);
   }
 
   NSArray<NSString *> *removedPaths =
       @[ @"/admin/capabilities", @"/admin/audit/receipts" ];
   for (NSString *path in removedPaths) {
-    RequestHandler getHandler =
-        [self.server handlerForRoute:path method:@"GET" parameters:nil];
-    XCTAssertNil(getHandler, @"Did not expect GET handler for %@", path);
-
-    RequestHandler postHandler =
-        [self.server handlerForRoute:path method:@"POST" parameters:nil];
-    XCTAssertNil(postHandler, @"Did not expect POST handler for %@", path);
+    for (NSString *method in methods) {
+      RequestHandler handler =
+          [self.server handlerForRoute:path method:method parameters:nil];
+      XCTAssertNil(handler, @"Did not expect %@ handler for %@", method, path);
+    }
   }
 }
 
