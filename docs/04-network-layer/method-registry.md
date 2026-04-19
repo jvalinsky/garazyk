@@ -54,4 +54,4 @@ Use the registry docs for the static map. Use the deep dives when you need the l
 - [XRPC Dispatch](./xrpc-dispatch)
 - [Domain Methods](./domain-methods)
 - [Services Overview](../03-application-layer/services-overview)
-- [Startup and Boot Sequence](../01-getting-started/startup-and-boot-sequence)
+- [Startup and Boot Sequence](../01-getting-started/startup-and-boot-sequence)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

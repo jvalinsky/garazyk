@@ -72,4 +72,4 @@ If the server accepts connections on one platform but behaves strangely on anoth
 
 - [HTTP Server](../04-network-layer/http-server)
 - [WebSocket Server](../08-sync-firehose/websocket-server)
-- [macOS and Linux Compatibility](./macos-linux)
+- [macOS and Linux Compatibility](./macos-linux)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

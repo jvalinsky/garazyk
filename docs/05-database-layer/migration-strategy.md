@@ -655,5 +655,4 @@ typedef struct {
 - [Data Integrity](data-integrity) — Verification and consistency checks
 - [Zero-Downtime Migrations](zero-downtime-migrations) — Online migration strategies
 - [Migrations](migrations) — Basic migration concepts and examples
-- [SQLite Architecture](sqlite-architecture) — Database design patterns
-
+- [SQLite Architecture](sqlite-architecture) — Database design patterns\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

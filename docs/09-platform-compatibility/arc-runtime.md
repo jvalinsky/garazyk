@@ -446,5 +446,4 @@ valgrind --leak-check=summary ./build/bin/kaszlak
 
 - **[Network Transport](network-transport)** — Platform-specific network I/O
 - **[Compatibility Layer](compatibility-layer)** — Compatibility shims
-- **[macOS/Linux](macos-linux)** — Platform overview
-
+- **[macOS/Linux](macos-linux)** — Platform overview\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

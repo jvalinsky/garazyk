@@ -82,4 +82,4 @@ Most local debugging gets easier as soon as those four answers are concrete.
 2. map it to route and service
 3. inspect the owning store boundary
 4. run the narrowest matching test
-5. repeat only after the failure mode changes
+5. repeat only after the failure mode changes\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

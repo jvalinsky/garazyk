@@ -16,6 +16,7 @@ New contributors should usually begin with this sequence:
 2. [Codebase Map](01-getting-started/codebase-map) to learn where the major subsystems live.
 3. [Request Lifecycle](01-getting-started/request-lifecycle) to understand how a request moves through the stack.
 4. [Tutorials Overview](10-tutorials/index) to pick the right repo-grounded walkthrough.
+5. [Documentation Map](11-reference/documentation-map) to navigate canonical and non-canonical doc collections.
 
 That path is intentionally short. The goal is to get you from clone to confident navigation without forcing you through large reference dumps first.
 
@@ -78,6 +79,8 @@ Some material remains intentionally outside the main newcomer path:
 
 Those directories remain useful, but they are deeper reference or historical material. The contributor-facing guidance lives in the numbered VitePress sections first.
 
+Repository-wide secondary docs are also indexed in [Repository Documentation Index](repo-index/index), with dedicated hubs for [Admin UI](11-reference/admin-ui-documentation), [Source-Adjacent](11-reference/source-adjacent-documentation), and [Tooling/Skills](11-reference/tooling-and-skills-documentation).
+
 ## Reading Style
 
 The tutorials and reference pages no longer assume that every example should be pasted into a fresh file and run unchanged. Instead, they are written to help you answer questions like:
@@ -94,9 +97,10 @@ That is the right mental model for a production codebase.
 - [Overview](01-getting-started/overview)
 - [Architecture Overview](01-getting-started/architecture-overview)
 - [Tutorials Overview](10-tutorials/index)
+- [Documentation Map](11-reference/documentation-map)
 - [Objective-C Research Map](11-reference/objective-c-research-map)
 - [Objective-C Research Appendices](guides/objective-c-appendices/)
 - [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui)
 - [Testing Map](11-reference/testing-map)
 - [Troubleshooting](11-reference/troubleshooting)
-- [Documentation and Comment Style Guide](../DOCUMENTATION.md)
+- [Documentation and Comment Style Guide](../DOCUMENTATION.md)\n\n## Related\n\n- [Documentation Map](11-reference/documentation-map.md)\n- [Contributor Guide](index.md)\n- [Repository Documentation Index](repo-index/index.md)\n\n
