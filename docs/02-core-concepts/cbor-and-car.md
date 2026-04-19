@@ -90,4 +90,4 @@ That order is usually faster than debugging the whole repository stack at once.
 - [Merkle Search Trees](./mst-trees)
 - [Deep Dive: Repository Data Structures](./repository-data-structures-walkthrough)
 - [CID and Hashing](../07-repository-protocol/cid-and-hashing)
-- [Repository Basics](../07-repository-protocol/repository-basics)
+- [Repository Basics](../07-repository-protocol/repository-basics)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

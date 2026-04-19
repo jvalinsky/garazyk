@@ -142,4 +142,4 @@ real feature instead of a hypothetical one.
 
 Current blob protection in Garazyk PDS is implemented as validation, rate
 limiting, and observability. It is not a full quota subsystem yet, and operators
-should run the server with that smaller mental model.
+should run the server with that smaller mental model.\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

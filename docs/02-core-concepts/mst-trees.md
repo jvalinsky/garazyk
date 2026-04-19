@@ -85,4 +85,4 @@ If a bug touches repo correctness, there is a good chance it crosses all three.
 - [CBOR and CAR](./cbor-and-car)
 - [Deep Dive: Repository Data Structures](./repository-data-structures-walkthrough)
 - [Repository Service](../03-application-layer/repository-service)
-- [Repository Basics](../07-repository-protocol/repository-basics)
+- [Repository Basics](../07-repository-protocol/repository-basics)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

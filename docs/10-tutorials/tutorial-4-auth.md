@@ -163,4 +163,4 @@ Understanding those boundaries is the difference between a safe auth change and 
 curl -sS http://127.0.0.1:2583/.well-known/oauth-authorization-server | jq .
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
 ./build/tests/AllTests -only-testing:AllTests/JWTTests
-```
+```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
