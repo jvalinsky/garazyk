@@ -1,5 +1,8 @@
 {{#each users}}
-<tr>
+<tr data-did="{{did}}">
+  <td>
+    <input type="checkbox" name="selected_users" value="{{did}}" class="user-checkbox" />
+  </td>
   <td><code style="font-size: 11px;">{{did}}</code></td>
   <td>{{handle}}</td>
   <td>{{email}}</td>
@@ -16,28 +19,62 @@
       <button
         type="button"
         class="btn btn-sm btn-secondary"
-        hx-get="/admin/users/{{did}}"
-        hx-target="#detail-modal"
-        hx-on="htmx:afterSettle: document.getElementById('detail-modal').showModal()">
+        hx-post="/admin/users/{{did}}/edit-email"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()"
+        title="Change user email">
+        Email
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        hx-post="/admin/users/{{did}}/edit-handle"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()"
+        title="Change user handle">
+        Handle
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        hx-post="/admin/users/{{did}}/reset-password"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()"
+        title="Reset user password">
+        Password
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        hx-get="/admin/partials/users/detail?did={{did}}"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()"
+        title="View user details">
         View
       </button>
-      {{#if active}}
-        <button
-          type="button"
-          class="btn btn-sm btn-destructive"
-          hx-post="/admin/users/{{did}}/deactivate"
-          hx-confirm="Deactivate this user?"
-          hx-swap="swap:outerHTML">
-          Deactivate
-        </button>
-      {{/if}}
+      <button
+        type="button"
+        class="btn btn-sm btn-warning"
+        hx-post="/admin/users/{{did}}/takedown"
+        hx-confirm="Takedown this account? This action can be reversed."
+        hx-swap="outerHTML">
+        Takedown
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-destructive"
+        hx-post="/admin/users/{{did}}/delete"
+        hx-confirm="Permanently delete this account? This action cannot be undone."
+        hx-swap="outerHTML">
+        Delete
+      </button>
     </div>
   </td>
 </tr>
 {{/each}}
 {{#if !users}}
 <tr>
-  <td colspan="6" class="text-secondary text-center p-lg">
+  <td colspan="7" class="text-secondary text-center p-lg">
     No users found. Try a different search query.
   </td>
 </tr>

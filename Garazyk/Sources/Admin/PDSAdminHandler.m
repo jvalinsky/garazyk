@@ -218,6 +218,10 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         return [self handleAdminUsers:headers body:body method:method];
     } else if ([path hasPrefix:@"/admin/users/"]) {
         return [self handleAdminUserAction:headers body:body method:method path:path];
+    } else if ([path isEqualToString:@"/admin/users/bulk/takedown"]) {
+        return [self handleAdminBulkTakedown:headers body:body];
+    } else if ([path isEqualToString:@"/admin/users/bulk/delete"]) {
+        return [self handleAdminBulkDelete:headers body:body];
     } else if ([path isEqualToString:@"/admin/invites"]) {
         return [self handleAdminInvites:headers body:body method:method];
     } else if ([path isEqualToString:@"/admin/invites/disable"]) {
@@ -900,6 +904,102 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     }
     
     return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
+}
+
+#pragma mark - Bulk Operations
+
+- (NSDictionary *)handleAdminBulkTakedown:(NSDictionary *)headers body:(NSData *)body {
+    // Parse request body for selected DIDs
+    NSError *parseError = nil;
+    NSArray *dids = nil;
+    
+    if (body) {
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        dids = json[@"selected_users"];
+    }
+    
+    if (!dids || ![dids isKindOfClass:[NSArray class]] || dids.count == 0) {
+        return [self jsonResponseWithStatus:400 body:@{@"error": @"No users selected"}];
+    }
+    
+    NSDictionary *result = [self handleBulkTakedownWithDids:dids];
+    return [self jsonResponseWithStatus:[result[@"success"] boolValue] ? 200 : 500 body:result];
+}
+
+- (NSDictionary *)handleAdminBulkDelete:(NSDictionary *)headers body:(NSData *)body {
+    // Parse request body for selected DIDs
+    NSError *parseError = nil;
+    NSArray *dids = nil;
+    
+    if (body) {
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        dids = json[@"selected_users"];
+    }
+    
+    if (!dids || ![dids isKindOfClass:[NSArray class]] || dids.count == 0) {
+        return [self jsonResponseWithStatus:400 body:@{@"error": @"No users selected"}];
+    }
+    
+    NSDictionary *result = [self handleBulkDeleteWithDids:dids];
+    return [self jsonResponseWithStatus:[result[@"success"] boolValue] ? 200 : 500 body:result];
+}
+
+- (NSDictionary *)handleBulkTakedownWithDids:(NSArray *)dids {
+    NSMutableArray *succeeded = [NSMutableArray array];
+    NSMutableArray *failed = [NSMutableArray array];
+    
+    for (NSString *did in dids) {
+        if (![did isKindOfClass:[NSString class]]) continue;
+        
+        NSError *dbError = nil;
+        PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
+        if (!account) {
+            [failed addObject:@{@"did": did, @"error": @"User not found"}];
+            continue;
+        }
+        
+        account.inviteEnabled = NO;
+        account.updatedAt = [[NSDate date] timeIntervalSince1970];
+        if ([self.database updateAccount:account error:&dbError]) {
+            [succeeded addObject:did];
+        } else {
+            [failed addObject:@{@"did": did, @"error": dbError.localizedDescription ?: @"Database error"}];
+        }
+    }
+    
+    return @{
+        @"success": @(failed.count == 0),
+        @"processed": @(dids.count),
+        @"succeeded": @(succeeded.count),
+        @"failed": failed,
+        @"message": [NSString stringWithFormat:@"Takedown complete: %lu succeeded, %lu failed",
+                     (unsigned long)succeeded.count, (unsigned long)failed.count]
+    };
+}
+
+- (NSDictionary *)handleBulkDeleteWithDids:(NSArray *)dids {
+    NSMutableArray *succeeded = [NSMutableArray array];
+    NSMutableArray *failed = [NSMutableArray array];
+    
+    for (NSString *did in dids) {
+        if (![did isKindOfClass:[NSString class]]) continue;
+        
+        NSError *dbError = nil;
+        if ([self.database deleteAccount:did error:&dbError]) {
+            [succeeded addObject:did];
+        } else {
+            [failed addObject:@{@"did": did, @"error": dbError.localizedDescription ?: @"Database error"}];
+        }
+    }
+    
+    return @{
+        @"success": @(failed.count == 0),
+        @"processed": @(dids.count),
+        @"succeeded": @(succeeded.count),
+        @"failed": failed,
+        @"message": [NSString stringWithFormat:@"Delete complete: %lu succeeded, %lu failed",
+                     (unsigned long)succeeded.count, (unsigned long)failed.count]
+    };
 }
 
 - (NSDictionary *)handleUserDeleteRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
