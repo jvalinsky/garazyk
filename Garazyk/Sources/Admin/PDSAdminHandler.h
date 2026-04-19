@@ -102,6 +102,14 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                                 limit:(NSInteger)limit
                                                cursor:(nullable NSString *)cursor;
 
+#pragma mark - Bulk Operations
+
+/// Bulk takedown accounts
+- (NSDictionary *)handleBulkTakedownWithDids:(NSArray *)dids;
+
+/// Bulk delete accounts
+- (NSDictionary *)handleBulkDeleteWithDids:(NSArray *)dids;
+
 @end
 
 NS_ASSUME_NONNULL_END
