@@ -1,12 +1,32 @@
 #import "Network/PDSHttpAdminRoutePack.h"
 
 #import "Admin/PDSAdminHandler.h"
-#import "Admin/AdminPartialHandler.h"
-#import "Admin/AdminUI/Handlers/AdminUIHandler.h"
 #import "Debug/PDSLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+
+static PDSHTTPMethod PDSAdminMethodFromHttpMethod(HttpMethod method) {
+  switch (method) {
+  case HttpMethodGET:
+    return PDSHTTPMethodGET;
+  case HttpMethodPOST:
+    return PDSHTTPMethodPOST;
+  case HttpMethodPUT:
+    return PDSHTTPMethodPUT;
+  case HttpMethodDELETE:
+    return PDSHTTPMethodDELETE;
+  default:
+    return PDSHTTPMethodGET;
+  }
+}
+
+static NSString *PDSAdminPathWithQuery(HttpRequest *request) {
+  if (request.queryString.length == 0) {
+    return request.path;
+  }
+  return [NSString stringWithFormat:@"%@?%@", request.path, request.queryString];
+}
 
 @implementation PDSHttpAdminRoutePack
 
@@ -15,65 +35,49 @@
 
   NSArray *adminPaths = @[
     @"/admin", @"/admin/login", @"/admin/logout", @"/admin/users",
+    @"/admin/users/*", @"/admin/users/bulk/takedown", @"/admin/users/bulk/delete",
     @"/admin/invites", @"/admin/invites/disable", @"/admin/blobs",
     @"/admin/metrics", @"/admin/health", @"/admin/stats", @"/admin/audit-log",
     @"/admin/plc/lookup", @"/admin/plc/export", @"/admin/plc/metrics",
+    @"/admin/plc/operations",
     @"/admin/relay/upstreams", @"/admin/relay/events", @"/admin/relay/crawl",
+    @"/admin/relay/operators",
     @"/admin/appview/backfill", @"/admin/appview/index", @"/admin/appview/metrics",
     @"/admin/chat/convos", @"/admin/chat/messages", @"/admin/chat/reports",
     @"/admin/ozone/events", @"/admin/ozone/statuses", @"/admin/ozone/team", @"/admin/ozone/templates",
     @"/admin/ozone/sets", @"/admin/ozone/correlations", @"/admin/ozone/verification",
+    @"/admin/ozone/safelinks", @"/admin/ozone/scheduled", @"/admin/ozone/config",
     @"/admin/security/sessions", @"/admin/security/app-passwords"
   ];
 
-  for (NSString *path in adminPaths) {
-    [server addRoute:@"GET"
-                path:path
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               NSInteger statusCode = 200;
-               NSString *contentType = nil;
-               NSString *result =
-                   [adminHandler handleRequestWithMethod:PDSHTTPMethodGET
-                                                    path:path
-                                                 headers:request.headers
-                                                    body:request.body
-                                              statusCode:&statusCode
-                                             contentType:&contentType];
-               if (result) {
-                 response.statusCode = statusCode;
-                 if (contentType.length > 0) {
-                   [response setHeader:contentType forKey:@"Content-Type"];
-                 }
-                 [response setBodyString:result];
-               } else {
-                 response.statusCode = 404;
-                 [response setJsonBody:@{@"error" : @"Not Found"}];
-               }
-             }];
+  NSArray<NSString *> *httpMethods = @[@"GET", @"POST", @"PUT", @"DELETE"];
 
-    [server addRoute:@"POST"
-                path:path
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               NSInteger statusCode = 200;
-               NSString *contentType = nil;
-               NSString *result =
-                   [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
-                                                    path:path
-                                                 headers:request.headers
-                                                    body:request.body
-                                              statusCode:&statusCode
-                                             contentType:&contentType];
-               if (result) {
-                 response.statusCode = statusCode;
-                 if (contentType.length > 0) {
-                   [response setHeader:contentType forKey:@"Content-Type"];
+  for (NSString *path in adminPaths) {
+    for (NSString *httpMethod in httpMethods) {
+      [server addRoute:httpMethod
+                  path:path
+               handler:^(HttpRequest *request, HttpResponse *response) {
+                 NSInteger statusCode = 200;
+                 NSString *contentType = nil;
+                 NSString *result =
+                     [adminHandler handleRequestWithMethod:PDSAdminMethodFromHttpMethod(request.method)
+                                                     path:PDSAdminPathWithQuery(request)
+                                                   headers:request.headers
+                                                      body:request.body
+                                                statusCode:&statusCode
+                                               contentType:&contentType];
+                 if (result) {
+                   response.statusCode = statusCode;
+                   if (contentType.length > 0) {
+                     [response setHeader:contentType forKey:@"Content-Type"];
+                   }
+                   [response setBodyString:result];
+                 } else {
+                   response.statusCode = 404;
+                   [response setJsonBody:@{@"error" : @"Not Found"}];
                  }
-                 [response setBodyString:result];
-               } else {
-                 response.statusCode = 404;
-                 [response setJsonBody:@{@"error" : @"Not Found"}];
-               }
-             }];
+               }];
+    }
   }
 
   [self registerPartialRoutesWithServer:server adminHandler:adminHandler];
@@ -83,42 +87,32 @@
 
 + (void)registerPartialRoutesWithServer:(HttpServer *)server
                            adminHandler:(PDSAdminHandler *)adminHandler {
-  // Register partial routes for HTMX
-  AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
-
-  [server addRoute:@"GET"
-              path:@"/admin/partials/*"
-            handler:^(HttpRequest *request, HttpResponse *response) {
-             AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
-             NSString *html = [partialHandler handlePartialRequestWithPath:request.path
-                                                                  headers:request.headers
-                                                                     body:request.body];
-             if (html) {
-               response.statusCode = 200;
-               [response setHeader:@"text/html; charset=utf-8" forKey:@"Content-Type"];
-               [response setBodyString:html];
-               return;
-             }
-             
-             // Fallback to AdminUIHandler
-             AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
-             NSInteger statusCode = 200;
-             NSString *contentType = @"text/html";
-             html = [uiHandler handleRequestWithMethod:AdminUIHTTPMethodGET
-                                                  path:request.path
-                                               headers:request.headers
-                                                  body:request.body
-                                            statusCode:&statusCode
-                                           contentType:&contentType];
-             if (html) {
-               response.statusCode = statusCode;
-               [response setHeader:contentType ?: @"text/html; charset=utf-8" forKey:@"Content-Type"];
-               [response setBodyString:html];
-             } else {
-               response.statusCode = 404;
-               [response setJsonBody:@{@"error" : @"Partial not found", @"path" : request.path}];
-             }
-           }];
+  NSArray<NSString *> *httpMethods = @[@"GET", @"POST", @"PUT", @"DELETE"];
+  for (NSString *httpMethod in httpMethods) {
+    [server addRoute:httpMethod
+                path:@"/admin/partials/*"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+               NSInteger statusCode = 200;
+               NSString *contentType = nil;
+               NSString *result =
+                   [adminHandler handleRequestWithMethod:PDSAdminMethodFromHttpMethod(request.method)
+                                                    path:PDSAdminPathWithQuery(request)
+                                                 headers:request.headers
+                                                    body:request.body
+                                              statusCode:&statusCode
+                                             contentType:&contentType];
+               if (result) {
+                 response.statusCode = statusCode;
+                 NSString *resolvedContentType =
+                     contentType.length > 0 ? contentType : @"text/html; charset=utf-8";
+                 [response setHeader:resolvedContentType forKey:@"Content-Type"];
+                 [response setBodyString:result];
+               } else {
+                 response.statusCode = 404;
+                 [response setJsonBody:@{@"error" : @"Partial not found", @"path" : request.path}];
+               }
+             }];
+  }
 
   PDS_LOG_DEBUG(@"PDSHttpAdminRoutePack: Partial routes registered");
 }
