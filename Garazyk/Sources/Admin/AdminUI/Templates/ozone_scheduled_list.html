@@ -1,0 +1,38 @@
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Subject</th>
+        <th>Action</th>
+        <th>Scheduled At</th>
+        <th>Created By</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each actions}}
+      <tr>
+        <td class="text-xs"><code>{{id}}</code></td>
+        <td class="text-xs">{{subject}}</td>
+        <td>{{action}}</td>
+        <td class="text-xs">{{scheduled_at}}</td>
+        <td class="text-xs">{{created_by}}</td>
+        <td>
+          <button class="btn btn-xs btn-destructive"
+                  data-action="ozone-scheduled-cancel"
+                  data-id="{{id}}">
+            Cancel
+          </button>
+        </td>
+      </tr>
+      {{/each}}
+      {{#if has_actions}}
+      {{else}}
+      <tr>
+        <td colspan="6" class="text-center text-secondary">No scheduled actions found.</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</div>

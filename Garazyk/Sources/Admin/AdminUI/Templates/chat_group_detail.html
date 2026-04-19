@@ -1,3 +1,7 @@
+<div class="mb-md">
+  <button class="btn" hx-get="/admin/partials/chat/groups" hx-target="#content-pane">◀ Back to Groups</button>
+</div>
+
 <div class="group-header mb-lg">
   <h3>{{name}}</h3>
   <p class="text-secondary">{{description}}</p>
@@ -27,7 +31,7 @@
               <td class="text-xs"><code>{{did}}</code></td>
               <td>{{role}}</td>
               <td>
-                <button class="btn btn-xs btn-destructive" data-action="remove-member" data-did="{{did}}" data-group="{{../uri}}">Remove</button>
+                <button class="btn btn-xs btn-destructive" data-action="remove-member" data-did="{{did}}" data-group="{{uri}}">Remove</button>
               </td>
             </tr>
             {{/each}}
