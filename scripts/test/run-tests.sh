@@ -11,5 +11,6 @@ exit 1
 fi
 
 echo "Running all tests..."
+"${script_dir}/check_ui_design_system.sh"
 "${test_binary}"
 echo "Tests complete."

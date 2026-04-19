@@ -101,6 +101,22 @@ Manages outdated documentation archival.
 npm run archive
 ```
 
+### Repo-Wide Registry and Validation (`repo_docs.py`)
+
+Generates canonical metadata and enforces strict internal link/discoverability checks across repository markdown.
+
+**Usage:**
+```bash
+# Generate registry, link graph, orphan report, and index/backlink pages
+python3 scripts/docs/repo_docs.py sync
+
+# Blocking validation modes
+python3 scripts/docs/repo_docs.py validate --internal-strict --orphans
+
+# Non-blocking scheduled external link report
+python3 scripts/docs/repo_docs.py validate --external-report
+```
+
 ## Development
 
 ### Linting
@@ -123,4 +139,4 @@ npm test
 
 ## Documentation
 
-See the [documentation-consolidation-and-enhancement spec](.kiro/specs/documentation-consolidation-and-enhancement/) for detailed requirements and design.
+See the [Documentation Map](../../docs/11-reference/documentation-map.md) for current repository documentation conventions and ownership.

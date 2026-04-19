@@ -10,7 +10,11 @@
     "migrate": "node migrate.js",
     "validate": "node validate.js",
     "validate-config": "node validate-config.js",
-    "archive": "node archive.js"
+    "archive": "node archive.js",
+    "repo:sync": "python3 ../../scripts/docs/repo_docs.py sync",
+    "repo:related": "python3 ../../scripts/docs/repo_docs.py enrich-related",
+    "repo:validate:strict": "python3 ../../scripts/docs/repo_docs.py validate --internal-strict --orphans",
+    "repo:validate:external": "python3 ../../scripts/docs/repo_docs.py validate --external-report"
   },
   "keywords": [
     "documentation",

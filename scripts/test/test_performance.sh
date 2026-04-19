@@ -49,7 +49,7 @@ echo "HTML page load time: ${HTML_TIME}ms"
 # Test API endpoint
 echo -e "${YELLOW}Testing API endpoint...${NC}"
 START=$(date +%s%3N)
-curl -s "http://localhost:${TEST_PORT}/explore/api/accounts" > /dev/null
+curl -s "http://localhost:${TEST_PORT}/api/pds/accounts" > /dev/null
 END=$(date +%s%3N)
 API_TIME=$((END - START))
 echo "API response time: ${API_TIME}ms"
@@ -57,13 +57,13 @@ echo "API response time: ${API_TIME}ms"
 # Test static files
 echo -e "${YELLOW}Testing static files...${NC}"
 START=$(date +%s%3N)
-curl -s "http://localhost:${TEST_PORT}/explore/css/style.css" > /dev/null
+curl -s "http://localhost:${TEST_PORT}/css/explore.css" > /dev/null
 END=$(date +%s%3N)
 CSS_TIME=$((END - START))
 echo "CSS load time: ${CSS_TIME}ms"
 
 START=$(date +%s%3N)
-curl -s "http://localhost:${TEST_PORT}/explore/js/ui.js" > /dev/null
+curl -s "http://localhost:${TEST_PORT}/js/ui.js" > /dev/null
 END=$(date +%s%3N)
 JS_TIME=$((END - START))
 echo "JS load time: ${JS_TIME}ms"

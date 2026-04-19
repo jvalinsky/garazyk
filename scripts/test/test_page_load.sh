@@ -51,7 +51,7 @@ echo "   HTML loaded in: ${HTML_TIME}ms"
 # 2. Extract and load CSS (simulating browser parsing HTML and finding <link> tags)
 echo -e "${BLUE}2. Loading CSS...${NC}"
 START=$(date +%s%3N)
-CSS=$(curl -s "http://localhost:${TEST_PORT}/explore/css/style.css")
+CSS=$(curl -s "http://localhost:${TEST_PORT}/css/explore.css")
 END=$(date +%s%3N)
 CSS_TIME=$((END - START))
 echo "   CSS loaded in: ${CSS_TIME}ms"
@@ -59,7 +59,7 @@ echo "   CSS loaded in: ${CSS_TIME}ms"
 # 3. Extract and load JS (simulating browser parsing HTML and finding <script> tags)
 echo -e "${BLUE}3. Loading JavaScript...${NC}"
 START=$(date +%s%3N)
-JS=$(curl -s "http://localhost:${TEST_PORT}/explore/js/ui.js")
+JS=$(curl -s "http://localhost:${TEST_PORT}/js/ui.js")
 END=$(date +%s%3N)
 JS_TIME=$((END - START))
 echo "   JS loaded in: ${JS_TIME}ms"
@@ -67,7 +67,7 @@ echo "   JS loaded in: ${JS_TIME}ms"
 # 4. Simulate user clicking "Accounts" - load accounts data
 echo -e "${BLUE}4. Loading accounts data (user interaction)...${NC}"
 START=$(date +%s%3N)
-ACCOUNTS=$(curl -s "http://localhost:${TEST_PORT}/explore/api/accounts")
+ACCOUNTS=$(curl -s "http://localhost:${TEST_PORT}/api/pds/accounts")
 END=$(date +%s%3N)
 ACCOUNTS_TIME=$((END - START))
 echo "   Accounts API loaded in: ${ACCOUNTS_TIME}ms"
