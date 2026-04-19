@@ -6,6 +6,7 @@ import { AdminPanel } from './admin-panel.js';
 import { AdminChat } from './admin-chat.js';
 import { AdminOzone } from './admin-ozone.js';
 import { AdminSecurity } from './admin-security.js';
+import { AdminPlcSync } from './admin-plc-sync.js';
 
 // ============================================================================
 // Configuration
@@ -16,6 +17,10 @@ const CONFIG = {
   activeServiceKey: 'adminui_active_service',
   sidebarCollapsePrefix: 'sidebar_collapsed_',
 };
+
+function getAdminToken() {
+  return sessionStorage.getItem('admin_token');
+}
 
 // ============================================================================
 // Service Switching
@@ -154,13 +159,24 @@ function initSidebarActive() {
 // ============================================================================
 
 function initHTMXHandlers() {
+  // Attach admin auth to all HTMX requests when a token is present.
+  document.body.addEventListener('htmx:configRequest', function(evt) {
+    const token = getAdminToken();
+    if (!token) return;
+
+    evt.detail.headers = evt.detail.headers || {};
+    evt.detail.headers.Authorization = 'Bearer ' + token;
+    evt.detail.headers['X-Admin-Token'] = token;
+  });
+
   // Show loading indicator before request
   document.body.addEventListener('htmx:beforeRequest', function(evt) {
-    const target = document.querySelector(evt.detail.target);
+    const targetSelector = typeof evt.detail.target === 'string' ? evt.detail.target : null;
+    const target = targetSelector ? document.querySelector(targetSelector) : evt.detail.target;
     if (target) {
       const spinner = document.createElement('div');
       spinner.className = 'loading-indicator';
-      target.parentElement.appendChild(spinner);
+      target.parentElement?.appendChild(spinner);
     }
   });
 
@@ -397,6 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
   AdminChat.init();
   AdminOzone.init();
   AdminSecurity.init();
+  AdminPlcSync.init();
 });
 
 // ============================================================================

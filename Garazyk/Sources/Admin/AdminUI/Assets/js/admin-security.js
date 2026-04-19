@@ -11,13 +11,13 @@ export function init() {
         
         const action = btn.dataset.action;
         if (action.startsWith('security-')) {
-            handleSecurityAction(e);
+            e.preventDefault();
+            handleSecurityAction(btn);
         }
     });
 }
 
-async function handleSecurityAction(event) {
-    const btn = event.currentTarget;
+async function handleSecurityAction(btn) {
     const action = btn.dataset.action;
     
     try {
