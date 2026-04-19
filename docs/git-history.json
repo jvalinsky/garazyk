@@ -1,19 +1,27 @@
 [
   {
-    "hash": "f0d48d38e83cf06a44988685ced5a229a56d68a6",
-    "short_hash": "f0d48d3",
+    "hash": "8487941911f901bd33f739886a8075cd73a0b9d2",
+    "short_hash": "8487941",
     "author": "Security Bot",
-    "date": "2026-04-18T11:53:11-04:00",
-    "message": "docs: sync deciduous graph for chat group admin",
-    "files_changed": 2
+    "date": "2026-04-18T13:04:34-04:00",
+    "message": "admin: include missing Ozone templates and plan documentation\n\nRestore templates required for the advanced moderation UI and add the corresponding design documents.",
+    "files_changed": 9
   },
   {
-    "hash": "e69fcd37ded41f437c543857493594076f719dd3",
-    "short_hash": "e69fcd3",
+    "hash": "b65192e1e95fb9371710782d6add7e3050e04c6d",
+    "short_hash": "b65192e",
     "author": "Security Bot",
-    "date": "2026-04-18T11:39:27-04:00",
-    "message": "web ui: fully wire up chat apis and add chat management to admin ui\n\n- Register missing chat.bsky.convo.* endpoints (listConvos, getMessages, sendMessage, getConvo)\n- Implement listAllConversations in ChatService for administrative monitoring\n- Add 'Chat' section to Admin UI sidebar with Conversations and Messages views\n- Add chat_convos.html and chat_messages.html templates\n- Update template engine to handle complex nested paths and improved conditionals\n- Fix various wiring gaps in AppView and Admin routes",
-    "files_changed": 12
+    "date": "2026-04-18T12:47:32-04:00",
+    "message": "admin: implement system diagnostics dashboard (sequencer health, blob audits, rate limits)\n\nAdd comprehensive diagnostic capabilities across three feature areas:\n\n**Sequencer Health Monitoring**\n- PDSSequencerAnalyticsCollector with 60-second periodic collection\n- Real-time metrics (seq number, events/sec, subscribers, backpressure)\n- Historical analytics with 24-hour default time window\n- Time-series charts with Chart.js visualization\n- Auto-refresh every 30 seconds\n\n**Blob Storage Audits**\n- PDSBlobAuditManager with background job queue (serial NSOperationQueue)\n- Four audit operation types:\n  - Orphan detection (filesystem blobs without DB metadata)\n  - CID verification (verify computed hashes)\n  - Consistency checking (find missing files)\n  - Reference scanning (find unreferenced blobs)\n- Progress tracking and job cancellation support\n- Dry-run mode for safe auditing\n- Job persistence with status and results storage\n\n**Rate Limit Management**\n- PDSRateLimitAdminHandler with query and admin override\n- Query rate limit status by DID/IP/blob\n- View top rate-limited identifiers\n- Admin clear with immutable audit trail\n- Mandatory reason field for all clears\n- History tracking with admin attribution\n\n**Database Schema**\n- sequencer_analytics: 90-day retention, indexed by timestamp\n- blob_audit_jobs: 90-day retention, indexed by status\n- rate_limit_history: 30-day retention, immutable audit trail\n\n**Testing**\n- PDSSequencerAnalyticsTests (14 tests)\n- PDSBlobAuditManagerTests (13 tests)\n- PDSRateLimitAdminHandlerTests (15 tests)\n\n**Integration**\n- Analytics collection wired to server lifecycle\n- Handlers routed in AdminUIHandler\n- Frontend UI with HTMX and JavaScript modules\n- Dashboard navigation in admin sidebar\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 38
+  },
+  {
+    "hash": "c19e095879ce118dafd78fea27ba695831390ae1",
+    "short_hash": "c19e095",
+    "author": "Security Bot",
+    "date": "2026-04-18T12:14:32-04:00",
+    "message": "docs: sync deciduous graph for security dashboard",
+    "files_changed": 2
   },
   {
     "hash": "5f5b220b421ca01686c7e6b5efd3e6b6c39a0ffb",
