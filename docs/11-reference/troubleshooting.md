@@ -135,4 +135,4 @@ curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
 
 ```bash
 curl -sS http://127.0.0.1:2583/metrics | head
-```
+```\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

@@ -32,9 +32,12 @@ Completed or superseded plans are moved to the [`archive/`](# Archive directory)
 
 See [`archive/README.md`](archive/README) for the complete index of archived documents.
 
+Legacy `docs/plan` content has been moved under [`docs/archive/planning/legacy-plan-workspace`](../archive/planning/legacy-plan-workspace/README) with pointer stubs left in place.
+
 ## Related Documentation
 
 - [Main Documentation](../README) - Project documentation index
+- [Documentation Map](../11-reference/documentation-map) - Canonical docs ownership and navigation
 - [Architecture](../architecture/README) - System architecture decisions and diagrams
 - [Security](../security/README) - Security analysis and hardening guides
 - [OAuth2](../oauth2/README) - Authentication and authorization documentation

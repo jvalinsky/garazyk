@@ -65,4 +65,4 @@ version of this page, continue to the tutorial subguide:
 - [XRPC Dispatch](./xrpc-dispatch)
 - [Method Registry](./method-registry)
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
-- [Firehose Overview](../08-sync-firehose/firehose-overview)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

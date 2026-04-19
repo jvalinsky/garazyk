@@ -142,4 +142,4 @@ That path matches the actual runtime shape of the process.
 - [Services Overview](./services-overview)
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
 - [Protocol Flow Walkthrough](../02-core-concepts/protocol-flow-walkthrough)
-- [Firehose Flow Walkthrough](../08-sync-firehose/firehose-flow-walkthrough)
+- [Firehose Flow Walkthrough](../08-sync-firehose/firehose-flow-walkthrough)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

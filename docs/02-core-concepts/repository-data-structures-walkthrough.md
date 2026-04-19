@@ -149,4 +149,4 @@ than starting from the network response alone.
 - [CBOR and CAR](./cbor-and-car)
 - [Merkle Search Trees](./mst-trees)
 - [Repository Basics](../07-repository-protocol/repository-basics)
-- [Repository Service](../03-application-layer/repository-service)
+- [Repository Service](../03-application-layer/repository-service)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

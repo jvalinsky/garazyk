@@ -80,4 +80,4 @@ That is a design fact contributors need to keep in mind when changing side-effec
 
 - service databases apply `PRAGMA journal_mode=WAL`
 - actor stores also configure WAL during database setup
-- long-running writes still block per-actor progress because the transaction queue is serial
+- long-running writes still block per-actor progress because the transaction queue is serial\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
