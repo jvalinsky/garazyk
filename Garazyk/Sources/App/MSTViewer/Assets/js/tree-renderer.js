@@ -49,8 +49,7 @@ export class TreeRenderer {
 
         // Create tooltip
         this.nodeTooltip = document.createElement('div');
-        this.nodeTooltip.className = 'node-tooltip';
-        this.nodeTooltip.style.display = 'none';
+        this.nodeTooltip.className = 'node-tooltip hidden';
         document.body.appendChild(this.nodeTooltip);
 
         // Handle window resize
@@ -185,19 +184,19 @@ export class TreeRenderer {
         }
 
         if (data.cid) {
-            content += `<div style="margin-top: 6px;"><div class="node-tooltip-label">CID</div>`;
+            content += `<div class="node-tooltip-section"><div class="node-tooltip-label">CID</div>`;
             content += `<div class="node-tooltip-content">${this.escapeHtml(data.cid)}</div></div>`;
         }
 
         if (data.value) {
-            content += `<div style="margin-top: 6px;"><div class="node-tooltip-label">Value</div>`;
+            content += `<div class="node-tooltip-section"><div class="node-tooltip-label">Value</div>`;
             content += `<div class="node-tooltip-content">${this.escapeHtml(JSON.stringify(data.value))}</div></div>`;
         }
 
-        content += `<div style="margin-top: 6px; font-size: 10px; color: #666;">Depth: ${d.depth} | Children: ${d.children ? d.children.length : 0}</div>`;
+        content += `<div class="node-tooltip-meta">Depth: ${d.depth} | Children: ${d.children ? d.children.length : 0}</div>`;
 
         this.nodeTooltip.innerHTML = content;
-        this.nodeTooltip.style.display = 'block';
+        this.nodeTooltip.classList.remove('hidden');
         this.nodeTooltip.style.left = (event.pageX + 10) + 'px';
         this.nodeTooltip.style.top = (event.pageY + 10) + 'px';
     }
@@ -206,7 +205,7 @@ export class TreeRenderer {
      * Hide tooltip
      */
     hideNodeTooltip() {
-        this.nodeTooltip.style.display = 'none';
+        this.nodeTooltip.classList.add('hidden');
     }
 
     /**

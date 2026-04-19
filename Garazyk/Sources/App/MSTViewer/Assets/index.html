@@ -8,7 +8,7 @@
     <!-- Shared Design System -->
     <link rel="stylesheet" href="/mst-viewer/css/shared/system.css">
     <!-- MST Viewer Specific Styles -->
-    <link rel="stylesheet" href="/mst-viewer/css/style.css">
+    <link rel="stylesheet" href="/mst-viewer/css/mst-viewer.css">
     <script src="/mst-viewer/js/d3.js"></script>
 </head>
 
@@ -64,14 +64,14 @@
             <section class="tree-section">
                 <div class="tree-toolbar">
                     <span id="current-account" class="account-label">Select an account</span>
-                    <span id="loading-indicator" class="loading-indicator" style="display: none;">Loading...</span>
+                    <span id="loading-indicator" class="loading-indicator hidden">Loading...</span>
                 </div>
 
                 <div id="tree-container" class="tree-container">
                     <p class="placeholder">Select an account from the list to view its MST.</p>
                 </div>
 
-                <div id="list-container" class="list-container" style="display: none;">
+                <div id="list-container" class="list-container hidden">
                     <div id="list-view">
                         <p class="placeholder">Select an account to view its node list.</p>
                     </div>

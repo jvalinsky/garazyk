@@ -51,7 +51,7 @@ function renderList(dids) {
 
     dids.forEach(did => {
         html += `
-            <tr style="cursor: pointer;" onclick="loadDID('${did}')">
+            <tr class="did-row" onclick="loadDID('${did}')">
                 <td><code>${did}</code></td>
                 <td><button class="btn-secondary">View</button></td>
             </tr>
@@ -155,10 +155,10 @@ function renderSummary(doc) {
         <div class="audit-card">
             <h3>Identifies as</h3>
             ${handles.length ? `
-                <ul style="list-style: none; padding: 0;">
-                    ${handles.map(h => `<li style="padding: 5px 0; border-bottom: 1px solid #eee;"><strong>${h.replace('at://', '@')}</strong></li>`).join('')}
+                <ul class="did-handle-list">
+                    ${handles.map(h => `<li class="did-handle-item"><strong>${h.replace('at://', '@')}</strong></li>`).join('')}
                 </ul>
-            ` : '<p style="color: #888; font-style: italic;">No handles registered</p>'}
+            ` : '<p class="muted-note">No handles registered</p>'}
         </div>
 
         <div class="audit-card">
@@ -174,7 +174,7 @@ function renderSummary(doc) {
                         </tr>
                     `).join('')}
                 </table>
-            ` : '<p style="color: #888; font-style: italic;">No services registered</p>'}
+            ` : '<p class="muted-note">No services registered</p>'}
         </div>
 
         <div class="audit-card">
@@ -194,8 +194,8 @@ function renderSummary(doc) {
         <div class="audit-card">
              <h3>Raw DID Document</h3>
              <details>
-                <summary style="cursor: pointer; color: #666;">Show JSON</summary>
-                <pre class="code-block" style="margin-top: 10px;">${JSON.stringify(doc, null, 2)}</pre>
+                <summary class="muted-summary">Show JSON</summary>
+                <pre class="code-block mt-sm">${JSON.stringify(doc, null, 2)}</pre>
              </details>
         </div>
     `;
@@ -279,9 +279,9 @@ function renderTimeline(log) {
 
         if (isGenesis) {
             diffHtml = `
-                <div style="margin-bottom: 10px;">
-                    <strong style="color: var(--success-color);">Identity created</strong>
-                    <div style="margin-top: 5px;">
+                <div class="diff-block">
+                    <strong class="text-success">Identity created</strong>
+                    <div class="diff-group">
                         <div>Handles: <span class="added">${(op.alsoKnownAs || []).join(', ') || 'None'}</span></div>
                         <div>Services: <span class="added">${Object.keys(op.services || {}).join(', ') || 'None'}</span></div>
                         <div>Keys: <span class="added">${(op.rotationKeys || []).length} keys</span></div>
@@ -295,26 +295,25 @@ function renderTimeline(log) {
             const changes = computeDiff(prevOp, op);
 
             if (changes.length === 0) {
-                diffHtml = `<div style="color: #666; font-style: italic;">No changes (checkpoint or rotation)</div>`;
+                diffHtml = `<div class="diff-none">No changes (checkpoint or rotation)</div>`;
             } else {
                 changes.forEach(c => {
-                    diffHtml += `<div style="margin-bottom: 8px;"><strong>${c.title}</strong>`;
+                    diffHtml += `<div class="diff-entry"><strong>${c.title}</strong>`;
                     if (c.type === 'service' || c.type === 'vm') {
                         c.items.forEach(item => {
-                            const color = item.action === 'removed' ? 'var(--error-color)' : 'var(--success-color)';
                             const icon = item.action === 'removed' ? '-' : '+';
                             diffHtml += `
-                                <div style="margin-left: 10px; color: ${color};">
+                                <div class="diff-item diff-item-${item.action}">
                                     ${icon} <strong>${item.key}</strong>: ${item.action}
-                                    ${item.action === 'updated' && item.val.endpoint ? `<br><span style="color:#666; margin-left: 15px;">-> ${item.val.endpoint}</span>` : ''}
+                                    ${item.action === 'updated' && item.val.endpoint ? `<br><span class="diff-endpoint">-> ${item.val.endpoint}</span>` : ''}
                                 </div>
                             `;
                         });
                     } else if (c.type === 'handle') {
                         diffHtml += `
-                            <div style="margin-left: 10px;">
-                                <div style="color: var(--error-color); text-decoration: line-through;">${c.old.join(', ')}</div>
-                                <div style="color: var(--success-color);">${c.new.join(', ')}</div>
+                            <div class="diff-group">
+                                <div class="removed">${c.old.join(', ')}</div>
+                                <div class="added">${c.new.join(', ')}</div>
                             </div>
                         `;
                     }
@@ -328,12 +327,12 @@ function renderTimeline(log) {
                 <div class="timeline-marker"></div>
                 <div class="timeline-content">
                     <div class="timeline-date">${date}</div>
-                     <div class="op-meta" style="color: #666; margin-bottom: 5px;">
+                     <div class="op-meta">
                         CID: <code>${cid.substring(0, 20)}...</code>
                     </div>
                     ${diffHtml}
-                    <details style="margin-top: 5px;">
-                        <summary style="cursor: pointer; color: #666;">Raw Op</summary>
+                    <details class="op-details">
+                        <summary class="muted-summary">Raw Op</summary>
                         <pre class="code-block">${JSON.stringify(op, null, 2)}</pre>
                     </details>
                 </div>
@@ -341,9 +340,6 @@ function renderTimeline(log) {
         `;
     });
     html += '</div>';
-
-    // Add some styles for added/removed
-    html += `<style> .added { color: var(--success-color); } .removed { color: var(--error-color); text-decoration: line-through; } </style>`;
 
     container.innerHTML = html;
 }
@@ -366,7 +362,7 @@ function renderAudit(log) {
                 <div class="status-icon status-success">✓</div>
                 <div>All signatures verified</div>
             </div>
-<div style="margin-top:8px; color:#666; font-style:italic;">Note: Checks based on operation count. Signature verification not performed client-side.</div>
+<div class="audit-note">Note: Checks based on operation count. Signature verification not performed client-side.</div>
         </div>
         
         <h3>Detailed Audit Log</h3>
@@ -377,12 +373,12 @@ function renderAudit(log) {
         const opType = !op.prev ? 'GENESIS' : 'UPDATE';
 
         html += `
-            <div class="audit-card" style="border-left: 4px solid var(--success-color)">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="audit-card audit-card-ok">
+                <div class="audit-header">
                     <strong>Op ${i}: ${opType}</strong>
                     <span class="status-icon status-success">✓</span>
                 </div>
-                <div style="color: #666; margin-top: 5px;">
+                <div class="audit-detail">
                     Verified against key: <code>${op.rotationKeys?.[0]?.substring(0, 20)}...</code>
                 </div>
             </div>
@@ -409,31 +405,43 @@ function renderGraph(doc) {
     methods.forEach((m, i) => {
         const top = 50 + (i * 70);
         const label = m.id.split('#')[1] || `key-${i}`;
-        nodesHtml += `<div class="node key" title="${m.publicKeyMultibase || ''}" style="top: ${top}px; left: 30px;">Key: ${label}</div>`;
+        nodesHtml += `<div class="node key" title="${m.publicKeyMultibase || ''}" data-top="${top}" data-left="30">Key: ${label}</div>`;
 
         services.forEach((s, j) => {
             const sTop = 50 + (j * 90);
-            linesHtml += `<line x1="130" y1="${top + 15}" x2="350" y2="${sTop + 15}" stroke="#bbb" stroke-width="1" stroke-dasharray="4" />`;
+            linesHtml += `<line x1="130" y1="${top + 15}" x2="350" y2="${sTop + 15}" stroke="var(--separator-color)" stroke-width="1" stroke-dasharray="4" />`;
         });
     });
 
     services.forEach((s, i) => {
         const top = 50 + (i * 90);
         const url = typeof s.serviceEndpoint === 'string' ? s.serviceEndpoint : (s.serviceEndpoint?.uri || 'N/A');
-        nodesHtml += `<div class="node service" title="${url}" style="top: ${top}px; left: 350px;">Service: ${s.type}</div>`;
+        nodesHtml += `<div class="node service" title="${url}" data-top="${top}" data-left="350">Service: ${s.type}</div>`;
     });
 
+    const graphHeight = Math.max(methods.length * 70 + 100, services.length * 90 + 100, 300);
     container.innerHTML = `
-        <div class="graph-container" style="height: ${Math.max(methods.length * 70 + 100, services.length * 90 + 100, 300)}px">
+        <div class="graph-container" data-graph-height="${graphHeight}">
             ${nodesHtml}
-            <svg style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
+            <svg class="graph-lines">
                 ${linesHtml}
             </svg>
         </div>
-        <p style="text-align:center; color:#666; margin-top:10px;">
+        <p class="graph-caption">
             Relationships between cryptographic keys and authorized services.
         </p>
     `;
+
+    const graphContainer = container.querySelector('.graph-container');
+    if (graphContainer) {
+        graphContainer.style.height = `${graphHeight}px`;
+    }
+    container.querySelectorAll('.node[data-top]').forEach((nodeEl) => {
+        const top = Number.parseInt(nodeEl.dataset.top || '0', 10);
+        const left = Number.parseInt(nodeEl.dataset.left || '0', 10);
+        nodeEl.style.top = `${top}px`;
+        nodeEl.style.left = `${left}px`;
+    });
 }
 
 async function fetchMetrics() {
@@ -496,12 +504,12 @@ function renderMetricsDashboard(text) {
             <tr><td>Errors</td><td><strong>${errors}</strong></td></tr>
             <tr><td>Avg Latency</td><td><strong>${latency.toFixed(2)} ms</strong></td></tr>
         </table>
-        <table class="param-table" style="margin-top: 10px;">
+        <table class="param-table mt-sm">
             <tr><th colspan="2">Cache</th></tr>
             <tr><td>L1 Memory</td><td><code>${memBar}</code> ${memRatio}% (${memHits}/${memHits + memMisses})</td></tr>
             <tr><td>L2 Disk</td><td><code>${diskBar}</code> ${diskRatio}% (${diskHits}/${diskHits + diskMisses})</td></tr>
         </table>
-        <table class="param-table" style="margin-top: 10px;">
+        <table class="param-table mt-sm">
             <tr><th colspan="2">Verification</th></tr>
             <tr><td>Successes</td><td>${verSuccess}</td></tr>
             <tr><td>Failures</td><td>${verFail}</td></tr>

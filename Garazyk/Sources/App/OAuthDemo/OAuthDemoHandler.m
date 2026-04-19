@@ -61,12 +61,21 @@
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
-    if ([path isEqualToString:@"/oauth-demo"] || [path isEqualToString:@"/oauth-demo/"] || [path isEqualToString:@"/oauth-demo/callback"]) {
-        path = @"/oauth-demo/index.html";
+    NSString *relativePath = nil;
+    if ([path isEqualToString:@"/oauth-demo"] ||
+        [path isEqualToString:@"/oauth-demo/"] ||
+        [path isEqualToString:@"/oauth-demo/callback"]) {
+        relativePath = @"index.html";
+    } else if ([path hasPrefix:@"/oauth-demo/"]) {
+        relativePath = [path substringFromIndex:[@"/oauth-demo/" length]];
     }
 
-    NSString *fileName = [path lastPathComponent];
-    NSString *ext = [fileName pathExtension];
+    if (!relativePath || relativePath.length == 0 ||
+        [relativePath hasPrefix:@"/"] || [relativePath containsString:@".."]) {
+        response.statusCode = 404;
+        [response setJsonBody:@{@"error": @"Invalid path", @"path": path ?: @""}];
+        return;
+    }
     
     NSString *assetsDir = [self assetsPath];
     if (!assetsDir) {
@@ -75,10 +84,15 @@
         return;
     }
 
-    NSString *filePath = [assetsDir stringByAppendingPathComponent:fileName];
+    NSString *filePath = [assetsDir stringByAppendingPathComponent:relativePath];
     if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
         response.statusCode = 404;
-        [response setJsonBody:@{@"error": @"File not found", @"path": path, @"checked": filePath}];
+        [response setJsonBody:@{
+            @"error": @"File not found",
+            @"path": path ?: @"",
+            @"relativePath": relativePath ?: @"",
+            @"checked": filePath ?: @""
+        }];
         return;
     }
 
@@ -90,9 +104,13 @@
         return;
     }
 
+    NSString *ext = [relativePath pathExtension];
     if ([ext isEqualToString:@"html"]) response.contentType = @"text/html; charset=utf-8";
     else if ([ext isEqualToString:@"js"]) response.contentType = @"application/javascript; charset=utf-8";
     else if ([ext isEqualToString:@"css"]) response.contentType = @"text/css; charset=utf-8";
+    else if ([ext isEqualToString:@"woff2"]) response.contentType = @"font/woff2";
+    else if ([ext isEqualToString:@"woff"]) response.contentType = @"font/woff";
+    else if ([ext isEqualToString:@"svg"]) response.contentType = @"image/svg+xml";
     else response.contentType = @"application/octet-stream";
 
     [response setBodyData:data];

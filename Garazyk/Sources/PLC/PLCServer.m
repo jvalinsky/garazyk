@@ -386,19 +386,28 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [weakSelf serveStaticFile:@"index.html" response:resp];
     }];
 
-    [self.httpServer addRoute:nil path:@"/css/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
-        NSString *file = req.pathParameters[@"file"];
-        [weakSelf serveStaticFile:[NSString stringWithFormat:@"css/%@", file] response:resp];
+    [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf serveStaticFile:@"index.html" response:resp];
     }];
 
-    [self.httpServer addRoute:nil path:@"/css/fonts/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
-        NSString *file = req.pathParameters[@"file"];
-        [weakSelf serveStaticFile:[NSString stringWithFormat:@"css/fonts/%@", file] response:resp];
+    [self.httpServer addRoute:@"GET" path:@"/index.html" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf serveStaticFile:@"index.html" response:resp];
     }];
 
-    [self.httpServer addRoute:nil path:@"/js/:file" handler:^(HttpRequest *req, HttpResponse *resp) {
-        NSString *file = req.pathParameters[@"file"];
-        [weakSelf serveStaticFile:[NSString stringWithFormat:@"js/%@", file] response:resp];
+    [self.httpServer addRoute:@"GET" path:@"/css/*" handler:^(HttpRequest *req, HttpResponse *resp) {
+        NSString *subpath = req.path;
+        if ([subpath hasPrefix:@"/"]) {
+            subpath = [subpath substringFromIndex:1];
+        }
+        [weakSelf serveStaticFile:subpath response:resp];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/js/*" handler:^(HttpRequest *req, HttpResponse *resp) {
+        NSString *subpath = req.path;
+        if ([subpath hasPrefix:@"/"]) {
+            subpath = [subpath substringFromIndex:1];
+        }
+        [weakSelf serveStaticFile:subpath response:resp];
     }];
     
     [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {

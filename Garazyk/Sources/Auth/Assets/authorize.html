@@ -6,145 +6,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{csrf_token}}">
     <title>Authorize Access - Kaszlak</title>
-    <!-- Shared Design System -->
     <link rel="stylesheet" href="/css/shared/system.css">
-    <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .auth-container {
-            width: 420px;
-        }
-
-        .scope-list {
-            margin: 15px 0;
-            padding: 10px;
-            background: #fff;
-            border: 1.5px solid #000;
-            list-style: none;
-        }
-
-        .scope-list li {
-            position: relative;
-            padding-left: 25px;
-            margin-bottom: 5px;
-        }
-
-        .scope-list li::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 2px;
-            width: 13px;
-            height: 13px;
-            background: url("/css/icon/checkmark.svg") no-repeat;
-            background-size: contain;
-        }
-
-        .client-info {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-
-        .auth-error {
-            color: #ff0000;
-            font-weight: bold;
-            margin-top: 8px;
-            display: none;
-        }
-
-        .auth-success {
-            color: #006600;
-            font-weight: bold;
-            margin-top: 8px;
-        }
-
-        .field-row-stacked {
-            margin-bottom: 10px;
-        }
-
-        .field-row-stacked label {
-            margin-bottom: 4px;
-            display: block;
-        }
-
-        .field-row-stacked input[type="text"],
-        .field-row-stacked input[type="password"] {
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .signed-in-as {
-            text-align: center;
-            padding: 8px;
-            margin-bottom: 12px;
-            border: 1.5px solid #000;
-            background: #fff;
-        }
-    </style>
 </head>
 
-<body>
-    <div class="auth-container outer-border">
-        <div class="inner-border standard-dialog">
-            <div class="title-bar">
-                <span class="title">Authorization</span>
-            </div>
+<body class="auth-page">
+    <main class="auth-container">
+        <section class="card auth-card" aria-labelledby="auth-title">
+            <header class="auth-card-header">
+                <h1 id="auth-title" class="auth-title">Authorization</h1>
+            </header>
 
-            <div class="window-body">
-                <!-- Step 1: Sign In -->
+            <div class="auth-card-body">
                 <div id="auth-step-signin">
                     <div class="client-info">
-                        <h1 id="client-name">Application</h1>
+                        <h2 id="client-name">Application</h2>
                         <p>wants to access your ATProto account.</p>
                         <p>Please sign in to continue.</p>
                     </div>
 
                     <div class="field-row-stacked">
-                        <label for="auth-handle">Handle:</label>
-                        <input type="text" id="auth-handle" placeholder="alice.test">
+                        <label class="form-label" for="auth-handle">Handle</label>
+                        <input class="form-input" type="text" id="auth-handle" placeholder="alice.test">
                     </div>
                     <div class="field-row-stacked">
-                        <label for="auth-password">Password:</label>
-                        <input type="password" id="auth-password" placeholder="••••••••">
+                        <label class="form-label" for="auth-password">Password</label>
+                        <input class="form-input" type="password" id="auth-password" placeholder="••••••••">
                     </div>
 
                     <div id="auth-error" class="auth-error"></div>
 
                     <div class="actions">
-                        <button class="btn" id="auth-cancel-btn">Cancel</button>
-                        <button class="btn btn-default" id="auth-signin-btn">Sign In</button>
+                        <button class="btn btn-secondary" id="auth-cancel-btn">Cancel</button>
+                        <button class="btn btn-primary" id="auth-signin-btn">Sign In</button>
                     </div>
                 </div>
 
-                <!-- Step 2: Consent -->
-                <div id="auth-step-consent" style="display: none;">
+                <div id="auth-step-consent" class="hidden">
                     <div class="client-info">
-                        <h1 id="consent-client-name">Application</h1>
+                        <h2 id="consent-client-name">Application</h2>
                         <p>would like to access your account.</p>
                     </div>
 
-                    <div class="signed-in-as">
+                    <p class="signed-in-as">
                         Signed in as <strong id="consent-handle"></strong>
-                    </div>
+                    </p>
 
                     <p>This application will be able to:</p>
-                    <ul class="scope-list" id="scope-list">
-                    </ul>
+                    <ul class="scope-list" id="scope-list"></ul>
 
-                    <p style="font-size: 14px; color: #444;">Make sure you trust this application before authorizing.
-                    </p>
+                    <p class="auth-note">Make sure you trust this application before authorizing.</p>
 
                     <div class="actions">
                         <form action="/oauth/authorize/confirm" method="POST">
@@ -159,7 +69,7 @@
                             <input type="hidden" name="login_hint" value="{{login_hint}}">
                             <input type="hidden" name="session_token" value="">
                             <input type="hidden" name="decision" value="allow">
-                            <button type="submit" class="btn btn-default">Authorize</button>
+                            <button type="submit" class="btn btn-primary">Authorize</button>
                         </form>
 
                         <form action="/oauth/authorize/confirm" method="POST">
@@ -168,13 +78,13 @@
                             <input type="hidden" name="redirect_uri" value="{{redirect_uri}}">
                             <input type="hidden" name="login_hint" value="{{login_hint}}">
                             <input type="hidden" name="decision" value="deny">
-                            <button type="submit" class="btn">Cancel</button>
+                            <button type="submit" class="btn btn-secondary">Cancel</button>
                         </form>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script>
         const params = new URLSearchParams(window.location.search);
@@ -191,7 +101,7 @@
         if (loginHint) {
             handleInput.value = loginHint;
             handleInput.readOnly = true;
-            handleInput.style.background = '#e0e0e0';
+            handleInput.classList.add('input-readonly');
         }
 
         // Populate scope list

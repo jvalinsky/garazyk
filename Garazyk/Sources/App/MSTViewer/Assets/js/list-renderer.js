@@ -33,16 +33,19 @@ export class ListRenderer {
         if (!node) return '';
 
         let html = '';
-        const indent = depth > 0 ? `style="margin-left: ${depth * 20}px;"` : '';
+        const indentPrefix = depth > 0
+            ? '<span class="list-item-indent" aria-hidden="true"></span>'.repeat(depth)
+            : '';
 
         // Create list item for this node
-        html += `<div class="list-item" ${indent}>`;
+        html += `<div class="list-item">`;
+        html += indentPrefix;
 
         // Level indicator
         if (depth > 0) {
             html += `<span class="list-item-level">L${depth}</span>`;
         } else {
-            html += `<span class="list-item-level" style="background-color: #3d80df; color: white;">ROOT</span>`;
+            html += `<span class="list-item-level list-item-level-root">ROOT</span>`;
         }
 
         // Key or label
@@ -61,7 +64,7 @@ export class ListRenderer {
 
         // Node stats
         const childCount = node.children ? node.children.length : 0;
-        html += `<div style="font-size: 10px; color: #666; margin-top: 4px;">`;
+        html += `<div class="list-item-stats">`;
         html += `Children: ${childCount}`;
         if (node.value) {
             html += ` • Value: ${typeof node.value === 'string' ? node.value.substring(0, 20) : JSON.stringify(node.value).substring(0, 20)}`;
