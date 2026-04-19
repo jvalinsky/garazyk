@@ -5,39 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Garazyk Design System - Styleguide</title>
-    <link rel="stylesheet" href="css/system.css">
-    <style>
-        .swatch-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: var(--space-md);
-        }
-
-        .swatch {
-            padding: var(--space-md);
-            border-radius: var(--radius-lg);
-            text-align: center;
-        }
-
-        .swatch-label {
-            font-size: var(--font-size-xs);
-            font-weight: 500;
-        }
-
-        .demo-section {
-            margin: var(--space-xl) 0;
-            padding: var(--space-lg);
-            border: 1px solid var(--separator-color);
-            border-radius: var(--radius-lg);
-            background: var(--color-bg-secondary);
-        }
-
-        .demo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: var(--space-lg);
-        }
-    </style>
+    <link rel="stylesheet" href="/design-system/css/system.css">
+    <link rel="stylesheet" href="/design-system/css/styleguide.css">
 </head>
 
 <body>
@@ -45,14 +14,14 @@
     <header role="banner">
         <nav class="toolbar">
             <div class="toolbar-section">
-                <h1 style="font-size: var(--font-size-lg); font-weight: 600;">Garazyk Design System</h1>
+                <h1 class="styleguide-title">Garazyk Design System</h1>
             </div>
         </nav>
     </header>
 
     <!-- Main Content -->
     <div class="app-layout">
-        <aside role="complementary" style="width: 200px;">
+        <aside role="complementary" class="styleguide-sidebar">
             <div class="sidebar">
                 <div class="sidebar-section">
                     <button class="sidebar-section-title" aria-expanded="true">Foundation</button>
@@ -201,7 +170,7 @@
                     <h2>Forms</h2>
                     <p class="text-secondary mb-lg">Form elements with consistent styling.</p>
 
-                    <form class="form" style="max-width: 400px;">
+                    <form class="form styleguide-form">
                         <div class="form-group">
                             <label class="form-label required">Username</label>
                             <input class="form-input" type="text" placeholder="Enter username">
