@@ -32,7 +32,7 @@ export function renderPlcOperations(operations) {
             Below is the sequence of operations that define the current state of this DID.
         </p>
         
-        <div class="timeline-container" style="position: relative; padding: 10px 0;">
+        <div class="timeline-container">
     `;
 
     for (let i = 0; i < operations.length; i++) {
@@ -44,17 +44,17 @@ export function renderPlcOperations(operations) {
         const isGenesis = i === 0;
 
         html += `
-            <div class="timeline-item" style="position: relative; padding-left: 30px; margin-bottom: 20px; border-left: 2px solid #ccc;">
-                <div class="timeline-marker" style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%; background: ${isGenesis ? '#28a745' : '#0066cc'}; border: 2px solid white;"></div>
-                <div class="op-card" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
-                        <span style="font-weight: bold; color: #333;">${escapeHtml(opType.toUpperCase())}</span>
-                        <span style="color: #999;">${escapeHtml(timestamp)}</span>
+            <div class="timeline-entry">
+                <div class="timeline-dot ${isGenesis ? 'timeline-dot-genesis' : 'timeline-dot-update'}"></div>
+                <div class="op-card">
+                    <div class="op-card-header">
+                        <span class="op-card-type">${escapeHtml(opType.toUpperCase())}</span>
+                        <span class="op-card-time">${escapeHtml(timestamp)}</span>
                     </div>
-                    <div style="color: #666; margin-bottom: 8px;">
+                    <div class="op-card-meta">
                         CID: <code>${escapeHtml(typeof cid === 'string' ? cid.slice(0, 12) + '...' : JSON.stringify(cid))}</code>
                     </div>
-                    <pre class="code-block" style="margin: 0; overflow-x: auto;">${escapeHtml(JSON.stringify(op, null, 2))}</pre>
+                    <pre class="code-block op-card-json">${escapeHtml(JSON.stringify(op, null, 2))}</pre>
                 </div>
             </div>
         `;

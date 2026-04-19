@@ -566,7 +566,7 @@
             @"dbPath": dbPath ?: @"",
             @"dbExists": @(dbExists),
             @"assetsPath": [self assetsPath] ?: @"",
-            @"cssPath": [self staticFilePath:@"css/style.css"] ?: @"",
+            @"cssPath": [self staticFilePath:@"css/explore.css"] ?: @"",
             @"jsPath": [self staticFilePath:@"js/ui.js"] ?: @""
         }];
     }

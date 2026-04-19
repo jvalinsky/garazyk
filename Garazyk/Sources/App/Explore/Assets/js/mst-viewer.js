@@ -19,7 +19,7 @@ async function loadMST(did) {
     const container = document.getElementById('mst-tree-container');
     const statsEl = document.getElementById('mst-stats');
 
-    container.innerHTML = '<p class="loading" style="padding: 20px;">Loading\u2026</p>';
+    container.innerHTML = '<p class="loading mst-feedback">Loading\u2026</p>';
     statsEl.textContent = '';
     setStatus('Loading\u2026');
 
@@ -37,7 +37,7 @@ async function loadMST(did) {
         currentMstData = treeData;
 
         if (treeData.error) {
-            container.innerHTML = '<p class="placeholder" style="padding: 20px;">' + escapeHtml(treeData.error) + '</p>';
+            container.innerHTML = '<p class="placeholder mst-feedback">' + escapeHtml(treeData.error) + '</p>';
             setStatus('Error');
             return;
         }
@@ -55,7 +55,7 @@ async function loadMST(did) {
         var entryCount = (stats && stats.entryCount) || treeData.entryCount || 0;
         setStatus(nodeCount + ' nodes, ' + entryCount + ' entries');
     } catch (e) {
-        container.innerHTML = '<p class="placeholder" style="padding: 20px;">Error: ' + escapeHtml(e.message) + '</p>';
+        container.innerHTML = '<p class="placeholder mst-feedback">Error: ' + escapeHtml(e.message) + '</p>';
         setStatus('Error: ' + e.message);
     }
 }
@@ -140,7 +140,7 @@ function renderMST(data) {
 
     var root = buildHierarchy(data);
     if (!root) {
-        container.innerHTML = '<p class="placeholder" style="padding: 20px;">Empty MST.</p>';
+        container.innerHTML = '<p class="placeholder mst-feedback">Empty MST.</p>';
         return;
     }
 
@@ -162,8 +162,7 @@ function renderNode(node, depth, startOpen) {
     // Entry node (record key)
     if (node.type === 'entry') {
         var spacer = document.createElement('span');
-        spacer.style.width = '12px';
-        spacer.style.display = 'inline-block';
+        spacer.className = 'mst-spacer';
         header.appendChild(spacer);
 
         var icon = document.createElement('span');
@@ -201,22 +200,20 @@ function renderNode(node, depth, startOpen) {
         var toggle = document.createElement('span');
         toggle.className = 'mst-toggle';
         toggle.textContent = startOpen ? '\u25BC' : '\u25B6';
-        toggle.style.cursor = 'pointer';
         toggle.addEventListener('click', function() {
             var content = wrapper.querySelector('.mst-node-children');
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
                 toggle.textContent = '\u25BC';
             } else {
-                content.style.display = 'none';
+                content.classList.add('hidden');
                 toggle.textContent = '\u25B6';
             }
         });
         header.appendChild(toggle);
     } else {
         var spacer2 = document.createElement('span');
-        spacer2.style.width = '12px';
-        spacer2.style.display = 'inline-block';
+        spacer2.className = 'mst-spacer';
         header.appendChild(spacer2);
     }
 
@@ -243,7 +240,7 @@ function renderNode(node, depth, startOpen) {
     if (hasChildren) {
         var childrenEl = document.createElement('div');
         childrenEl.className = 'mst-node-children';
-        if (!startOpen) childrenEl.style.display = 'none';
+        if (!startOpen) childrenEl.classList.add('hidden');
         for (var i = 0; i < node.children.length; i++) {
             childrenEl.appendChild(renderNode(node.children[i], depth + 1, false));
         }
@@ -266,7 +263,7 @@ function truncateCid(cid) {
 
 function expandAll() {
     document.querySelectorAll('#mst-tree-container .mst-node-children').forEach(function(el) {
-        el.style.display = 'block';
+        el.classList.remove('hidden');
     });
     document.querySelectorAll('#mst-tree-container .mst-toggle').forEach(function(el) {
         el.textContent = '\u25BC';
@@ -276,7 +273,7 @@ function expandAll() {
 
 function collapseAll() {
     document.querySelectorAll('#mst-tree-container .mst-node-children').forEach(function(el) {
-        el.style.display = 'none';
+        el.classList.add('hidden');
     });
     document.querySelectorAll('#mst-tree-container .mst-toggle').forEach(function(el) {
         el.textContent = '\u25B6';

@@ -4,16 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Campagnola</title>
+    <title>Campagnola PLC Explorer</title>
     <link rel="stylesheet" href="/css/shared/system.css">
-    <!-- PLC Specific Styles (classic System 7 desktop metaphor) -->
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/plc.css">
 </head>
 
 <body>
     <ul role="menu-bar">
         <li role="menu-item" tabindex="0" aria-haspopup="true">
-            
+            Campagnola
             <ul role="menu">
                 <li role="menu-item"><a href="#">About Campagnola</a></li>
             </ul>
@@ -36,7 +35,7 @@
                 <li role="menu-item"><a href="#" onclick="openWindow('graph')">Identity Graph</a></li>
             </ul>
         </li>
-        <li role="menu-item" style="float: right;">
+        <li role="menu-item" class="menu-right">
             <span id="status-clock">12:00 PM</span>
         </li>
     </ul>
@@ -50,9 +49,9 @@
             </div>
             <div class="window-pane">
                 <div class="field-row">
-                    <input type="text" id="lookup-input" placeholder="Search DID..." style="width: 100%;">
+                    <input class="w-full" type="text" id="lookup-input" placeholder="Search DID...">
                 </div>
-                <div class="field-row" style="justify-content: flex-end; margin-top: 5px;">
+                <div class="field-row justify-end mt-xs">
                     <button id="search-btn" class="btn btn-default">Find</button>
                 </div>
             </div>

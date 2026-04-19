@@ -138,7 +138,7 @@ class MSTViewer {
         });
 
         if (filteredAccounts.length === 0) {
-            this.accountListEl.innerHTML = '<li class="placeholder" style="list-style: none;">No accounts found</li>';
+            this.accountListEl.innerHTML = '<li class="placeholder placeholder-list-item">No accounts found</li>';
             return;
         }
 
@@ -223,11 +223,11 @@ class MSTViewer {
         this.currentViewMode = e.target.value;
 
         if (this.currentViewMode === 'tree') {
-            this.treeContainer.style.display = 'flex';
-            this.listContainer.style.display = 'none';
+            this.treeContainer.classList.remove('hidden');
+            this.listContainer.classList.add('hidden');
         } else {
-            this.treeContainer.style.display = 'none';
-            this.listContainer.style.display = 'block';
+            this.treeContainer.classList.add('hidden');
+            this.listContainer.classList.remove('hidden');
         }
 
         if (this.currentAccount) {
@@ -320,7 +320,7 @@ class MSTViewer {
      * @param {boolean} show - Whether to show the indicator
      */
     showLoadingIndicator(show) {
-        this.loadingIndicatorEl.style.display = show ? 'inline' : 'none';
+        this.loadingIndicatorEl.classList.toggle('hidden', !show);
     }
 
     /**
