@@ -1,32 +1,11 @@
 version: '3.8'
 
-# Full local ATProto network: PLC (campagnola) -> PDS (kaszlak) -> Relay (zuk) -> AppView (syrena)
-#
-# Usage:
-#   cd docker/local-network && docker compose up -d
-#   # Docker will build from Dockerfile.gnustep automatically (uses build: context in each service)
-#
-# Ports:
-#   2582 - PLC directory (campagnola)
-#   2583 - PDS             (kaszlak)
-#   2584 - Relay           (zuk)
-#   3200 - AppView         (syrena)
-#
-# AppView admin:
-#   curl -H "Authorization: Bearer localdevadmin" http://localhost:3200/admin/backfill/status
-#
-# Note: backfill is enabled but requires APPVIEW_PLC_URL to point to the local PLC.
-# Without this, backfill would try to resolve did:plc accounts via the public plc.directory
-# which doesn't know about accounts created on the local testnet.
-# The local relay provides real-time ingest regardless of backfill status.
-
 services:
 
   local-plc:
     build:
-      context: ../..
-      dockerfile: docker/Dockerfile.gnustep
-      target: runtime
+      context: .
+      dockerfile: Dockerfile.local
     container_name: local-plc
     entrypoint: ["/usr/local/bin/campagnola"]
     command:
@@ -54,9 +33,8 @@ services:
 
   local-pds:
     build:
-      context: ../..
-      dockerfile: docker/Dockerfile.gnustep
-      target: runtime
+      context: .
+      dockerfile: Dockerfile.local
     container_name: local-pds
     command:
       - "serve"
@@ -90,9 +68,8 @@ services:
 
   local-relay:
     build:
-      context: ../..
-      dockerfile: docker/Dockerfile.gnustep
-      target: runtime
+      context: .
+      dockerfile: Dockerfile.local
     container_name: local-relay
     entrypoint: ["/usr/local/bin/zuk"]
     command:
@@ -123,9 +100,8 @@ services:
 
   local-appview:
     build:
-      context: ../..
-      dockerfile: docker/Dockerfile.gnustep
-      target: runtime
+      context: .
+      dockerfile: Dockerfile.local
     container_name: local-appview
     entrypoint: ["/usr/local/bin/syrena"]
     command:
@@ -170,10 +146,6 @@ networks:
 
 volumes:
   local_plc_data:
-    name: local_plc_data
   local_pds_data:
-    name: local_pds_data
   local_relay_data:
-    name: local_relay_data
   local_appview_data:
-    name: local_appview_data
