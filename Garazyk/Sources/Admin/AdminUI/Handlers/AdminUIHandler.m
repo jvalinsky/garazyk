@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "AdminUIHandler.h"
 #import "Metrics/PDSMetrics.h"
+#import "Admin/AdminPartialHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -160,6 +161,9 @@ NS_ASSUME_NONNULL_BEGIN
     } else if ([partial isEqualToString:@"users/search"]) {
         NSString *query = params[@"q"] ?: @"";
         return [self renderUsersSearchWithQuery:query statusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"users/detail"]) {
+        NSString *did = params[@"did"];
+        return [self renderUsersDetailWithDid:did statusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"invites"]) {
         return [self renderInvitesPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"identity"]) {
@@ -236,6 +240,12 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderDiagnosticsBlobsPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"diagnostics/ratelimits"]) {
         return [self renderDiagnosticsRateLimitsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"reports"]) {
+        return [self renderReportsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"reports/list"]) {
+        return [self renderReportsListWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"audit-log"]) {
+        return [self renderAuditLogPartialWithStatusCode:statusCode contentType:contentType];
     }
 
     if (statusCode) *statusCode = 404;
@@ -1176,6 +1186,117 @@ NS_ASSUME_NONNULL_BEGIN
         @"<p>Rate limit management dashboard - loading...</p></div>"
     ];
     return html;
+}
+
+#pragma mark - User Detail View
+
+- (NSString *)renderUsersDetailWithDid:(NSString *)did
+                             statusCode:(nullable NSInteger *)statusCode
+                          contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    if (!did || did.length == 0) {
+        return @"<div class=\"card\"><p class=\"text-destructive\">No DID provided</p></div>";
+    }
+    
+    // Get user data from AdminPartialHandler
+    AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
+    NSDictionary *userData = [partialHandler getUserDetailForDid:did];
+    if (!userData) {
+        return [NSString stringWithFormat:@"<div class=\"card\"><p class=\"text-destructive\">User not found: %@</p></div>", did];
+    }
+    
+    // Render using AdminPartialHandler's template system
+    return [partialHandler renderPartialWithTemplate:@"users-detail" context:userData];
+}
+
+#pragma mark - Moderation Reports
+
+- (NSString *)renderReportsPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                      contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    return @"<div class=\"content-header\">"
+           @"<h2>Moderation Reports</h2>"
+           @"<p class=\"text-secondary\">View and resolve user-submitted reports.</p>"
+           @"</div>"
+           @"<div id=\"reports-list\" hx-get=\"/admin/partials/reports/list\" hx-trigger=\"load\">"
+           @"<p>Loading reports...</p>"
+           @"</div>";
+}
+
+- (NSString *)renderReportsListWithStatusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    // Get reports from AdminPartialHandler
+    AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
+    NSArray *reports = [partialHandler getModerationReports];
+    
+    if (!reports || reports.count == 0) {
+        return @"<div class=\"card\"><p class=\"text-secondary\">No reports found.</p></div>";
+    }
+    
+    NSMutableString *html = [NSMutableString stringWithString:
+        @"<div class=\"table-wrapper\">"
+        @"<table class=\"table\">"
+        @"<thead><tr>"
+        @"<th>ID</th><th>Reason</th><th>Subject</th><th>Reporter</th><th>Status</th><th>Created</th><th>Actions</th>"
+        @"</tr></thead><tbody>"];
+    
+    for (NSDictionary *report in reports) {
+        [html appendFormat:
+            @"<tr>"
+            @"<td><code>%@</code></td>"
+            @"<td>%@</td>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td>%@</td>"
+            @"<td><span class=\"badge %@\">%@</span></td>"
+            @"<td><small>%@</small></td>"
+            @"<td>"
+            @"<button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/reports/%@\" hx-target=\"#detail-modal\" hx-on=\"htmx:afterSettle: document.getElementById('detail-modal').showModal()\">View</button>"
+            @"</td>"
+            @"</tr>",
+            report[@"id"] ?: @"",
+            report[@"reason"] ?: @"",
+            report[@"subject"] ?: @"",
+            report[@"reporter"] ?: @"",
+            [report[@"resolved"] boolValue] ? @"badge-success" : @"badge-warning",
+            [report[@"resolved"] boolValue] ? @"Resolved" : @"Open",
+            report[@"createdAt"] ?: @"",
+            report[@"id"] ?: @""];
+    }
+    
+    [html appendString:@"</tbody></table></div>"];
+    return html;
+}
+
+#pragma mark - Audit Log
+
+- (NSString *)renderAuditLogPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                      contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    return @"<div class=\"content-header\">"
+           @"<h2>Audit Log</h2>"
+           @"<p class=\"text-secondary\">View admin action history and account changes.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Timestamp</th><th>Admin</th><th>Action</th><th>Subject</th><th>Details</th></tr></thead>"
+           @"<tbody>"
+           @"<tr><td colspan=\"5\" class=\"text-secondary\">Audit log viewer - implementation pending</td></tr>"
+           @"</tbody>"
+           @"</table>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
 }
 
 @end

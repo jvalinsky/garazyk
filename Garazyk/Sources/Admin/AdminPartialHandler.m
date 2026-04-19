@@ -688,4 +688,16 @@
     return [self renderPartialWithTemplate:@"security_app_passwords_list" context:context];
 }
 
+#pragma mark - Data Access Methods
+
+- (nullable NSDictionary *)getUserDetailForDid:(NSString *)did {
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    return [adminHandler getUserDetailDataForDid:did];
+}
+
+- (nullable NSArray *)getModerationReports {
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    return [adminHandler getModerationReportsData];
+}
+
 @end
