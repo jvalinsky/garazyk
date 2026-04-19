@@ -1,0 +1,76 @@
+<h3 class="mb-sm">Rules</h3>
+<div class="table-wrapper mb-lg">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>URL</th>
+        <th>Action</th>
+        <th>Updated</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each rules}}
+      <tr>
+        <td class="text-xs"><code>{{id}}</code></td>
+        <td class="text-xs">{{url}}</td>
+        <td><span class="badge">{{action}}</span></td>
+        <td class="text-xs">{{updated_at}}</td>
+        <td>
+          <div class="btn-group">
+            <button class="btn btn-xs"
+                    data-action="ozone-safelink-update"
+                    data-id="{{id}}"
+                    data-url="{{url}}"
+                    data-rule-action="{{action}}">
+              Edit
+            </button>
+            <button class="btn btn-xs btn-destructive"
+                    data-action="ozone-safelink-remove"
+                    data-id="{{id}}">
+              Remove
+            </button>
+          </div>
+        </td>
+      </tr>
+      {{/each}}
+      {{#if has_rules}}
+      {{else}}
+      <tr>
+        <td colspan="5" class="text-center text-secondary">No safe link rules found.</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</div>
+
+<h3 class="mb-sm">Recent Events</h3>
+<div class="table-wrapper">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>URL</th>
+        <th>Action</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each events}}
+      <tr>
+        <td class="text-xs"><code>{{id}}</code></td>
+        <td class="text-xs">{{url}}</td>
+        <td>{{action}}</td>
+        <td class="text-xs">{{created_at}}</td>
+      </tr>
+      {{/each}}
+      {{#if has_events}}
+      {{else}}
+      <tr>
+        <td colspan="4" class="text-center text-secondary">No safe link events found.</td>
+      </tr>
+      {{/if}}
+    </tbody>
+  </table>
+</div>

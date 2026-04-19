@@ -1,0 +1,17 @@
+<div class="content-header">
+  <h2>Verification</h2>
+  <p class="text-secondary">Grant and revoke verification badges.</p>
+</div>
+
+<div class="flex items-center justify-between mb-md">
+  <div class="text-secondary">Verification status is managed through Ozone verification APIs.</div>
+  <button class="btn btn-primary" data-action="ozone-verification-grant">Grant Verification</button>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div id="ozone-verification-list-container" hx-get="/admin/partials/ozone/verification/list" hx-trigger="load">
+      <p class="text-secondary text-center">Loading verifications...</p>
+    </div>
+  </div>
+</div>
