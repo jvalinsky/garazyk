@@ -1,0 +1,49 @@
+<div class="content-header">
+  <h2>PLC Operations</h2>
+  <p class="text-secondary">Request confirmation code, sign PLC operation, and submit it.</p>
+</div>
+
+<div class="grid-2 mb-lg">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Step 1: Request Signature Token</h3>
+    </div>
+    <div class="card-body">
+      <button class="btn btn-primary w-full" data-action="plc-request-signature">Request Token</button>
+      <p class="text-secondary text-xs mt-sm">
+        If email delivery is configured this may return `{}`; otherwise token is returned inline.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Step 2: Sign Operation</h3>
+    </div>
+    <div class="card-body">
+      <label class="form-label" for="plc-token-input">Token</label>
+      <input id="plc-token-input" class="form-input" type="text" placeholder="8-char token">
+      <button class="btn btn-primary mt-sm w-full" data-action="plc-sign-operation">Sign Operation</button>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Step 3: Submit Signed Operation</h3>
+  </div>
+  <div class="card-body">
+    <label class="form-label" for="plc-operation-json">Signed Operation JSON</label>
+    <textarea id="plc-operation-json" class="form-input" style="min-height: 200px;" placeholder="{ ...signed operation json... }"></textarea>
+    <button class="btn btn-primary mt-sm" data-action="plc-submit-operation">Submit Operation</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Operation Output</h3>
+  </div>
+  <div class="card-body">
+    <pre id="plc-operation-output" class="code-block">{}</pre>
+  </div>
+</div>
