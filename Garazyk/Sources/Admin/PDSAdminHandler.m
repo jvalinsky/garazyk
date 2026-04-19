@@ -12,6 +12,9 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Admin/AdminUI/Handlers/AdminUIHandler.h"
 #import "Admin/AdminPartialHandler.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
+#import "Network/XrpcHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -21,6 +24,21 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     PDSHTTPMethodPUT,
     PDSHTTPMethodDELETE
 };
+
+static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
+    switch (method) {
+        case HttpMethodGET: return @"GET";
+        case HttpMethodPOST: return @"POST";
+        case HttpMethodPUT: return @"PUT";
+        case HttpMethodDELETE: return @"DELETE";
+        case HttpMethodPATCH: return @"PATCH";
+        case HttpMethodOPTIONS: return @"OPTIONS";
+        case HttpMethodHEAD: return @"HEAD";
+        case HttpMethodUnknown:
+        default:
+            return @"GET";
+    }
+}
 
 @interface PDSAdminHandler : NSObject
 @property (nonatomic, strong, nullable) PDSDatabase *database;
@@ -134,15 +152,22 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                                     path:(NSString *)path
                                                  headers:(NSDictionary<NSString *, NSString *> *)headers
                                                     body:(nullable NSData *)body {
+    NSString *requestPath = path ?: @"";
+    NSString *routePath = requestPath;
+    NSRange queryRange = [requestPath rangeOfString:@"?"];
+    if (queryRange.location != NSNotFound) {
+        routePath = [requestPath substringToIndex:queryRange.location];
+    }
+
     // AdminUI static assets don't require authentication
-    if ([path hasPrefix:@"/admin/assets/"] || [path hasPrefix:@"/admin/css/"] || [path hasPrefix:@"/admin/js/"]) {
+    if ([routePath hasPrefix:@"/admin/assets/"] || [routePath hasPrefix:@"/admin/css/"] || [routePath hasPrefix:@"/admin/js/"]) {
         AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
         AdminUIHTTPMethod uiMethod = (AdminUIHTTPMethod)method;
         NSInteger statusCode = 200;
         NSString *contentType = @"text/html";
 
         NSString *response = [uiHandler handleRequestWithMethod:uiMethod
-                                                           path:path
+                                                           path:requestPath
                                                         headers:headers
                                                            body:body
                                                      statusCode:&statusCode
@@ -154,14 +179,14 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     }
 
     // AdminUI entry point (serves index.html)
-    if ([path isEqualToString:@"/admin/ui"] || [path isEqualToString:@"/admin/ui/"]) {
+    if ([routePath isEqualToString:@"/admin/ui"] || [routePath isEqualToString:@"/admin/ui/"]) {
         AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
         AdminUIHTTPMethod uiMethod = (AdminUIHTTPMethod)method;
         NSInteger statusCode = 200;
         NSString *contentType = @"text/html; charset=utf-8";
 
         NSString *response = [uiHandler handleRequestWithMethod:uiMethod
-                                                           path:path
+                                                           path:requestPath
                                                         headers:headers
                                                            body:body
                                                      statusCode:&statusCode
@@ -174,14 +199,14 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 
     PDSAdminAuth *auth = [PDSAdminAuth sharedAuth];
 
-    if (![path isEqualToString:@"/admin/login"] && ![path hasPrefix:@"/admin/assets/"] && ![path hasPrefix:@"/admin/css/"] && ![path hasPrefix:@"/admin/js/"] && ![auth isAuthenticatedWithRequest:headers]) {
+    if (![routePath isEqualToString:@"/admin/login"] && ![routePath hasPrefix:@"/admin/assets/"] && ![routePath hasPrefix:@"/admin/css/"] && ![routePath hasPrefix:@"/admin/js/"] && ![auth isAuthenticatedWithRequest:headers]) {
         return [self jsonResponseWithStatus:401 body:@{@"error": @"Unauthorized"}];
     }
 
     // AdminUI partials require authentication
-    if ([path hasPrefix:@"/admin/partials/"]) {
+    if ([routePath hasPrefix:@"/admin/partials/"]) {
         AdminPartialHandler *partialHandler = [AdminPartialHandler sharedHandler];
-        NSString *response = [partialHandler handlePartialRequestWithPath:path
+        NSString *response = [partialHandler handlePartialRequestWithPath:requestPath
                                                                  headers:headers
                                                                     body:body];
 
@@ -197,7 +222,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         NSString *contentType = @"text/html";
 
         response = [uiHandler handleRequestWithMethod:uiMethod
-                                                 path:path
+                                                 path:requestPath
                                               headers:headers
                                                  body:body
                                            statusCode:&statusCode
@@ -208,38 +233,55 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         }
     }
 
-    if ([path isEqualToString:@"/admin"]) {
+    if ([routePath isEqualToString:@"/admin"]) {
         return [self handleAdminIndex:headers body:body];
-    } else if ([path isEqualToString:@"/admin/login"]) {
+    } else if ([routePath isEqualToString:@"/admin/login"]) {
         return [self handleAdminLogin:headers body:body];
-    } else if ([path isEqualToString:@"/admin/logout"]) {
+    } else if ([routePath isEqualToString:@"/admin/logout"]) {
         return [self handleAdminLogout:headers body:body];
-    } else if ([path isEqualToString:@"/admin/users"]) {
+    } else if ([routePath isEqualToString:@"/admin/users"]) {
         return [self handleAdminUsers:headers body:body method:method];
-    } else if ([path hasPrefix:@"/admin/users/"]) {
-        return [self handleAdminUserAction:headers body:body method:method path:path];
-    } else if ([path isEqualToString:@"/admin/users/bulk/takedown"]) {
+    } else if ([routePath isEqualToString:@"/admin/users/bulk/takedown"]) {
         return [self handleAdminBulkTakedown:headers body:body];
-    } else if ([path isEqualToString:@"/admin/users/bulk/delete"]) {
+    } else if ([routePath isEqualToString:@"/admin/users/bulk/delete"]) {
         return [self handleAdminBulkDelete:headers body:body];
-    } else if ([path isEqualToString:@"/admin/invites"]) {
+    } else if ([routePath hasPrefix:@"/admin/users/"]) {
+        return [self handleAdminUserAction:headers body:body method:method path:routePath];
+    } else if ([routePath isEqualToString:@"/admin/invites"]) {
         return [self handleAdminInvites:headers body:body method:method];
-    } else if ([path isEqualToString:@"/admin/invites/disable"]) {
+    } else if ([routePath isEqualToString:@"/admin/invites/disable"]) {
         return [self handleAdminInviteDisable:headers body:body];
-    } else if ([path isEqualToString:@"/admin/blobs"]) {
+    } else if ([routePath isEqualToString:@"/admin/blobs"]) {
         return [self handleAdminBlobs:headers body:body];
-    } else if ([path isEqualToString:@"/admin/metrics"]) {
+    } else if ([routePath isEqualToString:@"/admin/metrics"]) {
         return [self handleAdminMetrics:headers body:body];
-    } else if ([path isEqualToString:@"/admin/health"]) {
+    } else if ([routePath isEqualToString:@"/admin/health"]) {
         return [self handleAdminHealth:headers body:body];
-    } else if ([path isEqualToString:@"/admin/stats"]) {
+    } else if ([routePath isEqualToString:@"/admin/stats"]) {
         return [self handleAdminStats:headers body:body];
-    } else if ([path isEqualToString:@"/admin/audit-log"]) {
+    } else if ([routePath isEqualToString:@"/admin/audit-log"]) {
         return [self handleAdminAuditLog:headers body:body];
-    } else if ([path hasPrefix:@"/admin/security/sessions"]) {
-        return [self handleAdminSecuritySessions:headers body:body method:method path:path];
-    } else if ([path hasPrefix:@"/admin/security/app-passwords"]) {
-        return [self handleAdminSecurityAppPasswords:headers body:body method:method path:path];
+    } else if ([routePath hasPrefix:@"/admin/security/sessions"]) {
+        return [self handleAdminSecuritySessions:headers body:body method:method path:requestPath];
+    } else if ([routePath hasPrefix:@"/admin/security/app-passwords"]) {
+        return [self handleAdminSecurityAppPasswords:headers body:body method:method path:requestPath];
+    }
+
+    // Any other /admin/* path should render the Admin UI shell so pushed URLs
+    // remain reload-safe even when they map to HTMX partials.
+    if ([routePath hasPrefix:@"/admin/"]) {
+        AdminUIHandler *uiHandler = [AdminUIHandler sharedHandler];
+        NSInteger statusCode = 200;
+        NSString *contentType = @"text/html; charset=utf-8";
+        NSString *response = [uiHandler handleRequestWithMethod:(AdminUIHTTPMethod)method
+                                                           path:requestPath
+                                                        headers:headers
+                                                           body:body
+                                                     statusCode:&statusCode
+                                                    contentType:&contentType];
+        if (response) {
+            return [self htmlResponseWithStatus:statusCode contentType:contentType body:response];
+        }
     }
 
     return nil;
@@ -343,10 +385,22 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing request body"}];
         }
 
-        NSError *parseError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
-        if (parseError || ![json isKindOfClass:[NSDictionary class]]) {
-            return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid JSON"}];
+        NSMutableDictionary *payload = [[self parseRequestBodyDictionary:body] mutableCopy];
+        if (!payload) {
+            return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid request body"}];
+        }
+
+        id maxUses = payload[@"max_uses"];
+        if ([maxUses isKindOfClass:[NSString class]] && [maxUses length] > 0) {
+            payload[@"max_uses"] = @([(NSString *)maxUses integerValue]);
+        }
+        id uses = payload[@"uses"];
+        if ([uses isKindOfClass:[NSString class]] && [uses length] > 0) {
+            payload[@"uses"] = @([(NSString *)uses integerValue]);
+        }
+        id useCount = payload[@"useCount"];
+        if ([useCount isKindOfClass:[NSString class]] && [useCount length] > 0) {
+            payload[@"useCount"] = @([(NSString *)useCount integerValue]);
         }
 
         PDSAdminService *svc = self.adminService;
@@ -355,7 +409,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         }
 
         NSError *createError = nil;
-        NSDictionary *result = [svc createInviteCode:json error:&createError];
+        NSDictionary *result = [svc createInviteCode:payload error:&createError];
         if (!result) {
             return [self jsonResponseWithStatus:400 body:@{@"error": createError.localizedDescription ?: @"Failed to create invite code"}];
         }
@@ -416,12 +470,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing request body"}];
     }
 
-    NSError *parseError = nil;
-    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
-    if (parseError || ![json isKindOfClass:[NSDictionary class]]) {
-        return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid JSON"}];
-    }
-
+    NSDictionary *json = [self parseRequestBodyDictionary:body];
     NSString *code = json[@"code"];
     if (!code.length) {
         return [self jsonResponseWithStatus:400 body:@{@"error": @"Missing code"}];
@@ -578,13 +627,15 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             NSMutableDictionary *m = [s mutableCopy];
             NSString *token = m[@"token"];
             if (token.length > 8) {
-                m[@"token"] = [token substringToIndex:8];
+                m[@"token_prefix"] = [token substringToIndex:8];
+            } else {
+                m[@"token_prefix"] = token ?: @"";
             }
             [cleaned addObject:m];
         }
         return [self jsonResponseWithStatus:200 body:@{@"sessions": cleaned}];
     } else if (method == PDSHTTPMethodPOST) {
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:nil];
+        NSDictionary *json = [self parseRequestBodyDictionary:body];
         NSString *action = json[@"action"];
         if ([action isEqualToString:@"revoke"]) {
             NSString *token = json[@"token"];
@@ -614,7 +665,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         NSArray *passwords = [self.database listAppPasswordsForDid:did error:&error];
         return [self jsonResponseWithStatus:200 body:@{@"app_passwords": passwords ?: @[]}];
     } else if (method == PDSHTTPMethodPOST) {
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:nil];
+        NSDictionary *json = [self parseRequestBodyDictionary:body];
         NSString *action = json[@"action"];
         if ([action isEqualToString:@"revoke"]) {
             NSString *did = json[@"did"];
@@ -641,13 +692,13 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     NSString *action = pathComponents[4];
 
     if ([action isEqualToString:@"edit-email"]) {
-        return [self handleUserEditEmailRequest:did body:body method:method];
+        return [self handleUserEditEmailRequest:did headers:headers body:body method:method];
     } else if ([action isEqualToString:@"edit-handle"]) {
-        return [self handleUserEditHandleRequest:did body:body method:method];
+        return [self handleUserEditHandleRequest:did headers:headers body:body method:method];
     } else if ([action isEqualToString:@"reset-password"]) {
-        return [self handleUserResetPasswordRequest:did body:body method:method];
+        return [self handleUserResetPasswordRequest:did headers:headers body:body method:method];
     } else if ([action isEqualToString:@"send-email"]) {
-        return [self handleUserSendEmailRequest:did body:body method:method];
+        return [self handleUserSendEmailRequest:did headers:headers body:body method:method];
     } else if ([action isEqualToString:@"takedown"]) {
         return [self handleUserTakedownRequest:did body:body method:method];
     } else if ([action isEqualToString:@"activate"]) {
@@ -659,7 +710,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p>Not found</p>"];
 }
 
-- (NSDictionary *)handleUserEditEmailRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+- (NSDictionary *)handleUserEditEmailRequest:(NSString *)did headers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
     if (method == PDSHTTPMethodPOST && !body) {
         // Return form
         NSString *html = [NSString stringWithFormat:
@@ -679,36 +730,36 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             @"</form>", did];
         return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
     } else if (method == PDSHTTPMethodPUT && body) {
-        // Parse form data and update account
-        NSError *parseError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        NSDictionary *json = [self parseRequestBodyDictionary:body];
         NSString *newEmail = json[@"email"];
 
         if (!newEmail || newEmail.length == 0) {
             return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Email is required</p>"];
         }
 
-        // Fetch account, update email, and save
-        NSError *dbError = nil;
-        PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
-        if (!account) {
-            return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
-        }
-
-        account.email = newEmail;
-        if ([self.database updateAccount:account error:&dbError]) {
+        NSDictionary *xrpcResponse = [self dispatchXrpcJSONMethod:@"com.atproto.admin.updateAccountEmail"
+                                                        httpMethod:HttpMethodPOST
+                                                           headers:headers
+                                                          jsonBody:@{
+                                                              @"account": did,
+                                                              @"email": newEmail
+                                                          }];
+        NSInteger status = [xrpcResponse[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
             NSString *html = [NSString stringWithFormat:
                 @"<p class=\"text-success\">Email updated successfully to: %@</p>", newEmail];
             return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
-        } else {
-            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to update email</p>"];
         }
+        NSDictionary *jsonError = xrpcResponse[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to update email";
+        return [self htmlResponseWithStatus:500 contentType:@"text/html"
+                                       body:[NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error]];
     }
 
     return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
 }
 
-- (NSDictionary *)handleUserEditHandleRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+- (NSDictionary *)handleUserEditHandleRequest:(NSString *)did headers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
     if (method == PDSHTTPMethodPOST && !body) {
         // Return form - per-account auth: user needs to provide current handle or a confirmation token
         NSString *html = [NSString stringWithFormat:
@@ -729,8 +780,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
     } else if (method == PDSHTTPMethodPUT && body) {
         // Require confirmation to prevent accidental changes
-        NSError *parseError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        NSDictionary *json = [self parseRequestBodyDictionary:body];
         NSString *newHandle = json[@"handle"];
         NSString *confirmation = json[@"confirmation"];
 
@@ -742,27 +792,29 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Handle is required</p>"];
         }
 
-        // Fetch account, update handle, and save
-        NSError *dbError = nil;
-        PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
-        if (!account) {
-            return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
-        }
-
-        account.handle = newHandle;
-        if ([self.database updateAccount:account error:&dbError]) {
+        NSDictionary *xrpcResponse = [self dispatchXrpcJSONMethod:@"com.atproto.admin.updateAccountHandle"
+                                                        httpMethod:HttpMethodPOST
+                                                           headers:headers
+                                                          jsonBody:@{
+                                                              @"did": did,
+                                                              @"handle": newHandle
+                                                          }];
+        NSInteger status = [xrpcResponse[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
             NSString *html = [NSString stringWithFormat:
                 @"<p class=\"text-success\">Handle updated successfully to: %@</p>", newHandle];
             return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
-        } else {
-            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to update handle</p>"];
         }
+        NSDictionary *jsonError = xrpcResponse[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to update handle";
+        return [self htmlResponseWithStatus:500 contentType:@"text/html"
+                                       body:[NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error]];
     }
 
     return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
 }
 
-- (NSDictionary *)handleUserResetPasswordRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+- (NSDictionary *)handleUserResetPasswordRequest:(NSString *)did headers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
     if (method == PDSHTTPMethodPOST && !body) {
         // Return form
         NSString *html = [NSString stringWithFormat:
@@ -783,8 +835,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             @"</form>", did];
         return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
     } else if (method == PDSHTTPMethodPUT && body) {
-        NSError *parseError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        NSDictionary *json = [self parseRequestBodyDictionary:body];
         NSString *password = json[@"password"];
         NSString *passwordConfirm = json[@"password_confirm"];
 
@@ -796,27 +847,22 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
             return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Password must be at least 8 characters</p>"];
         }
 
-        // Fetch account and hash password
-        NSError *dbError = nil;
-        PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
-        if (!account) {
-            return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
-        }
-
-        // Hash password with PBKDF2-SHA256
-        NSData *newHash = [self pbkdf2HashPassword:password salt:account.passwordSalt error:&dbError];
-        if (!newHash) {
-            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to hash password</p>"];
-        }
-
-        account.passwordHash = newHash;
-        account.updatedAt = [[NSDate date] timeIntervalSince1970];
-        if ([self.database updateAccount:account error:&dbError]) {
+        NSDictionary *xrpcResponse = [self dispatchXrpcJSONMethod:@"com.atproto.admin.updateAccountPassword"
+                                                        httpMethod:HttpMethodPOST
+                                                           headers:headers
+                                                          jsonBody:@{
+                                                              @"did": did,
+                                                              @"password": password
+                                                          }];
+        NSInteger status = [xrpcResponse[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
             NSString *html = @"<p class=\"text-success\">Password has been reset successfully.</p>";
             return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
-        } else {
-            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to reset password</p>"];
         }
+        NSDictionary *jsonError = xrpcResponse[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to reset password";
+        return [self htmlResponseWithStatus:500 contentType:@"text/html"
+                                       body:[NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error]];
     }
 
     return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
@@ -859,7 +905,7 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     }
 }
 
-- (NSDictionary *)handleUserSendEmailRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+- (NSDictionary *)handleUserSendEmailRequest:(NSString *)did headers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
     if (method == PDSHTTPMethodPOST && !body) {
         // Return form
         NSString *html = [NSString stringWithFormat:
@@ -884,21 +930,37 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
     } else if (method == PDSHTTPMethodPUT && body) {
         // Parse and send email via XRPC
-        NSError *parseError = nil;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        NSDictionary *json = [self parseRequestBodyDictionary:body];
         
         NSString *subject = json[@"subject"];
         NSString *content = json[@"content"];
-        NSString *sender = json[@"sender"] ?: @"admin";
+        NSString *sender = json[@"sender"];
         
         if (!subject || !content) {
             return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Subject and content are required</p>"];
         }
         
-        // Call XRPC sendEmail via admin service
-        // TODO: Call XrpcDispatcher for com.atproto.admin.sendEmail
-        // For now, just return success
-        
+        NSMutableDictionary *payload = [NSMutableDictionary dictionaryWithDictionary:@{
+            @"recipientDid": did,
+            @"subject": subject,
+            @"content": content
+        }];
+        if ([sender isKindOfClass:[NSString class]] && [sender hasPrefix:@"did:"]) {
+            payload[@"senderDid"] = sender;
+        }
+
+        NSDictionary *xrpcResponse = [self dispatchXrpcJSONMethod:@"com.atproto.admin.sendEmail"
+                                                        httpMethod:HttpMethodPOST
+                                                           headers:headers
+                                                          jsonBody:payload];
+        NSInteger status = [xrpcResponse[@"status"] integerValue];
+        if (status < 200 || status >= 300) {
+            NSDictionary *jsonError = xrpcResponse[@"json"];
+            NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to send email";
+            return [self htmlResponseWithStatus:500 contentType:@"text/html"
+                                           body:[NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error]];
+        }
+
         NSString *html = @"<p class=\"text-success\">Email has been sent to the user.</p>";
         return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
     }
@@ -909,16 +971,9 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 #pragma mark - Bulk Operations
 
 - (NSDictionary *)handleAdminBulkTakedown:(NSDictionary *)headers body:(NSData *)body {
-    // Parse request body for selected DIDs
-    NSError *parseError = nil;
-    NSArray *dids = nil;
-    
-    if (body) {
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
-        dids = json[@"selected_users"];
-    }
-    
-    if (!dids || ![dids isKindOfClass:[NSArray class]] || dids.count == 0) {
+    NSDictionary *json = [self parseRequestBodyDictionary:body];
+    NSArray<NSString *> *dids = [self stringValuesForDictionaryKey:@"selected_users" dictionary:json];
+    if (dids.count == 0) {
         return [self jsonResponseWithStatus:400 body:@{@"error": @"No users selected"}];
     }
     
@@ -927,16 +982,9 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 }
 
 - (NSDictionary *)handleAdminBulkDelete:(NSDictionary *)headers body:(NSData *)body {
-    // Parse request body for selected DIDs
-    NSError *parseError = nil;
-    NSArray *dids = nil;
-    
-    if (body) {
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
-        dids = json[@"selected_users"];
-    }
-    
-    if (!dids || ![dids isKindOfClass:[NSArray class]] || dids.count == 0) {
+    NSDictionary *json = [self parseRequestBodyDictionary:body];
+    NSArray<NSString *> *dids = [self stringValuesForDictionaryKey:@"selected_users" dictionary:json];
+    if (dids.count == 0) {
         return [self jsonResponseWithStatus:400 body:@{@"error": @"No users selected"}];
     }
     
@@ -1054,6 +1102,147 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         }
     }
     return [params copy];
+}
+
+- (NSDictionary *)parseFormEncodedBody:(NSData *)body {
+    if (!body || body.length == 0) {
+        return @{};
+    }
+
+    NSString *formString = [[NSString alloc] initWithData:body encoding:NSUTF8StringEncoding];
+    if (formString.length == 0) {
+        return @{};
+    }
+
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    NSArray<NSString *> *pairs = [formString componentsSeparatedByString:@"&"];
+    for (NSString *pair in pairs) {
+        if (pair.length == 0) continue;
+        NSRange equalsRange = [pair rangeOfString:@"="];
+        NSString *key = nil;
+        NSString *value = @"";
+        if (equalsRange.location == NSNotFound) {
+            key = pair;
+        } else {
+            key = [pair substringToIndex:equalsRange.location];
+            value = [pair substringFromIndex:equalsRange.location + 1];
+        }
+
+        key = [[key stringByReplacingOccurrencesOfString:@"+" withString:@" "] stringByRemovingPercentEncoding];
+        value = [[value stringByReplacingOccurrencesOfString:@"+" withString:@" "] stringByRemovingPercentEncoding];
+        if (key.length == 0) continue;
+
+        id existing = params[key];
+        if (!existing) {
+            params[key] = value ?: @"";
+        } else if ([existing isKindOfClass:[NSArray class]]) {
+            NSMutableArray *values = [existing mutableCopy];
+            [values addObject:value ?: @""];
+            params[key] = values;
+        } else {
+            params[key] = @[existing, value ?: @""];
+        }
+    }
+    return [params copy];
+}
+
+- (NSDictionary *)parseRequestBodyDictionary:(NSData *)body {
+    if (!body || body.length == 0) {
+        return @{};
+    }
+
+    NSError *parseError = nil;
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+    if (!parseError && [json isKindOfClass:[NSDictionary class]]) {
+        return json;
+    }
+
+    return [self parseFormEncodedBody:body];
+}
+
+- (NSArray<NSString *> *)stringValuesForDictionaryKey:(NSString *)key dictionary:(NSDictionary *)dictionary {
+    id value = dictionary[key];
+    if ([value isKindOfClass:[NSString class]]) {
+        return @[(NSString *)value];
+    }
+    if ([value isKindOfClass:[NSArray class]]) {
+        NSMutableArray<NSString *> *result = [NSMutableArray array];
+        for (id item in (NSArray *)value) {
+            if ([item isKindOfClass:[NSString class]] && ((NSString *)item).length > 0) {
+                [result addObject:item];
+            }
+        }
+        return [result copy];
+    }
+    return @[];
+}
+
+- (NSDictionary *)dispatchXrpcJSONMethod:(NSString *)methodId
+                               httpMethod:(HttpMethod)httpMethod
+                                  headers:(NSDictionary<NSString *, NSString *> *)headers
+                                 jsonBody:(nullable NSDictionary *)jsonBody {
+    NSString *path = [NSString stringWithFormat:@"/xrpc/%@", methodId];
+
+    NSData *requestBody = [NSData data];
+    if (jsonBody) {
+        NSError *encodeError = nil;
+        requestBody = [NSJSONSerialization dataWithJSONObject:jsonBody options:0 error:&encodeError];
+        if (!requestBody || encodeError) {
+            return @{
+                @"status": @(HttpStatusBadRequest),
+                @"json": @{
+                    @"error": @"InvalidPayload",
+                    @"message": @"Failed to encode request JSON"
+                }
+            };
+        }
+    }
+
+    NSMutableDictionary<NSString *, NSString *> *requestHeaders = [NSMutableDictionary dictionary];
+    [headers enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
+        if ([value isKindOfClass:[NSString class]]) {
+            requestHeaders[key] = value;
+        }
+    }];
+    NSString *authorization = requestHeaders[@"authorization"] ?: requestHeaders[@"Authorization"];
+    if (authorization.length == 0) {
+        NSString *adminToken = requestHeaders[@"x-admin-token"] ?: requestHeaders[@"X-Admin-Token"];
+        if (adminToken.length > 0) {
+            requestHeaders[@"authorization"] = [NSString stringWithFormat:@"Bearer %@", adminToken];
+        }
+    }
+    if (jsonBody) {
+        requestHeaders[@"content-type"] = @"application/json";
+        if (!requestHeaders[@"accept"]) {
+            requestHeaders[@"accept"] = @"application/json";
+        }
+    }
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:httpMethod
+                                                   methodString:PDSMethodStringFromHttpMethod(httpMethod)
+                                                           path:path
+                                                    queryString:@""
+                                                     queryParams:@{}
+                                                         version:@"HTTP/1.1"
+                                                         headers:requestHeaders
+                                                            body:requestBody
+                                                   remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [HttpResponse response];
+    [[XrpcDispatcher sharedDispatcher] handleRequest:request response:response];
+
+    NSDictionary *json = @{};
+    if (response.body.length > 0) {
+        NSError *parseError = nil;
+        id payload = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:&parseError];
+        if (!parseError && [payload isKindOfClass:[NSDictionary class]]) {
+            json = payload;
+        }
+    }
+
+    return @{
+        @"status": @(response.statusCode),
+        @"json": json
+    };
 }
 
 - (NSDictionary *)packetWithStatus:(NSInteger)status
