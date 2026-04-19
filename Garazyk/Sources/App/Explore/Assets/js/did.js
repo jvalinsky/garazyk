@@ -51,7 +51,7 @@ export function renderDidSummary(doc) {
             <h3>Identity Properties</h3>
             <table>
                 <tr>
-                    <th style="width: 150px">Property</th>
+                    <th class="did-property-col">Property</th>
                     <th>Value</th>
                 </tr>
                 <tr>

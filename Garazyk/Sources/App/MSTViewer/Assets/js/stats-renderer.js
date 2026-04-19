@@ -87,7 +87,7 @@ export class StatsRenderer {
         if (stats.root_cid) {
             html += `<div class="stat-item">`;
             html += `<div class="stat-label">Root CID</div>`;
-            html += `<div class="stat-value" style="font-size: 11px; word-break: break-all;">`;
+            html += `<div class="stat-value stat-value-cid">`;
             html += `${this.escapeHtml(stats.root_cid)}`;
             html += `</div>`;
             html += `</div>`;
@@ -131,7 +131,7 @@ export class StatsRenderer {
         this.container.innerHTML = `
             <div class="placeholder error">
                 <p>Error loading statistics:</p>
-                <p style="font-size: 11px;">${this.escapeHtml(error)}</p>
+                <p class="stats-error-text">${this.escapeHtml(error)}</p>
             </div>
         `;
     }

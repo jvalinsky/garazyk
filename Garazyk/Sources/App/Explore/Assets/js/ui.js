@@ -229,14 +229,14 @@ async function loadAccounts() {
             li.dataset.did = account.did;
             li.dataset.handle = account.handle || '';
             li.innerHTML = `
-                <span style="font-size:14px">◉</span>
+                <span class="account-indicator">◉</span>
                 <span class="account-handle">${escapeHtml(account.handle || account.did)}</span>
             `;
             li.addEventListener('click', () => selectAccount(account));
             list.appendChild(li);
         }
     } else {
-        list.innerHTML = '<li class="empty" style="padding:5px; border:none; background:none;">No accounts found</li>';
+        list.innerHTML = '<li class="empty account-empty">No accounts found</li>';
     }
 }
 
@@ -454,8 +454,6 @@ async function showRecordDetail(uri) {
     document.getElementById('record-title').textContent = uri;
     const container = document.getElementById('record-content');
     container.className = 'code-block';
-    container.style.whiteSpace = 'pre-wrap';
-    container.style.wordBreak = 'break-all';
     container.innerHTML = '';
     container.textContent = 'Loading...';
 
@@ -491,23 +489,19 @@ function renderPostWithToggle(container, record) {
 
     // Switch to a plain div for rich content
     container.className = '';
-    container.style.whiteSpace = '';
-    container.style.wordBreak = '';
     container.innerHTML = '';
 
     // Toggle bar
     const toggleBar = document.createElement('div');
-    toggleBar.style.cssText = 'margin-bottom: 8px; display: flex; gap: 4px;';
+    toggleBar.className = 'record-toggle-bar';
 
     const btnRendered = document.createElement('button');
-    btnRendered.className = 'btn btn-default';
+    btnRendered.className = 'btn btn-default record-toggle-btn';
     btnRendered.textContent = 'Rendered';
-    btnRendered.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
 
     const btnJSON = document.createElement('button');
-    btnJSON.className = 'btn';
+    btnJSON.className = 'btn record-toggle-btn';
     btnJSON.textContent = 'JSON';
-    btnJSON.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
 
     toggleBar.appendChild(btnRendered);
     toggleBar.appendChild(btnJSON);
@@ -515,77 +509,73 @@ function renderPostWithToggle(container, record) {
 
     // Rendered view
     const renderedView = document.createElement('div');
+    renderedView.className = 'record-rendered-view';
     renderedView.innerHTML = renderPostClassic(postData);
     container.appendChild(renderedView);
 
     // JSON view
     const jsonView = document.createElement('pre');
-    jsonView.className = 'code-block';
+    jsonView.className = 'code-block record-json-view hidden';
     jsonView.textContent = jsonStr;
-    jsonView.style.display = 'none';
     container.appendChild(jsonView);
 
     btnRendered.addEventListener('click', () => {
-        renderedView.style.display = '';
-        jsonView.style.display = 'none';
-        btnRendered.className = 'btn btn-default';
-        btnJSON.className = 'btn';
+        renderedView.classList.remove('hidden');
+        jsonView.classList.add('hidden');
+        btnRendered.className = 'btn btn-default record-toggle-btn';
+        btnJSON.className = 'btn record-toggle-btn';
     });
 
     btnJSON.addEventListener('click', () => {
-        renderedView.style.display = 'none';
-        jsonView.style.display = '';
-        btnJSON.className = 'btn btn-default';
-        btnRendered.className = 'btn';
+        renderedView.classList.add('hidden');
+        jsonView.classList.remove('hidden');
+        btnJSON.className = 'btn btn-default record-toggle-btn';
+        btnRendered.className = 'btn record-toggle-btn';
     });
 }
 
 function renderGenericWithToggle(container, record, renderedHtml) {
     const jsonStr = JSON.stringify(record, null, 2);
     container.className = '';
-    container.style.whiteSpace = '';
-    container.style.wordBreak = '';
     container.innerHTML = '';
 
     const toggleBar = document.createElement('div');
-    toggleBar.style.cssText = 'margin-bottom: 8px; display: flex; gap: 4px;';
+    toggleBar.className = 'record-toggle-bar';
 
     const btnRendered = document.createElement('button');
-    btnRendered.className = 'btn btn-default';
+    btnRendered.className = 'btn btn-default record-toggle-btn';
     btnRendered.textContent = 'Rendered';
-    btnRendered.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
 
     const btnJSON = document.createElement('button');
-    btnJSON.className = 'btn';
+    btnJSON.className = 'btn record-toggle-btn';
     btnJSON.textContent = 'JSON';
-    btnJSON.style.cssText = 'font-family: Chicago_12, monospace; font-size: 12px;';
 
     toggleBar.appendChild(btnRendered);
     toggleBar.appendChild(btnJSON);
     container.appendChild(toggleBar);
 
     const renderedView = document.createElement('div');
+    renderedView.className = 'record-rendered-view';
     renderedView.innerHTML = renderedHtml;
     container.appendChild(renderedView);
 
     const jsonView = document.createElement('pre');
-    jsonView.className = 'code-block';
+    jsonView.className = 'code-block record-json-view hidden';
     jsonView.textContent = jsonStr;
-    jsonView.style.display = 'none';
     container.appendChild(jsonView);
 
     btnRendered.addEventListener('click', () => {
-        renderedView.style.display = '';
-        jsonView.style.display = 'none';
-        btnRendered.className = 'btn btn-default';
-        btnJSON.className = 'btn';
+        renderedView.classList.remove('hidden');
+        jsonView.classList.add('hidden');
+        btnRendered.className = 'btn btn-default record-toggle-btn';
+        btnJSON.className = 'btn record-toggle-btn';
     });
 
     btnJSON.addEventListener('click', () => {
-        renderedView.style.display = 'none';
-        jsonView.style.display = '';
-        btnJSON.className = 'btn btn-default';
-        btnRendered.className = 'btn';
+        renderedView.classList.add('hidden');
+        jsonView.classList.remove('hidden');
+        btnJSON.className = 'btn btn-default record-toggle-btn';
+        btnRendered.className = 'btn record-toggle-btn';
     });
 }
 
@@ -726,9 +716,9 @@ function renderEmbedClassic(embed) {
     } else if (type === 'app.bsky.embed.external') {
         const ext = embed.external || {};
         html += '<span class="post-classic-meta-label">⌘ External link</span>';
-        if (ext.title) html += '<div style="font-weight: bold; margin-top: 4px;">' + escapeHtml(ext.title) + '</div>';
+        if (ext.title) html += '<div class="embed-title">' + escapeHtml(ext.title) + '</div>';
         if (ext.uri) html += '<div><code>' + escapeHtml(ext.uri) + '</code></div>';
-        if (ext.description) html += '<div style="color: #666; margin-top: 2px;">' + escapeHtml(ext.description) + '</div>';
+        if (ext.description) html += '<div class="embed-description">' + escapeHtml(ext.description) + '</div>';
     } else if (type === 'app.bsky.embed.record') {
         html += '<span class="post-classic-meta-label">⊞ Quoted record</span>';
         if (embed.record?.uri) html += '<div><code>' + escapeHtml(embed.record.uri) + '</code></div>';
@@ -777,13 +767,13 @@ function renderProfileClassic(profileData) {
 
     // Avatar/Banner refs
     if (profileData.avatar) {
-        html += '<div class="post-classic-meta" style="border-top: none;">';
+        html += '<div class="post-classic-meta post-meta-no-top-border">';
         html += '<span class="post-classic-meta-label">▣ Avatar:</span> ';
         html += '<code class="post-classic-meta-value">' + escapeHtml(profileData.avatar?.ref?.$link || 'blob') + '</code>';
         html += '</div>';
     }
     if (profileData.banner) {
-        html += '<div class="post-classic-meta" style="border-top: none;">';
+        html += '<div class="post-classic-meta post-meta-no-top-border">';
         html += '<span class="post-classic-meta-label">▤ Banner:</span> ';
         html += '<code class="post-classic-meta-value">' + escapeHtml(profileData.banner?.ref?.$link || 'blob') + '</code>';
         html += '</div>';
@@ -819,12 +809,12 @@ function renderLikeClassic(likeData) {
     }
     html += '</div>';
     html += '<div class="classic-card-body">';
-    html += '<div class="post-classic-meta" style="border: none; padding: 0;">';
+    html += '<div class="post-classic-meta post-meta-compact">';
     html += '<span class="post-classic-meta-label">Subject:</span> ';
     html += '<code class="post-classic-meta-value">' + subjectUri + '</code>';
     html += '</div>';
     if (subjectCid) {
-        html += '<div class="post-classic-meta" style="border: none; padding: 2px 0 0;">';
+        html += '<div class="post-classic-meta post-meta-compact-top">';
         html += '<span class="post-classic-meta-label">CID:</span> ';
         html += '<code class="post-classic-meta-value">' + subjectCid.slice(0, 16) + '…</code>';
         html += '</div>';
@@ -858,7 +848,7 @@ function renderFollowClassic(followData) {
     }
     html += '</div>';
     html += '<div class="classic-card-body">';
-    html += '<div class="post-classic-meta" style="border: none; padding: 0;">';
+    html += '<div class="post-classic-meta post-meta-compact">';
     html += '<span class="post-classic-meta-label">Following:</span> ';
     html += '<code class="post-classic-meta-value">' + subject + '</code>';
     html += '</div>';
@@ -915,7 +905,7 @@ async function showFeedPosts() {
         html += '<div class="post-classic-text">' + text.replace(/\n/g, '<br>') + '</div>';
 
         if (postData.reply) {
-            html += '<div class="post-classic-meta" style="margin-top: 6px;">';
+            html += '<div class="post-classic-meta post-meta-spaced">';
             html += '<span class="post-classic-meta-label">↩ Reply to:</span> ';
             html += '<code class="post-classic-meta-value">' + escapeHtml(postData.reply.parent?.uri || 'unknown') + '</code>';
             html += '</div>';
@@ -930,7 +920,7 @@ async function showFeedPosts() {
         html += '</div>';
 
         // JSON body (hidden)
-        html += '<pre class="code-block" id="post-json-' + i + '" style="display: none; margin: 0;">' + jsonStr + '</pre>';
+        html += '<pre class="code-block record-json-view hidden" id="post-json-' + i + '">' + jsonStr + '</pre>';
 
         html += '</div>';
     }
@@ -943,13 +933,13 @@ async function showFeedPosts() {
             const idx = btn.dataset.togglePost;
             const rendered = document.getElementById('post-rendered-' + idx);
             const json = document.getElementById('post-json-' + idx);
-            if (json.style.display === 'none') {
-                json.style.display = '';
-                rendered.style.display = 'none';
+            if (json.classList.contains('hidden')) {
+                json.classList.remove('hidden');
+                rendered.classList.add('hidden');
                 btn.textContent = 'Rendered';
             } else {
-                json.style.display = 'none';
-                rendered.style.display = '';
+                json.classList.add('hidden');
+                rendered.classList.remove('hidden');
                 btn.textContent = 'JSON';
             }
         });
@@ -997,13 +987,13 @@ async function showFeedLikes() {
         html += '</div>';
 
         html += '<div class="classic-card-body" id="like-rendered-' + i + '">';
-        html += '<div class="post-classic-meta" style="border: none; padding: 0;">';
+        html += '<div class="post-classic-meta post-meta-compact">';
         html += '<span class="post-classic-meta-label">Subject:</span> ';
         html += '<code class="post-classic-meta-value">' + subjectUri + '</code>';
         html += '</div>';
         html += '</div>';
 
-        html += '<pre class="code-block" id="like-json-' + i + '" style="display: none; margin: 0;">' + jsonStr + '</pre>';
+        html += '<pre class="code-block record-json-view hidden" id="like-json-' + i + '">' + jsonStr + '</pre>';
         html += '</div>';
     }
 
@@ -1014,13 +1004,13 @@ async function showFeedLikes() {
             const idx = btn.dataset.toggleLike;
             const rendered = document.getElementById('like-rendered-' + idx);
             const json = document.getElementById('like-json-' + idx);
-            if (json.style.display === 'none') {
-                json.style.display = '';
-                rendered.style.display = 'none';
+            if (json.classList.contains('hidden')) {
+                json.classList.remove('hidden');
+                rendered.classList.add('hidden');
                 btn.textContent = 'Rendered';
             } else {
-                json.style.display = 'none';
-                rendered.style.display = '';
+                json.classList.add('hidden');
+                rendered.classList.remove('hidden');
                 btn.textContent = 'JSON';
             }
         });
@@ -1085,15 +1075,15 @@ async function showGraphFollows() {
 
         html += '<div class="classic-card-body" id="follow-rendered-' + i + '">';
         if (displayName) {
-            html += '<div class="profile-classic-name" style="font-size: 12px;">' + displayName + '</div>';
+            html += '<div class="profile-classic-name profile-classic-name-small">' + displayName + '</div>';
         }
-        html += '<div class="post-classic-meta" style="border: none; padding: 2px 0 0;">';
+        html += '<div class="post-classic-meta post-meta-compact-top">';
         html += '<span class="post-classic-meta-label">DID:</span> ';
         html += '<code class="post-classic-meta-value">' + did + '</code>';
         html += '</div>';
         html += '</div>';
 
-        html += '<pre class="code-block" id="follow-json-' + i + '" style="display: none; margin: 0;">' + jsonStr + '</pre>';
+        html += '<pre class="code-block record-json-view hidden" id="follow-json-' + i + '">' + jsonStr + '</pre>';
         html += '</div>';
     }
 
@@ -1104,13 +1094,13 @@ async function showGraphFollows() {
             const idx = btn.dataset.toggleFollow;
             const rendered = document.getElementById('follow-rendered-' + idx);
             const json = document.getElementById('follow-json-' + idx);
-            if (json.style.display === 'none') {
-                json.style.display = '';
-                rendered.style.display = 'none';
+            if (json.classList.contains('hidden')) {
+                json.classList.remove('hidden');
+                rendered.classList.add('hidden');
                 btn.textContent = 'Rendered';
             } else {
-                json.style.display = 'none';
-                rendered.style.display = '';
+                json.classList.add('hidden');
+                rendered.classList.remove('hidden');
                 btn.textContent = 'JSON';
             }
         });
@@ -1142,9 +1132,9 @@ async function showActorProfile() {
     }
 
     // Toggle bar
-    let html = '<div style="margin-bottom: 8px; display: flex; gap: 4px;">';
-    html += '<button class="btn btn-default" id="profile-btn-rendered" style="font-family: Chicago_12, monospace; font-size: 12px;">Rendered</button>';
-    html += '<button class="btn" id="profile-btn-json" style="font-family: Chicago_12, monospace; font-size: 12px;">JSON</button>';
+    let html = '<div class="record-toggle-bar">';
+    html += '<button class="btn btn-default record-toggle-btn" id="profile-btn-rendered">Rendered</button>';
+    html += '<button class="btn record-toggle-btn" id="profile-btn-json">JSON</button>';
     html += '</div>';
 
     // Rendered view
@@ -1160,7 +1150,7 @@ async function showActorProfile() {
 
     html += '<div class="classic-card-body">';
     html += '<div class="profile-classic-name">' + escapeHtml(result.displayName || result.handle) + '</div>';
-    html += '<div style="color:#666; font-size: 11px; margin-bottom: 6px;">@' + escapeHtml(result.handle) + ' · <code style="font-size: 10px;">' + escapeHtml(result.did) + '</code></div>';
+    html += '<div class="profile-handle-line">@' + escapeHtml(result.handle) + ' · <code class="profile-did">' + escapeHtml(result.did) + '</code></div>';
 
     if (result.description) {
         html += '<div class="profile-classic-bio">' + escapeHtml(result.description).replace(/\n/g, '<br>') + '</div>';
@@ -1177,7 +1167,7 @@ async function showActorProfile() {
     html += '</div>';
 
     // JSON view (hidden)
-    html += '<pre class="code-block" id="profile-json-view" style="display: none;">' + escapeHtml(jsonStr) + '</pre>';
+    html += '<pre class="code-block hidden" id="profile-json-view">' + escapeHtml(jsonStr) + '</pre>';
 
     content.innerHTML = html;
 
@@ -1188,17 +1178,17 @@ async function showActorProfile() {
     const jsonView = document.getElementById('profile-json-view');
 
     btnRendered.addEventListener('click', () => {
-        renderedView.style.display = '';
-        jsonView.style.display = 'none';
-        btnRendered.className = 'btn btn-default';
-        btnJSON.className = 'btn';
+        renderedView.classList.remove('hidden');
+        jsonView.classList.add('hidden');
+        btnRendered.className = 'btn btn-default record-toggle-btn';
+        btnJSON.className = 'btn record-toggle-btn';
     });
 
     btnJSON.addEventListener('click', () => {
-        renderedView.style.display = 'none';
-        jsonView.style.display = '';
-        btnJSON.className = 'btn btn-default';
-        btnRendered.className = 'btn';
+        renderedView.classList.add('hidden');
+        jsonView.classList.remove('hidden');
+        btnJSON.className = 'btn btn-default record-toggle-btn';
+        btnRendered.className = 'btn record-toggle-btn';
     });
 }
 
@@ -1217,7 +1207,7 @@ async function handleCidDecode() {
         }
 
         // Custom render for the new style
-        let html = '<div style="margin-top:20px">';
+        let html = '<div class="cid-details">';
         html += `<h3>CID Version ${decoded.version}</h3>`;
         html += '<table><tr><th>Property</th><th>Value</th></tr>';
         html += `<tr><td>Codec</td><td>${decoded.codecName} (${decoded.codec})</td></tr>`;
@@ -1334,18 +1324,18 @@ function initSession() {
             // Load recent posts
             const recentList = document.getElementById('poster-recent-list');
             if (recentList) {
-                recentList.innerHTML = '<p style="color: #999; margin: 0;">Loading...</p>';
+                recentList.innerHTML = '<p class="poster-status-message">Loading...</p>';
                 const posts = await Poster.loadRecentPosts();
                 if (posts.length === 0) {
-                    recentList.innerHTML = '<p style="color: #999; margin: 0;">No posts yet.</p>';
+                    recentList.innerHTML = '<p class="poster-status-message">No posts yet.</p>';
                 } else {
                     recentList.innerHTML = posts.map(p => {
                         const text = p.value?.text || '';
                         const date = p.value?.createdAt || '';
                         const shortDate = date ? new Date(date).toLocaleString() : '';
-                        return '<div style="border-bottom: 1px solid #ddd; padding: 4px 0; font-size: 11px;">'
-                            + '<div style="white-space: pre-wrap;">' + escapeHtml(text) + '</div>'
-                            + '<div style="color: #999; font-size: 10px;">' + escapeHtml(shortDate) + '</div>'
+                        return '<div class="poster-recent-item">'
+                            + '<div class="poster-recent-item-text">' + escapeHtml(text) + '</div>'
+                            + '<div class="poster-recent-item-date">' + escapeHtml(shortDate) + '</div>'
                             + '</div>';
                     }).join('');
                 }
@@ -1383,7 +1373,7 @@ function initSession() {
                 document.getElementById('poster-charcount').textContent = '0';
                 if (document.getElementById('poster-reply-to')) document.getElementById('poster-reply-to').value = '';
             } catch (err) {
-                showPosterResult('Error: ' + escapeHtml(err.message) + ' <button class="btn" id="poster-retry-btn" style="margin-left: 8px;">Retry</button>', true);
+                showPosterResult('Error: ' + escapeHtml(err.message) + ' <button class="btn ml-sm" id="poster-retry-btn">Retry</button>', true);
                 const retryBtn = document.getElementById('poster-retry-btn');
                 if (retryBtn) {
                     retryBtn.addEventListener('click', () => postBtn.click());
@@ -1406,7 +1396,7 @@ function initSession() {
             }
             const el = document.getElementById('poster-charcount');
             el.textContent = count;
-            el.style.color = count > 300 ? '#ff0000' : '#666';
+            el.classList.toggle('poster-charcount-over', count > 300);
         });
     }
 
@@ -1593,7 +1583,7 @@ const AdminAPI = {
     async loadInviteCodes() {
         const tbody = document.getElementById('invite-table-body');
         const countEl = document.getElementById('invite-count');
-        tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">Loading...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="admin-table-message">Loading...</td></tr>';
 
         try {
             const resp = await this.adminFetch('/admin/invites');
@@ -1602,7 +1592,7 @@ const AdminAPI = {
             countEl.textContent = invites.length + ' invite code(s)';
 
             if (invites.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">No invite codes</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="admin-table-message">No invite codes</td></tr>';
                 return;
             }
 
@@ -1612,11 +1602,11 @@ const AdminAPI = {
                 const disabled = inv.disabled;
                 const status = disabled ? '🔴 Disabled' : '🟢 Active';
                 tr.innerHTML = `
-                    <td style="padding: 4px;"><code>${escapeHtml(inv.code)}</code></td>
-                    <td style="padding: 4px;">${escapeHtml(inv.created_by)}</td>
-                    <td style="padding: 4px; text-align: center;">${inv.uses || 0}/${inv.max_uses || 1}</td>
-                    <td style="padding: 4px; text-align: center;">${status}</td>
-                    <td style="padding: 4px; text-align: center;">${disabled ? '' : '<button class="btn" data-disable-code="' + escapeHtml(inv.code) + '">Disable</button>'}</td>
+                    <td class="admin-table-cell"><code>${escapeHtml(inv.code)}</code></td>
+                    <td class="admin-table-cell">${escapeHtml(inv.created_by)}</td>
+                    <td class="admin-table-cell text-center">${inv.uses || 0}/${inv.max_uses || 1}</td>
+                    <td class="admin-table-cell text-center">${status}</td>
+                    <td class="admin-table-cell text-center">${disabled ? '' : '<button class="btn" data-disable-code="' + escapeHtml(inv.code) + '">Disable</button>'}</td>
                 `;
                 tbody.appendChild(tr);
             }
@@ -1633,12 +1623,12 @@ const AdminAPI = {
                         });
                         this.loadInviteCodes();
                     } catch (e) {
-                        document.getElementById('invite-result').innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+                        document.getElementById('invite-result').innerHTML = '<div class="admin-result-error">' + escapeHtml(e.message) + '</div>';
                     }
                 });
             });
         } catch (e) {
-            tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center; color: red;">Error: ' + escapeHtml(e.message) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="admin-table-message admin-table-message-error">Error: ' + escapeHtml(e.message) + '</td></tr>';
         }
     },
 
@@ -1652,20 +1642,20 @@ const AdminAPI = {
             });
             const data = await resp.json();
             if (data.code) {
-                resultEl.innerHTML = '<div style="border: 1px solid #000; padding: 6px; background: #fff;">New code: <strong><code>' + escapeHtml(data.code) + '</code></strong></div>';
+                resultEl.innerHTML = '<div class="admin-result-success">New code: <strong><code>' + escapeHtml(data.code) + '</code></strong></div>';
                 this.loadInviteCodes();
             } else {
-                resultEl.innerHTML = '<div style="color: red;">' + escapeHtml(data.error || 'Unknown error') + '</div>';
+                resultEl.innerHTML = '<div class="admin-result-error">' + escapeHtml(data.error || 'Unknown error') + '</div>';
             }
         } catch (e) {
-            resultEl.innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+            resultEl.innerHTML = '<div class="admin-result-error">' + escapeHtml(e.message) + '</div>';
         }
     },
 
     async loadModeration() {
         const tbody = document.getElementById('moderation-table-body');
         const countEl = document.getElementById('moderation-count');
-        tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">Loading...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="admin-table-message">Loading...</td></tr>';
 
         try {
             const resp = await this.adminFetch('/admin/users');
@@ -1674,7 +1664,7 @@ const AdminAPI = {
             countEl.textContent = users.length + ' account(s)';
 
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center;">No accounts</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="admin-table-message">No accounts</td></tr>';
                 return;
             }
 
@@ -1683,11 +1673,11 @@ const AdminAPI = {
                 const tr = document.createElement('tr');
                 const status = user.deactivated ? '🔴 Disabled' : '🟢 Active';
                 tr.innerHTML = `
-                    <td style="padding: 4px;">${escapeHtml(user.handle)}</td>
-                    <td style="padding: 4px;"><code style="font-size: 10px;">${escapeHtml(user.did)}</code></td>
-                    <td style="padding: 4px;">${escapeHtml(user.email)}</td>
-                    <td style="padding: 4px; text-align: center;">${status}</td>
-                    <td style="padding: 4px; text-align: center;">
+                    <td class="admin-table-cell">${escapeHtml(user.handle)}</td>
+                    <td class="admin-table-cell"><code class="admin-did-code">${escapeHtml(user.did)}</code></td>
+                    <td class="admin-table-cell">${escapeHtml(user.email)}</td>
+                    <td class="admin-table-cell text-center">${status}</td>
+                    <td class="admin-table-cell text-center">
                         ${user.deactivated
                         ? '<button class="btn" data-enable-did="' + escapeHtml(user.did) + '">Enable</button>'
                         : '<button class="btn" data-disable-did="' + escapeHtml(user.did) + '">Disable</button>'}
@@ -1708,7 +1698,7 @@ const AdminAPI = {
                         });
                         this.loadModeration();
                     } catch (e) {
-                        document.getElementById('moderation-result').innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+                        document.getElementById('moderation-result').innerHTML = '<div class="admin-result-error">' + escapeHtml(e.message) + '</div>';
                     }
                 });
             });
@@ -1724,12 +1714,12 @@ const AdminAPI = {
                         });
                         this.loadModeration();
                     } catch (e) {
-                        document.getElementById('moderation-result').innerHTML = '<div style="color: red;">' + escapeHtml(e.message) + '</div>';
+                        document.getElementById('moderation-result').innerHTML = '<div class="admin-result-error">' + escapeHtml(e.message) + '</div>';
                     }
                 });
             });
         } catch (e) {
-            tbody.innerHTML = '<tr><td colspan="5" style="padding: 8px; text-align: center; color: red;">Error: ' + escapeHtml(e.message) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="admin-table-message admin-table-message-error">Error: ' + escapeHtml(e.message) + '</td></tr>';
         }
     }
 };
@@ -1767,8 +1757,8 @@ function updateUIForLogin(did, handle, isAdminUser) {
         statusUser.style.display = 'inline';
         // Different icon for admins
         statusUser.innerHTML = isAdminUser 
-            ? '<span style="color: #666;">\u2699</span> <span id="status-user-handle">' + escapeHtml(handle) + '</span>'
-            : '<span style="color: #666;">\u263A</span> <span id="status-user-handle">' + escapeHtml(handle) + '</span>';
+            ? '<span class="status-user-icon">\u2699</span> <span id="status-user-handle">' + escapeHtml(handle) + '</span>'
+            : '<span class="status-user-icon">\u263A</span> <span id="status-user-handle">' + escapeHtml(handle) + '</span>';
     }
 
     // Menu items
@@ -1815,9 +1805,9 @@ function updateUIForLogout() {
 function showPosterResult(html, isError) {
     const el = document.getElementById('poster-result');
     if (isError) {
-        el.innerHTML = '<div style="color: var(--error-color); border: 1px solid var(--error-color); padding: 6px; background: #fff;">' + html + '</div>';
+        el.innerHTML = '<div class="poster-result poster-result-error">' + html + '</div>';
     } else {
-        el.innerHTML = '<div style="padding: 6px; border: 1px solid #999; background: #fff;">' + html + '</div>';
+        el.innerHTML = '<div class="poster-result">' + html + '</div>';
     }
 }
 
