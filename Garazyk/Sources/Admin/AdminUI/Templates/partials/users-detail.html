@@ -1,0 +1,143 @@
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Account Details</h3>
+  </div>
+  <div class="card-body">
+    <div class="detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div>
+        <label class="form-label">DID</label>
+        <code style="font-size: 11px; word-break: break-all;">{{did}}</code>
+      </div>
+      <div>
+        <label class="form-label">Handle</label>
+        <span>{{handle}}</span>
+      </div>
+      <div>
+        <label class="form-label">Email</label>
+        <span>{{email}}</span>
+      </div>
+      <div>
+        <label class="form-label">Status</label>
+        {{#if active}}
+          <span class="badge badge-success">Active</span>
+        {{else}}
+          <span class="badge badge-secondary">Inactive</span>
+        {{/if}}
+        {{#if takendown}}
+          <span class="badge badge-warning">Taken Down</span>
+        {{/if}}
+      </div>
+      <div>
+        <label class="form-label">Created</label>
+        <span>{{createdAt}}</span>
+      </div>
+      <div>
+        <label class="form-label">Last Updated</label>
+        <span>{{updatedAt}}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-lg">
+  <div class="card-header">
+    <h3 class="card-title">Quick Actions</h3>
+  </div>
+  <div class="card-body">
+    <div class="btn-group" style="flex-wrap: wrap; gap: 8px;">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        hx-post="/admin/users/{{did}}/edit-email"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()">
+        Change Email
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        hx-post="/admin/users/{{did}}/edit-handle"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()">
+        Change Handle
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        hx-post="/admin/users/{{did}}/reset-password"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()">
+        Reset Password
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        hx-post="/admin/users/{{did}}/send-email"
+        hx-target="#user-action-modal"
+        hx-on="htmx:afterSettle: document.getElementById('user-action-modal').showModal()">
+        Send Admin Email
+      </button>
+      {{#if active}}
+        <button
+          type="button"
+          class="btn btn-warning"
+          hx-post="/admin/users/{{did}}/takedown"
+          hx-confirm="Takedown this account? This action can be reversed."
+          hx-swap="outerHTML">
+          Takedown Account
+        </button>
+      {{else}}
+        <button
+          type="button"
+          class="btn btn-secondary"
+          hx-post="/admin/users/{{did}}/activate"
+          hx-confirm="Reactivate this account?"
+          hx-swap="outerHTML">
+          Reactivate Account
+        </button>
+      {{/if}}
+      <button
+        type="button"
+        class="btn btn-destructive"
+        hx-post="/admin/users/{{did}}/delete"
+        hx-confirm="Permanently delete this account? This cannot be undone."
+        hx-swap="outerHTML">
+        Delete Account
+      </button>
+    </div>
+  </div>
+</div>
+
+{{#if invites}}
+<div class="card mt-lg">
+  <div class="card-header">
+    <h3 class="card-title">Invites Created ({{invites_count}})</h3>
+  </div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Used</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each invites}}
+        <tr>
+          <td><code style="font-size: 11px;">{{code}}</code></td>
+          <td>
+            {{#if used}}
+              <span class="badge badge-success">Used</span>
+            {{else}}
+              <span class="badge badge-secondary">Pending</span>
+            {{/if}}
+          </td>
+          <td><small>{{created_at}}</small></td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{/if}}

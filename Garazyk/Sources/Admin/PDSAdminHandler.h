@@ -89,6 +89,14 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                    statusCode:(nullable NSInteger *)statusCode
                                   contentType:(NSString * _Nullable * _Nullable)contentType;
 
+#pragma mark - User Detail Data
+
+/// Get user detail data including invites created by them
+- (nullable NSDictionary *)getUserDetailDataForDid:(NSString *)did;
+
+/// Get moderation reports list
+- (nullable NSArray *)getModerationReportsData;
+
 @end
 
 NS_ASSUME_NONNULL_END

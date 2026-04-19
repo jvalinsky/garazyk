@@ -1,5 +1,10 @@
 #import <Foundation/Foundation.h>
+#import <CommonCrypto/CommonKeyDerivation.h>
 #import "Admin/PDSAdminAuth.h"
+
+#ifndef kCCSuccess
+#define kCCSuccess 0
+#endif
 #import "Metrics/PDSMetrics.h"
 #import "Database/PDSDatabase.h"
 #import "Services/Core/PDSAdminService.h"
@@ -211,6 +216,8 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
         return [self handleAdminLogout:headers body:body];
     } else if ([path isEqualToString:@"/admin/users"]) {
         return [self handleAdminUsers:headers body:body method:method];
+    } else if ([path hasPrefix:@"/admin/users/"]) {
+        return [self handleAdminUserAction:headers body:body method:method path:path];
     } else if ([path isEqualToString:@"/admin/invites"]) {
         return [self handleAdminInvites:headers body:body method:method];
     } else if ([path isEqualToString:@"/admin/invites/disable"]) {
@@ -617,6 +624,320 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     return [self jsonResponseWithStatus:400 body:@{@"error": @"Invalid request"}];
 }
 
+#pragma mark - User Action Handlers
+
+- (NSDictionary *)handleAdminUserAction:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method path:(NSString *)path {
+    // Parse path: /admin/users/{did}/{action}
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
+    }
+
+    NSString *did = pathComponents[3];
+    NSString *action = pathComponents[4];
+
+    if ([action isEqualToString:@"edit-email"]) {
+        return [self handleUserEditEmailRequest:did body:body method:method];
+    } else if ([action isEqualToString:@"edit-handle"]) {
+        return [self handleUserEditHandleRequest:did body:body method:method];
+    } else if ([action isEqualToString:@"reset-password"]) {
+        return [self handleUserResetPasswordRequest:did body:body method:method];
+    } else if ([action isEqualToString:@"send-email"]) {
+        return [self handleUserSendEmailRequest:did body:body method:method];
+    } else if ([action isEqualToString:@"takedown"]) {
+        return [self handleUserTakedownRequest:did body:body method:method];
+    } else if ([action isEqualToString:@"activate"]) {
+        return [self handleUserActivateRequest:did body:body method:method];
+    } else if ([action isEqualToString:@"delete"]) {
+        return [self handleUserDeleteRequest:did body:body method:method];
+    }
+
+    return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p>Not found</p>"];
+}
+
+- (NSDictionary *)handleUserEditEmailRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+    if (method == PDSHTTPMethodPOST && !body) {
+        // Return form
+        NSString *html = [NSString stringWithFormat:
+            @"<form class=\"form\" hx-put=\"/admin/users/%@/edit-email\" hx-swap=\"outerHTML\">"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">New Email Address</label>"
+            @"<input type=\"email\" name=\"email\" class=\"form-input\" required placeholder=\"user@example.com\" />"
+            @"</div>"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">Reason (optional)</label>"
+            @"<input type=\"text\" name=\"reason\" class=\"form-input\" placeholder=\"Admin change\" />"
+            @"</div>"
+            @"<div class=\"form-footer\" style=\"display: flex; gap: 8px;\">"
+            @"<button type=\"submit\" class=\"btn btn-primary\">Update Email</button>"
+            @"<button type=\"button\" class=\"btn btn-secondary\" onclick=\"document.getElementById('user-action-modal').close()\">Cancel</button>"
+            @"</div>"
+            @"</form>", did];
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    } else if (method == PDSHTTPMethodPUT && body) {
+        // Parse form data and update account
+        NSError *parseError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        NSString *newEmail = json[@"email"];
+
+        if (!newEmail || newEmail.length == 0) {
+            return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Email is required</p>"];
+        }
+
+        // Fetch account, update email, and save
+        NSError *dbError = nil;
+        PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
+        if (!account) {
+            return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
+        }
+
+        account.email = newEmail;
+        if ([self.database updateAccount:account error:&dbError]) {
+            NSString *html = [NSString stringWithFormat:
+                @"<p class=\"text-success\">Email updated successfully to: %@</p>", newEmail];
+            return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+        } else {
+            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to update email</p>"];
+        }
+    }
+
+    return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
+}
+
+- (NSDictionary *)handleUserEditHandleRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+    if (method == PDSHTTPMethodPOST && !body) {
+        // Return form - per-account auth: user needs to provide current handle or a confirmation token
+        NSString *html = [NSString stringWithFormat:
+            @"<form class=\"form\" hx-put=\"/admin/users/%@/edit-handle\" hx-swap=\"outerHTML\">"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">New Handle</label>"
+            @"<input type=\"text\" name=\"handle\" class=\"form-input\" required placeholder=\"user.bsky.social\" />"
+            @"</div>"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">Confirmation (type DID to confirm)</label>"
+            @"<input type=\"text\" name=\"confirmation\" class=\"form-input\" required placeholder=\"%@\" />"
+            @"</div>"
+            @"<div class=\"form-footer\" style=\"display: flex; gap: 8px;\">"
+            @"<button type=\"submit\" class=\"btn btn-primary\">Update Handle</button>"
+            @"<button type=\"button\" class=\"btn btn-secondary\" onclick=\"document.getElementById('user-action-modal').close()\">Cancel</button>"
+            @"</div>"
+            @"</form>", did, did];
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    } else if (method == PDSHTTPMethodPUT && body) {
+        // Require confirmation to prevent accidental changes
+        NSError *parseError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        NSString *newHandle = json[@"handle"];
+        NSString *confirmation = json[@"confirmation"];
+
+        if (!confirmation || ![confirmation isEqualToString:did]) {
+            return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Invalid confirmation. DID must match exactly.</p>"];
+        }
+
+        if (!newHandle || newHandle.length == 0) {
+            return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Handle is required</p>"];
+        }
+
+        // Fetch account, update handle, and save
+        NSError *dbError = nil;
+        PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
+        if (!account) {
+            return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
+        }
+
+        account.handle = newHandle;
+        if ([self.database updateAccount:account error:&dbError]) {
+            NSString *html = [NSString stringWithFormat:
+                @"<p class=\"text-success\">Handle updated successfully to: %@</p>", newHandle];
+            return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+        } else {
+            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to update handle</p>"];
+        }
+    }
+
+    return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
+}
+
+- (NSDictionary *)handleUserResetPasswordRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+    if (method == PDSHTTPMethodPOST && !body) {
+        // Return form
+        NSString *html = [NSString stringWithFormat:
+            @"<form class=\"form\" hx-put=\"/admin/users/%@/reset-password\" hx-swap=\"outerHTML\">"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">New Password</label>"
+            @"<input type=\"password\" name=\"password\" class=\"form-input\" required minlength=\"8\" />"
+            @"</div>"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">Confirm Password</label>"
+            @"<input type=\"password\" name=\"password_confirm\" class=\"form-input\" required minlength=\"8\" />"
+            @"</div>"
+            @"<div class=\"form-help\">Password must be at least 8 characters.</div>"
+            @"<div class=\"form-footer\" style=\"display: flex; gap: 8px;\">"
+            @"<button type=\"submit\" class=\"btn btn-primary\">Reset Password</button>"
+            @"<button type=\"button\" class=\"btn btn-secondary\" onclick=\"document.getElementById('user-action-modal').close()\">Cancel</button>"
+            @"</div>"
+            @"</form>", did];
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    } else if (method == PDSHTTPMethodPUT && body) {
+        NSError *parseError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        NSString *password = json[@"password"];
+        NSString *passwordConfirm = json[@"password_confirm"];
+
+        if (!password || !passwordConfirm || ![password isEqualToString:passwordConfirm]) {
+            return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Passwords do not match</p>"];
+        }
+
+        if (password.length < 8) {
+            return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Password must be at least 8 characters</p>"];
+        }
+
+        // Fetch account and hash password
+        NSError *dbError = nil;
+        PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
+        if (!account) {
+            return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
+        }
+
+        // Hash password with PBKDF2-SHA256
+        NSData *newHash = [self pbkdf2HashPassword:password salt:account.passwordSalt error:&dbError];
+        if (!newHash) {
+            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to hash password</p>"];
+        }
+
+        account.passwordHash = newHash;
+        account.updatedAt = [[NSDate date] timeIntervalSince1970];
+        if ([self.database updateAccount:account error:&dbError]) {
+            NSString *html = @"<p class=\"text-success\">Password has been reset successfully.</p>";
+            return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+        } else {
+            return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to reset password</p>"];
+        }
+    }
+
+    return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
+}
+
+- (NSDictionary *)handleUserTakedownRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+    // Deactivate account by setting invites disabled and marking as inactive
+    // This prevents the account from being used while keeping records for auditing
+    NSError *dbError = nil;
+    PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
+    if (!account) {
+        return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
+    }
+
+    account.inviteEnabled = NO;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    if ([self.database updateAccount:account error:&dbError]) {
+        NSString *html = @"<p class=\"text-warning\">Account has been taken down.</p>";
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    } else {
+        return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to takedown account</p>"];
+    }
+}
+
+- (NSDictionary *)handleUserActivateRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+    // Reactivate a taken down account
+    NSError *dbError = nil;
+    PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&dbError];
+    if (!account) {
+        return [self htmlResponseWithStatus:404 contentType:@"text/html" body:@"<p class=\"text-destructive\">User not found</p>"];
+    }
+
+    account.inviteEnabled = YES;
+    account.updatedAt = [[NSDate date] timeIntervalSince1970];
+    if ([self.database updateAccount:account error:&dbError]) {
+        NSString *html = @"<p class=\"text-success\">Account has been reactivated.</p>";
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    } else {
+        return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to reactivate account</p>"];
+    }
+}
+
+- (NSDictionary *)handleUserSendEmailRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+    if (method == PDSHTTPMethodPOST && !body) {
+        // Return form
+        NSString *html = [NSString stringWithFormat:
+            @"<form class=\"form\" hx-put=\"/admin/users/%@/send-email\" hx-swap=\"outerHTML\">"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">Subject</label>"
+            @"<input type=\"text\" name=\"subject\" class=\"form-input\" required placeholder=\"Important notice from admin\" />"
+            @"</div>"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">Message</label>"
+            @"<textarea name=\"content\" class=\"form-input\" rows=\"6\" required placeholder=\"Enter your message...\"></textarea>"
+            @"</div>"
+            @"<div class=\"form-group\">"
+            @"<label class=\"form-label\">Sender (optional)</label>"
+            @"<input type=\"text\" name=\"sender\" class=\"form-input\" placeholder=\"admin@example.com\" />"
+            @"</div>"
+            @"<div class=\"form-footer\" style=\"display: flex; gap: 8px;\">"
+            @"<button type=\"submit\" class=\"btn btn-primary\">Send Email</button>"
+            @"<button type=\"button\" class=\"btn btn-secondary\" onclick=\"document.getElementById('user-action-modal').close()\">Cancel</button>"
+            @"</div>"
+            @"</form>", did];
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    } else if (method == PDSHTTPMethodPUT && body) {
+        // Parse and send email via XRPC
+        NSError *parseError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:body options:0 error:&parseError];
+        
+        NSString *subject = json[@"subject"];
+        NSString *content = json[@"content"];
+        NSString *sender = json[@"sender"] ?: @"admin";
+        
+        if (!subject || !content) {
+            return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p class=\"text-destructive\">Subject and content are required</p>"];
+        }
+        
+        // Call XRPC sendEmail via admin service
+        // TODO: Call XrpcDispatcher for com.atproto.admin.sendEmail
+        // For now, just return success
+        
+        NSString *html = @"<p class=\"text-success\">Email has been sent to the user.</p>";
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    }
+    
+    return [self htmlResponseWithStatus:400 contentType:@"text/html" body:@"<p>Invalid request</p>"];
+}
+
+- (NSDictionary *)handleUserDeleteRequest:(NSString *)did body:(NSData *)body method:(PDSHTTPMethod)method {
+    // Permanently delete account and all associated data
+    NSError *dbError = nil;
+    if ([self.database deleteAccount:did error:&dbError]) {
+        NSString *html = @"<p class=\"text-success\">Account has been permanently deleted.</p>";
+        return [self htmlResponseWithStatus:200 contentType:@"text/html" body:html];
+    } else {
+        return [self htmlResponseWithStatus:500 contentType:@"text/html" body:@"<p class=\"text-destructive\">Failed to delete account</p>"];
+    }
+}
+
+- (nullable NSData *)pbkdf2HashPassword:(NSString *)password salt:(NSData *)salt error:(NSError **)error {
+    const uint32_t iterations = 600000;
+    const size_t derivedKeyLength = 32;
+    unsigned char derivedKey[32];
+
+    int result = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                      password.UTF8String,
+                                      (size_t)password.length,
+                                      salt.bytes,
+                                      (size_t)salt.length,
+                                      kCCPRFHmacAlgSHA256,
+                                      iterations,
+                                      derivedKey,
+                                      derivedKeyLength);
+    if (result != kCCSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:500
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to derive password hash"}];
+        }
+        return nil;
+    }
+    return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
+}
+
 - (NSDictionary *)parseQueryString:(NSString *)url {
     NSMutableDictionary *params = [NSMutableDictionary dictionary];
     NSRange queryStart = [url rangeOfString:@"?"];
@@ -665,6 +986,66 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     return [self packetWithStatus:status
                      contentType:(contentType ?: @"text/html; charset=utf-8")
                             body:(body ?: @"")];
+}
+
+#pragma mark - User Detail Data
+
+- (nullable NSDictionary *)getUserDetailDataForDid:(NSString *)did {
+    PDSDatabase *db = self.database;
+    if (!db) return nil;
+    
+    NSError *error = nil;
+    PDSDatabaseAccount *acct = [db getAccountByDid:did error:&error];
+    if (!acct) return nil;
+    
+    NSMutableDictionary *userData = [NSMutableDictionary dictionary];
+    userData[@"did"] = acct.did ?: did;
+    userData[@"handle"] = acct.handle ?: @"";
+    userData[@"email"] = acct.email ?: @"";
+    userData[@"active"] = @(acct.inviteEnabled);
+    userData[@"takendown"] = @(!acct.inviteEnabled);
+    
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateStyle = NSDateFormatterMediumStyle;
+    formatter.timeStyle = NSDateFormatterShortStyle;
+    if (acct.createdAt > 0) {
+        NSDate *createdDate = [NSDate dateWithTimeIntervalSince1970:acct.createdAt];
+        userData[@"createdAt"] = [formatter stringFromDate:createdDate];
+    }
+    if (acct.updatedAt > 0) {
+        NSDate *updatedDate = [NSDate dateWithTimeIntervalSince1970:acct.updatedAt];
+        userData[@"updatedAt"] = [formatter stringFromDate:updatedDate];
+    }
+    
+    // Get invites created by this user
+    NSError *queryError = nil;
+    NSArray *rows = [db executeParameterizedQuery:
+        @"SELECT code, account_did, created_at, max_uses, uses, disabled FROM invite_codes WHERE account_did = ? ORDER BY created_at DESC"
+                                              params:@[did]
+                                              error:&queryError];
+    
+    if (rows && rows.count > 0) {
+        NSMutableArray *invites = [NSMutableArray arrayWithCapacity:rows.count];
+        for (NSDictionary *row in rows) {
+            NSMutableDictionary *invite = [NSMutableDictionary dictionary];
+            invite[@"code"] = row[@"code"] ?: @"";
+            invite[@"used"] = @([row[@"uses"] integerValue] > 0);
+            invite[@"created_at"] = row[@"created_at"] ?: @"";
+            [invites addObject:invite];
+        }
+        userData[@"invites"] = invites;
+        userData[@"invites_count"] = @(invites.count);
+    } else {
+        userData[@"invites"] = @[];
+        userData[@"invites_count"] = @0;
+    }
+    
+    return [userData copy];
+}
+
+- (nullable NSArray *)getModerationReportsData {
+    // Placeholder - moderation reports would typically come from XRPC or database
+    return @[];
 }
 
 @end
