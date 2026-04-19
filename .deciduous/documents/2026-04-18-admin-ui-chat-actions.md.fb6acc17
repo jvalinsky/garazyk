@@ -1,0 +1,18 @@
+# Admin UI Chat Actions (2026-04-18)
+
+## Scope
+- Complete chat moderation/action flows in Admin UI for existing chat endpoints.
+- Ensure chat partial routes resolve through `AdminPartialHandler` for wrapper + detail/list flows.
+
+## Decisions
+- Use incremental action wiring on top of existing chat list/detail partials instead of introducing a new bespoke chat admin backend.
+
+## Actions Implemented
+- Added message-level delete action wiring in chat message audit view.
+- Added direct wrapper routing for chat groups and invite-links through partial templates.
+
+## Outcome
+- Chat admin pages now include deterministic action wiring for key moderation actions.
+
+## Linked Deciduous Nodes
+- To be updated with node IDs after creation.

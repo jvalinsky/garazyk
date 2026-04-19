@@ -1,0 +1,21 @@
+# Admin UI PDS Account + Security Actions (2026-04-18)
+
+## Scope
+- Complete account/security admin actions for HTMX and API parity.
+- Ensure mutating admin actions accept both JSON and form-encoded payloads.
+
+## Decisions
+- User account actions now invoke existing `com.atproto.admin.*` XRPC methods rather than duplicating account mutation logic.
+- Bulk actions and invite operations parse both JSON and form-encoded payloads using shared parser helpers.
+
+## Actions Implemented
+- Updated user edit-email/edit-handle/reset-password/send-email PUT flows to parse form data.
+- Wired account mutation and send-email flows to XRPC dispatcher-backed admin endpoints.
+- Fixed security session revocation data integrity by preserving full token and exposing display prefix separately.
+- Fixed security list context rendering path for template loops.
+
+## Outcome
+- PDS admin mutating actions work end-to-end with HTMX form submissions and existing backend XRPC handlers.
+
+## Linked Deciduous Nodes
+- (to be populated after node creation)

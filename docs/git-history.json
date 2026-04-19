@@ -1,11 +1,75 @@
 [
   {
-    "hash": "8487941911f901bd33f739886a8075cd73a0b9d2",
-    "short_hash": "8487941",
+    "hash": "586d6c16d903b28512f210f0060a729486b0db42",
+    "short_hash": "586d6c1",
     "author": "Security Bot",
-    "date": "2026-04-18T13:04:34-04:00",
-    "message": "admin: include missing Ozone templates and plan documentation\n\nRestore templates required for the advanced moderation UI and add the corresponding design documents.",
-    "files_changed": 9
+    "date": "2026-04-18T21:42:54-04:00",
+    "message": "chore(docker): switch local-network to Dockerfile.local\n\nChanged docker-compose.yml to use local Dockerfile context:\n- Use docker/local-network/Dockerfile.local instead of Dockerfile.gnustep\n- Simplified build context to current directory\n- Removes need for relative path traversal to repo root\n\nNote: Dockerfile.local needs to be created for this to work\n\n🤖 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "28dffe94e7ee9457a50b8654083e9448e1d6b819",
+    "short_hash": "28dffe9",
+    "author": "Security Bot",
+    "date": "2026-04-18T21:31:23-04:00",
+    "message": "feat(admin): add bulk operations for users table\n\nBulk Operations:\n- Added checkboxes to users table for multi-select\n- \"Select all\" checkbox in table header\n- Bulk actions bar appears when users selected\n- Bulk takedown and bulk delete endpoints\n\nUI Changes:\n- users.html: Added select-all checkbox, bulk actions bar, JS handlers\n- users-search-response.html: Added per-row checkbox and View button\n\nBackend:\n- handleAdminBulkTakedown: POST /admin/users/bulk/takedown\n- handleAdminBulkDelete: POST /admin/users/bulk/delete\n- Returns JSON with success count and failures list\n\nDecision nodes: 463-465\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "254cddbc40e325adf1045886356e70d76be017ec",
+    "short_hash": "254cddb",
+    "author": "Security Bot",
+    "date": "2026-04-18T21:16:42-04:00",
+    "message": "feat(admin): add audit log viewer connected to XRPC API\n\nAudit Log Viewer:\n- Added renderAuditLogPartialWithStatusCode with full implementation\n- Connects to com.atproto.admin.queryAuditLog via PDSAdminService\n- Filter by admin DID and adjustable limit\n- Displays timestamp, admin, action, subject, and details\n- Pagination support via cursor\n\nPDSAdminHandler additions:\n- getAuditLogDataWithAdminDid:limit:cursor: method\n- Calls through to adminService.queryAuditLog\n\nDecision nodes: 463, 464\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "fd34f5040dd81e248f1e151fb0bff4aa5bf20d63",
+    "short_hash": "fd34f50",
+    "author": "Security Bot",
+    "date": "2026-04-18T21:04:42-04:00",
+    "message": "feat(admin): add user detail view and admin email action\n\nPhase 1 of PDS Admin Controls implementation:\n\nUser Detail View:\n- Created users-detail.html template with account info, invites, actions\n- Added route /admin/partials/users/detail?did=...\n- Added getUserDetailDataForDid method to PDSAdminHandler\n- Wired through AdminPartialHandler.getUserDetailForDid\n\nAdmin Email Action:\n- Added handleUserSendEmailRequest for com.atproto.admin.sendEmail\n- Modal form with subject, content, sender fields\n- POST returns form, PUT executes send\n\nAccount Activation:\n- Added handleUserActivateRequest to reverse takedowns\n- Button in detail view for inactive accounts\n\nModeration Reports Placeholder:\n- Added renderReportsPartialWithStatusCode route\n- Added renderReportsListWithStatusCode route\n- Placeholder for XRPC com.atproto.admin.getModerationReports\n\nAudit Log Placeholder:\n- Added renderAuditLogPartialWithStatusCode route\n- Placeholder for XRPC com.atproto.admin.queryAuditLog\n\nDecision node: 463\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 6
+  },
+  {
+    "hash": "fd34f5040dd81e248f1e151fb0bff4aa5bf20d63",
+    "short_hash": "fd34f50",
+    "author": "Security Bot",
+    "date": "2026-04-18T21:04:42-04:00",
+    "message": "feat(admin): add user detail view and admin email action\n\nPhase 1 of PDS Admin Controls implementation:\n\nUser Detail View:\n- Created users-detail.html template with account info, invites, actions\n- Added route /admin/partials/users/detail?did=...\n- Added getUserDetailDataForDid method to PDSAdminHandler\n- Wired through AdminPartialHandler.getUserDetailForDid\n\nAdmin Email Action:\n- Added handleUserSendEmailRequest for com.atproto.admin.sendEmail\n- Modal form with subject, content, sender fields\n- POST returns form, PUT executes send\n\nAccount Activation:\n- Added handleUserActivateRequest to reverse takedowns\n- Button in detail view for inactive accounts\n\nModeration Reports Placeholder:\n- Added renderReportsPartialWithStatusCode route\n- Added renderReportsListWithStatusCode route\n- Placeholder for XRPC com.atproto.admin.getModerationReports\n\nAudit Log Placeholder:\n- Added renderAuditLogPartialWithStatusCode route\n- Placeholder for XRPC com.atproto.admin.queryAuditLog\n\nDecision node: 463\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 6
+  },
+  {
+    "hash": "a26acbb69149fccf8a2ccfee865e3fa39d98a1e9",
+    "short_hash": "a26acbb",
+    "author": "Security Bot",
+    "date": "2026-04-18T19:42:22-04:00",
+    "message": "feat(middleware): add XrpcMiddlewarePresets for common chains\n\nAdds factory class for pre-configured middleware chains:\n\n- protectedEndpointWithController:rateLimit: - Auth + optional rate limit\n- adminEndpointWithController:serviceDatabases: - Admin auth only\n- publicEndpointWithRateLimit: - IP rate limit only\n\nUsage example:\n```objc\nNSArray *mw = [XrpcMiddlewarePresets protectedEndpointWithController:controller\n                                                          rateLimit:100];\n[dispatcher registerMethod:@\"com.atproto.repo.createRecord\"\n              middlewares:mw\n                  handler:handler];\n```\n\nDecision graph updates:\n- Node 461: Goal for middleware system\n- Nodes 456-460: Linked chain of decisions/actions/outcomes\n- Document attached: 2026-04-18-auth-middleware-review.md\n\nScratchpad: docs/scratchpad/2026-04-18-auth-middleware-review.md\nDecision nodes: 456, 457, 458, 459, 460, 461\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "c52a9a3e6112635a20a88f96c462289a367c1459",
+    "short_hash": "c52a9a3",
+    "author": "Security Bot",
+    "date": "2026-04-18T19:29:33-04:00",
+    "message": "feat(dispatcher): add middleware chain support to XrpcDispatcher\n\nAdds `registerMethod:middlewares:handler:` to XrpcDispatcher for\ndeclarative middleware chains on XRPC endpoints.\n\n- Forward declare XrpcMiddleware protocol in header\n- Import XrpcMiddleware for chain execution\n- Create wrapper handler that executes middleware chain first\n- If any middleware rejects (returns NO), chain stops and response is sent\n- If all middleware pass, final handler is executed\n\nUsage:\n```objc\nNSArray *middlewares = @[\n    [AuthMiddleware userAuthWithController:controller],\n    [RateLimitMiddleware perUser:100 window:60]\n];\n[dispatcher registerMethod:@\"com.atproto.repo.createRecord\"\n              middlewares:middlewares\n                  handler:handler];\n```\n\nAlso documents implementation in scratchpad:\n- docs/scratchpad/2026-04-18-auth-middleware-review.md\n\nDecision graph node: 458\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "b13149f2c92fe3212f53ccd14221f74971135bb1",
+    "short_hash": "b13149f",
+    "author": "Security Bot",
+    "date": "2026-04-18T19:06:14-04:00",
+    "message": "feat(middleware): add declarative middleware system and fix compilation\n\nMiddleware Infrastructure:\n- Add XrpcMiddleware protocol for request processing chains\n- Add XrpcMiddlewareChain for sequential middleware execution\n- Add AuthMiddleware (userAuth, adminAuth) for JWT validation\n- Add RateLimitMiddleware (perUser, perIP) for rate limiting\n- Add ResourceOwnershipMiddleware for access control\n- Add middlewareContext to HttpRequest for data passing\n\nBlob Audit Fixes:\n- Create PDSBlobAuditOperation_Protected.h for subclass access\n- Fix blobStorage and serviceDatabases visibility to subclasses\n- Fix import paths (PDSDatabase.h instead of non-existent headers)\n- Fix CID cidFromString: call in PDSDiskBlobProvider\n\nXrpcAdminMethods Fixes:\n- Remove orphaned duplicate updateAccountPassword code\n- Fix premature function close that orphaned handler registrations\n\nAlso adds middlewareContext property to HttpRequest for passing\nauthenticated DID between middleware chain stages.\n\nPlan: .letta/plans/2026-04-18-auth-middleware-review.md\nDecision graph node: 456, 457\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 12
+  },
+  {
+    "hash": "10013b112295719914b8235f2fe4b92990485207",
+    "short_hash": "10013b1",
+    "author": "Security Bot",
+    "date": "2026-04-18T14:00:28-04:00",
+    "message": "fix(admin-ui): wire Ozone section tabs to list partials with HTMX\n\nAdded HTMX triggers to main Ozone tab renderers so they load data\nfrom list partial endpoints. Three tabs were missing triggers:\n- ozone/events → hx-get=\"/admin/partials/ozone/events/list\"\n- ozone/statuses → hx-get=\"/admin/partials/ozone/statuses/list\"\n- ozone/team → hx-get=\"/admin/partials/ozone/team/list\"\n\nTemplates and Sets already had HTMX triggers. All list renderers\nin AdminPartialHandler.m already call XRPC APIs and render templates.\n\nPhase 1 of XRPC API to Web UI coverage audit complete.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
   },
   {
     "hash": "b65192e1e95fb9371710782d6add7e3050e04c6d",
@@ -14,14 +78,6 @@
     "date": "2026-04-18T12:47:32-04:00",
     "message": "admin: implement system diagnostics dashboard (sequencer health, blob audits, rate limits)\n\nAdd comprehensive diagnostic capabilities across three feature areas:\n\n**Sequencer Health Monitoring**\n- PDSSequencerAnalyticsCollector with 60-second periodic collection\n- Real-time metrics (seq number, events/sec, subscribers, backpressure)\n- Historical analytics with 24-hour default time window\n- Time-series charts with Chart.js visualization\n- Auto-refresh every 30 seconds\n\n**Blob Storage Audits**\n- PDSBlobAuditManager with background job queue (serial NSOperationQueue)\n- Four audit operation types:\n  - Orphan detection (filesystem blobs without DB metadata)\n  - CID verification (verify computed hashes)\n  - Consistency checking (find missing files)\n  - Reference scanning (find unreferenced blobs)\n- Progress tracking and job cancellation support\n- Dry-run mode for safe auditing\n- Job persistence with status and results storage\n\n**Rate Limit Management**\n- PDSRateLimitAdminHandler with query and admin override\n- Query rate limit status by DID/IP/blob\n- View top rate-limited identifiers\n- Admin clear with immutable audit trail\n- Mandatory reason field for all clears\n- History tracking with admin attribution\n\n**Database Schema**\n- sequencer_analytics: 90-day retention, indexed by timestamp\n- blob_audit_jobs: 90-day retention, indexed by status\n- rate_limit_history: 30-day retention, immutable audit trail\n\n**Testing**\n- PDSSequencerAnalyticsTests (14 tests)\n- PDSBlobAuditManagerTests (13 tests)\n- PDSRateLimitAdminHandlerTests (15 tests)\n\n**Integration**\n- Analytics collection wired to server lifecycle\n- Handlers routed in AdminUIHandler\n- Frontend UI with HTMX and JavaScript modules\n- Dashboard navigation in admin sidebar\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 38
-  },
-  {
-    "hash": "c19e095879ce118dafd78fea27ba695831390ae1",
-    "short_hash": "c19e095",
-    "author": "Security Bot",
-    "date": "2026-04-18T12:14:32-04:00",
-    "message": "docs: sync deciduous graph for security dashboard",
-    "files_changed": 2
   },
   {
     "hash": "5f5b220b421ca01686c7e6b5efd3e6b6c39a0ffb",

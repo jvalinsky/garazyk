@@ -1,0 +1,21 @@
+# Admin UI Foundation Stabilization (2026-04-18)
+
+## Scope
+- Normalize admin route/action handling through `PDSHttpAdminRoutePack` + `PDSAdminHandler`.
+- Consolidate `/admin/partials/*` behavior around `AdminPartialHandler`.
+- Preserve query semantics and deterministic route matching for admin actions.
+
+## Decisions
+- Route matching in `PDSAdminHandler` now uses a query-stripped `routePath` while preserving full request path for handlers that parse query params.
+- `/admin/partials/*` remains centralized in `AdminPartialHandler`, with `AdminUIHandler` used as a shell/fallback path.
+
+## Actions Implemented
+- Route pack now forwards path + query into admin handler for all admin and partial routes.
+- Added/normalized route coverage for wildcard and admin action paths.
+- Reordered bulk user routes before generic `/admin/users/*` matching.
+
+## Outcome
+- Admin route dispatch is deterministic for query-bearing paths and wildcard user action paths.
+
+## Linked Deciduous Nodes
+- (to be populated after node creation)

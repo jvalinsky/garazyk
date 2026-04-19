@@ -1,0 +1,19 @@
+# Admin UI PLC + Sync Operator Controls (2026-04-18)
+
+## Scope
+- Add PLC signing/submission flow in Admin UI.
+- Add operator sync controls for host/repo inspection and crawl/update triggering.
+
+## Decisions
+- Use explicit operator-triggered controls with immediate JSON feedback instead of hidden background automation.
+
+## Actions Implemented
+- Added PLC operations partial (`request` -> `sign` -> `submit`) and client handlers.
+- Added sync operator controls page for list hosts, host status, repo status, crawl request, and notify update.
+- Added sidebar and route coverage for new PLC/relay control pages.
+
+## Outcome
+- Admin operators can execute PLC and sync maintenance actions directly from the UI.
+
+## Linked Deciduous Nodes
+- To be updated with node IDs after creation.

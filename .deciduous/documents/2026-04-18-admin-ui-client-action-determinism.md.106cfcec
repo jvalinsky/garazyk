@@ -1,0 +1,20 @@
+# Admin UI Client Action Determinism (2026-04-18)
+
+## Scope
+- Ensure delegated `data-action` handlers resolve the clicked control deterministically.
+- Ensure HTMX requests include admin auth headers so action requests are authorized.
+
+## Decisions
+- Delegated handlers now pass the resolved button element (`closest('[data-action]')`) directly into action functions.
+- HTMX `configRequest` hook injects `Authorization` and `X-Admin-Token` from session storage.
+
+## Actions Implemented
+- Patched `admin-chat.js`, `admin-ozone.js`, `admin-security.js` to stop using `event.currentTarget` in delegated listeners.
+- Added action error handling for Ozone delete operations.
+- Patched templates with unsupported parent-loop references and normalized action data attributes.
+
+## Outcome
+- Client-side admin actions consistently execute against the intended control and carry auth context for backend processing.
+
+## Linked Deciduous Nodes
+- (to be populated after node creation)

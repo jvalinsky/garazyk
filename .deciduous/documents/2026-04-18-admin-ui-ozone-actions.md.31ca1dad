@@ -1,0 +1,18 @@
+# Admin UI Ozone Actions (2026-04-18)
+
+## Scope
+- Complete Ozone CRUD/action controls for team, sets, templates, and verification.
+- Add Safe Links, scheduled moderation actions, and config/setting controls in admin UI.
+
+## Decisions
+- Implement Ozone mutating actions via existing XRPC endpoints with authenticated JSON requests from the admin client.
+
+## Actions Implemented
+- Added Ozone wrapper/list partials for verification, safe links, scheduled actions, and config.
+- Implemented client-side action handlers for team/set/template CRUD, verification grant/revoke, safe-link add/update/remove, scheduled create/cancel, and config/settings updates.
+
+## Outcome
+- Ozone admin UI now exposes end-to-end operational controls for core moderation workflows.
+
+## Linked Deciduous Nodes
+- To be updated with node IDs after creation.
