@@ -15,7 +15,21 @@
         <td><span class="badge">{{role}}</span></td>
         <td class="text-xs">{{joined_at}}</td>
         <td>
-          <button class="btn btn-xs btn-destructive" data-action="ozone-team-delete" data-id="{{did}}">Remove</button>
+          <div class="btn-group">
+            <button class="btn btn-xs"
+                    data-action="ozone-team-edit"
+                    data-email="{{email}}"
+                    data-role="{{role}}">
+              Edit
+            </button>
+            <button class="btn btn-xs btn-destructive"
+                    data-action="ozone-team-delete"
+                    data-id="{{did}}"
+                    data-email="{{email}}"
+                    data-did="{{did}}">
+              Remove
+            </button>
+          </div>
         </td>
       </tr>
       {{/each}}

@@ -1,0 +1,17 @@
+<div class="content-header">
+  <h2>Safe Links</h2>
+  <p class="text-secondary">Manage URL safety rules and review related events.</p>
+</div>
+
+<div class="flex items-center justify-between mb-md">
+  <div class="text-secondary">Rules are enforced by `tools.ozone.safelink.*` endpoints.</div>
+  <button class="btn btn-primary" data-action="ozone-safelink-add">Add Rule</button>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div id="ozone-safelinks-list-container" hx-get="/admin/partials/ozone/safelinks/list" hx-trigger="load">
+      <p class="text-secondary text-center">Loading safe link rules...</p>
+    </div>
+  </div>
+</div>

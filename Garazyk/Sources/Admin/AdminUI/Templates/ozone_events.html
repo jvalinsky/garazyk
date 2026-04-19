@@ -1,0 +1,12 @@
+<div class="content-header">
+  <h2>Moderation Events</h2>
+  <p class="text-secondary">Recent moderation events emitted by Ozone.</p>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div id="ozone-events-list-container" hx-get="/admin/partials/ozone/events/list" hx-trigger="load">
+      <p class="text-secondary text-center">Loading events...</p>
+    </div>
+  </div>
+</div>

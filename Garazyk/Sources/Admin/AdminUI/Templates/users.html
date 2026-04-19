@@ -72,17 +72,38 @@
         <td>
           <div class="btn-group">
             <button class="btn btn-secondary btn-sm"
-                    hx-get="/admin/users/{{did}}/detail"
+                    hx-get="/admin/partials/users/detail?did={{did}}"
                     hx-target="#detail-panel"
                     title="View details">
               View
             </button>
             <button class="btn btn-secondary btn-sm"
-                    hx-post="/admin/users/{{did}}/deactivate"
-                    hx-confirm="Deactivate this user?"
-                    title="Deactivate user">
-              Disable
+                    hx-post="/admin/users/{{did}}/edit-email"
+                    hx-target="#detail-panel"
+                    title="Change email">
+              Email
             </button>
+            <button class="btn btn-secondary btn-sm"
+                    hx-post="/admin/users/{{did}}/send-email"
+                    hx-target="#detail-panel"
+                    title="Send admin email">
+              Notify
+            </button>
+            {{#if deactivated}}
+            <button class="btn btn-secondary btn-sm"
+                    hx-post="/admin/users/{{did}}/activate"
+                    hx-confirm="Reactivate this user?"
+                    title="Reactivate user">
+              Activate
+            </button>
+            {{else}}
+            <button class="btn btn-secondary btn-sm"
+                    hx-post="/admin/users/{{did}}/takedown"
+                    hx-confirm="Takedown this user?"
+                    title="Takedown user">
+              Takedown
+            </button>
+            {{/if}}
           </div>
         </td>
       </tr>

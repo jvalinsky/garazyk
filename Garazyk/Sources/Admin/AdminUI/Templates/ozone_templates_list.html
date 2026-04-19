@@ -14,7 +14,13 @@
         <td class="text-xs">{{updated_at}}</td>
         <td>
           <div class="btn-group">
-            <button class="btn btn-xs" data-action="ozone-template-edit" data-id="{{id}}">Edit</button>
+            <button class="btn btn-xs"
+                    data-action="ozone-template-edit"
+                    data-id="{{id}}"
+                    data-name="{{name}}"
+                    data-content-markdown="{{contentMarkdown}}">
+              Edit
+            </button>
             <button class="btn btn-xs btn-destructive" data-action="ozone-template-delete" data-id="{{id}}">Delete</button>
           </div>
         </td>
