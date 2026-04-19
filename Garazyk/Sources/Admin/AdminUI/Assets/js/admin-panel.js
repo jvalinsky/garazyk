@@ -298,6 +298,16 @@ export const AdminPanel = {
         return resp.json();
     },
 
+    async deleteConversationMessage(messageId) {
+        const resp = await adminFetch(XRPC_BASE + '/chat.bsky.convo.deleteMessageForSelf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messageId })
+        });
+        if (!resp.ok) throw new Error('Failed to delete message');
+        return resp.json();
+    },
+
     escapeHtml,
     
     getCurrentTab() {

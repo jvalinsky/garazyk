@@ -26,8 +26,7 @@ function renderConversations() {
     // This is mostly handled by HTMX now, but we keep this for JS-driven updates if needed
 }
 
-async function handleConvoAction(event) {
-    const btn = event.currentTarget;
+async function handleConvoAction(btn) {
     const action = btn.dataset.action;
     
     try {
@@ -61,6 +60,16 @@ async function handleConvoAction(event) {
                 // Reload detail view
                 document.getElementById('content-pane')?.dispatchEvent(new Event('load'));
             }
+        } else if (action === 'delete-message') {
+            const messageId = btn.dataset.messageId || btn.dataset.altMessageId;
+            if (!messageId) {
+                throw new Error('Missing message id');
+            }
+            if (confirm('Delete this message for the admin session?')) {
+                await AdminPanel.deleteConversationMessage(messageId);
+                window.AdminUI.showSuccess('Message removed');
+                btn.closest('.log-entry')?.remove();
+            }
         }
         
         if (action === 'lock' || action === 'unlock') {
@@ -74,8 +83,9 @@ async function handleConvoAction(event) {
 export function init() {
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
-        if (btn && ['lock', 'unlock', 'delete-group', 'revoke-link', 'remove-member'].includes(btn.dataset.action)) {
-            handleConvoAction(e);
+        if (btn && ['lock', 'unlock', 'delete-group', 'revoke-link', 'remove-member', 'delete-message'].includes(btn.dataset.action)) {
+            e.preventDefault();
+            handleConvoAction(btn);
         }
     });
 }
