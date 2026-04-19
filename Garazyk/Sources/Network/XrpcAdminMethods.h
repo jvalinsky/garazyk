@@ -12,6 +12,8 @@
 @class XrpcDispatcher;
 @class JWTMinter;
 @class PDSServiceDatabases;
+@class PDSRepositoryService;
+@class PDSBlobAuditManager;
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -32,6 +34,11 @@ NS_ASSUME_NONNULL_BEGIN
  * - com.atproto.admin.updateAccountHandle: Update account handle
  * - com.atproto.admin.updateAccountPassword: Update account password
  * - com.atproto.admin.updateSubjectStatus: Update moderation status (takedown)
+ * - com.atproto.admin.getServerStats: Get server statistics
+ * - com.atproto.admin.queryAuditLog: Query administrative audit log
+ * - com.atproto.admin.repairRepo: Force re-initialize a repository
+ * - com.atproto.admin.runBlobAudit: Start a blob audit job
+ * - com.atproto.admin.getBlobAuditStatus: Get status of a blob audit job
  *
  * All endpoints require admin authorization via XrpcAuthHelper.authorizeAdminRequest.
  *
@@ -48,11 +55,15 @@ NS_ASSUME_NONNULL_BEGIN
  * @param serviceDatabases Service-level database access
  * @param jwtMinter JWT token minter for authentication
  * @param adminController Admin controller for authorization and operations
+ * @param repositoryService Repository service for repair operations
+ * @param auditManager Blob audit manager
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                      jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController;
+               adminController:(id<PDSAdminController>)adminController
+             repositoryService:(PDSRepositoryService *)repositoryService
+                  auditManager:(PDSBlobAuditManager *)auditManager;
 
 @end
 
