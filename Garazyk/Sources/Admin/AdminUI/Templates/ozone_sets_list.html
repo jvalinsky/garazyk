@@ -18,7 +18,12 @@
         <td class="text-xs">{{created_by}}</td>
         <td>
           <div class="btn-group">
-            <button class="btn btn-xs" data-action="ozone-set-edit" data-id="{{id}}">Edit</button>
+            <button class="btn btn-xs"
+                    data-action="ozone-set-edit"
+                    data-id="{{id}}"
+                    data-name="{{name}}">
+              Edit
+            </button>
             <button class="btn btn-xs btn-destructive" data-action="ozone-set-delete" data-id="{{id}}">Delete</button>
           </div>
         </td>
