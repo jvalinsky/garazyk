@@ -97,6 +97,11 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 /// Get moderation reports list
 - (nullable NSArray *)getModerationReportsData;
 
+/// Get audit log entries
+- (nullable NSDictionary *)getAuditLogDataWithAdminDid:(nullable NSString *)adminDid
+                                                limit:(NSInteger)limit
+                                               cursor:(nullable NSString *)cursor;
+
 @end
 
 NS_ASSUME_NONNULL_END
