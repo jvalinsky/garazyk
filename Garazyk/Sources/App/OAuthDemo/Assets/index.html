@@ -5,137 +5,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATProto OAuth Demo</title>
+    <!-- Shared Design System -->
+    <link rel="stylesheet" href="/oauth-demo/css/shared/system.css">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
+        /* OAuth Demo specific overrides */
+        main {
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f7f9;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            color: #0085ff;
-        }
-
-        input,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        button {
-            background-color: #0085ff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        button:hover {
-            background-color: #0066cc;
-        }
-
-        pre {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-size: 13px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .success {
-            color: green;
-            font-weight: bold;
-        }
-
-        .error {
-            color: red;
-            font-weight: bold;
-        }
-
-        .warning {
-            color: #7a3e00;
-            font-weight: bold;
-        }
-
-        .banner {
-            padding: 10px 12px;
-            border-radius: 6px;
-            background: #fff4e6;
-            border: 1px solid #f0c36d;
-            margin: 12px 0;
+            padding: var(--space-lg);
         }
     </style>
 </head>
 
 <body>
-    <div class="card">
-        <h1>ATProto OAuth Demo</h1>
-        <p>Test OAuth flow (PKCE + DPoP) with your local PDS.</p>
-        <div id="storage-warning" class="banner warning hidden"></div>
+    <main>
+        <div class="card mb-lg">
+            <h1 class="mb-md">ATProto OAuth Demo</h1>
+            <p class="text-secondary mb-md">Test OAuth flow (PKCE + DPoP) with your local PDS.</p>
+            <div id="storage-warning" class="alert alert-warning hidden"></div>
 
-        <div id="login-section">
-            <label for="handle">PDS Handle (e.g., alice.test):</label>
-            <input type="text" id="handle" placeholder="alice.test" value="alice.test">
-            <button id="btn-login">Login with OAuth</button>
+            <div id="login-section" class="form">
+                <div class="form-group">
+                    <label class="form-label required" for="handle">PDS Handle (e.g., alice.test)</label>
+                    <input class="form-input" type="text" id="handle" placeholder="alice.test" value="alice.test">
+                </div>
+                <button id="btn-login" class="btn btn-primary">Login with OAuth</button>
+            </div>
+
+            <div id="callback-section" class="hidden">
+                <p class="text-success font-semibold">Authorization successful! Exchanging code for tokens...</p>
+                <div id="token-status"></div>
+            </div>
+
+            <div id="session-section" class="hidden">
+                <h2 class="mb-md">Authorized Session</h2>
+                <p><strong>Session DID:</strong> <span id="did-display">unknown</span></p>
+                <p><strong>Tokens received via DPoP:</strong></p>
+                <pre id="token-display"></pre>
+
+                <button id="btn-test-session" class="btn btn-primary">Test Authenticated Call (getSession)</button>
+                <pre id="api-result" class="hidden"></pre>
+
+                <h3 class="mt-lg mb-md">Create Post</h3>
+                <div class="form-group mb-md">
+                    <label class="form-label" for="post-text">Post text</label>
+                    <textarea class="form-input" id="post-text" rows="3" placeholder="Hello from the OAuth demo..."></textarea>
+                </div>
+                <button id="btn-create-post" class="btn btn-primary">Create app.bsky.feed.post</button>
+                <pre id="post-result" class="hidden"></pre>
+
+                <button id="btn-logout" class="btn btn-secondary mt-lg">Logout</button>
+            </div>
         </div>
 
-        <div id="callback-section" class="hidden">
-            <p class="success">Authorization successful! Exchanging code for tokens...</p>
-            <div id="token-status"></div>
+        <div class="card mb-lg">
+            <h3 class="mb-md">Public Records</h3>
+            <p class="text-secondary mb-md">List public records for DID: <span id="public-did-display">unknown</span></p>
+            <button id="btn-list-records" class="btn btn-secondary">List Records (public)</button>
+            <pre id="records-result" class="hidden"></pre>
         </div>
 
-        <div id="session-section" class="hidden">
-            <h2>Authorized Session</h2>
-            <p><strong>Session DID:</strong> <span id="did-display">unknown</span></p>
-            <p><strong>Tokens received via DPoP:</strong></p>
-            <pre id="token-display"></pre>
-
-            <button id="btn-test-session">Test Authenticated Call (getSession)</button>
-            <pre id="api-result" class="hidden"></pre>
-
-            <h3>Create Post</h3>
-            <label for="post-text">Post text:</label>
-            <textarea id="post-text" rows="3" placeholder="Hello from the OAuth demo..."></textarea>
-            <button id="btn-create-post">Create app.bsky.feed.post</button>
-            <pre id="post-result" class="hidden"></pre>
-
-            <button id="btn-logout" style="background-color: #666; margin-top: 20px;">Logout</button>
+        <div class="card">
+            <h3 class="mb-md">Debug Log</h3>
+            <pre id="debug-log" class="text-xs"></pre>
         </div>
-    </div>
-
-    <div class="card">
-        <h3>Public Records</h3>
-        <p>List public records for DID: <span id="public-did-display">unknown</span></p>
-        <button id="btn-list-records">List Records (public)</button>
-        <pre id="records-result" class="hidden"></pre>
-    </div>
-
-    <div class="card">
-        <h3>Debug Log</h3>
-        <pre id="debug-log" style="font-size: 11px;"></pre>
-    </div>
+    </main>
 
     <script src="/oauth-demo/client.js"></script>
 </body>
