@@ -32,6 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpServer;
 @class PDSRelayService;
 @class SubscribeReposHandler;
+@class PDSBlobAuditManager;
 
 @protocol PDSAccountService;
 @protocol PDSAdminController;
@@ -307,6 +308,13 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Provides account takedowns, moderation actions, and labeling.
  */
 @property (nonatomic, strong, readonly) id<PDSAdminController> adminController;
+
+/*!
+ @property blobAuditManager
+ 
+ @abstract Manager for blob auditing operations.
+ */
+@property (nonatomic, strong, readonly) PDSBlobAuditManager *blobAuditManager;
 
 #pragma mark - Backward Compatibility
 
