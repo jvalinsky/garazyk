@@ -1,0 +1,310 @@
+/* Apple HIG-aligned layout structures */
+
+/* Main app layout */
+.app-layout {
+  display: flex;
+  height: calc(100vh - 52px - 44px);
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Header/Toolbar */
+header[role="banner"] {
+  height: 52px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--separator-color);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: var(--z-sticky);
+}
+
+.toolbar {
+  height: 52px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--separator-color);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-md);
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.toolbar-section:first-child {
+  flex: 0 0 auto;
+}
+
+.toolbar-section:nth-child(2) {
+  flex: 1;
+  justify-content: center;
+}
+
+.toolbar-section:last-child {
+  flex: 0 0 auto;
+}
+
+/* Service segments */
+.service-segments {
+  display: flex;
+  gap: var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  padding: 2px;
+}
+
+.service-segment {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.service-segment:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.service-segment.active {
+  background: var(--color-bg-secondary);
+  color: var(--color-accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .service-segment:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Sidebar */
+aside[role="complementary"] {
+  width: 220px;
+  min-width: 220px;
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--separator-color);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  z-index: var(--z-sticky);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-md) 0;
+}
+
+.sidebar-section {
+  padding: 0;
+  margin-bottom: var(--space-sm);
+}
+
+.sidebar-section-title {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: default;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  width: 100%;
+}
+
+.sidebar-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: transform var(--transition-fast);
+  padding: 0;
+}
+
+.sidebar-section-toggle[aria-expanded="false"] {
+  transform: rotate(-90deg);
+}
+
+.sidebar-section-toggle:hover {
+  color: var(--color-text-primary);
+}
+
+.sidebar-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 var(--space-sm);
+}
+
+.sidebar-item {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-item:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.sidebar-item.active {
+  background: var(--color-accent);
+  color: white;
+  font-weight: 500;
+}
+
+.sidebar-items.hidden {
+  display: none;
+}
+
+/* Main content area */
+main[role="main"] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--color-bg-primary);
+}
+
+.content-pane {
+  flex: 1;
+  padding: var(--space-lg);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Header within content pane */
+.content-header {
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--separator-color);
+  margin-bottom: var(--space-lg);
+}
+
+.breadcrumbs {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.breadcrumbs a {
+  color: var(--color-accent);
+}
+
+.breadcrumbs-separator {
+  color: var(--color-text-tertiary);
+}
+
+/* Footer/Status bar */
+footer[role="contentinfo"] {
+  height: 44px;
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--separator-color);
+  padding: 0 var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.status-bar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+
+.status-indicator.connected {
+  background: var(--color-success);
+}
+
+.status-indicator.disconnected {
+  background: var(--color-destructive);
+}
+
+.status-indicator.pending {
+  background: var(--color-warning);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-bg-tertiary);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  aside[role="complementary"] {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--separator-color);
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .service-segments {
+    flex-wrap: wrap;
+  }
+}
