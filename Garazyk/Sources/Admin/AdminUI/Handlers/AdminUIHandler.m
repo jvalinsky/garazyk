@@ -2,6 +2,7 @@
 #import "AdminUIHandler.h"
 #import "Metrics/PDSMetrics.h"
 #import "Admin/AdminPartialHandler.h"
+#import "Admin/PDSAdminHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -1281,22 +1282,101 @@ NS_ASSUME_NONNULL_BEGIN
     if (statusCode) *statusCode = 200;
     if (contentType) *contentType = @"text/html";
     
-    return @"<div class=\"content-header\">"
-           @"<h2>Audit Log</h2>"
-           @"<p class=\"text-secondary\">View admin action history and account changes.</p>"
-           @"</div>"
-           @"<div class=\"card\">"
-           @"<div class=\"card-body\">"
-           @"<div class=\"table-wrapper\">"
-           @"<table class=\"table\">"
-           @"<thead><tr><th>Timestamp</th><th>Admin</th><th>Action</th><th>Subject</th><th>Details</th></tr></thead>"
-           @"<tbody>"
-           @"<tr><td colspan=\"5\" class=\"text-secondary\">Audit log viewer - implementation pending</td></tr>"
-           @"</tbody>"
-           @"</table>"
-           @"</div>"
-           @"</div>"
-           @"</div>";
+    // Get audit log data
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *auditData = [adminHandler getAuditLogDataWithAdminDid:nil limit:100 cursor:nil];
+    
+    NSMutableString *html = [NSMutableString stringWithString:
+        @"<div class=\"content-header\">"
+        @"<h2>Audit Log</h2>"
+        @"<p class=\"text-secondary\">View admin action history and account changes.</p>"
+        @"</div>"];
+    
+    if (!auditData) {
+        [html appendString:@"<div class=\"card\"><p class=\"text-secondary\">No audit log data available.</p></div>"];
+        return html;
+    }
+    
+    // Render filter form
+    [html appendString:
+        @"<div class=\"card mb-lg\">"
+        @"<div class=\"card-body\">"
+        @"<form class=\"form\" style=\"display: flex; gap: 16px; align-items: end;\">"
+        @"<div class=\"form-group\">"
+        @"<label class=\"form-label\">Admin DID</label>"
+        @"<input type=\"text\" name=\"adminDid\" class=\"form-input\" placeholder=\"did:plc:...\" />"
+        @"</div>"
+        @"<div class=\"form-group\">"
+        @"<label class=\"form-label\">Limit</label>"
+        @"<select name=\"limit\" class=\"form-input\">"
+        @"<option value=\"50\">50</option>"
+        @"<option value=\"100\" selected>100</option>"
+        @"<option value=\"200\">200</option>"
+        @"</select>"
+        @"</div>"
+        @"<div class=\"form-group\">"
+        @"<button type=\"submit\" class=\"btn btn-primary\">Filter</button>"
+        @"</div>"
+        @"</form>"
+        @"</div>"
+        @"</div>"];
+    
+    // Render table
+    [html appendString:
+        @"<div class=\"table-wrapper\">"
+        @"<table class=\"table\">"
+        @"<thead><tr>"
+        @"<th>Timestamp</th><th>Admin</th><th>Action</th><th>Subject</th><th>Details</th>"
+        @"</tr></thead><tbody>"];
+    
+    NSArray *logs = auditData[@"logs"] ?: auditData[@"audit_logs"] ?: @[];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateStyle = NSDateFormatterShortStyle;
+    formatter.timeStyle = NSDateFormatterMediumStyle;
+    
+    for (NSDictionary *entry in logs) {
+        NSString *timestamp = entry[@"createdAt"] ?: @"";
+        NSString *admin = entry[@"createdBy"] ?: entry[@"admin_did"] ?: @"";
+        NSString *action = entry[@"action"] ?: @"";
+        NSString *subject = entry[@"subject"] ?: entry[@"subject_did"] ?: @"";
+        
+        // Format details as JSON
+        NSDictionary *details = entry[@"details"] ?: @{};
+        NSString *detailsStr = @"";
+        if (details.count > 0) {
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:details options:0 error:nil];
+            if (jsonData) {
+                detailsStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            }
+        }
+        
+        [html appendFormat:
+            @"<tr>"
+            @"<td><small>%@</small></td>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td><span class=\"badge badge-secondary\">%@</span></td>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td><small style=\"word-break: break-all;\">%@</small></td>"
+            @"</tr>",
+            timestamp, admin, action, subject, detailsStr];
+    }
+    
+    if (logs.count == 0) {
+        [html appendString:@"<tr><td colspan=\"5\" class=\"text-secondary text-center\">No audit entries found.</td></tr>"];
+    }
+    
+    [html appendString:@"</tbody></table></div>"];
+    
+    // Add cursor for pagination if available
+    NSString *cursor = auditData[@"cursor"];
+    if (cursor && cursor.length > 0) {
+        [html appendFormat:
+            @"<div class=\"mt-md\">"
+            @"<button class=\"btn btn-secondary\" hx-get=\"/admin/partials/audit-log?cursor=%@\" hx-target=\".table-wrapper tbody\">Load More</button>"
+            @"</div>", cursor];
+    }
+    
+    return html;
 }
 
 @end

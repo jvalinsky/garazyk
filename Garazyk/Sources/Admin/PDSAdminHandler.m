@@ -1048,6 +1048,22 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     return @[];
 }
 
+- (nullable NSDictionary *)getAuditLogDataWithAdminDid:(nullable NSString *)adminDid
+                                                limit:(NSInteger)limit
+                                               cursor:(nullable NSString *)cursor {
+    PDSAdminService *adminService = self.adminService;
+    if (!adminService) return nil;
+    
+    NSMutableDictionary *filters = [NSMutableDictionary dictionary];
+    if (adminDid) {
+        filters[@"admin_did"] = adminDid;
+    }
+    
+    NSError *error = nil;
+    NSDictionary *result = [adminService queryAuditLog:filters limit:limit cursor:cursor error:&error];
+    return result;
+}
+
 @end
 
 NS_ASSUME_NONNULL_END
