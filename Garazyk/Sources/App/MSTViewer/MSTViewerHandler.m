@@ -83,29 +83,34 @@
 }
 
 - (void)serveCss:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *filename = [request.path lastPathComponent];
-    NSString *content = [self loadAsset:[NSString stringWithFormat:@"css/%@", filename]];
+    NSString *prefix = @"/mst-viewer/css/";
+    NSString *relativePath = [request.path hasPrefix:prefix]
+        ? [request.path substringFromIndex:prefix.length]
+        : [request.path lastPathComponent];
+    NSString *content = [self loadAsset:[NSString stringWithFormat:@"css/%@", relativePath]];
     if (content) {
         response.statusCode = HttpStatusOK;
-        [response setBody:[content dataUsingEncoding:NSUTF8StringEncoding]];
         [response setBody:[content dataUsingEncoding:NSUTF8StringEncoding]];
         response.contentType = @"text/css; charset=utf-8";
     } else {
         response.statusCode = HttpStatusNotFound;
-        [response setBody:[[NSString stringWithFormat:@"CSS file not found: %@", filename] dataUsingEncoding:NSUTF8StringEncoding]];
+        [response setBody:[[NSString stringWithFormat:@"CSS file not found: %@", relativePath] dataUsingEncoding:NSUTF8StringEncoding]];
     }
 }
 
 - (void)serveJs:(HttpRequest *)request response:(HttpResponse *)response {
-    NSString *filename = [request.path lastPathComponent];
-    NSData *content = [self loadAssetData:[NSString stringWithFormat:@"js/%@", filename]];
+    NSString *prefix = @"/mst-viewer/js/";
+    NSString *relativePath = [request.path hasPrefix:prefix]
+        ? [request.path substringFromIndex:prefix.length]
+        : [request.path lastPathComponent];
+    NSData *content = [self loadAssetData:[NSString stringWithFormat:@"js/%@", relativePath]];
     if (content) {
         response.statusCode = HttpStatusOK;
         [response setBody:content];
         response.contentType = @"application/javascript; charset=utf-8";
     } else {
         response.statusCode = HttpStatusNotFound;
-        [response setBody:[[NSString stringWithFormat:@"JS file not found: %@", filename] dataUsingEncoding:NSUTF8StringEncoding]];
+        [response setBody:[[NSString stringWithFormat:@"JS file not found: %@", relativePath] dataUsingEncoding:NSUTF8StringEncoding]];
     }
 }
 
