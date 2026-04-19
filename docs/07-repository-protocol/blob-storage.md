@@ -122,4 +122,4 @@ are really coordination bugs between those two layers.
 - [Blob Lifecycle](./blob-lifecycle)
 - [Blob Optimization](./blob-optimization)
 - [Blob Quotas](./blob-quotas)
-- [Blob Service](../03-application-layer/blob-service)
+- [Blob Service](../03-application-layer/blob-service)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

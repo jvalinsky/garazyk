@@ -85,4 +85,4 @@ This is why bad proxy headers or mismatched issuers show up as DPoP failures eve
 
 - `invalid_client` usually means client metadata or secret handling is wrong.
 - `use_dpop_nonce` means the proof was structurally acceptable but must be retried with the fresh nonce.
-- a later auth failure with a valid JWT usually means the DPoP thumbprint or expected URL does not match.
+- a later auth failure with a valid JWT usually means the DPoP thumbprint or expected URL does not match.\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

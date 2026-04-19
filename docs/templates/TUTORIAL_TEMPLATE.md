@@ -356,7 +356,7 @@ The complete code for this tutorial is available in:
 
 [Link to related tutorials or next steps]
 
-- **[Tutorial N+1: Title](./tutorial-[N]-[name])** — [Brief description]
+- **Tutorial N+1: Title** (`./tutorial-[N]-[name]`) — [Brief description]
 - **[Codebase Map](../01-getting-started/codebase-map)** — Understanding where code lives
 - **[Testing Map](../11-reference/testing-map)** — How to test changes
 
@@ -393,4 +393,4 @@ If you have questions or suggestions about this tutorial:
 **Version:** [Version number]  
 **Last Updated:** [Date]  
 **Example Code:** `examples/tutorial-[N]-[name]/`  
-**Related Tutorials:** [Tutorial N-1](./tutorial-[N-1]-[prev]), [Tutorial N+1](./tutorial-[N+1]-[next])
+**Related Tutorials:** `./tutorial-[N-1]-[prev]`, `./tutorial-[N+1]-[next]`
