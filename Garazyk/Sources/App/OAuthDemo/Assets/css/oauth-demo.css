@@ -1,0 +1,28 @@
+.oauth-demo-main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+body > main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+pre {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  margin-top: var(--space-sm);
+  padding: var(--space-md);
+  overflow: auto;
+  font-family: "Menlo", "Monaco", "SF Mono", "Courier New", monospace;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+#debug-log {
+  max-height: 320px;
+}
