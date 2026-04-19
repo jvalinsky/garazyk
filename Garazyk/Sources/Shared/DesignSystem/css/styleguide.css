@@ -1,0 +1,44 @@
+.swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-md);
+}
+
+.swatch {
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.swatch-label {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+}
+
+.demo-section {
+    margin: var(--space-xl) 0;
+    padding: var(--space-lg);
+    border: 1px solid var(--separator-color);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+}
+
+.demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+}
+
+.styleguide-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
+.styleguide-sidebar {
+    width: 200px !important;
+    min-width: 200px !important;
+}
+
+.styleguide-form {
+    max-width: 400px;
+}
