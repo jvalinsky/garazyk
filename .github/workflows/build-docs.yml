@@ -5,13 +5,23 @@ on:
     branches: [main, develop]
     paths:
       - 'docs/**'
+      - '*.md'
       - 'Garazyk/Sources/**'
+      - 'tooling/**'
+      - 'scripts/docs/**'
+      - 'skills/**'
+      - 'examples/**'
       - '.github/workflows/build-docs.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'docs/**'
+      - '*.md'
       - 'Garazyk/Sources/**'
+      - 'tooling/**'
+      - 'scripts/docs/**'
+      - 'skills/**'
+      - 'examples/**'
   workflow_dispatch:
 
 jobs:
@@ -41,7 +51,20 @@ jobs:
       - name: Run Validation
         run: |
           cd docs
-          npm run validate:all || echo "Validation warnings detected"
+          npm run validate:all
+
+      - name: Sync Repo-Wide Docs Metadata
+        run: |
+          python3 scripts/docs/repo_docs.py sync
+
+      - name: Verify Generated Docs Artifacts Are Committed
+        run: |
+          git diff -- docs/metadata docs/repo-index
+          git diff --exit-code -- docs/metadata docs/repo-index
+
+      - name: Validate Repo-Wide Internal Links and Discoverability
+        run: |
+          python3 scripts/docs/repo_docs.py validate --internal-strict --orphans
 
       - name: Build Documentation
         run: |
@@ -57,11 +80,6 @@ jobs:
             echo "Documentation build failed"
             exit 1
           fi
-
-      - name: Validate Internal Links
-        run: |
-          chmod +x scripts/docs/validate-doc-links.sh
-          ./scripts/docs/validate-doc-links.sh
 
       - name: Validate Diagrams
         run: |
