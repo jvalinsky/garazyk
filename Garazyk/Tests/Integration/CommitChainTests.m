@@ -177,7 +177,7 @@
     [handler ensureSequenceInitialized];
 
     @synchronized (handler.attachedConnections) {
-        [handler.attachedConnections addObject:mockConn];
+        [(NSMutableSet *)handler.attachedConnections addObject:mockConn];
     }
 
     // Create record 1

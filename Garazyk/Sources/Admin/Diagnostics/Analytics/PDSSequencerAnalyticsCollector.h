@@ -40,6 +40,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)stopCollecting;
 
 /**
+ * @brief Whether the collector is currently collecting.
+ */
+@property (nonatomic, readonly) BOOL isCollecting;
+
+/**
  * @brief Get the current sequencer metrics snapshot.
  *
  * @return Dictionary with keys: currentSeq, eventsPerSecond, subscriberCount,
