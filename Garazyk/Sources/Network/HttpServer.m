@@ -22,11 +22,35 @@
 #import "Network/PDSNetworkTransport.h"
 #import "Network/RateLimiter.h"
 #import "Network/WebSocketUpgradeHandler.h"
-#import "Network/Http1Parser.h"
-#import "Network/Http1PipelinePolicy.h"
+#import "Network/HttpProtocolSession.h"
 #import <CoreFoundation/CoreFoundation.h>
 
 @class HttpRouteTrie;
+
+@interface HttpQueuedResponse : NSObject
+@property(nonatomic, strong) NSData *headerData;
+@property(nonatomic, strong, nullable) NSData *bodyData;
+@property(nonatomic, copy, nullable) NSString *bodyFilePath;
+@property(nonatomic, assign) BOOL deleteBodyFileAfterSend;
+@property(nonatomic, copy, nullable)
+    HttpResponseBodyChunkProducer bodyChunkProducer;
+@property(nonatomic, assign) BOOL chunkedTransferEncoding;
+@property(nonatomic, strong, nullable) NSData *pendingGeneratedChunk;
+@property(nonatomic, assign) NSUInteger pendingGeneratedChunkOffset;
+@property(nonatomic, assign) NSUInteger queueByteSize;
+@end
+
+@interface HttpConnectionState : NSObject
+
+@property(nonatomic, strong) HttpProtocolSession *session;
+@property(nonatomic, assign) NSTimeInterval headerStartTime;
+@property(nonatomic, strong) NSMutableArray<HttpQueuedResponse *> *outputQueue;
+@property(nonatomic, assign) NSUInteger outputQueueSize;
+@property(nonatomic, assign) BOOL sendingActive;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
+    dispatch_queue_t transportQueue;
+
+@end
 
 @interface HttpServer ()
 
@@ -62,6 +86,25 @@
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, WebSocketRequestHandler> *webSocketHandlers;
 
+- (HttpQueuedResponse *)queueItemForResponse:(HttpResponse *)response;
+- (void)enqueueResponse:(HttpResponse *)response
+          forConnection:(id<PDSNetworkConnection>)connection;
+- (void)sendNextQueuedResponseForState:(HttpConnectionState *)state
+                            connection:(id<PDSNetworkConnection>)connection;
+- (void)finalizeQueuedResponseSend:(HttpQueuedResponse *)queueItem
+                           forState:(HttpConnectionState *)state
+                         connection:(id<PDSNetworkConnection>)connection;
+- (void)streamFileQueueItem:(HttpQueuedResponse *)queueItem
+                   forState:(HttpConnectionState *)state
+                 connection:(id<PDSNetworkConnection>)connection;
+- (void)streamGeneratedQueueItem:(HttpQueuedResponse *)queueItem
+                         forState:(HttpConnectionState *)state
+                       connection:(id<PDSNetworkConnection>)connection;
+- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+- (RequestHandler _Nullable)handlerForRoute:(NSString *)path
+                                     method:(NSString *)method
+                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
+
 @end
 
 static const NSUInteger kHttpMaxHeaderBytes = 16 * 1024;
@@ -74,38 +117,7 @@ static const NSUInteger kHttpFileSendChunkSize = 64 * 1024;
 static const NSUInteger kHttpGeneratedChunkSendSize = 64 * 1024;
 static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
-@interface HttpQueuedResponse : NSObject
-@property(nonatomic, strong) NSData *headerData;
-@property(nonatomic, strong, nullable) NSData *bodyData;
-@property(nonatomic, copy, nullable) NSString *bodyFilePath;
-@property(nonatomic, assign) BOOL deleteBodyFileAfterSend;
-@property(nonatomic, copy, nullable)
-    HttpResponseBodyChunkProducer bodyChunkProducer;
-@property(nonatomic, assign) BOOL chunkedTransferEncoding;
-@property(nonatomic, strong, nullable) NSData *pendingGeneratedChunk;
-@property(nonatomic, assign) NSUInteger pendingGeneratedChunkOffset;
-@property(nonatomic, assign) NSUInteger queueByteSize;
-@end
-
 @implementation HttpQueuedResponse
-@end
-
-@interface HttpConnectionState : NSObject
-
-@property(nonatomic, strong) Http1Parser *parser;
-@property(nonatomic, strong) Http1PipelinePolicy *pipelinePolicy;
-
-@property(nonatomic, assign) NSTimeInterval headerStartTime;
-@property(nonatomic, assign) BOOL requestInFlight;
-@property(nonatomic, strong) NSMutableArray<HttpQueuedResponse *> *outputQueue;
-@property(nonatomic, assign) BOOL readingPaused;
-@property(nonatomic, assign) NSUInteger outputQueueSize;
-@property(nonatomic, strong) NSMutableArray<HttpRequest *> *pendingRequests;
-@property(nonatomic, assign) BOOL sendingActive;
-@property(nonatomic, assign) BOOL upgradedToWebSocket;
-@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
-    dispatch_queue_t transportQueue;
-
 @end
 
 @implementation HttpConnectionState
@@ -113,16 +125,11 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _parser = [[Http1Parser alloc] init];
-    _pipelinePolicy = [[Http1PipelinePolicy alloc] init];
+    _session = [[HttpProtocolSession alloc] init];
     _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
-    _requestInFlight = NO;
     _outputQueue = [NSMutableArray array];
-    _readingPaused = NO;
     _outputQueueSize = 0;
-    _pendingRequests = [NSMutableArray array];
     _sendingActive = NO;
-    _upgradedToWebSocket = NO;
   }
   return self;
 }
@@ -134,13 +141,6 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     _transportQueue = NULL;
   }
 #endif
-}
-
-- (void)resetForNextRequest {
-  [_parser reset];
-  _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
-  _requestInFlight = NO;
-  _readingPaused = NO;
 }
 
 @end
@@ -353,12 +353,11 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 - (void)readRequestFromConnection:(id<PDSNetworkConnection>)connection {
   HttpConnectionState *state = [self connectionStateForConnection:connection];
-  if (state.upgradedToWebSocket) {
+  if (state.session.upgradedToWebSocket) {
     return;
   }
 
-  if (state.pipelinePolicy.pendingDispatchCount > 0 || state.outputQueue.count > 0 ||
-      state.pendingRequests.count > 0) {
+  if (state.session.pipelinePolicy.pendingDispatchCount > 0 || state.outputQueue.count > 0) {
     return;
   }
 
@@ -399,19 +398,76 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)handleReceivedData:(NSData *)data
-              onConnection:(id<PDSNetworkConnection>)connection {
+               onConnection:(id<PDSNetworkConnection>)connection {
   HttpConnectionState *state = [self connectionStateForConnection:connection];
   
-  if (!state.parser.remoteAddress) {
-    state.parser.remoteAddress = connection.remoteAddress;
+  if (!state.session.parser.remoteAddress) {
+    state.session.parser.remoteAddress = connection.remoteAddress;
   }
   
-  [self tryProcessRequestFromState:state data:data connection:connection];
+  NSArray<NSNumber *> *events = [state.session feedData:data];
+  for (NSNumber *eventNumber in events) {
+    HttpSessionEvent event = (HttpSessionEvent)[eventNumber integerValue];
+    switch (event) {
+      case HttpSessionEventRequestReady:
+        [self processPipelinedRequestsForState:state connection:connection];
+        break;
+      case HttpSessionEventError: {
+        Http1ParserError *parseError = state.session.parser.parseError;
+        HttpResponse *response = [HttpResponse responseWithStatusCode:parseError.statusCode];
+        response.keepAlive = NO;
+        [response setJsonBody:@{@"error": parseError.errorCode, @"message": parseError.message}];
+        [self enqueueResponse:response forConnection:connection];
+        break;
+      }
+      case HttpSessionEventUpgrade:
+        [self handleUpgradeEventForState:state connection:connection];
+        break;
+      case HttpSessionEventClose:
+        [connection cancel];
+        break;
+    }
+  }
 
-  if ([state.pipelinePolicy shouldReadMoreData] && state.outputQueue.count == 0) {
+  if ([state.session.pipelinePolicy shouldReadMoreData] && state.outputQueue.count == 0) {
     [self readRequestFromConnection:connection];
   }
 }
+
+- (void)handleUpgradeEventForState:(HttpConnectionState *)state
+                        connection:(id<PDSNetworkConnection>)connection {
+  HttpRequest *request = state.session.parser.completedRequest;
+  if (!request) return;
+
+  NSString *path = request.path;
+  WebSocketRequestHandler webSocketHandler = self.webSocketHandlers[path];
+  
+  if (webSocketHandler) {
+    HttpResponse *upgradeResponse = [HttpResponse response];
+    BOOL shouldUpgrade = [self.webSocketUpgradeHandler handleUpgradeRequest:request
+                                                                  response:upgradeResponse];
+    if (!shouldUpgrade) {
+      [state.session resetForNextRequest];
+      [self enqueueResponse:upgradeResponse forConnection:connection];
+      return;
+    }
+
+    state.session.upgradedToWebSocket = YES;
+    [state.outputQueue removeAllObjects];
+    state.outputQueueSize = 0;
+
+    NSData *responseData = [upgradeResponse serialize];
+    [connection sendData:responseData
+              completion:^(NSError *_Nullable error) {
+                if (error) {
+                  [connection cancel];
+                  return;
+                }
+                webSocketHandler(request, upgradeResponse, connection);
+              }];
+  }
+}
+
 
 - (HttpConnectionState *)connectionStateForConnection:
     (id<PDSNetworkConnection>)connection {
@@ -433,145 +489,12 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   return state;
 }
 
-- (void)tryProcessRequestFromState:(HttpConnectionState *)state
-                              data:(NSData *)data
-                        connection:(id<PDSNetworkConnection>)connection {
-  if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime >
-      kHttpHeaderTimeout) {
-    [connection cancel];
-    return;
-  }
-                        
-  BOOL completeOrError = [state.parser feedData:data];
-  if (!completeOrError) {
-    return;
-  }
-
-  Http1ParserError *parseError = [state.parser parseError];
-  if (parseError) {
-    HttpResponse *response =
-        [HttpResponse responseWithStatusCode:parseError.statusCode];
-    response.keepAlive = NO;
-    [response setJsonBody:@{
-      @"error" : parseError.errorCode,
-      @"message" : parseError.message
-    }];
-    [self queueResponse:response forState:state connection:connection];
-    return;
-  }
-
-  HttpRequest *request = [state.parser completedRequest];
-  if (!request) {
-    return;
-  }
-
-  NSString *path = request.path;
-  WebSocketRequestHandler webSocketHandler = self.webSocketHandlers[path];
-  
-  if (webSocketHandler && [request headerForKey:@"upgrade"] != nil) {
-    HttpResponse *upgradeResponse = [HttpResponse response];
-    BOOL shouldUpgrade =
-        [self.webSocketUpgradeHandler handleUpgradeRequest:request
-                                                  response:upgradeResponse];
-    if (!shouldUpgrade) {
-      [state resetForNextRequest];
-      [self queueResponse:upgradeResponse forState:state connection:connection];
-      return;
-    }
-
-    state.upgradedToWebSocket = YES;
-    [state.pendingRequests removeAllObjects];
-    [state.outputQueue removeAllObjects];
-    state.outputQueueSize = 0;
-
-    NSData *responseData = [upgradeResponse serialize];
-    [connection sendData:responseData
-              completion:^(NSError *_Nullable error) {
-                if (error) {
-                  [connection cancel];
-                  return;
-                }
-                webSocketHandler(request, upgradeResponse, connection);
-              }];
-    return;
-  }
-
-  Http1PipelineAction action = [state.pipelinePolicy requestParsed];
-  
-  if (action == Http1PipelineActionDispatch || action == Http1PipelineActionQueue) {
-    [state.pendingRequests addObject:request];
-    NSData *unconsumed = [state.parser unconsumedData];
-    [state resetForNextRequest];
-    
-    [self processPipelinedRequestsForState:state connection:connection];
-    
-    while (unconsumed.length > 0) {
-      if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime > kHttpHeaderTimeout) {
-        [connection cancel];
-        return;
-      }
-      
-      BOOL loopComplete = [state.parser feedData:unconsumed];
-      if (!loopComplete) {
-        break;
-      }
-      
-      Http1ParserError *loopError = [state.parser parseError];
-      if (loopError) {
-        HttpResponse *response = [HttpResponse responseWithStatusCode:loopError.statusCode];
-        response.keepAlive = NO;
-        [response setJsonBody:@{@"error": loopError.errorCode, @"message": loopError.message}];
-        [self queueResponse:response forState:state connection:connection];
-        return;
-      }
-      
-      HttpRequest *loopReq = [state.parser completedRequest];
-      if (!loopReq) break;
-      
-      Http1PipelineAction loopAction = [state.pipelinePolicy requestParsed];
-      if (loopAction == Http1PipelineActionDispatch || loopAction == Http1PipelineActionQueue) {
-        [state.pendingRequests addObject:loopReq];
-        unconsumed = [state.parser unconsumedData];
-        [state resetForNextRequest];
-        [self processPipelinedRequestsForState:state connection:connection];
-      } else {
-        break;
-      }
-    }
-  }
-}
-
 - (void)processPipelinedRequestsForState:(HttpConnectionState *)state
-                              connection:(id<PDSNetworkConnection>)connection {
-  while (state.pendingRequests.count > 0 &&
-         [state.pipelinePolicy shouldReadMoreData]) {
-    HttpRequest *request = state.pendingRequests[0];
-    [state.pendingRequests removeObjectAtIndex:0];
-    [state.pipelinePolicy requestDispatched];
-
+                               connection:(id<PDSNetworkConnection>)connection {
+  HttpRequest *request;
+  while ((request = [state.session nextRequestToDispatch])) {
     [self dispatchRequest:request onConnection:connection];
   }
-}
-
-- (void)queueResponse:(HttpResponse *)response
-             forState:(HttpConnectionState *)state
-           connection:(id<PDSNetworkConnection>)connection {
-  HttpQueuedResponse *queueItem = [self queueItemForResponse:response];
-  [state.outputQueue addObject:queueItem];
-  state.outputQueueSize += queueItem.queueByteSize;
-
-  while (state.outputQueueSize > kHttpOutputQueueHighWaterMark &&
-         state.outputQueue.count > 0) {
-    HttpQueuedResponse *oldest = state.outputQueue[0];
-    state.outputQueueSize -= oldest.queueByteSize;
-    if (oldest.deleteBodyFileAfterSend && oldest.bodyFilePath.length > 0) {
-      [[NSFileManager defaultManager] removeItemAtPath:oldest.bodyFilePath
-                                                 error:nil];
-    }
-    [state.outputQueue removeObjectAtIndex:0];
-  }
-
-  [self sendNextQueuedResponseForState:state connection:connection];
 }
 
 - (void)dispatchRequest:(HttpRequest *)request
@@ -715,8 +638,8 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           return;
         }
         [strongSelf finalizeQueuedResponseSend:queueItem
-                                      forState:state
-                                    connection:connection];
+                                       forState:state
+                                     connection:connection];
       }];
 }
 
@@ -753,6 +676,29 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   queueItem.headerData = serialized;
   queueItem.queueByteSize = serialized.length;
   return queueItem;
+}
+
+- (void)finalizeQueuedResponseSend:(HttpQueuedResponse *)queueItem
+                           forState:(HttpConnectionState *)state
+                         connection:(id<PDSNetworkConnection>)connection {
+  if (state.outputQueue.count > 0) {
+    [state.outputQueue removeObjectAtIndex:0];
+  }
+  state.outputQueueSize =
+      (state.outputQueueSize > queueItem.queueByteSize)
+          ? (state.outputQueueSize - queueItem.queueByteSize)
+          : 0;
+  
+  [state.session queueResponse:nil]; // Signal response completed to session
+  state.sendingActive = NO;
+  
+  // Try to send next if any
+  [self sendNextQueuedResponseForState:state connection:connection];
+  
+  // Continue connection if idle
+  if (state.outputQueue.count == 0 && [state.session.pipelinePolicy shouldReadMoreData]) {
+    [self readRequestFromConnection:connection];
+  }
 }
 
 - (void)streamFileQueueItem:(HttpQueuedResponse *)queueItem
@@ -793,8 +739,8 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         } @catch (__unused NSException *exception) {
         }
         [strongSelf finalizeQueuedResponseSend:queueItem
-                                      forState:state
-                                    connection:connection];
+                                       forState:state
+                                     connection:connection];
         sendNextChunk = nil;
         return;
       }
@@ -829,8 +775,8 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)streamGeneratedQueueItem:(HttpQueuedResponse *)queueItem
-                        forState:(HttpConnectionState *)state
-                      connection:(id<PDSNetworkConnection>)connection {
+                         forState:(HttpConnectionState *)state
+                       connection:(id<PDSNetworkConnection>)connection {
   __weak typeof(self) weakSelf = self;
   __block void (^sendNextChunk)(void) = nil;
   sendNextChunk = ^{
@@ -939,62 +885,6 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   sendNextChunk();
 }
 
-- (void)finalizeQueuedResponseSend:(HttpQueuedResponse *)queueItem
-                          forState:(HttpConnectionState *)state
-                        connection:(id<PDSNetworkConnection>)connection {
-  if (state.outputQueue.count > 0) {
-    [state.outputQueue removeObjectAtIndex:0];
-  }
-  state.outputQueueSize =
-      (state.outputQueueSize > queueItem.queueByteSize)
-          ? (state.outputQueueSize - queueItem.queueByteSize)
-          : 0;
-  
-  [state.pipelinePolicy responseCompleted];
-  state.sendingActive = NO;
-
-  if (queueItem.deleteBodyFileAfterSend && queueItem.bodyFilePath.length > 0) {
-    [[NSFileManager defaultManager] removeItemAtPath:queueItem.bodyFilePath
-                                               error:nil];
-  }
-
-  if (state.outputQueue.count > 0) {
-    [self sendNextQueuedResponseForState:state connection:connection];
-  } else {
-    [self continueConnection:connection withState:state];
-  }
-}
-
-- (void)continueConnection:(id<PDSNetworkConnection>)connection
-                 withState:(HttpConnectionState *)state {
-  if (state.outputQueue.count == 0 && [state.pipelinePolicy shouldReadMoreData] &&
-      state.pendingRequests.count == 0) {
-    [self readRequestFromConnection:connection];
-  }
-}
-
-- (RequestHandler _Nullable)
-    handlerForRoute:(NSString *)path
-             method:(NSString *)method
-         parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)
-                        parameters {
-  NSString *normalizedMethod = [(method ?: @"") uppercaseString];
-  HttpRouteTrie *trie = self.routeTries[normalizedMethod];
-  NSDictionary<NSString *, NSString *> *matchedParams = nil;
-  RequestHandler handler = [trie handlerForMethod:normalizedMethod
-                                             path:path
-                                    outParameters:&matchedParams];
-  if (!handler) {
-    HttpRouteTrie *catchAll = self.routeTries[@"*"];
-    handler =
-        [catchAll handlerForMethod:@"*" path:path outParameters:&matchedParams];
-  }
-  if (parameters) {
-    *parameters = handler ? matchedParams : nil;
-  }
-  return handler;
-}
-
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {
   NSString *logPath = request.queryString.length > 0
                           ? [NSString stringWithFormat:@"%@?%@", request.path,
@@ -1045,49 +935,6 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   }
 
   return response;
-}
-
-- (BOOL)path:(NSString *)path matchesPattern:(NSString *)pattern {
-  if ([path isEqualToString:pattern]) {
-    return YES;
-  }
-
-  if ([pattern hasSuffix:@"/"]) {
-    pattern = [pattern substringToIndex:pattern.length - 1];
-  }
-
-  if ([path hasPrefix:pattern] && [path length] > [pattern length] &&
-      [[path substringFromIndex:[pattern length]] hasPrefix:@"/"]) {
-    return YES;
-  }
-
-  NSArray<NSString *> *pathParts = [path componentsSeparatedByString:@"/"];
-  NSArray<NSString *> *patternParts =
-      [pattern componentsSeparatedByString:@"/"];
-
-  if (pathParts.count != patternParts.count) {
-    return NO;
-  }
-
-  for (NSUInteger i = 0; i < pathParts.count; i++) {
-    NSString *pathPart = pathParts[i];
-    NSString *patternPart = patternParts[i];
-
-    if ([patternPart hasPrefix:@"{"] && [patternPart hasSuffix:@"}"]) {
-      continue;
-    }
-
-    if (![pathPart isEqualToString:patternPart]) {
-      return NO;
-    }
-  }
-
-  return YES;
-}
-
-- (void)sendResponse:(HttpResponse *)response
-        onConnection:(id<PDSNetworkConnection>)connection {
-  [self enqueueResponse:response forConnection:connection];
 }
 
 - (void)stop {
@@ -1145,6 +992,27 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   NSString *prefixPath = [path hasSuffix:@"/"] ? [path stringByAppendingString:@"*"]
                                                : [path stringByAppendingString:@"/*"];
   [self addRoute:@"*" path:prefixPath handler:handler];
+}
+
+- (RequestHandler _Nullable)handlerForRoute:(NSString *)path
+                                     method:(NSString *)method
+                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters {
+  HttpRouteTrie *trie = self.routeTries[method.uppercaseString];
+  RequestHandler handler = nil;
+  if (trie) {
+    handler = [trie handlerForMethod:method path:path outParameters:parameters];
+  }
+  if (!handler) {
+    trie = self.routeTries[@"*"];
+    if (trie) {
+      handler = [trie handlerForMethod:method path:path outParameters:parameters];
+    }
+  }
+  return handler;
+}
+
+- (void)sendResponse:(HttpResponse *)response onConnection:(id<PDSNetworkConnection>)connection {
+  [self enqueueResponse:response forConnection:connection];
 }
 
 - (void)addWebSocketRoute:(NSString *)path

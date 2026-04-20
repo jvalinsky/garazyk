@@ -1,0 +1,11 @@
+[
+  {
+    "handle" : "alice.test",
+    "service" : "https:\/\/pds.garazyk.xyz",
+    "signingKey" : "<simulated_key>",
+    "sig" : "<simulated_signature>",
+    "type" : "create",
+    "recoveryKey" : "<simulated_key>",
+    "prev" : null
+  }
+]

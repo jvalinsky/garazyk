@@ -562,3 +562,26 @@ ul[role="menu-bar"] [role="menu-item"].divider {
 .strawberry-icon:hover {
   opacity: 1;
 }
+
+/* Window title bar buttons - macOS style */
+.title-bar .close,
+.title-bar .resize {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.title-bar .close:hover,
+.title-bar .resize:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.title-bar .close {
+  margin-left: auto;
+}
