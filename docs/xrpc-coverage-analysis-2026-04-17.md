@@ -294,8 +294,8 @@ App-specific query views:
 | `getBlocks` | ✅ | Syrena AppView |
 | `getList` | ✅ | Syrena AppView |
 | `getLists` | ✅ | Syrena AppView |
-| `getListMutes` | ❌ | **MISSING** |
-| `getListBlocks` | ❌ | **MISSING** |
+| `getListMutes` | ✅ | Syrena AppView |
+| `getListBlocks` | ✅ | Syrena AppView |
 | `getRelationships` | ✅ | Syrena AppView |
 | `getStarterPack` | ✅ | Syrena AppView |
 | `getStarterPacks` | ✅ | Syrena AppView |
@@ -318,7 +318,7 @@ App-specific query views:
 | `starterpack` | 📋 RECORD TYPE | |
 | `verification` | 📋 RECORD TYPE | |
 
-**AppView Coverage: ~85%** (missing getListMutes, getListBlocks, getListsWithMembership)
+**AppView Coverage: ~89%** (missing getListsWithMembership only)
 
 ### app.bsky.notification.*
 

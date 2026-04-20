@@ -64,8 +64,8 @@
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertNotNil(response.jsonBody[@"blocks"]);
-    XCTAssertEqual([response.jsonBody[@"blocks"] count], 0);
+    XCTAssertNotNil(response.jsonBody[@"lists"]);
+    XCTAssertEqual([response.jsonBody[@"lists"] count], 0);
 }
 
 // MARK: - app.bsky.graph.getListsWithMembership Tests
