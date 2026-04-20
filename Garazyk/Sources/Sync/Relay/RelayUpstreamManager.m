@@ -13,6 +13,11 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *reconnectAttempts;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *reconnectDelays;
 
+// Host status tracking for getHostStatus endpoint
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostSeqs;           // url -> seq
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostAccountCounts; // url -> count
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *hostStatuses;      // url -> @ RelayHostStatus
+
 @end
 
 @implementation RelayUpstreamManager {
@@ -31,6 +36,9 @@
         _isPaused = NO;
         _reconnectAttempts = [NSMutableDictionary dictionary];
         _reconnectDelays = [NSMutableDictionary dictionary];
+        _hostSeqs = [NSMutableDictionary dictionary];
+        _hostAccountCounts = [NSMutableDictionary dictionary];
+        _hostStatuses = [NSMutableDictionary dictionary];
 
         for (NSString *url in urls) {
             [self createClientForUpstream:url];
@@ -40,8 +48,25 @@
 }
 
 - (void)createClientForUpstream:(NSString *)url {
-    NSURL *wsURL = [NSURL URLWithString:[NSString stringWithFormat:@"wss://%@/xrpc/com.atproto.sync.subscribeRepos", url]];
-    RelayClient *client = [[RelayClient alloc] initWithServerURL:wsURL];
+    NSURL *httpURL = [NSURL URLWithString:url];
+    
+    // If no scheme provided, default based on hostname
+    if (!httpURL || !httpURL.scheme) {
+        if ([url hasPrefix:@"localhost:"] || [url hasPrefix:@"127.0.0.1:"]) {
+            httpURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@", url]];
+        } else {
+            httpURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://%@", url]];
+        }
+    }
+    
+    // Validate scheme is http or https
+    NSString *scheme = httpURL.scheme.lowercaseString;
+    if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) {
+        PDS_LOG_ERROR_C(@"Relay", @"Invalid upstream URL scheme: %@", httpURL.scheme);
+        return;
+    }
+    
+    RelayClient *client = [[RelayClient alloc] initWithServerURL:httpURL];
     client.delegate = self;
     self.upstreamClients[url] = client;
     self.reconnectAttempts[url] = @0;
@@ -135,6 +160,38 @@
     }
 }
 
+- (void)validateHost:(NSString *)hostname completion:(void (^)(BOOL reachable, NSError * _Nullable error))completion {
+    NSString *urlString = hostname;
+    if (![urlString containsString:@"://"]) {
+        if ([hostname hasPrefix:@"localhost:"] || [hostname hasPrefix:@"127.0.0.1:"]) {
+            urlString = [NSString stringWithFormat:@"http://%@", hostname];
+        } else {
+            urlString = [NSString stringWithFormat:@"https://%@", hostname];
+        }
+    }
+    
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@/xrpc/com.atproto.server.describeServer", urlString]];
+    if (!url) {
+        completion(NO, [NSError errorWithDomain:@"com.atproto.relay.upstream" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Invalid hostname"}]);
+        return;
+    }
+    
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        if (error) {
+            completion(NO, error);
+            return;
+        }
+        
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        if (httpResponse.statusCode == 200) {
+            completion(YES, nil);
+        } else {
+            completion(NO, [NSError errorWithDomain:@"com.atproto.relay.upstream" code:2 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unexpected status code: %ld", (long)httpResponse.statusCode]}]);
+        }
+    }];
+    [task resume];
+}
+
 - (void)pause {
     dispatch_async(_managerQueue, ^{
         self.isPaused = YES;
@@ -196,6 +253,7 @@
             [self.connectedUpstreams addObject:url];
             self.reconnectAttempts[url] = @0;
             self.reconnectDelays[url] = @(self.baseReconnectInterval);
+            self.hostStatuses[url] = @(RelayHostStatusActive);
         });
         [[RelayMetrics sharedMetrics] recordUpstreamConnected];
         [self.delegate upstreamManager:self didConnectToUpstream:url];
@@ -207,10 +265,11 @@
     if (url) {
         dispatch_async(_managerQueue, ^{
             [self.connectedUpstreams removeObject:url];
+            self.hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
         });
         [[RelayMetrics sharedMetrics] recordUpstreamDisconnected];
         [self.delegate upstreamManager:self didDisconnectFromUpstream:url error:error];
-        
+
         if (self.autoReconnectEnabled && !self.isPaused) {
             [self scheduleReconnectForUpstream:url];
         }
@@ -220,6 +279,9 @@
 - (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
     NSString *url = [self urlForClient:client];
     if (url) {
+        dispatch_async(_managerQueue, ^{
+            self.hostSeqs[url] = @(cursor);
+        });
         [[RelayMetrics sharedMetrics] recordSequence:cursor];
         [self.delegate upstreamManager:self didReceiveCursor:cursor fromUpstream:url];
     }
@@ -253,6 +315,51 @@
         }
     }
     return nil;
+}
+
+#pragma mark - Host Status
+
+- (int64_t)seqForUpstream:(NSString *)url {
+    __block int64_t seq = 0;
+    dispatch_sync(_managerQueue, ^{
+        NSNumber *seqNum = self.hostSeqs[url];
+        if (seqNum) {
+            seq = seqNum.longLongValue;
+        }
+    });
+    return seq;
+}
+
+- (RelayHostStatus)statusForUpstream:(NSString *)url {
+    __block RelayHostStatus status = RelayHostStatusDisconnected;
+    dispatch_sync(_managerQueue, ^{
+        if ([self.connectedUpstreams containsObject:url]) {
+            status = RelayHostStatusActive;
+        } else {
+            NSNumber *statusNum = self.hostStatuses[url];
+            if (statusNum) {
+                status = statusNum.integerValue;
+            }
+        }
+    });
+    return status;
+}
+
+- (NSUInteger)accountCountForUpstream:(NSString *)url {
+    __block NSUInteger count = 0;
+    dispatch_sync(_managerQueue, ^{
+        NSNumber *countNum = self.hostAccountCounts[url];
+        if (countNum) {
+            count = countNum.unsignedIntegerValue;
+        }
+    });
+    return count;
+}
+
+- (void)setAccountCount:(NSUInteger)count forUpstream:(NSString *)url {
+    dispatch_async(_managerQueue, ^{
+        self.hostAccountCounts[url] = @(count);
+    });
 }
 
 @end
