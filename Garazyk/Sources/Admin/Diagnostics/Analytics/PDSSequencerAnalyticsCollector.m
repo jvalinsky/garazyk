@@ -15,6 +15,7 @@
 @property (nonatomic) NSInteger lastWarnings;
 @property (nonatomic) NSInteger lastCritical;
 @property (nonatomic) NSInteger lastOverflows;
+@property (nonatomic, assign, readwrite) BOOL isCollecting;
 @end
 
 @implementation PDSSequencerAnalyticsCollector
@@ -49,6 +50,7 @@
         });
 
         dispatch_resume(self.timer);
+        self.isCollecting = YES;
         PDS_LOG_DB_INFO(@"Sequencer analytics collector started");
     });
 }
@@ -58,6 +60,7 @@
         if (self.timer) {
             dispatch_source_cancel(self.timer);
             self.timer = nil;
+            self.isCollecting = NO;
             PDS_LOG_DB_INFO(@"Sequencer analytics collector stopped");
         }
     });
