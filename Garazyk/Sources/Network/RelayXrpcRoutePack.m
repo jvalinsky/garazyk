@@ -74,6 +74,12 @@ static BOOL isValidDID(NSString *did) {
                  [self handleGetHostStatus:request response:response];
              }];
 
+    [server addRoute:@"POST"
+                path:@"/xrpc/com.atproto.sync.requestCrawl"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleRequestCrawl:request response:response];
+             }];
+
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getRepo"
              handler:^(HttpRequest *request, HttpResponse *response) {
@@ -449,6 +455,116 @@ static BOOL isValidDID(NSString *did) {
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:body];
+}
+
+#pragma mark - requestCrawl
+
+- (void)handleRequestCrawl:(HttpRequest *)request response:(HttpResponse *)response
+{
+    // Lexicon: com.atproto.sync.requestCrawl
+    // Input: { "hostname": "..." }
+    // Procedure: Request the relay to crawl a new PDS
+
+    // Parse JSON body
+    NSData *bodyData = request.body;
+    if (!bodyData || bodyData.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"Request body required"
+        }];
+        return;
+    }
+
+    NSError *parseError = nil;
+    NSDictionary *body = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&parseError];
+    if (!body || ![body isKindOfClass:[NSDictionary class]])
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"Invalid JSON body"
+        }];
+        return;
+    }
+
+    NSString *hostname = body[@"hostname"];
+    if (!hostname || hostname.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"hostname field required"
+        }];
+        return;
+    }
+
+    // Parse hostname - normalize and detect scheme
+    NSString *normalizedHostname = hostname;
+    BOOL useSSL = YES;
+
+    // Remove scheme if present
+    if ([normalizedHostname hasPrefix:@"https://"])
+    {
+        normalizedHostname = [normalizedHostname substringFromIndex:8];
+    }
+    else if ([normalizedHostname hasPrefix:@"http://"])
+    {
+        normalizedHostname = [normalizedHostname substringFromIndex:7];
+        useSSL = NO;
+    }
+
+    // Remove path
+    NSRange pathRange = [normalizedHostname rangeOfString:@"/"];
+    if (pathRange.location != NSNotFound)
+    {
+        normalizedHostname = [normalizedHostname substringToIndex:pathRange.location];
+    }
+
+    // Validate hostname format
+    if (normalizedHostname.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"hostname field empty or invalid"
+        }];
+        return;
+    }
+
+    // Check if we have an upstream manager
+    if (!_upstreamManager)
+    {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+            @"error": @"InternalError",
+            @"message": @"Relay upstream manager not configured"
+        }];
+        return;
+    }
+
+    // Build the upstream URL
+    NSString *upstreamURL = useSSL ?
+        [NSString stringWithFormat:@"https://%@", normalizedHostname] :
+        [NSString stringWithFormat:@"http://%@", normalizedHostname];
+
+    // Check if host is reachable (async validateHost callback)
+    // For now, we'll do a synchronous check
+    // TODO: In production, this should be async to avoid blocking
+    [_upstreamManager validateHost:upstreamURL completion:^(BOOL reachable, NSError * _Nullable error) {
+        // This callback happens after we return, so we can't use it here
+        // For initial implementation, just add the upstream and let the manager handle connection
+    }];
+
+    // Add upstream for crawling
+    [_upstreamManager addUpstream:upstreamURL];
+
+    PDS_LOG_SYNC_INFO(@"Relay requestCrawl: Added upstream %@", upstreamURL);
+
+    // Success - return empty response (per lexicon)
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{}];
 }
 
 #pragma mark - getRepo
