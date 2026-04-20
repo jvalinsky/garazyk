@@ -8,7 +8,7 @@
   overflow: hidden;
 }
 
-/* Header/Toolbar */
+/* Header/Toolbar - NSVisualEffectView inspired materials */
 header[role="banner"] {
   height: 52px;
   background: var(--color-bg-secondary);
@@ -30,6 +30,17 @@ header[role="banner"] {
   width: 100%;
 }
 
+.toolbar-blur {
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .toolbar-blur {
+    background: color-mix(in srgb, var(--color-bg-secondary), transparent 20%);
+  }
+}
+
 .toolbar-section {
   display: flex;
   align-items: center;
@@ -49,34 +60,37 @@ header[role="banner"] {
   flex: 0 0 auto;
 }
 
-/* Service segments */
+/* Service segments - NSSegmentedControl inspired */
 .service-segments {
   display: flex;
-  gap: var(--space-sm);
+  gap: 0;
   border-radius: var(--radius-md);
   background: var(--color-bg-tertiary);
-  padding: 2px;
+  padding: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .service-segment {
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   background: transparent;
   border: none;
   cursor: pointer;
   transition: all var(--transition-normal);
+  position: relative;
 }
 
-.service-segment:hover {
-  background: rgba(0, 0, 0, 0.05);
+.service-segment:hover:not(.active) {
+  color: var(--color-text-primary);
 }
 
 .service-segment.active {
   background: var(--color-bg-secondary);
-  color: var(--color-accent);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -85,7 +99,7 @@ header[role="banner"] {
   }
 }
 
-/* Sidebar */
+/* Sidebar - NSVisualEffectView sidebar material */
 aside[role="complementary"] {
   width: 220px;
   min-width: 220px;
@@ -95,6 +109,11 @@ aside[role="complementary"] {
   overflow-x: hidden;
   flex-shrink: 0;
   z-index: var(--z-sticky);
+}
+
+.sidebar-blur {
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .sidebar {
@@ -176,6 +195,19 @@ aside[role="complementary"] {
   background: var(--color-accent);
   color: white;
   font-weight: 500;
+  position: relative;
+}
+
+.sidebar-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: white;
+  border-radius: 0 2px 2px 0;
+  opacity: 0.8;
 }
 
 .sidebar-items.hidden {
@@ -272,7 +304,15 @@ footer[role="contentinfo"] {
   }
 }
 
-/* Loading indicator */
+/* AppKit-style status bar with segmented info */
+.status-bar-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+}
+
+/* Loading indicator - Generic */
 .loading-indicator {
   display: inline-block;
   width: 16px;
@@ -286,6 +326,40 @@ footer[role="contentinfo"] {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Strawberry loading indicator - Polish motif */
+.loading-strawberry {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.loading-strawberry::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: #e63946;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: bounce-strawberry 0.6s ease-in-out infinite;
+}
+
+.loading-strawberry::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-bottom: 6px solid #2d6a4f;
+}
+
+@keyframes bounce-strawberry {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
   }
 }
 
@@ -363,7 +437,8 @@ ul[role="menu-bar"] [role="menu"] {
   display: none;
 }
 
-ul[role="menu-bar"] li:hover > [role="menu"] {
+ul[role="menu-bar"] li:hover > [role="menu"],
+ul[role="menu-bar"] li.menu-open > [role="menu"] {
   display: block;
 }
 
@@ -473,4 +548,17 @@ ul[role="menu-bar"] [role="menu-item"].divider {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+/* Strawberry icon - Polish motif */
+.strawberry-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity var(--transition-normal);
+}
+
+.strawberry-icon:hover {
+  opacity: 1;
 }
