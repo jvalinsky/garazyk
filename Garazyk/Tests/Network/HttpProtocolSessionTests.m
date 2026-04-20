@@ -51,11 +51,13 @@
   NSData *requestData =
       [@"GET /one HTTP/1.1\r\nHost: localhost\r\n\r\nGET /two HTTP/1.1\r\nHost: localhost\r\n\r\n"
           dataUsingEncoding:NSUTF8StringEncoding];
-  [self.session feedData:requestData];
-  XCTAssertGreaterThan(self.session.pendingDispatchCount, 0U);
-  [self.session nextRequestToDispatch];
+  NSArray<NSNumber *> *events = [self.session feedData:requestData];
+  XCTAssertTrue([events containsObject:@(HttpSessionEventRequestReady)]);
+  HttpRequest *first = [self.session nextRequestToDispatch];
+  XCTAssertNotNil(first);
   [self.session responseDidFinishSending];
-  XCTAssertTrue([self.session shouldReadMoreData]);
+  HttpRequest *second = [self.session nextRequestToDispatch];
+  XCTAssertNotNil(second);
 }
 
 @end
