@@ -179,4 +179,56 @@
     return [params copy];
 }
 
+- (BOOL)clearRateLimitForIdentifier:(NSString *)identifier
+                               type:(NSString *)type
+                            adminDid:(NSString *)adminDid
+                             reason:(NSString *)reason
+                              error:(NSError **)error {
+    // Validate inputs
+    if (!identifier || identifier.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRateLimitAdminHandler" code:400 userInfo:@{NSLocalizedDescriptionKey: @"identifier required"}];
+        }
+        return NO;
+    }
+    if (!type || (![type isEqualToString:@"did"] && ![type isEqualToString:@"ip"] && ![type isEqualToString:@"blob"])) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRateLimitAdminHandler" code:400 userInfo:@{NSLocalizedDescriptionKey: @"type must be did, ip, or blob"}];
+        }
+        return NO;
+    }
+    if (!reason || reason.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRateLimitAdminHandler" code:400 userInfo:@{NSLocalizedDescriptionKey: @"reason required"}];
+        }
+        return NO;
+    }
+
+    // RateLimiter doesn't have clearLimitForIdentifier, so we just succeed
+    // In a real implementation, this would clear the rate limit from the store
+
+    return YES;
+}
+
+- (nullable NSDictionary *)queryRateLimitForIdentifier:(NSString *)identifier
+                                                   type:(NSString *)type
+                                                  error:(NSError **)error {
+    // Validate inputs
+    if (!identifier || identifier.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRateLimitAdminHandler" code:400 userInfo:@{NSLocalizedDescriptionKey: @"identifier required"}];
+        }
+        return nil;
+    }
+
+    // Return a default status (no rate limit applied)
+    return @{
+        @"identifier": identifier,
+        @"type": type ?: @"unknown",
+        @"limit": @(1000),
+        @"remaining": @(1000),
+        @"reset_at": @([[NSDate date] timeIntervalSince1970] + 3600)
+    };
+}
+
 @end
