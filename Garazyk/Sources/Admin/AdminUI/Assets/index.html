@@ -296,7 +296,27 @@
     </div>
   </footer>
 
-  <!-- Scripts -->
+  <!-- Admin Login Panel -->
+  <div id="admin-login-panel" class="admin-login-panel hidden">
+    <div class="admin-login-backdrop" onclick="AdminAuth.hideLoginPanel()"></div>
+    <div class="admin-login-window">
+      <div class="title-bar">
+        <span class="title">Admin Login</span>
+      </div>
+      <div class="window-body">
+        <div class="field-row-stacked">
+          <label for="admin-password">Password:</label>
+          <input type="password" id="admin-password" class="w-full">
+        </div>
+        <div id="admin-login-error" class="auth-error"></div>
+        <div class="field-row justify-end mt-md">
+          <button id="admin-login-btn" class="btn btn-primary">Login</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Scripts -->
   <script type="module" src="js/app.js"></script>
 
   <!-- HTMX error handling for 401 auth required -->
@@ -304,6 +324,11 @@
     document.addEventListener('htmx:responseError', function(evt) {
       if (evt.detail.xhr && evt.detail.xhr.status === 401) {
         evt.preventDefault();
+        // Check if already have token - if not, show login panel
+        if (!sessionStorage.getItem('admin_token')) {
+          AdminAuth.showLoginPanel();
+          return;
+        }
         const target = evt.detail.target;
         if (target) {
           target.innerHTML = `<div class="empty-state empty-state-auth">
