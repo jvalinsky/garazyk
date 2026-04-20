@@ -712,7 +712,18 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
             } else if ([_bindHost isEqualToString:@"localhost"]) {
                 inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
             } else {
-                addr.sin_addr.s_addr = INADDR_ANY;
+                NSError *hostError =
+                    [NSError errorWithDomain:NSPOSIXErrorDomain
+                                        code:EADDRNOTAVAIL
+                                    userInfo:@{
+                                      NSLocalizedDescriptionKey :
+                                          [NSString stringWithFormat:
+                                              @"Invalid bind host: %@", _bindHost]
+                                    }];
+                close(_listenfd);
+                _listenfd = -1;
+                [self failWithError:hostError];
+                return;
             }
         } else {
             addr.sin_addr.s_addr = INADDR_ANY;
@@ -723,10 +734,6 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
             NSError *bindError = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
             close(_listenfd);
             _listenfd = -1;
-            if (errno == EADDRINUSE && attempt == 0) {
-                portToBind = 0;
-                continue;
-            }
             [self failWithError:bindError];
             return;
         }
@@ -767,7 +774,10 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     if (clientfd == -1) return;
     
     if (self.newConnectionHandler) {
-        NSString *address = [NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)];
+        NSString *ipAddress = [NSString stringWithUTF8String:inet_ntoa(addr.sin_addr)];
+        NSString *address =
+            [NSString stringWithFormat:@"%@:%u", ipAddress ?: @"unknown",
+                                       (unsigned int)ntohs(addr.sin_port)];
         PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:clientfd address:address];
         self.newConnectionHandler(conn);
     } else {

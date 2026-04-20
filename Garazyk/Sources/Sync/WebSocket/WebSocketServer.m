@@ -26,7 +26,7 @@ static inline int set_reuseaddr(int fd) {
     return setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 }
 
-@interface WebSocketServer ()
+@interface WebSocketServer () <WebSocketConnectionDelegate>
 @property(nonatomic, readwrite) uint16_t port;
 @property(nonatomic, readwrite) WebSocketServerState state;
 @property(nonatomic, assign) int serverSocket;
@@ -172,6 +172,7 @@ static inline int set_reuseaddr(int fd) {
 }
 
 - (void)addConnection:(WebSocketConnection *)connection {
+    connection.delegate = self;
     dispatch_barrier_async(self.connectionsQueue, ^{
         [self.mutableConnections addObject:connection];
     });
@@ -193,9 +194,7 @@ static inline int set_reuseaddr(int fd) {
         predicate ? [snapshot filteredSetUsingPredicate:predicate] : snapshot;
 
     for (WebSocketConnection *connection in targets) {
-        dispatch_group_enter(self.taskGroup);
         [connection sendMessage:message];
-        dispatch_group_leave(self.taskGroup);
     }
 }
 
@@ -211,13 +210,38 @@ static inline int set_reuseaddr(int fd) {
     }
 }
 
+- (void)webSocketConnection:(WebSocketConnection *)connection
+           didCloseWithCode:(NSInteger)code
+                     reason:(NSString *)reason {
+    (void)code;
+    (void)reason;
+    [self removeConnection:connection];
+    id<WebSocketServerDelegate> delegate = self.delegate;
+    if ([delegate respondsToSelector:@selector(webSocketServer:didCloseConnection:)]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [delegate webSocketServer:self didCloseConnection:connection];
+        });
+    }
+}
+
+- (void)webSocketConnection:(WebSocketConnection *)connection
+           didFailWithError:(NSError *)error {
+    [self removeConnection:connection];
+    id<WebSocketServerDelegate> delegate = self.delegate;
+    if ([delegate respondsToSelector:@selector(webSocketServer:didFailWithError:)]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [delegate webSocketServer:self didFailWithError:error];
+        });
+    }
+}
+
 @end
 
 #else
 
 #import <Network/Network.h>
 
-@interface WebSocketServer ()
+@interface WebSocketServer () <WebSocketConnectionDelegate>
 @property(nonatomic, readwrite) uint16_t port;
 @property(nonatomic, readwrite) WebSocketServerState state;
 @property(nonatomic, strong) nw_listener_t listener;
@@ -322,6 +346,7 @@ static inline int set_reuseaddr(int fd) {
         if (!strongSelf) return;
         WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:connection];
         [strongSelf addConnection:webSocketConnection];
+        webSocketConnection.delegate = strongSelf;
         if ([strongSelf.delegate respondsToSelector:@selector(webSocketServer:didAcceptConnection:)]) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [strongSelf.delegate webSocketServer:strongSelf didAcceptConnection:webSocketConnection];
@@ -384,6 +409,7 @@ static inline int set_reuseaddr(int fd) {
 }
 
 - (void)addConnection:(WebSocketConnection *)connection {
+    connection.delegate = self;
     dispatch_barrier_async(self.connectionsQueue, ^{
         [self.mutableConnections addObject:connection];
     });
@@ -405,9 +431,7 @@ static inline int set_reuseaddr(int fd) {
         predicate ? [snapshot filteredSetUsingPredicate:predicate] : snapshot;
 
     for (WebSocketConnection *connection in targets) {
-        dispatch_group_enter(self.taskGroup);
         [connection sendMessage:message];
-        dispatch_group_leave(self.taskGroup);
     }
 }
 
@@ -420,6 +444,31 @@ static inline int set_reuseaddr(int fd) {
                 [delegate webSocketServer:self stateDidChange:state];
             });
         }
+    }
+}
+
+- (void)webSocketConnection:(WebSocketConnection *)connection
+           didCloseWithCode:(NSInteger)code
+                     reason:(NSString *)reason {
+    (void)code;
+    (void)reason;
+    [self removeConnection:connection];
+    id<WebSocketServerDelegate> delegate = self.delegate;
+    if ([delegate respondsToSelector:@selector(webSocketServer:didCloseConnection:)]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [delegate webSocketServer:self didCloseConnection:connection];
+        });
+    }
+}
+
+- (void)webSocketConnection:(WebSocketConnection *)connection
+           didFailWithError:(NSError *)error {
+    [self removeConnection:connection];
+    id<WebSocketServerDelegate> delegate = self.delegate;
+    if ([delegate respondsToSelector:@selector(webSocketServer:didFailWithError:)]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [delegate webSocketServer:self didFailWithError:error];
+        });
     }
 }
 

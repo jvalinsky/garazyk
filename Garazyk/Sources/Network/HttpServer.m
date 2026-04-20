@@ -23,6 +23,9 @@
 #import "Network/RateLimiter.h"
 #import "Network/WebSocketUpgradeHandler.h"
 #import "Network/HttpProtocolSession.h"
+#import "Network/HttpRequestDispatcher.h"
+#import "Network/HttpConnectionDriver.h"
+#import "Network/HttpResponseSender.h"
 #import <CoreFoundation/CoreFoundation.h>
 
 @class HttpRouteTrie;
@@ -85,6 +88,9 @@
 @property(nonatomic, strong) WebSocketUpgradeHandler *webSocketUpgradeHandler;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, WebSocketRequestHandler> *webSocketHandlers;
+@property(nonatomic, strong) HttpRequestDispatcher *requestDispatcher;
+@property(nonatomic, strong) HttpConnectionDriver *connectionDriver;
+@property(nonatomic, strong) HttpResponseSender *responseSender;
 
 - (HttpQueuedResponse *)queueItemForResponse:(HttpResponse *)response;
 - (void)enqueueResponse:(HttpResponse *)response
@@ -185,6 +191,19 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     _connectionStates = [NSMapTable strongToStrongObjectsMapTable];
     _webSocketUpgradeHandler = [[WebSocketUpgradeHandler alloc] init];
     _webSocketHandlers = [NSMutableDictionary dictionary];
+    __weak typeof(self) weakSelf = self;
+    _requestDispatcher = [[HttpRequestDispatcher alloc]
+        initWithRouteLookupHandler:^HttpServerRequestHandler _Nullable(
+            NSString *path, NSString *method,
+            NSDictionary<NSString *, NSString *> *__autoreleasing _Nullable *_Nullable parameters) {
+          __strong typeof(weakSelf) strongSelf = weakSelf;
+          if (!strongSelf) {
+            return nil;
+          }
+          return [strongSelf handlerForRoute:path method:method parameters:parameters];
+        }];
+    _connectionDriver = [[HttpConnectionDriver alloc] init];
+    _responseSender = [[HttpResponseSender alloc] init];
     _listenerReady = NO;
     _startupFinished = NO;
     _running = NO;
@@ -356,14 +375,15 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   if (state.session.upgradedToWebSocket) {
     return;
   }
-
-  if (state.session.pipelinePolicy.pendingDispatchCount > 0 || state.outputQueue.count > 0) {
-    return;
-  }
-
-  if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime >
-      kHttpHeaderTimeout) {
-    [connection cancel];
+  if (![self.connectionDriver shouldBeginReadForSession:state.session
+                                        outputQueueSize:state.outputQueue.count
+                                           headerOpened:state.headerStartTime
+                                                    now:[NSDate timeIntervalSinceReferenceDate]
+                                          headerTimeout:kHttpHeaderTimeout]) {
+    if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime >
+        kHttpHeaderTimeout) {
+      [connection cancel];
+    }
     return;
   }
 
@@ -401,9 +421,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                onConnection:(id<PDSNetworkConnection>)connection {
   HttpConnectionState *state = [self connectionStateForConnection:connection];
   
-  if (!state.session.parser.remoteAddress) {
-    state.session.parser.remoteAddress = connection.remoteAddress;
-  }
+  [state.session setRemoteAddressIfNeeded:connection.remoteAddress];
   
   NSArray<NSNumber *> *events = [state.session feedData:data];
   for (NSNumber *eventNumber in events) {
@@ -413,7 +431,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         [self processPipelinedRequestsForState:state connection:connection];
         break;
       case HttpSessionEventError: {
-        Http1ParserError *parseError = state.session.parser.parseError;
+        Http1ParserError *parseError = state.session.currentParseError;
         HttpResponse *response = [HttpResponse responseWithStatusCode:parseError.statusCode];
         response.keepAlive = NO;
         [response setJsonBody:@{@"error": parseError.errorCode, @"message": parseError.message}];
@@ -429,14 +447,15 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     }
   }
 
-  if ([state.session.pipelinePolicy shouldReadMoreData] && state.outputQueue.count == 0) {
+  if ([self.connectionDriver shouldResumeReadForSession:state.session
+                                        outputQueueSize:state.outputQueue.count]) {
     [self readRequestFromConnection:connection];
   }
 }
 
 - (void)handleUpgradeEventForState:(HttpConnectionState *)state
                         connection:(id<PDSNetworkConnection>)connection {
-  HttpRequest *request = state.session.parser.completedRequest;
+  HttpRequest *request = state.session.currentUpgradeRequest;
   if (!request) return;
 
   NSString *path = request.path;
@@ -582,7 +601,8 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   [state.outputQueue addObject:queueItem];
   state.outputQueueSize += queueItem.queueByteSize;
 
-  while (state.outputQueueSize > kHttpOutputQueueHighWaterMark &&
+  while ([self.responseSender shouldTrimQueueWithCurrentSize:state.outputQueueSize
+                                               highWaterMark:kHttpOutputQueueHighWaterMark] &&
          state.outputQueue.count > 0) {
     HttpQueuedResponse *oldest = state.outputQueue[0];
     state.outputQueueSize -= oldest.queueByteSize;
@@ -685,18 +705,17 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     [state.outputQueue removeObjectAtIndex:0];
   }
   state.outputQueueSize =
-      (state.outputQueueSize > queueItem.queueByteSize)
-          ? (state.outputQueueSize - queueItem.queueByteSize)
-          : 0;
+      [self.responseSender clampedQueueSizeAfterDequeue:state.outputQueueSize
+                                              itemBytes:queueItem.queueByteSize];
   
-  [state.session queueResponse:nil]; // Signal response completed to session
+  [state.session responseDidFinishSending];
   state.sendingActive = NO;
   
   // Try to send next if any
   [self sendNextQueuedResponseForState:state connection:connection];
   
   // Continue connection if idle
-  if (state.outputQueue.count == 0 && [state.session.pipelinePolicy shouldReadMoreData]) {
+  if (state.outputQueue.count == 0 && [state.session shouldReadMoreData]) {
     [self readRequestFromConnection:connection];
   }
 }
@@ -886,55 +905,8 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request {
-  NSString *logPath = request.queryString.length > 0
-                          ? [NSString stringWithFormat:@"%@?%@", request.path,
-                                                       request.queryString]
-                          : request.path;
-  PDS_LOG_HTTP_INFO(@"[%@] %@ %@", request.remoteAddress, request.methodString,
-                    logPath);
-  HttpResponse *response = [HttpResponse response];
-
-  if ([request.path hasPrefix:@"/oauth/"] && !RateLimiterIsDisabledGlobally() &&
-      [RateLimiter sharedLimiter].isEnabled) {
-    RateLimitResult *result =
-        [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
-    if (!result.allowed) {
-      response.statusCode = 429;
-      [response setJsonBody:@{
-        @"error" : @"too_many_requests",
-        @"message" : @"Rate limit exceeded"
-      }];
-      return response;
-    }
-  }
-
-  if (self.requestHandler) {
-    self.requestHandler(request, response);
-    return response;
-  }
-
-  NSString *methodString = request.methodString;
-  NSString *path = request.path;
-
-  NSDictionary<NSString *, NSString *> *pathParameters = nil;
-  RequestHandler handler = [self handlerForRoute:path
-                                          method:methodString
-                                      parameters:&pathParameters];
-
-  request.pathParameters = pathParameters;
-
-  if (handler) {
-    handler(request, response);
-  } else {
-    response.statusCode = HttpStatusNotFound;
-    [response setJsonBody:@{
-      @"error" : @"Not Found",
-      @"message" : [NSString
-          stringWithFormat:@"No handler for %@ %@", methodString, path]
-    }];
-  }
-
-  return response;
+  self.requestDispatcher.requestHandler = self.requestHandler;
+  return [self.requestDispatcher dispatchRequest:request];
 }
 
 - (void)stop {
