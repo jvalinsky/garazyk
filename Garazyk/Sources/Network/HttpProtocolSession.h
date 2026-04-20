@@ -50,11 +50,47 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
 - (nullable HttpRequest *)nextRequestToDispatch;
 
 /**
+ * @method currentUpgradeRequest
+ * @abstract Returns the request that triggered an upgrade event.
+ */
+- (nullable HttpRequest *)currentUpgradeRequest;
+
+/**
+ * @method currentParseError
+ * @abstract Returns the most recent parser error, if any.
+ */
+- (nullable Http1ParserError *)currentParseError;
+
+/**
+ * @method setRemoteAddressIfNeeded:
+ * @abstract Sets remote address metadata for parsed requests.
+ */
+- (void)setRemoteAddressIfNeeded:(nullable NSString *)remoteAddress;
+
+/**
+ * @method shouldReadMoreData
+ * @abstract Returns whether the protocol policy allows reading more bytes.
+ */
+- (BOOL)shouldReadMoreData;
+
+/**
+ * @method pendingDispatchCount
+ * @abstract Number of requests parsed but not yet fully responded to.
+ */
+- (NSUInteger)pendingDispatchCount;
+
+/**
  * @method queueResponse:
  * @abstract Queues a response to be sent for the oldest in-flight request.
  * @param response The HTTP response to send.
  */
 - (void)queueResponse:(HttpResponse *)response;
+
+/**
+ * @method responseDidFinishSending
+ * @abstract Signals that one queued response completed on the wire.
+ */
+- (void)responseDidFinishSending;
 
 /**
  * @method resetForNextRequest
