@@ -48,24 +48,31 @@
 }
 
 - (void)createClientForUpstream:(NSString *)url {
-    NSURL *httpURL = [NSURL URLWithString:url];
-    
-    // If no scheme provided, default based on hostname
-    if (!httpURL || !httpURL.scheme) {
-        if ([url hasPrefix:@"localhost:"] || [url hasPrefix:@"127.0.0.1:"]) {
-            httpURL = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@", url]];
+    // Check if URL needs scheme prefixing
+    // NSURL parses "localhost:2583" as scheme="localhost", which is wrong
+    NSString *urlString = url;
+    if (![urlString containsString:@"://"]) {
+        // No scheme present, add one
+        if ([urlString hasPrefix:@"localhost:"] || [urlString hasPrefix:@"127.0.0.1:"]) {
+            urlString = [NSString stringWithFormat:@"http://%@", urlString];
         } else {
-            httpURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://%@", url]];
+            urlString = [NSString stringWithFormat:@"https://%@", urlString];
         }
     }
-    
+
+    NSURL *httpURL = [NSURL URLWithString:urlString];
+    if (!httpURL) {
+        PDS_LOG_ERROR_C(@"Relay", @"Invalid upstream URL: %@", url);
+        return;
+    }
+
     // Validate scheme is http or https
     NSString *scheme = httpURL.scheme.lowercaseString;
     if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) {
-        PDS_LOG_ERROR_C(@"Relay", @"Invalid upstream URL scheme: %@", httpURL.scheme);
+        PDS_LOG_ERROR_C(@"Relay", @"Invalid upstream URL scheme: %@ (original: %@)", scheme, url);
         return;
     }
-    
+
     RelayClient *client = [[RelayClient alloc] initWithServerURL:httpURL];
     client.delegate = self;
     self.upstreamClients[url] = client;
