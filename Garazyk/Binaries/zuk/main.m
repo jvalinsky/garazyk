@@ -383,13 +383,15 @@ int main(int argc, const char * argv[]) {
             [strongHandler acceptUpgradedConnection:connection request:request];
         }];
 
-        // Register XRPC sync endpoints (listRepos, getHead, getRepo)
+        // Register XRPC sync endpoints (listRepos, getHead, getRepo, getLatestCommit,
+        // getRepoStatus, getHostStatus, requestCrawl)
         // Initialize PLC resolver for getRepo redirect functionality
         DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"https://plc.directory"];
         RelayXrpcRoutePack *xrpcRoutePack = [[RelayXrpcRoutePack alloc]
             initWithRepoStateManager:repoStateManager
                subscribeReposHandler:subscribeReposHandler
                        plcResolver:plcResolver];
+        xrpcRoutePack.upstreamManager = upstreamManager;
         [xrpcRoutePack registerRoutesWithServer:server];
 
         // Start server
