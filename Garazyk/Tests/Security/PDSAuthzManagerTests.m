@@ -44,7 +44,37 @@ NS_ASSUME_NONNULL_BEGIN
     if (![database openWithError:error]) {
         return nil;
     }
+    [self setupSchemaVersionForDatabase:database];
+    [self setupTablesForDatabase:database];
     return database;
+}
+
+- (void)setupSchemaVersionForDatabase:(PDSDatabase *)db {
+    NSError *error = nil;
+    NSString *createSchemaVersion = @"CREATE TABLE IF NOT EXISTS schema_version ("
+        @"version INTEGER NOT NULL, description TEXT, "
+        @"applied_at INTEGER DEFAULT (strftime('%s', 'now')))";
+    [db executeParameterizedUpdate:createSchemaVersion params:@[] error:&error];
+    
+    NSString *insertInitialMigration = @"INSERT INTO schema_version (version, description) VALUES (1, 'Initial schema with version tracking')";
+    [db executeParameterizedUpdate:insertInitialMigration params:@[] error:&error];
+}
+
+- (void)setupTablesForDatabase:(PDSDatabase *)db {
+    NSError *error = nil;
+    
+    NSString *createAccounts = @"CREATE TABLE IF NOT EXISTS accounts ("
+        @"did TEXT PRIMARY KEY, handle TEXT UNIQUE NOT NULL, email TEXT, "
+        @"password_hash BLOB, password_salt BLOB, access_jwt BLOB, refresh_jwt BLOB, "
+        @"created_at REAL, updated_at REAL, invite_enabled INTEGER DEFAULT 0, "
+        @"locked INTEGER DEFAULT 0, taken_down INTEGER DEFAULT 0, "
+        @"deactivation_token TEXT, email_confirmed INTEGER DEFAULT 0)";
+    XCTAssertTrue([db executeParameterizedUpdate:createAccounts params:@[] error:&error], @"Accounts table: %@", error);
+    
+    NSString *createRepos = @"CREATE TABLE IF NOT EXISTS repos ("
+        @"owner_did TEXT PRIMARY KEY, root_cid BLOB, created_at REAL, updated_at REAL, "
+        @"collection rkey TEXT)";
+    XCTAssertTrue([db executeParameterizedUpdate:createRepos params:@[] error:&error], @"Repos table: %@", error);
 }
 
 - (PDSDatabaseAccount *)createAccountWithDid:(NSString *)did handle:(NSString *)handle {

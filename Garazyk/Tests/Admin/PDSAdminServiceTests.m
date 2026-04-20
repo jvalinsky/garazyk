@@ -23,7 +23,44 @@ NS_ASSUME_NONNULL_BEGIN
     NSError *error = nil;
     XCTAssertTrue([self.database openWithError:&error], @"Database setup failed: %@", error);
     
+    [self setupTables];
+    
     self.service = [[PDSAdminService alloc] initWithDatabase:self.database databasePool:nil];
+}
+
+- (void)setupTables {
+    NSError *error = nil;
+    
+    NSString *createSchemaVersion = @"CREATE TABLE IF NOT EXISTS schema_version ("
+        @"version INTEGER NOT NULL, description TEXT, "
+        @"applied_at INTEGER DEFAULT (strftime('%s', 'now')))";
+    [self.database executeParameterizedUpdate:createSchemaVersion params:@[] error:nil];
+    
+    NSString *insertInitialMigration = @"INSERT OR IGNORE INTO schema_version (version, description) VALUES (1, 'Initial schema with version tracking')";
+    [self.database executeParameterizedUpdate:insertInitialMigration params:@[] error:nil];
+    
+    NSString *createAccounts = @"CREATE TABLE IF NOT EXISTS accounts ("
+        @"did TEXT PRIMARY KEY, handle TEXT UNIQUE NOT NULL, email TEXT, "
+        @"password_hash BLOB, password_salt BLOB, access_jwt BLOB, refresh_jwt BLOB, "
+        @"created_at REAL, updated_at REAL, invite_enabled INTEGER DEFAULT 0, "
+        @"locked INTEGER DEFAULT 0, taken_down INTEGER DEFAULT 0, "
+        @"deactivation_token TEXT, email_confirmed INTEGER DEFAULT 0)";
+    XCTAssertTrue([self.database executeParameterizedUpdate:createAccounts params:@[] error:&error], @"Accounts table: %@", error);
+    
+    NSString *createInviteCodes = @"CREATE TABLE IF NOT EXISTS invite_codes ("
+        @"id TEXT PRIMARY KEY, code TEXT NOT NULL, account_did TEXT, created_at REAL, "
+        @"max_uses INTEGER DEFAULT 1, uses INTEGER DEFAULT 0, disabled INTEGER DEFAULT 0)";
+    XCTAssertTrue([self.database executeParameterizedUpdate:createInviteCodes params:@[] error:&error], @"Invite codes table: %@", error);
+    
+    NSString *createReservedHandles = @"CREATE TABLE IF NOT EXISTS reserved_handles ("
+        @"id TEXT PRIMARY KEY, handle TEXT NOT NULL, reserved_at REAL, "
+        @"reserved_for_did TEXT, created_at REAL)";
+    XCTAssertTrue([self.database executeParameterizedUpdate:createReservedHandles params:@[] error:&error], @"Reserved handles table: %@", error);
+    
+    NSString *createAppPasswords = @"CREATE TABLE IF NOT EXISTS app_passwords ("
+        @"id TEXT PRIMARY KEY, name TEXT NOT NULL, password_hash TEXT NOT NULL, "
+        @"account_did TEXT NOT NULL, created_at REAL, privileged INTEGER DEFAULT 0)";
+    XCTAssertTrue([self.database executeParameterizedUpdate:createAppPasswords params:@[] error:&error], @"App passwords table: %@", error);
 }
 
 - (void)tearDown {

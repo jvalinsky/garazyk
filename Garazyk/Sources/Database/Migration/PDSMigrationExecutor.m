@@ -13,6 +13,10 @@
     if (!result || result.count == 0) {
         return 0; // No version table or no migrations yet
     }
+    
+    if (error && *error) {
+        return 0; // Table doesn't exist yet, treat as version 0
+    }
 
     NSNumber *version = result[0][@"max_version"];
     return version ? version.integerValue : 0;
