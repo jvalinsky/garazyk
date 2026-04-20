@@ -63,6 +63,12 @@ static BOOL isValidDID(NSString *did) {
              }];
 
     [server addRoute:@"GET"
+                path:@"/xrpc/com.atproto.sync.getRepoStatus"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetRepoStatus:request response:response];
+             }];
+
+    [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getRepo"
              handler:^(HttpRequest *request, HttpResponse *response) {
                  [self handleGetRepo:request response:response];
@@ -231,6 +237,91 @@ static BOOL isValidDID(NSString *did) {
         @"cid": rootCid,
         @"rev": rev
     }];
+}
+
+#pragma mark - getRepoStatus
+
+- (void)handleGetRepoStatus:(HttpRequest *)request response:(HttpResponse *)response
+{
+    // Lexicon: com.atproto.sync.getRepoStatus
+    // Output: { "did": "...", "active": bool, "status": "...", "rev": "..." }
+    NSString *didParam = [request queryParamForKey:@"did"];
+    if (didParam.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"did parameter is required"
+        }];
+        return;
+    }
+
+    // Check if repo is known to the relay
+    NSString *rootCid = [_repoStateManager rootCIDForRepo:didParam];
+    RelayRepoStatus status = [_repoStateManager statusForRepo:didParam];
+
+    // If repo has no root CID and status is default, it's unknown
+    if (!rootCid && status == RelayRepoStatusActive)
+    {
+        // Check if we've ever seen this repo
+        NSString *rev = [_repoStateManager revForRepo:didParam];
+        if (!rev)
+        {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{
+                @"error": @"RepoNotFound",
+                @"message": [NSString stringWithFormat:@"Repo not found: %@", didParam]
+            }];
+            return;
+        }
+    }
+
+    // Build response
+    BOOL active = (status == RelayRepoStatusActive);
+    NSMutableDictionary *body = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+        didParam, @"did",
+        @(active), @"active",
+        nil];
+
+    // Map status enum to string
+    if (!active)
+    {
+        NSString *statusStr = nil;
+        switch (status)
+        {
+            case RelayRepoStatusDesynchronized:
+                statusStr = @"desynchronized";
+                break;
+            case RelayRepoStatusInProgress:
+                statusStr = @"in-progress";
+                break;
+            case RelayRepoStatusThrottled:
+                statusStr = @"throttled";
+                break;
+            case RelayRepoStatusTombstoned:
+                statusStr = @"deleted";
+                break;
+            default:
+                break;
+        }
+        if (statusStr)
+        {
+            body[@"status"] = statusStr;
+        }
+    }
+
+    // Include rev if active
+    if (active)
+    {
+        NSString *rev = [_repoStateManager revForRepo:didParam];
+        if (rev && rev.length > 0)
+        {
+            body[@"rev"] = rev;
+        }
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:body];
 }
 
 #pragma mark - getRepo
