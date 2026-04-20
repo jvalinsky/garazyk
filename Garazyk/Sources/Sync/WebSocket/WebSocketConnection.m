@@ -207,6 +207,10 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (void)setupInitialState {
 }
 
+- (WebSocketHeartbeatPolicy *)heartbeatPolicy {
+  return self.session.heartbeatPolicy;
+}
+
 - (void)handlePDSStateChange:(PDSNetworkConnectionState)state
                        error:(NSError *_Nullable)error {
   dispatch_async(dispatch_get_main_queue(), ^{

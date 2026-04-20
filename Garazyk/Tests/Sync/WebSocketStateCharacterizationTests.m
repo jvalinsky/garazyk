@@ -16,6 +16,8 @@
 @property (nonatomic, assign) BOOL didReceiveQueueOverflow;
 @property (nonatomic, assign) NSUInteger lastOverflowBytes;
 @property (nonatomic, assign) NSUInteger lastOverflowLimit;
+@property (nonatomic, strong) XCTestExpectation *warningExpectation;
+@property (nonatomic, strong) XCTestExpectation *criticalExpectation;
 @end
 
 @implementation MockStateWebSocketDelegate
@@ -42,11 +44,13 @@
     self.didReceiveBackpressureWarning = YES;
     self.lastWarningFillPercentage = fillPercentage;
     self.lastWarningQueueBytes = bytes;
+    [self.warningExpectation fulfill];
 }
 - (void)webSocketConnection:(WebSocketConnection *)connection didReachBackpressureCritical:(double)fillPercentage queueBytes:(NSUInteger)bytes {
     self.didReceiveBackpressureCritical = YES;
     self.lastCriticalFillPercentage = fillPercentage;
     self.lastCriticalQueueBytes = bytes;
+    [self.criticalExpectation fulfill];
 }
 - (void)webSocketConnectionDidClearBackpressure:(WebSocketConnection *)connection {
     self.didReceiveBackpressureCleared = YES;
@@ -207,12 +211,10 @@
     NSData *frame8MB = [NSMutableData dataWithLength:8 * 1024 * 1024];
     [self.connection sendFrame:frame8MB];
 
-    // Wait for main queue to process delegate callback
     XCTestExpectation *exp = [self expectationWithDescription:@"Wait for warning callback"];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [exp fulfill];
-    });
+    self.delegate.warningExpectation = exp;
     [self waitForExpectations:@[exp] timeout:1.0];
+    self.delegate.warningExpectation = nil;
 
     XCTAssertTrue(self.delegate.didReceiveBackpressureWarning, @"Should notify delegate of warning");
     XCTAssertGreaterThanOrEqual(self.delegate.lastWarningFillPercentage, 0.8, @"Fill percentage should be ~80%%");
@@ -228,12 +230,10 @@
     NSMutableData *frame9_5MB = [NSMutableData dataWithLength:9.5 * 1024 * 1024];
     [self.connection sendFrame:frame9_5MB];
 
-    // Wait for main queue to process delegate callback
     XCTestExpectation *exp = [self expectationWithDescription:@"Wait for critical callback"];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [exp fulfill];
-    });
+    self.delegate.criticalExpectation = exp;
     [self waitForExpectations:@[exp] timeout:1.0];
+    self.delegate.criticalExpectation = nil;
 
     XCTAssertTrue(self.delegate.didReceiveBackpressureCritical, @"Should notify delegate of critical");
     XCTAssertGreaterThanOrEqual(self.delegate.lastCriticalFillPercentage, 0.9, @"Fill percentage should be ~95%%");
