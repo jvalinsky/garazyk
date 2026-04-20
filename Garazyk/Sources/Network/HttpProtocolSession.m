@@ -4,7 +4,7 @@
 @property(nonatomic, strong, readwrite) Http1Parser *parser;
 @property(nonatomic, strong, readwrite) Http1PipelinePolicy *pipelinePolicy;
 @property(nonatomic, strong) NSMutableArray<HttpRequest *> *pendingRequests;
-@property(nonatomic, assign) NSTimeInterval headerStartTime;
+@property(nonatomic, strong, nullable) HttpRequest *upgradeRequest;
 @end
 
 @implementation HttpProtocolSession
@@ -15,7 +15,6 @@
     _parser = [[Http1Parser alloc] init];
     _pipelinePolicy = [[Http1PipelinePolicy alloc] init];
     _pendingRequests = [NSMutableArray array];
-    _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
     _upgradedToWebSocket = NO;
   }
   return self;
@@ -46,6 +45,7 @@
 
   // Check for upgrade header
   if ([request headerForKey:@"upgrade"] != nil) {
+    self.upgradeRequest = request;
     [events addObject:@(HttpSessionEventUpgrade)];
     // Driver will handle the actual upgrade logic
   }
@@ -68,7 +68,7 @@
 }
 
 - (nullable HttpRequest *)nextRequestToDispatch {
-  if (self.pendingRequests.count > 0 && [self.pipelinePolicy shouldReadMoreData]) {
+  if (self.pendingRequests.count > 0 && [self shouldReadMoreData]) {
     HttpRequest *request = self.pendingRequests[0];
     [self.pendingRequests removeObjectAtIndex:0];
     [self.pipelinePolicy requestDispatched];
@@ -78,6 +78,11 @@
 }
 
 - (void)queueResponse:(HttpResponse *)response {
+  (void)response;
+  [self responseDidFinishSending];
+}
+
+- (void)responseDidFinishSending {
   // This just signals that a response was finished for the policy.
   // The driver still manages the actual network output queue (for now).
   [self.pipelinePolicy responseCompleted];
@@ -85,7 +90,28 @@
 
 - (void)resetForNextRequest {
   [self.parser reset];
-  self.headerStartTime = [NSDate timeIntervalSinceReferenceDate];
+}
+
+- (nullable HttpRequest *)currentUpgradeRequest {
+  return self.upgradeRequest;
+}
+
+- (nullable Http1ParserError *)currentParseError {
+  return self.parser.parseError;
+}
+
+- (void)setRemoteAddressIfNeeded:(nullable NSString *)remoteAddress {
+  if (self.parser.remoteAddress.length == 0 && remoteAddress.length > 0) {
+    self.parser.remoteAddress = remoteAddress;
+  }
+}
+
+- (BOOL)shouldReadMoreData {
+  return [self.pipelinePolicy shouldReadMoreData];
+}
+
+- (NSUInteger)pendingDispatchCount {
+  return self.pipelinePolicy.pendingDispatchCount;
 }
 
 @end
