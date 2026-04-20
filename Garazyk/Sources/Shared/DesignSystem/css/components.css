@@ -432,11 +432,11 @@
   color: var(--color-text-secondary);
 }
 
-/* Alerts */
+/* Alerts - Using full border instead of side-stripe to avoid AI slop pattern */
 .alert {
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-lg);
-  border-left: 4px solid;
+  border: 1px solid;
   display: flex;
   align-items: flex-start;
   gap: var(--space-md);
@@ -444,25 +444,25 @@
 }
 
 .alert-info {
-  background: rgba(48, 176, 192, 0.1);
+  background: rgba(48, 176, 192, 0.08);
   border-color: var(--color-info);
   color: var(--color-info);
 }
 
 .alert-success {
-  background: rgba(52, 199, 89, 0.1);
+  background: rgba(52, 199, 89, 0.08);
   border-color: var(--color-success);
   color: var(--color-success);
 }
 
 .alert-warning {
-  background: rgba(255, 149, 0, 0.1);
+  background: rgba(255, 149, 0, 0.08);
   border-color: var(--color-warning);
   color: var(--color-warning);
 }
 
 .alert-destructive {
-  background: rgba(255, 69, 58, 0.1);
+  background: rgba(255, 69, 58, 0.08);
   border-color: var(--color-destructive);
   color: var(--color-destructive);
 }
