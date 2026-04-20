@@ -2,8 +2,7 @@
 #import "Compat/PDSTypes.h"
 #import "Network/PDSNetworkTransport.h"
 #import "Network/HttpParsing.h"
-#import "Sync/WebSocket/WebSocketCodec.h"
-#import "Sync/WebSocket/WebSocketHeartbeatPolicy.h"
+#import "Sync/WebSocket/WebSocketProtocolSession.h"
 #import "Debug/PDSLogger.h"
 #import "Metrics/PDSMetrics.h"
 #import <CommonCrypto/CommonDigest.h>
@@ -34,9 +33,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG, nullable)
     dispatch_source_t heartbeatTimer;
 
-@property(nonatomic, strong) WebSocketCodec *codec;
-@property(nonatomic, strong) WebSocketHeartbeatPolicy *heartbeatPolicy;
-@property(nonatomic, assign) BOOL isUnderBackpressure;
+@property(nonatomic, strong) WebSocketProtocolSession *session;
 
 @end
 
@@ -89,27 +86,47 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                                       DISPATCH_QUEUE_SERIAL);
   _connectionQueue = dispatch_queue_create(
       "com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
-  _codec = [[WebSocketCodec alloc] init];
-  _heartbeatPolicy = [[WebSocketHeartbeatPolicy alloc] init];
-  _maxOutboundQueueBytes = WS_DEFAULT_MAX_QUEUE_BYTES;
-  _backpressureWarningThreshold = 0.7;
-  _backpressureCriticalThreshold = 0.9;
+  _session = [[WebSocketProtocolSession alloc] init];
 }
 
 - (NSTimeInterval)heartbeatInterval {
-  return self.heartbeatPolicy.heartbeatInterval;
+  return self.session.heartbeatPolicy.heartbeatInterval;
 }
 
 - (void)setHeartbeatInterval:(NSTimeInterval)interval {
-  self.heartbeatPolicy.heartbeatInterval = interval;
+  self.session.heartbeatPolicy.heartbeatInterval = interval;
 }
 
 - (NSTimeInterval)heartbeatTimeout {
-  return self.heartbeatPolicy.heartbeatTimeout;
+  return self.session.heartbeatPolicy.heartbeatTimeout;
 }
 
 - (void)setHeartbeatTimeout:(NSTimeInterval)timeout {
-  self.heartbeatPolicy.heartbeatTimeout = timeout;
+  self.session.heartbeatPolicy.heartbeatTimeout = timeout;
+}
+
+- (NSUInteger)maxOutboundQueueBytes {
+  return self.session.maxOutboundQueueBytes;
+}
+
+- (void)setMaxOutboundQueueBytes:(NSUInteger)bytes {
+  self.session.maxOutboundQueueBytes = bytes;
+}
+
+- (double)backpressureWarningThreshold {
+  return self.session.backpressureWarningThreshold;
+}
+
+- (void)setBackpressureWarningThreshold:(double)threshold {
+  self.session.backpressureWarningThreshold = threshold;
+}
+
+- (double)backpressureCriticalThreshold {
+  return self.session.backpressureCriticalThreshold;
+}
+
+- (void)setBackpressureCriticalThreshold:(double)threshold {
+  self.session.backpressureCriticalThreshold = threshold;
 }
 
 - (void)start {
@@ -272,29 +289,46 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)handleReceivedData:(NSData *)data {
-  NSArray<WSCodecEvent *> *events = [self.codec feedData:data];
-  
-  for (WSCodecEvent *event in events) {
-    switch (event.type) {
-      case WSCodecEventTextMessage:
-        [self notifyTextMessage:event.text];
-        break;
-      case WSCodecEventBinaryMessage:
-        [self notifyBinaryMessage:event.payload];
-        break;
-      case WSCodecEventPing:
-        [self handlePingFrame:event.payload];
-        break;
-      case WSCodecEventPong:
-        [self handlePongFrame:event.payload];
-        break;
-      case WSCodecEventClose:
-        [self closeWithCode:event.closeCode reason:event.closeReason];
-        break;
-      case WSCodecEventProtocolError:
-        [self closeWithCode:event.closeCode reason:event.closeReason];
-        break;
+  NSArray<WSSessionAction *> *actions = [self.session feedData:data];
+  for (WSSessionAction *action in actions) {
+    [self processAction:action];
+  }
+}
+
+- (void)processAction:(WSSessionAction *)action {
+  switch (action.type) {
+    case WSSessionActionTypeNotifyTextMessage:
+      [self notifyTextMessage:(NSString *)action.data];
+      break;
+    case WSSessionActionTypeNotifyBinaryMessage:
+      [self notifyBinaryMessage:(NSData *)action.data];
+      break;
+    case WSSessionActionTypeHandlePing:
+      [self handlePingFrame:(NSData *)action.data];
+      break;
+    case WSSessionActionTypeHandlePong:
+      [self handlePongFrame:(NSData *)action.data];
+      break;
+    case WSSessionActionTypeClose: {
+      WSCodecEvent *event = (WSCodecEvent *)action.data;
+      [self closeWithCode:event.closeCode reason:event.closeReason];
+      break;
     }
+    case WSSessionActionTypeSendPing:
+      [self sendPing:nil];
+      break;
+    case WSSessionActionTypeHeartbeatTimeout:
+      [self closeWithCode:1001 reason:@"Heartbeat timeout"];
+      break;
+    case WSSessionActionTypeBackpressureWarning:
+      [self notifyBackpressureWarning:[(NSNumber *)action.data doubleValue] bytes:self.queuedSendBytes];
+      break;
+    case WSSessionActionTypeBackpressureCritical:
+      [self notifyBackpressureCritical:[(NSNumber *)action.data doubleValue] bytes:self.queuedSendBytes];
+      break;
+    case WSSessionActionTypeBackpressureCleared:
+      [self notifyBackpressureCleared];
+      break;
   }
 }
 
@@ -303,8 +337,6 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)handlePongFrame:(NSData *)payload {
-  NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
-  [self.heartbeatPolicy pongReceived:now];
 }
 
 - (void)close {
@@ -325,7 +357,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     self.queuedSendBytes = 0;
   });
 
-  NSData *frame = [self.codec closeFrame:code reason:reason];
+  NSData *frame = [self.session.codec closeFrame:code reason:reason];
   [self writeData:frame];
 
   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)),
@@ -338,19 +370,19 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)sendMessage:(NSData *)data {
-  [self sendFrame:[self.codec binaryFrame:data]];
+  [self sendFrame:[self.session.codec binaryFrame:data]];
 }
 
 - (void)sendText:(NSString *)text {
-  [self sendFrame:[self.codec textFrame:text]];
+  [self sendFrame:[self.session.codec textFrame:text]];
 }
 
 - (void)sendPing:(NSData *)payload {
-  [self sendFrame:[self.codec pingFrame:payload]];
+  [self sendFrame:[self.session.codec pingFrame:payload]];
 }
 
 - (void)sendPong:(NSData *)payload {
-  [self sendFrame:[self.codec pongFrame:payload]];
+  [self sendFrame:[self.session.codec pongFrame:payload]];
 }
 
 - (void)sendFrame:(NSData *)frame {
@@ -361,19 +393,11 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     }
 
     NSUInteger newQueueSize = self.queuedSendBytes + frame.length;
-    double fillPercentage = (double)newQueueSize / (double)self.maxOutboundQueueBytes;
-
-    // Check critical threshold
-    if (fillPercentage >= self.backpressureCriticalThreshold) {
-      [self notifyBackpressureCritical:fillPercentage bytes:newQueueSize];
-    }
-    // Check warning threshold
-    else if (fillPercentage >= self.backpressureWarningThreshold) {
-      [self notifyBackpressureWarning:fillPercentage bytes:newQueueSize];
-    }
-
+    NSArray<WSSessionAction *> *actions = [self.session didEnqueueFrameOfSize:frame.length
+                                                           currentQueueSize:newQueueSize];
+    
     // Check overflow
-    if (newQueueSize > self.maxOutboundQueueBytes) {
+    if (newQueueSize > self.session.maxOutboundQueueBytes) {
       [self notifyQueueOverflow:newQueueSize];
       [self.messageQueue removeAllObjects];
       self.queuedSendBytes = 0;
@@ -381,6 +405,12 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
         [self closeWithCode:1009 reason:@"Outbound queue limit exceeded"];
       });
       return;
+    }
+
+    for (WSSessionAction *action in actions) {
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [self processAction:action];
+      });
     }
 
     [self.messageQueue addObject:frame];
@@ -440,17 +470,14 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                        } else {
                          strongSelf.queuedSendBytes -= sentFrame.length;
                        }
-                     }
 
-                     // Check if backpressure cleared
-                     double fillPercentage = (double)strongSelf.queuedSendBytes /
-                                            (double)strongSelf.maxOutboundQueueBytes;
-                     if (strongSelf.isUnderBackpressure &&
-                         fillPercentage < strongSelf.backpressureWarningThreshold) {
-                       strongSelf.isUnderBackpressure = NO;
-                       dispatch_async(dispatch_get_main_queue(), ^{
-                         [strongSelf notifyBackpressureCleared];
-                       });
+                       NSArray<WSSessionAction *> *actions = [strongSelf.session didDequeueFrameOfSize:sentFrame.length
+                                                                                     currentQueueSize:strongSelf.queuedSendBytes];
+                       for (WSSessionAction *action in actions) {
+                         dispatch_async(dispatch_get_main_queue(), ^{
+                           [strongSelf processAction:action];
+                         });
+                       }
                      }
 
                      [strongSelf flushWriteBuffer];
@@ -490,13 +517,9 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
 - (void)tickHeartbeat {
   NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
-  WSHeartbeatAction action = [self.heartbeatPolicy tick:now];
-  
-  if (action == WSHeartbeatActionSendPing) {
-    [self sendPing:nil];
-    [self.heartbeatPolicy pingSent:now];
-  } else if (action == WSHeartbeatActionTimeout) {
-    [self closeWithCode:1001 reason:@"Heartbeat timeout"];
+  NSArray<WSSessionAction *> *actions = [self.session tick:now];
+  for (WSSessionAction *action in actions) {
+    [self processAction:action];
   }
 }
 
@@ -516,7 +539,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
   dispatch_async(dispatch_get_main_queue(), ^{
     [self.delegate webSocketConnection:self
                       didCloseWithCode:code
-                                reason:reason];
+                                 reason:reason];
   });
 }
 
@@ -527,18 +550,16 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)notifyBackpressureWarning:(double)fillPercentage bytes:(NSUInteger)bytes {
-  if (self.isUnderBackpressure) return; // Already notified
-  self.isUnderBackpressure = YES;
   PDS_LOG_SYNC_WARN(@"[%@] WebSocket backpressure warning: queue %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, fillPercentage * 100,
-                    bytes, self.maxOutboundQueueBytes);
+                    bytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureWarning];
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:YES];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnection:didReachBackpressureWarning:queueBytes:)]) {
       [self.delegate webSocketConnection:self
               didReachBackpressureWarning:fillPercentage
-                               queueBytes:bytes];
+                                queueBytes:bytes];
     }
   });
 }
@@ -546,21 +567,21 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (void)notifyBackpressureCritical:(double)fillPercentage bytes:(NSUInteger)bytes {
   PDS_LOG_SYNC_WARN(@"[%@] WebSocket backpressure critical: queue %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, fillPercentage * 100,
-                    bytes, self.maxOutboundQueueBytes);
+                    bytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureCritical];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnection:didReachBackpressureCritical:queueBytes:)]) {
       [self.delegate webSocketConnection:self
                didReachBackpressureCritical:fillPercentage
-                                queueBytes:bytes];
+                                 queueBytes:bytes];
     }
   });
 }
 
 - (void)notifyBackpressureCleared {
   PDS_LOG_SYNC_INFO(@"[%@] WebSocket backpressure cleared: queue now %.1f%% full (%lu/%lu bytes)",
-                    self.remoteAddress, (double)self.queuedSendBytes / (double)self.maxOutboundQueueBytes * 100,
-                    self.queuedSendBytes, self.maxOutboundQueueBytes);
+                    self.remoteAddress, (double)self.queuedSendBytes / (double)self.session.maxOutboundQueueBytes * 100,
+                    self.queuedSendBytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnectionDidClearBackpressure:)]) {
@@ -571,18 +592,18 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
 - (void)notifyQueueOverflow:(NSUInteger)bytes {
   PDS_LOG_SYNC_ERROR(@"[%@] WebSocket queue overflow: %lu bytes exceeds limit %lu, closing connection",
-                     self.remoteAddress, bytes, self.maxOutboundQueueBytes);
+                     self.remoteAddress, bytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketQueueOverflowClosure];
-  if (self.isUnderBackpressure) {
-    [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
-  }
+  [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(webSocketConnection:willCloseForQueueOverflow:limit:)]) {
       [self.delegate webSocketConnection:self
-         willCloseForQueueOverflow:bytes
-                              limit:self.maxOutboundQueueBytes];
+          willCloseForQueueOverflow:bytes
+                               limit:self.session.maxOutboundQueueBytes];
     }
   });
 }
 
 @end
+
+
