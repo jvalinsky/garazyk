@@ -220,6 +220,24 @@ NS_ASSUME_NONNULL_BEGIN
     [self waitForExpectations:@[completion] timeout:1.0];
     close(fds[1]);
 }
+
+- (void)testListenerFailsForInvalidBindHost {
+    PDSNetworkListenerLinux *listener =
+        [[PDSNetworkListenerLinux alloc] initWithHost:@"invalid-bind-host" port:0];
+    dispatch_queue_t queue =
+        dispatch_queue_create("pds.linux.test.invalid-bind", DISPATCH_QUEUE_SERIAL);
+    XCTestExpectation *failed = [self expectationWithDescription:@"listener failed"];
+    listener.stateChangedHandler = ^(PDSNetworkListenerState state,
+                                     NSError *_Nullable error) {
+        if (state == PDSNetworkListenerStateFailed) {
+            XCTAssertNotNil(error);
+            XCTAssertEqual(error.code, EADDRNOTAVAIL);
+            [failed fulfill];
+        }
+    };
+    [listener startWithQueue:queue];
+    [self waitForExpectations:@[ failed ] timeout:1.0];
+}
 #endif
 
 @end

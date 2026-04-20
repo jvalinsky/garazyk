@@ -34,6 +34,8 @@ typedef NS_ENUM(NSInteger, WSSessionActionType) {
 @property(nonatomic, assign) double backpressureCriticalThreshold;
 
 - (NSArray<WSSessionAction *> *)feedData:(NSData *)data;
+- (NSArray<WSSessionAction *> *)feedData:(NSData *)data
+                              receivedAt:(NSTimeInterval)receivedAt;
 - (NSArray<WSSessionAction *> *)tick:(NSTimeInterval)now;
 
 // Tracking outbound state (input from driver)

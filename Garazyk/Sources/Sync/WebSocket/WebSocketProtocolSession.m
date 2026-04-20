@@ -31,6 +31,12 @@
 }
 
 - (NSArray<WSSessionAction *> *)feedData:(NSData *)data {
+  return [self feedData:data
+             receivedAt:[NSDate timeIntervalSinceReferenceDate]];
+}
+
+- (NSArray<WSSessionAction *> *)feedData:(NSData *)data
+                              receivedAt:(NSTimeInterval)receivedAt {
   NSArray<WSCodecEvent *> *codecEvents = [self.codec feedData:data];
   NSMutableArray<WSSessionAction *> *actions = [NSMutableArray array];
 
@@ -46,8 +52,7 @@
       [actions addObject:[WSSessionAction actionWithType:WSSessionActionTypeHandlePing data:codecEvent.payload]];
       break;
     case WSCodecEventPong: {
-      NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
-      [self.heartbeatPolicy pongReceived:now];
+      [self.heartbeatPolicy pongReceived:receivedAt];
       [actions addObject:[WSSessionAction actionWithType:WSSessionActionTypeHandlePong data:codecEvent.payload]];
       break;
     }
