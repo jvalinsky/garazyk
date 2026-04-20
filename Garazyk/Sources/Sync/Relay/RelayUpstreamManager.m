@@ -233,22 +233,25 @@
 
 - (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event {
     NSString *url = [self urlForClient:client];
-    if (url) {
-        [self.delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
+    id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+    if (url && delegate) {
+        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
 }
 
 - (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
     NSString *url = [self urlForClient:client];
-    if (url) {
-        [self.delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
+    id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+    if (url && delegate) {
+        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
 }
 
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
     NSString *url = [self urlForClient:client];
-    if (url) {
-        [self.delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
+    id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+    if (url && delegate) {
+        [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
 }
 
@@ -256,26 +259,47 @@
     NSString *url = [self urlForClient:client];
     if (url) {
         PDS_LOG_SYNC_INFO(@"RelayUpstreamManager: Client connected to %@", url);
+
+        // Capture properties for block
+        __strong typeof(self) strongSelf = self;
+        NSMutableSet *connectedUpstreams = self.connectedUpstreams;
+        NSMutableDictionary *reconnectAttempts = self.reconnectAttempts;
+        NSMutableDictionary *reconnectDelays = self.reconnectDelays;
+        NSMutableDictionary *hostStatuses = self.hostStatuses;
+        NSTimeInterval baseInterval = self.baseReconnectInterval;
+
         dispatch_async(_managerQueue, ^{
-            [self.connectedUpstreams addObject:url];
-            self.reconnectAttempts[url] = @0;
-            self.reconnectDelays[url] = @(self.baseReconnectInterval);
-            self.hostStatuses[url] = @(RelayHostStatusActive);
+            [connectedUpstreams addObject:url];
+            reconnectAttempts[url] = @0;
+            reconnectDelays[url] = @(baseInterval);
+            hostStatuses[url] = @(RelayHostStatusActive);
         });
         [[RelayMetrics sharedMetrics] recordUpstreamConnected];
-        [self.delegate upstreamManager:self didConnectToUpstream:url];
+
+        id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+        if (delegate) {
+            [delegate upstreamManager:self didConnectToUpstream:url];
+        }
     }
 }
 
 - (void)relayClient:(RelayClient *)client didDisconnectWithError:(NSError *)error {
     NSString *url = [self urlForClient:client];
     if (url) {
+        // Capture properties for block
+        NSMutableSet *connectedUpstreams = self.connectedUpstreams;
+        NSMutableDictionary *hostStatuses = self.hostStatuses;
+
         dispatch_async(_managerQueue, ^{
-            [self.connectedUpstreams removeObject:url];
-            self.hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
+            [connectedUpstreams removeObject:url];
+            hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
         });
         [[RelayMetrics sharedMetrics] recordUpstreamDisconnected];
-        [self.delegate upstreamManager:self didDisconnectFromUpstream:url error:error];
+
+        id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+        if (delegate) {
+            [delegate upstreamManager:self didDisconnectFromUpstream:url error:error];
+        }
 
         if (self.autoReconnectEnabled && !self.isPaused) {
             [self scheduleReconnectForUpstream:url];
@@ -286,11 +310,20 @@
 - (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
     NSString *url = [self urlForClient:client];
     if (url) {
+        // Capture self and delegate strongly for the block
+        __strong typeof(self) strongSelf = self;
+        __strong typeof(self.delegate) strongDelegate = self.delegate;
+        NSDictionary *hostSeqs = self.hostSeqs;
+
         dispatch_async(_managerQueue, ^{
-            self.hostSeqs[url] = @(cursor);
+            if (strongSelf) {
+                strongSelf.hostSeqs[url] = @(cursor);
+            }
         });
         [[RelayMetrics sharedMetrics] recordSequence:cursor];
-        [self.delegate upstreamManager:self didReceiveCursor:cursor fromUpstream:url];
+        if (strongDelegate) {
+            [strongDelegate upstreamManager:self didReceiveCursor:cursor fromUpstream:url];
+        }
     }
 }
 
