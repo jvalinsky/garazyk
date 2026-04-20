@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "Sync/Relay/RelayRepoStateManager.h"
+#import "Sync/Relay/RelayUpstreamManager.h"
 #import "Network/HttpServer.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 
@@ -12,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong, nullable) DIDPLCResolver *plcResolver;
 @property (nonatomic, strong, nullable) NSString *plcUrl;
+@property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
 
 - (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
                   subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler;

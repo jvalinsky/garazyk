@@ -69,6 +69,12 @@ static BOOL isValidDID(NSString *did) {
              }];
 
     [server addRoute:@"GET"
+                path:@"/xrpc/com.atproto.sync.getHostStatus"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetHostStatus:request response:response];
+             }];
+
+    [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getRepo"
              handler:^(HttpRequest *request, HttpResponse *response) {
                  [self handleGetRepo:request response:response];
@@ -319,6 +325,127 @@ static BOOL isValidDID(NSString *did) {
             body[@"rev"] = rev;
         }
     }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:body];
+}
+
+#pragma mark - getHostStatus
+
+- (void)handleGetHostStatus:(HttpRequest *)request response:(HttpResponse *)response
+{
+    // Lexicon: com.atproto.sync.getHostStatus
+    // Output: { "hostname": "...", "seq": 123, "status": "...", "accountCount": 456 }
+    NSString *hostnameParam = [request queryParamForKey:@"hostname"];
+    if (hostnameParam.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"hostname parameter is required"
+        }];
+        return;
+    }
+
+    // Normalize hostname (remove scheme if present)
+    NSString *normalizedHostname = hostnameParam;
+    if ([normalizedHostname hasPrefix:@"https://"])
+    {
+        normalizedHostname = [normalizedHostname substringFromIndex:8];
+    }
+    else if ([normalizedHostname hasPrefix:@"http://"])
+    {
+        normalizedHostname = [normalizedHostname substringFromIndex:7];
+    }
+
+    // Remove trailing slash and path
+    NSRange pathRange = [normalizedHostname rangeOfString:@"/"];
+    if (pathRange.location != NSNotFound)
+    {
+        normalizedHostname = [normalizedHostname substringToIndex:pathRange.location];
+    }
+
+    // Remove port for lookup
+    NSString *lookupHostname = normalizedHostname;
+    NSRange portRange = [lookupHostname rangeOfString:@":"];
+    if (portRange.location != NSNotFound)
+    {
+        lookupHostname = [lookupHostname substringToIndex:portRange.location];
+    }
+
+    // Check if we have this upstream
+    if (!_upstreamManager)
+    {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+            @"error": @"HostNotFound",
+            @"message": [NSString stringWithFormat:@"Host not found: %@", hostnameParam]
+        }];
+        return;
+    }
+
+    // Find matching upstream by hostname
+    NSArray<NSString *> *allUpstreams = [_upstreamManager allUpstreams];
+    NSString *matchedUpstream = nil;
+    for (NSString *upstream in allUpstreams)
+    {
+        // Extract hostname from URL
+        NSURL *upstreamURL = [NSURL URLWithString:upstream];
+        if (!upstreamURL)
+        {
+            // Try adding scheme
+            upstreamURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://%@", upstream]];
+        }
+        NSString *upstreamHost = upstreamURL.host ?: upstream;
+        if ([upstreamHost.lowercaseString isEqualToString:lookupHostname.lowercaseString])
+        {
+            matchedUpstream = upstream;
+            break;
+        }
+    }
+
+    if (!matchedUpstream)
+    {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+            @"error": @"HostNotFound",
+            @"message": [NSString stringWithFormat:@"Host not found: %@", hostnameParam]
+        }];
+        return;
+    }
+
+    // Build response
+    NSMutableDictionary *body = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+        normalizedHostname, @"hostname",
+        nil];
+
+    int64_t seq = [_upstreamManager seqForUpstream:matchedUpstream];
+    if (seq > 0)
+    {
+        body[@"seq"] = @(seq);
+    }
+
+    NSUInteger accountCount = [_upstreamManager accountCountForUpstream:matchedUpstream];
+    if (accountCount > 0)
+    {
+        body[@"accountCount"] = @(accountCount);
+    }
+
+    RelayHostStatus status = [_upstreamManager statusForUpstream:matchedUpstream];
+    NSString *statusStr = @"disconnected";
+    switch (status)
+    {
+        case RelayHostStatusActive:
+            statusStr = @"active";
+            break;
+        case RelayHostStatusError:
+            statusStr = @"error";
+            break;
+        case RelayHostStatusDisconnected:
+            statusStr = @"disconnected";
+            break;
+    }
+    body[@"status"] = statusStr;
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:body];

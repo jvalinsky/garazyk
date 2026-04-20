@@ -23,6 +23,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class RelayUpstreamManager;
 
+/*! Host status for getHostStatus endpoint */
+typedef NS_ENUM(NSInteger, RelayHostStatus) {
+    RelayHostStatusActive,      // Connected and receiving events
+    RelayHostStatusDisconnected, // Not connected
+    RelayHostStatusError        // Connection error
+};
+
 @protocol RelayUpstreamManagerDelegate <NSObject>
 - (void)upstreamManager:(RelayUpstreamManager *)manager didReceiveEvent:(id)event fromUpstream:(NSString *)url;
 - (void)upstreamManager:(RelayUpstreamManager *)manager didConnectToUpstream:(NSString *)url;
@@ -53,11 +60,27 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)connectToUpstream:(NSString *)url;
 - (void)disconnectFromUpstream:(NSString *)url;
 
+- (void)validateHost:(NSString *)hostname completion:(void (^)(BOOL reachable, NSError * _Nullable error))completion;
+
 - (void)pause;
 - (void)resume;
 
 - (BOOL)isConnected;
 - (BOOL)isConnectedToUpstream:(NSString *)url;
+
+#pragma mark - Host Status (for getHostStatus endpoint)
+
+/*! Returns the current sequence for an upstream host. */
+- (int64_t)seqForUpstream:(NSString *)url;
+
+/*! Returns the host status for an upstream. */
+- (RelayHostStatus)statusForUpstream:(NSString *)url;
+
+/*! Returns the number of accounts being tracked for a host. */
+- (NSUInteger)accountCountForUpstream:(NSString *)url;
+
+/*! Updates account count for a host (called when repos are added/removed). */
+- (void)setAccountCount:(NSUInteger)count forUpstream:(NSString *)url;
 
 @end
 
