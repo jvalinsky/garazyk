@@ -36,6 +36,8 @@
 }
 
 - (void)startCollecting {
+    // Capture self strongly - dispatch_source and timer handler will extend lifetime
+    // stopCollecting must be called to cancel timer and release this reference
     dispatch_async(self.queue, ^{
         if (self.timer) {
             return; // Already collecting
@@ -45,8 +47,12 @@
         dispatch_source_set_timer(self.timer, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC),
                                    60 * NSEC_PER_SEC, 1 * NSEC_PER_SEC);
 
+        __weak typeof(self) weakSelf = self;
         dispatch_source_set_event_handler(self.timer, ^{
-            [self collectMetrics];
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf collectMetrics];
+            }
         });
 
         dispatch_resume(self.timer);
@@ -56,7 +62,7 @@
 }
 
 - (void)stopCollecting {
-    dispatch_async(self.queue, ^{
+    dispatch_sync(self.queue, ^{
         if (self.timer) {
             dispatch_source_cancel(self.timer);
             self.timer = nil;
@@ -86,8 +92,9 @@
         }
     }
 
-    // Get subscriber count
-    NSInteger subscriberCount = self.subscribeHandler.attachedConnections.count;
+    // Get subscriber count - capture weak reference strongly
+    SubscribeReposHandler *strongHandler = self.subscribeHandler;
+    NSInteger subscriberCount = strongHandler.attachedConnections.count;
 
     // Get backpressure metrics
     PDSMetrics *metrics = [PDSMetrics sharedMetrics];
@@ -186,13 +193,18 @@
 
 - (nullable NSDictionary *)currentSnapshot {
     __block NSDictionary *snapshot = nil;
-
+    __weak typeof(self) weakSelf = self;
+    
     dispatch_sync(self.queue, ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        
         NSError *error = nil;
-        int64_t currentSeq = [self.serviceDatabases getMaxEventSequence:&error];
+        int64_t currentSeq = [strongSelf.serviceDatabases getMaxEventSequence:&error];
         if (error) return;
 
-        NSInteger subscriberCount = self.subscribeHandler.attachedConnections.count;
+        SubscribeReposHandler *strongHandler = strongSelf.subscribeHandler;
+        NSInteger subscriberCount = strongHandler.attachedConnections.count;
         PDSMetrics *metrics = [PDSMetrics sharedMetrics];
 
         snapshot = @{
