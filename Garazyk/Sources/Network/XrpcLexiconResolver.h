@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "Core/DID.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -15,6 +16,10 @@ extern NSErrorDomain const XrpcLexiconResolverErrorDomain;
 
 + (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
                                    configuration:(PDSConfiguration *)configuration;
+
+/*! Extracts the PDS service endpoint from a DID document. */
++ (nullable NSString *)pdsEndpointFromDidDocument:(DIDDocument *)document
+                                            error:(NSError **)error;
 
 @end
 
