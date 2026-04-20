@@ -364,13 +364,9 @@ file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/PDSHttpXrpcRoutePack.m"
   "Garazyk/Sources/Network/RelayXrpcRoutePack.m"
   "Garazyk/Sources/Network/AppViewXRpcRoutePack.m"
-  "Garazyk/Sources/Sync/RelayXRPCMethods.m"
-  "Garazyk/Sources/Sync/RelayXRPCMethods.c"
 )
 # XRPCError.m is included in ATPROTO_TRANSPORT_SOURCES, exclude from here to avoid duplicate
 list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Network/XRPCError\\.m$")
-list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Sync/Relay/RelayXRPCMethods\\.m$")
-list(FILTER ATPROTO_XRPC_SOURCES EXCLUDE REGEX ".*/Sync/Relay/RelayXRPCMethods\\.c$")
 
 file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
   "Garazyk/Sources/Sync/Firehose/*.m"
@@ -380,8 +376,6 @@ file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
   "Garazyk/Sources/Sync/WebSocket/*.m"
   "Garazyk/Sources/Sync/WebSocket/*.c"
 )
-list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.m$")
-list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/RelayXRPCMethods\\.c$")
 
 file(GLOB_RECURSE ATPROTO_PLC_SOURCES
   "Garazyk/Sources/PLC/*.m"

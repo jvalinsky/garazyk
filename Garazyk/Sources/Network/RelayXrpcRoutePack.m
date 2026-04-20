@@ -80,6 +80,12 @@ static BOOL isValidDID(NSString *did) {
                  [self handleRequestCrawl:request response:response];
              }];
 
+    [server addRoute:@"POST"
+                path:@"/admin/pds/requestCrawl"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleAdminRequestCrawl:request response:response];
+             }];
+
     [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getRepo"
              handler:^(HttpRequest *request, HttpResponse *response) {
@@ -549,13 +555,42 @@ static BOOL isValidDID(NSString *did) {
         [NSString stringWithFormat:@"https://%@", normalizedHostname] :
         [NSString stringWithFormat:@"http://%@", normalizedHostname];
 
-    // Check if host is reachable (async validateHost callback)
-    // For now, we'll do a synchronous check
-    // TODO: In production, this should be async to avoid blocking
+    // Synchronously validate host with semaphore and timeout
+    __block BOOL validationSuccess = NO;
+    __block NSError *validationError = nil;
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
     [_upstreamManager validateHost:upstreamURL completion:^(BOOL reachable, NSError * _Nullable error) {
-        // This callback happens after we return, so we can't use it here
-        // For initial implementation, just add the upstream and let the manager handle connection
+        validationSuccess = reachable;
+        validationError = error;
+        dispatch_semaphore_signal(semaphore);
     }];
+
+    // Wait up to 5 seconds for validation
+    long waitResult = dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+    if (waitResult != 0)
+    {
+        // Timeout
+        response.statusCode = HttpStatusGatewayTimeout;
+        [response setJsonBody:@{
+            @"error": @"HostValidationTimeout",
+            @"message": @"Timeout validating host - host may be unreachable"
+        }];
+        return;
+    }
+
+    if (!validationSuccess)
+    {
+        NSString *errorMessage = validationError ? validationError.localizedDescription : @"Unknown error";
+        response.statusCode = HttpStatusServiceUnavailable;
+        [response setJsonBody:@{
+            @"error": @"HostValidationError",
+            @"message": errorMessage,
+            @"hostname": normalizedHostname
+        }];
+        PDS_LOG_SYNC_WARN(@"Relay requestCrawl: Host validation failed for %@: %@", upstreamURL, errorMessage);
+        return;
+    }
 
     // Add upstream for crawling
     [_upstreamManager addUpstream:upstreamURL];
@@ -565,6 +600,104 @@ static BOOL isValidDID(NSString *did) {
     // Success - return empty response (per lexicon)
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{}];
+}
+
+#pragma mark - Admin requestCrawl
+
+- (void)handleAdminRequestCrawl:(HttpRequest *)request response:(HttpResponse *)response
+{
+    // Admin endpoint for requesting relay to crawl a PDS
+    // Bypasses host validation (for trusted admin operations)
+    // Requires Authorization: Bearer <admin_token>
+
+    // Check authorization
+    NSString *authHeader = [request headerForKey:@"Authorization"];
+    if (!authHeader || ![authHeader hasPrefix:@"Bearer "])
+    {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{
+            @"error": @"AuthenticationRequired",
+            @"message": @"Authorization header required"
+        }];
+        return;
+    }
+
+    NSString *token = [authHeader substringFromIndex:7]; // Skip "Bearer "
+
+    // Validate against RELAY_ADMIN_PASSWORD or PDS_ADMIN_PASSWORD
+    NSString *relayAdminPassword = [NSProcessInfo processInfo].environment[@"RELAY_ADMIN_PASSWORD"];
+    NSString *pdsAdminPassword = [NSProcessInfo processInfo].environment[@"PDS_ADMIN_PASSWORD"];
+    NSString *expectedToken = relayAdminPassword ?: pdsAdminPassword;
+
+    if (!expectedToken || ![token isEqualToString:expectedToken])
+    {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{
+            @"error": @"InvalidToken",
+            @"message": @"Invalid admin token"
+        }];
+        return;
+    }
+
+    // Parse JSON body
+    NSData *bodyData = request.body;
+    if (!bodyData || bodyData.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"Request body required"
+        }];
+        return;
+    }
+
+    NSError *parseError = nil;
+    NSDictionary *body = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&parseError];
+    if (!body || ![body isKindOfClass:[NSDictionary class]])
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"Invalid JSON body"
+        }];
+        return;
+    }
+
+    NSString *hostname = body[@"hostname"];
+    if (!hostname || hostname.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"hostname field required"
+        }];
+        return;
+    }
+
+    // Build upstream URL (default to https unless localhost)
+    NSString *upstreamURL = hostname;
+    if (![hostname containsString:@"://"])
+    {
+        if ([hostname hasPrefix:@"localhost:"] || [hostname hasPrefix:@"127.0.0.1:"])
+        {
+            upstreamURL = [NSString stringWithFormat:@"http://%@", hostname];
+        }
+        else
+        {
+            upstreamURL = [NSString stringWithFormat:@"https://%@", hostname];
+        }
+    }
+
+    // Add upstream immediately (admin bypasses validation)
+    [_upstreamManager addUpstream:upstreamURL];
+
+    PDS_LOG_SYNC_INFO(@"Relay admin requestCrawl: Added upstream %@ (bypassing validation)", upstreamURL);
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{
+        @"success": @YES,
+        @"hostname": upstreamURL
+    }];
 }
 
 #pragma mark - getRepo
