@@ -122,8 +122,11 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)notifyDisconnectionWithError:(NSError *)error {
+    id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate relayClient:self didDisconnectWithError:error];
+        if (delegate) {
+            [delegate relayClient:self didDisconnectWithError:error];
+        }
     });
 }
 
@@ -154,8 +157,11 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     self.isConnected = YES;
     self.reconnectAttempts = 0;
 
+    id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate relayClientDidConnect:self];
+        if (delegate) {
+            [delegate relayClientDidConnect:self];
+        }
     });
 }
 
@@ -164,28 +170,41 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     [self storeCursor:event.seq forRepo:event.repo];
     self.currentSeq = event.seq;
 
+    id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate relayClient:self didReceiveCommitEvent:event];
+        if (delegate) {
+            [delegate relayClient:self didReceiveCommitEvent:event];
+        }
     });
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
+    id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate relayClient:self didReceiveIdentityEvent:event];
+        if (delegate) {
+            [delegate relayClient:self didReceiveIdentityEvent:event];
+        }
     });
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+    id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate relayClient:self didReceiveErrorEvent:event];
+        if (delegate) {
+            [delegate relayClient:self didReceiveErrorEvent:event];
+        }
     });
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(NSError *)error {
     self.isConnected = NO;
 
+    id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
+    int64_t seq = self.currentSeq;  // Capture value
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.delegate relayClient:self didReceiveCursor:self.currentSeq];
+        if (delegate) {
+            [delegate relayClient:self didReceiveCursor:seq];
+        }
     });
 
     if (error) {
