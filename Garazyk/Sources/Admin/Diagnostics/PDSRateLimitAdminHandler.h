@@ -76,6 +76,34 @@ NS_ASSUME_NONNULL_BEGIN
                                    statusCode:(nullable NSInteger *)statusCode
                                   contentType:(NSString * _Nullable * _Nullable)contentType;
 
+/**
+ * @brief Clear rate limit for an identifier with audit trail.
+ *
+ * @param identifier The DID or IP to clear
+ * @param type The type of identifier ("did" or "ip")
+ * @param adminDid The DID of the admin performing the action
+ * @param reason Reason for clearing (required)
+ * @param error Output error
+ * @return YES if successful
+ */
+- (BOOL)clearRateLimitForIdentifier:(NSString *)identifier
+                               type:(NSString *)type
+                            adminDid:(NSString *)adminDid
+                             reason:(NSString *)reason
+                              error:(NSError **)error;
+
+/**
+ * @brief Query rate limit status for an identifier.
+ *
+ * @param identifier The DID or IP to query
+ * @param type The type of identifier ("did" or "ip")
+ * @param error Output error
+ * @return Dictionary with rate limit status or nil on error
+ */
+- (nullable NSDictionary *)queryRateLimitForIdentifier:(NSString *)identifier
+                                                   type:(NSString *)type
+                                                  error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
