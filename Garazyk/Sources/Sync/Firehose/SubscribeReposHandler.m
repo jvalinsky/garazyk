@@ -148,9 +148,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   NSSet<WebSocketConnection *> *attachedSnapshot = nil;
   @synchronized(_attachedConnections) {
     attachedSnapshot = [_attachedConnections copy];
-    [_attachedConnections removeAllObjects];
   }
   for (WebSocketConnection *connection in attachedSnapshot) {
+    [self detachConnection:connection];
     [connection close];
   }
 
@@ -218,11 +218,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   PDS_LOG_SYNC_INFO(@"[%@] Closed WebSocket connection for subscribeRepos",
                     connection.remoteAddress);
   [self detachConnection:connection];
-
-  if ([self.delegate respondsToSelector:@selector
-                     (subscribeReposHandler:didCloseConnection:)]) {
-    [self.delegate subscribeReposHandler:self didCloseConnection:connection];
-  }
 }
 
 - (void)webSocketServer:(WebSocketServer *)server
@@ -244,10 +239,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       @"[%@] Main-port WebSocket connection closed (code=%ld, reason=%@)",
       connection.remoteAddress, (long)code, reason ?: @"");
   [self detachConnection:connection];
-  if ([self.delegate respondsToSelector:@selector
-                     (subscribeReposHandler:didCloseConnection:)]) {
-    [self.delegate subscribeReposHandler:self didCloseConnection:connection];
-  }
 }
 
 - (void)webSocketConnection:(WebSocketConnection *)connection
@@ -255,10 +246,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   PDS_LOG_SYNC_ERROR(@"[%@] Main-port WebSocket connection failed: %@",
                      connection.remoteAddress, error);
   [self detachConnection:connection];
-  if ([self.delegate respondsToSelector:@selector
-                     (subscribeReposHandler:didCloseConnection:)]) {
-    [self.delegate subscribeReposHandler:self didCloseConnection:connection];
-  }
 }
 
 #pragma mark - Record Change Notification
@@ -903,10 +890,21 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)detachConnection:(WebSocketConnection *)connection {
+  BOOL removed = NO;
+  NSUInteger count = 0;
   @synchronized(_attachedConnections) {
-    [_attachedConnections removeObject:connection];
+    if ([_attachedConnections containsObject:connection]) {
+      [_attachedConnections removeObject:connection];
+      removed = YES;
+      count = _attachedConnections.count;
+    }
   }
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
+  if (removed) {
+    [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
+    if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
+      [self.delegate subscribeReposHandler:self didCloseConnection:connection];
+    }
+  }
 }
 
 - (BOOL)sendEventData:(NSData *)eventData
