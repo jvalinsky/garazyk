@@ -3,6 +3,16 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
+#import "PLC/DIDPLCResolver.h"
+#import "Network/XrpcLexiconResolver.h"
+#import "Core/DID.h"
+#import "Debug/PDSLogger.h"
+
+// DID validation helper
+static BOOL isValidDID(NSString *did) {
+    if (!did || did.length < 7) return NO;
+    return [did hasPrefix:@"did:plc:"] || [did hasPrefix:@"did:web:"];
+}
 
 @implementation RelayXrpcRoutePack
 {
@@ -13,11 +23,21 @@
 - (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
                   subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
 {
+    return [self initWithRepoStateManager:repoStateManager
+                     subscribeReposHandler:subscribeReposHandler
+                                 plcResolver:nil];
+}
+
+- (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
+                  subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
+                              plcResolver:(nullable DIDPLCResolver *)plcResolver
+{
     self = [super init];
     if (self)
     {
         _repoStateManager = repoStateManager;
         _subscribeReposHandler = subscribeReposHandler;
+        _plcResolver = plcResolver;
     }
     return self;
 }
@@ -169,8 +189,17 @@
 
 - (void)handleGetRepo:(HttpRequest *)request response:(HttpResponse *)response
 {
-    NSString *repoParam = [request queryParamForKey:@"did"];
-    if (repoParam.length == 0)
+    // Per ATProto spec and indigo reference: relay getRepo returns HTTP 302 redirect
+    // to the source PDS's getRepo endpoint, not the CAR data itself.
+    // Reference: indigo/cmd/relay/stubs.go:125-158
+
+    NSString *didParam = [request queryParamForKey:@"did"];
+    if (didParam.length == 0)
+    {
+        // Also check legacy 'repo' parameter for compatibility
+        didParam = [request queryParamForKey:@"repo"];
+    }
+    if (didParam.length == 0)
     {
         response.statusCode = HttpStatusBadRequest;
         [response setJsonBody:@{
@@ -180,27 +209,146 @@
         return;
     }
 
-    NSString *rootCid = [_repoStateManager rootCIDForRepo:repoParam];
-    if (!rootCid)
+    // Validate DID format
+    if (!isValidDID(didParam))
     {
-        response.statusCode = HttpStatusNotFound;
+        response.statusCode = HttpStatusBadRequest;
         [response setJsonBody:@{
-            @"error": @"RepoNotFound",
-            @"message": [NSString stringWithFormat:@"Repo not found: %@", repoParam]
+            @"error": @"InvalidRequest",
+            @"message": [NSString stringWithFormat:@"Invalid DID format: %@ (must be did:plc or did:web)", didParam]
         }];
         return;
     }
 
-    NSString *rev = [_repoStateManager revForRepo:repoParam];
-    RelayRepoStatus status = [_repoStateManager statusForRepo:repoParam];
+    // Resolve the DID document to get the PDS endpoint
+    NSError *resolveError = nil;
+    NSDictionary *didDoc = nil;
 
-    response.statusCode = HttpStatusOK;
-    [response setJsonBody:@{
-        @"did": repoParam,
-        @"head": rootCid,
-        @"rev": rev ?: @"",
-        @"active": @(status == RelayRepoStatusActive)
-    }];
+    if ([didParam hasPrefix:@"did:plc:"] && self.plcResolver)
+    {
+        didDoc = [self.plcResolver resolveDID:didParam error:&resolveError];
+    }
+    else if ([didParam hasPrefix:@"did:web:"])
+    {
+        // For did:web, fetch the DID document from the web endpoint
+        NSString *domain = [didParam substringFromIndex:8]; // Remove "did:web:"
+        NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/did.json", domain];
+        NSURL *url = [NSURL URLWithString:urlString];
+        NSData *data = [NSData dataWithContentsOfURL:url options:0 error:&resolveError];
+        if (data)
+        {
+            didDoc = [NSJSONSerialization JSONObjectWithData:data options:0 error:&resolveError];
+        }
+    }
+    else
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"Unsupported DID method (must be did:plc or did:web)"
+        }];
+        return;
+    }
+
+    if (!didDoc || resolveError)
+    {
+        PDS_LOG_WARN(@"Relay getRepo: Failed to resolve DID %@: %@", didParam,
+                     resolveError.localizedDescription ?: @"unknown error");
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+            @"error": @"RepoNotFound",
+            @"message": [NSString stringWithFormat:@"Could not resolve DID: %@", didParam]
+        }];
+        return;
+    }
+
+    // Wrap as DIDDocument for endpoint extraction
+    DIDDocument *didDocument = [DIDDocument documentWithJSON:didDoc error:&resolveError];
+    if (!didDocument)
+    {
+        PDS_LOG_WARN(@"Relay getRepo: Invalid DID document for %@: %@", didParam,
+                     resolveError.localizedDescription ?: @"unknown error");
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+            @"error": @"RepoNotFound",
+            @"message": [NSString stringWithFormat:@"Invalid DID document: %@", didParam]
+        }];
+        return;
+    }
+
+    // Extract PDS endpoint from DID document
+    NSError *endpointError = nil;
+    NSString *pdsEndpoint = [XrpcLexiconResolver pdsEndpointFromDidDocument:didDocument error:&endpointError];
+
+    if (!pdsEndpoint || pdsEndpoint.length == 0)
+    {
+        PDS_LOG_WARN(@"Relay getRepo: No PDS endpoint in DID document for %@", didParam);
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+            @"error": @"RepoNotFound",
+            @"message": @"DID document has no AtprotoPersonalDataServer endpoint"
+        }];
+        return;
+    }
+
+    // Normalize PDS endpoint (remove trailing slash)
+    if ([pdsEndpoint hasSuffix:@"/"])
+    {
+        pdsEndpoint = [pdsEndpoint substringWithRange:NSMakeRange(0, pdsEndpoint.length - 1)];
+    }
+
+    // Build redirect URL to PDS's getRepo endpoint
+    NSURLComponents *redirectComponents = [NSURLComponents componentsWithString:pdsEndpoint];
+    if (!redirectComponents)
+    {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+            @"error": @"InternalError",
+            @"message": @"Invalid PDS endpoint URL in DID document"
+        }];
+        return;
+    }
+
+    // Append the XRPC path
+    NSString *basePath = redirectComponents.path ?: @"";
+    if (basePath.length == 0 || [basePath isEqualToString:@"/"])
+    {
+        redirectComponents.path = @"/xrpc/com.atproto.sync.getRepo";
+    }
+    else
+    {
+        redirectComponents.path = [basePath stringByAppendingString:@"/xrpc/com.atproto.sync.getRepo"];
+    }
+
+    // Add query parameters
+    NSMutableArray<NSURLQueryItem *> *queryItems = [NSMutableArray array];
+    [queryItems addObject:[NSURLQueryItem queryItemWithName:@"did" value:didParam]];
+
+    // Preserve the 'since' parameter if provided
+    NSString *sinceParam = [request queryParamForKey:@"since"];
+    if (sinceParam.length > 0)
+    {
+        [queryItems addObject:[NSURLQueryItem queryItemWithName:@"since" value:sinceParam]];
+    }
+
+    redirectComponents.queryItems = queryItems;
+
+    NSURL *redirectURL = redirectComponents.URL;
+    if (!redirectURL)
+    {
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{
+            @"error": @"InternalError",
+            @"message": @"Failed to construct redirect URL"
+        }];
+        return;
+    }
+
+    PDS_LOG_INFO(@"Relay getRepo: Redirecting %@ to %@", didParam, redirectURL.absoluteString);
+
+    // HTTP 302 Found (temporary redirect) per indigo reference
+    response.statusCode = HttpStatusFound;
+    [response setHeader:redirectURL.absoluteString forKey:@"Location"];
 }
 
 @end
