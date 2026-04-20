@@ -57,6 +57,12 @@ static BOOL isValidDID(NSString *did) {
              }];
 
     [server addRoute:@"GET"
+                path:@"/xrpc/com.atproto.sync.getLatestCommit"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetLatestCommit:request response:response];
+             }];
+
+    [server addRoute:@"GET"
                 path:@"/xrpc/com.atproto.sync.getRepo"
              handler:^(HttpRequest *request, HttpResponse *response) {
                  [self handleGetRepo:request response:response];
@@ -149,39 +155,81 @@ static BOOL isValidDID(NSString *did) {
     [response setJsonBody:result];
 }
 
-#pragma mark - getHead
+#pragma mark - getHead (deprecated)
 
 - (void)handleGetHead:(HttpRequest *)request response:(HttpResponse *)response
 {
-    NSString *repoParam = [request queryParamForKey:@"repo"];
-    if (repoParam.length == 0)
+    // DEPRECATED endpoint - use getLatestCommit instead
+    // Output format: { "root": "<cid>" }
+    NSString *didParam = [request queryParamForKey:@"did"];
+    if (didParam.length == 0)
+    {
+        didParam = [request queryParamForKey:@"repo"]; // legacy parameter
+    }
+    if (didParam.length == 0)
     {
         response.statusCode = HttpStatusBadRequest;
         [response setJsonBody:@{
             @"error": @"InvalidRequest",
-            @"message": @"repo parameter is required"
+            @"message": @"did parameter is required"
         }];
         return;
     }
 
-    NSString *rootCid = [_repoStateManager rootCIDForRepo:repoParam];
+    NSString *rootCid = [_repoStateManager rootCIDForRepo:didParam];
+    if (!rootCid)
+    {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+            @"error": @"HeadNotFound",
+            @"message": [NSString stringWithFormat:@"Head not found for repo: %@", didParam]
+        }];
+        return;
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:@{ @"root": rootCid }];
+}
+
+#pragma mark - getLatestCommit
+
+- (void)handleGetLatestCommit:(HttpRequest *)request response:(HttpResponse *)response
+{
+    // Current endpoint - returns cid and rev
+    // Lexicon: com.atproto.sync.getLatestCommit
+    // Output: { "cid": "<cid>", "rev": "<rev>" }
+    NSString *didParam = [request queryParamForKey:@"did"];
+    if (didParam.length == 0)
+    {
+        response.statusCode = HttpStatusBadRequest;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"did parameter is required"
+        }];
+        return;
+    }
+
+    NSString *rootCid = [_repoStateManager rootCIDForRepo:didParam];
     if (!rootCid)
     {
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
             @"error": @"RepoNotFound",
-            @"message": [NSString stringWithFormat:@"Repo not found: %@", repoParam]
+            @"message": [NSString stringWithFormat:@"Repo not found: %@", didParam]
         }];
         return;
     }
 
-    NSString *rev = [_repoStateManager revForRepo:repoParam];
+    NSString *rev = [_repoStateManager revForRepo:didParam];
+    if (!rev)
+    {
+        rev = @"";
+    }
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{
-        @"did": repoParam,
-        @"head": rootCid,
-        @"rev": rev ?: @""
+        @"cid": rootCid,
+        @"rev": rev
     }];
 }
 
@@ -347,7 +395,7 @@ static BOOL isValidDID(NSString *did) {
     PDS_LOG_INFO(@"Relay getRepo: Redirecting %@ to %@", didParam, redirectURL.absoluteString);
 
     // HTTP 302 Found (temporary redirect) per indigo reference
-    response.statusCode = HttpStatusFound;
+    response.statusCode = 302;
     [response setHeader:redirectURL.absoluteString forKey:@"Location"];
 }
 
