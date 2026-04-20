@@ -289,7 +289,9 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)handleReceivedData:(NSData *)data {
-  NSArray<WSSessionAction *> *actions = [self.session feedData:data];
+  NSArray<WSSessionAction *> *actions = [self.session
+      feedData:data
+      receivedAt:[NSDate timeIntervalSinceReferenceDate]];
   for (WSSessionAction *action in actions) {
     [self processAction:action];
   }
@@ -461,33 +463,37 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                    if (!strongSelf)
                      return;
 
-                   dispatch_async(strongSelf.writeQueue, ^{
-                     if (strongSelf.messageQueue.count > 0) {
-                       NSData *sentFrame = strongSelf.messageQueue.firstObject;
-                       [strongSelf.messageQueue removeObjectAtIndex:0];
-                       if (sentFrame.length >= strongSelf.queuedSendBytes) {
-                         strongSelf.queuedSendBytes = 0;
-                       } else {
-                         strongSelf.queuedSendBytes -= sentFrame.length;
-                       }
-
-                       NSArray<WSSessionAction *> *actions = [strongSelf.session didDequeueFrameOfSize:sentFrame.length
-                                                                                     currentQueueSize:strongSelf.queuedSendBytes];
-                       for (WSSessionAction *action in actions) {
-                         dispatch_async(dispatch_get_main_queue(), ^{
-                           [strongSelf processAction:action];
-                         });
-                       }
-                     }
-
-                     [strongSelf flushWriteBuffer];
-                   });
-
                    if (error) {
                      dispatch_async(dispatch_get_main_queue(), ^{
                        [strongSelf notifyError:error];
+                      [strongSelf closeWithCode:1011 reason:@"WebSocket write failed"];
                      });
+                    return;
                    }
+
+                  dispatch_async(strongSelf.writeQueue, ^{
+                    if (strongSelf.messageQueue.count > 0) {
+                      NSData *sentFrame = strongSelf.messageQueue.firstObject;
+                      [strongSelf.messageQueue removeObjectAtIndex:0];
+                      if (sentFrame.length >= strongSelf.queuedSendBytes) {
+                        strongSelf.queuedSendBytes = 0;
+                      } else {
+                        strongSelf.queuedSendBytes -= sentFrame.length;
+                      }
+
+                      NSArray<WSSessionAction *> *actions =
+                          [strongSelf.session
+                              didDequeueFrameOfSize:sentFrame.length
+                                   currentQueueSize:strongSelf.queuedSendBytes];
+                      for (WSSessionAction *action in actions) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                          [strongSelf processAction:action];
+                        });
+                      }
+                    }
+
+                    [strongSelf flushWriteBuffer];
+                  });
                  }];
 }
 
