@@ -18,8 +18,72 @@ const CONFIG = {
   sidebarCollapsePrefix: 'sidebar_collapsed_',
 };
 
+// ============================================================================
+// Admin Authentication
+// ============================================================================
+
+const AdminAuth = {
+  getToken() {
+    return sessionStorage.getItem('admin_token');
+  },
+
+  showLoginPanel() {
+    const panel = document.getElementById('admin-login-panel');
+    const input = document.getElementById('admin-password');
+    const errorEl = document.getElementById('admin-login-error');
+    if (panel) {
+      panel.classList.remove('hidden');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      if (errorEl) {
+        errorEl.textContent = '';
+      }
+    }
+  },
+
+  hideLoginPanel() {
+    const panel = document.getElementById('admin-login-panel');
+    if (panel) {
+      panel.classList.add('hidden');
+    }
+  },
+
+  async doLogin() {
+    const password = document.getElementById('admin-password')?.value;
+    const errorEl = document.getElementById('admin-login-error');
+    
+    if (!password) {
+      if (errorEl) errorEl.textContent = 'Password required';
+      return;
+    }
+    
+    try {
+      const resp = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await resp.json();
+      
+      if (resp.ok && data.token) {
+        sessionStorage.setItem('admin_token', data.token);
+        this.hideLoginPanel();
+        window.location.reload();
+      } else {
+        if (errorEl) errorEl.textContent = data.error || 'Login failed';
+      }
+    } catch (e) {
+      if (errorEl) errorEl.textContent = 'Connection error';
+    }
+  }
+};
+
+window.AdminAuth = AdminAuth;
+
 function getAdminToken() {
-  return sessionStorage.getItem('admin_token');
+  return sessionStorage.getItem('admin_token') || AdminAuth.getToken();
 }
 
 // ============================================================================
@@ -393,6 +457,30 @@ function initSearchHandlers() {
 }
 
 // ============================================================================
+// Login handlers
+// ============================================================================
+
+function initLoginHandlers() {
+  const loginBtn = document.getElementById('admin-login-btn');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      AdminAuth.doLogin();
+    });
+  }
+  
+  const passwordInput = document.getElementById('admin-password');
+  if (passwordInput) {
+    passwordInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        AdminAuth.doLogin();
+      }
+    });
+  }
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
@@ -408,6 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initTableHandlers();
   initDialogHandlers();
   initSearchHandlers();
+  initLoginHandlers();
   
   // Feature Initializations
   AdminChat.init();
