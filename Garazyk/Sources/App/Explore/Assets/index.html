@@ -481,6 +481,82 @@
             const now = new Date();
             document.getElementById('status-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }, 1000);
+
+        // Menu handling: click to toggle, click outside to close, keyboard navigation
+        (function() {
+            const menuBar = document.querySelector('ul[role="menu-bar"]');
+            if (!menuBar) return;
+
+            // Toggle menu on click
+            menuBar.addEventListener('click', function(e) {
+                const menuItem = e.target.closest('[role="menu-item"][aria-haspopup="true"]');
+                if (menuItem) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Close other menus first
+                    const otherMenus = menuBar.querySelectorAll('li.menu-open');
+                    otherMenus.forEach(m => {
+                        if (m !== menuItem) m.classList.remove('menu-open');
+                    });
+                    
+                    // Toggle this menu
+                    const isOpen = menuItem.classList.toggle('menu-open');
+                    menuItem.setAttribute('aria-expanded', isOpen);
+                    
+                    if (isOpen) {
+                        menuItem.querySelector('[role="menu"] a')?.focus();
+                    }
+                }
+            });
+
+            // Close menus on click outside
+            document.addEventListener('click', function(e) {
+                if (!menuBar.contains(e.target)) {
+                    const openMenus = menuBar.querySelectorAll('li.menu-open');
+                    openMenus.forEach(m => {
+                        m.classList.remove('menu-open');
+                        m.setAttribute('aria-expanded', 'false');
+                    });
+                }
+            });
+
+            // Keyboard navigation
+            menuBar.addEventListener('keydown', function(e) {
+                const menuItem = e.target.closest('[role="menu-item"]');
+                if (!menuItem) return;
+
+                if (e.key === 'Escape') {
+                    const openParent = menuBar.querySelector('li.menu-open');
+                    if (openParent) {
+                        openParent.classList.remove('menu-open');
+                        openParent.setAttribute('aria-expanded', 'false');
+                        openParent.focus();
+                        e.preventDefault();
+                    }
+                }
+
+                if (e.key === 'Enter' || e.key === ' ') {
+                    const toggleItem = e.target.closest('[aria-haspopup="true"]');
+                    if (toggleItem) {
+                        e.preventDefault();
+                        toggleItem.click();
+                    }
+                }
+            });
+
+            // Close menu on menu item click
+            menuBar.addEventListener('click', function(e) {
+                const link = e.target.closest('[role="menu-item"] a');
+                if (link) {
+                    const openMenu = menuBar.querySelector('li.menu-open');
+                    if (openMenu) {
+                        openMenu.classList.remove('menu-open');
+                        openMenu.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+        })();
     </script>
 </body>
 

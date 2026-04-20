@@ -95,15 +95,47 @@
   border-radius: var(--radius-full);
 }
 
-/* Terminal/Log viewer styles (used by Relay events, Chat messages) */
+/* Terminal/Log viewer styles - FidoNet/ANSI inspired */
 .terminal-window {
-  background: #1d1d1d;
+  background: #0a0a0a;
   border-radius: var(--radius-lg);
   padding: var(--space-md);
   font-family: "Monaco", "Menlo", "Courier New", monospace;
   font-size: var(--font-size-xs);
   overflow: auto;
   max-height: 400px;
+  border: 1px solid #333;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  border-bottom: 1px solid #333;
+}
+
+.terminal-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.terminal-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminal-btn.close { background: #ff5f56; }
+.terminal-btn.minimize { background: #ffbd2e; }
+.terminal-btn.zoom { background: #27c93f; }
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  color: #666;
+  font-size: 11px;
 }
 
 .terminal-content {
@@ -123,20 +155,20 @@
 }
 
 .terminal-timestamp {
-  color: #8e8e93;
+  color: #666;
   flex-shrink: 0;
 }
 
 .terminal-level-info {
-  color: var(--color-info);
+  color: #4ec9b0;
 }
 
 .terminal-level-warn {
-  color: var(--color-warning);
+  color: #dcdcaa;
 }
 
 .terminal-level-error {
-  color: var(--color-destructive);
+  color: #f14c4c;
 }
 
 /* Empty state pattern */
@@ -153,6 +185,87 @@
   font-size: 48px;
   margin-bottom: var(--space-md);
   color: var(--color-text-tertiary);
+}
+
+/* Strawberry empty state - Polish motif */
+.empty-state-strawberry .empty-state-icon {
+  width: 64px;
+  height: 64px;
+  position: relative;
+}
+
+.empty-state-strawberry .empty-state-icon::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  background: #e63946;
+  border-radius: 50% 50% 45% 45%;
+}
+
+.empty-state-strawberry .empty-state-icon::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 12px solid #2d6a4f;
+}
+
+/* Version info with Polish reference */
+.version-info {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* Auth required empty state */
+.empty-state-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  text-align: center;
+}
+
+.empty-state-auth .empty-state-icon {
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-md);
+}
+
+.empty-state-auth .empty-state-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.empty-state-auth .empty-state-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-lg);
+  max-width: 300px;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.version-info::before {
+  content: "Garazyk ";
+}
+
+.version-info::after {
+  content: " — Bajtek Edition";
+  font-style: italic;
 }
 
 .empty-state-title {
