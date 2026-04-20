@@ -28,6 +28,7 @@
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "PLC/DIDPLCResolver.h"
 
 static const char *executable_name = "zuk";
 
@@ -383,9 +384,12 @@ int main(int argc, const char * argv[]) {
         }];
 
         // Register XRPC sync endpoints (listRepos, getHead, getRepo)
+        // Initialize PLC resolver for getRepo redirect functionality
+        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:@"https://plc.directory"];
         RelayXrpcRoutePack *xrpcRoutePack = [[RelayXrpcRoutePack alloc]
             initWithRepoStateManager:repoStateManager
-               subscribeReposHandler:subscribeReposHandler];
+               subscribeReposHandler:subscribeReposHandler
+                       plcResolver:plcResolver];
         [xrpcRoutePack registerRoutesWithServer:server];
 
         // Start server
