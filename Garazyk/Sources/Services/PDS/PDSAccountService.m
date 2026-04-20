@@ -513,19 +513,16 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     return [NSData dataWithBytes:derivedKey length:derivedKeyLength];
 }
 
-#pragma mark - PLC Registration
+#pragma mark - PLC DID Generation (Sans-I/O)
 
-- (nullable NSString *)_registerDIDWithPLCWithHandle:(NSString *)handle
-                                           signingKey:(Secp256k1KeyPair *)signingKey
-                                          rotationKey:(Secp256k1KeyPair *)rotationKey
-                                                error:(NSError **)error {
+/// Pure DID generation - no network I/O. Generates a valid did:plc from the
+/// operation data without registering with a PLC server. This is the sans-IO
+/// core that can be tested without mocks.
+- (nullable NSString *)_generateDIDWithHandle:(NSString *)handle
+                                    signingKey:(Secp256k1KeyPair *)signingKey
+                                   rotationKey:(Secp256k1KeyPair *)rotationKey
+                                         error:(NSError **)error {
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    NSString *plcURLString = config.plcURL;
-    
-    if ([plcURLString isEqualToString:@"mock"] || plcURLString.length == 0) {
-        plcURLString = @"http://127.0.0.1:2582";
-    }
-    
     NSString *pdsURL = config.canonicalIssuer;
     
     NSString *signingKeyMultibase = [signingKey didKeyString];
@@ -564,10 +561,10 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
     if (!unsignedCBOR) return nil;
     
-    fprintf(stderr, "[PDS ACCOUNT] Unsigned CBOR hex: %s\n", [[CryptoUtils hexStringFromData:unsignedCBOR] UTF8String]);
+    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Unsigned CBOR hex: %@", [CryptoUtils hexStringFromData:unsignedCBOR]);
 
     NSData *hash = [CID rawSha256:unsignedCBOR];
-    fprintf(stderr, "[PDS ACCOUNT] Unsigned operation hash (SHA-256): %s\n", [[CryptoUtils hexStringFromData:hash] UTF8String]);
+    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Unsigned operation hash (SHA-256): %@", [CryptoUtils hexStringFromData:hash]);
     
     NSData *sig = nil;
     if (![keyManager signHash:hash result:&sig error:error]) {
@@ -583,11 +580,73 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSString *did = [PLCOperation calculateDIDForData:unsignedData];
     PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for unsigned data: %@", did, unsignedData);
     
-    // Step 5: Create operation object for submission
+    return did;
+}
+
+#pragma mark - PLC Registration (I/O Layer)
+
+/// I/O adapter - generates DID then registers with PLC server.
+/// For tests that don't need actual registration, use _generateDIDWithHandle: directly.
+- (nullable NSString *)_registerDIDWithPLCWithHandle:(NSString *)handle
+                                           signingKey:(Secp256k1KeyPair *)signingKey
+                                          rotationKey:(Secp256k1KeyPair *)rotationKey
+                                                error:(NSError **)error {
+    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    NSString *plcURLString = config.plcURL;
+    
+    // Check for "skip" mode - generate DID without network registration (for tests)
+    if ([plcURLString isEqualToString:@"skip"]) {
+        return [self _generateDIDWithHandle:handle signingKey:signingKey rotationKey:rotationKey error:error];
+    }
+    
+    if ([plcURLString isEqualToString:@"mock"] || plcURLString.length == 0) {
+        plcURLString = @"http://127.0.0.1:2582";
+    }
+    
+    // Generate the DID (pure, sans-IO)
+    NSString *did = [self _generateDIDWithHandle:handle signingKey:signingKey rotationKey:rotationKey error:error];
+    if (!did) return nil;
+    
+    // Build the operation for submission (I/O layer needs full operation)
+    NSString *pdsURL = config.canonicalIssuer;
+    NSString *signingKeyMultibase = [signingKey didKeyString];
+    NSString *rotationKeyMultibase = [rotationKey didKeyString];
+    
+    PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
+    NSString *serverRotationKey = keyManager.rotationKeyDidKey;
+    NSArray *rotationKeys = @[serverRotationKey, rotationKeyMultibase];
+    
+    // Rebuild unsigned data for the operation
+    NSDictionary *unsignedData = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": rotationKeys,
+        @"verificationMethods": @{
+            @"atproto": signingKeyMultibase
+        },
+        @"alsoKnownAs": @[[NSString stringWithFormat:@"at://%@", handle]],
+        @"services": @{
+            @"atproto_pds": @{
+                @"type": @"AtprotoPersonalDataServer",
+                @"endpoint": pdsURL
+            }
+        },
+        @"prev": [NSNull null]
+    };
+    
+    // Re-sign for the operation
+    NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
+    if (!unsignedCBOR) return nil;
+    
+    NSData *hash = [CID rawSha256:unsignedCBOR];
+    NSData *sig = nil;
+    if (![keyManager signHash:hash result:&sig error:error]) {
+        return nil;
+    }
+    
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = did;
     op.data = [unsignedData copy];
-    op.sig = signedData[@"sig"];
+    op.sig = [CryptoUtils base64URLEncode:sig];
     op.prev = nil;
     
     NSDictionary *opDict = [op toDictionary];

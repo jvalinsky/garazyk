@@ -1,0 +1,65 @@
+# Admin UI Login Panel Implementation Plan
+
+## Goal
+Add inline login panel to Admin UI - matching Explore's pattern and macOS native feel.
+
+## Why Inline Panel (vs redirect)
+1. **macOS native pattern**: Apps use sheets/modals for auth, not page redirects
+2. **Consistent with Explore**: Already has `window-admin-login` 
+3. **AppKit theme**: Stays true to native feel
+4. **No jarring navigation**: No URL change
+
+---
+
+## Implementation Plan
+
+### Phase 1: Add Login Panel HTML to AdminUI
+**File**: `AdminUI/Assets/index.html`
+- Add login panel HTML (hidden by default)
+- Modal overlay with password input
+
+### Phase 2: Add Login Panel CSS
+**File**: `Shared/DesignSystem/css/system.css`
+- Add `.admin-login-panel` styles
+- Backdrop, window, positioning
+
+### Phase 3: Add Login JavaScript
+**File**: `AdminUI/Assets/js/app.js`
+- Add `AdminAuth` module (reuses Explore pattern)
+- `showLoginPanel()`, `doLogin()`, token storage
+
+### Phase 4: Update 401 Handler
+- Change HTMX 401 handler to show login panel (not redirect)
+
+### Phase 5: Update HTMX Header Handling
+- Ensure token sent with requests (verify existing code)
+
+---
+
+## Files to Modify
+
+| File | Change |
+|------|-------|
+| `AdminUI/Assets/index.html` | Add login panel HTML |
+| `Shared/DesignSystem/css/system.css` | Add login panel styles |
+| `AdminUI/Assets/js/app.js` | Add AdminAuth module |
+
+---
+
+## Auth Flow
+
+1. User visits `/admin` unauthenticated → Server returns 401
+2. HTMX catches 401 → shows login panel
+3. User enters password → POST `/admin/login`
+4. Server returns token → stored in sessionStorage
+5. Page reloads → authenticated content loads
+
+---
+
+## Consistency with Explore
+
+| Component | Explore | AdminUI |
+|-----------|---------|---------|
+| Login endpoint | `/admin/login` | Same |
+| Token storage | sessionStorage | Same |
+| HTML pattern | window | panel |

@@ -1031,7 +1031,10 @@ if(BUILD_TESTS)
   if(APPLE)
     target_link_libraries(AllTests PRIVATE "-framework XCTest")
     target_compile_options(AllTests PRIVATE "-F${XCTEST_SEARCH_PATHS}")
-    target_link_options(AllTests PRIVATE "-F${XCTEST_SEARCH_PATHS}")
+    target_link_options(AllTests PRIVATE 
+      "-F${XCTEST_SEARCH_PATHS}"
+      "LINKER:-rpath,${XCTEST_SEARCH_PATHS}"
+    )
     # Critical: Load all Objective-C categories from static libraries
     # Without -ObjC, category methods (like PDSActorStore+Account) are not linked
     set_target_properties(AllTests PROPERTIES

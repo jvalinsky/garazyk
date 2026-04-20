@@ -183,7 +183,13 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (BOOL)createSchema:(NSError **)error {
     // Sprint 3: Use migration-based schema management
-    PDSMigrationManager *migrationManager = [PDSMigrationManager actorStoreMigrationManager];
+    // Use service migration manager for __service__ database, actor migration manager for actors
+    PDSMigrationManager *migrationManager;
+    if ([self.did isEqualToString:@"__service__"]) {
+        migrationManager = [PDSMigrationManager serviceDatabaseMigrationManager];
+    } else {
+        migrationManager = [PDSMigrationManager actorStoreMigrationManager];
+    }
 
     NSInteger currentVersion = [migrationManager currentVersion:self.db];
 

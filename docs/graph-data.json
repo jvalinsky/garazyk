@@ -56,14 +56,25 @@
       "metadata_json": "{\"branch\":\"main\",\"files\":[\".deciduous/scratch/2026-04-20-admin-ui-design/phase1-slop-fix.md\"]}"
     },
     {
+      "id": 13,
+      "change_id": "576b74df-9cfe-42e7-894f-4b8c6f175c3c",
+      "node_type": "decision",
+      "title": "Admin Login: Inline Panel Implementation",
+      "description": "Add inline login panel to Admin UI matching Explore pattern",
+      "status": "completed",
+      "created_at": "2026-04-20T00:00:00-04:00",
+      "updated_at": "2026-04-20T12:41:22.658838-04:00",
+      "metadata_json": "{\"branch\":\"main\"}"
+    },
+    {
       "id": 1,
       "change_id": "ef39a64d-7890-44d0-9caf-1175683781b7",
       "node_type": "action",
       "title": "Implemented admin requestCrawl endpoint with validation bypass",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T00:25:09.009145-04:00",
-      "updated_at": "2026-04-20T00:25:09.009145-04:00",
+      "updated_at": "2026-04-20T12:39:03.035449-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f0329f6b\"}"
     },
     {
@@ -72,9 +83,9 @@
       "node_type": "action",
       "title": "Fixed URL scheme detection for localhost upstreams",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T00:46:53.352028-04:00",
-      "updated_at": "2026-04-20T00:46:53.352028-04:00",
+      "updated_at": "2026-04-20T12:39:03.144857-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5f74044f\"}"
     },
     {
@@ -83,9 +94,9 @@
       "node_type": "action",
       "title": "Fixed relay SIGBUS crash by capturing weak delegates strongly",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T01:40:01.674492-04:00",
-      "updated_at": "2026-04-20T01:40:01.674492-04:00",
+      "updated_at": "2026-04-20T12:39:03.189378-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"4204bfb0\"}"
     },
     {
@@ -199,9 +210,47 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-20T11:47:17.385740-04:00"
+    },
+    {
+      "id": 7,
+      "from_node_id": 8,
+      "to_node_id": 12,
+      "from_change_id": "377e8723-dda3-4efc-80c5-e49188a37e0d",
+      "to_change_id": "e36442c6-63f1-475e-8398-5dc6434de400",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-20T12:38:58.862247-04:00"
+    },
+    {
+      "id": 8,
+      "from_node_id": 8,
+      "to_node_id": 13,
+      "from_change_id": "377e8723-dda3-4efc-80c5-e49188a37e0d",
+      "to_change_id": "576b74df-9cfe-42e7-894f-4b8c6f175c3c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-20T12:38:59.375284-04:00"
     }
   ],
   "documents": [
+    {
+      "id": 2,
+      "change_id": "3a2320c3-2f45-4b24-b8bc-ea288dd472c4",
+      "node_id": 13,
+      "node_change_id": "576b74df-9cfe-42e7-894f-4b8c6f175c3c",
+      "content_hash": "13a5802e015424c36a1cbab55d4e7d6bf8026571b4e1fa00c99d96084b1ef297",
+      "original_filename": "stdin",
+      "storage_filename": "stdin.13a5802e",
+      "mime_type": "application/octet-stream",
+      "file_size": 1847,
+      "description": null,
+      "description_source": "none",
+      "attached_at": "2026-04-20T12:37:49.600697-04:00",
+      "attached_by": null,
+      "detached_at": null
+    },
     {
       "id": 1,
       "change_id": "3954c7a3-13e7-45d3-9457-56d3af45cedd",

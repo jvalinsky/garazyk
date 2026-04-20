@@ -254,7 +254,12 @@
       "Bash(./build/bin/migration_tests)",
       "Bash(cmake --build build --target migration_tests && ./build/bin/migration_tests)",
       "Bash(cmake --build build --target connection_pool_tests && ./build/bin/connection_pool_tests)",
-      "Bash(cmake --build build --target ATProtoServices 2>&1 | tail -100)"
+      "Bash(cmake --build build --target ATProtoServices 2>&1 | tail -100)",
+      "Bash(./build/tests/AllTests 2>&1 | head -100)",
+      "Bash(cd /Users/jack/Software/garazyk && xcodebuild -project Garazyk.xcodeproj -scheme AllTests build 2>&1 | tail -5)",
+      "Bash(cmake --build build --target AllTests 2>&1 | tail -10)",
+      "Bash(timeout 300 ./build/tests/AllTests 2>&1 | tee /tmp/test_output6.txt | grep -E \"Test Suite.*at|Test Case.*passed|Test Case.*failed\" | tail -100)",
+      "Bash(cmake -B build 2>&1 | tail -10 && cmake --build build --target AllTests 2>&1 | tail -10)"
     ]
   }
 }

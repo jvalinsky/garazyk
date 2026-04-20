@@ -15,6 +15,8 @@
 #import "Repository/CBOR.h"
 #import "Repository/RepoCommit.h"
 #import "Sync/Relay/EventFormatter.h"
+#import "Sync/Firehose/FirehoseCARBuilder.h"
+#import "Sync/Firehose/FirehoseProtocolSession.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
 #import "Sync/WebSocket/WebSocketServer.h"
@@ -38,11 +40,10 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
                                      WebSocketConnectionDelegate>
 
 @property(nonatomic, strong) WebSocketServer *webSocketServer;
-@property(nonatomic, strong) EventFormatter *eventFormatter;
+@property(nonatomic, strong) FirehoseProtocolSession *session;
 @property(nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property(nonatomic, strong) PDSDatabasePool *userDatabasePool;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
-@property(nonatomic, assign) NSUInteger sequenceNumber;
 @property(nonatomic, assign) BOOL sequenceInitialized;
 @property(nonatomic, assign) BOOL stopping;
 @property(nonatomic, strong)
@@ -63,20 +64,9 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 - (BOOL)sendEventData:(NSData *)eventData
     toConnectionWithBackpressureCheck:(WebSocketConnection *)connection;
 + (NSString *)rfc3339Timestamp;
-- (NSData *)buildCARBlocksForCommit:(RepoCommit *)commit
-                                ops:(NSArray<NSDictionary *> *)ops;
-- (nullable CID *)extractCIDFromCBORTag:(CBORValue *)tagValue;
-- (NSUInteger)addBlocksForRevision:(NSString *)rev
-                                did:(NSString *)repoDid
-                           toWriter:(CARWriter *)writer
-                     skippingCIDs:(NSMutableSet<NSString *> *)seenCIDs;
-- (NSUInteger)addMSTNodeBlocksForRootCID:(CID *)rootCID
-                                     did:(NSString *)repoDid
-                                toWriter:(CARWriter *)writer;
 - (nullable NSNumber *)oldestPersistedSequenceNumber;
 - (NSUInteger)effectiveReplayCursorForRequestedCursor:(NSUInteger)requestedCursor
                                               outdated:(BOOL *)outdated;
-- (NSData *)buildCARBlocksForSyncCommitOnly:(RepoCommit *)commit;
 
 @end
 
@@ -91,12 +81,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (self) {
     _serviceDatabases = serviceDatabases;
     _userDatabasePool = userDatabasePool;
-    _eventFormatter = [[EventFormatter alloc] init];
     _eventQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.events",
                                         DISPATCH_QUEUE_SERIAL);
     dispatch_queue_set_specific(_eventQueue, kSubscribeReposEventQueueKey,
                                 kSubscribeReposEventQueueKey, NULL);
-    _sequenceNumber = 0;
     _sequenceInitialized = NO;
     _stopping = NO;
     _attachedConnections = [NSMutableSet set];
@@ -381,20 +369,18 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 #pragma mark - Event Broadcasting
 
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit
-                          forRepo:(NSString *)repoDid
-                              ops:(NSArray<NSDictionary *> *)ops
-                            blobs:(NSArray<CID *> *)blobs {
+                           forRepo:(NSString *)repoDid
+                               ops:(NSArray<NSDictionary *> *)ops
+                             blobs:(NSArray<CID *> *)blobs {
   if (self.stopping) {
     return;
   }
   dispatch_async(self.eventQueue, ^{
     [self ensureSequenceInitialized];
-    self.sequenceNumber++;
 
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
 
     // Required fields per subscribeRepos lexicon
-    event.seq = self.sequenceNumber;
     event.rebase = NO; // Deprecated, always false
     event.tooBig = NO; // Deprecated, always false
     event.repo = repoDid;
@@ -402,8 +388,20 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     event.rev = commit.rev;
     event.since =
         self.lastCommitRevByDID[repoDid]; // Previous commit rev for this repo
-    event.blocks =
-        [self buildCARBlocksForCommit:commit ops:ops]; // Real CAR bytes
+    
+    __weak typeof(self) weakSelf = self;
+    event.blocks = [FirehoseCARBuilder buildCARForCommit:commit
+                                                     ops:ops
+                                           blockProvider:^NSData * _Nullable(NSData * _Nonnull cidBytes) {
+                                              __strong typeof(weakSelf) strongSelf = weakSelf;
+                                              if (!strongSelf || !strongSelf.userDatabasePool) return nil;
+                                              return [[strongSelf.userDatabasePool storeForDid:repoDid error:nil] getBlockForCID:cidBytes forDid:repoDid error:nil];
+                                           }
+                                     revBlockListProvider:^NSArray<NSData *> * _Nullable(NSString * _Nonnull rev) {
+                                              __strong typeof(weakSelf) strongSelf = weakSelf;
+                                              if (!strongSelf || !strongSelf.userDatabasePool) return nil;
+                                              return [[strongSelf.userDatabasePool storeForDid:repoDid error:nil] listBlockCIDsForRevision:rev limit:200000 error:nil];
+                                     }];
     event.ops = ops;
     event.blobs = blobs ?: @[]; // Already CID array
     event.time = [SubscribeReposHandler rfc3339Timestamp];
@@ -415,33 +413,28 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     NSString *eventType = @"commit";
-    NSError *error = nil;
-    NSData *eventData =
-        [self.eventFormatter encodeCommitEvent:event error:&error];
+    NSData *eventData = [self.session encodeCommitEvent:event];
     if (!eventData) {
       PDS_LOG_SYNC_WARN(
-          @"Commit event encoding failed for %@ at seq %lu (%@), falling back "
+          @"Commit event encoding failed for %@ at seq %lu, falling back "
           @"to #sync",
-          repoDid, (unsigned long)self.sequenceNumber, error);
+          repoDid, (unsigned long)self.session.sequenceNumber + 1);
       FirehoseSyncEvent *syncEvent = [[FirehoseSyncEvent alloc] init];
-      syncEvent.seq = self.sequenceNumber;
       syncEvent.did = repoDid;
-      syncEvent.blocks = [self buildCARBlocksForSyncCommitOnly:commit];
+      syncEvent.blocks = [FirehoseCARBuilder buildCARForSyncCommitOnly:commit];
       syncEvent.rev = commit.rev ?: @"";
       syncEvent.time = event.time;
 
-      NSError *syncError = nil;
-      eventData = [self.eventFormatter encodeSyncEvent:syncEvent error:&syncError];
+      eventData = [self.session.eventFormatter encodeSyncEvent:syncEvent error:nil];
       if (!eventData) {
-        PDS_LOG_SYNC_ERROR(@"Failed to encode sync fallback event: %@",
-                           syncError);
+        PDS_LOG_SYNC_ERROR(@"Failed to encode sync fallback event");
         return;
       }
       eventType = @"sync";
     }
 
     NSError *persistError = nil;
-    if (![self.serviceDatabases persistEvent:self.sequenceNumber
+    if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
                                         type:eventType
                                         data:eventData
                                        error:&persistError]) {
@@ -452,11 +445,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [self broadcastEventData:eventData];
     [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"commit"];
     [[PDSMetrics sharedMetrics] incrementRepoCommits];
-    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.sequenceNumber];
+    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
     PDS_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
-                      repoDid, (unsigned long)self.sequenceNumber);
+                      repoDid, (unsigned long)self.session.sequenceNumber);
   });
 }
+
 
 - (void)broadcastIdentityChange:(NSString *)did
                          handle:(nullable NSString *)handle {
@@ -465,25 +459,20 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   dispatch_async(self.eventQueue, ^{
     [self ensureSequenceInitialized];
-    self.sequenceNumber++;
 
     FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
-    event.seq = self.sequenceNumber;
     event.did = did;
     event.time = [SubscribeReposHandler rfc3339Timestamp];
     event.handle = handle;
 
-    NSError *error = nil;
-    NSData *eventData =
-        [self.eventFormatter encodeIdentityEvent:event error:&error];
+    NSData *eventData = [self.session encodeIdentityEvent:event];
 
     if (!eventData) {
-      PDS_LOG_SYNC_ERROR(@"Failed to encode identity event: %@", error);
       return;
     }
 
     NSError *persistError = nil;
-    if (![self.serviceDatabases persistEvent:self.sequenceNumber
+    if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
                                         type:@"identity"
                                         data:eventData
                                        error:&persistError]) {
@@ -492,9 +481,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     [self broadcastEventData:eventData];
     [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
-    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.sequenceNumber];
+    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
     PDS_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
-                      (unsigned long)self.sequenceNumber);
+                      (unsigned long)self.session.sequenceNumber);
   });
 }
 
@@ -504,26 +493,21 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   dispatch_async(self.eventQueue, ^{
     [self ensureSequenceInitialized];
-    self.sequenceNumber++;
 
     FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
-    event.seq = self.sequenceNumber;
     event.did = did;
     event.active = NO;
     event.status = @"takendown";
     event.time = [SubscribeReposHandler rfc3339Timestamp];
 
-    NSError *error = nil;
-    NSData *eventData =
-        [self.eventFormatter encodeAccountEvent:event error:&error];
+    NSData *eventData = [self.session encodeAccountEvent:event];
 
     if (!eventData) {
-      PDS_LOG_SYNC_ERROR(@"Failed to encode account event: %@", error);
       return;
     }
 
     NSError *persistError = nil;
-    if (![self.serviceDatabases persistEvent:self.sequenceNumber
+    if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
                                         type:@"account"
                                         data:eventData
                                        error:&persistError]) {
@@ -532,9 +516,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     [self broadcastEventData:eventData];
     [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
-    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.sequenceNumber];
+    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
     PDS_LOG_SYNC_INFO(@"Broadcast account takedown event for DID %@, seq %lu",
-                      did, (unsigned long)self.sequenceNumber);
+                      did, (unsigned long)self.session.sequenceNumber);
   });
 }
 
@@ -544,23 +528,19 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   dispatch_async(self.eventQueue, ^{
     [self ensureSequenceInitialized];
-    self.sequenceNumber++;
 
     FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
     event.kind = kind;
     event.message = message;
 
-    NSError *error = nil;
-    NSData *eventData =
-        [self.eventFormatter encodeInfoEvent:event error:&error];
+    NSData *eventData = [self.session encodeInfoEvent:event];
 
     if (!eventData) {
-      PDS_LOG_SYNC_ERROR(@"Failed to encode info event: %@", error);
       return;
     }
 
     NSError *persistError = nil;
-    if (![self.serviceDatabases persistEvent:self.sequenceNumber
+    if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
                                         type:@"info"
                                         data:eventData
                                        error:&persistError]) {
@@ -569,7 +549,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     [self broadcastEventData:eventData];
     PDS_LOG_SYNC_INFO(@"Broadcast info event (%@), seq %lu", kind,
-                      (unsigned long)self.sequenceNumber);
+                      (unsigned long)self.session.sequenceNumber);
   });
 }
 
@@ -673,20 +653,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
               continue;
             }
             
-            CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
-            NSMutableSet<NSString *> *seenCIDs = [NSMutableSet set];
-            if (commitCID.stringValue.length > 0) {
-              [seenCIDs addObject:commitCID.stringValue];
-            }
+            NSData *carData = [FirehoseCARBuilder buildCARForCommit:[RepoCommit createCommitWithDid:repo.ownerDid data:nil rev:rev prev:nil]
+                                                                ops:@[]
+                                                      blockProvider:^NSData * _Nullable(NSData * _Nonnull cidBytes) {
+                                                        return [store getBlockForCID:cidBytes forDid:repo.ownerDid error:nil];
+                                                      }
+                                                revBlockListProvider:nil];
             
-            NSData *commitBlockData = [store getBlockForCID:rootCidBytes forDid:repo.ownerDid error:&repoError];
-            if (commitBlockData && commitBlockData.length > 0) {
-              [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
-            }
-            
-            [self addMSTNodeBlocksForRootCID:commitCID did:repo.ownerDid toWriter:writer];
-            
-            NSData *carData = [writer serialize];
             if (carData.length == 0) {
               PDS_LOG_SYNC_WARN(@"Empty CAR data for %@ - skipping", repo.ownerDid);
               continue;
@@ -702,7 +675,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
             event.time = [SubscribeReposHandler rfc3339Timestamp];
             
             NSError *encodeError = nil;
-            NSData *eventData = [self.eventFormatter encodeCommitEvent:event error:&encodeError];
+            NSData *eventData = [self.session.eventFormatter encodeCommitEvent:event error:&encodeError];
             if (!eventData) {
               PDS_LOG_SYNC_ERROR(@"Failed to encode commit event for %@: %@", repo.ownerDid, encodeError);
               continue;
@@ -717,7 +690,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       }
     }
 
-    if (hasCursor && parsedCursor > self.sequenceNumber) {
+    if (hasCursor && parsedCursor > self.session.sequenceNumber) {
       [self
           sendErrorFrameWithCode:kSubscribeReposErrorFutureCursor
                          message:@"requested cursor is ahead of server sequence"
@@ -747,12 +720,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                toConnection:connection];
       }
 
-      if (replayCursor >= self.sequenceNumber) {
+      if (replayCursor >= self.session.sequenceNumber) {
         PDS_LOG_SYNC_INFO(@"Cursor %lu is up to date at server sequence %lu.",
                           (unsigned long)replayCursor,
-                          (unsigned long)self.sequenceNumber);
+                          (unsigned long)self.session.sequenceNumber);
       } else {
-        NSUInteger backlog = self.sequenceNumber - replayCursor;
+        NSUInteger backlog = self.session.sequenceNumber - replayCursor;
         PDS_LOG_SYNC_INFO(@"Starting replay of %lu events for connection %@",
                           (unsigned long)backlog, connection);
         [self replayEventsAfterCursor:replayCursor toConnection:connection];
@@ -819,7 +792,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       hasMore = NO;
     }
 
-    if (fetchCursor >= self.sequenceNumber) {
+    if (fetchCursor >= self.session.sequenceNumber) {
       hasMore = NO;
     }
   }
@@ -829,20 +802,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)sendInfoEvent:(NSString *)kind
-              message:(NSString *)message
-         toConnection:(WebSocketConnection *)connection {
+               message:(NSString *)message
+          toConnection:(WebSocketConnection *)connection {
   FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
   event.kind = kind;
   event.message = message;
 
-  NSError *error = nil;
-  NSData *eventData = [self.eventFormatter encodeInfoEvent:event error:&error];
+  NSData *eventData = [self.session encodeInfoEvent:event];
 
   if (eventData) {
     [connection sendMessage:eventData];
     PDS_LOG_SYNC_DEBUG(@"Sent info event (%@) to connection", kind);
-  } else {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode info event: %@", error);
   }
 }
 
@@ -906,9 +876,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
   }
 
-  if (self.sequenceNumber > self.maxReplayEventsPerConnection) {
+  if (self.session.sequenceNumber > self.maxReplayEventsPerConnection) {
     NSUInteger replayWindowCursor =
-        self.sequenceNumber - self.maxReplayEventsPerConnection;
+        self.session.sequenceNumber - self.maxReplayEventsPerConnection;
     if (replayWindowCursor > minimumCursor) {
       minimumCursor = replayWindowCursor;
     }
@@ -926,12 +896,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                   toConnection:(WebSocketConnection *)connection {
   FirehoseErrorEvent *event =
       [FirehoseErrorEvent eventWithError:code message:message];
-  NSError *error = nil;
-  NSData *eventData = [self.eventFormatter encodeErrorEvent:event error:&error];
+  NSData *eventData = [self.session encodeErrorEvent:event];
   if (eventData) {
     [connection sendMessage:eventData];
-  } else {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode error event (%@): %@", code, error);
   }
 }
 
@@ -976,10 +943,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       return;
     }
 
-    self.sequenceNumber = (NSUInteger)MAX((int64_t)0, maxSequence);
+    self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:(NSUInteger)MAX((int64_t)0, maxSequence)];
     self.sequenceInitialized = YES;
     PDS_LOG_SYNC_INFO(@"Initialized sequence number to %lu",
-                      (unsigned long)self.sequenceNumber);
+                      (unsigned long)self.session.sequenceNumber);
   }
 }
 
@@ -987,250 +954,5 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
 
-- (NSData *)buildCARBlocksForCommit:(RepoCommit *)commit
-                                ops:(NSArray<NSDictionary *> *)ops {
-  // Build a CAR file containing commit block + changed blocks for this
-  // revision. Per ATProto spec, firehose CAR must contain:
-  //  1. The signed commit block (root)
-  //  2. Record blocks for create/update ops
-  //  3. MST node blocks (and other referenced blocks) needed by consumers
-
-  CID *commitCID = commit.computeCID;
-  if (!commitCID) {
-    PDS_LOG_SYNC_ERROR(@"Failed to compute commit CID for CAR");
-    return [NSData data];
-  }
-
-  CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
-  NSMutableSet<NSString *> *seenCIDs = [NSMutableSet set];
-  if (commitCID.stringValue.length > 0) {
-    [seenCIDs addObject:commitCID.stringValue];
-  }
-
-  NSData *commitBlockData = [commit serializeSigned];
-  if (commitBlockData.length > 0) {
-    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
-  } else {
-    // Fallback for legacy paths that may only populate exportCAR.
-    NSData *singleBlockCAR = [commit exportCAR];
-    if (singleBlockCAR) {
-      CARReader *reader = [CARReader readFromData:singleBlockCAR error:nil];
-      CARBlock *commitBlock = reader.blocks.firstObject;
-      if (commitBlock) {
-        [writer addBlock:commitBlock];
-      }
-    }
-  }
-
-  // Add record blocks for create/update ops
-  NSUInteger recordBlockCount = 0;
-  for (NSDictionary *op in ops) {
-    NSString *action = op[@"action"];
-    if ([action isEqualToString:@"delete"])
-      continue;
-
-    NSData *recordCBOR = op[@"recordCBOR"];
-    if (![recordCBOR isKindOfClass:[NSData class]] || recordCBOR.length == 0)
-      continue;
-
-    NSString *recordCIDString =
-        [op[@"cid"] isKindOfClass:[NSString class]] ? op[@"cid"] : nil;
-    CID *recordCID =
-        (recordCIDString.length > 0) ? [CID cidFromString:recordCIDString] : nil;
-    if (!recordCID) {
-      // Fallback: compute CID from bytes if op didn't carry one.
-      NSData *digest = [CID rawSha256:recordCBOR];
-      recordCID = digest ? [CID cidWithDigest:digest codec:0x71] : nil;
-    }
-    NSString *recordCIDKey = recordCID.stringValue;
-    if (recordCID && recordCIDKey.length > 0 &&
-        ![seenCIDs containsObject:recordCIDKey]) {
-      [seenCIDs addObject:recordCIDKey];
-      [writer addBlock:[CARBlock blockWithCID:recordCID data:recordCBOR]];
-      recordBlockCount++;
-    }
-  }
-
-  // Prefer revision-indexed changed blocks when available.
-  NSUInteger revisionBlockCount = 0;
-  if (commit.rev.length > 0 && commit.did.length > 0) {
-    revisionBlockCount = [self addBlocksForRevision:commit.rev
-                                                did:commit.did
-                                           toWriter:writer
-                                       skippingCIDs:seenCIDs];
-  }
-
-  // Fallback for older stores without block revision metadata.
-  NSUInteger mstBlockCount = 0;
-  if (revisionBlockCount == 0 && commit.dataCID && commit.did.length > 0) {
-    mstBlockCount = [self addMSTNodeBlocksForRootCID:commit.dataCID
-                                                 did:commit.did
-                                            toWriter:writer];
-  }
-
-  NSData *carData = [writer serialize];
-  PDS_LOG_SYNC_DEBUG(
-      @"Built CAR blocks: %lu bytes (commit + %lu record blocks + %lu revision blocks + %lu MST fallback blocks)",
-                     (unsigned long)carData.length,
-                     (unsigned long)recordBlockCount,
-                     (unsigned long)revisionBlockCount,
-                     (unsigned long)mstBlockCount);
-
-  return carData ?: [NSData data];
-}
-
-- (NSData *)buildCARBlocksForSyncCommitOnly:(RepoCommit *)commit {
-  CID *commitCID = commit.computeCID;
-  if (!commitCID) {
-    PDS_LOG_SYNC_ERROR(@"Failed to compute commit CID for sync fallback CAR");
-    return [NSData data];
-  }
-
-  CARWriter *writer = [CARWriter writerWithRootCID:commitCID];
-  NSData *commitBlockData = [commit serializeSigned];
-  if (commitBlockData.length > 0) {
-    [writer addBlock:[CARBlock blockWithCID:commitCID data:commitBlockData]];
-  } else {
-    NSData *singleBlockCAR = [commit exportCAR];
-    if (singleBlockCAR.length > 0) {
-      CARReader *reader = [CARReader readFromData:singleBlockCAR error:nil];
-      CARBlock *commitBlock = reader.blocks.firstObject;
-      if (commitBlock) {
-        [writer addBlock:commitBlock];
-      }
-    }
-  }
-
-  NSData *carData = [writer serialize];
-  return carData ?: [NSData data];
-}
-
-- (nullable CID *)extractCIDFromCBORTag:(CBORValue *)tagValue {
-  if (!tagValue || tagValue.type != CBORTypeTag)
-    return nil;
-  CBORValue *inner = tagValue.tagValue;
-  if (!inner || inner.type != CBORTypeByteString ||
-      inner.byteString.length <= 1)
-    return nil;
-  NSData *cidBytes = [inner.byteString
-      subdataWithRange:NSMakeRange(1, inner.byteString.length - 1)];
-  return [CID cidFromBytes:cidBytes];
-}
-
-- (NSUInteger)addBlocksForRevision:(NSString *)rev
-                                did:(NSString *)repoDid
-                           toWriter:(CARWriter *)writer
-                     skippingCIDs:(NSMutableSet<NSString *> *)seenCIDs {
-  if (rev.length == 0 || repoDid.length == 0 || !writer || !self.userDatabasePool) {
-    return 0;
-  }
-
-  NSError *dbError = nil;
-  PDSActorStore *store =
-      [self.userDatabasePool storeForDid:repoDid error:&dbError];
-  if (!store || dbError) {
-    PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ to load rev blocks: %@",
-                      repoDid, dbError);
-    return 0;
-  }
-
-  NSArray<NSData *> *cids = [store listBlockCIDsForRevision:rev
-                                                      limit:200000
-                                                      error:&dbError];
-  if (!cids || dbError) {
-    if (dbError) {
-      PDS_LOG_SYNC_WARN(@"Failed to list blocks for rev %@ (did=%@): %@",
-                        rev, repoDid, dbError);
-    }
-    return 0;
-  }
-
-  NSUInteger count = 0;
-  for (NSData *cidBytes in cids) {
-    CID *cid = [CID cidFromBytes:cidBytes];
-    NSString *cidKey = cid.stringValue;
-    if (!cid || cidKey.length == 0 || [seenCIDs containsObject:cidKey]) {
-      continue;
-    }
-
-    NSData *blockData = [store getBlockForCID:cidBytes forDid:repoDid error:nil];
-    if (blockData.length == 0) {
-      continue;
-    }
-
-    [seenCIDs addObject:cidKey];
-    [writer addBlock:[CARBlock blockWithCID:cid data:blockData]];
-    count++;
-  }
-
-  return count;
-}
-
-// BFS traversal of MST blocks from rootCID, loading each block from the actor
-// store and adding it to writer. Returns the number of blocks added.
-- (NSUInteger)addMSTNodeBlocksForRootCID:(CID *)rootCID
-                                     did:(NSString *)repoDid
-                                toWriter:(CARWriter *)writer {
-  if (!rootCID || !repoDid || !writer || !self.userDatabasePool)
-    return 0;
-
-  NSError *dbError = nil;
-  PDSActorStore *store =
-      [self.userDatabasePool storeForDid:repoDid error:&dbError];
-  if (!store || dbError) {
-    PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ to load MST nodes: %@",
-                      repoDid, dbError);
-    return 0;
-  }
-
-  NSMutableArray<NSData *> *queue =
-      [NSMutableArray arrayWithObject:[rootCID bytes]];
-  NSMutableSet<NSString *> *visited = [NSMutableSet set];
-  NSUInteger count = 0;
-  NSUInteger queueHead = 0;
-
-  while (queueHead < queue.count) {
-    NSData *cidBytes = queue[queueHead++];
-
-    CID *nodeCID = [CID cidFromBytes:cidBytes];
-    if (!nodeCID)
-      continue;
-
-    NSString *cidKey = nodeCID.stringValue;
-    if (!cidKey || [visited containsObject:cidKey])
-      continue;
-    [visited addObject:cidKey];
-
-    NSError *blockError = nil;
-    NSData *blockData =
-        [store getBlockForCID:cidBytes forDid:repoDid error:&blockError];
-    if (!blockData) {
-      if (blockError) {
-        PDS_LOG_SYNC_DEBUG(@"MST block not found for CID %@: %@", cidKey,
-                           blockError);
-      }
-      continue;
-    }
-
-    [writer addBlock:[CARBlock blockWithCID:nodeCID data:blockData]];
-    count++;
-
-    // Parse the MST node CBOR to discover child node CIDs:
-    //   "l" key: left subtree CID (CBOR tag 42)
-    //   "e" key: array of entry maps, each with "t" key: right subtree CID
-    //   (CBOR tag 42)
-    CBORValue *nodeMap = [CBORValue decode:blockData];
-    if (!nodeMap || nodeMap.type != CBORTypeMap)
-      continue;
-
-    // DO NOT RECURSE! The ATProto spec requires only *new* MST blocks for the
-    // commit. Traversing the entire tree here (O(N) operations) causes the PDS
-    // to deadlock/OOM on large repositories during high-frequency deleteRecord
-    // calls from crawlers. Missing blocks will be re-fetched by the crawler if
-    // necessary.
-  }
-
-  return count;
-}
-
 @end
+

@@ -98,6 +98,14 @@ int main(int argc, char *argv[]) {
     if (getenv("PDS_USE_BIOMETRIC_PROTECTION") == NULL) {
       setenv("PDS_USE_BIOMETRIC_PROTECTION", "0", 1);
     }
+    // Set master secret for PLC rotation key operations in tests
+    if (getenv("PDS_MASTER_SECRET") == NULL) {
+      setenv("PDS_MASTER_SECRET", "test-master-secret-123", 1);
+    }
+    // Skip PLC server registration in tests - use sans-IO DID generation
+    if (getenv("PDS_PLC_URL") == NULL) {
+      setenv("PDS_PLC_URL", "skip", 1);
+    }
 
     // Disable rate limiting for tests
     RateLimiterSetDisabledGlobally(YES);
