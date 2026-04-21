@@ -146,6 +146,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)blobAuditJobsTableSchema;
 
 /*!
+ @method serviceHostingEventsTableSchema
+
+ @abstract Schema for hosting events (account created, handle updated, etc).
+
+ @return CREATE TABLE SQL for hosting events.
+ */
+- (NSString *)serviceHostingEventsTableSchema;
+
+/*!
  @method rateLimitHistoryTableSchema
  @abstract Schema for rate_limit_history table (admin action audit trail).
  @return CREATE TABLE SQL for rate limit history.
@@ -159,6 +168,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)ozoneSetMembersTableSchema;
 - (NSString *)ozoneTemplatesTableSchema;
 - (NSString *)ozoneTeamTableSchema;
+- (NSString *)ozoneScheduledActionsTableSchema;
 
 /*!
  @method serviceSchemaSQL
