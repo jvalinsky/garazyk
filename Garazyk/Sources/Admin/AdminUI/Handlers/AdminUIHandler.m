@@ -115,6 +115,11 @@ NS_ASSUME_NONNULL_BEGIN
         return [self handleChatMessageDeleteWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
     }
 
+    // Ozone event emit route
+    if ([path isEqualToString:@"/admin/ozone/events/emit"]) {
+        return [self handleOzoneEventEmitWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
     // Root admin UI entry point and all sub-paths return the shell
     if ([path isEqualToString:@"/admin"] || [path hasPrefix:@"/admin/"] ) {
         // Exclude specific prefixes that are handled elsewhere
@@ -2015,6 +2020,53 @@ NS_ASSUME_NONNULL_BEGIN
     NSDictionary *jsonError = result[@"json"];
     NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to delete message";
     return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+}
+
+#pragma mark - Ozone Event Emit
+
+- (NSString *)handleOzoneEventEmitWithMethod:(AdminUIHTTPMethod)method
+                                   headers:(NSDictionary<NSString *, NSString *> *)headers
+                                      body:(nullable NSData *)body
+                                statusCode:(nullable NSInteger *)statusCode
+                               contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *subjectDid = params[@"subjectDid"];
+        NSString *action = params[@"action"] ?: @"takedown";
+        NSString *reason = params[@"reason"] ?: @"";
+
+        if (!subjectDid || subjectDid.length == 0) {
+            return @"<p class=\"text-destructive\">Subject DID is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.moderation.emitEvent"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"action": action,
+                                                               @"subject": @{
+                                                                   @"did": subjectDid,
+                                                                   @"type": @"account"
+                                                               },
+                                                               @"reason": reason
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Moderation event emitted successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to emit event";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
 }
 
 @end
