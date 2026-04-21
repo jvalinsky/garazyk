@@ -191,6 +191,7 @@ static AppViewRuntime *_sharedRuntime = nil;
                                     orchestrator:_orchestrator
                                     relevanceSet:_relevanceSet
                                     ingestEngine:_ingestEngine
+                                        database:_database
                                      adminSecret:config.adminSecret];
     }
 
