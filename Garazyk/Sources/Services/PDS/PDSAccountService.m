@@ -258,6 +258,18 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     [_accountRepository saveAccount:account error:nil];
     [_sessionRepository storeRefreshToken:refreshToken forAccountDid:resolvedDid error:nil];
 
+    if (self.serviceDatabases) {
+        NSDictionary *details = @{
+            @"handle": handle ?: @"",
+            @"email": email ?: @""
+        };
+        [self.serviceDatabases logHostingEvent:resolvedDid
+                                          type:@"account_created"
+                                       details:details
+                                     createdBy:resolvedDid
+                                         error:nil];
+    }
+
     // Send Welcome Email
     if (self.emailProvider) {
         NSString *welcomeSubject = @"Welcome to the ATProto Network!";
