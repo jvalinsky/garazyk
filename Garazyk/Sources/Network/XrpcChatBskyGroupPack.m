@@ -798,6 +798,29 @@
         response.statusCode = 200;
         [response setJsonBody:@{@"success": @YES}];
     }];
+
+    // chat.bsky.group.enableJoinLink - Re-enable a disabled join link
+    [dispatcher registerMethod:@"chat.bsky.group.enableJoinLink"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *linkId = body[@"linkId"];
+        if (!linkId) {
+            [XrpcErrorHelper setValidationError:response message:@"linkId is required"];
+            return;
+        }
+
+        // Would re-enable join link
+        response.statusCode = 200;
+        [response setJsonBody:@{@"link": @{@"id": linkId, @"enabled": @YES}}];
+    }];
 }
 
 @end

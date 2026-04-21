@@ -78,6 +78,14 @@ NS_ASSUME_NONNULL_BEGIN
                     cancelledBy:(NSString *)adminDid
                           error:(NSError **)error;
 
+- (nullable NSDictionary *)cancelScheduledActions:(NSArray<NSString *> *)subjects
+                                          comment:(nullable NSString *)comment
+                                      cancelledBy:(NSString *)adminDid
+                                            error:(NSError **)error;
+
+- (nullable NSArray<NSDictionary *> *)getSubjects:(NSArray<NSString *> *)subjects
+                                            error:(NSError **)error;
+
 #pragma mark - Team Management
 
 - (nullable NSString *)addTeamMember:(NSDictionary *)member

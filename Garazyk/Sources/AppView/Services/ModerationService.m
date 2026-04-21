@@ -563,6 +563,58 @@
     return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[actionId] error:error];
 }
 
+- (nullable NSDictionary *)cancelScheduledActions:(NSArray<NSString *> *)subjects
+                                          comment:(nullable NSString *)comment
+                                      cancelledBy:(NSString *)adminDid
+                                            error:(NSError **)error {
+    NSMutableArray *succeeded = [NSMutableArray array];
+    NSMutableArray *failed = [NSMutableArray array];
+
+    for (NSString *subjectDid in subjects) {
+        NSString *sql = @"UPDATE moderation_scheduled_actions SET status = 'cancelled' WHERE subject_did = ? AND status = 'pending'";
+        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[subjectDid] error:nil];
+        if (success) {
+            [succeeded addObject:subjectDid];
+        } else {
+            [failed addObject:@{
+                @"did": subjectDid,
+                @"error": @"Failed to cancel scheduled actions",
+                @"errorCode": @"DatabaseError"
+            }];
+        }
+    }
+
+    return @{@"succeeded": succeeded, @"failed": failed};
+}
+
+- (nullable NSArray<NSDictionary *> *)getSubjects:(NSArray<NSString *> *)subjects
+                                            error:(NSError **)error {
+    NSMutableArray *results = [NSMutableArray array];
+
+    for (NSString *subject in subjects) {
+        // Get moderation status for subject
+        NSString *statusSql = @"SELECT * FROM moderation_subjects WHERE did = ?";
+        NSArray *statusRows = [self.database executeParameterizedQuery:statusSql params:@[subject] error:nil];
+
+        NSMutableDictionary *subjectView = [NSMutableDictionary dictionary];
+        subjectView[@"did"] = subject;
+
+        if (statusRows && statusRows.count > 0) {
+            NSDictionary *row = statusRows.firstObject;
+            subjectView[@"reviewState"] = row[@"review_state"] ?: @"none";
+            subjectView[@"reviewedAt"] = row[@"reviewed_at"] ?: @"";
+            subjectView[@"reviewerDid"] = row[@"reviewer_did"] ?: @"";
+            subjectView[@"lastReviewedBy"] = row[@"reviewer_did"] ?: @"";
+        } else {
+            subjectView[@"reviewState"] = @"none";
+        }
+
+        [results addObject:subjectView];
+    }
+
+    return [results copy];
+}
+
 #pragma mark - Safelinks
 
 - (nullable NSString *)createSafelink:(NSDictionary *)safelink
