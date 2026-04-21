@@ -67,9 +67,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Scheduled Actions
 
-- (nullable NSString *)scheduleAction:(NSDictionary *)action
-                            createdBy:(NSString *)adminDid
-                                error:(NSError **)error;
+- (nullable NSDictionary *)scheduleAction:(NSDictionary *)action
+                             createdBy:(NSString *)adminDid
+                                 error:(NSError **)error;
 
 - (nullable NSArray<NSDictionary *> *)listScheduledActions:(NSDictionary *)filters
                                                      error:(NSError **)error;
@@ -138,7 +138,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Communication Templates
 
-- (nullable NSString *)createCommunicationTemplate:(NSDictionary *)template
+- (nullable NSString *)createCommunicationTemplate:(NSDictionary *)templateDict
                                          createdBy:(NSString *)adminDid
                                              error:(NSError **)error;
 
