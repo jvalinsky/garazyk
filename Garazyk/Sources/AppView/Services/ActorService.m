@@ -320,4 +320,29 @@
     return [actors copy];
 }
 
+- (NSInteger)getTotalRecordsCountForCollection:(NSString *)collection error:(NSError **)error {
+    if (!collection || collection.length == 0) {
+        return 0;
+    }
+    NSString *query = @"SELECT COUNT(*) as count FROM records WHERE collection = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[collection] error:error];
+
+    if (rows && rows.count > 0) {
+        return [rows.firstObject[@"count"] integerValue];
+    }
+    return 0;
+}
+
+- (NSInteger)getTotalPostsCount:(NSError **)error {
+    return [self getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:error];
+}
+
+- (NSInteger)getTotalProfilesCount:(NSError **)error {
+    return [self getTotalRecordsCountForCollection:@"app.bsky.actor.profile" error:error];
+}
+
+- (NSInteger)getTotalFollowsCount:(NSError **)error {
+    return [self getTotalRecordsCountForCollection:@"app.bsky.graph.follow" error:error];
+}
+
 @end
