@@ -353,7 +353,8 @@
     }
     
     NSError *sigError = nil;
-    NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:keyPair.privateKey error:&sigError];
+    // Genesis operations must be signed by a rotation key, not the atproto signing key
+    NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:rotationKeyPair.privateKey error:&sigError];
     if (!signature) {
         if (error) *error = sigError;
         return nil;
