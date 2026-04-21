@@ -28,6 +28,53 @@ CLI --port 2583
 
 **The CLI sets `serverBuilder.issuer` but never updates `controller.jwtMinter.issuer`!**
 
+## Fix Applied ✅
+
+**Commit**: `33710a03`
+
+**Changes in PDSCLIServeCommand.m**:
+1. Set `PDSConfiguration.serverPort` before creating PDSController
+2. Explicitly update `controller.jwtMinter.issuer` after creation
+
+```objc
+// CRITICAL: Set serverPort BEFORE creating PDSController so that
+// PDSApplication uses the correct port for JWT issuer calculation.
+// Without this, JWT minter defaults to port 8080 while server runs on --port.
+[[PDSConfiguration sharedConfiguration] setServerPort:port];
+
+// ... create controller ...
+
+// Calculate canonical issuer with the actual port
+NSString *canonicalIssuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
+serverBuilder.issuer = canonicalIssuer;
+
+// Ensure JWT minter issuer matches the server port (belt and suspenders)
+controller.jwtMinter.issuer = canonicalIssuer;
+```
+
+## Verification ✅
+
+```
+# JWT Payload (decoded):
+{
+  "iss": "http://localhost:2583",  // Correct! Was 8080 before
+  "did": "did:plc:nt3vjqflcoxxawfsn2rq3sxi",
+  ...
+}
+
+# Authenticated endpoints now work:
+$ curl -s "http://localhost:2583/xrpc/app.bsky.graph.getListMutes" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+{"lists": []}
+```
+
+## Summary
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| JWT verification failing | Issuer mismatch (8080 vs 2583) | Set config.serverPort before PDSApplication init |
+| getConfig ignored --port | PDSConfiguration default 8080 | Explicit update after controller creation |
+
 
 ## Evidence
 
