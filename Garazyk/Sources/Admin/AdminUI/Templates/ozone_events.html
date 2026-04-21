@@ -1,9 +1,46 @@
 <div class="content-header">
   <h2>Moderation Events</h2>
-  <p class="text-secondary">Recent moderation events emitted by Ozone.</p>
+  <p class="text-secondary">Create and view moderation events emitted by Ozone.</p>
+</div>
+
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Create Event</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/admin/ozone/events/emit" hx-swap="outerHTML">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Subject DID</label>
+          <input type="text" name="subjectDid" class="form-input" required placeholder="did:plc:..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Action</label>
+          <select name="action" class="form-input">
+            <option value="takedown">Takedown</option>
+            <option value="flag">Flag</option>
+            <option value="acknowledge">Acknowledge</option>
+            <option value="escalate">Escalate</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Reason</label>
+          <input type="text" name="reason" class="form-input" placeholder="Reason for action" />
+        </div>
+      </div>
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary">Emit Event</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Recent Events</h3>
+  </div>
   <div class="card-body">
     <div id="ozone-events-list-container" hx-get="/admin/partials/ozone/events/list" hx-trigger="load">
       <p class="text-secondary text-center">Loading events...</p>
