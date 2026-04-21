@@ -120,6 +120,17 @@ NS_ASSUME_NONNULL_BEGIN
         return [self handleOzoneEventEmitWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
     }
 
+    // Ozone sets routes
+    if ([path isEqualToString:@"/admin/ozone/sets/create"]) {
+        return [self handleOzoneSetCreateWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path hasPrefix:@"/admin/ozone/sets/"] && [path hasSuffix:@"/delete"]) {
+        return [self handleOzoneSetDeleteWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path hasPrefix:@"/admin/ozone/sets/"] && [path hasSuffix:@"/add-values"]) {
+        return [self handleOzoneSetAddValuesWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
     // PLC operation routes
     if ([path isEqualToString:@"/admin/plc/request-signature"]) {
         return [self handlePlcRequestSignatureWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
@@ -2340,6 +2351,151 @@ NS_ASSUME_NONNULL_BEGIN
     }
 
     return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+#pragma mark - Ozone Sets Management
+
+- (NSString *)handleOzoneSetCreateWithMethod:(AdminUIHTTPMethod)method
+                                  headers:(NSDictionary<NSString *, NSString *> *)headers
+                                     body:(nullable NSData *)body
+                               statusCode:(nullable NSInteger *)statusCode
+                              contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *name = params[@"name"];
+        NSString *purpose = params[@"purpose"] ?: @"moderation";
+        NSString *description = params[@"description"] ?: @"";
+
+        if (!name || name.length == 0) {
+            return @"<p class=\"text-destructive\">Name is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.set.create"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"name": name,
+                                                               @"purpose": purpose,
+                                                               @"description": description
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Set created successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to create set";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handleOzoneSetDeleteWithPath:(NSString *)path
+                                    method:(AdminUIHTTPMethod)method
+                                  headers:(NSDictionary<NSString *, NSString *> *)headers
+                                     body:(nullable NSData *)body
+                               statusCode:(nullable NSInteger *)statusCode
+                              contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *setName = pathComponents[3];
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.set.delete"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"name": setName
+                                                           }];
+
+    NSInteger status = [result[@"status"] integerValue];
+    if (status >= 200 && status < 300) {
+        return @"<p class=\"text-success\">Set deleted successfully!</p>"
+               @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+    }
+
+    NSDictionary *jsonError = result[@"json"];
+    NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to delete set";
+    return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+}
+
+- (NSString *)handleOzoneSetAddValuesWithPath:(NSString *)path
+                                    method:(AdminUIHTTPMethod)method
+                                  headers:(NSDictionary<NSString *, NSString *> *)headers
+                                     body:(nullable NSData *)body
+                               statusCode:(nullable NSInteger *)statusCode
+                              contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *setName = pathComponents[3];
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *valuesStr = params[@"values"];
+
+        if (!valuesStr || valuesStr.length == 0) {
+            return @"<p class=\"text-destructive\">Values are required</p>";
+        }
+
+        NSArray *values = [valuesStr componentsSeparatedByString:@"\n"];
+        NSMutableArray *trimmedValues = [NSMutableArray array];
+        for (NSString *v in values) {
+            NSString *t = [v stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (t.length > 0) {
+                [trimmedValues addObject:t];
+            }
+        }
+
+        if (trimmedValues.count == 0) {
+            return @"<p class=\"text-destructive\">No valid values provided</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.set.addValues"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"name": setName,
+                                                               @"values": trimmedValues
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Values added successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to add values";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<form class=\"form\" hx-post=\"%@\" hx-swap=\"innerHTML\">"
+           @"<div class=\"form-group\">"
+           @"<label class=\"form-label\">Values (one per line)</label>"
+           @"<textarea name=\"values\" class=\"form-input\" style=\"min-height: 100px;\" placeholder=\"did:plc:...\"></textarea>"
+           @"</div>"
+           @"<button type=\"submit\" class=\"btn btn-primary\">Add Values</button>"
+           @"</form>", path;
 }
 
 @end
