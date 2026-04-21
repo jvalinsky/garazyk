@@ -313,6 +313,24 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 #pragma mark - Event Persistence
 
 /*!
+ @method logHostingEvent:type:details:createdBy:error:
+
+ @abstract Log a hosting event (account creation, handle update, etc.).
+
+ @param did The DID of the account.
+ @param type The type of event (e.g. account_created, handle_updated).
+ @param details Optional dictionary of event details (will be JSON serialized).
+ @param createdBy Optional DID of the actor creating the event.
+ @param error Error pointer.
+ @return YES if logged successfully.
+ */
+- (BOOL)logHostingEvent:(NSString *)did
+                   type:(NSString *)type
+                details:(nullable NSDictionary *)details
+              createdBy:(nullable NSString *)createdBy
+                  error:(NSError **)error;
+
+/*!
  @method persistEvent:seq:type:data:error:
 
  @abstract Store a firehose event.
