@@ -92,6 +92,15 @@ NS_ASSUME_NONNULL_BEGIN
                                                     cursor:(nullable NSString *)cursor
                                                       error:(NSError **)error;
 
+/*! Get notification preferences for actor. */
+- (nullable NSDictionary *)getPreferencesForActor:(NSString *)actorDID
+                                            error:(NSError **)error;
+
+/*! Put notification preferences for actor. */
+- (BOOL)putPreferencesForActor:(NSString *)actorDID
+                   preferences:(NSArray *)preferences
+                        error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
