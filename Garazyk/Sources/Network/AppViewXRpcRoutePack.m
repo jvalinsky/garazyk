@@ -6,6 +6,8 @@
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
+#import "AppView/Services/AgeAssuranceService.h"
+#import "AppView/Services/ChatModerationService.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/DID.h"
 
@@ -24,14 +26,18 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     ActorService *_actorService;
     GraphService *_graphService;
     NotificationService *_notificationService;
+    AgeAssuranceService *_ageAssuranceService;
+    ChatModerationService *_chatModerationService;
     id<PDSQueryDatabase> _database;
 }
 
 - (instancetype)initWithFeedService:(FeedService *)feedService
-                      actorService:(ActorService *)actorService
-                      graphService:(nullable GraphService *)graphService
-                notificationService:(NotificationService *)notificationService
-                         database:(nullable id<PDSQueryDatabase>)database
+                       actorService:(ActorService *)actorService
+                       graphService:(nullable GraphService *)graphService
+                 notificationService:(NotificationService *)notificationService
+                ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
+               chatModerationService:(nullable ChatModerationService *)chatModerationService
+                          database:(nullable id<PDSQueryDatabase>)database
 {
     self = [super init];
     if (self)
@@ -40,10 +46,13 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
         _actorService = actorService;
         _graphService = graphService;
         _notificationService = notificationService;
+        _ageAssuranceService = ageAssuranceService;
+        _chatModerationService = chatModerationService;
         _database = database;
     }
     return self;
 }
+
 
 - (void)registerRoutesWithServer:(HttpServer *)server
 {
@@ -286,6 +295,44 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                 path:@"/xrpc/com.atproto.admin.getSubjectStatus"
              handler:^(HttpRequest *request, HttpResponse *response) {
                  [self handleGetSubjectStatus:request response:response];
+             }];
+
+    // --- app.bsky.ageassurance ---
+    [server addRoute:@"POST"
+                path:@"/xrpc/app.bsky.ageassurance.begin"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleAgeAssuranceBegin:request response:response];
+             }];
+
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.ageassurance.getConfig"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleAgeAssuranceGetConfig:request response:response];
+             }];
+
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.ageassurance.getState"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleAgeAssuranceGetState:request response:response];
+             }];
+
+    // --- chat.bsky.moderation ---
+    [server addRoute:@"GET"
+                path:@"/xrpc/chat.bsky.moderation.getActorMetadata"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleChatGetActorMetadata:request response:response];
+             }];
+
+    [server addRoute:@"GET"
+                path:@"/xrpc/chat.bsky.moderation.getMessageContext"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleChatGetMessageContext:request response:response];
+             }];
+
+    [server addRoute:@"POST"
+                path:@"/xrpc/chat.bsky.moderation.updateActorAccess"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleChatUpdateActorAccess:request response:response];
              }];
 }
 
@@ -1407,6 +1454,171 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
         @"takedown": @{ @"applied": @(NO) },
         @"review": @{ @"state": @"none" }
     }];
+}
+
+#pragma mark - app.bsky.ageassurance
+
+- (void)handleAgeAssuranceBegin:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSDictionary *body = request.jsonBody;
+    if (!body || !body[@"email"] || !body[@"language"] || !body[@"countryCode"]) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"email, language, and countryCode required" }];
+        return;
+    }
+
+    if (!_ageAssuranceService) {
+        response.statusCode = 503;
+        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Age assurance service not available" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *result = [_ageAssuranceService beginAgeAssurance:actorDID
+                                                             email:body[@"email"]
+                                                          language:body[@"language"]
+                                                       countryCode:body[@"countryCode"]
+                                                        regionCode:body[@"regionCode"]
+                                                             error:&error];
+    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
+    response.statusCode = 200;
+    [response setJsonBody:result];
+}
+
+- (void)handleAgeAssuranceGetConfig:(HttpRequest *)request response:(HttpResponse *)response
+{
+    if (!_ageAssuranceService) {
+        response.statusCode = 503;
+        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Age assurance service not available" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *config = [_ageAssuranceService getAgeAssuranceConfig:&error];
+    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
+    response.statusCode = 200;
+    [response setJsonBody:config];
+}
+
+- (void)handleAgeAssuranceGetState:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSString *countryCode = [request queryParamForKey:@"countryCode"];
+    if (!countryCode) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"countryCode parameter is required" }];
+        return;
+    }
+
+    if (!_ageAssuranceService) {
+        response.statusCode = 503;
+        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Age assurance service not available" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *state = [_ageAssuranceService getAgeAssuranceState:actorDID
+                                                        countryCode:countryCode
+                                                         regionCode:[request queryParamForKey:@"regionCode"]
+                                                              error:&error];
+    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
+    
+    response.statusCode = 200;
+    [response setJsonBody:@{
+        @"state": state ?: @{ @"id": @"", @"status": @"none" },
+        @"metadata": @{
+            @"countryCode": countryCode,
+            @"regionCode": [request queryParamForKey:@"regionCode"] ?: @"",
+            @"computedAt": [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]]
+        }
+    }];
+}
+
+#pragma mark - chat.bsky.moderation
+
+- (void)handleChatGetActorMetadata:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSString *target = [request queryParamForKey:@"actor"];
+    if (!target) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
+        return;
+    }
+
+    if (!_chatModerationService) {
+        response.statusCode = 503;
+        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Chat moderation service not available" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *metadata = [_chatModerationService getActorMetadata:target error:&error];
+    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
+    
+    response.statusCode = 200;
+    [response setJsonBody:metadata ?: @{}];
+}
+
+- (void)handleChatGetMessageContext:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSString *messageId = [request queryParamForKey:@"messageId"];
+    if (!messageId) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"messageId parameter is required" }];
+        return;
+    }
+
+    if (!_chatModerationService) {
+        response.statusCode = 503;
+        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Chat moderation service not available" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *context = [_chatModerationService getMessageContext:messageId error:&error];
+    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
+    
+    response.statusCode = 200;
+    [response setJsonBody:context ?: @{}];
+}
+
+- (void)handleChatUpdateActorAccess:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSDictionary *body = request.jsonBody;
+    if (!body || !body[@"actor"]) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor required in body" }];
+        return;
+    }
+
+    if (!_chatModerationService) {
+        response.statusCode = 503;
+        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Chat moderation service not available" }];
+        return;
+    }
+
+    NSError *error = nil;
+    BOOL success = [_chatModerationService updateActorAccess:body[@"actor"]
+                                                   access:body[@"access"] ?: @{}
+                                                    error:&error];
+    if (!success) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
+    
+    response.statusCode = 200;
+    [response setJsonBody:@{}];
 }
 
 @end

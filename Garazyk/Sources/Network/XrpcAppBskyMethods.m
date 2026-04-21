@@ -6,6 +6,8 @@
 #import "AppView/Services/ContactService.h"
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
+#import "AppView/Services/AgeAssuranceService.h"
+#import "AppView/Services/ChatModerationService.h"
 #import "AppView/Services/RecordLifecycleHandler.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -29,9 +31,9 @@
 @implementation XrpcAppBskyMethods
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController {
+               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                       jwtMinter:(JWTMinter *)jwtMinter
+                 adminController:(id<PDSAdminController>)adminController {
   NSError *appViewDbError = nil;
   PDSDatabase *appViewDatabase =
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
@@ -42,8 +44,8 @@
 
   [XrpcAppBskyActorPack registerWithDispatcher:dispatcher
                                  appViewDatabase:appViewDatabase
-                                      jwtMinter:jwtMinter
-                                adminController:adminController];
+                                       jwtMinter:jwtMinter
+                                 adminController:adminController];
 
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher
                                                      appViewDatabase:appViewDatabase
@@ -67,57 +69,59 @@
   ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
   ContactService *contactService = [[ContactService alloc] initWithDatabase:appViewDatabase
                                                                 actorService:actorService];
+  AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase];
+  ChatModerationService *chatModerationService = [[ChatModerationService alloc] initWithDatabase:appViewDatabase];
 
   __attribute__((unused)) RecordLifecycleHandler *lifecycleHandler =
       [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
-                                                  bookmarkService:bookmarkService
-                                                     graphService:graphService
-                                                         database:appViewDatabase];
+                                                   bookmarkService:bookmarkService
+                                                      graphService:graphService
+                                                          database:appViewDatabase];
 
   [XrpcAppBskyFeedPack registerWithDispatcher:dispatcher
-                               appViewDatabase:appViewDatabase
-                                     jwtMinter:jwtMinter
-                               adminController:adminController];
+                                appViewDatabase:appViewDatabase
+                                      jwtMinter:jwtMinter
+                                adminController:adminController];
 
   [XrpcAppBskyGraphPack registerWithDispatcher:dispatcher
-                              serviceDatabases:serviceDatabases
-                                appViewDatabase:appViewDatabase
-                                     jwtMinter:jwtMinter
-                               adminController:adminController];
+                               serviceDatabases:serviceDatabases
+                                 appViewDatabase:appViewDatabase
+                                      jwtMinter:jwtMinter
+                                adminController:adminController];
 
   [XrpcAppBskyNotificationPack registerWithDispatcher:dispatcher
-                                        appViewDatabase:appViewDatabase
-                                             jwtMinter:jwtMinter
-                                       adminController:adminController];
+                                         appViewDatabase:appViewDatabase
+                                              jwtMinter:jwtMinter
+                                        adminController:adminController];
 
   [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher
-                                   bookmarkService:bookmarkService
-                                         jwtMinter:jwtMinter
-                                   adminController:adminController];
+                                    bookmarkService:bookmarkService
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController];
 
   [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher];
-  [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher];
+  [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
   [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
   [XrpcAppBskyVideoPack registerWithDispatcher:dispatcher
-                                serviceDatabases:serviceDatabases
-                                    appViewDatabase:appViewDatabase
-                                         jwtMinter:jwtMinter
-                                   adminController:adminController];
+                                 serviceDatabases:serviceDatabases
+                                     appViewDatabase:appViewDatabase
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController];
   [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
   [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
+                                appViewDatabase:appViewDatabase
+                                     jwtMinter:jwtMinter
+                               adminController:adminController];
+  [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
                                appViewDatabase:appViewDatabase
                                     jwtMinter:jwtMinter
                               adminController:adminController];
-  [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
-                              appViewDatabase:appViewDatabase
-                                   jwtMinter:jwtMinter
-                             adminController:adminController];
-  [XrpcChatBskyActorPack registerWithDispatcher:dispatcher];
+  [XrpcChatBskyActorPack registerWithDispatcher:dispatcher chatModerationService:chatModerationService];
   [XrpcToolsOzonePack registerWithDispatcher:dispatcher
-                            appViewDatabase:appViewDatabase
-                                 jwtMinter:jwtMinter
-                           adminController:adminController];
+                             appViewDatabase:appViewDatabase
+                                  jwtMinter:jwtMinter
+                            adminController:adminController];
 }
 
 @end
