@@ -606,4 +606,90 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [task resume];
 }
 
+- (nullable NSString *)resolveHandleSync:(NSString *)handle error:(NSError **)error {
+    if (!handle || handle.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                          code:DIDErrorInvalidIdentifier
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Handle is empty"}];
+        }
+        return nil;
+    }
+
+    // Normalize handle (remove @ prefix if present)
+    NSString *normalizedHandle = handle;
+    if ([normalizedHandle hasPrefix:@"@"]) {
+        normalizedHandle = [normalizedHandle substringFromIndex:1];
+    }
+
+    // Build well-known URL: https://{handle}/.well-known/atproto-did
+    NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", normalizedHandle];
+    NSURL *url = [NSURL URLWithString:urlString];
+
+    if (!url) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                          code:DIDErrorInvalidIdentifier
+                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid handle URL"}];
+        }
+        return nil;
+    }
+
+    // Synchronous network request
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url
+                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                                       timeoutInterval:10.0];
+    request.HTTPMethod = @"GET";
+
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+    __block NSString *resolvedDID = nil;
+    __block NSError *requestError = nil;
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+        completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+            if (err) {
+                requestError = err;
+                dispatch_semaphore_signal(sem);
+                return;
+            }
+
+            NSHTTPURLResponse *httpResponse = [resp isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)resp : nil;
+            if (!httpResponse || httpResponse.statusCode != 200) {
+                requestError = [NSError errorWithDomain:DIDErrorDomain
+                                                    code:DIDErrorResolutionFailed
+                                                userInfo:@{NSLocalizedDescriptionKey: @"Handle resolution failed"}];
+                dispatch_semaphore_signal(sem);
+                return;
+            }
+
+            NSString *responseString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            if (!responseString) {
+                requestError = [NSError errorWithDomain:DIDErrorDomain
+                                                    code:DIDErrorInvalidDocument
+                                                userInfo:@{NSLocalizedDescriptionKey: @"Invalid response encoding"}];
+                dispatch_semaphore_signal(sem);
+                return;
+            }
+
+            // Response should be a DID string
+            responseString = [responseString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if ([responseString hasPrefix:@"did:"]) {
+                resolvedDID = responseString;
+            } else {
+                requestError = [NSError errorWithDomain:DIDErrorDomain
+                                                    code:DIDErrorInvalidDocument
+                                                userInfo:@{NSLocalizedDescriptionKey: @"Response is not a valid DID"}];
+            }
+            dispatch_semaphore_signal(sem);
+        }];
+
+    [task resume];
+    dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+
+    if (requestError && error) {
+        *error = requestError;
+    }
+    return resolvedDID;
+}
+
 @end
