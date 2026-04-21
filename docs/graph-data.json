@@ -622,9 +622,9 @@
       "node_type": "decision",
       "title": "AppView Index Stats",
       "description": "Add stats endpoints to AppViewAdminRoutePack, wire frontend to real data",
-      "status": "pending",
+      "status": "done",
       "created_at": "2026-04-21T16:05:52.066962-04:00",
-      "updated_at": "2026-04-21T16:06:23.627787-04:00",
+      "updated_at": "2026-04-21T17:48:21.524777-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -637,6 +637,17 @@
       "created_at": "2026-04-21T16:18:13.698379-04:00",
       "updated_at": "2026-04-21T16:18:33.501085-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m\",\"Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.h\",\"Garazyk/Sources/AppView/Server/AppViewRuntime.m\"]}"
+    },
+    {
+      "id": 59,
+      "change_id": "72fad7e3-628b-47b8-b981-b1d04a30f94d",
+      "node_type": "decision",
+      "title": "AppView Index Stats & Metrics Endpoints",
+      "description": "Implemented count methods in ActorService. Created AppViewIdentityHelper for PLC handle caching. Added /admin/appview/index/stats, /admin/appview/index/repos, and /admin/appview/metrics/stats. Updated HTMX frontend template.",
+      "status": "done",
+      "created_at": "2026-04-21T17:48:15.684374-04:00",
+      "updated_at": "2026-04-21T17:48:21.515313-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/AppView/Services/ActorService.m\",\"Garazyk/Sources/AppView/Server/AppViewIdentityHelper.m\",\"Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m\",\"Garazyk/Sources/Admin/AdminUI/Templates/sections/appview/index.html\"]}"
     }
   ],
   "edges": [
@@ -1167,6 +1178,17 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-21T16:18:31.442678-04:00"
+    },
+    {
+      "id": 49,
+      "from_node_id": 57,
+      "to_node_id": 59,
+      "from_change_id": "6f73c146-5d63-4d12-846c-91b5ac840ed5",
+      "to_change_id": "72fad7e3-628b-47b8-b981-b1d04a30f94d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-21T17:48:21.503684-04:00"
     }
   ],
   "documents": [
