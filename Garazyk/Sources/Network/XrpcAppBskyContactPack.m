@@ -14,7 +14,9 @@
 @implementation XrpcAppBskyContactPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 contactService:(ContactService *)contactService {
+                  contactService:(ContactService *)contactService
+                       jwtMinter:(JWTMinter *)jwtMinter
+                 adminController:(id<PDSAdminController>)adminController {
 
     // app.bsky.contact.startPhoneVerification
     [dispatcher registerMethod:@"app.bsky.contact.startPhoneVerification"

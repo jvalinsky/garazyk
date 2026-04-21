@@ -40,17 +40,6 @@
 
 + (void)registerProxyOnlyMethodsWithDispatcher:(XrpcDispatcher *)dispatcher {
   NSArray<NSString *> *methodIds = @[
-    @"app.bsky.ageassurance.begin",
-    @"app.bsky.ageassurance.getConfig",
-    @"app.bsky.ageassurance.getState",
-    @"app.bsky.contact.dismissMatch",
-    @"app.bsky.contact.getMatches",
-    @"app.bsky.contact.getSyncStatus",
-    @"app.bsky.contact.importContacts",
-    @"app.bsky.contact.removeData",
-    @"app.bsky.contact.sendNotification",
-    @"app.bsky.contact.startPhoneVerification",
-    @"app.bsky.contact.verifyPhone",
     @"app.bsky.graph.verification.createVerification",
     @"app.bsky.graph.verification.deleteVerification",
     @"app.bsky.unspecced.getAgeAssuranceState",

@@ -648,6 +648,17 @@
       "created_at": "2026-04-21T17:48:15.684374-04:00",
       "updated_at": "2026-04-21T17:48:21.515313-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/AppView/Services/ActorService.m\",\"Garazyk/Sources/AppView/Server/AppViewIdentityHelper.m\",\"Garazyk/Sources/AppView/Server/Admin/AppViewAdminRoutePack.m\",\"Garazyk/Sources/Admin/AdminUI/Templates/sections/appview/index.html\"]}"
+    },
+    {
+      "id": 60,
+      "change_id": "04228872-310d-41f1-9b48-71d064666df8",
+      "node_type": "decision",
+      "title": "Implement Scheduled Actions",
+      "description": "Added ozone_scheduled_actions table and implemented scheduleAction, listScheduledActions, and cancelScheduledAction in ModerationService.",
+      "status": "done",
+      "created_at": "2026-04-21T17:59:32.543673-04:00",
+      "updated_at": "2026-04-21T17:59:38.294158-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/Database/Schema/PDSSchemaManager.m\",\"Garazyk/Sources/Database/Migrations/PDSMigrationManager.m\",\"Garazyk/Sources/AppView/Services/ModerationService.m\",\"Garazyk/Sources/Network/XrpcToolsOzonePack.m\"]}"
     }
   ],
   "edges": [
@@ -1189,6 +1200,17 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-21T17:48:21.503684-04:00"
+    },
+    {
+      "id": 50,
+      "from_node_id": 56,
+      "to_node_id": 60,
+      "from_change_id": "61d37ffc-3c4b-4808-9ce7-0f9d3592bf70",
+      "to_change_id": "04228872-310d-41f1-9b48-71d064666df8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-04-21T17:59:38.285389-04:00"
     }
   ],
   "documents": [

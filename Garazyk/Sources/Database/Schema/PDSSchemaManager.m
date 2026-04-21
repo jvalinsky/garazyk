@@ -273,6 +273,44 @@
            @")";
 }
 
+#pragma mark - BSky AppView Schemas
+
+- (NSString *)bskyAgeAssuranceTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS age_assurance_states ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    did TEXT NOT NULL,"
+           @"    status TEXT NOT NULL,"
+           @"    email TEXT,"
+           @"    country_code TEXT,"
+           @"    region_code TEXT,"
+           @"    language TEXT,"
+           @"    token TEXT,"
+           @"    created_at INTEGER,"
+           @"    updated_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyChatEventLogTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS chat_event_log ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    convo_id TEXT NOT NULL,"
+           @"    actor_did TEXT NOT NULL,"
+           @"    event_type TEXT NOT NULL,"
+           @"    event_data TEXT,"
+           @"    created_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyChatActorMetadataTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS chat_actor_metadata ("
+           @"    did TEXT PRIMARY KEY,"
+           @"    muted INTEGER DEFAULT 0,"
+           @"    blocked INTEGER DEFAULT 0,"
+           @"    labels TEXT,"
+           @"    updated_at INTEGER"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self serviceAccountsTableSchema]];
@@ -313,6 +351,12 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self ozoneScheduledActionsTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyAgeAssuranceTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyChatEventLogTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyChatActorMetadataTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self serviceHostingEventsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
@@ -344,6 +388,12 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_events_created ON moderation_events(created_at);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did);"];
+    [sql appendString:@";\n\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_age_assurance_did ON age_assurance_states(did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_chat_event_log_convo ON chat_event_log(convo_id);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_chat_event_log_actor ON chat_event_log(actor_did);"];
     [sql appendString:@";\n\n"];
     [sql appendString:[self schemaVersionTableSQL]];
     return sql;
