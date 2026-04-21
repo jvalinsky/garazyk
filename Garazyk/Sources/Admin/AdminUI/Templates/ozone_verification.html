@@ -1,17 +1,63 @@
 <div class="content-header">
   <h2>Verification</h2>
-  <p class="text-secondary">Grant and revoke verification badges.</p>
+  <p class="text-secondary">Grant and revoke verification badges to confirm account authenticity.</p>
 </div>
 
-<div class="flex items-center justify-between mb-md">
-  <div class="text-secondary">Verification status is managed through Ozone verification APIs.</div>
-  <button class="btn btn-primary" data-action="ozone-verification-grant">Grant Verification</button>
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Grant Verification</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/admin/ozone/verification/grant" hx-swap="outerHTML">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Account DID</label>
+          <input type="text" name="did" class="form-input" required placeholder="did:plc:..." />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <input type="text" name="notes" class="form-input" placeholder="Reason for verification" />
+        </div>
+      </div>
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary">Grant Verification</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Verified Accounts</h3>
+  </div>
   <div class="card-body">
     <div id="ozone-verification-list-container" hx-get="/admin/partials/ozone/verification/list" hx-trigger="load">
       <p class="text-secondary text-center">Loading verifications...</p>
     </div>
   </div>
 </div>
+
+<!-- Revoke Modal -->
+<dialog id="revoke-verification-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">Revoke Verification</h2>
+      <button type="button" class="btn btn-icon" onclick="document.getElementById('revoke-verification-modal').close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="form" hx-post="/admin/ozone/verification/revoke" hx-swap="outerHTML">
+        <input type="hidden" name="did" id="revoke-did" />
+        <div class="form-group">
+          <label class="form-label">Reason for revocation</label>
+          <input type="text" name="reason" class="form-input" placeholder="Reason for revoking verification" />
+        </div>
+        <div class="form-footer">
+          <button type="submit" class="btn btn-warning">Revoke Verification</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('revoke-verification-modal').close()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</dialog>
