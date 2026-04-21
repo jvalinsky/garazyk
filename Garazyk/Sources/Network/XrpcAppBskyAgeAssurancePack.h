@@ -7,13 +7,15 @@
 #import <Foundation/Foundation.h>
 
 @class XrpcDispatcher;
+@class AgeAssuranceService;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcAppBskyAgeAssurancePack : NSObject
 
 /*! Register all app.bsky.ageassurance routes with the dispatcher. */
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService;
 
 @end
 
