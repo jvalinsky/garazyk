@@ -1,0 +1,20 @@
+{
+  "lexicon": 1,
+  "id": "chat.bsky.group.deleteMessageForSelf",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Delete message for self",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["messageId"],
+          "properties": {
+            "messageId": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}
