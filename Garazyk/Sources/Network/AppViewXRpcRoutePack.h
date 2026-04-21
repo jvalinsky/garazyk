@@ -2,6 +2,7 @@
 
 @class FeedService;
 @class ActorService;
+@class GraphService;
 @class NotificationService;
 @class HttpServer;
 
@@ -11,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)initWithFeedService:(FeedService *)feedService
                       actorService:(ActorService *)actorService
+                      graphService:(nullable GraphService *)graphService
                 notificationService:(NotificationService *)notificationService;
 
 - (void)registerRoutesWithServer:(HttpServer *)server;

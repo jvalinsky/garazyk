@@ -481,6 +481,21 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
         }
 
         if (hasLocalHandler || ![methodId hasPrefix:@"app.bsky."]) {
+          // If we have a local handler AND an AppView is configured, prefer
+          // the AppView for GET (query) requests. The PDS should handle
+          // POST (mutation) endpoints locally since those modify state.
+          if (hasLocalHandler && [methodId hasPrefix:@"app.bsky."]) {
+            NSString *fallbackDescriptor =
+                configuredAppViewProxyDescriptor(configuration);
+            if (fallbackDescriptor.length > 0 &&
+                request.method == HttpMethodGET &&
+                [[request headerForKey:@"x-objpds-proxy-hop"] integerValue] == 0) {
+              return proxyXrpcRequest(request, response, methodId,
+                                      fallbackDescriptor, configuration, NO,
+                                      jwtMinter, adminController, serviceDatabases,
+                                      userDatabasePool);
+            }
+          }
           return NO;
         }
 
