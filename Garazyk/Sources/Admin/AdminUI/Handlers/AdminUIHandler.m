@@ -131,6 +131,14 @@ NS_ASSUME_NONNULL_BEGIN
         return [self handleOzoneSetAddValuesWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
     }
 
+    // Ozone templates routes
+    if ([path isEqualToString:@"/admin/ozone/templates/create"]) {
+        return [self handleOzoneTemplateCreateWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path hasPrefix:@"/admin/ozone/templates/"] && [path hasSuffix:@"/delete"]) {
+        return [self handleOzoneTemplateDeleteWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
     // PLC operation routes
     if ([path isEqualToString:@"/admin/plc/request-signature"]) {
         return [self handlePlcRequestSignatureWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
@@ -2496,6 +2504,88 @@ NS_ASSUME_NONNULL_BEGIN
            @"</div>"
            @"<button type=\"submit\" class=\"btn btn-primary\">Add Values</button>"
            @"</form>", path;
+}
+
+#pragma mark - Ozone Templates Management
+
+- (NSString *)handleOzoneTemplateCreateWithMethod:(AdminUIHTTPMethod)method
+                                        headers:(NSDictionary<NSString *, NSString *> *)headers
+                                           body:(nullable NSData *)body
+                                     statusCode:(nullable NSInteger *)statusCode
+                                    contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *templateId = params[@"id"];
+        NSString *subject = params[@"subject"];
+        NSString *content = params[@"content"];
+        NSString *disabledStr = params[@"disabled"] ?: @"false";
+        BOOL disabled = [disabledStr isEqualToString:@"true"];
+
+        if (!templateId || !subject || !content) {
+            return @"<p class=\"text-destructive\">Template ID, subject, and content are required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.communication.createTemplate"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"id": templateId,
+                                                               @"subject": subject,
+                                                               @"contentMarkdown": content,
+                                                               @"disabled": @(disabled)
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Template created successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to create template";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handleOzoneTemplateDeleteWithPath:(NSString *)path
+                                        method:(AdminUIHTTPMethod)method
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *templateId = pathComponents[3];
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.communication.deleteTemplate"
+                                                     httpMethod:HttpMethodPOST
+                                                        headers:headers
+                                                       jsonBody:@{
+                                                           @"id": templateId
+                                                       }];
+
+    NSInteger status = [result[@"status"] integerValue];
+    if (status >= 200 && status < 300) {
+        return @"<p class=\"text-success\">Template deleted successfully!</p>"
+               @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+    }
+
+    NSDictionary *jsonError = result[@"json"];
+    NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to delete template";
+    return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
 }
 
 @end
