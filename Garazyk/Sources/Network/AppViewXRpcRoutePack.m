@@ -123,6 +123,12 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                  [self handleGetPosts:request response:response];
              }];
 
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.feed.getFeedGenerators"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetFeedGenerators:request response:response];
+             }];
+
     // --- app.bsky.graph ---
     if (_graphService) {
         [server addRoute:@"GET"
@@ -685,6 +691,37 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     [response setJsonBody:result ?: @{ @"posts": @[] }];
 }
 
+- (void)handleGetFeedGenerators:(HttpRequest *)request response:(HttpResponse *)response
+{
+    NSString *urisParam = [request queryParamForKey:@"uris"];
+    if (!urisParam || urisParam.length == 0)
+    {
+        response.statusCode = 400;
+        [response setJsonBody:@{
+            @"error": @"InvalidRequest",
+            @"message": @"uris parameter is required"
+        }];
+        return;
+    }
+
+    NSArray<NSString *> *uris = [urisParam componentsSeparatedByString:@","];
+    NSError *error = nil;
+    NSDictionary *result = [_feedService getFeedGenerators:uris error:&error];
+
+    if (error)
+    {
+        response.statusCode = 500;
+        [response setJsonBody:@{
+            @"error": @"InternalServerError",
+            @"message": error.localizedDescription ?: @"Failed to get feed generators"
+        }];
+        return;
+    }
+
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{ @"feeds": @[] }];
+}
+
 #pragma mark - app.bsky.graph
 
 - (void)handleGetFollows:(HttpRequest *)request response:(HttpResponse *)response
@@ -1084,9 +1121,21 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
 
-    // NotificationService doesn't have getPreferences yet; return empty
+    NSError *error = nil;
+    NSDictionary *prefs = [_notificationService getPreferencesForActor:actorDID error:&error];
+
+    if (error)
+    {
+        response.statusCode = 500;
+        [response setJsonBody:@{
+            @"error": @"InternalServerError",
+            @"message": error.localizedDescription ?: @"Failed to get preferences"
+        }];
+        return;
+    }
+
     response.statusCode = 200;
-    [response setJsonBody:@{ @"preferences": @[] }];
+    [response setJsonBody:prefs ?: @{ @"preferences": @[] }];
 }
 
 - (void)handlePutNotificationPreferences:(HttpRequest *)request response:(HttpResponse *)response
@@ -1094,7 +1143,41 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     NSString *actorDID = [self requireAuth:request response:response];
     if (!actorDID) return;
 
-    // Acknowledge but no-op for now; NotificationService needs this method
+    NSData *bodyData = request.body;
+    if (!bodyData || bodyData.length == 0)
+    {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Request body required" }];
+        return;
+    }
+
+    NSError *jsonError = nil;
+    NSDictionary *body = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&jsonError];
+    if (!body)
+    {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"Invalid JSON body" }];
+        return;
+    }
+
+    NSArray *preferences = body[@"preferences"];
+    if (!preferences)
+    {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"preferences field required" }];
+        return;
+    }
+
+    NSError *error = nil;
+    BOOL success = [_notificationService putPreferencesForActor:actorDID preferences:preferences error:&error];
+
+    if (!success)
+    {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+
     response.statusCode = 200;
     [response setJsonBody:@{}];
 }

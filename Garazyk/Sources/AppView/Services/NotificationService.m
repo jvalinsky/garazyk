@@ -380,4 +380,43 @@
     return [result copy];
 }
 
+- (nullable NSDictionary *)getPreferencesForActor:(NSString *)actorDID
+                                            error:(NSError **)error {
+    // Query notification preferences from a dedicated table.
+    // For now, return default/empty preferences if no table exists.
+    NSString *query = @"SELECT preferences FROM notification_preferences WHERE did = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID] error:error];
+
+    if (rows && rows.count > 0) {
+        NSString *prefsJson = rows.firstObject[@"preferences"];
+        if (prefsJson && prefsJson.length > 0) {
+            NSData *data = [prefsJson dataUsingEncoding:NSUTF8StringEncoding];
+            return [NSJSONSerialization JSONObjectWithData:data options:0 error:error];
+        }
+    }
+
+    // Return default preferences
+    return @{@"preferences": @[]};
+}
+
+- (BOOL)putPreferencesForActor:(NSString *)actorDID
+                   preferences:(NSArray *)preferences
+                        error:(NSError **)error {
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:preferences ?: @[]
+                                                       options:0
+                                                         error:error];
+    if (!jsonData && error && *error) {
+        return NO;
+    }
+
+    NSString *prefsJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+    // Upsert notification preferences
+    NSString *query = @"INSERT OR REPLACE INTO notification_preferences (did, preferences) VALUES (?, ?)";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID, prefsJson] error:error];
+
+    (void)rows;
+    return (error && *error) ? NO : YES;
+}
+
 @end
