@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class AppViewBackfillOrchestrator;
 @class AppViewRelevanceSet;
 @class AppViewIngestEngine;
+@class AppViewDatabase;
 
 @interface AppViewAdminRoutePack : NSObject
 
@@ -28,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
               orchestrator:(AppViewBackfillOrchestrator *)orchestrator
               relevanceSet:(AppViewRelevanceSet *)relevanceSet
               ingestEngine:(AppViewIngestEngine *)ingestEngine
+                  database:(AppViewDatabase *)database
                adminSecret:(NSString *)adminSecret;
 
 @end

@@ -9,6 +9,8 @@
 #import "AppView/Server/Backfill/AppViewBackfillOrchestrator.h"
 #import "AppView/Server/Relevance/AppViewRelevanceSet.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
+#import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewTypes.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -45,6 +47,7 @@ static NSString *AppViewAdminExtractRepoDID(NSString *path, NSString *suffix) {
               orchestrator:(AppViewBackfillOrchestrator *)orchestrator
               relevanceSet:(AppViewRelevanceSet *)relevanceSet
               ingestEngine:(AppViewIngestEngine *)ingestEngine
+                  database:(AppViewDatabase *)database
                adminSecret:(NSString *)adminSecret {
 
     // -----------------------------------------------------------------
