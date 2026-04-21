@@ -11,6 +11,8 @@
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
+#import "AppView/Server/AppViewIdentityHelper.h"
+#import "AppView/Services/ActorService.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -48,7 +50,175 @@ static NSString *AppViewAdminExtractRepoDID(NSString *path, NSString *suffix) {
               relevanceSet:(AppViewRelevanceSet *)relevanceSet
               ingestEngine:(AppViewIngestEngine *)ingestEngine
                   database:(AppViewDatabase *)database
+              actorService:(ActorService *)actorService
                adminSecret:(NSString *)adminSecret {
+
+    // -----------------------------------------------------------------
+    // GET /admin/appview/index/stats
+    // -----------------------------------------------------------------
+    [server addRoute:@"GET"
+                path:@"/admin/appview/index/stats"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 if (![self _validateAdminToken:request secret:adminSecret response:response]) return;
+
+                 NSDictionary *status = [orchestrator statusReport];
+                 NSError *err = nil;
+                 NSInteger posts = [actorService getTotalPostsCount:&err];
+                 NSInteger profiles = [actorService getTotalProfilesCount:&err];
+                 NSInteger follows = [actorService getTotalFollowsCount:&err];
+
+                 NSDictionary *stats = @{
+                     @"indexed_repos": status[@"repos_synced"] ?: @0,
+                     @"posts": @(posts),
+                     @"profiles": @(profiles),
+                     @"follows": @(follows)
+                 };
+
+                 BOOL wantsHTML = [request.headers[@"Hx-Request"] isEqualToString:@"true"] ||
+                                  [request.headers[@"Accept"] containsString:@"text/html"];
+
+                 response.statusCode = 200;
+                 if (wantsHTML) {
+                     [response setHeader:@"text/html" forKey:@"Content-Type"];
+                     NSString *html = [NSString stringWithFormat:
+                         @"<div class=\"grid-4 mb-lg\" hx-get=\"/admin/appview/index/stats\" hx-trigger=\"load, every 60s\" hx-swap=\"outerHTML\">"
+                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Indexed Repos</div><div class=\"stat-value\">%@</div></div>"
+                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Posts</div><div class=\"stat-value\">%ld</div></div>"
+                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Profiles</div><div class=\"stat-value\">%ld</div></div>"
+                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Follows</div><div class=\"stat-value\">%ld</div></div>"
+                         @"</div>",
+                         stats[@"indexed_repos"], (long)posts, (long)profiles, (long)follows];
+                     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
+                 } else {
+                     [response setJsonBody:stats];
+                 }
+             }];
+
+    // -----------------------------------------------------------------
+    // GET /admin/appview/index/repos
+    // -----------------------------------------------------------------
+    [server addRoute:@"GET"
+                path:@"/admin/appview/index/repos"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 if (![self _validateAdminToken:request secret:adminSecret response:response]) return;
+
+                 NSString *status = request.queryParams[@"status"];
+                 NSInteger limit = [request.queryParams[@"limit"] integerValue] ?: 50;
+                 NSString *cursor = request.queryParams[@"cursor"];
+
+                 NSDictionary *queueResult = [orchestrator queueWithLimit:limit cursor:cursor status:status];
+                 NSMutableArray *entries = [NSMutableArray array];
+
+                 for (NSDictionary *entry in queueResult[@"entries"]) {
+                     NSString *did = entry[@"did"];
+                     NSInteger recordCount = [actorService getPostsCountForDID:did error:nil];
+                     NSString *handle = [AppViewIdentityHelper resolveHandleForDID:did error:nil];
+
+                     [entries addObject:@{
+                         @"did": did,
+                         @"handle": handle ?: [NSNull null],
+                         @"status": entry[@"status"] ?: @"",
+                         @"last_updated": entry[@"last_backfill_at"] ?: [NSNull null],
+                         @"retry_count": entry[@"retry_count"] ?: @0,
+                         @"last_error": entry[@"last_error"] ?: [NSNull null],
+                         @"record_count": @(recordCount)
+                     }];
+                 }
+
+                 NSDictionary *result = @{
+                     @"entries": entries,
+                     @"total": queueResult[@"total"] ?: @0,
+                     @"cursor": queueResult[@"cursor"] ?: [NSNull null]
+                 };
+
+                 BOOL wantsHTML = [request.headers[@"Hx-Request"] isEqualToString:@"true"] ||
+                                  [request.headers[@"Accept"] containsString:@"text/html"];
+
+                 response.statusCode = 200;
+                 if (wantsHTML) {
+                     [response setHeader:@"text/html" forKey:@"Content-Type"];
+                     NSMutableString *html = [NSMutableString stringWithString:@"<tbody hx-get=\"/admin/appview/index/repos\" hx-trigger=\"load, every 60s\" hx-swap=\"innerHTML\">"];
+                     for (NSDictionary *e in entries) {
+                         [html appendFormat:@"<tr><td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>"
+                             @"<button class=\"btn btn-sm\" hx-post=\"/admin/backfill/repos/%@/retry\" hx-swap=\"none\">Retry</button>"
+                             @"</td></tr>",
+                             e[@"handle"] != [NSNull null] ? e[@"handle"] : @"-",
+                             e[@"did"],
+                             e[@"status"],
+                             e[@"record_count"],
+                             e[@"last_updated"] != [NSNull null] ? e[@"last_updated"] : @"-",
+                             e[@"did"]];
+                     }
+                     if (entries.count == 0) {
+                         [html appendString:@"<tr><td colspan=\"6\" class=\"text-center p-md\">No repositories found</td></tr>"];
+                     }
+                     [html appendString:@"</tbody>"];
+                     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
+                 } else {
+                     [response setJsonBody:result];
+                 }
+             }];
+
+    // -----------------------------------------------------------------
+    // GET /admin/appview/metrics/stats
+    // -----------------------------------------------------------------
+    [server addRoute:@"GET"
+                path:@"/admin/appview/metrics/stats"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 if (![self _validateAdminToken:request secret:adminSecret response:response]) return;
+
+                 NSDictionary *status = [orchestrator statusReport];
+                 NSDictionary *lag = ingestEngine.lagByRelay ?: @{};
+                 NSDictionary *relays = ingestEngine.relayHealth ?: @{};
+                 NSDictionary *throughput = ingestEngine.throughput ?: @{};
+
+                 NSInteger totalRecords = [actorService getTotalPostsCount:nil] +
+                                          [actorService getTotalProfilesCount:nil] +
+                                          [actorService getTotalFollowsCount:nil];
+
+                 NSDictionary *metrics = @{
+                     @"backfill": @{
+                         @"queue_depth": status[@"queue_depth"] ?: @0,
+                         @"active_workers": status[@"active_workers"] ?: @0,
+                         @"repos_pending": status[@"repos_pending"] ?: @0,
+                         @"repos_processing": status[@"repos_processing"] ?: @0,
+                         @"repos_synced": status[@"repos_synced"] ?: @0,
+                         @"repos_dirty": status[@"repos_dirty"] ?: @0
+                     },
+                     @"ingest": @{
+                         @"relays": relays,
+                         @"lag_by_relay": lag,
+                         @"throughput": throughput
+                     },
+                     @"index": @{
+                         @"total_records": @(totalRecords)
+                     }
+                 };
+
+                 BOOL wantsHTML = [request.headers[@"Hx-Request"] isEqualToString:@"true"] ||
+                                  [request.headers[@"Accept"] containsString:@"text/html"];
+
+                 response.statusCode = 200;
+                 if (wantsHTML) {
+                     [response setHeader:@"text/html" forKey:@"Content-Type"];
+                     NSNumber *tpTotal = @0;
+                     for (NSNumber *tp in throughput.allValues) {
+                         tpTotal = @(tpTotal.integerValue + tp.integerValue);
+                     }
+                     NSString *html = [NSString stringWithFormat:
+                         @"<div class=\"grid-3 mb-lg\" hx-get=\"/admin/appview/metrics/stats\" hx-trigger=\"load, every 60s\" hx-swap=\"outerHTML\">"
+                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Queue Depth</div><div class=\"stat-value\" id=\"metrics-queue-depth\">%@</div></div>"
+                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Active Workers</div><div class=\"stat-value\" id=\"metrics-workers\">%@</div></div>"
+                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Ingest/sec</div><div class=\"stat-value\" id=\"metrics-throughput\">%@</div></div>"
+                         @"</div>",
+                         status[@"queue_depth"] ?: @0,
+                         status[@"active_workers"] ?: @0,
+                         tpTotal];
+                     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
+                 } else {
+                     [response setJsonBody:metrics];
+                 }
+             }];
 
     // -----------------------------------------------------------------
     // GET /admin/backfill/status

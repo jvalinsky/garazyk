@@ -23,6 +23,22 @@
   </div>
 </div>
 
+<!-- Metrics Dashboard -->
+<div class="grid-3 mb-lg" hx-get="/admin/appview/metrics/stats" hx-trigger="load, every 60s" hx-swap="outerHTML">
+  <div class="stat-card">
+    <div class="stat-label">Queue Depth</div>
+    <div class="stat-value" id="queue-depth">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active Workers</div>
+    <div class="stat-value" id="workers">Loading...</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Ingest/sec</div>
+    <div class="stat-value" id="throughput">Loading...</div>
+  </div>
+</div>
+
 <!-- Index Search -->
 <div class="card mb-lg">
   <div class="card-header">
