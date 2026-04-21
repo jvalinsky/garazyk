@@ -1,0 +1,21 @@
+{
+  "lexicon": 1,
+  "id": "chat.bsky.group.addReaction",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Add reaction to group message",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["messageId", "reaction"],
+          "properties": {
+            "messageId": {"type": "string"},
+            "reaction": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

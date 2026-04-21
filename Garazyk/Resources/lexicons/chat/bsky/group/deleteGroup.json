@@ -1,0 +1,20 @@
+{
+  "lexicon": 1,
+  "id": "chat.bsky.group.deleteGroup",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Delete a group",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["groupUri"],
+          "properties": {
+            "groupUri": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

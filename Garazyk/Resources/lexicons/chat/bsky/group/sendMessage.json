@@ -1,0 +1,21 @@
+{
+  "lexicon": 1,
+  "id": "chat.bsky.group.sendMessage",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Send message to group",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["groupUri", "message"],
+          "properties": {
+            "groupUri": {"type": "string"},
+            "message": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}
