@@ -121,6 +121,21 @@ NS_ASSUME_NONNULL_BEGIN
            addedBy:(NSString *)adminDid
                error:(NSError **)error;
 
+- (BOOL)deleteSetValues:(NSString *)setId
+                values:(NSArray *)values
+             deletedBy:(NSString *)adminDid
+                 error:(NSError **)error;
+
+- (nullable NSDictionary *)getSetValues:(NSString *)setId
+                                  limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                  error:(NSError **)error;
+
+- (nullable NSDictionary *)querySets:(NSInteger)limit
+                              cursor:(nullable NSString *)cursor
+                          namePrefix:(nullable NSString *)namePrefix
+                              error:(NSError **)error;
+
 #pragma mark - Communication Templates
 
 - (nullable NSString *)createCommunicationTemplate:(NSDictionary *)template
