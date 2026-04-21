@@ -139,6 +139,16 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method resolveHandleSync:error:
+ @abstract Resolve a handle to its DID synchronously.
+ @param handle The handle to resolve (e.g., "user.bsky.social").
+ @param error On return, contains an error if resolution failed.
+ @return The resolved DID string, or nil if resolution failed.
+ @discussion Uses the well-known endpoint: https://{handle}/.well-known/atproto-did
+ */
+- (nullable NSString *)resolveHandleSync:(NSString *)handle error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

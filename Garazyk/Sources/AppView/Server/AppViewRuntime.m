@@ -183,7 +183,8 @@ static AppViewRuntime *_sharedRuntime = nil;
     AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
                                                                    actorService:_actorService
                                                                    graphService:_graphService
-                                                            notificationService:_notificationService];
+                                                            notificationService:_notificationService
+                                                                     database:_database];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
     if (config.adminSecret.length > 0) {
