@@ -394,12 +394,12 @@
 
 #pragma mark - Communication Templates
 
-- (nullable NSString *)createCommunicationTemplate:(NSDictionary *)template
+- (nullable NSString *)createCommunicationTemplate:(NSDictionary *)templateDict
                                          createdBy:(NSString *)adminDid
                                              error:(NSError **)error {
     NSString *id = [[NSUUID UUID] UUIDString];
-    NSString *name = template[@"name"];
-    NSString *text = template[@"text"];
+    NSString *name = templateDict[@"name"];
+    NSString *text = templateDict[@"text"];
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
 
     NSString *sql = @"INSERT INTO moderation_templates (id, name, text, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)";
@@ -474,21 +474,93 @@
 
 #pragma mark - Scheduled Actions
 
-- (nullable NSString *)scheduleAction:(NSDictionary *)action
+- (nullable NSDictionary *)scheduleAction:(NSDictionary *)payload
                              createdBy:(NSString *)adminDid
                                  error:(NSError **)error {
-    return [[NSUUID UUID] UUIDString];
+    NSDictionary *action = payload[@"action"];
+    NSArray *subjects = payload[@"subjects"];
+    NSDictionary *scheduling = payload[@"scheduling"];
+    NSString *modTool = payload[@"modTool"];
+
+    if (!action || !subjects || !scheduling) {
+        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"action, subjects, and scheduling are required"}];
+        return nil;
+    }
+
+    NSString *actionType = action[@"$type"] ?: @"takedown";
+    NSString *comment = action[@"comment"] ?: @"";
+    NSNumber *duration = action[@"durationInHours"] ?: @0;
+    NSNumber *ackSubjects = action[@"acknowledgeAccountSubjects"] ?: @0;
+    NSArray *policies = action[@"policies"] ?: @[];
+    NSString *severity = action[@"severityLevel"] ?: @"";
+    NSNumber *strikeCount = action[@"strikeCount"] ?: @0;
+    NSString *strikeExpiresAt = action[@"strikeExpiresAt"] ?: @"";
+    NSString *emailContent = action[@"emailContent"] ?: @"";
+    NSString *emailSubject = action[@"emailSubject"] ?: @"";
+
+    NSString *executeAt = scheduling[@"executeAt"] ?: @"";
+    NSString *executeAfter = scheduling[@"executeAfter"] ?: @"";
+    NSString *executeUntil = scheduling[@"executeUntil"] ?: @"";
+
+    NSData *policiesData = [NSJSONSerialization dataWithJSONObject:policies options:0 error:nil];
+    NSString *policiesJson = [[NSString alloc] initWithData:policiesData encoding:NSUTF8StringEncoding];
+
+    NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
+    NSTimeInterval executeAtInterval = executeAt.length > 0 ? [[formatter dateFromString:executeAt] timeIntervalSince1970] : 0;
+    NSTimeInterval executeAfterInterval = executeAfter.length > 0 ? [[formatter dateFromString:executeAfter] timeIntervalSince1970] : 0;
+    NSTimeInterval executeUntilInterval = executeUntil.length > 0 ? [[formatter dateFromString:executeUntil] timeIntervalSince1970] : 0;
+    NSTimeInterval strikeExpiresInterval = strikeExpiresAt.length > 0 ? [[formatter dateFromString:strikeExpiresAt] timeIntervalSince1970] : 0;
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+
+    NSMutableArray *succeeded = [NSMutableArray array];
+    NSMutableArray *failed = [NSMutableArray array];
+
+    for (NSString *subjectDid in subjects) {
+        NSString *actionId = [[NSUUID UUID] UUIDString];
+
+        NSString *sql = @"INSERT INTO moderation_scheduled_actions (id, subject_did, action_type, comment, duration_in_hours, acknowledge_account_subjects, policies_json, severity_level, strike_count, strike_expires_at, email_content, email_subject, execute_at, execute_after, execute_until, created_by, created_at, status, mod_tool) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[actionId, subjectDid, actionType, comment, duration, ackSubjects, policiesJson, severity, strikeCount, @(strikeExpiresInterval), emailContent, emailSubject, @(executeAtInterval), @(executeAfterInterval), @(executeUntilInterval), adminDid, @(now), @"pending", modTool ?: [NSNull null]] error:error];
+
+        if (success) {
+            [succeeded addObject:subjectDid];
+        } else {
+            [failed addObject:@{@"subject": subjectDid, @"error": @"Failed to save to database", @"errorCode": @"DatabaseError"}];
+        }
+    }
+
+    return @{@"succeeded": succeeded, @"failed": failed};
 }
 
 - (nullable NSArray<NSDictionary *> *)listScheduledActions:(NSDictionary *)filters
                                                       error:(NSError **)error {
-    return @[];
+    NSString *sql = @"SELECT * FROM moderation_scheduled_actions WHERE status = 'pending' ORDER BY created_at DESC";
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:sql params:@[] error:error];
+    if (!rows) return nil;
+
+    NSMutableArray *actions = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSMutableDictionary *action = [NSMutableDictionary dictionary];
+        action[@"id"] = row[@"id"];
+        action[@"subject"] = row[@"subject_did"];
+        action[@"action"] = row[@"action_type"];
+        action[@"comment"] = row[@"comment"];
+        action[@"duration_in_hours"] = row[@"duration_in_hours"];
+        action[@"status"] = row[@"status"];
+        action[@"created_by"] = row[@"created_by"];
+        action[@"created_at"] = @([row[@"created_at"] doubleValue]);
+        action[@"execute_at"] = @([row[@"execute_at"] doubleValue]);
+        
+        [actions addObject:action];
+    }
+    return actions;
 }
 
 - (BOOL)cancelScheduledAction:(NSString *)actionId
                     cancelledBy:(NSString *)adminDid
                           error:(NSError **)error {
-    return YES;
+    NSString *sql = @"UPDATE moderation_scheduled_actions SET status = 'cancelled' WHERE id = ?";
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[actionId] error:error];
 }
 
 #pragma mark - Safelinks

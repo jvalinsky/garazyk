@@ -352,20 +352,21 @@
 
         NSDictionary *body = request.jsonBody;
         NSDictionary *action = body[@"action"];
-        if (!action) {
-            [XrpcErrorHelper setValidationError:response message:@"action is required"];
+        NSArray *subjects = body[@"subjects"];
+        if (!action || !subjects) {
+            [XrpcErrorHelper setValidationError:response message:@"action and subjects are required"];
             return;
         }
 
         NSError *error = nil;
-        NSString *actionId = [moderationService scheduleAction:action createdBy:adminDid error:&error];
-        if (error) {
+        NSDictionary *results = [moderationService scheduleAction:body createdBy:adminDid error:&error];
+        if (error || !results) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
         response.statusCode = 200;
-        [response setJsonBody:@{@"id": actionId}];
+        [response setJsonBody:results];
     }];
 
     // tools.ozone.moderation.listScheduledActions - List scheduled actions
