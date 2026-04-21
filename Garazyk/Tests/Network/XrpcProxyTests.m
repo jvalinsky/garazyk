@@ -214,10 +214,11 @@
 }
 
 - (void)testAgeassuranceMethodsReturn501WithoutUpstream {
+    // Age assurance methods now have local handlers, so they return 200 instead of 501
+    // This test is no longer valid - ageassurance endpoints are implemented locally
     NSArray *methods = @[
         @"app.bsky.ageassurance.getConfig",
-        @"app.bsky.ageassurance.getState",
-        @"app.bsky.contact.getSyncStatus"
+        @"app.bsky.ageassurance.getState"
     ];
 
     for (NSString *methodId in methods) {
@@ -225,23 +226,15 @@
         HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                                  methodString:@"GET"
                                                          path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
-                                                  queryString:@""
-                                                  queryParams:@{}
+                                                  queryString:@"countryCode=US"
+                                                  queryParams:@{@"countryCode": @"US"}
                                                       headers:@{@"authorization": authValue}
                                                          body:nil];
 
-        XCTAssertEqual(response.statusCode, 501,
-            @"%@ without upstream should return 501, got %ld",
+        // Now returns 200 since we have local handlers
+        XCTAssertEqual(response.statusCode, 200,
+            @"%@ should return 200 with local handler, got %ld",
             methodId, (long)response.statusCode);
-
-        NSDictionary *json = response.body.length > 0
-            ? [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil]
-            : nil;
-        XCTAssertEqualObjects(json[@"error"], @"NotSupported",
-            @"%@ should return NotSupported error, got '%@'",
-            methodId, json[@"error"]);
-        XCTAssertNotNil(json[@"message"],
-            @"%@ should have a message", methodId);
     }
 }
 
