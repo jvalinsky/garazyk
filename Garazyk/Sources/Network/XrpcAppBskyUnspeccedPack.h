@@ -8,12 +8,14 @@
 #import <Foundation/Foundation.h>
 
 @class XrpcDispatcher;
+@class AgeAssuranceService;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcAppBskyUnspeccedPack : NSObject
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher;
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService;
 
 @end
 
