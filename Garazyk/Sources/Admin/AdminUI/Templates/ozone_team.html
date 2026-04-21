@@ -3,10 +3,87 @@
   <p class="text-secondary">Manage moderation team membership and roles.</p>
 </div>
 
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Add Team Member</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/admin/ozone/team/add" hx-swap="outerHTML">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Member DID</label>
+          <input type="text" name="did" class="form-input" required placeholder="did:plc:..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select name="role" class="form-input">
+            <option value="moderator">Moderator</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary">Add Member</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Team Members</h3>
+  </div>
   <div class="card-body">
     <div id="ozone-team-list-container" hx-get="/admin/partials/ozone/team/list" hx-trigger="load">
       <p class="text-secondary text-center">Loading team members...</p>
     </div>
   </div>
 </div>
+
+<!-- Edit Member Modal -->
+<dialog id="edit-member-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">Edit Member Role</h2>
+      <button type="button" class="btn btn-icon" onclick="document.getElementById('edit-member-modal').close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="form" hx-post="/admin/ozone/team/update" hx-swap="outerHTML">
+        <input type="hidden" name="did" id="edit-member-did" />
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select name="role" class="form-input">
+            <option value="moderator">Moderator</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary">Update Role</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-member-modal').close()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<!-- Delete Member Modal -->
+<dialog id="delete-member-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">Remove Team Member</h2>
+      <button type="button" class="btn btn-icon" onclick="document.getElementById('delete-member-modal').close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-md">Are you sure you want to remove this team member?</p>
+      <form class="form" hx-post="/admin/ozone/team/delete" hx-swap="outerHTML">
+        <input type="hidden" name="did" id="delete-member-did" />
+        <div class="form-footer">
+          <button type="submit" class="btn btn-destructive">Remove Member</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('delete-member-modal').close()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</dialog>

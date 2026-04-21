@@ -83,6 +83,25 @@ NS_ASSUME_NONNULL_BEGIN
         return [self handleVerificationRevokeWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
     }
 
+    // Ozone team action routes
+    if ([path isEqualToString:@"/admin/ozone/team/add"]) {
+        return [self handleTeamAddWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path isEqualToString:@"/admin/ozone/team/update"]) {
+        return [self handleTeamUpdateWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path isEqualToString:@"/admin/ozone/team/delete"]) {
+        return [self handleTeamDeleteWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
+    // Ozone safelinks action routes
+    if ([path isEqualToString:@"/admin/ozone/safelinks/add"]) {
+        return [self handleSafelinksAddWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path isEqualToString:@"/admin/ozone/safelinks/delete"]) {
+        return [self handleSafelinksDeleteWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
     // Root admin UI entry point and all sub-paths return the shell
     if ([path isEqualToString:@"/admin"] || [path hasPrefix:@"/admin/"] ) {
         // Exclude specific prefixes that are handled elsewhere
@@ -230,6 +249,8 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderOzoneStatusesPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/team"]) {
         return [self renderOzoneTeamPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/team/list"]) {
+        return [self renderOzoneTeamListWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/templates"]) {
         return [self renderOzoneTemplatesPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"security/sessions"]) {
@@ -238,6 +259,10 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderSecurityAppPasswordsPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/sets"]) {
         return [self renderOzoneSetsPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/safelinks"]) {
+        return [self renderOzoneSafelinksPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/safelinks/list"]) {
+        return [self renderOzoneSafelinksListWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/correlations"]) {
         return [self renderOzoneCorrelationsPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/verification"]) {
@@ -1537,6 +1562,324 @@ NS_ASSUME_NONNULL_BEGIN
         }
     }
     return params;
+}
+
+#pragma mark - Ozone Team Management
+
+- (NSString *)renderOzoneTeamListWithStatusCode:(nullable NSInteger *)statusCode
+                                   contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.team.listMembers"
+                                                     httpMethod:HttpMethodGET
+                                                        headers:@{}
+                                                       jsonBody:nil];
+
+    NSArray *members = @[];
+    if ([result[@"status"] integerValue] == 200) {
+        members = result[@"json"][@"members"] ?: @[];
+    }
+
+    if (members.count == 0) {
+        return @"<tr><td colspan=\"4\" class=\"text-secondary text-center\">No team members found.</td></tr>";
+    }
+
+    NSMutableString *html = [NSMutableString string];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateStyle = NSDateFormatterMediumStyle;
+
+    for (NSDictionary *m in members) {
+        NSString *did = m[@"did"] ?: @"";
+        NSString *role = m[@"role"] ?: @"viewer";
+        NSString *createdAt = m[@"createdAt"] ?: @"";
+
+        [html appendFormat:
+            @"<tr>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td><span class=\"badge badge-secondary\">%@</span></td>"
+            @"<td><small>%@</small></td>"
+            @"<td>"
+            @"<button class=\"btn btn-sm btn-secondary\" "
+            @"hx-on=\"click: document.getElementById('edit-member-did').value='%@'; document.getElementById('edit-member-modal').showModal()\">Edit</button>"
+            @"<button class=\"btn btn-sm btn-destructive\" "
+            @"hx-on=\"click: document.getElementById('delete-member-did').value='%@'; document.getElementById('delete-member-modal').showModal()\">Remove</button>"
+            @"</td>"
+            @"</tr>",
+            did, role, createdAt, did, did];
+    }
+
+    return html;
+}
+
+- (NSString *)handleTeamAddWithMethod:(AdminUIHTTPMethod)method
+                             headers:(NSDictionary<NSString *, NSString *> *)headers
+                                body:(nullable NSData *)body
+                          statusCode:(nullable NSInteger *)statusCode
+                         contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *did = params[@"did"];
+        NSString *role = params[@"role"] ?: @"moderator";
+
+        if (!did || did.length == 0) {
+            return @"<p class=\"text-destructive\">DID is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.team.addMember"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"did": did,
+                                                               @"role": role
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Team member added successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to add team member";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handleTeamUpdateWithMethod:(AdminUIHTTPMethod)method
+                                headers:(NSDictionary<NSString *, NSString *> *)headers
+                                   body:(nullable NSData *)body
+                             statusCode:(nullable NSInteger *)statusCode
+                            contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *did = params[@"did"];
+        NSString *role = params[@"role"] ?: @"moderator";
+
+        if (!did || did.length == 0) {
+            return @"<p class=\"text-destructive\">DID is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.team.updateMember"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"did": did,
+                                                               @"role": role
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Team member updated successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to update team member";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handleTeamDeleteWithMethod:(AdminUIHTTPMethod)method
+                                headers:(NSDictionary<NSString *, NSString *> *)headers
+                                   body:(nullable NSData *)body
+                             statusCode:(nullable NSInteger *)statusCode
+                            contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *did = params[@"did"];
+
+        if (!did || did.length == 0) {
+            return @"<p class=\"text-destructive\">DID is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.team.deleteMember"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"did": did
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Team member removed successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to remove team member";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+#pragma mark - Ozone Safe Links Management
+
+- (NSString *)renderOzoneSafelinksPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                          contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    return @"<div class=\"content-header\">"
+           @"<h2>Safe Links</h2>"
+           @"<p class=\"text-secondary\">Manage URL safety rules and review related events.</p>"
+           @"</div>"
+           @"<div class=\"card\">"
+           @"<div class=\"card-body\">"
+           @"<div class=\"table-wrapper\">"
+           @"<table class=\"table\">"
+           @"<thead><tr><th>Base URL</th><th>Auto-Report</th><th>Created</th><th>Actions</th></tr></thead>"
+           @"<tbody><tr><td colspan=\"4\" class=\"text-secondary text-center\">Loading...</td></tr></tbody>"
+           @"</table>"
+           @"</div>"
+           @"</div>"
+           @"</div>";
+}
+
+- (NSString *)renderOzoneSafelinksListWithStatusCode:(nullable NSInteger *)statusCode
+                                      contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.safelink.queryRules"
+                                                     httpMethod:HttpMethodGET
+                                                        headers:@{}
+                                                       jsonBody:nil];
+
+    NSArray *rules = @[];
+    if ([result[@"status"] integerValue] == 200) {
+        rules = result[@"json"][@"rules"] ?: @[];
+    }
+
+    if (rules.count == 0) {
+        return @"<tr><td colspan=\"4\" class=\"text-secondary text-center\">No safe link rules found.</td></tr>";
+    }
+
+    NSMutableString *html = [NSMutableString string];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateStyle = NSDateFormatterMediumStyle;
+
+    for (NSDictionary *r in rules) {
+        NSString *baseUrl = r[@"baseUrl"] ?: @"";
+        NSString *createdAt = r[@"createdAt"] ?: @"";
+        BOOL autoReport = [r[@"autoReport"] boolValue];
+
+        [html appendFormat:
+            @"<tr>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td>%@</td>"
+            @"<td><small>%@</small></td>"
+            @"<td>"
+            @"<button class=\"btn btn-sm btn-destructive\" "
+            @"hx-on=\"click: document.getElementById('delete-rule-url').value='%@'; document.getElementById('delete-rule-modal').showModal()\">Remove</button>"
+            @"</td>"
+            @"</tr>",
+            baseUrl, autoReport ? @"Yes" : @"No", createdAt, baseUrl];
+    }
+
+    return html;
+}
+
+- (NSString *)handleSafelinksAddWithMethod:(AdminUIHTTPMethod)method
+                                headers:(NSDictionary<NSString *, NSString *> *)headers
+                                   body:(nullable NSData *)body
+                             statusCode:(nullable NSInteger *)statusCode
+                            contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *baseUrl = params[@"baseUrl"];
+        NSString *autoReportStr = params[@"autoReport"] ?: @"false";
+        NSString *comment = params[@"comment"] ?: @"";
+        BOOL autoReport = [autoReportStr isEqualToString:@"true"];
+
+        if (!baseUrl || baseUrl.length == 0) {
+            return @"<p class=\"text-destructive\">Base URL is required</p>";
+        }
+
+        NSMutableDictionary *jsonBody = [NSMutableDictionary dictionary];
+        jsonBody[@"baseUrl"] = baseUrl;
+        jsonBody[@"autoReport"] = @(autoReport);
+        if (comment.length > 0) {
+            jsonBody[@"comment"] = comment;
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.safelink.addRule"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:jsonBody];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Safe link rule added successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to add rule";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handleSafelinksDeleteWithMethod:(AdminUIHTTPMethod)method
+                                   headers:(NSDictionary<NSString *, NSString *> *)headers
+                                      body:(nullable NSData *)body
+                                statusCode:(nullable NSInteger *)statusCode
+                               contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *baseUrl = params[@"baseUrl"];
+
+        if (!baseUrl || baseUrl.length == 0) {
+            return @"<p class=\"text-destructive\">Base URL is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.safelink.removeRule"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"baseUrl": baseUrl
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Safe link rule removed successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to remove rule";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
 }
 
 @end

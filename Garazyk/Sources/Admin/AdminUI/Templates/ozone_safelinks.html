@@ -3,15 +3,65 @@
   <p class="text-secondary">Manage URL safety rules and review related events.</p>
 </div>
 
-<div class="flex items-center justify-between mb-md">
-  <div class="text-secondary">Rules are enforced by `tools.ozone.safelink.*` endpoints.</div>
-  <button class="btn btn-primary" data-action="ozone-safelink-add">Add Rule</button>
+<div class="card mb-lg">
+  <div class="card-header">
+    <h3 class="card-title">Add Safe Link Rule</h3>
+  </div>
+  <div class="card-body">
+    <form class="form" hx-post="/admin/ozone/safelinks/add" hx-swap="outerHTML">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Base URL</label>
+          <input type="url" name="baseUrl" class="form-input" required placeholder="https://example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Auto-Report</label>
+          <select name="autoReport" class="form-input">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Comment (optional)</label>
+          <input type="text" name="comment" class="form-input" placeholder="Reason for adding rule" />
+        </div>
+      </div>
+      <div class="form-footer">
+        <button type="submit" class="btn btn-primary">Add Rule</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Active Rules</h3>
+  </div>
   <div class="card-body">
     <div id="ozone-safelinks-list-container" hx-get="/admin/partials/ozone/safelinks/list" hx-trigger="load">
       <p class="text-secondary text-center">Loading safe link rules...</p>
     </div>
   </div>
 </div>
+
+<!-- Delete Rule Modal -->
+<dialog id="delete-rule-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">Remove Safe Link Rule</h2>
+      <button type="button" class="btn btn-icon" onclick="document.getElementById('delete-rule-modal').close()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-md">Are you sure you want to remove this safe link rule?</p>
+      <form class="form" hx-post="/admin/ozone/safelinks/delete" hx-swap="outerHTML">
+        <input type="hidden" name="baseUrl" id="delete-rule-url" />
+        <div class="form-footer">
+          <button type="submit" class="btn btn-destructive">Remove Rule</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('delete-rule-modal').close()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</dialog>
