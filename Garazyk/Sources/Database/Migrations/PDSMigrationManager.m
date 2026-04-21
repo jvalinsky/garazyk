@@ -124,6 +124,99 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V4 Ozone Scheduled Actions Schema Migration
+
+@interface V4OzoneScheduledActionsSchema : NSObject <PDSMigration>
+@end
+
+@implementation V4OzoneScheduledActionsSchema
+
+- (NSInteger)version {
+    return 4;
+}
+
+- (NSString *)name {
+    return @"ozone_scheduled_actions_schema";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    PDSSchemaManager *sm = [PDSSchemaManager sharedManager];
+    NSArray *schemas = @[
+        [sm ozoneScheduledActionsTableSchema]
+    ];
+
+    for (NSString *sql in schemas) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V4 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    NSString *sql = @"DROP TABLE IF EXISTS moderation_scheduled_actions";
+    sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
+#pragma mark - V5 Hosting Events Schema Migration
+
+@interface V5HostingEventsSchema : NSObject <PDSMigration>
+@end
+
+@implementation V5HostingEventsSchema
+
+- (NSInteger)version {
+    return 5;
+}
+
+- (NSString *)name {
+    return @"hosting_events_schema";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    PDSSchemaManager *sm = [PDSSchemaManager sharedManager];
+    NSArray *schemas = @[
+        [sm serviceHostingEventsTableSchema],
+        @"CREATE INDEX IF NOT EXISTS idx_hosting_events_did ON hosting_events(did)"
+    ];
+
+    for (NSString *sql in schemas) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V5 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    NSString *sql = @"DROP TABLE IF EXISTS hosting_events";
+    sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
 #pragma mark - V1 Initial Schema Migration
 
 @interface V1InitialSchema : NSObject <PDSMigration>
@@ -1119,6 +1212,8 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"service"]];
     [manager registerMigration:[[V2OzoneSchema alloc] init]];
     [manager registerMigration:[[V3DiagnosticsSchema alloc] init]];
+    [manager registerMigration:[[V4OzoneScheduledActionsSchema alloc] init]];
+    [manager registerMigration:[[V5HostingEventsSchema alloc] init]];
     return manager;
 }
 

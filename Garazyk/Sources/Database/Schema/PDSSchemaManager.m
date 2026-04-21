@@ -183,6 +183,17 @@
            @")";
 }
 
+- (NSString *)serviceHostingEventsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS hosting_events ("
+           @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           @"    did TEXT NOT NULL,"
+           @"    event_type TEXT NOT NULL,"
+           @"    details_json TEXT,"
+           @"    created_by TEXT,"
+           @"    created_at REAL NOT NULL"
+           @")";
+}
+
 #pragma mark - Ozone Moderation Schemas
 
 - (NSString *)ozoneEventsTableSchema {
@@ -238,6 +249,30 @@
            @")";
 }
 
+- (NSString *)ozoneScheduledActionsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_scheduled_actions ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    subject_did TEXT NOT NULL,"
+           @"    action_type TEXT NOT NULL,"
+           @"    comment TEXT,"
+           @"    duration_in_hours INTEGER,"
+           @"    acknowledge_account_subjects INTEGER DEFAULT 0,"
+           @"    policies_json TEXT,"
+           @"    severity_level TEXT,"
+           @"    strike_count INTEGER,"
+           @"    strike_expires_at REAL,"
+           @"    email_content TEXT,"
+           @"    email_subject TEXT,"
+           @"    execute_at REAL,"
+           @"    execute_after REAL,"
+           @"    execute_until REAL,"
+           @"    created_by TEXT NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    status TEXT NOT NULL DEFAULT 'pending',"
+           @"    mod_tool TEXT"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self serviceAccountsTableSchema]];
@@ -275,6 +310,10 @@
     [sql appendString:[self ozoneTemplatesTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self ozoneTeamTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneScheduledActionsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self serviceHostingEventsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
     [sql appendString:@";\n"];
