@@ -66,6 +66,19 @@ NS_ASSUME_NONNULL_BEGIN
                                                        limit:(NSInteger)limit
                                                        error:(NSError **)error;
 
+/*! Get total record count for a collection across all repos. */
+- (NSInteger)getTotalRecordsCountForCollection:(NSString *)collection
+                                    error:(NSError **)error;
+
+/*! Get total posts count. */
+- (NSInteger)getTotalPostsCount:(NSError **)error;
+
+/*! Get total profiles count. */
+- (NSInteger)getTotalProfilesCount:(NSError **)error;
+
+/*! Get total follows count. */
+- (NSInteger)getTotalFollowsCount:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
