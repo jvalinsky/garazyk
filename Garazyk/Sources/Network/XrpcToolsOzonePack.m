@@ -417,6 +417,71 @@
         [response setJsonBody:@{@"success": @YES}];
     }];
 
+    // tools.ozone.moderation.cancelScheduledActions - Cancel all scheduled actions for subjects
+    [dispatcher registerMethod:@"tools.ozone.moderation.cancelScheduledActions"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSArray *subjects = body[@"subjects"];
+        NSString *comment = body[@"comment"];
+        if (!subjects || subjects.count == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"subjects is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *results = [moderationService cancelScheduledActions:subjects
+                                                                  comment:comment
+                                                              cancelledBy:adminDid
+                                                                    error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:results ?: @{@"succeeded": @[], @"failed": @[]}];
+    }];
+
+    // tools.ozone.moderation.getSubjects - Get subject details
+    [dispatcher registerMethod:@"tools.ozone.moderation.getSubjects"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSString *subjectsParam = [request queryParamForKey:@"subjects"];
+        NSArray *subjects = nil;
+        if (subjectsParam) {
+            subjects = [subjectsParam componentsSeparatedByString:@","];
+        }
+        if (!subjects || subjects.count == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"subjects is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        NSArray *subjectViews = [moderationService getSubjects:subjects error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{@"subjects": subjectViews ?: @[]}];
+    }];
+
 #pragma mark - Team Management (4)
 
     // tools.ozone.team.addMember

@@ -626,6 +626,24 @@
         [response setJsonBody:@{@"convo": convo}];
     }];
 
+    // chat.bsky.convo.getLog - Get conversation event log
+    [dispatcher registerMethod:@"chat.bsky.convo.getLog"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!actorDID) return;
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        // Return empty log - would need event log table
+        response.statusCode = 200;
+        [response setJsonBody:@{@"logs": @[], @"cursor": cursor ?: @""}];
+    }];
+
     PDS_LOG_INFO(@"Registered chat.bsky.convo.* endpoints (core + features)");
 }
 
