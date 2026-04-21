@@ -806,7 +806,7 @@
         }
 
         NSMutableDictionary *result = [NSMutableDictionary dictionary];
-        result[@"blocks"] = blocks;
+        result[@"lists"] = blocks;  // Per lexicon spec: output key is "lists" not "blocks"
         if (rows.count > (NSUInteger)limit && blocks.count > 0) {
             result[@"cursor"] = [rows[limit][@"rkey"] isKindOfClass:[NSString class]] ? rows[limit][@"rkey"] : nil;
         }
