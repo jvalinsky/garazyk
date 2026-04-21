@@ -64,6 +64,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Get multiple posts by URI. */
 - (nullable NSDictionary *)getPosts:(NSArray<NSString *> *)uris error:(NSError **)error;
 
+/*! Get feed generators by URIs. */
+- (nullable NSDictionary *)getFeedGenerators:(NSArray<NSString *> *)uris error:(NSError **)error;
+
 /*! Get a single post record by AT URI. */
 - (nullable NSDictionary *)getPostByURI:(NSString *)uri error:(NSError **)error;
 

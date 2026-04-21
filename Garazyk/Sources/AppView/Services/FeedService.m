@@ -326,6 +326,55 @@
     return @{@"posts": posts};
 }
 
+- (nullable NSDictionary *)getFeedGenerators:(NSArray<NSString *> *)uris error:(NSError **)error {
+    if (!uris || uris.count == 0) {
+        return @{@"feeds": @[]};
+    }
+
+    NSMutableArray *generators = [NSMutableArray array];
+    for (NSString *uri in uris) {
+        // Parse the URI to get did and rkey
+        NSArray *components = [uri componentsSeparatedByString:@"/"];
+        if (components.count < 5) {
+            continue;
+        }
+        NSString *did = components[2];
+        NSString *rkey = components[4];
+
+        // Look up the feed generator record
+        NSString *query = @"SELECT cid, value FROM records WHERE did = ? AND collection = ? AND rkey = ?";
+        NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, @"app.bsky.feed.generator", rkey] error:error];
+
+        if (rows && rows.count > 0) {
+            NSDictionary *row = rows.firstObject;
+            NSString *cid = row[@"cid"];
+            NSString *value = row[@"value"];
+
+            NSDictionary *record = nil;
+            if (value && value.length > 0) {
+                record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+            }
+
+            if (record) {
+                NSDictionary *generator = @{
+                    @"uri": uri,
+                    @"cid": cid ?: @"",
+                    @"did": did,
+                    @"creator": [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did},
+                    @"displayName": record[@"displayName"] ?: @"",
+                    @"description": record[@"description"] ?: @"",
+                    @"avatar": record[@"avatar"] ?: [NSNull null],
+                    @"likeCount": @(0),
+                    @"onboarding": @(NO)
+                };
+                [generators addObject:generator];
+            }
+        }
+    }
+
+    return @{@"feeds": generators};
+}
+
 - (nullable NSDictionary *)getPostByURI:(NSString *)uri error:(NSError **)error {
     NSArray *components = [uri componentsSeparatedByString:@"/"];
     if (components.count < 5) {
