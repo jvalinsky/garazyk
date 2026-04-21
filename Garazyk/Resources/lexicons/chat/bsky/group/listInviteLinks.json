@@ -1,0 +1,26 @@
+{
+  "lexicon": 1,
+  "id": "chat.bsky.group.listInviteLinks",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "List group invite links",
+      "parameters": {
+        "type": "params",
+        "required": ["groupUri"],
+        "properties": {
+          "groupUri": {"type": "string"}
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "links": {"type": "array", "items": {"type": "object"}}
+          }
+        }
+      }
+    }
+  }
+}
