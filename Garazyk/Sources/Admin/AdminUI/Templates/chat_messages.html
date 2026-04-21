@@ -24,9 +24,9 @@
       <span class="log-sender" title="{{senderDid}}">{{senderDid}}</span>:
       <span class="log-message">{{text}}</span>
       <button class="btn btn-xs btn-destructive ml-md"
-              data-action="delete-message"
-              data-message-id="{{id}}"
-              data-alt-message-id="{{messageId}}">
+              hx-post="/admin/chat/messages/{{messageId}}/delete"
+              hx-confirm="Delete this message? This cannot be undone."
+              hx-swap="outerHTML">
         Delete
       </button>
       {{#if embedJson}}

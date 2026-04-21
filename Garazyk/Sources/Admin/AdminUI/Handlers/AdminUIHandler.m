@@ -102,6 +102,19 @@ NS_ASSUME_NONNULL_BEGIN
         return [self handleSafelinksDeleteWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
     }
 
+    // Chat group action routes
+    if ([path hasPrefix:@"/admin/chat/groups/"] && [path hasSuffix:@"/takedown"]) {
+        return [self handleChatGroupTakedownWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path hasPrefix:@"/admin/chat/groups/"] && [path hasSuffix:@"/delete"]) {
+        return [self handleChatGroupDeleteWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
+    // Chat message deletion route
+    if ([path hasPrefix:@"/admin/chat/messages/"] && [path hasSuffix:@"/delete"]) {
+        return [self handleChatMessageDeleteWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
     // Root admin UI entry point and all sub-paths return the shell
     if ([path isEqualToString:@"/admin"] || [path hasPrefix:@"/admin/"] ) {
         // Exclude specific prefixes that are handled elsewhere
@@ -1880,6 +1893,128 @@ NS_ASSUME_NONNULL_BEGIN
     }
 
     return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+#pragma mark - Chat Group Management
+
+- (NSString *)handleChatGroupTakedownWithPath:(NSString *)path
+                                        method:(AdminUIHTTPMethod)method
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *groupUri = @"";
+    for (int i = 3; i < pathComponents.count - 1; i++) {
+        if (groupUri.length > 0) groupUri = [groupUri stringByAppendingString:@"/"];
+        groupUri = [groupUri stringByAppendingString:pathComponents[i]];
+    }
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"chat.bsky.group.updateGroup"
+                                                     httpMethod:HttpMethodPOST
+                                                        headers:headers
+                                                       jsonBody:@{
+                                                           @"group": groupUri,
+                                                           @"archive": @YES
+                                                       }];
+
+    NSInteger status = [result[@"status"] integerValue];
+    if (status >= 200 && status < 300) {
+        return @"<p class=\"text-success\">Group takedown successful!</p>"
+               @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+    }
+
+    NSDictionary *jsonError = result[@"json"];
+    NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to takedown group";
+    return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+}
+
+- (NSString *)handleChatGroupDeleteWithPath:(NSString *)path
+                                     method:(AdminUIHTTPMethod)method
+                                   headers:(NSDictionary<NSString *, NSString *> *)headers
+                                      body:(nullable NSData *)body
+                                statusCode:(nullable NSInteger *)statusCode
+                               contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *groupUri = @"";
+    for (int i = 3; i < pathComponents.count - 1; i++) {
+        if (groupUri.length > 0) groupUri = [groupUri stringByAppendingString:@"/"];
+        groupUri = [groupUri stringByAppendingString:pathComponents[i]];
+    }
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"chat.bsky.group.deleteGroup"
+                                                     httpMethod:HttpMethodPOST
+                                                        headers:headers
+                                                       jsonBody:@{
+                                                           @"group": groupUri
+                                                       }];
+
+    NSInteger status = [result[@"status"] integerValue];
+    if (status >= 200 && status < 300) {
+        return @"<p class=\"text-success\">Group deleted successfully!</p>"
+               @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+    }
+
+    NSDictionary *jsonError = result[@"json"];
+    NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to delete group";
+    return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+}
+
+#pragma mark - Chat Message Moderation
+
+- (NSString *)handleChatMessageDeleteWithPath:(NSString *)path
+                                        method:(AdminUIHTTPMethod)method
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *messageId = @"";
+    for (int i = 4; i < pathComponents.count - 1; i++) {
+        if (messageId.length > 0) messageId = [messageId stringByAppendingString:@"/"];
+        messageId = [messageId stringByAppendingString:pathComponents[i]];
+    }
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"chat.bsky.convo.deleteMessageForSelf"
+                                                     httpMethod:HttpMethodPOST
+                                                        headers:headers
+                                                       jsonBody:@{
+                                                           @"convoId": @"",
+                                                           @"messageId": messageId
+                                                       }];
+
+    NSInteger status = [result[@"status"] integerValue];
+    if (status >= 200 && status < 300) {
+        return @"<p class=\"text-success\">Message deleted!</p>";
+    }
+
+    NSDictionary *jsonError = result[@"json"];
+    NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to delete message";
+    return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
 }
 
 @end
