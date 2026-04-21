@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
-#import "Database/PDSQueryDatabase.h"
+
+@protocol PDSQueryDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -89,10 +90,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Batch operations
 - (nullable NSArray<NSDictionary *> *)sendMessageBatch:(NSString *)convoId
-                                            senderDid:(NSString *)senderDid
-                                             messages:(NSArray<NSDictionary *> *)messages
-                                                error:(NSError **)error;
+                                             senderDid:(NSString *)senderDid
+                                              messages:(NSArray<NSDictionary *> *)messages
+                                                 error:(NSError **)error;
+
+// Event Log
+- (nullable NSArray<NSDictionary *> *)getChatLogWithLimit:(NSInteger)limit
+                                                 cursor:(nullable NSString *)cursor
+                                                  error:(NSError **)error;
 
 @end
+
 
 NS_ASSUME_NONNULL_END
