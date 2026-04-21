@@ -22,13 +22,13 @@
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
+#import "AppView/Services/AgeAssuranceService.h"
+#import "AppView/Services/ChatModerationService.h"
 #import "Network/AppViewXRpcRoutePack.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
-
-// ---------------------------------------------------------------------------
 
 @interface AppViewRuntime () <AppViewIngestEngineDelegate,
                                AppViewBackfillOrchestratorDelegate>
@@ -44,9 +44,12 @@
 @property (nonatomic, strong) ActorService *actorService;
 @property (nonatomic, strong) GraphService *graphService;
 @property (nonatomic, strong) NotificationService *notificationService;
+@property (nonatomic, strong) AgeAssuranceService *ageAssuranceService;
+@property (nonatomic, strong) ChatModerationService *chatModerationService;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
 @end
+
 
 // ---------------------------------------------------------------------------
 
@@ -179,14 +182,19 @@ static AppViewRuntime *_sharedRuntime = nil;
     _graphService = [[GraphService alloc] initWithDatabase:_database];
     _notificationService = [[NotificationService alloc] initWithDatabase:_database
                                                             actorService:_actorService];
+    _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database];
+    _chatModerationService = [[ChatModerationService alloc] initWithDatabase:_database];
 
     // Register XRPC routes
     AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
-                                                                   actorService:_actorService
-                                                                   graphService:_graphService
-                                                            notificationService:_notificationService
-                                                                     database:_database];
+                                                                    actorService:_actorService
+                                                                    graphService:_graphService
+                                                             notificationService:_notificationService
+                                                             ageAssuranceService:_ageAssuranceService
+                                                            chatModerationService:_chatModerationService
+                                                                      database:_database];
     [xrpcPack registerRoutesWithServer:_httpServer];
+
 
     if (config.adminSecret.length > 0) {
         [AppViewIdentityHelper configureWithPlcURL:config.plcURL cacheTTLSeconds:300];
