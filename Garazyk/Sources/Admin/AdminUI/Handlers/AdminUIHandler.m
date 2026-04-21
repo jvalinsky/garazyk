@@ -3,6 +3,7 @@
 #import "Metrics/PDSMetrics.h"
 #import "Admin/AdminPartialHandler.h"
 #import "Admin/PDSAdminHandler.h"
+#import "Network/HttpRequest.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -72,6 +73,14 @@ NS_ASSUME_NONNULL_BEGIN
     // Route partial templates
     if ([path hasPrefix:@"/admin/partials/"]) {
         return [self handlePartialPath:path statusCode:statusCode contentType:contentType];
+    }
+
+    // Ozone verification action routes
+    if ([path isEqualToString:@"/admin/ozone/verification/grant"]) {
+        return [self handleVerificationGrantWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path isEqualToString:@"/admin/ozone/verification/revoke"]) {
+        return [self handleVerificationRevokeWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
     }
 
     // Root admin UI entry point and all sub-paths return the shell
@@ -233,6 +242,8 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderOzoneCorrelationsPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"ozone/verification"]) {
         return [self renderOzoneVerificationPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"ozone/verification/list"]) {
+        return [self renderOzoneVerificationListWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"diagnostics/overview"]) {
         return [self renderDiagnosticsOverviewPartialWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"diagnostics/sequencer"]) {
@@ -1059,7 +1070,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NSString *)renderOzoneVerificationPartialWithStatusCode:(nullable NSInteger *)statusCode
-                                               contentType:(NSString * _Nullable * _Nullable)contentType {
+                                                contentType:(NSString * _Nullable * _Nullable)contentType {
     if (statusCode) *statusCode = 200;
     if (contentType) *contentType = @"text/html";
     return @"<div class=\"content-header\">"
@@ -1076,6 +1087,56 @@ NS_ASSUME_NONNULL_BEGIN
            @"</div>"
            @"</div>"
            @"</div>";
+}
+
+- (NSString *)renderOzoneVerificationListWithStatusCode:(nullable NSInteger *)statusCode
+                                             contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.verification.listVerifications"
+                                                     httpMethod:HttpMethodGET
+                                                        headers:@{}
+                                                       jsonBody:nil];
+
+    NSArray *verifications = @[];
+    if ([result[@"status"] integerValue] == 200) {
+        verifications = result[@"json"][@"verifications"] ?: @[];
+    }
+
+    if (verifications.count == 0) {
+        return @"<tr><td colspan=\"3\" class=\"text-secondary text-center\">No verified accounts found.</td></tr>";
+    }
+
+    NSMutableString *html = [NSMutableString string];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateStyle = NSDateFormatterMediumStyle;
+    formatter.timeStyle = NSDateFormatterShortStyle;
+
+    for (NSDictionary *v in verifications) {
+        NSString *did = v[@"did"] ?: @"";
+        NSString *createdAt = v[@"createdAt"] ?: @"";
+        NSString *meta = @"";
+        if (v[@"meta"]) {
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:v[@"meta"] options:0 error:nil];
+            if (jsonData) meta = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        }
+
+        [html appendFormat:
+            @"<tr>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td><small>%@</small></td>"
+            @"<td>"
+            @"<button class=\"btn btn-sm btn-warning\" "
+            @"hx-on=\"click: document.getElementById('revoke-did').value='%@'; document.getElementById('revoke-verification-modal').showModal()\">"
+            @"Revoke</button>"
+            @"</td>"
+            @"</tr>",
+            did, createdAt, did];
+    }
+
+    return html;
 }
 
 - (NSString *)renderSecuritySessionsListPartialWithParams:(NSDictionary *)params
@@ -1377,6 +1438,105 @@ NS_ASSUME_NONNULL_BEGIN
     }
     
     return html;
+}
+
+#pragma mark - Ozone Verification Actions
+
+- (NSString *)handleVerificationGrantWithMethod:(AdminUIHTTPMethod)method
+                                        headers:(NSDictionary<NSString *, NSString *> *)headers
+                                           body:(nullable NSData *)body
+                                     statusCode:(nullable NSInteger *)statusCode
+                                    contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *did = params[@"did"];
+        NSString *notes = params[@"notes"] ?: @"";
+
+        if (!did || did.length == 0) {
+            return @"<p class=\"text-destructive\">DID is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.verification.grantVerification"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"did": did,
+                                                               @"meta": @{@"notes": notes}
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Verification granted successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to grant verification";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handleVerificationRevokeWithMethod:(AdminUIHTTPMethod)method
+                                          headers:(NSDictionary<NSString *, NSString *> *)headers
+                                             body:(nullable NSData *)body
+                                       statusCode:(nullable NSInteger *)statusCode
+                                      contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *did = params[@"did"];
+        NSString *reason = params[@"reason"] ?: @"";
+
+        if (!did || did.length == 0) {
+            return @"<p class=\"text-destructive\">DID is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"tools.ozone.verification.revokeVerification"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"did": did,
+                                                               @"meta": @{@"reason": reason}
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Verification revoked successfully!</p>"
+                   @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to revoke verification";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSDictionary *)parseFormBody:(NSData *)body {
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    NSString *bodyStr = [[NSString alloc] initWithData:body encoding:NSUTF8StringEncoding];
+    if (!bodyStr) return params;
+
+    NSArray *pairs = [bodyStr componentsSeparatedByString:@"&"];
+    for (NSString *pair in pairs) {
+        NSArray *components = [pair componentsSeparatedByString:@"="];
+        if (components.count == 2) {
+            NSString *key = [components[0] stringByRemovingPercentEncoding];
+            NSString *value = [components[1] stringByRemovingPercentEncoding];
+            params[key] = value ?: @"";
+        }
+    }
+    return params;
 }
 
 @end

@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "PDSAdminAuth.h"
-#import "Metrics/PDSMetrics.h"
+#import "Network/HttpRequest.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -109,6 +109,14 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 
 /// Bulk delete accounts
 - (NSDictionary *)handleBulkDeleteWithDids:(NSArray *)dids;
+
+#pragma mark - XRPC Dispatch
+
+/// Dispatch an XRPC method call and return the result
+- (NSDictionary *)dispatchXrpcJSONMethod:(NSString *)methodId
+                                httpMethod:(HttpMethod)httpMethod
+                                   headers:(NSDictionary<NSString *, NSString *> *)headers
+                                  jsonBody:(nullable NSDictionary *)jsonBody;
 
 @end
 
