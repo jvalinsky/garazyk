@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 
+@protocol PDSQueryDatabase;
 @class FeedService;
 @class ActorService;
 @class GraphService;
@@ -13,7 +14,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithFeedService:(FeedService *)feedService
                       actorService:(ActorService *)actorService
                       graphService:(nullable GraphService *)graphService
-                notificationService:(NotificationService *)notificationService;
+                notificationService:(NotificationService *)notificationService
+                         database:(nullable id<PDSQueryDatabase>)database;
 
 - (void)registerRoutesWithServer:(HttpServer *)server;
 
