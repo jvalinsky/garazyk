@@ -33,7 +33,8 @@
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                        jwtMinter:(JWTMinter *)jwtMinter
-                 adminController:(id<PDSAdminController>)adminController {
+                 adminController:(id<PDSAdminController>)adminController
+                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
   NSError *appViewDbError = nil;
   PDSDatabase *appViewDatabase =
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
@@ -69,7 +70,8 @@
   ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
   ContactService *contactService = [[ContactService alloc] initWithDatabase:appViewDatabase
                                                                 actorService:actorService];
-  AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase];
+  AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase
+                                                                             emailProvider:emailProvider];
   ChatModerationService *chatModerationService = [[ChatModerationService alloc] initWithDatabase:appViewDatabase];
 
   __attribute__((unused)) RecordLifecycleHandler *lifecycleHandler =
@@ -107,7 +109,7 @@
                                      appViewDatabase:appViewDatabase
                                           jwtMinter:jwtMinter
                                     adminController:adminController];
-  [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher];
+  [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
   [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
                                 appViewDatabase:appViewDatabase

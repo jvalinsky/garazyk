@@ -13,6 +13,7 @@
 @class JWTMinter;
 @class PDSServiceDatabases;
 @protocol PDSAdminController;
+@protocol PDSEmailProvider;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -37,12 +38,15 @@ NS_ASSUME_NONNULL_BEGIN
  @param serviceDatabases Service-level database access (for appView database)
  @param jwtMinter JWT token minter for optional authentication
  @param adminController Admin operations controller for takedown checks
+ @param emailProvider Pluggable email delivery system
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController;
+                       jwtMinter:(JWTMinter *)jwtMinter
+                 adminController:(id<PDSAdminController>)adminController
+                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
 
 @end
+
 
 NS_ASSUME_NONNULL_END

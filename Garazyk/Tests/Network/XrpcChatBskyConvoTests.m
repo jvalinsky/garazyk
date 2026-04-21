@@ -1,4 +1,5 @@
 #import "AdminAuthXrpcTestBase.h"
+#import "Database/Service/ServiceDatabases.h"
 
 @interface XrpcChatBskyConvoTests : AdminAuthXrpcTestBase
 @property (nonatomic, copy) NSString *secondUserDid;
@@ -18,13 +19,19 @@
 
 // Helper method to create a test user
 - (NSDictionary *)createTestUser {
-    NSString *uniqueHandle = [NSString stringWithFormat:@"testuser%@", [[NSUUID UUID] UUIDString]];
+    NSString *uniqueHandle = [NSString stringWithFormat:@"testuser%@.test", [[NSUUID UUID] UUIDString]];
+
+    // Create invite code first
+    NSString *inviteCode = @"test-invite-code";
+    PDSServiceDatabases *sdb = self.application.serviceDatabases;
+    [sdb createInviteCode:inviteCode forAccount:self.userDid maxUses:1 error:nil];
 
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAccount"
                                                       body:@{
                                                           @"handle": uniqueHandle,
                                                           @"password": @"password123",
-                                                          @"email": [NSString stringWithFormat:@"%@@example.com", uniqueHandle]
+                                                          @"email": [NSString stringWithFormat:@"%@@example.com", uniqueHandle],
+                                                          @"inviteCode": inviteCode
                                                       }
                                                    headers:@{}];
 
@@ -34,6 +41,7 @@
             @"accessJwt": response.jsonBody[@"accessJwt"] ?: @""
         };
     }
+    NSLog(@"createTestUser failed: status=%ld, error=%@, message=%@", response.statusCode, response.jsonBody[@"error"], response.jsonBody[@"message"]);
     return nil;
 }
 
@@ -369,6 +377,22 @@
                                                       body:@{@"messageId": @"msg/test"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
+}
+
+- (void)testGetLogSuccess {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    
+    // Create some activity
+    [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                             body:@{@"members": @[self.userDid, self.secondUserDid]}
+                          headers:@{@"authorization": authHeader}];
+    
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getLog"
+                                              queryString:@""
+                                              queryParams:@{}
+                                                  headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"logs"]);
 }
 
 @end
