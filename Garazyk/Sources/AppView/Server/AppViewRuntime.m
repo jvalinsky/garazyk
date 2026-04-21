@@ -182,7 +182,8 @@ static AppViewRuntime *_sharedRuntime = nil;
     _graphService = [[GraphService alloc] initWithDatabase:_database];
     _notificationService = [[NotificationService alloc] initWithDatabase:_database
                                                             actorService:_actorService];
-    _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database];
+    _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database
+                                                           emailProvider:nil];
     _chatModerationService = [[ChatModerationService alloc] initWithDatabase:_database];
 
     // Register XRPC routes
