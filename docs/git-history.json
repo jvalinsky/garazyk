@@ -1,5 +1,21 @@
 [
   {
+    "hash": "bbb33ca502c94bcaf1202f811b2dbdd70dc1cc15",
+    "short_hash": "bbb33ca",
+    "author": "Security Bot",
+    "date": "2026-04-20T16:12:04-04:00",
+    "message": "test(websocket,http): stabilize characterization coverage after Sans-I/O split\n\nExpose websocket heartbeat policy for state characterization and align new protocol-session assertions with current pipeline semantics so regression tests match refactored boundaries.\n\nMade-with: Cursor",
+    "files_changed": 3
+  },
+  {
+    "hash": "9148a77a3156191ce63f5fbecc817760b2c7892a",
+    "short_hash": "9148a77",
+    "author": "Security Bot",
+    "date": "2026-04-20T16:08:03-04:00",
+    "message": "refactor(network): harden Sans-I/O boundaries across HTTP/WS layers\n\nIsolate protocol-facing APIs from transport internals, extract HTTP driver/dispatcher helpers, tighten websocket lifecycle and write semantics, and document cross-platform transport capability contracts for macOS/GNUstep parity.\n\nMade-with: Cursor",
+    "files_changed": 19
+  },
+  {
     "hash": "4204bfb0751fafc6d21037bb749c20a47554175a",
     "short_hash": "4204bfb",
     "author": "Security Bot",
