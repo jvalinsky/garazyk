@@ -886,6 +886,56 @@ static NSString *appPasswordGenerateSecret(void) {
 
 #pragma mark - Event Persistence
 
+- (BOOL)logHostingEvent:(NSString *)did
+                   type:(NSString *)type
+                details:(nullable NSDictionary *)details
+              createdBy:(nullable NSString *)createdBy
+                  error:(NSError **)error {
+    __block BOOL success = NO;
+    __block NSError *localError = nil;
+    
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *sql = @"INSERT INTO hosting_events (did, event_type, details_json, created_by, created_at) VALUES (?, ?, ?, ?, ?)";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) { success = NO; return; }
+        
+        sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
+        
+        if (details) {
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:details options:0 error:nil];
+            if (jsonData) {
+                NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                sqlite3_bind_text(stmt, 3, jsonString.UTF8String, -1, SQLITE_TRANSIENT);
+            } else {
+                sqlite3_bind_null(stmt, 3);
+            }
+        } else {
+            sqlite3_bind_null(stmt, 3);
+        }
+        
+        if (createdBy) {
+            sqlite3_bind_text(stmt, 4, createdBy.UTF8String, -1, SQLITE_TRANSIENT);
+        } else {
+            sqlite3_bind_null(stmt, 4);
+        }
+        
+        sqlite3_bind_double(stmt, 5, [[NSDate date] timeIntervalSince1970]);
+        
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        if (!success) {
+            PDS_LOG_ERROR(@"Failed to log hosting event for did:%@: %s", did, sqlite3_errmsg(store.db));
+        }
+    } error:&localError];
+    
+    if (!success && localError) {
+        if (error) *error = localError;
+    }
+    
+    return success;
+}
+
 - (BOOL)persistEvent:(int64_t)seq
                 type:(NSString *)type
                 data:(NSData *)data
