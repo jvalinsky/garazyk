@@ -74,6 +74,12 @@ static BOOL isValidDID(NSString *did) {
                  [self handleGetHostStatus:request response:response];
              }];
 
+    [server addRoute:@"GET"
+                path:@"/xrpc/com.atproto.sync.listHosts"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleListHosts:request response:response];
+             }];
+
     [server addRoute:@"POST"
                 path:@"/xrpc/com.atproto.sync.requestCrawl"
              handler:^(HttpRequest *request, HttpResponse *response) {
@@ -461,6 +467,125 @@ static BOOL isValidDID(NSString *did) {
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:body];
+}
+
+#pragma mark - listHosts
+
+- (void)handleListHosts:(HttpRequest *)request response:(HttpResponse *)response
+{
+    // Lexicon: com.atproto.sync.listHosts
+    // Description: Enumerates upstream hosts (eg, PDS or relay instances) that this service consumes from.
+    // Output: { "hosts": [{ "hostname": "...", "seq": N, "accountCount": N, "status": "..." }] }
+
+    // Parse limit parameter
+    NSString *limitParam = [request queryParamForKey:@"limit"];
+    NSInteger limit = 200; // default per lexicon
+    if (limitParam.length > 0)
+    {
+        if (![[NSScanner scannerWithString:limitParam] scanInteger:&limit] || limit < 1 || limit > 1000)
+        {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": @"limit must be an integer between 1 and 1000"
+            }];
+            return;
+        }
+    }
+
+    // Parse cursor parameter
+    NSString *cursorParam = [request queryParamForKey:@"cursor"];
+    NSInteger startIndex = 0;
+    if (cursorParam.length > 0)
+    {
+        if (![[NSScanner scannerWithString:cursorParam] scanInteger:&startIndex] || startIndex < 0)
+        {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{
+                @"error": @"InvalidRequest",
+                @"message": @"cursor must be a non-negative integer"
+            }];
+            return;
+        }
+    }
+
+    // Check if we have an upstream manager
+    if (!_upstreamManager)
+    {
+        // No upstreams configured - return empty list
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{ @"hosts": @[] }];
+        return;
+    }
+
+    // Get all upstreams
+    NSArray<NSString *> *allUpstreams = [_upstreamManager allUpstreams];
+    NSInteger totalHosts = allUpstreams.count;
+
+    // Build hosts array with pagination
+    NSMutableArray *hosts = [NSMutableArray array];
+    NSInteger scanIndex = MAX(0, MIN(startIndex, totalHosts));
+
+    while (scanIndex < totalHosts && hosts.count < limit)
+    {
+        NSString *upstreamURL = allUpstreams[(NSUInteger)scanIndex];
+
+        // Extract hostname from URL
+        NSURL *url = [NSURL URLWithString:upstreamURL];
+        NSString *hostname = url.host;
+        if (!hostname)
+        {
+            // Fallback: use the URL as-is if parsing fails
+            hostname = upstreamURL;
+        }
+
+        // Build host object
+        NSMutableDictionary *hostObj = [NSMutableDictionary dictionaryWithObject:hostname forKey:@"hostname"];
+
+        // Add seq if available
+        int64_t seq = [_upstreamManager seqForUpstream:upstreamURL];
+        if (seq > 0)
+        {
+            hostObj[@"seq"] = @(seq);
+        }
+
+        // Add account count if available
+        NSUInteger accountCount = [_upstreamManager accountCountForUpstream:upstreamURL];
+        if (accountCount > 0)
+        {
+            hostObj[@"accountCount"] = @(accountCount);
+        }
+
+        // Add status
+        RelayHostStatus status = [_upstreamManager statusForUpstream:upstreamURL];
+        NSString *statusStr = @"disconnected";
+        switch (status)
+        {
+            case RelayHostStatusActive:
+                statusStr = @"active";
+                break;
+            case RelayHostStatusError:
+                statusStr = @"error";
+                break;
+            case RelayHostStatusDisconnected:
+                statusStr = @"disconnected";
+                break;
+        }
+        hostObj[@"status"] = statusStr;
+
+        [hosts addObject:hostObj];
+        scanIndex += 1;
+    }
+
+    // Build response
+    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:hosts forKey:@"hosts"];
+    if (scanIndex < totalHosts)
+    {
+        result[@"cursor"] = [NSString stringWithFormat:@"%ld", (long)scanIndex];
+    }
+
+    response.statusCode = HttpStatusOK;
+    [response setJsonBody:result];
 }
 
 #pragma mark - requestCrawl
