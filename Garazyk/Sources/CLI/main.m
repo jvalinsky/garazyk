@@ -17,6 +17,9 @@
 // so all CLI commands are available.
 extern void PDSCLIRegisterAllCommands(void);
 
+// Force NSDateFormatter category to be linked
+extern void NSDateFormatterLinkATProtoCategory(void);
+
 /// The name of the executable for usage messages.
 static const char *executable_name = "kaszlak";
 
@@ -111,6 +114,8 @@ static int fail_with_usage(NSString *errorMessage) {
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         PDSCLIRegisterAllCommands();
+        // Force linkage of NSDateFormatter category on static builds
+        NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
         // On Linux/GNUstep, verify critical categories are loaded
         if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {
