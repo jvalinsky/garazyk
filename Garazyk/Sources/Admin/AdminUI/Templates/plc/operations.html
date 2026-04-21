@@ -9,9 +9,11 @@
       <h3 class="card-title">Step 1: Request Signature Token</h3>
     </div>
     <div class="card-body">
-      <button class="btn btn-primary w-full" data-action="plc-request-signature">Request Token</button>
+      <form class="form" hx-post="/admin/plc/request-signature" hx-swap="innerHTML" hx-target="#plc-output">
+        <button type="submit" class="btn btn-primary w-full">Request Token</button>
+      </form>
       <p class="text-secondary text-xs mt-sm">
-        If email delivery is configured this may return `{}`; otherwise token is returned inline.
+        If email delivery is configured this may return empty; otherwise token is returned inline.
       </p>
     </div>
   </div>
@@ -21,9 +23,26 @@
       <h3 class="card-title">Step 2: Sign Operation</h3>
     </div>
     <div class="card-body">
-      <label class="form-label" for="plc-token-input">Token</label>
-      <input id="plc-token-input" class="form-input" type="text" placeholder="8-char token">
-      <button class="btn btn-primary mt-sm w-full" data-action="plc-sign-operation">Sign Operation</button>
+      <form class="form" hx-post="/admin/plc/sign-operation" hx-swap="innerHTML" hx-target="#plc-output">
+        <div class="form-group">
+          <label class="form-label">Token</label>
+          <input name="token" class="form-input" type="text" placeholder="8-char token" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Operation Type</label>
+          <select name="operationType" class="form-input">
+            <option value="update_handle">Update Handle</option>
+            <option value="update_signed_by">Update Signed By</option>
+            <option value="update_service">Update Service</option>
+            <option value="terminate">Terminate</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Value (for handle: user.bsky.social)</label>
+          <input name="value" class="form-input" type="text" placeholder="">
+        </div>
+        <button type="submit" class="btn btn-primary mt-sm w-full">Sign Operation</button>
+      </form>
     </div>
   </div>
 </div>
@@ -33,9 +52,13 @@
     <h3 class="card-title">Step 3: Submit Signed Operation</h3>
   </div>
   <div class="card-body">
-    <label class="form-label" for="plc-operation-json">Signed Operation JSON</label>
-    <textarea id="plc-operation-json" class="form-input" style="min-height: 200px;" placeholder="{ ...signed operation json... }"></textarea>
-    <button class="btn btn-primary mt-sm" data-action="plc-submit-operation">Submit Operation</button>
+    <form class="form" hx-post="/admin/plc/submit-operation" hx-swap="innerHTML" hx-target="#plc-output">
+      <div class="form-group">
+        <label class="form-label">Signed Operation JSON</label>
+        <textarea name="operationJson" class="form-input" style="min-height: 150px;" placeholder="{ ...signed operation json... }" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary mt-sm">Submit Operation</button>
+    </form>
   </div>
 </div>
 
@@ -44,6 +67,6 @@
     <h3 class="card-title">Operation Output</h3>
   </div>
   <div class="card-body">
-    <pre id="plc-operation-output" class="code-block">{}</pre>
+    <pre id="plc-output" class="code-block">Results will appear here...</pre>
   </div>
 </div>
