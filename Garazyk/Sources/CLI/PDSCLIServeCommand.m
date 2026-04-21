@@ -180,6 +180,12 @@
       [dataDir isEqualToString:@"./data"]) {
     dataDir = @".";
   }
+
+  // CRITICAL: Set serverPort BEFORE creating PDSController so that
+  // PDSApplication uses the correct port for JWT issuer calculation.
+  // Without this, JWT minter defaults to port 8080 while server runs on --port.
+  [[PDSConfiguration sharedConfiguration] setServerPort:port];
+
   PDS_LOG_INFO_C(PDSLogComponentCLI,
                  @"Initializing PDS controller with data directory: %@",
                  dataDir);
@@ -205,7 +211,13 @@
   serverBuilder.jwtMinter = controller.jwtMinter;
   serverBuilder.serviceDatabases = controller.serviceDatabases;
   serverBuilder.subscribeReposHandler = subscribeReposHandler;
-  serverBuilder.issuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
+
+  // Calculate canonical issuer with the actual port
+  NSString *canonicalIssuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
+  serverBuilder.issuer = canonicalIssuer;
+
+  // Ensure JWT minter issuer matches the server port (belt and suspenders)
+  controller.jwtMinter.issuer = canonicalIssuer;
 
   NSError *builderError = nil;
   if (![serverBuilder configureServer:httpServer error:&builderError]) {
