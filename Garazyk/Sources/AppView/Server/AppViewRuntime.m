@@ -19,6 +19,7 @@
 #import "AppView/Server/Admin/AppViewAdminRoutePack.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
+#import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
 #import "Network/AppViewXRpcRoutePack.h"
 #import "Network/HttpServer.h"
@@ -40,6 +41,7 @@
 @property (nonatomic, strong) HttpServer *httpServer;
 @property (nonatomic, strong) FeedService *feedService;
 @property (nonatomic, strong) ActorService *actorService;
+@property (nonatomic, strong) GraphService *graphService;
 @property (nonatomic, strong) NotificationService *notificationService;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
@@ -173,11 +175,14 @@ static AppViewRuntime *_sharedRuntime = nil;
     // Initialize Services with AppViewDatabase (which now conforms to PDSQueryDatabase)
     _feedService = [[FeedService alloc] initWithDatabase:_database];
     _actorService = [[ActorService alloc] initWithDatabase:_database];
-    _notificationService = [[NotificationService alloc] initWithDatabase:_database];
+    _graphService = [[GraphService alloc] initWithDatabase:_database];
+    _notificationService = [[NotificationService alloc] initWithDatabase:_database
+                                                            actorService:_actorService];
 
     // Register XRPC routes
     AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
                                                                    actorService:_actorService
+                                                                   graphService:_graphService
                                                             notificationService:_notificationService];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
