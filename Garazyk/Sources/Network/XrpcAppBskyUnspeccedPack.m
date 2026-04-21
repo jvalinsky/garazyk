@@ -6,10 +6,12 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcAuthHelper.h"
+#import "AppView/Services/AgeAssuranceService.h"
 
 @implementation XrpcAppBskyUnspeccedPack
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher {
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService {
 
 #pragma mark - Labeler
 
@@ -228,6 +230,34 @@
                            @"assurance": @"no_verification",
                            @"verifiedAt": [NSNull null]
                        }];
+                     }];
+
+  [dispatcher registerMethod:@"app.bsky.unspecced.confirmAgeAssurance"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       NSDictionary *body = request.jsonBody;
+                       NSString *token = body[@"token"];
+
+                       if (!token || token.length == 0) {
+                           [XrpcErrorHelper setValidationError:response message:@"token parameter is required"];
+                           return;
+                       }
+
+                       if (ageAssuranceService) {
+                           NSError *error = nil;
+                           if ([ageAssuranceService confirmAgeAssuranceWithToken:token error:&error]) {
+                               response.statusCode = HttpStatusOK;
+                               [response setJsonBody:@{}];
+                           } else {
+                               if (error.code == 404) {
+                                   [XrpcErrorHelper setValidationError:response message:error.localizedDescription];
+                               } else {
+                                   [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                               }
+                           }
+                       } else {
+                           response.statusCode = HttpStatusOK;
+                           [response setJsonBody:@{}];
+                       }
                      }];
 
 #pragma mark - User Discovery (Onboarding & Discovery Pages)

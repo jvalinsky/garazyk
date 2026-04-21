@@ -201,18 +201,26 @@
                  memberDid:(NSString *)memberDid
                      error:(NSError **)error {
     NSString *query = @"UPDATE conversation_members SET status = ? WHERE convo_id = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
                                             params:@[@"accepted", convoId, memberDid]
                                                  error:error];
+    if (success) {
+        [self logChatEvent:@"accept" convoId:convoId actorDid:memberDid data:nil error:nil];
+    }
+    return success;
 }
 
 - (BOOL)leaveConversation:(NSString *)convoId
                 memberDid:(NSString *)memberDid
                    error:(NSError **)error {
     NSString *query = @"UPDATE conversation_members SET status = ? WHERE convo_id = ? AND member_did = ?";
-    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
                                             params:@[@"left", convoId, memberDid]
                                                  error:error];
+    if (success) {
+        [self logChatEvent:@"leave" convoId:convoId actorDid:memberDid data:nil error:nil];
+    }
+    return success;
 }
 
 - (nullable NSArray<NSDictionary *> *)listConversationRequestsForActor:(NSString *)actorDid
@@ -240,6 +248,35 @@
     return requests;
 }
 
+#pragma mark - Event Logging
+
+- (BOOL)logChatEvent:(NSString *)eventType
+             convoId:(NSString *)convoId
+            actorDid:(NSString *)actorDid
+                data:(nullable NSDictionary *)data
+               error:(NSError **)error {
+    NSString *eventId = [[NSUUID UUID] UUIDString];
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSString *dataJson = nil;
+    if (data) {
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:0 error:nil];
+        dataJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    }
+    
+    NSString *sql = @"INSERT INTO chat_event_log (id, convo_id, actor_did, event_type, event_data, created_at) "
+                    @"VALUES (?, ?, ?, ?, ?, ?)";
+    NSArray *params = @[
+        eventId,
+        convoId,
+        actorDid,
+        eventType,
+        dataJson ?: [NSNull null],
+        @( (long long)now )
+    ];
+    
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:params error:error];
+}
+
 #pragma mark - Message Management
 
 - (nullable NSDictionary *)sendMessage:(NSString *)convoId
@@ -255,6 +292,9 @@
                                                     params:@[messageId, convoId, senderDid, text ?: [NSNull null], embedJson ?: [NSNull null], now]
                                                          error:error];
     if (!success) return nil;
+
+    // Log the message event
+    [self logChatEvent:@"message" convoId:convoId actorDid:senderDid data:@{@"messageId": messageId} error:nil];
 
     // Update conversation updated_at
     NSString *updateQuery = @"UPDATE conversations SET updated_at = ? WHERE id = ?";
@@ -360,20 +400,39 @@
                error:(NSError **)error {
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
     NSString *query = @"INSERT OR REPLACE INTO message_reactions (message_id, actor_did, emoji, created_at) VALUES (?, ?, ?, ?)";
-    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
                                             params:@[messageId, actorDid, emoji, now]
                                                  error:error];
+    if (success) {
+        // Get convoId for this message
+        NSString *convoQuery = @"SELECT convo_id FROM messages WHERE id = ?";
+        NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:convoQuery params:@[messageId] error:nil];
+        if (rows.count > 0) {
+            [self logChatEvent:@"reaction_add" convoId:rows[0][@"convo_id"] actorDid:actorDid data:@{@"messageId": messageId, @"emoji": emoji} error:nil];
+        }
+    }
+    return success;
 }
 
 - (BOOL)removeReaction:(NSString *)messageId
-              actorDid:(NSString *)actorDid
-                 emoji:(NSString *)emoji
-                 error:(NSError **)error {
+               actorDid:(NSString *)actorDid
+                  emoji:(NSString *)emoji
+                  error:(NSError **)error {
     NSString *query = @"DELETE FROM message_reactions WHERE message_id = ? AND actor_did = ? AND emoji = ?";
-    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+    BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:query
                                             params:@[messageId, actorDid, emoji]
                                                  error:error];
+    if (success) {
+        // Get convoId for this message
+        NSString *convoQuery = @"SELECT convo_id FROM messages WHERE id = ?";
+        NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:convoQuery params:@[messageId] error:nil];
+        if (rows.count > 0) {
+            [self logChatEvent:@"reaction_remove" convoId:rows[0][@"convo_id"] actorDid:actorDid data:@{@"messageId": messageId, @"emoji": emoji} error:nil];
+        }
+    }
+    return success;
 }
+
 
 #pragma mark - Conversation Preferences
 
@@ -464,6 +523,40 @@
     }
 
     return sentMessages;
+}
+
+- (nullable NSArray<NSDictionary *> *)getChatLogWithLimit:(NSInteger)limit
+                                                 cursor:(nullable NSString *)cursor
+                                                  error:(NSError **)error {
+    limit = MIN(MAX(limit, 1), 100);
+    
+    NSString *query = @"SELECT * FROM chat_event_log ";
+    NSMutableArray *params = [NSMutableArray array];
+    
+    if (cursor) {
+        query = [query stringByAppendingString:@"WHERE created_at < ? "];
+        [params addObject:cursor];
+    }
+    
+    query = [query stringByAppendingString:@"ORDER BY created_at DESC LIMIT ?"];
+    [params addObject:@(limit)];
+    
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query params:params error:error];
+    if (!rows) return nil;
+    
+    NSMutableArray *results = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSMutableDictionary *logEntry = [row mutableCopy];
+        // Parse event_data if present
+        NSString *dataJson = row[@"event_data"];
+        if (dataJson && ![dataJson isKindOfClass:[NSNull class]]) {
+            NSData *data = [dataJson dataUsingEncoding:NSUTF8StringEncoding];
+            logEntry[@"data"] = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] ?: @{};
+        }
+        [results addObject:logEntry];
+    }
+    
+    return results;
 }
 
 @end

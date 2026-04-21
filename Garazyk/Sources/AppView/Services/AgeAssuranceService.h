@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
-#import "Database/PDSQueryDatabase.h"
+
+@protocol PDSQueryDatabase;
+@protocol PDSEmailProvider;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -9,7 +11,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface AgeAssuranceService : NSObject
 
-- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
+- (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database
+                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
 
 /*!
  @method beginAgeAssurance:email:language:countryCode:regionCode:error:
@@ -36,6 +39,13 @@ NS_ASSUME_NONNULL_BEGIN
                                     countryCode:(nullable NSString *)countryCode
                                      regionCode:(nullable NSString *)regionCode
                                           error:(NSError **)error;
+
+/*!
+ @method confirmAgeAssuranceWithToken:error:
+ @abstract Confirm an age assurance verification flow using a token.
+ */
+- (BOOL)confirmAgeAssuranceWithToken:(NSString *)token
+                               error:(NSError **)error;
 
 @end
 

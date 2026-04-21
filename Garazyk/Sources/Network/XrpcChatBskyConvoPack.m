@@ -633,16 +633,30 @@
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                            jwtMinter:jwtMinter
                                                      adminController:adminController
-                                                             request:request
-                                                            response:response];
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
 
-        // Return empty log - would need event log table
+        NSError *error = nil;
+        NSArray *logs = [chatService getChatLogWithLimit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        NSString *nextCursor = nil;
+        if (logs.count > 0 && logs.count == (NSUInteger)limit) {
+            nextCursor = [logs.lastObject[@"created_at"] description];
+        }
+
         response.statusCode = 200;
-        [response setJsonBody:@{@"logs": @[], @"cursor": cursor ?: @""}];
+        [response setJsonBody:@{@"logs": logs ?: @[], @"cursor": nextCursor ?: @""}];
     }];
+
 
     PDS_LOG_INFO(@"Registered chat.bsky.convo.* endpoints (core + features)");
 }

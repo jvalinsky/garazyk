@@ -538,7 +538,8 @@ static void registerMethodsWithDispatcherUsingServices(
   [XrpcAppBskyMethods registerWithDispatcher:dispatcher
                             serviceDatabases:serviceDatabases
                                    jwtMinter:jwtMinter
-                             adminController:adminController];
+                             adminController:adminController
+                               emailProvider:emailProvider];
 
   [XrpcAdminMethods registerWithDispatcher:dispatcher
                           serviceDatabases:serviceDatabases
