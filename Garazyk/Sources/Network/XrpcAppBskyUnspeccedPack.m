@@ -279,6 +279,22 @@
                        response.statusCode = HttpStatusOK;
                        [response setJsonBody:@{@"actors" : @[]}];
                      }];
+
+  // app.bsky.unspecced.getTrends
+  [dispatcher registerMethod:@"app.bsky.unspecced.getTrends"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       NSString *limitParam = [request queryParamForKey:@"limit"];
+                       NSInteger limit = 10;
+                       if (limitParam) {
+                         limit = [limitParam integerValue];
+                         if (limit < 1) limit = 1;
+                         if (limit > 25) limit = 25;
+                       }
+
+                       // Return empty trends - would need trending topic analysis
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"trends" : @[]}];
+                     }];
 }
 
 @end

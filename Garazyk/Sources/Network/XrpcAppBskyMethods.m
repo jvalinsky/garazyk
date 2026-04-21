@@ -11,6 +11,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
 #import "Network/XrpcAppBskyActorPack.h"
+#import "Network/XrpcAppBskyAgeAssurancePack.h"
 #import "Network/XrpcAppBskyBookmarksPack.h"
 #import "Network/XrpcAppBskyContactPack.h"
 #import "Network/XrpcAppBskyDraftsPack.h"
@@ -22,6 +23,7 @@
 #import "Network/XrpcAppBskyVideoPack.h"
 #import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcChatBskyGroupPack.h"
+#import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcToolsOzonePack.h"
 
 @implementation XrpcAppBskyMethods
@@ -94,6 +96,7 @@
                                    adminController:adminController];
 
   [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher];
+  [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher];
   [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
   [XrpcAppBskyVideoPack registerWithDispatcher:dispatcher
                                 serviceDatabases:serviceDatabases
@@ -110,6 +113,7 @@
                               appViewDatabase:appViewDatabase
                                    jwtMinter:jwtMinter
                              adminController:adminController];
+  [XrpcChatBskyActorPack registerWithDispatcher:dispatcher];
   [XrpcToolsOzonePack registerWithDispatcher:dispatcher
                             appViewDatabase:appViewDatabase
                                  jwtMinter:jwtMinter
