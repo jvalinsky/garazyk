@@ -120,6 +120,33 @@ NS_ASSUME_NONNULL_BEGIN
         return [self handleOzoneEventEmitWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
     }
 
+    // PLC operation routes
+    if ([path isEqualToString:@"/admin/plc/request-signature"]) {
+        return [self handlePlcRequestSignatureWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path isEqualToString:@"/admin/plc/sign-operation"]) {
+        return [self handlePlcSignOperationWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path isEqualToString:@"/admin/plc/submit-operation"]) {
+        return [self handlePlcSubmitOperationWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
+    // Relay crawl routes
+    if ([path isEqualToString:@"/admin/relay/crawl/request"]) {
+        return [self handleRelayCrawlRequestWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path isEqualToString:@"/admin/relay/crawl/retry-failed"]) {
+        return [self handleRelayCrawlRetryFailedWithMethod:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
+    // Security session routes
+    if ([path hasPrefix:@"/admin/security/sessions/"] && [path hasSuffix:@"/revoke-all"]) {
+        return [self handleSecurityRevokeAllSessionsWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+    if ([path hasPrefix:@"/admin/security/sessions/"] && [path containsString:@"/revoke/"]) {
+        return [self handleSecurityRevokeSessionWithPath:path method:method headers:headers body:body statusCode:statusCode contentType:contentType];
+    }
+
     // Root admin UI entry point and all sub-paths return the shell
     if ([path isEqualToString:@"/admin"] || [path hasPrefix:@"/admin/"] ) {
         // Exclude specific prefixes that are handled elsewhere
@@ -2063,6 +2090,220 @@ NS_ASSUME_NONNULL_BEGIN
 
         NSDictionary *jsonError = result[@"json"];
         NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to emit event";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+#pragma mark - Relay Crawl Operations
+
+- (NSString *)handleRelayCrawlRequestWithMethod:(AdminUIHTTPMethod)method
+                                    headers:(NSDictionary<NSString *, NSString *> *)headers
+                                       body:(nullable NSData *)body
+                                 statusCode:(nullable NSInteger *)statusCode
+                                contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *did = params[@"did"];
+
+        if (!did || did.length == 0) {
+            return @"<p class=\"text-destructive\">DID is required</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"com.atproto.sync.requestCrawl"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"did": did
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            return @"<p class=\"text-success\">Crawl requested successfully!</p>";
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to request crawl";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handleRelayCrawlRetryFailedWithMethod:(AdminUIHTTPMethod)method
+                                       headers:(NSDictionary<NSString *, NSString *> *)headers
+                                          body:(nullable NSData *)body
+                                    statusCode:(nullable NSInteger *)statusCode
+                                   contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    return @"<p class=\"text-warning\">Retry failed crawls is not yet implemented</p>";
+}
+
+#pragma mark - Security Session Management
+
+- (NSString *)handleSecurityRevokeAllSessionsWithPath:(NSString *)path
+                                              method:(AdminUIHTTPMethod)method
+                                            headers:(NSDictionary<NSString *, NSString *> *)headers
+                                               body:(nullable NSData *)body
+                                         statusCode:(nullable NSInteger *)statusCode
+                                        contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 5) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *did = pathComponents[3];
+
+    return @"<p class=\"text-warning\">Bulk session revocation requires com.atproto.admin.deleteSession - not implemented</p>";
+}
+
+- (NSString *)handleSecurityRevokeSessionWithPath:(NSString *)path
+                                          method:(AdminUIHTTPMethod)method
+                                        headers:(NSDictionary<NSString *, NSString *> *)headers
+                                           body:(nullable NSData *)body
+                                     statusCode:(nullable NSInteger *)statusCode
+                                    contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    NSArray *pathComponents = [path componentsSeparatedByString:@"/"];
+    if (pathComponents.count < 6) {
+        return @"<p class=\"text-destructive\">Invalid path</p>";
+    }
+
+    NSString *did = pathComponents[3];
+    NSString *token = pathComponents[5];
+
+    return @"<p class=\"text-warning\">Session revocation requires admin API - not implemented</p>";
+}
+
+#pragma mark - PLC Operations
+
+- (NSString *)handlePlcRequestSignatureWithMethod:(AdminUIHTTPMethod)method
+                                       headers:(NSDictionary<NSString *, NSString *> *)headers
+                                          body:(nullable NSData *)body
+                                    statusCode:(nullable NSInteger *)statusCode
+                                   contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"com.atproto.identity.requestPlcOperationSignature"
+                                                     httpMethod:HttpMethodPOST
+                                                        headers:headers
+                                                       jsonBody:@{}];
+
+    NSInteger status = [result[@"status"] integerValue];
+    if (status >= 200 && status < 300) {
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result[@"json"] options:NSJSONWritingPrettyPrinted error:nil];
+        NSString *jsonStr = jsonData ? [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] : @"{}";
+        return [NSString stringWithFormat:@"<pre class=\"code-block\">%@</pre>", jsonStr];
+    }
+
+    NSDictionary *jsonError = result[@"json"];
+    NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to request signature";
+    return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+}
+
+- (NSString *)handlePlcSignOperationWithMethod:(AdminUIHTTPMethod)method
+                                    headers:(NSDictionary<NSString *, NSString *> *)headers
+                                       body:(nullable NSData *)body
+                                 statusCode:(nullable NSInteger *)statusCode
+                                contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *token = params[@"token"];
+        NSString *operationType = params[@"operationType"] ?: @"update_handle";
+        NSString *value = params[@"value"] ?: @"";
+
+        if (!token || token.length == 0) {
+            return @"<p class=\"text-destructive\">Token is required</p>";
+        }
+
+        NSMutableDictionary *operation = [NSMutableDictionary dictionary];
+        operation[@"type"] = operationType;
+        if (value.length > 0) {
+            if ([operationType isEqualToString:@"update_handle"]) {
+                operation[@"handle"] = value;
+            } else if ([operationType isEqualToString:@"update_service"]) {
+                operation[@"service"] = value;
+            }
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"com.atproto.identity.signPlcOperation"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:@{
+                                                               @"token": token,
+                                                               @"operation": operation
+                                                           }];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result[@"json"] options:NSJSONWritingPrettyPrinted error:nil];
+            NSString *jsonStr = jsonData ? [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] : @"{}";
+            return [NSString stringWithFormat:@"<pre class=\"code-block\">%@</pre>", jsonStr];
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to sign operation";
+        return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
+    }
+
+    return @"<p class=\"text-destructive\">Invalid request</p>";
+}
+
+- (NSString *)handlePlcSubmitOperationWithMethod:(AdminUIHTTPMethod)method
+                                       headers:(NSDictionary<NSString *, NSString *> *)headers
+                                          body:(nullable NSData *)body
+                                    statusCode:(nullable NSInteger *)statusCode
+                                   contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+
+    if (method == AdminUIHTTPMethodPOST && body) {
+        NSDictionary *params = [self parseFormBody:body];
+        NSString *operationJson = params[@"operationJson"];
+
+        if (!operationJson || operationJson.length == 0) {
+            return @"<p class=\"text-destructive\">Operation JSON is required</p>";
+        }
+
+        NSError *parseError = nil;
+        id operation = [NSJSONSerialization JSONObjectWithData:[operationJson dataUsingEncoding:NSUTF8StringEncoding] options:0 error:&parseError];
+        if (parseError || !operation) {
+            return @"<p class=\"text-destructive\">Invalid JSON</p>";
+        }
+
+        PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+        NSDictionary *result = [adminHandler dispatchXrpcJSONMethod:@"com.atproto.identity.submitPlcOperation"
+                                                         httpMethod:HttpMethodPOST
+                                                            headers:headers
+                                                           jsonBody:operation];
+
+        NSInteger status = [result[@"status"] integerValue];
+        if (status >= 200 && status < 300) {
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:result[@"json"] options:NSJSONWritingPrettyPrinted error:nil];
+            NSString *jsonStr = jsonData ? [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] : @"{}";
+            return [NSString stringWithFormat:@"<pre class=\"code-block text-success\">Operation submitted successfully!\n\n%@</pre>", jsonStr];
+        }
+
+        NSDictionary *jsonError = result[@"json"];
+        NSString *error = jsonError[@"message"] ?: jsonError[@"error"] ?: @"Failed to submit operation";
         return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
     }
 
