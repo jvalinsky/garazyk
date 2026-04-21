@@ -114,25 +114,25 @@ App-specific query views:
 
 | NSID | PDS | Relay | Notes |
 |------|-----|-------|-------|
-| `getRepo` | ✅ | ✅ | |
-| `getCheckout` | ✅ | ❓ | |
-| `getHead` | ✅ | ❓ | |
-| `getBlob` | ✅ | ✅ | |
-| `listBlobs` | ✅ | ✅ | |
-| `getBlocks` | ✅ | ✅ | |
-| `getRecord` | ✅ | ✅ | |
+| `getRepo` | ✅ | ✅ (redirect) | Relay redirects to PDS |
+| `getCheckout` | ✅ | ❌ | PDS-only |
+| `getHead` | ✅ | ✅ | Deprecated, use getLatestCommit |
+| `getBlob` | ✅ | ❌ | PDS-only |
+| `listBlobs` | ✅ | ❌ | PDS-only |
+| `getBlocks` | ✅ | ❌ | PDS-only |
+| `getRecord` | ✅ | ❌ | PDS-only |
 | `getLatestCommit` | ✅ | ✅ | |
-| `getRepoStatus` | ✅ | ❓ | |
-| `listRepos` | ❓ | ✅ | PDS may not need this |
-| `listReposByCollection` | ✅ | ❌ | |
-| `listHosts` | ✅ | ❓ | |
-| `getHostStatus` | ✅ | ✅ | |
-| `notifyOfUpdate` | ✅ | ❌ | |
-| `requestCrawl` | ❓ | ✅ | Relay-specific |
+| `getRepoStatus` | ✅ | ✅ | |
+| `listRepos` | ❌ | ✅ | Relay-only |
+| `listReposByCollection` | ✅ | ❌ | PDS-only |
+| `listHosts` | ❌ | ✅ | Relay-only (impl 2026-04-21) |
+| `getHostStatus` | ❌ | ✅ | Relay-only |
+| `notifyOfUpdate` | ✅ | ❌ | Deprecated, use requestCrawl |
+| `requestCrawl` | ❌ | ✅ | Relay-only |
 | `subscribeRepos` | ✅ | ✅ | Firehose |
 
 **PDS Coverage: 93%** (14/15, minus requestCrawl which is relay-specific)
-**Relay: Needs verification for zuk**
+**Relay Coverage: 100%** (verified 2026-04-21: listHosts, getHostStatus, requestCrawl, subscribeRepos, getRepo, getRepoStatus, listRepos, getLatestCommit)
 
 ---
 
@@ -523,7 +523,7 @@ These are non-standard Bluesky extensions:
 |-----------|---------|----------|--------|
 | `com.atproto.server.*` | PDS | 100% | ✅ |
 | `com.atproto.repo.*` | PDS | 100% | ✅ |
-| `com.atproto.sync.*` | PDS/Relay | 93% | ✅ requestCrawl relay-specific |
+| `com.atproto.sync.*` | PDS/Relay | 100% | ✅ Relay: listHosts, getHostStatus, requestCrawl, subscribeRepos, getRepo, getRepoStatus, listRepos, getLatestCommit |
 | `com.atproto.identity.*` | PDS | 100% | ✅ |
 | `com.atproto.label.*` | PDS | 100% | ✅ |
 | `com.atproto.moderation.*` | PDS | 100% | ✅ |
