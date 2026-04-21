@@ -17,6 +17,7 @@
 #import "AppView/Server/Indexers/AppViewGraphIndexer.h"
 #import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
 #import "AppView/Server/Admin/AppViewAdminRoutePack.h"
+#import "AppView/Server/AppViewIdentityHelper.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
@@ -188,11 +189,13 @@ static AppViewRuntime *_sharedRuntime = nil;
     [xrpcPack registerRoutesWithServer:_httpServer];
 
     if (config.adminSecret.length > 0) {
+        [AppViewIdentityHelper configureWithPlcURL:config.plcURL cacheTTLSeconds:300];
         [AppViewAdminRoutePack registerWithServer:_httpServer
                                     orchestrator:_orchestrator
                                     relevanceSet:_relevanceSet
                                     ingestEngine:_ingestEngine
                                         database:_database
+                                    actorService:_actorService
                                      adminSecret:config.adminSecret];
     }
 
