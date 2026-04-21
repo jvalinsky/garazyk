@@ -3,6 +3,7 @@
 #import "App/PDSConfiguration.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/BookmarkService.h"
+#import "AppView/Services/ContactService.h"
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/RecordLifecycleHandler.h"
@@ -11,6 +12,7 @@
 #import "Debug/PDSLogger.h"
 #import "Network/XrpcAppBskyActorPack.h"
 #import "Network/XrpcAppBskyBookmarksPack.h"
+#import "Network/XrpcAppBskyContactPack.h"
 #import "Network/XrpcAppBskyDraftsPack.h"
 #import "Network/XrpcAppBskyFeedPack.h"
 #import "Network/XrpcAppBskyGraphPack.h"
@@ -60,6 +62,9 @@
                                                         initWithDatabase:appViewDatabase]];
   GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
   BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];
+  ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
+  ContactService *contactService = [[ContactService alloc] initWithDatabase:appViewDatabase
+                                                                actorService:actorService];
 
   __attribute__((unused)) RecordLifecycleHandler *lifecycleHandler =
       [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
@@ -89,6 +94,7 @@
                                    adminController:adminController];
 
   [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher];
+  [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
   [XrpcAppBskyVideoPack registerWithDispatcher:dispatcher
                                 serviceDatabases:serviceDatabases
                                     appViewDatabase:appViewDatabase
