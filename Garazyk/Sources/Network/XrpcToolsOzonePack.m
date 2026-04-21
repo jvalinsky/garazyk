@@ -527,8 +527,8 @@
 
 #pragma mark - Set Management (6)
 
-    // tools.ozone.set.create
-    [dispatcher registerMethod:@"tools.ozone.set.create"
+    // tools.ozone.set.upsertSet (replaces create/update)
+    [dispatcher registerMethod:@"tools.ozone.set.upsertSet"
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
@@ -539,57 +539,41 @@
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
-        if (!body[@"name"]) {
+        NSString *name = body[@"name"];
+        if (!name) {
             [XrpcErrorHelper setValidationError:response message:@"name is required"];
             return;
         }
 
         NSError *error = nil;
-        NSString *setId = [moderationService createSet:body createdBy:adminDid error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
+        NSString *setId = body[@"id"]; // Optional: if provided, update existing set
+        if (setId) {
+            // Update existing set
+            BOOL success = [moderationService updateSet:setId
+                                               newName:name
+                                             newValues:body[@"values"]
+                                             updatedBy:adminDid
+                                                 error:&error];
+            if (!success) {
+                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                return;
+            }
+            response.statusCode = 200;
+            [response setJsonBody:@{@"id": setId}];
+        } else {
+            // Create new set
+            NSString *newSetId = [moderationService createSet:body createdBy:adminDid error:&error];
+            if (error) {
+                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+                return;
+            }
+            response.statusCode = 200;
+            [response setJsonBody:@{@"id": newSetId}];
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"id": setId}];
     }];
 
-    // tools.ozone.set.update
-    [dispatcher registerMethod:@"tools.ozone.set.update"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
-        if (!adminDid) return;
-
-        NSDictionary *body = request.jsonBody;
-        NSString *setId = body[@"id"];
-        if (!setId) {
-            [XrpcErrorHelper setValidationError:response message:@"id is required"];
-            return;
-        }
-
-        NSError *error = nil;
-        BOOL success = [moderationService updateSet:setId
-                                           newName:body[@"name"]
-                                         newValues:body[@"values"]
-                                         updatedBy:adminDid
-                                             error:&error];
-        if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
-        }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-
-    // tools.ozone.set.delete
-    [dispatcher registerMethod:@"tools.ozone.set.delete"
+    // tools.ozone.set.deleteSet
+    [dispatcher registerMethod:@"tools.ozone.set.deleteSet"
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
@@ -614,11 +598,11 @@
         }
 
         response.statusCode = 200;
-        [response setJsonBody:@{@"success": @YES}];
+        [response setJsonBody:@{}];
     }];
 
-    // tools.ozone.set.get
-    [dispatcher registerMethod:@"tools.ozone.set.get"
+    // tools.ozone.set.getValues
+    [dispatcher registerMethod:@"tools.ozone.set.getValues"
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
@@ -631,34 +615,49 @@
             return;
         }
 
+        NSInteger limit = 100;
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        if (limitParam.length > 0) {
+            limit = [limitParam integerValue];
+        }
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
         NSError *error = nil;
-        NSDictionary *set = [moderationService getSet:setId error:&error];
+        NSDictionary *result = [moderationService getSetValues:setId limit:limit cursor:cursor error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
         response.statusCode = 200;
-        [response setJsonBody:@{@"set": set ?: @{}}];
+        [response setJsonBody:result ?: @{ @"values": @[] }];
     }];
 
-    // tools.ozone.set.list
-    [dispatcher registerMethod:@"tools.ozone.set.list"
+    // tools.ozone.set.querySets
+    [dispatcher registerMethod:@"tools.ozone.set.querySets"
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter
                                  adminController:adminController request:request response:response];
         if (!authHeader) return;
 
+        NSInteger limit = 50;
+        NSString *limitParam = [request queryParamForKey:@"limit"];
+        if (limitParam.length > 0) {
+            limit = [limitParam integerValue];
+        }
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSString *namePrefix = [request queryParamForKey:@"namePrefix"];
+
         NSError *error = nil;
-        NSArray *sets = [moderationService listSets:&error];
+        NSDictionary *result = [moderationService querySets:limit cursor:cursor namePrefix:namePrefix error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
         }
 
         response.statusCode = 200;
-        [response setJsonBody:@{@"sets": sets ?: @[]}];
+        [response setJsonBody:result ?: @{ @"sets": @[] }];
     }];
 
     // tools.ozone.set.addValues
@@ -688,7 +687,37 @@
         }
 
         response.statusCode = 200;
-        [response setJsonBody:@{@"success": @YES}];
+        [response setJsonBody:@{}];
+    }];
+
+    // tools.ozone.set.deleteValues
+    [dispatcher registerMethod:@"tools.ozone.set.deleteValues"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
+        if (!adminDid) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *setId = body[@"id"];
+        NSArray *values = body[@"values"];
+        if (!setId || !values) {
+            [XrpcErrorHelper setValidationError:response message:@"id and values are required"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [moderationService deleteSetValues:setId values:values deletedBy:adminDid error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = 200;
+        [response setJsonBody:@{}];
     }];
 
 #pragma mark - Communication Templates (4)
@@ -804,8 +833,8 @@
 
 #pragma mark - Verification (3)
 
-    // tools.ozone.verification.grantVerification
-    [dispatcher registerMethod:@"tools.ozone.verification.grantVerification"
+    // tools.ozone.verification.grantVerifications
+    [dispatcher registerMethod:@"tools.ozone.verification.grantVerifications"
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
@@ -833,8 +862,8 @@
         [response setJsonBody:@{@"id": verificationId}];
     }];
 
-    // tools.ozone.verification.revokeVerification
-    [dispatcher registerMethod:@"tools.ozone.verification.revokeVerification"
+    // tools.ozone.verification.revokeVerifications
+    [dispatcher registerMethod:@"tools.ozone.verification.revokeVerifications"
                      handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
