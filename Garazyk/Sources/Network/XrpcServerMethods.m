@@ -164,9 +164,18 @@ static BOOL updateAccountEmail(PDSServiceDatabases *serviceDatabases,
     if (!account) {
         return NO;
     }
+    NSString *oldEmail = account.email;
     account.email = email;
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
-    return [serviceDatabases updateAccount:account error:error];
+    BOOL success = [serviceDatabases updateAccount:account error:error];
+    if (success) {
+        NSDictionary *details = @{
+            @"old_email": oldEmail ?: @"",
+            @"new_email": email ?: @""
+        };
+        [serviceDatabases logHostingEvent:did type:@"email_updated" details:details createdBy:did error:nil];
+    }
+    return success;
 }
 
 static BOOL updateAccountHandle(PDSServiceDatabases *serviceDatabases,
@@ -177,9 +186,18 @@ static BOOL updateAccountHandle(PDSServiceDatabases *serviceDatabases,
     if (!account) {
         return NO;
     }
+    NSString *oldHandle = account.handle;
     account.handle = handle;
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
-    return [serviceDatabases updateAccount:account error:error];
+    BOOL success = [serviceDatabases updateAccount:account error:error];
+    if (success) {
+        NSDictionary *details = @{
+            @"old_handle": oldHandle ?: @"",
+            @"new_handle": handle ?: @""
+        };
+        [serviceDatabases logHostingEvent:did type:@"handle_updated" details:details createdBy:did error:nil];
+    }
+    return success;
 }
 
 static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
@@ -1035,6 +1053,8 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
             [response setJsonBody:@{@"error": @"PasswordResetFailed", @"message": updateError.localizedDescription ?: @"Failed to persist new password"}];
             return;
         }
+
+        [serviceDatabases logHostingEvent:token type:@"password_updated" details:@{} createdBy:token error:nil];
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
