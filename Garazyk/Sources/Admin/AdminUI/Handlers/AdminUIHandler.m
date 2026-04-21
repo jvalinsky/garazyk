@@ -2164,7 +2164,23 @@ NS_ASSUME_NONNULL_BEGIN
 
     NSString *did = pathComponents[3];
 
-    return @"<p class=\"text-warning\">Bulk session revocation requires com.atproto.admin.deleteSession - not implemented</p>";
+    NSDictionary *jsonBody = @{@"action": @"revokeAll", @"did": did};
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonBody options:0 error:nil];
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
+                                                        path:@"/admin/security/sessions"
+                                                     headers:headers
+                                                        body:jsonData
+                                                 statusCode:statusCode
+                                                contentType:contentType];
+
+    if (result && *statusCode >= 200 && *statusCode < 300) {
+        return @"<p class=\"text-success\">All sessions revoked!</p>"
+               @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+    }
+
+    return @"<p class=\"text-destructive\">Failed to revoke sessions</p>";
 }
 
 - (NSString *)handleSecurityRevokeSessionWithPath:(NSString *)path
@@ -2184,7 +2200,23 @@ NS_ASSUME_NONNULL_BEGIN
     NSString *did = pathComponents[3];
     NSString *token = pathComponents[5];
 
-    return @"<p class=\"text-warning\">Session revocation requires admin API - not implemented</p>";
+    NSDictionary *jsonBody = @{@"action": @"revoke", @"did": did, @"token": token};
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonBody options:0 error:nil];
+
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSString *result = [adminHandler handleRequestWithMethod:PDSHTTPMethodPOST
+                                                        path:@"/admin/security/sessions"
+                                                     headers:headers
+                                                        body:jsonData
+                                                 statusCode:statusCode
+                                                contentType:contentType];
+
+    if (result && *statusCode >= 200 && *statusCode < 300) {
+        return @"<p class=\"text-success\">Session revoked!</p>"
+               @"<script>setTimeout(function() { location.reload(); }, 1500);</script>";
+    }
+
+    return @"<p class=\"text-destructive\">Failed to revoke session</p>";
 }
 
 #pragma mark - PLC Operations
