@@ -302,6 +302,96 @@
     return YES;
 }
 
+- (BOOL)deleteSetValues:(NSString *)setId
+                values:(NSArray *)values
+             deletedBy:(NSString *)adminDid
+                 error:(NSError **)error {
+    for (NSString *did in values) {
+        NSString *sql = @"DELETE FROM moderation_set_members WHERE set_id = ? AND did = ?";
+        [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[setId, did] error:nil];
+    }
+    return YES;
+}
+
+- (nullable NSDictionary *)getSetValues:(NSString *)setId
+                                  limit:(NSInteger)limit
+                                 cursor:(nullable NSString *)cursor
+                                  error:(NSError **)error {
+    NSMutableArray *params = [NSMutableArray arrayWithObject:setId];
+    NSString *sql = @"SELECT did, added_at FROM moderation_set_members WHERE set_id = ?";
+    
+    if (cursor && cursor.length > 0) {
+        sql = [sql stringByAppendingString:@" AND did > ? ORDER BY did LIMIT ?"];
+        [params addObject:cursor];
+        [params addObject:@(limit)];
+    } else {
+        sql = [sql stringByAppendingString:@" ORDER BY did LIMIT ?"];
+        [params addObject:@(limit)];
+    }
+    
+    NSArray *rows = [self.database executeParameterizedQuery:sql params:params error:error];
+    if (!rows) return nil;
+    
+    NSMutableArray *values = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        [values addObject:@{
+            @"did": row[@"did"] ?: @"",
+            @"addedAt": row[@"added_at"] ?: @""
+        }];
+    }
+    
+    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:values forKey:@"values"];
+    if (rows.count >= (NSUInteger)limit) {
+        result[@"cursor"] = [rows.lastObject[@"did"] stringValue] ?: @"";
+    }
+    return [result copy];
+}
+
+- (nullable NSDictionary *)querySets:(NSInteger)limit
+                              cursor:(nullable NSString *)cursor
+                          namePrefix:(nullable NSString *)namePrefix
+                              error:(NSError **)error {
+    NSMutableArray *params = [NSMutableArray array];
+    NSString *sql = @"SELECT id, name, created_by, created_at FROM moderation_sets";
+    
+    NSMutableArray *conditions = [NSMutableArray array];
+    if (namePrefix && namePrefix.length > 0) {
+        [conditions addObject:@"name LIKE ?"];
+        [params addObject:[NSString stringWithFormat:@"%@%%", namePrefix]];
+    }
+    if (cursor && cursor.length > 0) {
+        [conditions addObject:@"id > ?"];
+        [params addObject:cursor];
+    }
+    
+    if (conditions.count > 0) {
+        sql = [sql stringByAppendingString:[NSString stringWithFormat:@" WHERE %@",
+            [conditions componentsJoinedByString:@" AND "]]];
+    }
+    
+    sql = [sql stringByAppendingString:@" ORDER BY id LIMIT ?"];
+    [params addObject:@(limit)];
+    
+    NSArray *rows = [self.database executeParameterizedQuery:sql params:params error:error];
+    if (!rows) return nil;
+    
+    NSMutableArray *sets = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        [sets addObject:@{
+            @"id": row[@"id"] ?: @"",
+            @"name": row[@"name"] ?: @"",
+            @"createdBy": row[@"created_by"] ?: @"",
+            @"createdAt": row[@"created_at"] ?: @""
+        }];
+    }
+    
+    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:sets forKey:@"sets"];
+    if (rows.count >= (NSUInteger)limit) {
+        result[@"cursor"] = [rows.lastObject[@"id"] stringValue] ?: @"";
+    }
+    return [result copy];
+}
+
 #pragma mark - Communication Templates
 
 - (nullable NSString *)createCommunicationTemplate:(NSDictionary *)template
