@@ -22,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class AppViewRelevanceSet;
 @class AppViewIngestEngine;
 @class AppViewDatabase;
+@class ActorService;
 
 @interface AppViewAdminRoutePack : NSObject
 
@@ -30,6 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
               relevanceSet:(AppViewRelevanceSet *)relevanceSet
               ingestEngine:(AppViewIngestEngine *)ingestEngine
                   database:(AppViewDatabase *)database
+              actorService:(ActorService *)actorService
                adminSecret:(NSString *)adminSecret;
 
 @end
