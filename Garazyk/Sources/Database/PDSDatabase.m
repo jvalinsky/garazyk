@@ -2434,6 +2434,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     return [self executeParameterizedUpdate:sql params:@[did] error:error];
 }
 
+- (BOOL)deactivateAccount:(NSString *)did error:(NSError **)error {
+    // Set account status to "deactivated" (user-initiated, reversible)
+    NSString *sql = @"UPDATE accounts SET status = 'deactivated', deactivated_at = ?, updated_at = ? WHERE did = ?";
+    NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    return [self executeParameterizedUpdate:sql params:@[dateStr, @(now), did] error:error];
+}
+
+- (BOOL)activateAccount:(NSString *)did error:(NSError **)error {
+    // Set account status back to "active" (reverses deactivation)
+    NSString *sql = @"UPDATE accounts SET status = 'active', deactivated_at = NULL, updated_at = ? WHERE did = ?";
+    NSNumber *now = @([[NSDate date] timeIntervalSince1970]);
+    return [self executeParameterizedUpdate:sql params:@[now, did] error:error];
+}
+
+- (NSString *)accountStatusForDid:(NSString *)did error:(NSError **)error {
+    if (!did) return nil;
+    NSString *sql = @"SELECT status FROM accounts WHERE did = ?";
+    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
+    if (rows.count == 0) return nil;
+    return rows.firstObject[@"status"];
+}
+
 - (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error {
     if (!did) return NO;
     NSString *sql = @"SELECT applied FROM admin_takedowns WHERE subjectId = ? AND subjectType = 'account' ORDER BY createdAt DESC LIMIT 1";

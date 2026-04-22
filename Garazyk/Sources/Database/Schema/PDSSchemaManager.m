@@ -22,6 +22,8 @@
            @"    password_salt BLOB,"
            @"    access_jwt BLOB,"
            @"    refresh_jwt BLOB,"
+           @"    status TEXT NOT NULL DEFAULT 'active',"
+           @"    deactivated_at REAL,"
            @"    created_at REAL NOT NULL,"
            @"    updated_at REAL NOT NULL"
            @")";

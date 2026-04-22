@@ -155,6 +155,20 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     return [_database takeDownAccount:did reason:reason takedownRef:nil error:error];
 }
 
+- (BOOL)deactivateAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSAdminServiceErrorDomain"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+        }
+        return NO;
+    }
+
+    PDS_LOG_INFO(@"Deactivating account: %@ reason: %@", did, reason);
+    return [_database deactivateAccount:did error:error];
+}
+
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
     if (!did || did.length == 0) {
         if (error) {
