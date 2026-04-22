@@ -3,6 +3,7 @@
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
 #import "Core/PDSRecordEvents.h"
+#import "Core/PDSAccountEvents.h"
 #import "Core/TID.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Database/ActorStore/ActorStore.h"
@@ -74,6 +75,15 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 
 static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
+- (instancetype)init {
+  return [self initWithServiceDatabases:nil userDatabasePool:nil];
+}
+
+- (instancetype)initWithServiceDatabases:
+    (PDSServiceDatabases *)serviceDatabases {
+  return [self initWithServiceDatabases:serviceDatabases userDatabasePool:nil];
+}
+
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
                         userDatabasePool:
                             (nullable PDSDatabasePool *)userDatabasePool {
@@ -98,13 +108,24 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
            selector:@selector(handleRecordChange:)
                name:PDSRecordDidChangeNotification
              object:nil];
+
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(handleAccountLifecycleEvent:)
+               name:PDSAccountCreatedNotification
+             object:nil];
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(handleAccountLifecycleEvent:)
+               name:PDSAccountActivatedNotification
+             object:nil];
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(handleAccountLifecycleEvent:)
+               name:PDSAccountDeactivatedNotification
+             object:nil];
   }
   return self;
-}
-
-- (instancetype)initWithServiceDatabases:
-    (PDSServiceDatabases *)serviceDatabases {
-  return [self initWithServiceDatabases:serviceDatabases userDatabasePool:nil];
 }
 
 - (void)dealloc {
@@ -167,6 +188,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection
                          request:(HttpRequest *)request {
+  PDS_LOG_SYNC_INFO(@"Accepting upgraded connection for subscribeRepos from %@", request.remoteAddress);
   [self ensureSequenceInitialized];
 
   WebSocketConnection *webSocketConnection =
@@ -353,6 +375,25 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   });
 }
 
+#pragma mark - Account Lifecycle Notification
+
+- (void)handleAccountLifecycleEvent:(NSNotification *)notification {
+  NSDictionary *info = notification.userInfo;
+  NSString *did = info[PDSAccountEventDidKey];
+  if (!did) return;
+
+  if ([notification.name isEqualToString:PDSAccountCreatedNotification]) {
+    NSString *handle = info[PDSAccountEventHandleKey];
+    [self broadcastIdentityChange:did handle:handle];
+    [self broadcastAccountStatus:did active:YES status:nil];
+  } else if ([notification.name isEqualToString:PDSAccountActivatedNotification]) {
+    [self broadcastAccountStatus:did active:YES status:nil];
+  } else if ([notification.name isEqualToString:PDSAccountDeactivatedNotification]) {
+    NSString *status = info[PDSAccountEventStatusKey] ?: @"deactivated";
+    [self broadcastAccountStatus:did active:NO status:status];
+  }
+}
+
 #pragma mark - Event Broadcasting
 
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit
@@ -474,7 +515,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   });
 }
 
-- (void)broadcastAccountTakedown:(NSString *)did {
+- (void)broadcastAccountStatus:(NSString *)did
+                        active:(BOOL)active
+                        status:(nullable NSString *)status {
   if (self.stopping) {
     return;
   }
@@ -483,8 +526,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
     event.did = did;
-    event.active = NO;
-    event.status = @"takendown";
+    event.active = active;
+    event.status = status;
     event.time = [SubscribeReposHandler rfc3339Timestamp];
 
     NSData *eventData = [self.session encodeAccountEvent:event];
@@ -504,9 +547,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [self broadcastEventData:eventData];
     [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
     [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
-    PDS_LOG_SYNC_INFO(@"Broadcast account takedown event for DID %@, seq %lu",
-                      did, (unsigned long)self.session.sequenceNumber);
+    PDS_LOG_SYNC_INFO(@"Broadcast account status event for DID %@ (active=%d, status=%@), seq %lu",
+                      did, active, status ?: @"(null)", (unsigned long)self.session.sequenceNumber);
   });
+}
+
+- (void)broadcastAccountTakedown:(NSString *)did {
+  [self broadcastAccountStatus:did active:NO status:@"takendown"];
 }
 
 - (void)broadcastInfo:(NSString *)kind message:(NSString *)message {
@@ -543,13 +590,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 #pragma mark - Private Methods
 
 - (void)broadcastEventData:(NSData *)eventData {
-  [self.webSocketServer broadcastMessage:eventData toConnectionsMatching:nil];
-  NSSet<WebSocketConnection *> *attachedSnapshot = nil;
-  @synchronized(self.attachedConnections) {
-    attachedSnapshot = [self.attachedConnections copy];
-  }
-  for (WebSocketConnection *connection in attachedSnapshot) {
-    [self sendEventData:eventData toConnectionWithBackpressureCheck:connection];
+  @synchronized(_attachedConnections) {
+    PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers", (unsigned long)_attachedConnections.count);
+    for (WebSocketConnection *connection in _attachedConnections) {
+      [connection sendMessage:eventData];
+    }
   }
 }
 
@@ -586,6 +631,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     PDS_LOG_SYNC_INFO(@"No cursor requested by client, connection will start in live update mode");
   }
 
+  PDS_LOG_SYNC_INFO(@"Queuing initial state worker for connection %@ (queue: %p)", connection.remoteAddress, self.eventQueue);
+  if (!self.eventQueue) {
+    PDS_LOG_SYNC_ERROR(@"CRITICAL: eventQueue is NULL in SubscribeReposHandler!");
+    return;
+  }
   dispatch_async(self.eventQueue, ^{
     PDS_LOG_SYNC_INFO(@"Async worker started: processing initial state for connection %@", connection.remoteAddress);
     [self ensureSequenceInitialized];
@@ -600,78 +650,74 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     // If no cursor is provided, replay existing repository state before starting live mode
-    if (!hasCursor) {
+    if (!hasCursor && self.userDatabasePool != nil) {
       PDS_LOG_SYNC_INFO(@"No cursor provided; replaying existing repository state before live updates.");
       
-      if (!self.userDatabasePool) {
-        PDS_LOG_SYNC_ERROR(@"User database pool not available for initial replay");
+      NSError *error = nil;
+      NSArray<PDSDatabaseRepo *> *repos = [self.userDatabasePool getAllReposWithError:&error];
+      if (error) {
+        PDS_LOG_SYNC_ERROR(@"Failed to fetch repositories for initial replay: %@", error);
       } else {
-        NSError *error = nil;
-        NSArray<PDSDatabaseRepo *> *repos = [self.userDatabasePool getAllReposWithError:&error];
-        if (error) {
-          PDS_LOG_SYNC_ERROR(@"Failed to fetch repositories for initial replay: %@", error);
-        } else {
-          PDS_LOG_SYNC_DEBUG(@"Found %lu repos to replay", (unsigned long)repos.count);
-          for (PDSDatabaseRepo *repo in repos) {
-            PDS_LOG_SYNC_DEBUG(@"Replaying repository %@", repo.ownerDid);
-            
-            NSError *repoError = nil;
-            PDSActorStore *store = [self.userDatabasePool storeForDid:repo.ownerDid error:&repoError];
-            if (!store || repoError) {
-              PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ - skipping: %@", repo.ownerDid, repoError);
-              continue;
-            }
-            
-            NSString *rev = [store getRepoRevisionForDid:repo.ownerDid error:&repoError];
-            if (!rev || rev.length == 0) {
-              PDS_LOG_SYNC_WARN(@"Could not get revision for %@ - skipping", repo.ownerDid);
-              continue;
-            }
-            
-            NSData *rootCidBytes = [store getRepoRootForDid:repo.ownerDid error:&repoError];
-            if (!rootCidBytes || rootCidBytes.length == 0) {
-              PDS_LOG_SYNC_WARN(@"Could not get root CID for %@ - skipping", repo.ownerDid);
-              continue;
-            }
-            
-            CID *commitCID = [CID cidFromBytes:rootCidBytes];
-            if (!commitCID) {
-              PDS_LOG_SYNC_WARN(@"Could not parse commit CID for %@ - skipping", repo.ownerDid);
-              continue;
-            }
-            
-            NSData *carData = [FirehoseCARBuilder buildCARForCommit:[RepoCommit createCommitWithDid:repo.ownerDid data:nil rev:rev prev:nil]
-                                                                ops:@[]
-                                                      blockProvider:^NSData * _Nullable(NSData * _Nonnull cidBytes) {
-                                                        return [store getBlockForCID:cidBytes forDid:repo.ownerDid error:nil];
-                                                      }
-                                                revBlockListProvider:nil];
-            
-            if (carData.length == 0) {
-              PDS_LOG_SYNC_WARN(@"Empty CAR data for %@ - skipping", repo.ownerDid);
-              continue;
-            }
-            
-            FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
-            event.repo = repo.ownerDid;
-            event.commit = commitCID;
-            event.rev = rev;
-            event.blocks = carData;
-            event.ops = @[];
-            event.blobs = @[];
-            event.time = [SubscribeReposHandler rfc3339Timestamp];
-            
-            NSError *encodeError = nil;
-            NSData *eventData = [self.session.eventFormatter encodeCommitEvent:event error:&encodeError];
-            if (!eventData) {
-              PDS_LOG_SYNC_ERROR(@"Failed to encode commit event for %@: %@", repo.ownerDid, encodeError);
-              continue;
-            }
-            
-            if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
-              PDS_LOG_SYNC_WARN(@"Failed to send initial commit event for %@ during replay (backpressure or closed)", repo.ownerDid);
-              return;
-            }
+        PDS_LOG_SYNC_DEBUG(@"Found %lu repos to replay", (unsigned long)repos.count);
+        for (PDSDatabaseRepo *repo in repos) {
+          PDS_LOG_SYNC_DEBUG(@"Replaying repository %@", repo.ownerDid);
+          
+          NSError *repoError = nil;
+          PDSActorStore *store = [self.userDatabasePool storeForDid:repo.ownerDid error:&repoError];
+          if (!store || repoError) {
+            PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ - skipping: %@", repo.ownerDid, repoError);
+            continue;
+          }
+          
+          NSString *rev = [store getRepoRevisionForDid:repo.ownerDid error:&repoError];
+          if (!rev || rev.length == 0) {
+            PDS_LOG_SYNC_WARN(@"Could not get revision for %@ - skipping", repo.ownerDid);
+            continue;
+          }
+          
+          NSData *rootCidBytes = [store getRepoRootForDid:repo.ownerDid error:&repoError];
+          if (!rootCidBytes || rootCidBytes.length == 0) {
+            PDS_LOG_SYNC_WARN(@"Could not get root CID for %@ - skipping", repo.ownerDid);
+            continue;
+          }
+          
+          CID *commitCID = [CID cidFromBytes:rootCidBytes];
+          if (!commitCID) {
+            PDS_LOG_SYNC_WARN(@"Could not parse commit CID for %@ - skipping", repo.ownerDid);
+            continue;
+          }
+          
+          NSData *carData = [FirehoseCARBuilder buildCARForCommit:[RepoCommit createCommitWithDid:repo.ownerDid data:nil rev:rev prev:nil]
+                                                              ops:@[]
+                                                    blockProvider:^NSData * _Nullable(NSData * _Nonnull cidBytes) {
+                                                      return [store getBlockForCID:cidBytes forDid:repo.ownerDid error:nil];
+                                                    }
+                                              revBlockListProvider:nil];
+          
+          if (carData.length == 0) {
+            PDS_LOG_SYNC_WARN(@"Empty CAR data for %@ - skipping", repo.ownerDid);
+            continue;
+          }
+          
+          FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+          event.repo = repo.ownerDid;
+          event.commit = commitCID;
+          event.rev = rev;
+          event.blocks = carData;
+          event.ops = @[];
+          event.blobs = @[];
+          event.time = [SubscribeReposHandler rfc3339Timestamp];
+          
+          NSError *encodeError = nil;
+          NSData *eventData = [self.session.eventFormatter encodeCommitEvent:event error:&encodeError];
+          if (!eventData) {
+            PDS_LOG_SYNC_ERROR(@"Failed to encode commit event for %@: %@", repo.ownerDid, encodeError);
+            continue;
+          }
+          
+          if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
+            PDS_LOG_SYNC_WARN(@"Failed to send initial commit event for %@ during replay (backpressure or closed)", repo.ownerDid);
+            return;
           }
         }
       }

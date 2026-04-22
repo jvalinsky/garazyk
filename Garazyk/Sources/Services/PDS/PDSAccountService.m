@@ -15,6 +15,7 @@
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <Security/Security.h>
 #import "Core/ATProtoError.h"
+#import "Core/PDSAccountEvents.h"
 #import "Core/Repositories/PDSAccountRepository.h"
 #import "Core/Repositories/PDSSessionRepository.h"
 #import "Database/PDSRepositoryFactory.h"
@@ -270,6 +271,15 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                                          error:nil];
     }
 
+    // Notify firehose of new account (#identity + #account events)
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:PDSAccountCreatedNotification
+                      object:self
+                    userInfo:@{
+                        PDSAccountEventDidKey: resolvedDid,
+                        PDSAccountEventHandleKey: handle ?: @""
+                    }];
+
     // Send Welcome Email
     if (self.emailProvider) {
         NSString *welcomeSubject = @"Welcome to the ATProto Network!";
@@ -393,8 +403,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     
     return @{
         @"did": account.did ?: @"",
-        @"handle": account.handle ?: @"",
-        @"email": account.email ?: @""
+        @"handle": account.handle ?: @""
     };
 }
 
