@@ -98,7 +98,12 @@ layer is to create meaningful seams, not more indirection.
 
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
 - [Deep Dive: Runtime Flow](./runtime-flow-walkthrough)
+- [Syrena AppView Server](./appview-server)
+- [Zuk Relay Server](./relay-server)
+- [Trust, Safety, and Compliance](./safety-and-compliance)
+- [Chat Service](./chat-service)
 - [Blob Service](./blob-service)
 - [Repository Service](./repository-service)
 - [Relay Service](./relay-service)
-- [Auth Helpers](../04-network-layer/auth-helpers)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Auth Helpers](../04-network-layer/auth-helpers)
+\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
