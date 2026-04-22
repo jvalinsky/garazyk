@@ -40,8 +40,8 @@ You will build a working mental model of the startup path that powers the first 
 ```mermaid
 flowchart LR
   CLI["kaszlak serve"] --> Config["PDSConfiguration"]
-  Config --> Controller["PDSController"]
-  Controller --> Builder["PDSHttpServerBuilder"]
+  Config --> App["PDSApplication"]
+  App --> Builder["PDSHttpServerBuilder"]
   Builder --> Http["HttpServer"]
   Http --> Xrpc["XRPC routes"]
   Xrpc --> Describe["describeServer"]
@@ -66,13 +66,13 @@ Read them in that order. The point is to see which values come from CLI flags, w
 After CLI parsing, the important handoff is:
 
 1. configuration is loaded,
-2. `PDSController` is initialized,
+2. `PDSApplication` (the composition root) is initialized,
 3. `PDSHttpServerBuilder` registers the server routes,
 4. `HttpServer` starts listening.
 
 For this tutorial, the most useful files are:
 
-- `Garazyk/Sources/App/PDSController.m`
+- `Garazyk/Sources/App/PDSApplication.m`
 - `Garazyk/Sources/Network/PDSHttpServerBuilder.m`
 - `Garazyk/Sources/Network/HttpServer.m`
 
@@ -135,7 +135,7 @@ The "hello world" of Garazyk is not a toy socket server. It is the real boot pat
 
 - CLI command,
 - configuration load,
-- controller creation,
+- application facade creation,
 - route registration,
 - and discovery output.
 

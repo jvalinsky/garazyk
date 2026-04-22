@@ -23,10 +23,11 @@ That split is why an OAuth failure can originate in very different parts of the 
 
 The auth path is easiest to reason about when you separate the layers:
 
-- `OAuth2Handler` owns HTTP-facing authorization and token endpoints
-- `OAuth2` owns grant processing and token issuance rules
-- `Session` owns persisted session state, refresh, and lookup
-- auth helpers enforce request-time token and DPoP requirements
+- `OAuth2Handler` (`Sources/Auth/OAuth2.m`) owns HTTP-facing authorization and token endpoints.
+- `DPoPUtil` (`Sources/Auth/DPoPUtil.m`) handles proof verification and binding.
+- `PDSNonceManager` (`Sources/Auth/PDSNonceManager.m`) enforces replay protection via nonces.
+- `Session` owns persisted session state, refresh, and lookup.
+- Auth helpers enforce request-time token and DPoP requirements.
 
 If you read all OAuth failures as "token parsing bugs," you will miss most of the real causes.
 

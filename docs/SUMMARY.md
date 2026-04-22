@@ -12,6 +12,7 @@ title: Table of Contents
 - [Overview](01-getting-started/overview)
 - [Architecture Overview](01-getting-started/architecture-overview)
 - [Codebase Map](01-getting-started/codebase-map)
+- [Kaszlak CLI Usage](01-getting-started/cli-usage)
 - [Request Lifecycle](01-getting-started/request-lifecycle)
 - [Setup](01-getting-started/setup)
 
@@ -26,6 +27,11 @@ title: Table of Contents
 ### 03 Application Layer
 - [Services Overview](03-application-layer/services-overview)
 - [PDSApplication Facade](03-application-layer/pds-application)
+- [Syrena AppView Server](03-application-layer/appview-server)
+- [Zuk Relay Server](03-application-layer/relay-server)
+- [Trust, Safety, and Compliance](03-application-layer/safety-and-compliance)
+- [Chat Service](03-application-layer/chat-service)
+- [Video Processing](03-application-layer/video-processing)
 - [Account Service](03-application-layer/account-service)
 - [Record Service](03-application-layer/record-service)
 - [Blob Service](03-application-layer/blob-service)
@@ -35,6 +41,7 @@ title: Table of Contents
 
 ### 04 Network Layer
 - [HTTP Server](04-network-layer/http-server)
+- [Sans-I/O Architecture](04-network-layer/sans-io)
 - [XRPC Dispatch](04-network-layer/xrpc-dispatch)
 - [Method Registry](04-network-layer/method-registry)
 - [Domain Methods](04-network-layer/domain-methods)
@@ -67,6 +74,7 @@ title: Table of Contents
 
 ### 07 Repository & Protocol
 - [Repository Basics](07-repository-protocol/repository-basics)
+- [Lexicon Validation](07-repository-protocol/lexicon-validation)
 - [CBOR Serialization](07-repository-protocol/cbor-serialization)
 - [CAR Format](07-repository-protocol/car-format)
 - [CID and Hashing](07-repository-protocol/cid-and-hashing)
@@ -108,6 +116,7 @@ title: Table of Contents
 - [API Reference](11-reference/api-reference)
 - [Config Reference](11-reference/config-reference)
 - [CLI Reference](11-reference/cli-reference)
+- [Security Hardening](security/hardening-measures)
 - [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui)
 - [Testing Map](11-reference/testing-map)
 - [Troubleshooting](11-reference/troubleshooting)
