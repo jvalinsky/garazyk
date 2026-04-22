@@ -52,12 +52,12 @@ That is the core architectural idea of the PLC directory in this repository.
 
 ## Local Versus External PLC
 
-The PDS can resolve against a configured PLC URL, and the repository also ships
-a standalone PLC server implementation. That gives contributors two useful
-modes:
+The PDS can resolve against a configured PLC URL, and the repository also ships a standalone PLC server implementation named **Campagnola (`campagnola`)**. That gives contributors two useful modes:
 
 - talk to the public `plc.directory`
-- run a local PLC server for development and testing
+- run a local `campagnola` server for development, testing, or private network operation
+
+`campagnola` provides the full set of PLC XRPC endpoints, including `com.atproto.identity.getRecommendedDidCredentials` and history retrieval.
 
 The important distinction is that both modes still speak the same identity
 model. Only the operator boundary changes.
