@@ -19,6 +19,28 @@ Treat the shared stores as the home for:
 
 If the data belongs to the process rather than to one DID's repo, it usually belongs here.
 
+## Key Tables and Entities
+
+### Account & Auth
+*   `accounts`: Primary user account registry (DID, handle, email).
+*   `refresh_tokens`: Valid OAuth2/JWT refresh sessions.
+*   `invite_codes`: PDS registration invite management.
+
+### Trust & Safety
+*   `age_assurance_states`: Metadata and tokens for age verification flows.
+*   `chat_actor_metadata`: Mute/block/label state for chat participants.
+*   `chat_event_log`: Permanent audit trail of all safety-sensitive chat actions.
+*   `moderation_events`: Log of global moderation actions (takedowns, etc.).
+
+### AppView Indexing
+*   `appview_checkpoints`: Firehose sequence numbers for each upstream relay.
+*   `appview_repo_sync_state`: Indexing status per DID.
+*   `appview_relevance`: The set of DIDs being actively indexed in partial mode.
+
+### Identity & Sync
+*   `did_cache`: Local cache of resolved DID documents.
+*   `events`: The PDS sequencer event log for the firehose.
+
 ## Why The Synthetic Service Store Matters
 
 `ServiceDatabases` uses the synthetic DID `__service__` to access the shared-store path through the same pool abstractions used elsewhere. That choice matters because it keeps shared-store access consistent without pretending it is actor-owned data.

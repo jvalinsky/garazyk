@@ -45,6 +45,16 @@ It then builds the application services and adjacent controllers:
 - admin controller
 - subscribeRepos handler
 - relay service
+- age assurance service
+- chat moderation service
+
+### Standalone Servers
+
+In addition to the PDS services, the repository implements standalone servers that fulfill global AT Protocol roles:
+
+- **Syrena (AppView)**: Consumes the global firehose to build read-models for feeds and profiles.
+- **Zuk (Relay)**: Aggregates data from multiple PDS instances and re-broadcasts it via a unified firehose.
+- **Campagnola (PLC)**: A standalone directory server for the `did:plc` method.
 
 This order matters because most services depend on the database pools, config,
 or auth infrastructure being ready first.

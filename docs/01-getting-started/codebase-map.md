@@ -15,6 +15,17 @@ Garazyk is easiest to understand when you stop thinking about it as one monolith
 
 This page is the shortest route from "I can build it" to "I know where to change it."
 
+## Standalone Binaries
+
+While most logic is in the `ATProtoPDS` framework, the repository produces several specialized binaries:
+
+| Binary | Subsystem | Purpose |
+| --- | --- | --- |
+| `kaszlak` | PDS | The primary Personal Data Server CLI and daemon. |
+| `syrena` | AppView | The standalone AppView for feed and profile indexing. |
+| `zuk` | Relay | An AT Protocol relay for firehose aggregation. |
+| `campagnola` | PLC | A standalone PLC directory server. |
+
 ## Runtime Layout
 
 | Area | What it owns | Where to start |
