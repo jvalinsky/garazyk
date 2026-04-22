@@ -30,17 +30,18 @@ While most logic is in the `ATProtoPDS` framework, the repository produces sever
 
 | Area | What it owns | Where to start |
 | --- | --- | --- |
-| App | Application composition, configuration, shared services, web UIs | `Garazyk/Sources/App/`, `PDSApplication`, `PDSConfiguration` |
-| Network | HTTP routing, XRPC dispatch, auth gates, route registration | `Garazyk/Sources/Network/`, `PDSHttpServerBuilder`, `XrpcMethodRegistry` |
+| App | Application composition, composition root, configuration, standalone runtimes | `Garazyk/Sources/App/`, `PDSApplication`, `PDSConfiguration`, `AppViewRuntime`, `RelayRuntime`, `PLCRuntime` |
+| Network | HTTP routing, Sans-I/O protocol sessions, auth gates, route registration | `Garazyk/Sources/Network/`, `PDSHttpServerBuilder`, `HttpProtocolSession` |
 | Database | Service DBs, actor stores, pooling, migrations, monitoring | `Garazyk/Sources/Database/` |
 | Repository | MST, CAR, commit logic, repository state | `Garazyk/Sources/Repository/`, `Garazyk/Sources/Core/Repositories/` |
 | Auth | JWT, DPoP, OAuth, verifier helpers, signing paths | `Garazyk/Sources/Auth/`, `Garazyk/Sources/Auth/Crypto/`, `Garazyk/Sources/Auth/Verifier/`, `Garazyk/Sources/Auth/OAuthProvider/`, `Garazyk/Sources/Auth/PDS/` |
-| Services | Account, record, admin, phone verification, higher-level business logic | `Garazyk/Sources/Services/`, `Garazyk/Sources/App/Services/` |
-| Identity and PLC | Handle validation, DID/PLC operations, PLC server | `Garazyk/Sources/Identity/`, `Garazyk/Sources/PLC/` |
-| Sync, Relay, and Federation | Firehose, relay behavior, relay APIs, cross-PDS flows | `Garazyk/Sources/Sync/`, `Garazyk/Sources/Relay/`, `Garazyk/Sources/Federation/` |
+| Services | Account, record, admin, safety, phone verification, high-level business logic | `Garazyk/Sources/Services/PDS/`, `Garazyk/Sources/App/Services/` |
+| Identity | Handle validation, DID resolution, DNS verification | `Garazyk/Sources/Identity/` |
+| PLC | DID/PLC operations, auditor, replayer, PLC server | `Garazyk/Sources/PLC/` |
+| Sync, Relay, and Federation | Firehose, relay behavior, aggregation, federation flows | `Garazyk/Sources/Sync/`, `Garazyk/Sources/Relay/`, `Garazyk/Sources/Federation/` |
 | AppView and UI | Read-model services plus contributor-facing browser tools | `Garazyk/Sources/AppView/`, `Garazyk/Sources/App/Explore/`, `Garazyk/Sources/App/CappuccinoUI/`, `Garazyk/Sources/App/AdminUI/` |
 | CLI and Admin | Operator workflows and admin surfaces | `Garazyk/Sources/CLI/`, `Garazyk/Sources/Admin/` |
-| Supporting subsystems | Blob storage, media helpers, metrics, lexicon validation, compatibility shims, logging | `Garazyk/Sources/Blob/`, `Garazyk/Sources/Media/`, `Garazyk/Sources/Metrics/`, `Garazyk/Sources/Lexicon/`, `Garazyk/Sources/Compat/`, `Garazyk/Sources/Debug/` |
+| Supporting subsystems | Blob storage, media transcoding, metrics, lexicon validation, compatibility shims, logging | `Garazyk/Sources/Blob/`, `Garazyk/Sources/Media/`, `Garazyk/Sources/Metrics/`, `Garazyk/Sources/Lexicon/`, `Garazyk/Sources/Compat/`, `Garazyk/Sources/Debug/` |
 
 ## Read Order for New Contributors
 
@@ -51,8 +52,8 @@ If you are onboarding to the codebase, read in this order:
 3. `Garazyk/Sources/App/PDSConfiguration.{h,m}` to learn what can be configured.
 4. `Garazyk/Sources/Network/PDSHttpServerBuilder.m` to see what the server actually exposes.
 5. `Garazyk/Sources/Network/XrpcMethodRegistry.m` to see how protocol methods are wired.
-6. One service path you care about, usually `PDSAccountService` or `PDSRecordService`.
-7. The matching test area in `Garazyk/Tests/`.
+6. One service path you care about, usually `PDSAccountService` or `PDSRecordService` in `Garazyk/Sources/Services/PDS/`.
+7. The matching test area in `Garazyk/Tests/App/Services/`.
 
 That sequence gives you the system boundary, the routing surface, then one domain slice with tests.
 
@@ -88,6 +89,7 @@ The test tree mostly mirrors the runtime tree, which is a useful navigation tric
 | `Garazyk/Sources/AppView/` | `Garazyk/Tests/AppView/`, `Garazyk/Tests/AppViewServer/` |
 | `Garazyk/Sources/Email/` | `Garazyk/Tests/Email/` |
 | `Garazyk/Sources/PLC/` | `Garazyk/Tests/PLC/`, `Garazyk/Tests/plc_e2e/` |
+| `Garazyk/Sources/Services/` | `Garazyk/Tests/App/Services/` |
 
 Use [Testing Map](../11-reference/testing-map) when you need the contributor workflow instead of the raw directory listing.
 

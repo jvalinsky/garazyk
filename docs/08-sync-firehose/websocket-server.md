@@ -22,14 +22,11 @@ and only becomes a WebSocket after the upgrade succeeds.
 
 In the current runtime:
 
-- `PDSHttpServerBuilder` registers
-  `/xrpc/com.atproto.sync.subscribeRepos` as a WebSocket route on the main HTTP
-  server
-- `HttpServer` detects the route and validates the upgrade request
-- `WebSocketUpgradeHandler` computes `Sec-WebSocket-Accept` and prepares the
-  `101 Switching Protocols` response
-- `SubscribeReposHandler` accepts the upgraded connection and sends initial
-  replay or current-state data
+- `PDSHttpServerBuilder` registers `/xrpc/com.atproto.sync.subscribeRepos` as a WebSocket route.
+- `HttpServer` detects the route and validates the upgrade request.
+- `WebSocketUpgradeHandler` computes `Sec-WebSocket-Accept`.
+- **`WebSocketProtocolSession`** (Sans-I/O) handles framing, masking, and heartbeats once switched.
+- `SubscribeReposHandler` accepts the upgraded connection and manages event subscription.
 
 ```mermaid
 flowchart TD

@@ -6,15 +6,15 @@ title: HTTP Server
 
 ## Overview
 
-`HttpServer` is the transport boundary for Garazyk. It accepts HTTP/1.1 requests, enforces request-size and timing limits, handles keep-alive behavior, and performs WebSocket upgrade handoff. It is the first runtime component in the request path, but it is not the place where ATProto semantics are decided.
+`HttpServer` is the transport boundary for Garazyk. It implements a **Sans-I/O architecture**, separating protocol parsing logic from network socket operations. It accepts HTTP/1.1 requests, enforces request-size and timing limits, handles keep-alive behavior, and performs WebSocket upgrade handoff.
 
 ## What This Layer Owns
 
-Treat the HTTP server as the answer to these questions:
+Treat the HTTP server and its session state machines as the answer to these questions:
 
-- can the runtime parse this request at all?
+- can the runtime parse this request at all? (`HttpProtocolSession`)
 - did the request exceed header or body limits?
-- does the path match a registered route family?
+- does the path match a registered route family? (`PDSHttpServerBuilder`)
 - should this connection stay HTTP or upgrade to WebSocket?
 - can the runtime serialize and send the response back cleanly?
 

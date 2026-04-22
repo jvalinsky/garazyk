@@ -27,7 +27,7 @@ That is the job of DAG-CBOR in this tree:
 - record values are encoded before CID calculation
 - special ATProto wrappers such as `{"$link": ...}` and `{"$bytes": ...}` are
   converted into DAG-CBOR forms
-- map keys are sorted so the same logical object produces the same bytes
+- map keys are sorted canonically (byte-length first, then lexicographical byte-order) so the same logical object produces the same bytes.
 
 This is why serialization details are not an implementation footnote. They are
 part of repository correctness.

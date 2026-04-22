@@ -6,7 +6,7 @@ title: Admin Service
 
 ## Overview
 
-The `PDSAdminService` provides administrative operations for PDS management including account moderation, takedowns, labeling, and system administration. It handles privileged operations that require admin authentication.
+The `PDSAdminService` (delegated by `PDSAdminController`) provides administrative operations for PDS management including account moderation, takedowns, labeling, and system administration. It handles privileged operations that require admin authentication.
 
 ### Why This Service Matters
 
@@ -51,7 +51,8 @@ Understanding the Admin Service is crucial for implementing responsible moderati
 
 ```mermaid
 flowchart TD
-    endpoints["XRPC admin endpoints<br/>com.atproto.admin.*"] --> service["PDSAdminService"]
+    endpoints["XRPC admin endpoints<br/>com.atproto.admin.*"] --> controller["PDSAdminController"]
+    controller --> service["PDSAdminService"]
     service --> audit["Audit logging"]
     service --> moderation["Moderation data"]
     audit --> databases["PDSServiceDatabases"]
@@ -557,6 +558,16 @@ for (NSString *did in violatingAccounts) {
                     error:&error];
 }
 ```
+
+## Implementation Map
+
+Start here when you change administrative or moderation behavior:
+
+- `Garazyk/Sources/Services/Core/PDSAdminService.h`
+- `Garazyk/Sources/Services/Core/PDSAdminService.m`
+- `Garazyk/Sources/Admin/PDSAdminController.m`
+- `Garazyk/Sources/Admin/PDSAdminHandler.m`
+- `Garazyk/Sources/Network/XrpcAdminMethods.m`
 
 ## See Also
 

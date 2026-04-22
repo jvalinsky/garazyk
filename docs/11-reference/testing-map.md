@@ -26,6 +26,8 @@ This page turns the raw test catalog into a contributor workflow.
 | `Tests/PLC/`, `Tests/plc_e2e/` | PLC behavior and end-to-end PLC flows |
 | `Tests/CLI/`, `Tests/Admin/` | operator and admin workflows |
 | `Tests/Sync/`, `Tests/Federation/`, `Tests/Integration/` | firehose, federation, and higher-level integration paths |
+| `Tests/Interop/` | compliance against official AT Protocol fixtures |
+| `Tests/Safety/` | age assurance, chat moderation, and audit logs |
 
 For the detailed per-class index, use the deep reference under [`docs/tests/`](../tests/README). Treat that directory as catalog material, while this page is the contributor-facing entry point.
 
@@ -33,6 +35,8 @@ For the detailed per-class index, use the deep reference under [`docs/tests/`](.
 
 | If you changed | Start with |
 | --- | --- |
+| core protocol logic (DID, NSID, CID) | interop tests (`Tests/Interop/`) |
+| trust and safety features | safety tests (`Tests/Safety/`) |
 | configuration parsing or env overrides | utility/config tests plus the affected integration path |
 | account, auth, or OAuth flows | auth tests, identity tests, then relevant integration tests |
 | HTTP or XRPC routing | network and XRPC tests |

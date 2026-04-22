@@ -84,6 +84,17 @@ If repository behavior looks wrong, inspect in this order:
 That order is faster than starting at the HTTP edge because repository bugs are
 usually lower in the stack.
 
+## Implementation Map
+
+Start here when you change repository, MST, or CAR behavior:
+
+- `Garazyk/Sources/Services/PDS/PDSRepositoryService.h`
+- `Garazyk/Sources/Services/PDS/PDSRepositoryService.m`
+- `Garazyk/Sources/Repository/MST.m`
+- `Garazyk/Sources/Repository/CAR.m`
+- `Garazyk/Sources/Network/XrpcRepoMethods.m`
+- `Garazyk/Sources/Network/XrpcSyncMethods.m`
+
 ## Related Reading
 
 - [Services Overview](./services-overview)

@@ -34,15 +34,17 @@ By the end, you should understand:
 
 ## Architecture Overview
 
-The production model is intentionally simple:
+The production model supports both standalone PDS and distributed components:
 
 ```mermaid
 flowchart TD
   Internet["Internet clients"] --> Nginx["nginx TLS and proxy layer"]
-  Nginx --> PDS["PDS container on port 2583"]
+  Nginx --> PDS["PDS (kaszlak)"]
+  Nginx --> AppView["AppView (syrena)"]
+  Nginx --> Relay["Relay (zuk)"]
   PDS --> Volume["Persistent volume: /var/lib/atprotopds"]
-  PDS --> Plc["https://plc.directory"]
-  PDS --> Relay["configured relays and AppView"]
+  AppView --> PDS
+  Relay --> PDS
 ```
 
 Why this shape matters:

@@ -75,6 +75,7 @@ For example:
 
 - auth rules belong in auth and account paths,
 - record semantics belong in record and repository services,
+- safety and compliance logic belongs in `AgeAssuranceService` or `ChatModerationService`,
 - contributor tooling aggregation belongs in Explorer or UI controllers.
 
 ## Step 4: Verify the Smallest Trust Boundary First
@@ -147,6 +148,7 @@ That workflow keeps protocol changes, project-specific tools, and written docs a
 ```bash
 xcodegen generate
 xcodebuild -scheme AllTests build
-./build/tests/AllTests -only-testing:AllTests/OAuth2Tests
+./build/tests/AllTests -XCTest OAuth2Tests
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
-```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+```
+\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

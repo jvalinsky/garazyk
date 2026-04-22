@@ -15,23 +15,27 @@ This page describes the normal flow for a request that enters the PDS and the pl
 ```mermaid
 sequenceDiagram
   participant C as Client
-  participant H as HttpServer
+  participant T as Platform Transport
+  participant H as HttpServer (Driver)
+  participant P as HttpProtocolSession (Sans-I/O)
   participant B as PDSHttpServerBuilder Routes
   participant X as XRPC or UI Handler
   participant S as Service Layer
-  participant D as Database and Repository
-  participant R as Relay or Metrics Side Effects
 
-  C->>H: HTTP request or WebSocket upgrade
+  C->>T: TCP/TLS Packets
+  T->>H: feedData: (bytes)
+  H->>P: feedData:
+  P-->>H: Events (RequestReady, etc.)
   H->>B: Match registered route
   B->>X: Invoke handler
   X->>X: Parse input, auth, rate limits, validation
   X->>S: Call domain service
-  S->>D: Read or mutate state
-  S->>R: Emit side effects if needed
   S-->>X: Domain result or error
-  X-->>H: Response payload and status
-  H-->>C: HTTP response or streamed event
+  X-->>H: Response payload
+  H->>P: queueResponse:
+  P-->>H: Actions (SendData, etc.)
+  H->>T: sendData: (bytes)
+  T-->>C: HTTP Response
 ```
 
 ## Stage 1: Transport and Route Selection

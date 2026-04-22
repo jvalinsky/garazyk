@@ -49,8 +49,8 @@ flowchart LR
 
 The best starting point is:
 
-- `Garazyk/Sources/App/Services/PDSAccountService.m`
-- `Garazyk/Sources/App/Services/PDSAccountService.h`
+- `Garazyk/Sources/Services/PDS/PDSAccountService.m`
+- `Garazyk/Sources/Services/PDS/PDSAccountService.h`
 
 Why start there?
 

@@ -24,6 +24,7 @@ flowchart TD
     app --> repository["PDSRepositoryService"]
     app --> admin["PDSAdminController"]
     app --> relay["PDSRelayService"]
+    app --> safety["AgeAssurance / ChatModeration"]
     app --> serviceDb["PDSServiceDatabases"]
     app --> userDb["PDSDatabasePool"]
 ```

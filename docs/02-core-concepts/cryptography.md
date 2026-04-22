@@ -34,8 +34,8 @@ protocol model.
 
 The repository uses more than one key story because ATProto itself does:
 
-- secp256k1 actor keys are used for ES256K-style signing paths
-- P-256 appears in DPoP and other ES256-oriented OAuth flows
+- secp256k1 actor keys are used for ES256K-style signing paths, strictly verified for **low-S form** to prevent signature malleability.
+- P-256 appears in DPoP and other ES256-oriented OAuth flows, also enforcing **low-S signatures**.
 - key-manager backed JWT flows can also verify algorithms such as ES256 or
   RS256 where configured
 
