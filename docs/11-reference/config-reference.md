@@ -143,6 +143,25 @@ Key env overrides use the `PDS_RATELIMIT_*` prefix.
 | `appview.did` | upstream AppView DID |
 | `appview.local_enabled` | local AppView toggle |
 
+### Ozone and Moderation
+
+| Key | Purpose |
+| --- | --- |
+| `ozone.url` | Ozone moderation service URL |
+| `ozone.did` | Ozone service DID |
+
+### Blob storage
+
+| Key | Purpose |
+| --- | --- |
+| `blob_storage.storage_type` | `disk` or `s3` |
+| `blob_storage.s3_bucket` | S3 bucket name |
+| `blob_storage.s3_region` | S3 region |
+| `blob_storage.s3_endpoint` | S3 endpoint override |
+| `blob_storage.s3_access_key_id` | S3 credentials |
+| `blob_storage.s3_secret_access_key` | S3 credentials |
+| `blob_storage.cdn_url` | CDN base URL for blobs |
+
 This `appview` block is the current loader shape. Older camelCase examples such as `appViewURL` and `localAppViewEnabled` should be treated as stale unless the code changes.
 
 ## Defaults vs Recommended Practice

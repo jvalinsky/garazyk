@@ -89,6 +89,9 @@ Why this matters:
 
 ```bash
 xcodebuild -scheme kaszlak build
+xcodebuild -scheme syrena build
+xcodebuild -scheme zuk build
+xcodebuild -scheme campagnola build
 xcodebuild -scheme AllTests build
 ```
 
@@ -114,8 +117,8 @@ Linux is supported, but the contributor ergonomics are different because the GNU
 
 ```bash
 mkdir -p build-linux
-cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-linux -j
+cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
+cmake --build build-linux -j 8
 ```
 
 ### Step 2: run tests if the build generated them
@@ -159,10 +162,12 @@ Do not infer production guidance from bare runtime defaults.
 After the server starts, verify the discovery and contributor surfaces rather than assuming the process is healthy just because it is running.
 
 ```bash
+./build/bin/kaszlak account list
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq '.did'
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
-curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/ui/Info.plist
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/ui/index.html
 ```
+
 
 These checks confirm:
 
