@@ -846,6 +846,72 @@
       "created_at": "2026-04-21T20:02:36.631846-04:00",
       "updated_at": "2026-04-21T20:03:00.983485-04:00",
       "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Age assurance and chat auditing ready for production use\"}"
+    },
+    {
+      "id": 78,
+      "change_id": "95dabe19-4c45-4582-b835-d087c2f4d60e",
+      "node_type": "goal",
+      "title": "Achieve Full AT Protocol Interoperability",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-21T20:26:46.923011-04:00",
+      "updated_at": "2026-04-21T20:26:53.067867-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Verified compliance with official atproto test fixtures and implemented production-grade record indexing\"}"
+    },
+    {
+      "id": 79,
+      "change_id": "9941e0f3-7d72-4ed3-b7c4-72dac66097f1",
+      "node_type": "decision",
+      "title": "Refine Core Syntax Validators",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-21T20:26:46.961630-04:00",
+      "updated_at": "2026-04-21T20:26:53.075268-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Updated DID, NSID, and CID validators to match the official AT Protocol specification\"}"
+    },
+    {
+      "id": 80,
+      "change_id": "d531a2d4-6a10-47e4-a07b-faefb2c8856b",
+      "node_type": "decision",
+      "title": "Enforce Cryptographic Constraints",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-21T20:26:46.997398-04:00",
+      "updated_at": "2026-04-21T20:26:53.082900-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Implemented low-S signature enforcement and multibase decoding\"}"
+    },
+    {
+      "id": 81,
+      "change_id": "d9df8fbb-9795-40ac-b90b-ed326d6aac5a",
+      "node_type": "action",
+      "title": "Implement Specialized Record Indexing",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-21T20:26:47.033982-04:00",
+      "updated_at": "2026-04-21T20:26:53.090708-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Added indexing for threadgates, postgates, and lists to RecordLifecycleHandler\"}"
+    },
+    {
+      "id": 82,
+      "change_id": "c88d7bae-2126-429e-b726-5f48be413c22",
+      "node_type": "action",
+      "title": "Pass Official Interop Suite",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-21T20:26:47.069922-04:00",
+      "updated_at": "2026-04-21T20:26:53.098384-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Verified 59 test cases covering data model, syntax, and crypto\"}"
+    },
+    {
+      "id": 83,
+      "change_id": "b45accc1-3add-4158-a4f5-7808f8962c3c",
+      "node_type": "outcome",
+      "title": "Interoperability Milestone Achieved",
+      "description": null,
+      "status": "done",
+      "created_at": "2026-04-21T20:26:47.105721-04:00",
+      "updated_at": "2026-04-21T20:26:53.105637-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"prompt\":\"Core system is now compatible with the wider AT Protocol ecosystem\"}"
     }
   ],
   "edges": [
@@ -1574,6 +1640,72 @@
       "weight": 1.0,
       "rationale": "Goal achieved",
       "created_at": "2026-04-21T20:02:54.532476-04:00"
+    },
+    {
+      "id": 67,
+      "from_node_id": 70,
+      "to_node_id": 78,
+      "from_change_id": "21523b5b-6e6b-439e-9c5b-c846e8a7d3d1",
+      "to_change_id": "95dabe19-4c45-4582-b835-d087c2f4d60e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Service logic leads to full interop",
+      "created_at": "2026-04-21T20:26:53.018296-04:00"
+    },
+    {
+      "id": 68,
+      "from_node_id": 78,
+      "to_node_id": 79,
+      "from_change_id": "95dabe19-4c45-4582-b835-d087c2f4d60e",
+      "to_change_id": "9941e0f3-7d72-4ed3-b7c4-72dac66097f1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Syntax compliance",
+      "created_at": "2026-04-21T20:26:53.028374-04:00"
+    },
+    {
+      "id": 69,
+      "from_node_id": 78,
+      "to_node_id": 80,
+      "from_change_id": "95dabe19-4c45-4582-b835-d087c2f4d60e",
+      "to_change_id": "d531a2d4-6a10-47e4-a07b-faefb2c8856b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Crypto compliance",
+      "created_at": "2026-04-21T20:26:53.036487-04:00"
+    },
+    {
+      "id": 70,
+      "from_node_id": 78,
+      "to_node_id": 81,
+      "from_change_id": "95dabe19-4c45-4582-b835-d087c2f4d60e",
+      "to_change_id": "d9df8fbb-9795-40ac-b90b-ed326d6aac5a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "AppView readiness",
+      "created_at": "2026-04-21T20:26:53.044379-04:00"
+    },
+    {
+      "id": 71,
+      "from_node_id": 78,
+      "to_node_id": 82,
+      "from_change_id": "95dabe19-4c45-4582-b835-d087c2f4d60e",
+      "to_change_id": "c88d7bae-2126-429e-b726-5f48be413c22",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Validation",
+      "created_at": "2026-04-21T20:26:53.052174-04:00"
+    },
+    {
+      "id": 72,
+      "from_node_id": 78,
+      "to_node_id": 83,
+      "from_change_id": "95dabe19-4c45-4582-b835-d087c2f4d60e",
+      "to_change_id": "b45accc1-3add-4158-a4f5-7808f8962c3c",
+      "edge_type": "chosen",
+      "weight": 1.0,
+      "rationale": "Goal achieved",
+      "created_at": "2026-04-21T20:26:53.059931-04:00"
     }
   ],
   "documents": [
