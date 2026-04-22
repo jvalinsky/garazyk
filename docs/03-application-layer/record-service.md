@@ -67,103 +67,20 @@ Creates or updates a record in a collection. Validates the record against lexico
 
 **Returns:** YES on success, NO on failure
 
-**Implementation pattern (from PDSRecordService.m lines 150-250):**
+**Implementation pattern (from PDSRecordService.m):**
 
 The service validates authorization, performs lexicon validation, generates a CID, and stores the record:
 
 ```objc
 - (BOOL)putRecord:(NSString *)collection
-              rkey:(NSString *)rkey
-             value:(NSDictionary *)value
-            forDid:(NSString *)did
-          actorDid:(NSString *)actorDid
-    validationMode:(PDSValidationMode)mode
-             error:(NSError **)error {
-    
-    // Check authorization
-    if (![self checkAuthorizationForDid:did actorDid:actorDid error:error]) {
-        return NO;
-    }
-    
-    // Validate collection NSID format
-    NSError *nsidError = nil;
-    if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
-        PDS_LOG_ERROR(@"[PDSRecordService] Invalid collection NSID: %@", collection);
-        if (error) *error = nsidError;
-        return NO;
-    }
-
-    // Lexicon validation
-    if (mode != PDSValidationModeOff) {
-        ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
-            initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
-
-        NSError *validationError = nil;
-        if (![validator validateRecord:value
-                            collection:collection
-                                  mode:(ATProtoValidationMode)mode
-                                 error:&validationError]) {
-            PDS_LOG_ERROR(@"[PDSRecordService] Lexicon validation failed for %@: %@",
-                          collection, validationError.localizedDescription);
-            if (error) *error = validationError;
-            return NO;
-        }
-    }
-
-    // Validate createdAt timestamp coherence
-    if (!validateCreatedAtCoherence(collection, rkey, value, mode, error)) {
-        return NO;
-    }
-
-    // Generate CID using DAG-CBOR encoding
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-    NSError *cidError;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:&cidError];
-    if (!cborData) {
-        if (error) *error = cidError;
-        return NO;
-    }
-
-    NSString *cidString = [self generateCIDForData:cborData error:&cidError];
-    if (!cidString) {
-        if (error) *error = cidError;
-        return NO;
-    }
-
-    // Store record in database
-    PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
-    record.uri = uri;
-    record.did = did;
-    record.collection = collection;
-    record.rkey = rkey;
-    record.cid = cidString;
-    record.createdAt = [NSDate date];
-    record.rev = [TID tid].stringValue;
-
-    // Save to database
-    PDSActorStore *store = [_databasePool storeForDid:did error:error];
-    if (!store) return NO;
-
-    __block BOOL success = NO;
-    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        success = [transactor putRecord:record error:blockError];
-    } error:error];
-
-    if (success) {
-        // Post notification
-        [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
-                                                            object:self
-                                                          userInfo:@{
-                                                              @"did": did,
-                                                              @"collection": collection,
-                                                              @"rkey": rkey,
-                                                              @"action": @"create"
-                                                          }];
-    }
-
-    return success;
-}
+               rkey:(NSString *)rkey
+              value:(NSDictionary *)value
+             forDid:(NSString *)did
+           actorDid:(NSString *)actorDid
+     validationMode:(PDSValidationMode)mode
+              error:(NSError **)error {
 ```
+
 
 **Example usage:**
 ```objc

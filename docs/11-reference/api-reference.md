@@ -34,6 +34,9 @@ Typical method families include:
 - `com.atproto.repo.*` for record and repository operations
 - `com.atproto.sync.*` for sync and firehose behavior
 - `com.atproto.identity.*` and related identity flows where implemented
+- `app.bsky.*` for Bluesky-specific application logic (feed, notifications, etc.)
+- `chat.bsky.*` for private and group conversation services
+- `tools.ozone.*` for moderation and safety operations
 
 ### Explorer API
 
@@ -200,9 +203,10 @@ GET /xrpc/com.atproto.repo.listRecords?cursor=abc123
 ### Common content types
 
 - `application/json` — JSON data
-- `application/cbor` — CBOR data
-- `image/jpeg` — JPEG images
-- `image/png` — PNG images
+- `application/cbor` — CBOR data (DAG-CBOR)
+- `application/vnd.ipld.car` — CAR file archives
+- `application/vnd.ipld.dag-cbor` — Direct IPLD DAG-CBOR
+- `image/jpeg`, `image/png`, `image/webp` — Image blobs
 - `video/mp4` — MP4 videos
 
 ## Next Steps

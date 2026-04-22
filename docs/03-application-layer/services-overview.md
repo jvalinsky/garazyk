@@ -42,7 +42,7 @@ It then builds the application services and adjacent controllers:
 - record service
 - blob service
 - repository service
-- admin controller
+- admin service (via controller)
 - subscribeRepos handler
 - relay service
 - age assurance service
