@@ -34,6 +34,12 @@ NS_ASSUME_NONNULL_BEGIN
     @return DER-encoded signature for Security framework, or nil on error. */
 + (nullable NSData *)derSignatureFromRaw:(NSData *)raw error:(NSError **)error;
 
+/*! Checks if a raw P-256 signature is in low-S form.
+    @param rawSignature Raw 64-byte signature.
+    @param error Set on failure.
+    @return YES if low-S, NO otherwise. */
++ (BOOL)isLowS:(NSData *)rawSignature error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

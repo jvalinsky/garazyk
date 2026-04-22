@@ -17,20 +17,23 @@ NS_ASSUME_NONNULL_BEGIN
 @class NotificationService;
 @class BookmarkService;
 @class GraphService;
+@class FeedService;
 @class PDSDatabase;
 
 /*!
  @class RecordLifecycleHandler
-
+ 
  @abstract Handles record lifecycle events to generate notifications and index social data.
  */
 @interface RecordLifecycleHandler : NSObject
 
 /*! Initialize and start observing record changes. */
 - (instancetype)initWithNotificationService:(NotificationService *)notificationService
-                            bookmarkService:(BookmarkService *)bookmarkService
-                               graphService:(GraphService *)graphService
-                                   database:(PDSDatabase *)database;
+                             bookmarkService:(BookmarkService *)bookmarkService
+                                graphService:(GraphService *)graphService
+                                 feedService:(FeedService *)feedService
+                                    database:(PDSDatabase *)database;
+
 
 /*! Stop observing. */
 - (void)stopObserving;
