@@ -1,16 +1,3 @@
-/*!
- @file CID.m
-
- @abstract CID (Content Identifier) implementation for content addressing.
-
- @discussion This file implements CIDv1 per the IPFS specification, used
- throughout ATProto for content-addressable record storage. CIDs combine
- multicodec identification with multihash digests (SHA-256 by default)
- encoded in Base32 (multibase 'b').
-
- @copyright Copyright (c) 2024 Jack Valinsky
- */
-
 #import "Core/CID.h"
 #import "Core/Base58.h"
 #import "Debug/PDSLogger.h"
@@ -20,7 +7,6 @@
 
 /// Base32 alphabet (RFC 4648) - Lowercase for Multibase 'b'
 static const char kBase32Alphabet[] = "abcdefghijklmnopqrstuvwxyz234567";
-static const char kBase58Alphabet[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 /// CIDv1 multicodec code (0x01)
 static const uint64_t kCIDv1Multicodec = 0x01;
@@ -61,7 +47,6 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable instancetype)cidFromString:(NSString *)string {
-    b32_debug_log(stderr, "cidFromString: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return nil;
     }
@@ -69,18 +54,73 @@ static const NSUInteger kMaxVarintSize = 9;
         return nil;
     }
 
-    // For now, assume base32 encoding (most common for ATProto)
-    if ([string characterAtIndex:0] != 'b') {
-        return nil;
+    unichar multibasePrefix = [string characterAtIndex:0];
+    NSString *encodedPart = [string substringFromIndex:1];
+    NSData *decodedData = nil;
+
+    switch (multibasePrefix) {
+        case 'b': // base32
+            decodedData = [self base32Decode:encodedPart];
+            break;
+        case 'z': // base58btc
+            decodedData = [self base58btcDecode:encodedPart];
+            break;
+        case 'f': // base16 (hex)
+            decodedData = [self hexDecode:encodedPart];
+            break;
+        case 'm': // base64
+            decodedData = [self base64Decode:encodedPart];
+            break;
+        case 'u': // base64url
+            decodedData = [self base64urlDecode:encodedPart];
+            break;
+        case '7': // base8 (Contrived example in fixtures)
+            decodedData = [self base8Decode:encodedPart];
+            break;
+        default:
+            return nil;
     }
 
-    NSString *encodedPart = [string substringFromIndex:1];
-    NSData *decodedData = [self base32Decode:encodedPart];
-    if (!decodedData || decodedData.length < 2) {
+    if (!decodedData) {
         return nil;
     }
 
     return [self cidFromBytes:decodedData];
+}
+
++ (nullable NSData *)hexDecode:(NSString *)hex {
+    if (hex.length % 2 != 0) return nil;
+    NSMutableData *data = [NSMutableData dataWithCapacity:hex.length / 2];
+    for (NSUInteger i = 0; i < hex.length; i += 2) {
+        unsigned int value;
+        NSScanner *scanner = [NSScanner scannerWithString:[hex substringWithRange:NSMakeRange(i, 2)]];
+        if (![scanner scanHexInt:&value]) return nil;
+        uint8_t byte = (uint8_t)value;
+        [data appendBytes:&byte length:1];
+    }
+    return data;
+}
+
++ (nullable NSData *)base64urlDecode:(NSString *)string {
+    if (!string) return nil;
+    NSMutableString *base64 = [string mutableCopy];
+    [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
+    [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
+    while (base64.length % 4 != 0) {
+        [base64 appendString:@"="];
+    }
+    return [[NSData alloc] initWithBase64EncodedString:base64 options:0];
+}
+
++ (nullable NSData *)base64Decode:(NSString *)string {
+    if (!string) return nil;
+    NSData *data = [[NSData alloc] initWithBase64EncodedString:string options:0];
+    if (data) return data;
+    NSMutableString *base64 = [string mutableCopy];
+    while (base64.length % 4 != 0) {
+        [base64 appendString:@"="];
+    }
+    return [[NSData alloc] initWithBase64EncodedString:base64 options:0];
 }
 
 + (nullable instancetype)cidFromBytes:(NSData *)data {
@@ -94,7 +134,6 @@ static const NSUInteger kMaxVarintSize = 9;
     const uint8_t *bytes = data.bytes;
     NSUInteger offset = 0;
 
-    // Read version multicodec
     uint64_t versionMulticodec;
     NSUInteger versionSize = [self readVarint:bytes + offset
                                      maxLength:data.length - offset
@@ -103,11 +142,8 @@ static const NSUInteger kMaxVarintSize = 9;
         return nil;
     }
 
-    // Handle legacy CID format where version byte is 0x00
-    // In this case, skip the version byte and parse remaining as CIDv1
     if (versionMulticodec == 0) {
         offset += versionSize;
-        // Re-parse assuming the remaining bytes are CIDv1
         if (offset >= data.length) {
             return nil;
         }
@@ -118,11 +154,10 @@ static const NSUInteger kMaxVarintSize = 9;
             return nil;
         }
     } else if (versionMulticodec != kCIDv1Multicodec) {
-        return nil; // Not a valid CIDv1
+        return nil; 
     }
     offset += versionSize;
 
-    // Read content type codec
     uint64_t codec;
     NSUInteger codecSize = [self readVarint:bytes + offset
                                     maxLength:data.length - offset
@@ -132,7 +167,6 @@ static const NSUInteger kMaxVarintSize = 9;
     }
     offset += codecSize;
 
-    // Remaining bytes are the multihash
     if (offset >= data.length) {
         return nil;
     }
@@ -144,19 +178,10 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 - (NSString *)stringValue {
-    // Create CIDv1 binary format
     NSMutableData *binaryData = [NSMutableData data];
-    
-    // Write version multicodec (CIDv1 = 0x01)
     [binaryData appendData:[CID encodeVarint:kCIDv1Multicodec]];
-    
-    // Write content type codec
     [binaryData appendData:[CID encodeVarint:self.codec]];
-    
-    // Write multihash
     [binaryData appendData:self.multihash];
-    
-    // Encode as base32 with 'b' prefix
     NSString *base32String = [CID base32Encode:binaryData];
     return [@"b" stringByAppendingString:base32String];
 }
@@ -184,52 +209,10 @@ static const NSUInteger kMaxVarintSize = 9;
 
 - (NSData *)bytes {
     NSMutableData *data = [NSMutableData data];
-    
-    // Version multicodec
     [data appendData:[CID encodeVarint:kCIDv1Multicodec]];
-    
-    // Content codec
     [data appendData:[CID encodeVarint:self.codec]];
-    
-    // Multihash
     [data appendData:self.multihash];
-    
     return [data copy];
-}
-
-#pragma mark - NSCopying
-
-- (id)copyWithZone:(nullable NSZone *)zone {
-    // CID is immutable
-    return self;
-}
-
-#pragma mark - NSSecureCoding
-
-+ (BOOL)supportsSecureCoding {
-    return YES;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder {
-    [coder encodeInteger:self.version forKey:@"version"];
-    [coder encodeInteger:self.codec forKey:@"codec"];
-    [coder encodeObject:self.multihash forKey:@"multihash"];
-}
-
-- (nullable instancetype)initWithCoder:(NSCoder *)coder {
-    NSUInteger version = [coder decodeIntegerForKey:@"version"];
-    NSUInteger codec = [coder decodeIntegerForKey:@"codec"];
-    NSData *multihash = [coder decodeObjectOfClass:[NSData class] forKey:@"multihash"];
-    
-    if (!multihash) {
-        return nil;
-    }
-    
-    self = [CID cidWithMultihash:multihash codec:codec];
-    if (self) {
-        // Version is implicit in v1 format
-    }
-    return self;
 }
 
 #pragma mark - Varint Encoding/Decoding
@@ -237,7 +220,6 @@ static const NSUInteger kMaxVarintSize = 9;
 + (NSData *)encodeVarint:(uint64_t)value {
     NSMutableData *data = [NSMutableData dataWithCapacity:kMaxVarintSize];
     uint64_t v = value;
-    
     do {
         uint8_t byte = v & 0x7F;
         v >>= 7;
@@ -246,39 +228,31 @@ static const NSUInteger kMaxVarintSize = 9;
         }
         [data appendBytes:&byte length:1];
     } while (v != 0);
-    
     return [data copy];
 }
 
 + (NSUInteger)readVarint:(const uint8_t *)bytes 
                maxLength:(NSUInteger)maxLength 
                    value:(uint64_t *)value {
-    
     if (maxLength == 0) {
         return 0;
     }
-    
     uint64_t result = 0;
     NSUInteger shift = 0;
     NSUInteger offset = 0;
-    
     while (offset < maxLength) {
         uint8_t byte = bytes[offset++];
         result |= ((uint64_t)(byte & 0x7F)) << shift;
         shift += 7;
-        
         if ((byte & 0x80) == 0) {
             *value = result;
             return offset;
         }
-        
-        // Prevent overflow
         if (shift >= 64) {
             return 0;
         }
     }
-    
-    return 0; // Incomplete varint
+    return 0;
 }
 
 #pragma mark - Base32 Encoding/Decoding
@@ -287,11 +261,9 @@ static const NSUInteger kMaxVarintSize = 9;
     if (!data || data.length == 0) {
         return @"";
     }
-
     const uint8_t *bytes = data.bytes;
     NSUInteger length = data.length;
     NSMutableString *result = [NSMutableString stringWithCapacity:((length * 8) + 4) / 5];
-
     uint64_t buffer = 0;
     int bitsLeft = 0;
     for (NSUInteger i = 0; i < length; i++) {
@@ -304,47 +276,33 @@ static const NSUInteger kMaxVarintSize = 9;
         }
         buffer &= ((1ULL << bitsLeft) - 1);
     }
-
     if (bitsLeft > 0) {
         [result appendFormat:@"%c", kBase32Alphabet[(buffer << (5 - bitsLeft)) & 0x1F]];
     }
-
     return [result copy];
 }
 
 + (NSData *)base32Decode:(NSString *)string {
-    b32_debug_log(stderr, "base32Decode started: %s\n", [string UTF8String]);
     if (!string || string.length == 0) {
         return [NSData data];
     }
-
-    // Remove padding characters (=)
     NSString *cleanString = [string stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
-
     NSUInteger length = cleanString.length;
     NSMutableData *result = [NSMutableData dataWithCapacity:((length * 5) + 7) / 8];
-
     uint64_t buffer = 0;
     NSUInteger bitsLeft = 0;
-
     for (NSUInteger i = 0; i < length; i++) {
         unichar c = [cleanString characterAtIndex:i];
-        if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a'; // Convert to lowercase
-
-        b32_debug_log(stderr, "char: %c\n", (char)c);
+        if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
         const char *ptr = strchr(kBase32Alphabet, (char)c);
         if (!ptr) {
             PDS_LOG_DEBUG_C(PDSLogComponentCore, @"Invalid character: %c", (char)c);
-            return nil; // Invalid character
+            return nil;
         }
-
         uint8_t value = (uint8_t)(ptr - kBase32Alphabet);
-
         buffer = (buffer << 5) | value;
         bitsLeft += 5;
-
         while (bitsLeft >= 8) {
-            b32_debug_log(stderr, "bitsLeft: %lu\n", (unsigned long)bitsLeft);
             NSUInteger byteShift = bitsLeft - 8;
             uint8_t byte = (buffer >> byteShift) & 0xFF;
             [result appendBytes:&byte length:1];
@@ -353,7 +311,6 @@ static const NSUInteger kMaxVarintSize = 9;
             bitsLeft = byteShift;
         }
     }
-
     return [result copy];
 }
 
@@ -365,6 +322,26 @@ static const NSUInteger kMaxVarintSize = 9;
     return [Base58 encode:data];
 }
 
++ (nullable NSData *)base8Decode:(NSString *)string {
+    NSUInteger length = string.length;
+    NSMutableData *result = [NSMutableData dataWithCapacity:(length * 3 + 7) / 8];
+    uint64_t buffer = 0;
+    int bitsLeft = 0;
+    for (NSUInteger i = 0; i < length; i++) {
+        unichar c = [string characterAtIndex:i];
+        if (c < '0' || c > '7') return nil;
+        uint8_t value = c - '0';
+        buffer = (buffer << 3) | value;
+        bitsLeft += 3;
+        while (bitsLeft >= 8) {
+            uint8_t byte = (buffer >> (bitsLeft - 8)) & 0xFF;
+            [result appendBytes:&byte length:1];
+            bitsLeft -= 8;
+        }
+    }
+    return result;
+}
+
 #pragma mark - Hashing
 
 + (CID *)sha256:(NSData *)data {
@@ -373,12 +350,6 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (NSData *)sha256Digest:(NSData *)data {
-    unsigned char hash[CC_SHA256_DIGEST_LENGTH];
-    CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
-    return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
-}
-
-+ (NSData *)rawSha256:(NSData *)data {
     unsigned char hash[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
     return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];

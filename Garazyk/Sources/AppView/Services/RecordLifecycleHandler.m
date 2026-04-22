@@ -10,6 +10,7 @@
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/BookmarkService.h"
 #import "AppView/Services/GraphService.h"
+#import "AppView/Services/FeedService.h"
 #import "Services/PDS/PDSRecordService.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
@@ -20,21 +21,25 @@
 @property (nonatomic, strong) NotificationService *notificationService;
 @property (nonatomic, strong) BookmarkService *bookmarkService;
 @property (nonatomic, strong) GraphService *graphService;
+@property (nonatomic, strong) FeedService *feedService;
 @property (nonatomic, strong) PDSDatabase *database;
 @end
 
 @implementation RecordLifecycleHandler
 
 - (instancetype)initWithNotificationService:(NotificationService *)notificationService
-                            bookmarkService:(BookmarkService *)bookmarkService
-                               graphService:(GraphService *)graphService
-                                   database:(PDSDatabase *)database {
+                             bookmarkService:(BookmarkService *)bookmarkService
+                                graphService:(GraphService *)graphService
+                                 feedService:(FeedService *)feedService
+                                    database:(PDSDatabase *)database {
     self = [super init];
     if (self) {
         _notificationService = notificationService;
         _bookmarkService = bookmarkService;
         _graphService = graphService;
+        _feedService = feedService;
         _database = database;
+
 
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(handleRecordChange:)
@@ -80,6 +85,16 @@
             [self.bookmarkService unindexBookmarkWithURI:uri did:did error:nil];
         } else if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
             [self.graphService unindexStarterPackWithRKey:rkey did:did error:nil];
+        } else if ([collection isEqualToString:@"app.bsky.feed.threadgate"]) {
+            [self.feedService unindexThreadgateWithURI:uri error:nil];
+        } else if ([collection isEqualToString:@"app.bsky.feed.postgate"]) {
+            [self.feedService unindexPostgateWithURI:uri error:nil];
+        } else if ([collection isEqualToString:@"app.bsky.feed.generator"]) {
+            [self.feedService unindexGeneratorWithURI:uri error:nil];
+        } else if ([collection isEqualToString:@"app.bsky.graph.list"]) {
+            [self.graphService unindexListWithURI:uri error:nil];
+        } else if ([collection isEqualToString:@"app.bsky.graph.listitem"]) {
+            [self.graphService unindexListitemWithURI:uri error:nil];
         }
         return;
     }
@@ -107,6 +122,16 @@
         [self.bookmarkService indexBookmark:record did:did uri:uri cid:cid error:nil];
     } else if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
         [self.graphService indexStarterPack:record did:did rkey:rkey cid:cid error:nil];
+    } else if ([collection isEqualToString:@"app.bsky.feed.threadgate"]) {
+        [self.feedService indexThreadgate:record did:did uri:uri cid:cid error:nil];
+    } else if ([collection isEqualToString:@"app.bsky.feed.postgate"]) {
+        [self.feedService indexPostgate:record did:did uri:uri cid:cid error:nil];
+    } else if ([collection isEqualToString:@"app.bsky.feed.generator"]) {
+        [self.feedService indexGenerator:record did:did uri:uri cid:cid error:nil];
+    } else if ([collection isEqualToString:@"app.bsky.graph.list"]) {
+        [self.graphService indexList:record did:did uri:uri cid:cid error:nil];
+    } else if ([collection isEqualToString:@"app.bsky.graph.listitem"]) {
+        [self.graphService indexListitem:record did:did uri:uri cid:cid error:nil];
     }
 }
 
