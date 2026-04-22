@@ -259,7 +259,9 @@
       "Bash(cd /Users/jack/Software/garazyk && xcodebuild -project Garazyk.xcodeproj -scheme AllTests build 2>&1 | tail -5)",
       "Bash(cmake --build build --target AllTests 2>&1 | tail -10)",
       "Bash(timeout 300 ./build/tests/AllTests 2>&1 | tee /tmp/test_output6.txt | grep -E \"Test Suite.*at|Test Case.*passed|Test Case.*failed\" | tail -100)",
-      "Bash(cmake -B build 2>&1 | tail -10 && cmake --build build --target AllTests 2>&1 | tail -10)"
+      "Bash(cmake -B build 2>&1 | tail -10 && cmake --build build --target AllTests 2>&1 | tail -10)",
+      "Bash(cd /Users/jack/Software/garazyk\n\ngit add Garazyk/Sources/AppView/Services/ContactService.h \\\n       Garazyk/Sources/AppView/Services/ContactService.m \\\n       Garazyk/Sources/Network/XrpcAppBskyContactPack.h \\\n       Garazyk/Sources/Network/XrpcAppBskyContactPack.m \\\n       Garazyk/Sources/Network/XrpcAppBskyMethods.m\n\ngit commit --amend --no-edit)",
+      "Bash(cd /tmp/atproto-lexicons\n\necho \"=== app.bsky.ageassurance.begin ===\"\njq '{id, defs: {main: {type: .defs.main.type, input: .defs.main.input.schema, output: .defs.main.output.schema}}}' lexicons/app/bsky/ageassurance/begin.json\n\necho -e \"\\n=== app.bsky.ageassurance.getConfig ===\"\njq '{id, defs: {main: {type: .defs.main.type, output: .defs.main.output.schema}}}' lexicons/app/bsky/ageassurance/getConfig.json\n\necho -e \"\\n=== app.bsky.ageassurance.getState ===\"\njq '{id, defs: {main: {type: .defs.main.type, parameters: .defs.main.parameters, output: .defs.main.output.schema}}}' lexicons/app/bsky/ageassurance/getState.json)"
     ]
   }
 }

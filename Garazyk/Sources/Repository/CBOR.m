@@ -384,7 +384,10 @@
         NSData *d2 = [key2 encode];
         if (d1.length < d2.length) return NSOrderedAscending;
         if (d1.length > d2.length) return NSOrderedDescending;
-        return memcmp(d1.bytes, d2.bytes, d1.length) < 0 ? NSOrderedAscending : NSOrderedDescending;
+        int cmp = memcmp(d1.bytes, d2.bytes, d1.length);
+        if (cmp < 0) return NSOrderedAscending;
+        if (cmp > 0) return NSOrderedDescending;
+        return NSOrderedSame;
     }];
     
     for (CBORValue *key in sortedKeys) {

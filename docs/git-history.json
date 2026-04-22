@@ -1,5 +1,21 @@
 [
   {
+    "hash": "d2c541ea0ab85fe5064febf3d760087c3d9098eb",
+    "short_hash": "d2c541e",
+    "author": "Security Bot",
+    "date": "2026-04-21T18:57:28-04:00",
+    "message": "fix(test): update ageassurance test for local handlers\n\ntestAgeassuranceMethodsReturn501WithoutUpstream now expects 200\nsince we have local implementations of ageassurance endpoints.\n\nRemoved app.bsky.contact.getSyncStatus from this test since it\nalso has a local handler now.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "2cc6f81623c487234ce46923b5215b5d9c6555ee",
+    "short_hash": "2cc6f81",
+    "author": "Security Bot",
+    "date": "2026-04-21T18:40:33-04:00",
+    "message": "feat(xrpc): implement 13 missing XRPC endpoints\n\ntools.ozone.moderation:\n- cancelScheduledActions: batch cancel for multiple subjects\n- getSubjects: get subject details for moderation\n\napp.bsky.unspecced:\n- getTrends: trending topics (stub)\n\napp.bsky.ageassurance (3 endpoints):\n- begin: initiate age assurance flow\n- getConfig: get age assurance configuration\n- getState: get current age assurance state\n\nchat.bsky.actor:\n- deleteAccount: delete chat account data\n- exportAccountData: export chat data as JSON\n\nchat.bsky.convo:\n- getLog: get conversation event log\n\nchat.bsky.group:\n- enableJoinLink: re-enable a disabled join link\n\nchat.bsky.moderation (3 endpoints):\n- getActorMetadata: get actor moderation metadata\n- getMessageContext: get message context for moderation\n- updateActorAccess: update actor's chat access\n\nModerationService additions:\n- cancelScheduledActions:subjects:comment:cancelledBy:error:\n- getSubjects:error:\n\nTotal registered endpoints: 297 → 310\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 11
+  },
+  {
     "hash": "bbb33ca502c94bcaf1202f811b2dbdd70dc1cc15",
     "short_hash": "bbb33ca",
     "author": "Security Bot",

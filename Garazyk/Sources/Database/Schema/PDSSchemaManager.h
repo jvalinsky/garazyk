@@ -175,6 +175,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)bskyAgeAssuranceTableSchema;
 - (NSString *)bskyChatEventLogTableSchema;
 - (NSString *)bskyChatActorMetadataTableSchema;
+- (NSString *)bskyFeedThreadgateTableSchema;
+- (NSString *)bskyFeedPostgateTableSchema;
+- (NSString *)bskyFeedGeneratorTableSchema;
+- (NSString *)bskyLabelerServiceTableSchema;
+- (NSString *)bskyGraphListTableSchema;
+- (NSString *)bskyGraphListitemTableSchema;
 
 /*!
  @method serviceSchemaSQL

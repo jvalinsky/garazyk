@@ -311,6 +311,66 @@
            @")";
 }
 
+- (NSString *)bskyFeedThreadgateTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS bsky_feed_threadgates ("
+           @"    uri TEXT PRIMARY KEY,"
+           @"    post_uri TEXT NOT NULL,"
+           @"    allow_json TEXT,"
+           @"    created_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyFeedPostgateTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS bsky_feed_postgates ("
+           @"    uri TEXT PRIMARY KEY,"
+           @"    post_uri TEXT NOT NULL,"
+           @"    embedding_rules_json TEXT,"
+           @"    detached_embedding_uris_json TEXT,"
+           @"    created_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyFeedGeneratorTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS bsky_feed_generators ("
+           @"    uri TEXT PRIMARY KEY,"
+           @"    did TEXT NOT NULL,"
+           @"    display_name TEXT,"
+           @"    description TEXT,"
+           @"    avatar_blob_cid TEXT,"
+           @"    created_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyLabelerServiceTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS bsky_labeler_services ("
+           @"    uri TEXT PRIMARY KEY,"
+           @"    did TEXT NOT NULL,"
+           @"    policies_json TEXT,"
+           @"    created_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyGraphListTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS bsky_graph_lists ("
+           @"    uri TEXT PRIMARY KEY,"
+           @"    did TEXT NOT NULL,"
+           @"    name TEXT NOT NULL,"
+           @"    purpose TEXT NOT NULL,"
+           @"    description TEXT,"
+           @"    avatar_blob_cid TEXT,"
+           @"    created_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyGraphListitemTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS bsky_graph_listitems ("
+           @"    uri TEXT PRIMARY KEY,"
+           @"    list_uri TEXT NOT NULL,"
+           @"    subject_did TEXT NOT NULL,"
+           @"    created_at INTEGER"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
     NSMutableString *sql = [NSMutableString string];
     [sql appendString:[self serviceAccountsTableSchema]];
@@ -357,6 +417,18 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self bskyChatActorMetadataTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyFeedThreadgateTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyFeedPostgateTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyFeedGeneratorTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyLabelerServiceTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyGraphListTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyGraphListitemTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self serviceHostingEventsTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
@@ -394,6 +466,20 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_chat_event_log_convo ON chat_event_log(convo_id);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_chat_event_log_actor ON chat_event_log(actor_did);"];
+    [sql appendString:@";\n\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_feed_threadgates_post ON bsky_feed_threadgates(post_uri);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_feed_postgates_post ON bsky_feed_postgates(post_uri);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_feed_generators_did ON bsky_feed_generators(did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_labeler_services_did ON bsky_labeler_services(did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_graph_lists_did ON bsky_graph_lists(did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_graph_listitems_list ON bsky_graph_listitems(list_uri);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_graph_listitems_subject ON bsky_graph_listitems(subject_did);"];
     [sql appendString:@";\n\n"];
     [sql appendString:[self schemaVersionTableSQL]];
     return sql;

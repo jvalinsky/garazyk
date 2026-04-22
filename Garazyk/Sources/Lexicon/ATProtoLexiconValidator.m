@@ -17,6 +17,23 @@ static NSCharacterSet *sValidRecordKeyCharacters;
 // Cached regex for language tag validation
 static NSRegularExpression *sLanguageTagRegex;
 
+static NSData *LexiconBase64URLDecode(NSString *string) {
+    if (!string || ![string isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+    NSMutableString *base64 = [string mutableCopy];
+    // Replace base64url characters
+    [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
+    [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
+    
+    // Add padding if missing
+    while (base64.length % 4 != 0) {
+        [base64 appendString:@"="];
+    }
+    
+    return [[NSData alloc] initWithBase64EncodedString:base64 options:0];
+}
+
 @interface ATProtoLexiconValidator ()
 
 @property (nonatomic, strong) ATProtoLexiconRegistry *registry;
@@ -503,15 +520,16 @@ static NSRegularExpression *sLanguageTagRegex;
             constraints:(ATProtoLexiconIntegerConstraints *)constraints
                 context:(NSString *)context
                   error:(NSError **)error {
-    if (![value isKindOfClass:[NSNumber class]]) {
+    if (![value isKindOfClass:[NSNumber class]] || CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID()) {
         if (error) {
             *error = [ATProtoLexiconError typeMismatchError:@"value"
                                                     expected:@"integer"
-                                                      actual:[self typeNameForValue:value]
-                                                     context:context];
+                                                       actual:[self typeNameForValue:value]
+                                                      context:context];
         }
         return NO;
     }
+
 
     NSNumber *num = (NSNumber *)value;
 
@@ -571,15 +589,16 @@ static NSRegularExpression *sLanguageTagRegex;
             constraints:(ATProtoLexiconBooleanConstraints *)constraints
                 context:(NSString *)context
                   error:(NSError **)error {
-    if (![value isKindOfClass:[NSNumber class]] || strcmp([value objCType], @encode(BOOL)) != 0) {
+    if (![value isKindOfClass:[NSNumber class]] || CFGetTypeID((__bridge CFTypeRef)value) != CFBooleanGetTypeID()) {
         if (error) {
             *error = [ATProtoLexiconError typeMismatchError:@"value"
                                                     expected:@"boolean"
-                                                      actual:[self typeNameForValue:value]
-                                                     context:context];
+                                                       actual:[self typeNameForValue:value]
+                                                      context:context];
         }
         return NO;
     }
+
 
     NSNumber *boolNum = (NSNumber *)value;
 
@@ -627,7 +646,7 @@ static NSRegularExpression *sLanguageTagRegex;
     }
 
     // Decode base64 to check length
-    NSData *data = [[NSData alloc] initWithBase64EncodedString:base64 options:0];
+    NSData *data = LexiconBase64URLDecode(base64);
     if (!data) {
         if (error) {
             *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorInvalidFieldValue
@@ -920,18 +939,24 @@ static NSRegularExpression *sLanguageTagRegex;
     // Try to validate against each variant
     if (constraints.refs) {
         for (NSString *ref in constraints.refs) {
-            // Resolve ref to definition
-            ATProtoLexiconDef *variantDef = [self resolveRef:ref inSchema:schema];
+            // In ATProto unions, the value's $type must match the ref NSID
+            // (or the NSID must be the base schema ID if it's a local ref)
+            NSString *variantNSID = ref;
+            if ([ref hasPrefix:@"#"]) {
+                variantNSID = [schema.nsid stringByAppendingString:ref];
+            }
+            
+            if ([discriminator isEqualToString:variantNSID]) {
+                // Resolve ref to definition
+                ATProtoLexiconDef *variantDef = [self resolveRef:ref inSchema:schema];
 
-            if (variantDef) {
-                NSError *variantError = nil;
-                if ([self validateValue:value
-                             againstDef:variantDef
-                                context:context
-                          recursionDepth:depth
-                                 schema:schema
-                                  error:&variantError]) {
-                    return YES; // Matched one variant
+                if (variantDef) {
+                    return [self validateValue:value
+                                    againstDef:variantDef
+                                       context:context
+                                 recursionDepth:depth
+                                        schema:schema
+                                         error:error];
                 }
             }
         }
@@ -1023,7 +1048,7 @@ static NSRegularExpression *sLanguageTagRegex;
         return @"string";
     } else if ([value isKindOfClass:[NSNumber class]]) {
         // Distinguish boolean from number
-        if (strcmp([value objCType], @encode(BOOL)) == 0) {
+        if (CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID()) {
             return @"boolean";
         }
         return @"number";
