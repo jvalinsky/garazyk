@@ -65,6 +65,18 @@
     return [_adminService takeDownAccount:did reason:reason error:error];
 }
 
+- (BOOL)deactivateAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error {
+    if (!did || did.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSAdminControllerErrorDomain"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"DID is required"}];
+        }
+        return NO;
+    }
+    return [_adminService deactivateAccount:did reason:reason error:error];
+}
+
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
     if (!did || did.length == 0) {
         if (error) {

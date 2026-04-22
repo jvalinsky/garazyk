@@ -97,11 +97,19 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Broadcasts an identity change event. */
 - (void)broadcastIdentityChange:(NSString *)did handle:(nullable NSString *)handle;
 
-/*! Broadcasts an account takedown event. */
+/*! Broadcasts an account status event for any lifecycle transition. */
+- (void)broadcastAccountStatus:(NSString *)did
+                        active:(BOOL)active
+                        status:(nullable NSString *)status;
+
+/*! Broadcasts an account takedown event. Convenience method. */
 - (void)broadcastAccountTakedown:(NSString *)did;
 
-/*! Broadcasts an info event. */
+/*! Broadcasts an informational message. */
 - (void)broadcastInfo:(NSString *)kind message:(NSString *)message;
+
+/*! Broadcasts pre-encoded raw CBOR data to all connected clients. */
+- (void)broadcastEventData:(NSData *)eventData;
 
 @end
 
