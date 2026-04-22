@@ -26,6 +26,7 @@
 #import "Database/PDSDatabase.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Core/DID.h"
+#import "Core/PDSAccountEvents.h"
 #import "Debug/PDSLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -1222,6 +1223,28 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                  jwtMinter:(JWTMinter *)jwtMinter
                            adminController:(id<PDSAdminController>)adminController
                             accountService:(id<PDSAccountService>)accountService {
+    [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
+
+        if (!did) {
+            response.statusCode = HttpStatusUnauthorized;
+            [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *account = [accountService getAccountForDid:did error:&error];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"AccountNotFound"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:account];
+    }];
+
     [dispatcher registerComAtprotoServerDeleteAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *did = body[@"did"];
@@ -1295,6 +1318,12 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"success": @YES}];
+
+        // Notify firehose of account activation (#account event)
+        [[NSNotificationCenter defaultCenter]
+            postNotificationName:PDSAccountActivatedNotification
+                          object:nil
+                        userInfo:@{PDSAccountEventDidKey: did}];
     }];
 
     [dispatcher registerComAtprotoServerDeactivateAccount:^(HttpRequest *request, HttpResponse *response) {
@@ -1311,7 +1340,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         NSString *reason = body[@"reason"];
 
         NSError *error = nil;
-        BOOL success = [adminController takeDownAccount:did reason:reason ?: @"User deactivation" error:&error];
+        BOOL success = [adminController deactivateAccount:did reason:reason ?: @"User deactivation" error:&error];
 
         if (!success) {
             response.statusCode = 400;
@@ -1321,6 +1350,15 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"success": @YES}];
+
+        // Notify firehose of account deactivation (#account event)
+        [[NSNotificationCenter defaultCenter]
+            postNotificationName:PDSAccountDeactivatedNotification
+                          object:nil
+                        userInfo:@{
+                            PDSAccountEventDidKey: did,
+                            PDSAccountEventStatusKey: @"deactivated"
+                        }];
     }];
 }
 

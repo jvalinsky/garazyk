@@ -54,6 +54,22 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error;
 
 /*!
+ @method deactivateAccount:reason:error:
+
+ @abstract Deactivates an account (user-initiated, reversible).
+
+ @discussion Sets the account status to "deactivated" which is distinct from
+ takedown. Deactivation is a user-initiated action; takedown is an admin action
+ for policy violations.
+
+ @param did The DID of the account to deactivate.
+ @param reason The reason for deactivation.
+ @param error On return, contains an error if the operation failed.
+ @return YES if successful, NO otherwise.
+ */
+- (BOOL)deactivateAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error;
+
+/*!
  @method reinstateAccount:error:
 
  @abstract Reinstates a previously taken down account.

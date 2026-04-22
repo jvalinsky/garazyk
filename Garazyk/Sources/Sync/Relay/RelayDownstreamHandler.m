@@ -21,7 +21,7 @@
 @property (nonatomic, strong) SubscribeReposHandler *subscribeReposHandler;
 @property (nonatomic, assign) int64_t currentSequence;
 @property (nonatomic, strong) NSMutableArray<id<PDSNetworkConnection>> *downstreamConnections;
-@property (nonatomic, assign) dispatch_queue_t handlerQueue;
+@property (nonatomic, strong) dispatch_queue_t handlerQueue;
 @end
 
 @implementation RelayDownstreamHandler
@@ -29,7 +29,7 @@
 #pragma mark - Initialization
 
 - (instancetype)initWithEventBuffer:(RelayEventBuffer *)buffer
-              subscribeReposHandler:(SubscribeReposHandler *)handler {
+               subscribeReposHandler:(SubscribeReposHandler *)handler {
     self = [super init];
     if (self) {
         _eventBuffer = buffer;
@@ -38,15 +38,18 @@
         _currentSequence = 0;
         _downstreamConnections = [NSMutableArray array];
         _handlerQueue = dispatch_queue_create("com.atproto.relay.downstream", DISPATCH_QUEUE_SERIAL);
+        PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler initialized %p", self);
     }
     return self;
 }
+
 
 #pragma mark - RelayUpstreamManagerDelegate
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
          didReceiveEvent:(id)event
            fromUpstream:(NSString *)url {
+    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event from %@", url);
     // Process on handler queue for thread safety
     dispatch_async(self.handlerQueue, ^{
         // Extract sequence number and event type
@@ -87,6 +90,20 @@
             [self broadcastIdentityEvent:identityEvent];
 
             PDS_LOG_DEBUG(@"Relay: Received identity seq=%lld did=%@", seq, identityEvent.did);
+        }
+        else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
+            FirehoseAccountEvent *accountEvent = (FirehoseAccountEvent *)event;
+            seq = accountEvent.seq;
+            eventType = @"account";
+
+            // Store in buffer
+            [self.eventBuffer appendEvent:event seq:seq];
+
+            // Broadcast account status change
+            [self broadcastAccountEvent:accountEvent];
+
+            PDS_LOG_DEBUG(@"Relay: Received account seq=%lld did=%@ active=%d",
+                          seq, accountEvent.did, accountEvent.active);
         }
         else if ([event isKindOfClass:[FirehoseErrorEvent class]]) {
             FirehoseErrorEvent *errorEvent = (FirehoseErrorEvent *)event;
@@ -158,40 +175,36 @@
 #pragma mark - Event Broadcasting
 
 - (void)broadcastCommitEvent:(FirehoseCommitEvent *)commitEvent {
-    // Use SubscribeReposHandler to broadcast to downstream connections
-    // The handler has its own connection management
     if (self.subscribeReposHandler) {
-        // Format the event for wire transmission
         NSData *eventData = [self formatCommitEventForWire:commitEvent];
         if (eventData) {
-            // The SubscribeReposHandler should have methods to broadcast
-            // For now, we rely on its internal broadcasting mechanism
-            // when it accepts connections
+            [self.subscribeReposHandler broadcastEventData:eventData];
         }
     }
 }
 
 - (void)broadcastIdentityEvent:(FirehoseIdentityEvent *)identityEvent {
     if (self.subscribeReposHandler) {
-        // Similar to commit events
         NSData *eventData = [self formatIdentityEventForWire:identityEvent];
-        (void)eventData; // Suppress unused warning
+        if (eventData) {
+            [self.subscribeReposHandler broadcastEventData:eventData];
+        }
+    }
+}
+
+- (void)broadcastAccountEvent:(FirehoseAccountEvent *)accountEvent {
+    if (self.subscribeReposHandler) {
+        NSData *eventData = [self formatAccountEventForWire:accountEvent];
+        if (eventData) {
+            [self.subscribeReposHandler broadcastEventData:eventData];
+        }
     }
 }
 
 - (NSData *)formatCommitEventForWire:(FirehoseCommitEvent *)event {
-    // Format as CBOR/JSON for wire transmission
-    // This would use the EventFormatter
+    EventFormatter *formatter = [[EventFormatter alloc] init];
     NSError *error = nil;
-    NSData *data = [NSJSONSerialization dataWithJSONObject:@{
-        @"seq": @(event.seq),
-        @"repo": event.repo ?: @"",
-        @"commit": event.commit.stringValue ?: @"",
-        @"rev": event.rev ?: @"",
-        @"since": event.since ?: [NSNull null],
-        @"ops": event.ops ?: @[],
-        @"time": event.time ?: @""
-    } options:0 error:&error];
+    NSData *data = [formatter encodeCommitEvent:event error:&error];
 
     if (error) {
         PDS_LOG_WARN(@"Failed to format commit event: %@", error.localizedDescription);
@@ -202,16 +215,25 @@
 }
 
 - (NSData *)formatIdentityEventForWire:(FirehoseIdentityEvent *)event {
+    EventFormatter *formatter = [[EventFormatter alloc] init];
     NSError *error = nil;
-    NSData *data = [NSJSONSerialization dataWithJSONObject:@{
-        @"seq": @(event.seq),
-        @"did": event.did ?: @"",
-        @"handle": event.handle ?: [NSNull null],
-        @"time": event.time ?: @""
-    } options:0 error:&error];
+    NSData *data = [formatter encodeIdentityEvent:event error:&error];
 
     if (error) {
         PDS_LOG_WARN(@"Failed to format identity event: %@", error.localizedDescription);
+        return nil;
+    }
+
+    return data;
+}
+
+- (NSData *)formatAccountEventForWire:(FirehoseAccountEvent *)event {
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    NSError *error = nil;
+    NSData *data = [formatter encodeAccountEvent:event error:&error];
+
+    if (error) {
+        PDS_LOG_WARN(@"Failed to format account event: %@", error.localizedDescription);
         return nil;
     }
 
@@ -275,6 +297,8 @@
             data = [self formatCommitEventForWire:(FirehoseCommitEvent *)event];
         } else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
             data = [self formatIdentityEventForWire:(FirehoseIdentityEvent *)event];
+        } else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
+            data = [self formatAccountEventForWire:(FirehoseAccountEvent *)event];
         }
 
         if (data) {
