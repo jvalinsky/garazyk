@@ -62,7 +62,7 @@ Creates a new account with the provided credentials. Returns account information
 
 **Returns:** Dictionary with account info or nil on failure
 
-**Implementation pattern (from PDSAccountService.m lines 50-150):**
+**Implementation pattern (from PDSAccountService.m):**
 
 The service validates the handle, generates cryptographic keys, registers with PLC, and stores the account:
 

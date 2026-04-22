@@ -83,8 +83,8 @@ what it does, and the docs should be too.
 
 Start here when you change blob application behavior:
 
-- `Garazyk/Sources/App/Services/PDSBlobService.h`
-- `Garazyk/Sources/App/Services/PDSBlobService.m`
+- `Garazyk/Sources/Services/PDS/PDSBlobService.h`
+- `Garazyk/Sources/Services/PDS/PDSBlobService.m`
 - `Garazyk/Sources/Blob/BlobStorage.m`
 - `Garazyk/Sources/Network/XrpcRepoMethods.m`
 - `Garazyk/Sources/Network/XrpcSyncMethods.m`
