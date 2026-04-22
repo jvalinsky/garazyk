@@ -326,7 +326,12 @@ int main(int argc, char *argv[]) {
       @"HttpProtocolSessionTests",
       @"XrpcAppBskyAgeAssuranceTests",
       @"XrpcChatBskyActorTests",
-      @"XrpcChatBskyConvoTests"
+      @"XrpcChatBskyConvoTests",
+      @"LexiconValidatorInteropTests",
+      @"AtprotoInteropFixturesTests",
+      @"SyntaxInteropTests",
+      @"MSTInteropTests",
+      @"CARInteropTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

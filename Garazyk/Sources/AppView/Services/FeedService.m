@@ -590,4 +590,74 @@
     return [TID tid].stringValue;
 }
 
+#pragma mark - Indexing
+
+- (BOOL)indexThreadgate:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
+    NSString *postUri = record[@"post"];
+    if (!postUri) {
+        // Fallback for missing field
+    }
+    
+    NSArray *allow = record[@"allow"];
+    NSString *allowJson = nil;
+    if (allow) {
+        NSData *data = [NSJSONSerialization dataWithJSONObject:allow options:0 error:nil];
+        allowJson = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
+    
+    NSString *sql = @"INSERT OR REPLACE INTO bsky_feed_threadgates (uri, post_uri, allow_json, created_at) VALUES (?, ?, ?, ?)";
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    
+    return [self.database executeParameterizedUpdate:sql params:@[uri, postUri ?: @"", allowJson ?: @"[]", @((long long)now)] error:error];
+}
+
+- (BOOL)unindexThreadgateWithURI:(NSString *)uri error:(NSError **)error {
+    NSString *sql = @"DELETE FROM bsky_feed_threadgates WHERE uri = ?";
+    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+}
+
+- (BOOL)indexPostgate:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
+    NSString *postUri = record[@"post"];
+    NSArray *embeddingRules = record[@"embeddingRules"];
+    NSArray *detachedEmbeddingUris = record[@"detachedEmbeddingUris"];
+    
+    NSString *rulesJson = @"[]";
+    if (embeddingRules) {
+        NSData *data = [NSJSONSerialization dataWithJSONObject:embeddingRules options:0 error:nil];
+        rulesJson = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
+    
+    NSString *detachedJson = @"[]";
+    if (detachedEmbeddingUris) {
+        NSData *data = [NSJSONSerialization dataWithJSONObject:detachedEmbeddingUris options:0 error:nil];
+        detachedJson = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
+    
+    NSString *sql = @"INSERT OR REPLACE INTO bsky_feed_postgates (uri, post_uri, embedding_rules_json, detached_embedding_uris_json, created_at) VALUES (?, ?, ?, ?, ?)";
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    
+    return [self.database executeParameterizedUpdate:sql params:@[uri, postUri ?: @"", rulesJson, detachedJson, @((long long)now)] error:error];
+}
+
+- (BOOL)unindexPostgateWithURI:(NSString *)uri error:(NSError **)error {
+    NSString *sql = @"DELETE FROM bsky_feed_postgates WHERE uri = ?";
+    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+}
+
+- (BOOL)indexGenerator:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
+    NSString *displayName = record[@"displayName"];
+    NSString *description = record[@"description"];
+    NSString *avatar = record[@"avatar"]; // CID
+    
+    NSString *sql = @"INSERT OR REPLACE INTO bsky_feed_generators (uri, did, display_name, description, avatar_blob_cid, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    
+    return [self.database executeParameterizedUpdate:sql params:@[uri, did, displayName ?: @"", description ?: @"", avatar ?: [NSNull null], @((long long)now)] error:error];
+}
+
+- (BOOL)unindexGeneratorWithURI:(NSString *)uri error:(NSError **)error {
+    NSString *sql = @"DELETE FROM bsky_feed_generators WHERE uri = ?";
+    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+}
+
 @end

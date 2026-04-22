@@ -536,4 +536,38 @@
     return [self.database executeParameterizedUpdate:sql params:@[did, rkey] error:error];
 }
 
+#pragma mark - Indexing
+
+- (BOOL)indexList:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
+    NSString *name = record[@"name"];
+    NSString *purpose = record[@"purpose"];
+    NSString *description = record[@"description"];
+    NSString *avatar = record[@"avatar"]; // CID
+    
+    NSString *sql = @"INSERT OR REPLACE INTO bsky_graph_lists (uri, did, name, purpose, description, avatar_blob_cid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    
+    return [self.database executeParameterizedUpdate:sql params:@[uri, did, name ?: @"", purpose ?: @"", description ?: @"", avatar ?: [NSNull null], @((long long)now)] error:error];
+}
+
+- (BOOL)unindexListWithURI:(NSString *)uri error:(NSError **)error {
+    NSString *sql = @"DELETE FROM bsky_graph_lists WHERE uri = ?";
+    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+}
+
+- (BOOL)indexListitem:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
+    NSString *listUri = record[@"list"];
+    NSString *subjectDid = record[@"subject"];
+    
+    NSString *sql = @"INSERT OR REPLACE INTO bsky_graph_listitems (uri, list_uri, subject_did, created_at) VALUES (?, ?, ?, ?)";
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    
+    return [self.database executeParameterizedUpdate:sql params:@[uri, listUri ?: @"", subjectDid ?: @"", @((long long)now)] error:error];
+}
+
+- (BOOL)unindexListitemWithURI:(NSString *)uri error:(NSError **)error {
+    NSString *sql = @"DELETE FROM bsky_graph_listitems WHERE uri = ?";
+    return [self.database executeParameterizedUpdate:sql params:@[uri] error:error];
+}
+
 @end
