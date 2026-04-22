@@ -29,6 +29,16 @@
 | tools.ozone.moderation | listScheduledActions | ✅ Full |
 | tools.ozone.moderation | cancelScheduledAction | ✅ Full |
 
+## Record Types Supported (Indexing & Schema)
+
+The following record types now have dedicated database tables and indexing logic in the service layer:
+- `app.bsky.feed.threadgate`
+- `app.bsky.feed.postgate`
+- `app.bsky.feed.generator`
+- `app.bsky.labeler.service`
+- `app.bsky.graph.list`
+- `app.bsky.graph.listitem`
+
 ## Next Steps
 
 ### 1. Interoperability Testing
