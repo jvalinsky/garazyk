@@ -64,7 +64,7 @@ Keeping those boundaries clear is what makes firehose bugs debuggable.
 Start with these files:
 
 - `Garazyk/Sources/Network/WebSocketUpgradeHandler.m`
-- `Garazyk/Sources/Sync/SubscribeReposHandler.m`
+- `Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m`
 - `Garazyk/Sources/Sync/WebSocketServer.m`
 - `Garazyk/Sources/Sync/WebSocketConnection.m`
 - `Garazyk/Sources/Sync/WebSocketCodec.m`
@@ -154,7 +154,8 @@ Contributors who debug it at the right layer move much faster than contributors 
 ### Small verification loop
 
 ```bash
-./build/tests/AllTests -only-testing:AllTests/SubscribeReposHandlerTests
-./build/tests/AllTests -only-testing:AllTests/WebSocketUpgradeHandlerTests
+./build/tests/AllTests -XCTest SubscribeReposHandlerTests
+./build/tests/AllTests -XCTest WebSocketUpgradeHandlerTests
 websocat ws://127.0.0.1:2583/xrpc/com.atproto.sync.subscribeRepos
-```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+```
+\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

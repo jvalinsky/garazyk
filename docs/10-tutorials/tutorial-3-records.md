@@ -56,8 +56,8 @@ flowchart LR
 
 Begin with:
 
-- `Garazyk/Sources/App/Services/PDSRecordService.m`
-- `Garazyk/Sources/App/Services/PDSRecordService.h`
+- `Garazyk/Sources/Services/PDS/PDSRecordService.m`
+- `Garazyk/Sources/Services/PDS/PDSRecordService.h`
 
 The service boundary is where the record path becomes legible. It answers:
 
