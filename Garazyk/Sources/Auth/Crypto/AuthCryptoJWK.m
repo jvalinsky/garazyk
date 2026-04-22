@@ -216,6 +216,11 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
+    // ATProto requires low-S signatures
+    if (![AuthCryptoECDSA isLowS:signature error:error]) {
+        return NO;
+    }
+
     NSError *derError = nil;
     NSData *derSig = [AuthCryptoECDSA derSignatureFromRaw:signature error:&derError];
     if (!derSig) {
@@ -286,6 +291,11 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
                                          code:PDSKeyErrorCodeInvalidSignature
                                      userInfo:@{NSLocalizedDescriptionKey: @"Signature must be 64 bytes"}];
         }
+        return NO;
+    }
+
+    // ATProto requires low-S signatures
+    if (![AuthCryptoECDSA isLowS:signature error:error]) {
         return NO;
     }
 

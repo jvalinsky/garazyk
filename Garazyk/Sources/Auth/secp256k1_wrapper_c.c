@@ -96,6 +96,12 @@ Secp256k1Error secp256k1_wrapper_verify(const Secp256k1PublicKey *public_key,
         return Secp256k1ErrorInvalidSignature;
     }
 
+    // ATProto requires low-S signatures.
+    // secp256k1_ecdsa_signature_normalize returns 1 if it changed the signature (meaning it was high-S).
+    if (secp256k1_ecdsa_signature_normalize(get_context(), NULL, &sig)) {
+        return Secp256k1ErrorInvalidSignature;
+    }
+
     int ret = secp256k1_ecdsa_verify(get_context(), &sig, hash32, &pubkey);
     if (!ret) {
         return Secp256k1ErrorVerificationFailed;

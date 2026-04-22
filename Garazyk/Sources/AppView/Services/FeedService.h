@@ -10,7 +10,8 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Database/PDSQueryDatabase.h"
+
+@protocol PDSQueryDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -75,6 +76,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Generate a CID string for a record dictionary. */
 - (NSString *)generateCIDForRecord:(NSDictionary *)record;
+
+#pragma mark - Indexing
+
+- (BOOL)indexThreadgate:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+- (BOOL)unindexThreadgateWithURI:(NSString *)uri error:(NSError **)error;
+
+- (BOOL)indexPostgate:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+- (BOOL)unindexPostgateWithURI:(NSString *)uri error:(NSError **)error;
+
+- (BOOL)indexGenerator:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+- (BOOL)unindexGeneratorWithURI:(NSString *)uri error:(NSError **)error;
 
 @end
 

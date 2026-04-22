@@ -5,6 +5,7 @@
 #import "AppView/Services/BookmarkService.h"
 #import "AppView/Services/ContactService.h"
 #import "AppView/Services/GraphService.h"
+#import "AppView/Services/FeedService.h"
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/AgeAssuranceService.h"
 #import "AppView/Services/ChatModerationService.h"
@@ -66,6 +67,7 @@
                                        actorService:[[ActorService alloc]
                                                         initWithDatabase:appViewDatabase]];
   GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
+  FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
   BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];
   ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
   ContactService *contactService = [[ContactService alloc] initWithDatabase:appViewDatabase
@@ -78,6 +80,7 @@
       [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
                                                    bookmarkService:bookmarkService
                                                       graphService:graphService
+                                                       feedService:feedService
                                                           database:appViewDatabase];
 
   [XrpcAppBskyFeedPack registerWithDispatcher:dispatcher

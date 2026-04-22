@@ -11,7 +11,8 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Database/PDSQueryDatabase.h"
+
+@protocol PDSQueryDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -113,6 +114,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)unindexStarterPackWithRKey:(NSString *)rkey
                                did:(NSString *)did
                              error:(NSError **)error;
+
+#pragma mark - Indexing
+
+- (BOOL)indexList:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+- (BOOL)unindexListWithURI:(NSString *)uri error:(NSError **)error;
+
+- (BOOL)indexListitem:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+- (BOOL)unindexListitemWithURI:(NSString *)uri error:(NSError **)error;
 
 @end
 

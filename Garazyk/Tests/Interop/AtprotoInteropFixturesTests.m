@@ -62,10 +62,11 @@
     NSMutableArray<NSString *> *lines = [NSMutableArray array];
     [contents enumerateLinesUsingBlock:^(NSString * _Nonnull line, BOOL * _Nonnull stop) {
         (void)stop;
-        NSString *trimmed = [line stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if (trimmed.length == 0) return;
-        if ([trimmed hasPrefix:@"#"]) return;
-        [lines addObject:trimmed];
+        if (line.length == 0) return;
+        if ([line hasPrefix:@"#"]) return;
+        
+        // Don't trim - spaces might be part of the invalid test case
+        [lines addObject:line];
     }];
     return [lines copy];
 }
@@ -217,8 +218,8 @@ static NSData *InteropBase64URLDecode(NSString *string) {
         XCTAssertNotNil(expectedCID);
         if (!json || !cborBase64 || !expectedCID) continue;
 
-        NSData *expectedCBOR = [[NSData alloc] initWithBase64EncodedString:cborBase64 options:0];
-        XCTAssertNotNil(expectedCBOR);
+        NSData *expectedCBOR = InteropBase64URLDecode(cborBase64);
+        XCTAssertNotNil(expectedCBOR, @"Failed to decode expected CBOR base64 in fixture: %@", fixture[@"name"]);
         if (!expectedCBOR) continue;
 
         NSError *encodeError = nil;

@@ -184,4 +184,28 @@
     return sequence;
 }
 
++ (BOOL)isLowS:(NSData *)rawSignature error:(NSError **)error {
+    if (rawSignature.length != 64) return NO;
+    
+    // Extract s (last 32 bytes)
+    const uint8_t *s = (const uint8_t *)rawSignature.bytes + 32;
+    
+    // P-256 curve order N divided by 2 (N/2)
+    // N = FFFFFFFF 00000001 00000000 00000000 00000000 FFFFFFFF FFFFFFFF FFFFFFFF
+    // N/2 = 7FFFFFFF 80000000 80000000 00000000 00000000 7FFFFFFF FFFFFFFF FFFFFFFF
+    static const uint8_t p256HalfN[32] = {
+        0x7f, 0xff, 0xff, 0xff, 0x80, 0x00, 0x00, 0x00,
+        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x7f, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+    };
+    
+    for (int i = 0; i < 32; i++) {
+        if (s[i] < p256HalfN[i]) return YES;
+        if (s[i] > p256HalfN[i]) return NO;
+    }
+    
+    return YES; // Equal to N/2 is also low-S
+}
+
 @end

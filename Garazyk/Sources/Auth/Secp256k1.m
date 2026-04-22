@@ -208,11 +208,11 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
 }
 
 - (BOOL)verifySignature:(NSData *)signature forHash:(NSData *)hash withPublicKey:(NSData *)publicKey error:(NSError **)error {
-    if (publicKey.length != 65) {
+    if (publicKey.length != 33 && publicKey.length != 65) {
         if (error) {
             *error = [NSError errorWithDomain:Secp256k1ErrorDomain
                                          code:Secp256k1ErrorInvalidPublicKey
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Public key must be 65 bytes"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Public key must be 33 or 65 bytes"}];
         }
         return NO;
     }
@@ -236,7 +236,15 @@ NSString * const Secp256k1ErrorDomain = @"com.atproto.pds.secp256k1";
     }
 
     Secp256k1PublicKey pubKey;
-    memcpy(pubKey.data, publicKey.bytes, 65);
+    Secp256k1Error normResult = secp256k1_wrapper_public_key_normalize(publicKey.bytes, publicKey.length, pubKey.data);
+    if (normResult != Secp256k1ErrorNone) {
+        if (error) {
+            *error = [NSError errorWithDomain:Secp256k1ErrorDomain
+                                         code:normResult
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse/normalize public key"}];
+        }
+        return NO;
+    }
 
     Secp256k1Signature sig;
     memcpy(sig.data, signature.bytes, 64);
