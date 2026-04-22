@@ -10,7 +10,7 @@ title: Architecture Overview
 
 *Complete system architecture showing all major components and their interactions*
 
-The PDS is built as a layered architecture with clear separation of concerns:
+The Garazyk ecosystem is built as a layered architecture with clear separation of concerns, supporting both monolithic (PDS) and distributed (AppView, Relay, PLC) deployment models:
 
 ```text
 
@@ -21,7 +21,7 @@ The PDS is built as a layered architecture with clear separation of concerns:
                              │
                 ┌────────────▼────────────┐
                 │   HttpServer (2583)    │
-                │  - Route Registration  │
+                │  - State Machine Parse │ <── Sans-I/O Architecture
                 │  - TLS Termination     │
                 │  - WebSocket Upgrade   │
                 └────────────┬────────────┘
@@ -50,13 +50,18 @@ The PDS is built as a layered architecture with clear separation of concerns:
         ┌────────────▼────────────────────────────────────┐
         │        PDSApplication Facade                    │
         │  ┌──────────────────────────────────────────┐  │
-        │  │ Services:                                │  │
+        │  │ Core Services:                           │  │
         │  │ - PDSAccountService                      │  │
         │  │ - PDSRecordService                       │  │
         │  │ - PDSBlobService                         │  │
         │  │ - PDSRepositoryService                   │  │
         │  │ - PDSAdminController                     │  │
         │  │ - PDSRelayService                        │  │
+        │  └──────────────────────────────────────────┘  │
+        │  ┌──────────────────────────────────────────┐  │
+        │  │ Safety & Compliance:                     │  │
+        │  │ - AgeAssuranceService                    │  │
+        │  │ - ChatModerationService                  │  │
         │  └──────────────────────────────────────────┘  │
         └────────────┬─────────────────────────────────────┘
                      │
@@ -65,8 +70,8 @@ The PDS is built as a layered architecture with clear separation of concerns:
         │  ┌──────────────────────────────────────────┐  │
         │  │ PDSServiceDatabases (Shared)             │  │
         │  │ - Service DB (users, DIDs, config)       │  │
-        │  │ - DID Cache                              │  │
-        │  │ - Sequencer                              │  │
+        │  │ - Safety DB (AA, Chat audit)             │  │
+        │  │ - AppView DB (Checkpoints, Relevance)    │  │
         │  └──────────────────────────────────────────┘  │
         │  ┌──────────────────────────────────────────┐  │
         │  │ PDSDatabasePool (Per-User)               │  │
@@ -77,6 +82,17 @@ The PDS is built as a layered architecture with clear separation of concerns:
         └─────────────────────────────────────────────────┘
 ```
 
+## Core Architectural Patterns
+
+### 1. Sans-I/O Protocol Logic
+The system utilizes a **Sans-I/O architecture** for HTTP and WebSocket handling. Protocol logic is implemented as pure state machines (`HttpProtocolSession`, `WebSocketProtocolSession`) that are decoupled from socket operations. This ensures that the same codebase is highly portable and facilitates deterministic testing. See the [Sans-I/O Guide](../04-network-layer/sans-io) for more details.
+
+### 2. Standalone Binary Suite
+While the system can run as a unified PDS, it provides a suite of standalone binaries for distributed deployments:
+*   **Syrena (`syrena`)**: A standalone AppView for feed generation and profile indexing.
+*   **Zuk (`zuk`)**: An AT Protocol relay for firehose aggregation.
+*   **Campagnola (`campagnola`)**: A standalone PLC directory server.
+
 ## Layer Descriptions
 
 ### 1. HTTP Server Layer
@@ -85,10 +101,10 @@ The PDS is built as a layered architecture with clear separation of concerns:
 
 The HTTP server is a custom implementation that:
 - Listens on port 2583 (configurable)
-- Handles HTTP/1.1 requests
-- Supports WebSocket upgrades for the firehose
-- Implements TLS termination (in production, behind nginx)
-- Routes requests to XRPC dispatcher
+- Handles HTTP/1.1 requests using the `HttpProtocolSession` state machine.
+- Supports WebSocket upgrades for the firehose using `WebSocketProtocolSession`.
+- Implements TLS termination (in production, usually behind nginx).
+- Routes requests to XRPC dispatcher.
 
 **Key Classes:**
 - `HttpServer` — Main server implementation
