@@ -3,6 +3,19 @@
 #import "Repository/CBOR.h"
 #import <Security/Security.h>
 
+static NSData *CBORBase64URLDecode(NSString *string) {
+    if (!string || ![string isKindOfClass:[NSString class]]) {
+        return nil;
+    }
+    NSMutableString *base64 = [string mutableCopy];
+    [base64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, base64.length)];
+    [base64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, base64.length)];
+    while (base64.length % 4 != 0) {
+        [base64 appendString:@"="];
+    }
+    return [[NSData alloc] initWithBase64EncodedString:base64 options:0];
+}
+
 @implementation ATProtoCBORSerialization
 
 + (NSData *)encodeDataWithJSONObject:(id)obj error:(NSError **)error {
@@ -61,8 +74,7 @@
     // ATProto lex-to-IPLD: convert {"$bytes": "base64..."} to CBOR byte string
     if (json.count == 1 && [json[@"$bytes"] isKindOfClass:[NSString class]]) {
       NSString *b64 = json[@"$bytes"];
-      NSData *bytes =
-          [[NSData alloc] initWithBase64EncodedString:b64 options:0];
+      NSData *bytes = CBORBase64URLDecode(b64);
       return [CBORValue byteString:bytes ?: [NSData data]];
     }
 
