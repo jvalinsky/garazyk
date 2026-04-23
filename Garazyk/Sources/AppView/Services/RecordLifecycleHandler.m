@@ -8,6 +8,7 @@
 
 #import "AppView/Services/RecordLifecycleHandler.h"
 #import "AppView/Services/NotificationService.h"
+#import "Core/NSDictionary+CID.h"
 #import "AppView/Services/BookmarkService.h"
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/FeedService.h"
@@ -69,7 +70,7 @@
     NSString *collection = info[@"collection"];
     NSString *rkey = info[@"rkey"];
     NSString *action = info[@"action"];
-    NSString *cid = [info[@"cid"] isKindOfClass:[NSNull class]] ? nil : info[@"cid"];
+    NSString *cid = [info cidStringForKey:@"cid"];
     NSData *recordCBOR = [info[@"recordCBOR"] isKindOfClass:[NSNull class]] ? nil : info[@"recordCBOR"];
 
     if (!did || !collection || !rkey || !action) return;

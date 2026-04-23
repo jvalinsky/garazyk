@@ -12,6 +12,7 @@
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
+#import "Core/NSDictionary+CID.h"
 #import "Repository/CAR.h"
 
 // ---------------------------------------------------------------------------
@@ -108,8 +109,8 @@
 @property (nonatomic, strong) AppViewDatabase *database;
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;
 @property (nonatomic, strong) NSMutableArray<AppViewRelayConnection *> *connections;
-@property (nonatomic, assign) dispatch_queue_t eventQueue;
-@property (nonatomic, assign) dispatch_queue_t checkpointQueue;
+@property (nonatomic, strong) dispatch_queue_t eventQueue;
+@property (nonatomic, strong) dispatch_queue_t checkpointQueue;
 @property (nonatomic, strong) NSTimer *checkpointTimer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *lagByRelay;
@@ -202,7 +203,7 @@
 - (void)_handleCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL {
     NSString *did = event.repo;
     NSString *rev = event.rev;
-    NSString *cid = event.commit ? [event.commit description] : nil;
+    NSString *cid = event.commit ? [event.commit stringValue] : nil;
     int64_t seq   = event.seq;
 
     // Idempotency check
@@ -236,7 +237,9 @@
         NSString *action = op[@"action"];
         NSString *path = op[@"path"];
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@", did, path];
-        NSString *cidStr = op[@"cid"];
+
+        // cid may be a CID object (from CBOR tag 42 decode), NSString, or NSNull
+        NSString *cidStr = [op cidStringForKey:@"cid"];
         
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSArray *parts = [path componentsSeparatedByString:@"/"];
