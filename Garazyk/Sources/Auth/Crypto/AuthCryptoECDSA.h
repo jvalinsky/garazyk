@@ -40,6 +40,23 @@ NS_ASSUME_NONNULL_BEGIN
     @return YES if low-S, NO otherwise. */
 + (BOOL)isLowS:(NSData *)rawSignature error:(NSError **)error;
 
+/*! Normalizes a raw P-256 signature to low-S form.
+    @discussion If s > N/2, replaces s with N - s (per PLC spec low-S canonicalization).
+    https://web.plc.directory/spec/v0.1/did-plc
+    @param rawSignature Raw 64-byte signature.
+    @param error Set on failure.
+    @return Normalized 64-byte signature (may be same object if already low-S). */
++ (nullable NSData *)normalizeLowS:(NSData *)rawSignature error:(NSError **)error;
+
+/*! Converts a low-S P-256 signature back to high-S form.
+    @discussion Inverse of normalizeLowS: — replaces s with N - s.
+    Used during verification because Apple's SecKeyVerifySignature may only
+    accept the original (high-S) form produced by SecKeyCreateSignature.
+    @param rawSignature Raw 64-byte low-S signature.
+    @param error Set on failure.
+    @return High-S 64-byte signature, or nil on error. */
++ (nullable NSData *)denormalizeLowS:(NSData *)rawSignature error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

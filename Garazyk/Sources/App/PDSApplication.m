@@ -275,6 +275,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _serviceDatabases.refreshTokenTTLSeconds = _configuration.refreshTokenTtlSeconds;
     
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
+    _userDatabasePool.masterSecret = _configuration.masterSecret;
     
     // Initialize JWT Minter
     _jwtMinter = [[JWTMinter alloc] init];

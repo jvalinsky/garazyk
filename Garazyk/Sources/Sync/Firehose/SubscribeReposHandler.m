@@ -592,8 +592,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 - (void)broadcastEventData:(NSData *)eventData {
   @synchronized(_attachedConnections) {
     PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers", (unsigned long)_attachedConnections.count);
-    for (WebSocketConnection *connection in _attachedConnections) {
-      [connection sendMessage:eventData];
+    for (WebSocketConnection *connection in [_attachedConnections copy]) {
+      if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
+        PDS_LOG_SYNC_WARN(@"Dropping slow consumer during live broadcast");
+      }
     }
   }
 }

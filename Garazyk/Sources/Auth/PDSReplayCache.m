@@ -4,6 +4,7 @@
 
 @implementation PDSReplayCache {
     sqlite3 *_db;
+    NSTimer *_cleanupTimer;
 }
 
 + (instancetype)sharedCache {
@@ -46,17 +47,23 @@
         }
 
         // Setup periodic cleanup
-        NSTimer *timer = [NSTimer timerWithTimeInterval:300 target:self selector:@selector(cleanup) userInfo:nil repeats:YES];
-        [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+        _cleanupTimer = [NSTimer timerWithTimeInterval:300 target:self selector:@selector(cleanup) userInfo:nil repeats:YES];
+        [[NSRunLoop mainRunLoop] addTimer:_cleanupTimer forMode:NSRunLoopCommonModes];
     }
     return self;
 }
 
-- (void)dealloc {
+- (void)invalidate {
+    [_cleanupTimer invalidate];
+    _cleanupTimer = nil;
     if (_db) {
         sqlite3_close(_db);
         _db = NULL;
     }
+}
+
+- (void)dealloc {
+    [self invalidate];
 }
 
 - (BOOL)checkAndAddJTI:(NSString *)jti expiration:(NSDate *)expiration {

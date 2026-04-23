@@ -151,8 +151,12 @@ static BOOL parse_relay_options(NSArray<NSString *> *args,
     return YES;
 }
 
+// Force NSDateFormatter category to be linked
+extern void NSDateFormatterLinkATProtoCategory(void);
+
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
+        NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
         // On Linux/GNUstep, verify critical categories are loaded
         if (![NSDateFormatter respondsToSelector:NSSelectorFromString(@"atproto_dateFromString:")]) {

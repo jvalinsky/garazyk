@@ -91,6 +91,7 @@
   }
 
   if (subscribeReposHandler) {
+    PDS_LOG_SYNC_INFO(@"PDSHttpXrpcRoutePack: Registering WebSocket route for subscribeRepos");
     // OPTIONS preflight for WebSocket upgrade
     [server addRoute:@"OPTIONS"
                 path:@"/xrpc/com.atproto.sync.subscribeRepos"

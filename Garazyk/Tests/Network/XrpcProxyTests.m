@@ -254,7 +254,7 @@
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
     HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodPOST
                                              methodString:@"POST"
-                                                     path:@"/xrpc/app.bsky.ageassurance.begin"
+                                                     path:@"/xrpc/app.bsky.unspecced.someProxyTest"
                                               queryString:@""
                                               queryParams:@{}
                                                   headers:@{
@@ -264,7 +264,7 @@
                                                      body:bodyData];
 
     XCTAssertEqual(response.statusCode, 200,
-        @"ageassurance.begin should be proxied successfully, got %ld",
+        @"proxy method should be proxied successfully, got %ld",
         (long)response.statusCode);
 
     NSDictionary *json = response.body.length > 0
@@ -297,7 +297,7 @@
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
     HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodPOST
                                              methodString:@"POST"
-                                                     path:@"/xrpc/app.bsky.ageassurance.begin"
+                                                     path:@"/xrpc/app.bsky.unspecced.someProxyTest"
                                               queryString:@""
                                               queryParams:@{}
                                                   headers:@{
@@ -332,7 +332,7 @@
     self.dispatcher.ozoneURL = [NSURL URLWithString:ozoneBase];
     self.dispatcher.ozoneDID = @"did:web:ozone.example.com";
 
-    NSString *methodId = @"tools.ozone.moderation.getRepo";
+    NSString *methodId = @"tools.ozone.moderation.nonExistentMethod";
     NSString *query = @"did=did:plc:example";
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
     HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
@@ -354,7 +354,7 @@
 }
 
 - (void)testUnknownOzoneMethodReturnsNotFoundWhenNoOzoneProxyConfigured {
-    NSString *methodId = @"tools.ozone.moderation.queryEvents";
+    NSString *methodId = @"tools.ozone.moderation.anotherNonExistentMethod";
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
 
     // Ensure ozoneURL is not set

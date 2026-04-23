@@ -240,4 +240,90 @@
     XCTAssertEqual(EventFormatterErrorCodeDecodingFailed, 5001);
 }
 
+- (void)testOpsCIDRoundTrip {
+    // Verify that CID objects in ops survive encode→decode round-trip
+    NSError *error = nil;
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:roundtrip";
+    event.rev = @"3kroundtrip";
+    event.time = @"2024-01-01T00:00:00Z";
+    NSData *digest = [@"roundtrip-test" dataUsingEncoding:NSUTF8StringEncoding];
+    event.commit = [CID cidWithDigest:digest codec:0x71];
+
+    // Create a CID for the op's record
+    NSData *recordDigest = [@"record-cid-test" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *recordCID = [CID cidWithDigest:recordDigest codec:0x71];
+    XCTAssertNotNil(recordCID, @"Precondition: record CID must be created");
+
+    event.ops = @[@{
+        @"action": @"create",
+        @"path": @"app.bsky.feed.post/3kabc123",
+        @"cid": recordCID
+    }];
+    event.blobs = @[];
+
+    // Encode
+    NSData *encoded = [self.formatter encodeCommitEvent:event error:&error];
+    XCTAssertNotNil(encoded, @"Encoding should succeed");
+    XCTAssertNil(error, @"No encoding error expected");
+
+    // Decode
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+    XCTAssertNotNil(decoded, @"Decoding should succeed");
+    XCTAssertNil(error, @"No decoding error expected: %@", error.localizedDescription);
+    XCTAssertEqualObjects(msgType, @"#commit");
+
+    // Verify ops survived round-trip
+    NSArray *decodedOps = decoded[@"ops"];
+    XCTAssertEqual(decodedOps.count, 1U, @"Should have 1 op");
+    NSDictionary *decodedOp = decodedOps.firstObject;
+    XCTAssertEqualObjects(decodedOp[@"action"], @"create", @"Action should survive round-trip");
+    XCTAssertEqualObjects(decodedOp[@"path"], @"app.bsky.feed.post/3kabc123", @"Path with rkey should survive round-trip");
+
+    // Verify CID survived round-trip
+    id decodedCIDValue = decodedOp[@"cid"];
+    XCTAssertTrue([decodedCIDValue isKindOfClass:[CID class]], @"cid should be a CID object, got %@", NSStringFromClass([decodedCIDValue class]));
+    if ([decodedCIDValue isKindOfClass:[CID class]]) {
+        CID *decodedCID = (CID *)decodedCIDValue;
+        XCTAssertEqualObjects(decodedCID.stringValue, recordCID.stringValue, @"CID string should match after round-trip");
+    }
+}
+
+- (void)testOpsCIDNullRoundTrip {
+    // Verify that NSNull cid in ops (for delete ops) survives round-trip
+    NSError *error = nil;
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.repo = @"did:plc:deletetest";
+    event.rev = @"3kdeletetest";
+    event.time = @"2024-01-01T00:00:00Z";
+    NSData *digest = [@"delete-test" dataUsingEncoding:NSUTF8StringEncoding];
+    event.commit = [CID cidWithDigest:digest codec:0x71];
+
+    event.ops = @[@{
+        @"action": @"delete",
+        @"path": @"app.bsky.feed.post/3kdel456",
+        @"cid": [NSNull null]
+    }];
+    event.blobs = @[];
+
+    NSData *encoded = [self.formatter encodeCommitEvent:event error:&error];
+    XCTAssertNotNil(encoded);
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+    XCTAssertNotNil(decoded);
+    XCTAssertNil(error);
+
+    NSArray *decodedOps = decoded[@"ops"];
+    XCTAssertEqual(decodedOps.count, 1U);
+    NSDictionary *decodedOp = decodedOps.firstObject;
+    XCTAssertEqualObjects(decodedOp[@"action"], @"delete");
+    XCTAssertEqualObjects(decodedOp[@"path"], @"app.bsky.feed.post/3kdel456");
+    XCTAssertTrue([decodedOp[@"cid"] isKindOfClass:[NSNull class]], @"cid should be NSNull for delete ops");
+}
+
 @end
