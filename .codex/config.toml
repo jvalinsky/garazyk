@@ -1,0 +1,80 @@
+# Codex CLI project config — WAT framework integration.
+#
+# Codex does not auto-discover the agents/skills under .agents/ or .opencode/
+# the way opencode and Claude Code do, so we enumerate them here explicitly.
+#
+# Canonical artifacts:
+#   - AGENTS.md                    (rules, read by all three tools)
+#   - .agents/agents/<name>.md     (subagents, YAML frontmatter + prompt body)
+#   - .agents/skills/<name>/SKILL.md (skills)
+#   - .opencode/workflows/*.md     (workflow runbooks, linked from AGENTS.md)
+#   - .opencode/tools/*.sh         (JSON-emitting Bash wrappers)
+
+# ---------------------------------------------------------------------------
+# Skills — enumerated so Codex's skills.config loader can find them.
+# ---------------------------------------------------------------------------
+skills.config = [
+  { path = ".agents/skills/objc-security-audit", enabled = true },
+  { path = ".agents/skills/objc-concurrency-audit", enabled = true },
+  { path = ".agents/skills/objc-architecture-audit", enabled = true },
+  { path = ".agents/skills/web-ui-audit", enabled = true },
+  { path = ".agents/skills/atproto-coverage-audit", enabled = true },
+  { path = ".agents/skills/debugging-objc-crashes", enabled = true },
+  { path = ".agents/skills/professional-bash-scripting", enabled = true },
+  { path = ".agents/skills/rewriting-code-comments", enabled = true },
+  { path = ".agents/skills/slop-detector", enabled = true },
+]
+
+# ---------------------------------------------------------------------------
+# Subagents — one table per agent. `prompt_file` points at the canonical
+# Markdown definition; `skills.config` narrows the skill set the subagent
+# loads (so each auditor sees only its own skill).
+# ---------------------------------------------------------------------------
+
+[subagents.security-auditor]
+description = "Objective-C security audit — SQLi, crypto, secrets, log redaction."
+prompt_file = ".agents/agents/security-auditor.md"
+model = "gpt-5-codex"
+model_reasoning_effort = "medium"
+skills.config = [{ path = ".agents/skills/objc-security-audit", enabled = true }]
+
+[subagents.concurrency-auditor]
+description = "Thread-safety, deadlocks, re-entrancy, queue-contract violations."
+prompt_file = ".agents/agents/concurrency-auditor.md"
+model = "gpt-5-codex"
+model_reasoning_effort = "medium"
+skills.config = [{ path = ".agents/skills/objc-concurrency-audit", enabled = true }]
+
+[subagents.architecture-auditor]
+description = "Platform portability, XRPC contracts, service boundaries, SQLite invariants."
+prompt_file = ".agents/agents/architecture-auditor.md"
+model = "gpt-5-codex"
+model_reasoning_effort = "medium"
+skills.config = [{ path = ".agents/skills/objc-architecture-audit", enabled = true }]
+
+[subagents.web-ui-auditor]
+description = "AdminUI accessibility, JS patterns, frontend security — checklist-driven."
+prompt_file = ".agents/agents/web-ui-auditor.md"
+model = "gpt-5-codex"
+model_reasoning_effort = "low"
+skills.config = [{ path = ".agents/skills/web-ui-audit", enabled = true }]
+
+[subagents.atproto-coverage-auditor]
+description = "XRPC endpoint coverage vs. lexicon schemas; stub detection."
+prompt_file = ".agents/agents/atproto-coverage-auditor.md"
+model = "gpt-5-codex"
+model_reasoning_effort = "medium"
+skills.config = [{ path = ".agents/skills/atproto-coverage-audit", enabled = true }]
+
+[subagents.pr-reviewer]
+description = "Branch/PR review: diff triage, quality-gate run, subagent recommendations."
+prompt_file = ".agents/agents/pr-reviewer.md"
+model = "gpt-5-codex"
+model_reasoning_effort = "medium"
+skills.config = []
+
+# ---------------------------------------------------------------------------
+# Project-doc loading — make sure Codex pulls in AGENTS.md fully.
+# ---------------------------------------------------------------------------
+project_doc_max_bytes = 65536
+project_doc_fallback_filenames = ["AGENTS.md", "CLAUDE.md"]
