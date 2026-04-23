@@ -42,16 +42,21 @@ typedef NS_ENUM(NSInteger, KeyManagerError) {
 
 @property (nonatomic, copy) NSString *keyID;
 @property (nonatomic, copy) NSString *algorithm;
-@property (nonatomic, assign) SecKeyRef privateKey;
-@property (nonatomic, assign) SecKeyRef publicKey;
+@property (nonatomic, assign, nullable) SecKeyRef privateKey;
+@property (nonatomic, assign, nullable) SecKeyRef publicKey;
 @property (nonatomic, strong) NSDate *createdAt;
 @property (nonatomic, assign) BOOL isActive;
 @property (nonatomic, assign) BOOL isSecureEnclaveKey;
+@property (nonatomic, copy, nullable) NSData *secp256k1PrivateKeyData;  // Raw secp256k1 private key for ES256K signing
 
 + (nullable instancetype)keyPairFromPrivateKey:(SecKeyRef)privateKey
                                       publicKey:(SecKeyRef)publicKey
                                         keyID:(NSString *)keyID
                                      algorithm:(NSString *)algorithm;
+
++ (nullable instancetype)keyPairWithSecp256k1PrivateKey:(NSData *)privateKeyData
+                                              publicKey:(NSData *)publicKeyData
+                                                 keyID:(NSString *)keyID;
 
 @end
 
