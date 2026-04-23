@@ -1,0 +1,22 @@
+{
+  "lexicon": 1,
+  "id": "com.atproto.admin.getServerStats",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Get server statistics for admin monitoring.",
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "accountCount": { "type": "integer" },
+            "repoCount": { "type": "integer" },
+            "blobCount": { "type": "integer" },
+            "lastIndexed": { "type": "string", "format": "datetime" }
+          }
+        }
+      }
+    }
+  }
+}
