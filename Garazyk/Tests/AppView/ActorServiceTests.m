@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 @interface ActorServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -393,9 +394,7 @@
     NSDictionary *profile = [self.service getProfileForActor:@"did:plc:indexed" error:&error];
     
     XCTAssertNotNil(profile[@"indexedAt"]);
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    NSDate *indexedDate = [formatter dateFromString:profile[@"indexedAt"]];
+    NSDate *indexedDate = [NSDateFormatter atproto_dateFromString:profile[@"indexedAt"]];
     XCTAssertNotNil(indexedDate);
     XCTAssertGreaterThan(indexedDate.timeIntervalSince1970, 0);
 }

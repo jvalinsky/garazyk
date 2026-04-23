@@ -1,17 +1,33 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "Admin/PDSAdminAuth.h"
+#import "App/PDSConfiguration.h"
+#import "Database/Service/ServiceDatabases.h"
+
+@interface PDSConfiguration (Test)
+- (void)applyConfig:(NSDictionary *)config;
+@end
 
 @implementation AdminAuthXrpcTestBase
 
 - (void)setUp {
     [super setUp];
 
+    // Set required environment variables before creating PDSApplication
+    // (matching RepoAuthXrpcTestBase setup which works correctly)
+    setenv("PDS_AVAILABLE_USER_DOMAINS", "test", 1);
+    setenv("PDS_ADMIN_PASSWORD", "password", 1);
+    setenv("PDS_MASTER_SECRET", "test-master-secret-123", 1);
+    setenv("PDS_PLC_URL", "mock", 1);
+    [[PDSConfiguration sharedConfiguration] applyConfig:@{@"server": @{}}];
+
     self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+    NSError *dirError = nil;
     [[NSFileManager defaultManager] createDirectoryAtURL:self.tempURL
                              withIntermediateDirectories:YES
                                               attributes:nil
-                                                   error:nil];
+                                                   error:&dirError];
+    XCTAssertNil(dirError, @"Failed to create temp directory: %@", dirError);
 
     self.application = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
     self.dispatcher = [[XrpcDispatcher alloc] init];
@@ -23,12 +39,11 @@
                                                                                     handle:@"administrator.app.test"
                                                                                        did:nil
                                                                                      error:&error];
-    XCTAssertNil(error);
+    XCTAssertNil(error, @"Failed to create admin account: %@", error);
 
-    setenv("PDS_ADMIN_PASSWORD", "password", 1);
     NSError *adminAuthError = nil;
     BOOL adminAuthSuccess = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"password" error:&adminAuthError];
-    XCTAssertTrue(adminAuthSuccess);
+    XCTAssertTrue(adminAuthSuccess, @"Admin authentication failed: %@", adminAuthError);
     XCTAssertNil(adminAuthError);
     self.adminJwt = [PDSAdminAuth sharedAuth].adminToken;
     XCTAssertTrue(self.adminJwt.length > 0);
@@ -40,14 +55,18 @@
                                                                                    handle:@"user.app.test"
                                                                                       did:nil
                                                                                     error:&error];
-    XCTAssertNil(error);
+    XCTAssertNil(error, @"Failed to create user account: %@", error);
     self.userDid = userAccount[@"did"];
     self.userJwt = userAccount[@"accessJwt"];
-    XCTAssertTrue(self.userDid.length > 0);
-    XCTAssertTrue(self.userJwt.length > 0);
+    XCTAssertTrue(self.userDid.length > 0, @"userDid should not be nil");
+    XCTAssertTrue(self.userJwt.length > 0, @"userJwt should not be nil");
 }
 
 - (void)tearDown {
+    [self.application stop];
+    [PDSAdminAuth sharedAuth].controller = nil;
+    self.dispatcher = nil;
+    self.application = nil;
     [[NSFileManager defaultManager] removeItemAtURL:self.tempURL error:nil];
     [super tearDown];
 }
