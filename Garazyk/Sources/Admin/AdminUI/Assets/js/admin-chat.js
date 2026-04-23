@@ -6,6 +6,10 @@
 
 import { AdminPanel } from './admin-panel.js';
 
+function getConfirm() {
+    return window.AdminUI?.confirm || window.confirm;
+}
+
 let convoList = [];
 let selectedConvoId = null;
 
@@ -28,6 +32,7 @@ function renderConversations() {
 
 async function handleConvoAction(btn) {
     const action = btn.dataset.action;
+    const Conf = getConfirm();
     
     try {
         if (action === 'lock') {
@@ -40,12 +45,17 @@ async function handleConvoAction(btn) {
             window.AdminUI.showSuccess('Conversation unlocked');
         } else if (action === 'delete-group') {
             const uri = btn.dataset.uri;
-            if (confirm('Are you sure you want to delete this group? This action is IRREVERSIBLE.')) {
-                // We need to implement deleteGroup API in admin-panel.js
-                await AdminPanel.deleteGroup(uri);
-                window.AdminUI.showSuccess('Group deleted');
-                document.getElementById('group-list-container')?.dispatchEvent(new Event('load'));
-            }
+            Conf.confirm({
+                title: 'Delete Group',
+                message: 'Are you sure you want to delete this group? This action is IRREVERSIBLE.',
+                confirmLabel: 'Delete',
+                destructive: true,
+                onConfirm: async () => {
+                    await AdminPanel.deleteGroup(uri);
+                    window.AdminUI.showSuccess('Group deleted');
+                    document.getElementById('group-list-container')?.dispatchEvent(new Event('load'));
+                }
+            });
         } else if (action === 'revoke-link') {
             const linkId = btn.dataset.id;
             await AdminPanel.revokeInviteLink(linkId);
@@ -54,22 +64,33 @@ async function handleConvoAction(btn) {
         } else if (action === 'remove-member') {
             const uri = btn.dataset.group;
             const did = btn.dataset.did;
-            if (confirm('Remove ' + did + ' from group?')) {
-                await AdminPanel.removeMemberFromGroup(uri, did);
-                window.AdminUI.showSuccess('Member removed');
-                // Reload detail view
-                document.getElementById('content-pane')?.dispatchEvent(new Event('load'));
-            }
+            Conf.confirm({
+                title: 'Remove Member',
+                message: `Remove ${did} from group?`,
+                confirmLabel: 'Remove',
+                destructive: true,
+                onConfirm: async () => {
+                    await AdminPanel.removeMemberFromGroup(uri, did);
+                    window.AdminUI.showSuccess('Member removed');
+                    document.getElementById('content-pane')?.dispatchEvent(new Event('load'));
+                }
+            });
         } else if (action === 'delete-message') {
             const messageId = btn.dataset.messageId || btn.dataset.altMessageId;
             if (!messageId) {
                 throw new Error('Missing message id');
             }
-            if (confirm('Delete this message for the admin session?')) {
-                await AdminPanel.deleteConversationMessage(messageId);
-                window.AdminUI.showSuccess('Message removed');
-                btn.closest('.log-entry')?.remove();
-            }
+            Conf.confirm({
+                title: 'Delete Message',
+                message: 'Delete this message for the admin session?',
+                confirmLabel: 'Delete',
+                destructive: true,
+                onConfirm: async () => {
+                    await AdminPanel.deleteConversationMessage(messageId);
+                    window.AdminUI.showSuccess('Message removed');
+                    btn.closest('.log-entry')?.remove();
+                }
+            });
         }
         
         if (action === 'lock' || action === 'unlock') {

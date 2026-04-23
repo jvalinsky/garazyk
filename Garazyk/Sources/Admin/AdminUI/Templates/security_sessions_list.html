@@ -1,10 +1,9 @@
 <div class="card">
   <div class="card-header flex justify-between items-center">
     <h4>Sessions for <code>{{did}}</code></h4>
-    <button class="btn btn-xs btn-destructive" 
-            hx-post="/admin/security/sessions/{{did}}/revoke-all"
-            hx-confirm="Revoke all sessions for this user?"
-            hx-swap="outerHTML">
+    <button class="btn btn-sm btn-destructive" 
+            data-action="security-revoke-all"
+            data-did="{{did}}">
       Revoke All
     </button>
   </div>
@@ -26,10 +25,9 @@
             <td class="text-xs">{{created_at}}</td>
             <td class="text-xs">{{expires_at}}</td>
             <td>
-              <button class="btn btn-xs btn-destructive" 
-                      hx-post="/admin/security/sessions/{{did}}/revoke/{{token}}"
-                      hx-confirm="Revoke this session?"
-                      hx-swap="outerHTML">
+              <button class="btn btn-sm btn-destructive" 
+                      data-action="security-revoke-session"
+                      data-token="{{token}}">
                 Revoke
               </button>
             </td>

@@ -3,10 +3,10 @@
     <h3 class="card-title">Account Details</h3>
   </div>
   <div class="card-body">
-    <div class="detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div class="detail-grid">
       <div>
         <label class="form-label">DID</label>
-        <code style="font-size: 11px; word-break: break-all;">{{did}}</code>
+        <code class="code-inline-sm">{{did}}</code>
       </div>
       <div>
         <label class="form-label">Handle</label>
@@ -44,7 +44,7 @@
     <h3 class="card-title">Quick Actions</h3>
   </div>
   <div class="card-body">
-    <div class="btn-group" style="flex-wrap: wrap; gap: 8px;">
+    <div class="btn-group">
       <button
         type="button"
         class="btn btn-secondary"
@@ -125,7 +125,7 @@
       <tbody>
         {{#each invites}}
         <tr>
-          <td><code style="font-size: 11px;">{{code}}</code></td>
+          <td><code class="code-inline-sm">{{code}}</code></td>
           <td>
             {{#if used}}
               <span class="badge badge-success">Used</span>

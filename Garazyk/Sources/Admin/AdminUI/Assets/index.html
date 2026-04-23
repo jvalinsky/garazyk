@@ -279,12 +279,24 @@
       </div>
     </aside>
 
-    <!-- Main content area -->
+    <!-- Main content area with optional inspector pane -->
     <main role="main" aria-label="Content area">
-      <div class="content-pane" id="content-pane" hx-get="/admin/partials/overview" hx-trigger="load">
-        <!-- Will be replaced by overview partial -->
-        <div class="p-lg text-secondary text-center">Loading dashboard...</div>
+      <div class="content-area" id="content-area">
+        <div class="content-pane" id="content-pane" hx-get="/admin/partials/overview" hx-trigger="load">
+          <!-- Will be replaced by overview partial -->
+          <div class="p-lg text-secondary text-center" role="status" aria-live="polite">Loading dashboard...</div>
+        </div>
       </div>
+      <!-- Inspector pane - shows selected item details -->
+      <aside class="inspector-pane" id="inspector-pane" aria-label="Inspector" hidden>
+        <div class="inspector-header">
+          <span class="inspector-title" id="inspector-title">Inspector</span>
+          <button class="btn-close-inline" data-action="close-inspector" aria-label="Close inspector">×</button>
+        </div>
+        <div class="inspector-content" id="inspector-content">
+          <!-- Inspector content loaded dynamically -->
+        </div>
+      </aside>
     </main>
   </div>
 
@@ -304,7 +316,7 @@
 
   <!-- Admin Login Panel -->
   <div id="admin-login-panel" class="admin-login-panel hidden">
-    <div class="admin-login-backdrop" onclick="AdminAuth.hideLoginPanel()"></div>
+    <div class="admin-login-backdrop" data-action="hide-login-panel"></div>
     <div class="admin-login-window">
       <div class="title-bar">
         <span class="title">Admin Login</span>
@@ -321,6 +333,8 @@
       </div>
     </div>
   </div>
+
+  <div id="admin-a11y-status" class="sr-only" aria-live="polite"></div>
 
 <!-- Scripts -->
   <script type="module" src="js/app.js"></script>
