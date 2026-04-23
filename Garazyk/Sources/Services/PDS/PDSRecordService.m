@@ -8,6 +8,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
 #import "Core/CID.h"
+#import "Core/NSDictionary+CID.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/TID.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
@@ -978,7 +979,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         }
         NSMutableDictionary *entry = [NSMutableDictionary dictionary];
         entry[@"uri"] = op[@"uri"] ?: @"";
-        entry[@"cid"] = op[@"cid"] ?: @"";
+        entry[@"cid"] = [op cidStringForKey:@"cid"] ?: @"";
         NSString *validationStatus = @"unknown";
         if (mode != PDSValidationModeOff &&
             [collection isKindOfClass:[NSString class]] &&
