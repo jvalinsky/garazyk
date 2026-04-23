@@ -2,6 +2,7 @@
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
 #import "Debug/PDSLogger.h"
+#import "Core/NSDictionary+CID.h"
 
 @implementation FirehoseCARBuilder
 
@@ -32,8 +33,8 @@
     if (![recordCBOR isKindOfClass:[NSData class]] || recordCBOR.length == 0)
       continue;
 
-    CID *recordCID = op[@"cid"];
-    if (!recordCID || [recordCID isKindOfClass:[NSNull class]]) {
+    CID *recordCID = [op cidObjectForKey:@"cid"];
+    if (!recordCID) {
       NSData *digest = [CID rawSha256:recordCBOR];
       recordCID = digest ? [CID cidWithDigest:digest codec:0x71] : nil;
     }
