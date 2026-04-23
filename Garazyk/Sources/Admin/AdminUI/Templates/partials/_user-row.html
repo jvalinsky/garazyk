@@ -15,18 +15,16 @@
       <button
         type="button"
         class="btn btn-sm btn-secondary"
-        hx-get="/admin/users/{{did}}"
-        hx-target="#detail-modal"
-        hx-on="htmx:afterSettle: document.getElementById('detail-modal').showModal()">
+        data-action="view-user"
+        data-did="{{did}}">
         View
       </button>
       {{#if active}}
         <button
           type="button"
           class="btn btn-sm btn-destructive"
-          hx-post="/admin/users/{{did}}/deactivate"
-          hx-confirm="Deactivate this user?"
-          hx-swap="none">
+          data-action="deactivate-user"
+          data-did="{{did}}">
           Deactivate
         </button>
       {{/if}}

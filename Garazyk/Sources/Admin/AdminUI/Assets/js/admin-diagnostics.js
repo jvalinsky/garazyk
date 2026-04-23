@@ -144,7 +144,7 @@ const DiagnosticsSequencer = {
 
   showError(message) {
     const alertEl = document.createElement('div');
-    alertEl.className = 'alert alert-danger';
+    alertEl.className = 'alert alert-destructive';
     alertEl.textContent = message;
     document.querySelector('.content-header')?.insertAdjacentElement('afterend', alertEl);
   }
@@ -244,7 +244,7 @@ const DiagnosticsBlobs = {
           <span class="badge badge-${job.status}">${job.status}</span>
         </div>
         <div class="progress">
-          <div class="progress-bar" style="width: ${(job.progress * 100).toFixed(1)}%"></div>
+          <div class="progress-bar" data-progress="${(job.progress * 100).toFixed(1)}"></div>
         </div>
         <div class="job-info text-sm mt-sm">
           Progress: ${(job.progress * 100).toFixed(1)}%
@@ -253,6 +253,10 @@ const DiagnosticsBlobs = {
     `).join('');
 
     activeAuditsEl.innerHTML = html;
+    activeAuditsEl.querySelectorAll('.progress-bar[data-progress]').forEach((bar) => {
+      const pct = Number.parseFloat(bar.getAttribute('data-progress') || '0');
+      bar.style.width = `${Number.isFinite(pct) ? pct : 0}%`;
+    });
   },
 
   async loadRecentAudits() {
@@ -272,7 +276,7 @@ const DiagnosticsBlobs = {
 
   showError(message) {
     const alertEl = document.createElement('div');
-    alertEl.className = 'alert alert-danger';
+    alertEl.className = 'alert alert-destructive';
     alertEl.textContent = message;
     document.querySelector('.content-header')?.insertAdjacentElement('afterend', alertEl);
   }
@@ -299,6 +303,17 @@ const DiagnosticsRateLimits = {
     const clearBtn = document.getElementById('clearBtn');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => this.handleClear());
+    }
+
+    const tableBody = document.querySelector('#topUsersTable tbody');
+    if (tableBody) {
+      tableBody.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-action=\"query-rate-user\"]');
+        if (!trigger) return;
+        const identifier = trigger.getAttribute('data-identifier') || '';
+        const type = trigger.getAttribute('data-type') || 'did';
+        this.queryUser(identifier, type);
+      });
     }
   },
 
@@ -328,7 +343,7 @@ const DiagnosticsRateLimits = {
 
   renderQueryResults(data) {
     const resultsEl = document.getElementById('queryResults');
-    resultsEl.style.display = 'block';
+    resultsEl?.classList.remove('is-hidden', 'hidden');
 
     document.getElementById('currentCount').textContent = data.currentCount || '0';
     document.getElementById('limit').textContent = data.limit || '-';
@@ -342,16 +357,35 @@ const DiagnosticsRateLimits = {
     // Show clear button only if there's usage
     const clearBtn = document.getElementById('clearBtn');
     if (clearBtn) {
-      clearBtn.style.display = (data.currentCount > 0) ? 'block' : 'none';
+      const shouldHide = !(data.currentCount > 0);
+      clearBtn.classList.toggle('is-hidden', shouldHide);
+      clearBtn.classList.toggle('hidden', shouldHide);
     }
   },
 
   async handleClear() {
     if (!this.currentQuery) return;
 
-    const reason = prompt('Reason for clearing rate limit:', '');
-    if (!reason) return; // User cancelled
+    const Sheet = window.AdminUI?.SheetDialog || window.SheetDialog;
+    if (!Sheet) {
+      this.showError('Sheet dialog not available');
+      return;
+    }
 
+    Sheet.prompt({
+      title: 'Clear Rate Limit',
+      label: 'Reason for clearing rate limit:',
+      initialValue: '',
+      placeholder: 'Enter reason...',
+      confirmLabel: 'Clear',
+      onConfirm: async (reason) => {
+        if (!reason) return;
+        await this.performClear(reason);
+      }
+    });
+  },
+
+  async performClear(reason) {
     try {
       const response = await fetch('/admin/api/diagnostics/ratelimits/clear', {
         method: 'POST',
@@ -360,7 +394,7 @@ const DiagnosticsRateLimits = {
           identifier: this.currentQuery.identifier,
           type: this.currentQuery.type,
           reason: reason,
-          adminDid: 'did:plc:admin' // TODO: Get from session
+          adminDid: 'did:plc:admin'
         })
       });
 
@@ -368,8 +402,9 @@ const DiagnosticsRateLimits = {
 
       const result = await response.json();
       if (result.success) {
-        alert('Rate limit cleared successfully');
-        // Refresh the query
+        if (window.AdminUI && typeof window.AdminUI.showSuccess === 'function') {
+          window.AdminUI.showSuccess('Rate limit cleared successfully.');
+        }
         this.handleQuery(new Event('submit'));
       } else {
         this.showError('Failed to clear rate limit: ' + (result.error || 'Unknown error'));
@@ -401,9 +436,11 @@ const DiagnosticsRateLimits = {
       return;
     }
 
-    const rows = users.map(user => {
+      const rows = users.map(user => {
       const percentage = ((user.count / user.limit) * 100).toFixed(1);
       const statusClass = user.status === 'exceeded' ? 'danger' : 'warning';
+      const identifier = this.escapeAttr(user.identifier);
+      const type = this.escapeAttr(user.type);
 
       return `
         <tr>
@@ -413,7 +450,7 @@ const DiagnosticsRateLimits = {
           <td>${percentage}%</td>
           <td><span class="badge badge-${statusClass}">${user.status}</span></td>
           <td>
-            <button class="btn btn-sm btn-danger" onclick="DiagnosticsRateLimits.queryUser('${user.identifier}', '${user.type}')">
+            <button class="btn btn-sm btn-danger" data-action="query-rate-user" data-identifier="${identifier}" data-type="${type}">
               View
             </button>
           </td>
@@ -435,9 +472,18 @@ const DiagnosticsRateLimits = {
     return str.length > length ? str.substring(0, length) + '...' : str;
   },
 
+  escapeAttr(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  },
+
   showError(message) {
     const alertEl = document.createElement('div');
-    alertEl.className = 'alert alert-danger';
+    alertEl.className = 'alert alert-destructive';
     alertEl.textContent = message;
     document.querySelector('.content-header')?.insertAdjacentElement('afterend', alertEl);
   }
@@ -460,7 +506,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Helper function for navigation (used in overview template)
-function navigateTo(path) {
-  window.location.href = path;
-}
+window.DiagnosticsSequencer = DiagnosticsSequencer;
+window.DiagnosticsBlobs = DiagnosticsBlobs;
+window.DiagnosticsRateLimits = DiagnosticsRateLimits;
