@@ -79,6 +79,12 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Get total follows count. */
 - (NSInteger)getTotalFollowsCount:(NSError **)error;
 
+/*! Resolve handle to DID. Returns DID if handle exists, nil otherwise. */
+- (nullable NSString *)resolveHandleToDID:(NSString *)handle error:(NSError **)error;
+
+/*! Resolve DID to handle. Returns handle if known, nil otherwise. */
+- (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

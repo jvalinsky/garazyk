@@ -238,9 +238,7 @@ Consider these improvements for future iterations:
 ### For Stakeholders
 
 - **Project Summary**: `docs/PROJECT_SUMMARY.md`
-- **Requirements**: `.kiro/specs/vitepress-docs-migration/requirements.md`
-- **Design**: `.kiro/specs/vitepress-docs-migration/design.md`
-- **Tasks**: `.kiro/specs/vitepress-docs-migration/tasks.md`
+- **Documentation Migration Status**: Legacy specs removed (see `.opencode/plans/` for current work items).
 
 ## Conclusion
 

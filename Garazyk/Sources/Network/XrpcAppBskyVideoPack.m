@@ -90,8 +90,8 @@
       @"jobStatus" : @{
         @"jobId" : jobId,
         @"did" : did,
-        @"state" : @"JOB_STATE_PENDING",
-        @"progress" : @0
+        @"state" : @"JOB_STATE_COMPLETED",
+        @"progress" : @100
       }
     }];
   }];

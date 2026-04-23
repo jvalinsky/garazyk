@@ -333,7 +333,13 @@
     // 5. POST genesis operation to PLC Server
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: config.plcURL;
-    if (plcUrl.length == 0 || [plcUrl isEqualToString:@"mock"]) {
+    
+    // Check for "skip" or "mock" mode - generate DID without network registration (for tests)
+    if ([plcUrl isEqualToString:@"skip"] || [plcUrl isEqualToString:@"mock"]) {
+        return did;
+    }
+    
+    if (plcUrl.length == 0) {
         plcUrl = @"http://127.0.0.1:2582";
     }
     NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];

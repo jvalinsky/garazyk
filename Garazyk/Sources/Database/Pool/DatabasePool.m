@@ -120,6 +120,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&blockError];
 
         if (store) {
+            store.masterSecret = self.masterSecret;
             self.stores[did] = store;
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;

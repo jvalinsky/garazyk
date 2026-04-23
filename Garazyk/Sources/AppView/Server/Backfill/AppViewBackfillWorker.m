@@ -6,13 +6,13 @@
 
 #import "AppView/Server/Backfill/AppViewBackfillWorker.h"
 #import "AppView/Server/AppViewDatabase.h"
-#import "AppView/Server/AppViewTypes.h"
 #import "AppView/Server/Indexers/AppViewIndexer.h"
+#import "AppView/Server/AppViewTypes.h"
 #import "Debug/PDSLogger.h"
-
-#import <Foundation/Foundation.h>
-
-NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerErrorDomain";
+#import "Repository/CAR.h"
+#import "Repository/MST.h"
+#import "Core/ATProtoDagCBOR.h"
+#import "Core/CID.h"
 
 @interface AppViewBackfillWorker ()
 @property (nonatomic, copy)   NSString *did;
@@ -20,23 +20,30 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 @end
 
-@implementation AppViewBackfillWorker
+@implementation AppViewBackfillWorker {
+    NSString *_plcURL;
+}
+
+NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfill";
 
 - (instancetype)initWithDID:(NSString *)did
                     database:(AppViewDatabase *)database
                     indexers:(NSArray<id<AppViewIndexer>> *)indexers
                     plcURL:(NSString *)plcURL {
     self = [super init];
-    if (!self) return nil;
-    _did      = [did copy];
-    _database = database;
-    _indexers = [indexers copy];
-    _plcURL  = [plcURL copy];
+    if (self) {
+        _did       = [did copy];
+        _database  = database;
+        _indexers  = [indexers copy];
+        _plcURL    = [plcURL copy];
+    }
     return self;
 }
 
+// ---------------------------------------------------------------------------
+
 - (void)start {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [self _run];
     });
 }
@@ -52,17 +59,17 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
     AppViewRepoSyncState *state = [_database loadRepoSyncStateForDID:did error:&stateErr];
     NSString *sinceRev = state.lastRev; // nil for fresh backfill
 
-    // Resolve PDS host for this DID via com.atproto.identity.resolveHandle /
+    // Resolve PDS endpoint for this DID via com.atproto.identity.resolveHandle /
     // DID document `pds` service endpoint.
-    NSString *pdsHost = [self _resolvePDSHostForDID:did];
-    if (!pdsHost) {
-        [self _failWithMessage:@"Could not resolve PDS host" statusCode:0];
+    NSString *pdsEndpoint = [self _resolvePDSEndpointForDID:did];
+    if (!pdsEndpoint) {
+        [self _failWithMessage:@"Could not resolve PDS endpoint" statusCode:0];
         return;
     }
 
     // Build the getRepo URL
-    NSString *urlStr = [NSString stringWithFormat:@"https://%@/xrpc/com.atproto.sync.getRepo?did=%@",
-                        pdsHost,
+    NSString *urlStr = [NSString stringWithFormat:@"%@/xrpc/com.atproto.sync.getRepo?did=%@",
+                        pdsEndpoint,
                         [did stringByAddingPercentEncodingWithAllowedCharacters:
                             [NSCharacterSet URLQueryAllowedCharacterSet]]];
     if (sinceRev.length > 0) {
@@ -84,8 +91,8 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
     NSURLSession *session = [NSURLSession sharedSession];
     NSURLSessionDataTask *task = [session dataTaskWithRequest:req
                                            completionHandler:^(NSData *data,
-                                                               NSURLResponse *resp,
-                                                               NSError *err) {
+                                                                NSURLResponse *resp,
+                                                                NSError *err) {
         carData   = data;
         httpResp  = (NSHTTPURLResponse *)resp;
         fetchErr  = err;
@@ -149,10 +156,16 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
 // PDS host resolution
 // ---------------------------------------------------------------------------
 
-- (nullable NSString *)_resolvePDSHostForDID:(NSString *)did {
+- (nullable NSString *)_resolvePDSEndpointForDID:(NSString *)did {
     // did:web — host is in the DID itself
     if ([did hasPrefix:@"did:web:"]) {
-        return [did substringFromIndex:8];
+        NSString *host = [did substringFromIndex:8];
+        host = [host stringByRemovingPercentEncoding] ?: host;
+        // Check if it's localhost or local network, use http
+        if ([host hasPrefix:@"127."] || [host hasPrefix:@"localhost"] || [host hasPrefix:@"192.168."] || [host hasPrefix:@"10."]) {
+            return [NSString stringWithFormat:@"http://%@", host];
+        }
+        return [NSString stringWithFormat:@"https://%@", host];
     }
 
     // did:plc — fetch from configured PLC directory
@@ -168,7 +181,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
     __block NSData *data = nil;
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     [[[NSURLSession sharedSession] dataTaskWithRequest:req
-                                    completionHandler:^(NSData *d, NSURLResponse *r, NSError *e) {
+                                     completionHandler:^(NSData *d, NSURLResponse *r, NSError *e) {
         data = d; resp = (NSHTTPURLResponse *)r; err = e;
         dispatch_semaphore_signal(sema);
     }] resume];
@@ -185,8 +198,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
         NSString *type = svc[@"type"];
         NSString *endpoint = svc[@"serviceEndpoint"];
         if ([type isEqualToString:@"AtprotoPersonalDataServer"] && endpoint.length > 0) {
-            NSURL *epURL = [NSURL URLWithString:endpoint];
-            return epURL.host;
+            return endpoint;
         }
     }
 
@@ -200,63 +212,141 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
 - (nullable NSString *)_parseCARAndIndex:(NSData *)carData
                                   forDID:(NSString *)did
                                    error:(NSError **)error {
-    // A minimal CAR v1 parser.
-    // CAR format: uvarint(header_len) | CBOR(header) | blocks...
-    // Each block: uvarint(block_len) | CID | bytes
-    //
-    // For AppView backfill we need to find app.bsky.* lexicon records in the blocks.
-    // We use basic heuristics since we don't have a full IPLD codec here:
-    // look for CBOR-encoded dictionaries with a "$type" key.
+    // File-based debug logging
+    static NSString *debugLogPath = @"/tmp/debug-logs/backfill.log";
+    [[NSFileManager defaultManager] createDirectoryAtPath:@"/tmp/debug-logs" withIntermediateDirectories:YES attributes:nil error:nil];
+    NSString *logMsg = [NSString stringWithFormat:@"[%@] PARSE START did=%@ len=%lu\n",
+                     [NSDate date], did, (unsigned long)carData.length];
+    NSFileHandle *fh = [NSFileHandle fileHandleForWritingAtPath:debugLogPath];
+    if (!fh) {
+        [[NSData data] writeToFile:debugLogPath atomically:YES];
+        fh = [NSFileHandle fileHandleForWritingAtPath:debugLogPath];
+    }
+    [fh writeData:[logMsg dataUsingEncoding:NSUTF8StringEncoding]];
+    [fh synchronizeFile];
+    [fh closeFile];
 
-    const uint8_t *bytes = (const uint8_t *)carData.bytes;
-    NSUInteger len = carData.length;
-    NSUInteger pos = 0;
+    NSLog(@"[DEBUG] _parseCARAndIndex called for %@", did);
+    NSLog(@"[DEBUG] CAR data length: %lu", (unsigned long)carData.length);
 
-    // Skip header (uvarint length + header bytes)
-    uint64_t headerLen = 0;
-    int bytesRead = [self _readUvarint:bytes + pos remaining:len - pos value:&headerLen];
-    if (bytesRead <= 0) {
-        if (error) *error = [NSError errorWithDomain:AppViewBackfillWorkerErrorDomain
-                                                code:-1
-                                            userInfo:@{NSLocalizedDescriptionKey: @"Invalid CAR header"}];
+CARReader *reader = [CARReader readFromData:carData error:error];
+    if (!reader) {
+        NSLog(@"[DEBUG] CARReader failed: %@", *error);
+        PDS_LOG_ERROR(@"[AppView BackfillWorker] Failed to read CAR: %@", *error);
         return nil;
     }
-    pos += bytesRead + headerLen;
 
-    // Parse header CBOR to find roots (we skip this for now — just advance past it)
-    // header was already skipped above
+    NSLog(@"[DEBUG] CARReader success: blocks=%lu rootCID=%@",
+          (unsigned long)reader.blocks.count, reader.rootCID);
 
     NSString *lastRev = nil;
     NSMutableArray<NSDictionary *> *records = [NSMutableArray array];
 
-    // Iterate blocks
-    while (pos < len) {
-        // uvarint block length
-        uint64_t blockLen = 0;
-        int nb = [self _readUvarint:bytes + pos remaining:len - pos value:&blockLen];
-        if (nb <= 0 || blockLen == 0) break;
-        pos += nb;
+    // Find and parse the data MST from commit object
+    NSArray<MSTEntry *> *entries = nil;
+    CID *dataMSTCID = nil;
 
-        if (pos + blockLen > len) break;
-        NSData *blockData = [NSData dataWithBytes:bytes + pos length:(NSUInteger)blockLen];
-        pos += blockLen;
+    if (reader.rootCID) {
+        CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
+        if (commitBlock) {
+            PDS_LOG_INFO(@"[AppView BackfillWorker] Decoding commit block (%lu bytes)",
+                      (unsigned long)commitBlock.data.length);
+            id commitObj = [ATProtoDagCBOR decodeData:commitBlock.data error:nil];
+            if ([commitObj isKindOfClass:[NSDictionary class]]) {
+                NSDictionary *commitDict = (NSDictionary *)commitObj;
 
-        // Try to decode as CBOR dict — look for $type
-        NSDictionary *decoded = [self _tryDecodeCBORDict:blockData];
-        if (decoded && decoded[@"$type"]) {
-            [records addObject:decoded];
-        }
-        // Capture rev from commit block
-        if (decoded && decoded[@"rev"] && !lastRev) {
-            lastRev = decoded[@"rev"];
+                // Extract revision
+                lastRev = commitDict[@"rev"];
+                PDS_LOG_INFO(@"[AppView BackfillWorker] Found commit revision: %@", lastRev);
+
+                // Extract data CID - this is the actual data MST
+                id dataField = commitDict[@"data"];
+                if ([dataField isKindOfClass:[CID class]]) {
+                    dataMSTCID = (CID *)dataField;
+                    PDS_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (CID type): %@", dataMSTCID);
+                } else if ([dataField isKindOfClass:[NSData class]]) {
+                    dataMSTCID = [CID cidFromBytes:dataField];
+                    PDS_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (NSData type): %@", dataMSTCID);
+                } else if ([dataField isKindOfClass:[NSString class]]) {
+                    dataMSTCID = [CID cidFromString:dataField];
+                    PDS_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (NSString type): %@", dataMSTCID);
+                } else if (dataField) {
+                    PDS_LOG_WARN(@"[AppView BackfillWorker] data field is unexpected type: %@", NSStringFromClass([dataField class]));
+                }
+            }
         }
     }
 
-    // Dispatch records to indexers
+    // Now load the data MST using its CID
+    if (dataMSTCID) {
+        CARBlock *dataMSTBlock = [reader blockWithCID:dataMSTCID];
+        if (dataMSTBlock) {
+            PDS_LOG_INFO(@"[AppView BackfillWorker] Trying to deserialize data MST...");
+            MST *dataMST = [MST deserializeFromCBOR:dataMSTBlock.data];
+            if (dataMST && dataMST.root) {
+                entries = [dataMST allEntries];
+                PDS_LOG_INFO(@"[AppView BackfillWorker] Parsed data MST with %lu entries",
+                          (unsigned long)entries.count);
+            } else {
+                PDS_LOG_WARN(@"[AppView BackfillWorker] Data MST deserialize failed");
+                entries = [self _parseCBOREntriesFromBlock:dataMSTBlock.data];
+            }
+        } else {
+            PDS_LOG_WARN(@"[AppView BackfillWorker] Could not find data MST block for CID: %@", dataMSTCID);
+        }
+    } else {
+        PDS_LOG_WARN(@"[AppView BackfillWorker] No data CID found in commit");
+    }
+
+    // Index entries
+    if (entries.count > 0) {
+        for (MSTEntry *entry in entries) {
+            CID *valueCID = entry.valueCID;
+            if (!valueCID) continue;
+
+            // Key format: "collection/!rkey" or "collection!rkey"
+            NSString *fullKey = entry.key;
+            if (!fullKey.length) continue;
+
+            NSString *collection = fullKey;
+            NSString *rkey = nil;
+            NSRange delimRange = [fullKey rangeOfString:@"/"];
+            if (delimRange.location == NSNotFound) {
+                delimRange = [fullKey rangeOfString:@"!"];
+            }
+            if (delimRange.location != NSNotFound) {
+                collection = [fullKey substringToIndex:delimRange.location];
+                rkey = [fullKey substringFromIndex:delimRange.location + 1];
+            }
+
+            // Skip internal keys (not a record collection)
+            if ([collection hasPrefix:@"_"] || [collection hasPrefix:@"#"]) continue;
+
+            CARBlock *block = [reader blockWithCID:valueCID];
+            if (!block) {
+                PDS_LOG_WARN(@"[AppView BackfillWorker] Missing block for CID %@ in %@",
+                          valueCID, did);
+                continue;
+            }
+
+            NSError *decodeError = nil;
+            id decoded = [ATProtoDagCBOR decodeData:block.data error:&decodeError];
+            if ([decoded isKindOfClass:[NSDictionary class]]) {
+                NSDictionary *record = (NSDictionary *)decoded;
+                // Ensure $type is set from the collection key if not already present
+                NSMutableDictionary *mutableRecord = [record mutableCopy];
+                if (!mutableRecord[@"$type"]) {
+                    mutableRecord[@"$type"] = collection;
+                }
+                [records addObject:mutableRecord.count > 0 ? [mutableRecord copy] : record];
+            }
+        }
+    }
+
+    PDS_LOG_INFO(@"[AppView BackfillWorker] Found %lu records in CAR for %@", (unsigned long)records.count, did);
     for (NSDictionary *record in records) {
         NSString *collection = record[@"$type"];
-        if (!collection) continue;
-
+        NSLog(@"[DEBUG] Calling indexers for collection=%@", collection);
         for (id<AppViewIndexer> indexer in _indexers) {
             if ([indexer canIndexCollection:collection]) {
                 NSError *indexErr = nil;
@@ -278,7 +368,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
                                     validationError:indexErr.localizedDescription ?: @"unknown"
                                               error:nil];
                 }
-                break; // Only first matching indexer handles a record
+                break;
             }
         }
     }
@@ -287,183 +377,52 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"AppViewBackfillWorkerError
 }
 
 // ---------------------------------------------------------------------------
-// Minimal uvarint decoder
+// Fallback CBOR parsing for older CAR formats
 // ---------------------------------------------------------------------------
 
-- (int)_readUvarint:(const uint8_t *)buf remaining:(NSUInteger)remaining value:(uint64_t *)outValue {
-    uint64_t value = 0;
-    int shift = 0;
-    for (NSUInteger i = 0; i < remaining && i < 10; i++) {
-        uint8_t b = buf[i];
-        value |= ((uint64_t)(b & 0x7F)) << shift;
-        shift += 7;
-        if ((b & 0x80) == 0) {
-            *outValue = value;
-            return (int)(i + 1);
+- (NSArray<MSTEntry *> *)_parseCBOREntriesFromBlock:(NSData *)data {
+    NSMutableArray<MSTEntry *> *entries = [NSMutableArray array];
+    NSError *error = nil;
+    id cbor = [ATProtoDagCBOR decodeData:data error:&error];
+    if (![cbor isKindOfClass:[NSDictionary class]]) return entries;
+
+    NSDictionary *dict = (NSDictionary *)cbor;
+
+    // Try to get entries from various CBOR structures
+    id entriesData = dict[@"entries"] ?: dict[@"recordContents"] ?: dict[@"data"];
+    if ([entriesData isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *entriesDict = (NSDictionary *)entriesData;
+        for (NSString *key in entriesDict) {
+            id value = entriesDict[key];
+            if ([value isKindOfClass:[NSData class]]) {
+                NSData *valueData = (NSData *)value;
+                CID *cid = [CID cidFromBytes:valueData];
+                if (cid) {
+                    MSTEntry *entry = [MSTEntry entryWithKey:key valueCID:cid];
+                    [entries addObject:entry];
+                }
+            }
         }
     }
-    return -1; // truncated
+
+    return entries;
 }
 
 // ---------------------------------------------------------------------------
-// Minimal CBOR map decoder (top-level only)
+// Helpers
 // ---------------------------------------------------------------------------
 
-- (nullable NSDictionary *)_tryDecodeCBORDict:(NSData *)data {
-    if (data.length == 0) return nil;
-    const uint8_t *b = (const uint8_t *)data.bytes;
-    NSUInteger len = data.length;
-    NSUInteger pos = 0;
-
-    // CBOR major type 5 = map, major type 6 = tag (skip CID prefix tags)
-    uint8_t initial = b[pos];
-    uint8_t majorType = (initial >> 5) & 0x07;
-
-    // Skip CID prefix if present (0xd8 0x2a = tag 42)
-    if (majorType == 6) {
-        pos++; // skip tag byte
-        if (pos >= len) return nil;
-        // skip tag number (may be multi-byte but we only handle 0xd8 0x2a)
-        if (b[pos - 1] == 0xd8 && pos < len) pos++; // two-byte tag
-        if (pos >= len) return nil;
-        initial = b[pos];
-        majorType = (initial >> 5) & 0x07;
-        // After tag likely comes a byte string (the CID bytes), skip it
-        if (majorType == 2) {
-            NSUInteger cidLen = 0;
-            uint8_t addl = initial & 0x1F;
-            pos++;
-            if (addl <= 23) {
-                cidLen = addl;
-            } else if (addl == 24 && pos < len) {
-                cidLen = b[pos++];
-            } else {
-                return nil;
-            }
-            pos += cidLen;
-            if (pos >= len) return nil;
-            initial = b[pos];
-            majorType = (initial >> 5) & 0x07;
-        }
-    }
-
-    if (majorType != 5) return nil; // not a map
-
-    // Decode map count
-    uint8_t addl = initial & 0x1F;
-    NSUInteger mapCount = 0;
-    pos++;
-    if (addl <= 23) {
-        mapCount = addl;
-    } else if (addl == 24 && pos < len) {
-        mapCount = b[pos++];
-    } else {
-        return nil; // too complex
-    }
-
-    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithCapacity:mapCount];
-    for (NSUInteger i = 0; i < mapCount; i++) {
-        if (pos >= len) return nil;
-        // Decode key (must be text string, major type 3)
-        uint8_t keyInitial = b[pos];
-        if ((keyInitial >> 5) != 3) return nil;
-        NSUInteger keyLen = keyInitial & 0x1F;
-        pos++;
-        if (keyLen > 23) {
-            if (pos >= len) return nil;
-            keyLen = b[pos++];
-        }
-        if (pos + keyLen > len) return nil;
-        NSString *key = [[NSString alloc] initWithBytes:b + pos
-                                                 length:keyLen
-                                               encoding:NSUTF8StringEncoding];
-        pos += keyLen;
-        if (!key) return nil;
-
-        // Decode value (only handle text strings and nested for $type)
-        if (pos >= len) return nil;
-        uint8_t valInitial = b[pos];
-        uint8_t valMajor = (valInitial >> 5) & 0x07;
-        if (valMajor == 3) {
-            // Text string
-            NSUInteger valLen = valInitial & 0x1F;
-            pos++;
-            if (valLen > 23 && pos < len) valLen = b[pos++];
-            if (pos + valLen > len) return nil;
-            NSString *val = [[NSString alloc] initWithBytes:b + pos
-                                                     length:valLen
-                                                   encoding:NSUTF8StringEncoding];
-            pos += valLen;
-            if (val) result[key] = val;
-        } else {
-            // Skip value (variable width — use a rough skip)
-            pos = [self _skipCBORValue:b atPos:pos length:len];
-            if (pos == NSUIntegerMax) return nil;
-        }
-    }
-
-    return result.count > 0 ? [result copy] : nil;
+- (void)_failWithError:(NSError *)error rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
+    PDS_LOG_WARN(@"[AppView BackfillWorker] Backfill failed for %@: %@", _did, error.localizedDescription);
+    [_database recordBackfillError:_did message:error.localizedDescription error:nil];
+    [_delegate worker:self didFailForDID:_did error:error rateLimitedUntil:rateLimitedUntil];
 }
 
-- (NSUInteger)_skipCBORValue:(const uint8_t *)b atPos:(NSUInteger)pos length:(NSUInteger)len {
-    if (pos >= len) return NSUIntegerMax;
-    uint8_t initial = b[pos];
-    uint8_t major = (initial >> 5) & 0x07;
-    uint8_t addl  = initial & 0x1F;
-    pos++;
-
-    NSUInteger count = 0;
-    if (addl <= 23) {
-        count = addl;
-    } else if (addl == 24 && pos < len) {
-        count = b[pos++];
-    } else if (addl == 25 && pos + 1 < len) {
-        count = ((NSUInteger)b[pos] << 8) | b[pos+1]; pos += 2;
-    } else if (addl == 26 && pos + 3 < len) {
-        count = ((NSUInteger)b[pos] << 24) | ((NSUInteger)b[pos+1] << 16)
-              | ((NSUInteger)b[pos+2] << 8) | b[pos+3]; pos += 4;
-    } else {
-        return NSUIntegerMax;
-    }
-
-    switch (major) {
-        case 0: case 1: return pos;                    // uint/int (no additional bytes beyond count)
-        case 2: case 3: return pos + count;             // byte/text string
-        case 4: {                                        // array
-            for (NSUInteger i = 0; i < count; i++) {
-                pos = [self _skipCBORValue:b atPos:pos length:len];
-                if (pos == NSUIntegerMax) return NSUIntegerMax;
-            }
-            return pos;
-        }
-        case 5: {                                        // map
-            for (NSUInteger i = 0; i < count * 2; i++) {
-                pos = [self _skipCBORValue:b atPos:pos length:len];
-                if (pos == NSUIntegerMax) return NSUIntegerMax;
-            }
-            return pos;
-        }
-        case 6: return [self _skipCBORValue:b atPos:pos length:len]; // tag
-        case 7: return pos; // simple/float
-    }
-    return NSUIntegerMax;
-}
-
-// ---------------------------------------------------------------------------
-// Error helpers
-// ---------------------------------------------------------------------------
-
-- (void)_failWithMessage:(NSString *)msg statusCode:(NSInteger)code {
-    [_database recordBackfillError:_did message:msg error:nil];
+- (void)_failWithMessage:(NSString *)message statusCode:(NSInteger)statusCode {
     NSError *err = [NSError errorWithDomain:AppViewBackfillWorkerErrorDomain
-                                       code:code
-                                   userInfo:@{NSLocalizedDescriptionKey: msg}];
-    [_delegate worker:self didFailForDID:_did error:err rateLimitedUntil:nil];
-}
-
-- (void)_failWithError:(NSError *)err rateLimitedUntil:(nullable NSDate *)until {
-    [_database recordBackfillError:_did message:err.localizedDescription ?: @"" error:nil];
-    [_delegate worker:self didFailForDID:_did error:err rateLimitedUntil:until];
+                                       code:statusCode
+                                   userInfo:@{NSLocalizedDescriptionKey: message}];
+    [self _failWithError:err rateLimitedUntil:nil];
 }
 
 @end

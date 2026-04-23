@@ -153,6 +153,10 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     NSData *rawSignature = [AuthCryptoECDSA rawSignatureFromDER:derSignature expectedSize:32 error:error];
     if (!rawSignature) return nil;
 
+    // Normalize to low-S form per PLC spec (AT Protocol requires low-S canonicalization)
+    rawSignature = [AuthCryptoECDSA normalizeLowS:rawSignature error:error];
+    if (!rawSignature) return nil;
+
     token.jwt = [NSString stringWithFormat:@"%@.%@.%@", headerB64, payloadB64, [AuthCryptoBase64URL encode:rawSignature]];
     return token;
 }

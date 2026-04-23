@@ -4,6 +4,7 @@
 #import "PLC/PLCOperation.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
+#import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Core/CID.h"
 #import <Security/Security.h>
 
@@ -300,6 +301,12 @@
     // Convert DER to Raw (r||s)
     NSData *rawSig = [self rawSignatureFromDER:derSig];
     XCTAssertNotNil(rawSig);
+    
+    // Normalize to low-S form per PLC spec
+    // https://web.plc.directory/spec/v0.1/did-plc — "high-S values rejected as invalid"
+    NSError *normalizeError = nil;
+    rawSig = [AuthCryptoECDSA normalizeLowS:rawSig error:&normalizeError];
+    XCTAssertNotNil(rawSig, @"Low-S normalization failed: %@", normalizeError);
     
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = [PLCOperation calculateDIDForData:opData];

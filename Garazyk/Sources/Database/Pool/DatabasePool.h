@@ -61,6 +61,9 @@ typedef NS_ENUM(NSInteger, PDSDatabasePoolError) {
 /*! Number of open file handles. */
 @property (nonatomic, assign, readonly) NSUInteger openFileHandleCount;
 
+/*! Master secret for database encryption/decryption. */
+@property (nonatomic, copy, nullable) NSString *masterSecret;
+
 - (instancetype)initWithDbDirectory:(NSString *)dbDirectory maxSize:(NSUInteger)maxSize;
 
 /*! Gets or creates an actor store for a DID. */

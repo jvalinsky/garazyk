@@ -15,11 +15,28 @@
         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:2 userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID format"}];
         return NO;
     }
-    
+
     // Check length (max 2048 per DID spec)
     if (did.length > 2048) {
         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:3 userInfo:@{NSLocalizedDescriptionKey: @"DID too long"}];
         return NO;
+    }
+
+    // did:plc identifier must be 24 lowercase base32 chars (no uppercase, no 0189)
+    if ([did hasPrefix:@"did:plc:"]) {
+        NSString *identifier = [did substringFromIndex:8]; // skip "did:plc:"
+        if (identifier.length != 24) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:5 userInfo:@{NSLocalizedDescriptionKey: @"did:plc identifier must be exactly 24 characters"}];
+            return NO;
+        }
+        static NSString * const plcAlphabet = @"234567abcdefghijklmnopqrstuvwxyz";
+        for (NSUInteger i = 0; i < identifier.length; i++) {
+            unichar c = [identifier characterAtIndex:i];
+            if ([plcAlphabet rangeOfString:[NSString stringWithCharacters:&c length:1]].location == NSNotFound) {
+                if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:6 userInfo:@{NSLocalizedDescriptionKey: @"did:plc identifier must be lowercase base32 (no uppercase, no 0, 1, 8, 9)"}];
+                return NO;
+            }
+        }
     }
 
     return YES;
@@ -37,7 +54,7 @@
     }
 
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$" options:0 error:nil];
-    
+
     if ([regex numberOfMatchesInString:handle options:0 range:NSMakeRange(0, handle.length)] == 0) {
         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:6 userInfo:@{NSLocalizedDescriptionKey: @"Invalid handle syntax"}];
         return NO;
@@ -57,15 +74,26 @@
         return NO;
     }
 
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9+/=]+$" options:0 error:nil];
-    if ([regex numberOfMatchesInString:cid options:0 range:NSMakeRange(0, cid.length)] == 0) {
-        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:10 userInfo:@{NSLocalizedDescriptionKey: @"Invalid characters in CID"}];
-        return NO;
-    }
-
+    // CIDv0 (Qm...) not supported in AT Protocol
     if ([cid hasPrefix:@"Qm"]) {
         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:10 userInfo:@{NSLocalizedDescriptionKey: @"CIDv0 not supported"}];
         return NO;
+    }
+
+    // CIDv1 must start with 'b' (lowercase) and use base32 lowercase only
+    // Valid base32 chars: 234567abcdefghijklmnopqrstuvwxyz (no 0, 1, 8, 9, no uppercase)
+    if (![cid hasPrefix:@"b"]) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:10 userInfo:@{NSLocalizedDescriptionKey: @"CIDv1 must start with 'b'"}];
+        return NO;
+    }
+
+    static NSString * const base32Alphabet = @"234567abcdefghijklmnopqrstuvwxyz";
+    for (NSUInteger i = 1; i < cid.length; i++) {
+        unichar c = [cid characterAtIndex:i];
+        if ([base32Alphabet rangeOfString:[NSString stringWithCharacters:&c length:1]].location == NSNotFound) {
+            if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:10 userInfo:@{NSLocalizedDescriptionKey: @"CID contains invalid base32 characters (must be lowercase, no 0, 1, 8, 9)"}];
+            return NO;
+        }
     }
 
     return YES;
@@ -102,18 +130,18 @@
 
 + (BOOL)validateNSID:(NSString *)nsid error:(NSError **)error {
     if (!nsid) return NO;
-    
+
     if (nsid.length > 317) {
         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:15 userInfo:@{NSLocalizedDescriptionKey: @"NSID too long"}];
         return NO;
     }
-    
+
     NSArray *components = [nsid componentsSeparatedByString:@"."];
     if (components.count < 3) {
         if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:13 userInfo:@{NSLocalizedDescriptionKey: @"NSID must have at least three segments"}];
         return NO;
     }
-    
+
     for (NSUInteger i = 0; i < components.count; i++) {
         NSString *comp = components[i];
         if (comp.length == 0) {
@@ -124,18 +152,18 @@
             if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:18 userInfo:@{NSLocalizedDescriptionKey: @"NSID segment too long"}];
             return NO;
         }
-        
+
         unichar firstChar = [comp characterAtIndex:0];
         BOOL isLetter = (firstChar >= 'a' && firstChar <= 'z') || (firstChar >= 'A' && firstChar <= 'Z');
         BOOL isDigit = (firstChar >= '0' && firstChar <= '9');
         BOOL isFirst = (i == 0);
         BOOL isLast = (i == components.count - 1);
-        
+
         if ((isFirst || isLast) && !isLetter) {
             if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:19 userInfo:@{NSLocalizedDescriptionKey: @"The first and last segments of an NSID must start with a letter"}];
             return NO;
         }
-        
+
         if (!isLetter && !isDigit) {
             if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:19 userInfo:@{NSLocalizedDescriptionKey: @"NSID segment must start with a letter or digit"}];
             return NO;
@@ -145,7 +173,7 @@
             if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:19 userInfo:@{NSLocalizedDescriptionKey: @"The last segment of an NSID must not contain hyphens"}];
             return NO;
         }
-        
+
         NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9-]+$" options:0 error:nil];
         if ([regex numberOfMatchesInString:comp options:0 range:NSMakeRange(0, comp.length)] == 0) {
             if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:20 userInfo:@{NSLocalizedDescriptionKey: @"NSID contains invalid characters"}];
@@ -159,7 +187,7 @@
             return NO;
         }
     }
-    
+
     if ([nsid hasPrefix:@"."] || [nsid hasSuffix:@"."]) {
          if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:21 userInfo:@{NSLocalizedDescriptionKey: @"NSID cannot start or end with dot"}];
          return NO;

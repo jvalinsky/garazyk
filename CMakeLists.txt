@@ -544,8 +544,10 @@ target_compile_definitions(kaszlak PRIVATE
   SQLITE_THREADSAFE=2
 )
 
+# Without -ObjC, category methods are not linked from static libraries
 set_target_properties(kaszlak PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
 )
 
 # PLC Server (campagnola - PLC directory binary)
@@ -589,8 +591,10 @@ target_compile_definitions(campagnola PRIVATE
   SQLITE_THREADSAFE=2
 )
 
+# Without -ObjC, category methods are not linked from static libraries
 set_target_properties(campagnola PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
 )
 
 # Relay Server (zuk - AT Protocol relay)
@@ -636,8 +640,10 @@ target_compile_definitions(zuk PRIVATE
   SQLITE_THREADSAFE=2
 )
 
+# Without -ObjC, category methods are not linked from static libraries
 set_target_properties(zuk PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
 )
 
 # AppView server source library
@@ -712,8 +718,10 @@ target_compile_definitions(syrena PRIVATE
   SQLITE_THREADSAFE=2
 )
 
+# Without -ObjC, category methods are not linked from static libraries
 set_target_properties(syrena PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
 )
 
 # Tutorial 1: Hello PDS Example

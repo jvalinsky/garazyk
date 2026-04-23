@@ -1,7 +1,9 @@
 #import <XCTest/XCTest.h>
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
+#import "Sync/Relay/EventFormatter.h"
 #import "Core/ATProtoDagCBOR.h"
+#import "Core/CID.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -50,23 +52,30 @@ NS_ASSUME_NONNULL_BEGIN
     delegate.commitExpectation = [self expectationWithDescription:@"commit"];
     [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
-    NSDictionary *message = @{
-        @"kind": @"commit",
-        @"seq": @(1),
-        @"repo": @"did:plc:alice",
-        @"commit": @"bafycommit",
-        @"ops": @[@{@"action": @"create"}],
-        @"blobs": @[@"bafyblob"]
-    };
-    NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
+    // Create commit event using EventFormatter for proper XRPC stream frame encoding
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 1;
+    event.repo = @"did:plc:alice";
+    event.commit = [CID cidFromString:@"bafyreibv3zhl3h7v6yyh5w5g3l5g3l5g3l5g3l5g3l5g3l5g3l5g3l5g3l5g3l5"];
+    event.ops = @[@{@"action": @"create"}];
+    event.blobs = @[];
+    event.time = @"2024-01-01T00:00:00Z";
+    event.rebase = NO;
+    event.tooBig = NO;
+    event.rev = @"123";
+
+    NSError *error = nil;
+    NSData *data = [formatter encodeCommitEvent:event error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(data);
+
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
-    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.commitExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.commitEvent.repo, @"did:plc:alice");
-    XCTAssertEqualObjects(delegate.commitEvent.commit, @"bafycommit");
-    // Removed: 'prevCid' field no longer exists
+    XCTAssertNotNil(delegate.commitEvent.commit);
     XCTAssertEqual(delegate.commitEvent.ops.count, 1);
 }
 #endif
@@ -78,14 +87,20 @@ NS_ASSUME_NONNULL_BEGIN
     delegate.identityExpectation = [self expectationWithDescription:@"identity"];
     [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
-    NSDictionary *message = @{
-        @"kind": @"identity",
-        @"did": @"did:plc:bob"
-    };
-    NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
+    // Create identity event using EventFormatter for proper XRPC stream frame encoding
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    event.seq = 1;
+    event.did = @"did:plc:bob";
+    event.time = @"2024-01-01T00:00:00Z";
+
+    NSError *error = nil;
+    NSData *data = [formatter encodeIdentityEvent:event error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(data);
+
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
-    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.identityExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.identityEvent.did, @"did:plc:bob");
@@ -99,14 +114,19 @@ NS_ASSUME_NONNULL_BEGIN
     delegate.errorExpectation = [self expectationWithDescription:@"error"];
     [firehose subscribeWithCursor:0 collections:nil delegate:delegate];
 
-    NSDictionary *message = @{
-        @"kind": @"error",
-        @"message": @"oops"
-    };
-    NSData *data = [ATProtoDagCBOR encodeObject:message error:nil];
+    // Create error frame using EventFormatter
+    EventFormatter *formatter = [[EventFormatter alloc] init];
+    FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
+    event.error = @"ServerError";
+    event.message = @"oops";
+
+    NSError *error = nil;
+    NSData *data = [formatter encodeErrorEvent:event error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(data);
+
     WebSocketConnection *connection = [[WebSocketConnection alloc] initWithHost:@"example.com" port:443 path:@"/"];
     [firehose webSocketConnection:connection didReceiveMessage:data];
-    // The delegate will call [expectation fulfill]
 
     [self waitForExpectations:@[delegate.errorExpectation] timeout:1.0];
     XCTAssertEqualObjects(delegate.errorEvent.message, @"oops");

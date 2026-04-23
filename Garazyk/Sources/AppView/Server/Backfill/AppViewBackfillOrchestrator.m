@@ -19,7 +19,7 @@
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 
 // Queue discipline
-@property (nonatomic, assign) dispatch_queue_t schedulerQueue; // Serial
+@property (nonatomic, strong) dispatch_queue_t schedulerQueue; // Serial
 @property (nonatomic, strong) NSMutableArray<NSString *> *pendingQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *activeWorkersByHost;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *hostBackoffUntil;

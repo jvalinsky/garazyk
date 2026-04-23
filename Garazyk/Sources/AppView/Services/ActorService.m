@@ -19,12 +19,21 @@
     return self;
 }
 
-- (nullable NSDictionary *)getProfileForActor:(NSString *)actorDID error:(NSError **)error {
-    if (!actorDID || actorDID.length == 0) {
+- (nullable NSDictionary *)getProfileForActor:(NSString *)actorOrHandle error:(NSError **)error {
+    if (!actorOrHandle || actorOrHandle.length == 0) {
         if (error) {
-            *error = [NSError errorWithDomain:@"ActorService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID"}];
+            *error = [NSError errorWithDomain:@"ActorService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing actor parameter"}];
         }
         return nil;
+    }
+
+    NSString *actorDID = actorOrHandle;
+    if (![actorOrHandle hasPrefix:@"did:"]) {
+        NSString *resolvedDID = [self resolveHandleToDID:actorOrHandle error:error];
+        if (!resolvedDID) {
+            return nil;
+        }
+        actorDID = resolvedDID;
     }
 
     NSMutableDictionary *profile = [NSMutableDictionary dictionary];
@@ -176,6 +185,62 @@
         return rows.firstObject[@"handle"];
     }
 
+    return nil;
+}
+
+- (nullable NSString *)resolveHandleToDID:(NSString *)handle error:(NSError **)error {
+    if (!handle || handle.length == 0) {
+        return nil;
+    }
+
+    // First check local accounts table
+    NSString *query = @"SELECT did FROM accounts WHERE handle = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[handle] error:error];
+
+    if (rows && rows.count > 0) {
+        return rows.firstObject[@"did"];
+    }
+
+    // If not found locally, try to resolve via PDS
+    // This is needed for remote handles not yet in our database
+    NSString *resolveURL = [NSString stringWithFormat:@"http://127.0.0.1:2583/xrpc/com.atproto.identity.resolveHandle?handle=%@",
+                           [handle stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]]];
+    NSURLRequest *req = [NSURLRequest requestWithURL:[NSURL URLWithString:resolveURL]];
+    __block NSData *responseData = nil;
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+    [[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+        responseData = data;
+        dispatch_semaphore_signal(sem);
+    }];
+    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+    if (responseData) {
+        NSDictionary *result = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
+        if (result[@"did"]) {
+            return result[@"did"];
+        }
+    }
+
+    return nil;
+}
+
+- (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error {
+    if (!did || did.length == 0) {
+        return nil;
+    }
+
+    // First check local accounts table
+    NSString *query = @"SELECT handle FROM accounts WHERE did = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did] error:error];
+
+    if (rows && rows.count > 0) {
+        NSString *handle = rows.firstObject[@"handle"];
+        if (handle && handle.length > 0) {
+            return handle;
+        }
+    }
+
+    // Could also try PLC directory for remote resolution if needed
     return nil;
 }
 

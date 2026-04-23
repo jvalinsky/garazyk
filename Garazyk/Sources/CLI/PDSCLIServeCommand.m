@@ -200,9 +200,8 @@
   // Ensure PDSAdminAuth has data directory for admin DID persistence
   [PDSAdminAuth sharedAuth].dataDirectory = dataDir;
 
-  SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc]
-      initWithServiceDatabases:controller.serviceDatabases
-              userDatabasePool:controller.userDatabasePool];
+  // Use the handler from the controller
+  SubscribeReposHandler *subscribeReposHandler = controller.subscribeReposHandler;
 
   PDSHttpServerBuilder *serverBuilder = [[PDSHttpServerBuilder alloc]
       initWithConfiguration:[PDSConfiguration sharedConfiguration]];

@@ -2,6 +2,8 @@
 #import <sqlite3.h>
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 
 @interface ServiceDatabasesPruningTests : XCTestCase
 @property (nonatomic, strong) PDSServiceDatabases *dbs;
@@ -59,22 +61,25 @@
         }
     } error:nil];
     
-    // Better approach: Open the DB file manually and insert events.
-    NSString *dbPath = [self.tempDir stringByAppendingPathComponent:@"service/service.db"];
-    // Ensure DB is initialized (it is by init).
-    
-    sqlite3 *db;
-    if (sqlite3_open(dbPath.UTF8String, &db) == SQLITE_OK) {
+    // Better approach: Use the pool transactor to insert events with manual timestamps.
+    NSDate *now = [NSDate date];
+    [self.dbs.sequencerPool transactWithDid:@"__service__" block:^(id transactor, NSError **err) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        sqlite3 *db = store.db;
+        
         char *errMsg = NULL;
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO events (seq, event_type, event_data, created_at) VALUES (1, 'test', 'data', %f)", yesterday.timeIntervalSince1970];
-        sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
-        
-        NSDate *now = [NSDate date];
+        if (sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            XCTFail(@"Failed to insert old event: %s", errMsg);
+            sqlite3_free(errMsg);
+        }
+
         NSString *sql2 = [NSString stringWithFormat:@"INSERT INTO events (seq, event_type, event_data, created_at) VALUES (2, 'test', 'data', %f)", now.timeIntervalSince1970];
-        sqlite3_exec(db, sql2.UTF8String, NULL, NULL, &errMsg);
-        
-        sqlite3_close(db);
-    }
+        if (sqlite3_exec(db, sql2.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
+            XCTFail(@"Failed to insert new event: %s", errMsg);
+            sqlite3_free(errMsg);
+        }
+    } error:nil];
     
     // Verify count is 2
     NSArray *events = [self.dbs getEventsSince:0 limit:10 error:nil];

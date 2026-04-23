@@ -91,7 +91,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Account Operations
 
-
+/*! Generates a random did:plc identifier (for testing). */
+- (NSString *)generatePlcIdentifier;
 
 @end
 

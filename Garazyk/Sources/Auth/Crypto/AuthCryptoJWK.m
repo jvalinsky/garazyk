@@ -242,18 +242,38 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
         return NO;
     }
 
+    // Try verifying with the low-S DER form first.
+    // Apple's SecKeyVerifySignature may have produced a high-S signature that was
+    // then normalized to low-S. Since (r, s) and (r, N-s) are both valid ECDSA
+    // signatures for the same message, we try both forms.
     CFErrorRef cfError = NULL;
     BOOL valid = SecKeyVerifySignature(pubKey,
                                        kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
                                        (__bridge CFDataRef)hashData,
                                        (__bridge CFDataRef)derSig,
                                        &cfError);
+    if (cfError) CFRelease(cfError);
+
+    // If low-S form fails, try the high-S form (denormalize s → N-s)
+    if (!valid) {
+        NSData *highS = [AuthCryptoECDSA denormalizeLowS:signature error:nil];
+        if (highS) {
+            NSData *derHighS = [AuthCryptoECDSA derSignatureFromRaw:highS error:nil];
+            if (derHighS) {
+                cfError = NULL;
+                valid = SecKeyVerifySignature(pubKey,
+                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+                                             (__bridge CFDataRef)hashData,
+                                             (__bridge CFDataRef)derHighS,
+                                             &cfError);
+                if (cfError) CFRelease(cfError);
+            }
+        }
+    }
 
     if (_isPrivateKey && pubKey != _secKey) {
         CFRelease(pubKey);
     }
-
-    if (cfError) CFRelease(cfError);
 
     if (!valid && error) {
         *error = [NSError errorWithDomain:AuthCryptoErrorDomain
@@ -327,12 +347,29 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
                                        (__bridge CFDataRef)digest,
                                        (__bridge CFDataRef)derSig,
                                        &cfError);
+    if (cfError) CFRelease(cfError);
+
+    // If low-S form fails, try the high-S form (denormalize s → N-s)
+    // Apple's SecKeyVerifySignature may only accept the original form
+    if (!valid) {
+        NSData *highS = [AuthCryptoECDSA denormalizeLowS:signature error:nil];
+        if (highS) {
+            NSData *derHighS = [AuthCryptoECDSA derSignatureFromRaw:highS error:nil];
+            if (derHighS) {
+                cfError = NULL;
+                valid = SecKeyVerifySignature(pubKey,
+                                             kSecKeyAlgorithmECDSASignatureDigestX962SHA256,
+                                             (__bridge CFDataRef)digest,
+                                             (__bridge CFDataRef)derHighS,
+                                             &cfError);
+                if (cfError) CFRelease(cfError);
+            }
+        }
+    }
 
     if (_isPrivateKey && pubKey != _secKey) {
         CFRelease(pubKey);
     }
-
-    if (cfError) CFRelease(cfError);
 
     if (!valid && error) {
         *error = [NSError errorWithDomain:AuthCryptoErrorDomain

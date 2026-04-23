@@ -86,8 +86,8 @@ static NSString *appPasswordGenerateSecret(void) {
         NSString *pdsDir = [dir stringByAppendingPathComponent:@"ATProtoPDS"];
         shared = [[PDSServiceDatabases alloc] initWithDirectory:pdsDir 
                                                     serviceMaxSize:100
-                                                  didCacheMaxSize:1000 
-                                                sequencerMaxSize:100];
+                                                   didCacheMaxSize:1000 
+                                                 sequencerMaxSize:100];
     });
     return shared;
 }
@@ -134,7 +134,6 @@ static NSString *appPasswordGenerateSecret(void) {
 #pragma mark - Schema Initialization
 
 - (BOOL)initializeServiceSchema:(NSError **)error {
-    // Sprint 3: Use migration-based schema management
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return NO;
 
@@ -152,7 +151,6 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (BOOL)initializeDidCacheSchema:(NSError **)error {
-    // DID cache is simple, use direct schema (migrations can be added later if needed)
     NSString *schemaSQL = [NSString stringWithFormat:@"%@;%@",
                            [[PDSSchemaManager sharedManager] serviceDIDCacheTableSchema],
                            @"CREATE INDEX IF NOT EXISTS idx_did_cache_expires ON did_cache(expires_at);"];
@@ -160,10 +158,11 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (BOOL)initializeSequencerSchema:(NSError **)error {
-    // Sequencer is simple, use direct schema (migrations can be added later if needed)
-    NSString *schemaSQL = [NSString stringWithFormat:@"%@;%@",
+    NSString *schemaSQL = [NSString stringWithFormat:@"%@;%@;%@;%@",
                            [[PDSSchemaManager sharedManager] serviceRepoSequenceTableSchema],
-                           @"CREATE INDEX IF NOT EXISTS idx_repo_sequence_did ON repo_sequence(did);"];
+                           [[PDSSchemaManager sharedManager] serviceEventsTableSchema],
+                           @"CREATE INDEX IF NOT EXISTS idx_repo_sequence_did ON repo_sequence(did);",
+                           @"CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);"];
     return [self executeSQL:schemaSQL onPool:self.sequencerPool error:error];
 }
 
@@ -215,7 +214,6 @@ static NSString *appPasswordGenerateSecret(void) {
 
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-
         for (PDSDatabaseAccount *account in accounts) {
             BOOL accountSuccess = [store createAccount:account error:innerError];
             if (!accountSuccess) {
@@ -238,9 +236,7 @@ static NSString *appPasswordGenerateSecret(void) {
 
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
-    if (!store) {
-        return nil;
-    }
+    if (!store) return nil;
 
     NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
     __autoreleasing NSError *stmtError = nil;
@@ -268,7 +264,6 @@ static NSString *appPasswordGenerateSecret(void) {
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return nil;
-    
     return [store getAccountByHandle:handle error:error];
 }
 
@@ -279,41 +274,26 @@ static NSString *appPasswordGenerateSecret(void) {
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return nil;
-    
     return [store getAccountByEmail:email error:error];
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
-    if (!store) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open service database"}];
-        }
-        return nil;
-    }
+    if (!store) return nil;
 
     NSString *sql = @"SELECT a.* FROM accounts a "
                     @"INNER JOIN refresh_tokens rt ON a.did = rt.account_did "
                     @"WHERE rt.token = ? AND rt.expires_at > ?";
     __autoreleasing NSError *stmtError = nil;
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
-    if (!stmt) {
-        if (error) *error = stmtError;
-        return nil;
-    }
+    if (!stmt) return nil;
 
     sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
     sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         account = [store accountFromStatement:stmt];
-        PDS_LOG_AUTH_DEBUG(@"Found account %@ for refresh token %@", account.did, refreshToken);
-    } else {
-        PDS_LOG_AUTH_DEBUG(@"No account found for refresh token %@", refreshToken);
     }
     return account;
 }
@@ -326,39 +306,28 @@ static NSString *appPasswordGenerateSecret(void) {
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         success = [store updateAccount:account error:innerError];
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-    
+    if (error) *error = localError;
     return success;
 }
 
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         success = [store deleteAccount:did error:innerError];
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-    
+    if (error) *error = localError;
     return success;
 }
 
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return @[];
-    
     return [store getAllAccountsWithError:error] ?: @[];
 }
 
@@ -369,13 +338,8 @@ static NSString *appPasswordGenerateSecret(void) {
 - (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return @[];
-    
-    // Fallback to getAllAccounts and filter if needed, or implement limit in ActorStore
-    // For now, let's just use getAllAccounts for consistency if limit is not critical here
     NSArray *all = [store getAllAccountsWithError:error];
     if (!all) return @[];
-    
-    // Simple cursor implementation
     if (cursor) {
         NSUInteger index = [all indexOfObjectPassingTest:^BOOL(PDSDatabaseAccount *obj, NSUInteger idx, BOOL *stop) {
             return [obj.did isEqualToString:cursor];
@@ -388,7 +352,6 @@ static NSString *appPasswordGenerateSecret(void) {
     } else if (all.count > (NSUInteger)limit) {
         all = [all subarrayWithRange:NSMakeRange(0, (NSUInteger)limit)];
     }
-    
     return all;
 }
 
@@ -401,35 +364,19 @@ static NSString *appPasswordGenerateSecret(void) {
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-        
+        if (!stmt) return;
         sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 3, [[NSDate date] timeIntervalSince1970]);
-        
-        NSUInteger refreshTokenTtl = self.refreshTokenTTLSeconds > 0
-                                         ? self.refreshTokenTTLSeconds
-                                         : (30 * 24 * 60 * 60);
+        NSUInteger refreshTokenTtl = self.refreshTokenTTLSeconds > 0 ? self.refreshTokenTTLSeconds : (30 * 24 * 60 * 60);
         sqlite3_bind_double(stmt, 4, [[NSDate dateWithTimeIntervalSinceNow:refreshTokenTtl] timeIntervalSince1970]);
-
-        BOOL result = (sqlite3_step(stmt) == SQLITE_DONE);
-        if (!result) {
-            PDS_LOG_AUTH_ERROR(@"Failed to insert refresh token: %s", sqlite3_errmsg(store.db));
-        } else {
-            PDS_LOG_AUTH_DEBUG(@"Successfully stored refresh token for DID %@", accountDid);
-        }
-        success = result;
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-
+    if (error) *error = localError;
     return success;
 }
 
@@ -440,22 +387,15 @@ static NSString *appPasswordGenerateSecret(void) {
 - (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-
         NSString *sql = @"DELETE FROM refresh_tokens WHERE token = ?";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-
+        if (!stmt) return;
         sqlite3_bind_text(stmt, 1, token.UTF8String, -1, SQLITE_TRANSIENT);
         success = (sqlite3_step(stmt) == SQLITE_DONE);
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-
+    if (error) *error = localError;
     return success;
 }
 
@@ -466,103 +406,64 @@ static NSString *appPasswordGenerateSecret(void) {
 - (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-
         NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-        
+        if (!stmt) return;
         sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         success = (sqlite3_step(stmt) == SQLITE_DONE);
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-
+    if (error) *error = localError;
     return success;
 }
 
 #pragma mark - Invite Code Operations
 
-- (BOOL)createInviteCode:(NSString *)code
-              forAccount:(NSString *)accountDid
-               maxUses:(NSInteger)maxUses
-                 error:(NSError **)error {
+- (BOOL)createInviteCode:(NSString *)code forAccount:(NSString *)accountDid maxUses:(NSInteger)maxUses error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        NSString *sql = @"INSERT INTO invite_codes (id, code, account_did, created_at, max_uses) "
-                        @"VALUES (?, ?, ?, ?, ?)";
+        NSString *sql = @"INSERT INTO invite_codes (id, code, account_did, created_at, max_uses) VALUES (?, ?, ?, ?, ?)";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-        
-        NSString *uuid = [[NSUUID UUID] UUIDString];
-        sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
+        if (!stmt) return;
+        sqlite3_bind_text(stmt, 1, [[NSUUID UUID] UUIDString].UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, code.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 3, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 4, [[NSDate date] timeIntervalSince1970]);
         sqlite3_bind_int64(stmt, 5, maxUses);
-
         success = (sqlite3_step(stmt) == SQLITE_DONE);
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-
+    if (error) *error = localError;
     return success;
 }
 
 - (nullable NSString *)getInviteCodeForAccount:(NSString *)accountDid error:(NSError **)error {
-    __block NSString *code = nil;
-
-    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
-    if (!store) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to open service database"}];
-        }
-        return nil;
-    }
-
+    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
+    if (!store) return nil;
     NSString *sql = @"SELECT code FROM invite_codes WHERE account_did = ? AND disabled = 0 LIMIT 1";
-    __autoreleasing NSError *stmtError = nil;
-    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
-    if (!stmt) {
-        if (error) *error = stmtError;
-        return nil;
-    }
-
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:error];
+    if (!stmt) return nil;
     sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
-
+    NSString *code = nil;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         code = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
     }
-
-    [store finalizeStatement:stmt];
     return code;
 }
 
 - (BOOL)useInviteCode:(NSString *)code error:(NSError **)error {
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"UPDATE invite_codes SET uses = uses + 1 WHERE code = ? AND disabled = 0";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-        
+        if (!stmt) return;
         sqlite3_bind_text(stmt, 1, code.UTF8String, -1, SQLITE_TRANSIENT);
         success = (sqlite3_step(stmt) == SQLITE_DONE);
         [store finalizeStatement:stmt];
-        
         if (success) {
             sql = @"UPDATE invite_codes SET disabled = 1 WHERE code = ? AND uses >= max_uses";
             stmt = [store prepareStatement:sql error:nil];
@@ -573,11 +474,7 @@ static NSString *appPasswordGenerateSecret(void) {
             }
         }
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-
+    if (error) *error = localError;
     return success;
 }
 
@@ -585,478 +482,234 @@ static NSString *appPasswordGenerateSecret(void) {
 
 - (BOOL)reserveHandle:(NSString *)handle error:(NSError **)error {
     NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle ?: @""];
-    if (normalizedHandle.length == 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing handle"}];
-        }
-        return NO;
-    }
-
+    if (normalizedHandle.length == 0) return NO;
     __block BOOL success = NO;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT OR IGNORE INTO reserved_handles (handle, created_at) VALUES (?, ?)";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
-        
         sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
-        
         success = (sqlite3_step(stmt) == SQLITE_DONE);
     } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
+    if (error) *error = localError;
     return success;
 }
 
 - (BOOL)isHandleReserved:(NSString *)handle error:(NSError **)error {
     NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle ?: @""];
-    if (normalizedHandle.length == 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing handle"}];
-        }
-        return NO;
-    }
-
+    if (normalizedHandle.length == 0) return NO;
     PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:error];
     if (!store) return NO;
-
     NSString *sql = @"SELECT 1 FROM reserved_handles WHERE handle = ? LIMIT 1";
-    __autoreleasing NSError *stmtError = nil;
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
-    if (!stmt) {
-        if (error) *error = stmtError;
-        return NO;
-    }
-
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:error];
+    if (!stmt) return NO;
     sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
-    BOOL reserved = (sqlite3_step(stmt) == SQLITE_ROW);
-    
-    return reserved;
+    return (sqlite3_step(stmt) == SQLITE_ROW);
 }
 
 #pragma mark - App Password Operations
 
-- (nullable NSDictionary *)createAppPasswordForAccount:(NSString *)accountDid
-                                                 name:(NSString *)name
-                                           privileged:(BOOL)privileged
-                                                error:(NSError **)error {
-    if (accountDid.length == 0 || name.length == 0) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing accountDid or name"}];
-        }
-        return nil;
-    }
-
+- (nullable NSDictionary *)createAppPasswordForAccount:(NSString *)accountDid name:(NSString *)name privileged:(BOOL)privileged error:(NSError **)error {
+    if (accountDid.length == 0 || name.length == 0) return nil;
     __block NSDictionary *result = nil;
     __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-
         NSString *password = appPasswordGenerateSecret();
         NSData *salt = appPasswordGenerateSalt();
         NSData *hash = appPasswordHash(password, salt);
-        if (!hash) {
-            if (innerError) {
-                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                                 code:-1
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to hash app password"}];
-            }
-            return;
-        }
-
+        if (!hash) return;
         NSTimeInterval createdAt = [[NSDate date] timeIntervalSince1970];
-
-        NSString *sql = @"INSERT INTO app_passwords (id, account_did, name, password_hash, password_salt, privileged, created_at) "
-                        @"VALUES (?, ?, ?, ?, ?, ?, ?)";
+        NSString *sql = @"INSERT INTO app_passwords (id, account_did, name, password_hash, password_salt, privileged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
-
-        NSString *uuid = [[NSUUID UUID] UUIDString];
-        sqlite3_bind_text(stmt, 1, uuid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 1, [[NSUUID UUID] UUIDString].UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 3, name.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_blob(stmt, 4, hash.bytes, (int)hash.length, SQLITE_TRANSIENT);
         sqlite3_bind_blob(stmt, 5, salt.bytes, (int)salt.length, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 6, privileged ? 1 : 0);
         sqlite3_bind_double(stmt, 7, createdAt);
-
-        if (sqlite3_step(stmt) != SQLITE_DONE) {
-            if (innerError) {
-                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                                 code:sqlite3_errcode(store.db)
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to insert app password"}];
-            }
-            return;
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            result = @{@"name": name, @"password": password, @"createdAt": [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]] ?: @"", @"privileged": @(privileged)};
         }
-
-        NSString *createdAtString = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]];
-        result = @{
-            @"name": name,
-            @"password": password,
-            @"createdAt": createdAtString ?: @"",
-            @"privileged": @(privileged)
-        };
     } error:&localError];
-
-    if (!result && localError) {
-        if (error) *error = localError;
-    }
-
+    if (error) *error = localError;
     return result;
 }
 
-- (NSArray<NSDictionary *> *)listAppPasswordsForAccount:(NSString *)accountDid
-                                                 error:(NSError **)error {
+- (NSArray<NSDictionary *> *)listAppPasswordsForAccount:(NSString *)accountDid error:(NSError **)error {
     if (accountDid.length == 0) return @[];
-
     __block NSMutableArray<NSDictionary *> *passwords = [NSMutableArray array];
-    __block NSError *localError = nil;
-
     [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-
         NSString *sql = @"SELECT name, created_at, privileged FROM app_passwords WHERE account_did = ? ORDER BY created_at DESC";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
-
         sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
-
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            const char *nameText = (const char *)sqlite3_column_text(stmt, 0);
+            NSString *name = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
             double createdAt = sqlite3_column_double(stmt, 1);
-            int privilegedFlag = sqlite3_column_int(stmt, 2);
-
-            NSString *name = nameText ? [NSString stringWithUTF8String:nameText] : @"";
-            NSString *createdAtString = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]] ?: @"";
-
-            NSMutableDictionary *entry = [NSMutableDictionary dictionary];
-            entry[@"name"] = name;
-            entry[@"createdAt"] = createdAtString;
-            if (privilegedFlag != 0) {
-                entry[@"privileged"] = @YES;
-            }
-            [passwords addObject:entry];
+            int privileged = sqlite3_column_int(stmt, 2);
+            [passwords addObject:@{@"name": name, @"createdAt": [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]] ?: @"", @"privileged": @(privileged != 0)}];
         }
-    } error:&localError];
-
-    if (localError && error) {
-        *error = localError;
-    }
-
+    } error:error];
     return passwords;
 }
 
-- (BOOL)revokeAppPasswordForAccount:(NSString *)accountDid
-                               name:(NSString *)name
-                              error:(NSError **)error {
-    if (accountDid.length == 0 || name.length == 0) return NO;
-
+- (BOOL)revokeAppPasswordForAccount:(NSString *)accountDid name:(NSString *)name error:(NSError **)error {
     __block BOOL success = NO;
-    __block NSError *localError = nil;
-
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-
         NSString *sql = @"DELETE FROM app_passwords WHERE account_did = ? AND name = ?";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
-
         sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, name.UTF8String, -1, SQLITE_TRANSIENT);
-
-        if (sqlite3_step(stmt) != SQLITE_DONE) {
-            return;
-        }
-        success = (sqlite3_changes(store.db) > 0);
-    } error:&localError];
-
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-
+        success = (sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(store.db) > 0);
+    } error:error];
     return success;
 }
 
-- (BOOL)verifyAppPasswordForAccount:(NSString *)accountDid
-                           password:(NSString *)password
-                              error:(NSError **)error {
+- (BOOL)verifyAppPasswordForAccount:(NSString *)accountDid password:(NSString *)password error:(NSError **)error {
     if (accountDid.length == 0 || password.length == 0) return NO;
-
     __block BOOL matches = NO;
-    __block NSError *localError = nil;
-
     [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-
         NSString *sql = @"SELECT password_hash, password_salt FROM app_passwords WHERE account_did = ?";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
-
         sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
-
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            const void *hashBytes = sqlite3_column_blob(stmt, 0);
-            int hashLen = sqlite3_column_bytes(stmt, 0);
-            const void *saltBytes = sqlite3_column_blob(stmt, 1);
-            int saltLen = sqlite3_column_bytes(stmt, 1);
-            if (!hashBytes || hashLen <= 0 || !saltBytes || saltLen <= 0) {
-                continue;
-            }
-
-            NSData *storedHash = [NSData dataWithBytes:hashBytes length:(NSUInteger)hashLen];
-            NSData *salt = [NSData dataWithBytes:saltBytes length:(NSUInteger)saltLen];
+            NSData *storedHash = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) length:sqlite3_column_bytes(stmt, 0)];
+            NSData *salt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 1) length:sqlite3_column_bytes(stmt, 1)];
             NSData *candidate = appPasswordHash(password, salt);
-            if (candidate && [candidate isEqualToData:storedHash]) {
-                matches = YES;
-                break;
-            }
+            if (candidate && [candidate isEqualToData:storedHash]) { matches = YES; break; }
         }
-    } error:&localError];
-
-    if (localError && error) {
-        *error = localError;
-    }
-
+    } error:error];
     return matches;
 }
 
 #pragma mark - DID Cache Operations
 
-- (void)cacheDID:(NSString *)did 
-        document:(NSDictionary *)document 
-      expiresAt:(NSDate *)expiresAt {
+- (void)cacheDID:(NSString *)did document:(NSDictionary *)document expiresAt:(NSDate *)expiresAt {
     [self.didCachePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        
         NSString *sql = @"INSERT OR REPLACE INTO did_cache (did, document, expires_at) VALUES (?, ?, ?)";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:nil];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:nil];
         if (!stmt) return;
-        
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        NSError *jsonError = nil;
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:document options:0 error:&jsonError];
-        if (jsonData) {
-            sqlite3_bind_blob(stmt, 2, jsonData.bytes, (int)jsonData.length, SQLITE_TRANSIENT);
-        }
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:document options:0 error:nil];
+        if (jsonData) sqlite3_bind_blob(stmt, 2, jsonData.bytes, (int)jsonData.length, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 3, expiresAt.timeIntervalSince1970);
-        
         sqlite3_step(stmt);
-        [store finalizeStatement:stmt];
     } error:nil];
 }
 
 - (nullable NSDictionary *)resolveDID:(NSString *)did {
     __block NSDictionary *document = nil;
-    
     [self.didCachePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        
         NSString *sql = @"SELECT document FROM did_cache WHERE did = ? AND expires_at > ?";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:nil];
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:nil];
         if (!stmt) return;
-        
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
-        
         if (sqlite3_step(stmt) == SQLITE_ROW) {
-            const void *blob = sqlite3_column_blob(stmt, 0);
-            int bytes = sqlite3_column_bytes(stmt, 0);
-            NSData *jsonData = [NSData dataWithBytes:blob length:bytes];
+            NSData *jsonData = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) length:sqlite3_column_bytes(stmt, 0)];
             document = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
         }
-        
-        [store finalizeStatement:stmt];
     } error:nil];
-    
     return document;
 }
 
 #pragma mark - Event Persistence
 
-- (BOOL)logHostingEvent:(NSString *)did
-                   type:(NSString *)type
-                details:(nullable NSDictionary *)details
-              createdBy:(nullable NSString *)createdBy
-                  error:(NSError **)error {
+- (BOOL)logHostingEvent:(NSString *)did type:(NSString *)type details:(nullable NSDictionary *)details createdBy:(nullable NSString *)createdBy error:(NSError **)error {
     __block BOOL success = NO;
-    __block NSError *localError = nil;
-    
     [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO hosting_events (did, event_type, details_json, created_by, created_at) VALUES (?, ?, ?, ?, ?)";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-        
+        if (!stmt) return;
         sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
-        
         if (details) {
             NSData *jsonData = [NSJSONSerialization dataWithJSONObject:details options:0 error:nil];
-            if (jsonData) {
-                NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-                sqlite3_bind_text(stmt, 3, jsonString.UTF8String, -1, SQLITE_TRANSIENT);
-            } else {
-                sqlite3_bind_null(stmt, 3);
-            }
-        } else {
-            sqlite3_bind_null(stmt, 3);
-        }
-        
-        if (createdBy) {
-            sqlite3_bind_text(stmt, 4, createdBy.UTF8String, -1, SQLITE_TRANSIENT);
-        } else {
-            sqlite3_bind_null(stmt, 4);
-        }
-        
+            if (jsonData) sqlite3_bind_text(stmt, 3, [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding].UTF8String, -1, SQLITE_TRANSIENT);
+            else sqlite3_bind_null(stmt, 3);
+        } else sqlite3_bind_null(stmt, 3);
+        if (createdBy) sqlite3_bind_text(stmt, 4, createdBy.UTF8String, -1, SQLITE_TRANSIENT);
+        else sqlite3_bind_null(stmt, 4);
         sqlite3_bind_double(stmt, 5, [[NSDate date] timeIntervalSince1970]);
-        
         success = (sqlite3_step(stmt) == SQLITE_DONE);
-        if (!success) {
-            PDS_LOG_ERROR(@"Failed to log hosting event for did:%@: %s", did, sqlite3_errmsg(store.db));
-        }
-    } error:&localError];
-    
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-    
+    } error:error];
     return success;
 }
 
-- (BOOL)persistEvent:(int64_t)seq
-                type:(NSString *)type
-                data:(NSData *)data
-               error:(NSError **)error {
+- (BOOL)persistEvent:(int64_t)seq type:(NSString *)type data:(NSData *)data error:(NSError **)error {
     __block BOOL success = NO;
-    __block NSError *localError = nil;
-    
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+    [self.sequencerPool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"INSERT INTO events (seq, event_type, event_data, created_at) VALUES (?, ?, ?, ?)";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-        
+        if (!stmt) return;
         sqlite3_bind_int64(stmt, 1, seq);
         sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_blob(stmt, 3, data.bytes, (int)data.length, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 4, [[NSDate date] timeIntervalSince1970]);
-        
-        PDS_LOG_DEBUG(@"Persisting event seq:%lld type:%@ data_len:%lu", seq, type, (unsigned long)data.length);
         success = (sqlite3_step(stmt) == SQLITE_DONE);
-        if (!success) {
-            PDS_LOG_ERROR(@"Failed to persist event seq:%lld: %s", seq, sqlite3_errmsg(store.db));
-        }
-    } error:&localError];
-    
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-    
+    } error:error];
     return success;
 }
 
-- (nullable NSArray<NSDictionary *> *)getEventsSince:(int64_t)seq
-                                              limit:(NSInteger)limit
-                                              error:(NSError **)error {
+- (nullable NSArray<NSDictionary *> *)getEventsSince:(int64_t)seq limit:(NSInteger)limit error:(NSError **)error {
     __block NSMutableArray *events = [NSMutableArray array];
-    __block NSError *localError = nil;
-    
-    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+    [self.sequencerPool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
         NSString *sql = @"SELECT seq, event_type, event_data, created_at FROM events WHERE seq > ? ORDER BY seq ASC LIMIT ?";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
-        
         sqlite3_bind_int64(stmt, 1, seq);
         sqlite3_bind_int64(stmt, 2, limit);
-        
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             int64_t seqVal = sqlite3_column_int64(stmt, 0);
             NSString *type = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
-            const void *dataBlob = sqlite3_column_blob(stmt, 2);
-            int dataLen = sqlite3_column_bytes(stmt, 2);
-            NSData *data = [NSData dataWithBytes:dataBlob length:dataLen];
+            NSData *data = [NSData dataWithBytes:sqlite3_column_blob(stmt, 2) length:sqlite3_column_bytes(stmt, 2)];
             NSTimeInterval created = sqlite3_column_double(stmt, 3);
-            
-            [events addObject:@{
-                @"seq": @(seqVal),
-                @"type": type,
-                @"data": data,
-                @"created_at": [NSDate dateWithTimeIntervalSince1970:created]
-            }];
+            [events addObject:@{@"seq": @(seqVal), @"type": type, @"data": data, @"created_at": [NSDate dateWithTimeIntervalSince1970:created]}];
         }
-    } error:&localError];
-    
-    if (localError) {
-        if (error) *error = localError;
-        return nil;
-    }
-    
+    } error:error];
     return events;
 }
 
 - (int64_t)getMaxEventSequence:(NSError **)error {
     __block int64_t maxSeq = 0;
-    __block NSError *localError = nil;
-    
-    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+    [self.sequencerPool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)reader;
         NSString *sql = @"SELECT MAX(seq) FROM events";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
         if (!stmt) return;
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            if (sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
-                maxSeq = sqlite3_column_int64(stmt, 0);
-            }
+        if (sqlite3_step(stmt) == SQLITE_ROW && sqlite3_column_type(stmt, 0) != SQLITE_NULL) {
+            maxSeq = sqlite3_column_int64(stmt, 0);
         }
-    } error:&localError];
-    
-    if (localError) {
-        if (error) *error = localError;
-        return 0;
-    }
-    
+    } error:error];
     return maxSeq;
 }
 
 - (BOOL)pruneEventsBefore:(NSDate *)date error:(NSError **)error {
     __block BOOL success = NO;
-    __block NSError *localError = nil;
-    
-    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+    [self.sequencerPool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSString *sql = @"DELETE FROM events WHERE created_at < ?";
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
-        if (!stmt) { success = NO; return; }
-        
+        if (!stmt) return;
         sqlite3_bind_double(stmt, 1, date.timeIntervalSince1970);
-        
-        if (sqlite3_step(stmt) == SQLITE_DONE) {
-            success = YES;
-            int changes = sqlite3_changes(store.db);
-            // We could log this if logger was available here
-            (void)changes; 
-        }
-    } error:&localError];
-    
-    if (!success && localError) {
-        if (error) *error = localError;
-    }
-    
+        success = (sqlite3_step(stmt) == SQLITE_DONE);
+    } error:error];
     return success;
 }
 
@@ -1065,9 +718,7 @@ static NSString *appPasswordGenerateSecret(void) {
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
     NSString *dbFilePath = [self.serviceDbPath stringByAppendingPathComponent:@"service.db"];
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbFilePath]];
-    if (![db openWithError:error]) {
-        return nil;
-    }
+    if (![db openWithError:error]) return nil;
     return db;
 }
 

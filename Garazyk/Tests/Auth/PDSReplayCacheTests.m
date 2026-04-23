@@ -36,7 +36,8 @@
     BOOL replay = [cache1 checkAndAddJTI:@"jti-persist-test" expiration:futureExpiry];
     XCTAssertFalse(replay, @"Replay should be detected on same instance");
 
-    // Destroy initial instance
+    // Destroy initial instance (must invalidate timer to break retain cycle)
+    [cache1 invalidate];
     cache1 = nil;
 
     // New instance with same path: JTI should be rejected (persisted)
@@ -44,6 +45,7 @@
     XCTAssertNotNil(cache2);
     BOOL replayAfterReopen = [cache2 checkAndAddJTI:@"jti-persist-test" expiration:futureExpiry];
     XCTAssertFalse(replayAfterReopen, @"Replay should be detected after reopening database");
+    [cache2 invalidate];
 }
 
 - (void)testExpiredJTICanBeReused {
@@ -64,6 +66,7 @@
     // Now it should be rejected (non-expired)
     BOOL replay = [cache checkAndAddJTI:@"jti-expiry-test" expiration:futureExpiry];
     XCTAssertFalse(replay, @"Non-expired JTI should be rejected");
+    [cache invalidate];
 }
 
 - (void)testCleanupRemovesExpiredEntries {
@@ -82,6 +85,7 @@
     NSDate *futureExpiry = [NSDate dateWithTimeIntervalSinceNow:3600];
     BOOL added = [cache checkAndAddJTI:@"jti-cleanup-test" expiration:futureExpiry];
     XCTAssertTrue(added, @"After cleanup, expired JTI should be re-addable");
+    [cache invalidate];
 }
 
 - (void)testInMemoryCache {
@@ -95,6 +99,7 @@
 
     BOOL replay = [cache checkAndAddJTI:@"jti-memory-test" expiration:futureExpiry];
     XCTAssertFalse(replay);
+    [cache invalidate];
 }
 
 @end
