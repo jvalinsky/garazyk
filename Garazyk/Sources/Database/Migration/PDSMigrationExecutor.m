@@ -9,13 +9,22 @@
     // Query MAX(version) from schema_version table
     NSString *sql = @"SELECT MAX(version) as max_version FROM schema_version";
 
-    NSArray *result = [database executeParameterizedQuery:sql params:@[] error:error];
-    if (!result || result.count == 0) {
-        return 0; // No version table or no migrations yet
+    NSError *queryError = nil;
+    NSArray *result = [database executeParameterizedQuery:sql params:@[] error:&queryError];
+    
+    if (queryError || !result) {
+        // Table doesn't exist yet — create it and return version 0
+        NSString *createSQL = @"CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, description TEXT)";
+        NSError *createError = nil;
+        if (![database executeParameterizedUpdate:createSQL params:@[] error:&createError]) {
+            if (error) *error = createError;
+            return 0;
+        }
+        return 0; // Fresh database, no migrations applied
     }
     
-    if (error && *error) {
-        return 0; // Table doesn't exist yet, treat as version 0
+    if (result.count == 0) {
+        return 0;
     }
 
     NSNumber *version = result[0][@"max_version"];
@@ -27,6 +36,8 @@
                                      error:(NSError **)error {
     // Get current schema version
     NSInteger currentVersion = [self currentVersionOfDatabase:database error:error];
+    // currentVersionOfDatabase: creates schema_version table if missing,
+    // so we only fail if the error is set after that.
     if (error && *error) {
         PDS_LOG_DB_ERROR(@"Failed to get current schema version: %@", *error);
         return NO;
