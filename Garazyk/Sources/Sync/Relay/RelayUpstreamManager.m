@@ -48,15 +48,21 @@
 }
 
 - (void)createClientForUpstream:(NSString *)url {
-    // Check if URL needs scheme prefixing
-    // NSURL parses "localhost:2583" as scheme="localhost", which is wrong
     NSString *urlString = url;
     if (![urlString containsString:@"://"]) {
-        // No scheme present, add one
+        // Bare hostname — add http/https scheme
         if ([urlString hasPrefix:@"localhost:"] || [urlString hasPrefix:@"127.0.0.1:"]) {
             urlString = [NSString stringWithFormat:@"http://%@", urlString];
         } else {
             urlString = [NSString stringWithFormat:@"https://%@", urlString];
+        }
+    } else {
+        // Normalize WebSocket schemes to HTTP so NSURL can parse them.
+        // RelayClient.buildWebSocketURL converts http→ws, https→wss when connecting.
+        if ([urlString hasPrefix:@"ws://"]) {
+            urlString = [NSString stringWithFormat:@"http://%@", [urlString substringFromIndex:5]];
+        } else if ([urlString hasPrefix:@"wss://"]) {
+            urlString = [NSString stringWithFormat:@"https://%@", [urlString substringFromIndex:6]];
         }
     }
 
@@ -66,7 +72,6 @@
         return;
     }
 
-    // Validate scheme is http or https
     NSString *scheme = httpURL.scheme.lowercaseString;
     if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) {
         PDS_LOG_ERROR_C(@"Relay", @"Invalid upstream URL scheme: %@ (original: %@)", scheme, url);
@@ -114,7 +119,7 @@
         [self.upstreamClients removeAllObjects];
         [self.connectedUpstreams removeAllObjects];
         [self.reconnectAttempts removeAllObjects];
-        [self.reconnectDelays removeObjectForKey:@""];
+        [self.reconnectDelays removeAllObjects];
     });
 }
 
@@ -152,11 +157,12 @@
 }
 
 - (void)connectToUpstream:(NSString *)url {
-    if (self.isPaused) return;
-    
     RelayClient *client = self.upstreamClients[url];
-    if (client && !client.isConnected) {
+    if (client) {
+        PDS_LOG_SYNC_INFO(@"RelayUpstreamManager: Connecting to %@", url);
         [client connect];
+    } else {
+        PDS_LOG_SYNC_ERROR(@"RelayUpstreamManager: No client found for %@", url);
     }
 }
 
@@ -233,7 +239,7 @@
 
 - (void)relayClient:(RelayClient *)client didReceiveCommitEvent:(FirehoseCommitEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -241,7 +247,7 @@
 
 - (void)relayClient:(RelayClient *)client didReceiveIdentityEvent:(FirehoseIdentityEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -249,7 +255,7 @@
 
 - (void)relayClient:(RelayClient *)client didReceiveErrorEvent:(FirehoseErrorEvent *)event {
     NSString *url = [self urlForClient:client];
-    id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+    id<RelayUpstreamManagerDelegate> delegate = self.delegate;
     if (url && delegate) {
         [delegate upstreamManager:self didReceiveEvent:event fromUpstream:url];
     }
@@ -259,24 +265,14 @@
     NSString *url = [self urlForClient:client];
     if (url) {
         PDS_LOG_SYNC_INFO(@"RelayUpstreamManager: Client connected to %@", url);
-
-        // Capture properties for block
-        __strong typeof(self) strongSelf = self;
-        NSMutableSet *connectedUpstreams = self.connectedUpstreams;
-        NSMutableDictionary *reconnectAttempts = self.reconnectAttempts;
-        NSMutableDictionary *reconnectDelays = self.reconnectDelays;
-        NSMutableDictionary *hostStatuses = self.hostStatuses;
-        NSTimeInterval baseInterval = self.baseReconnectInterval;
-
         dispatch_async(_managerQueue, ^{
-            [connectedUpstreams addObject:url];
-            reconnectAttempts[url] = @0;
-            reconnectDelays[url] = @(baseInterval);
-            hostStatuses[url] = @(RelayHostStatusActive);
+            [self.connectedUpstreams addObject:url];
+            self.reconnectAttempts[url] = @0;
+            self.reconnectDelays[url] = @(self.baseReconnectInterval);
+            self.hostStatuses[url] = @(RelayHostStatusActive);
         });
         [[RelayMetrics sharedMetrics] recordUpstreamConnected];
-
-        id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+        id<RelayUpstreamManagerDelegate> delegate = self.delegate;
         if (delegate) {
             [delegate upstreamManager:self didConnectToUpstream:url];
         }
@@ -286,21 +282,15 @@
 - (void)relayClient:(RelayClient *)client didDisconnectWithError:(NSError *)error {
     NSString *url = [self urlForClient:client];
     if (url) {
-        // Capture properties for block
-        NSMutableSet *connectedUpstreams = self.connectedUpstreams;
-        NSMutableDictionary *hostStatuses = self.hostStatuses;
-
         dispatch_async(_managerQueue, ^{
-            [connectedUpstreams removeObject:url];
-            hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
+            [self.connectedUpstreams removeObject:url];
+            self.hostStatuses[url] = @(error ? RelayHostStatusError : RelayHostStatusDisconnected);
         });
         [[RelayMetrics sharedMetrics] recordUpstreamDisconnected];
-
-        id<RelayUpstreamManagerDelegate> delegate = self.delegate;  // Capture strongly
+        id<RelayUpstreamManagerDelegate> delegate = self.delegate;
         if (delegate) {
             [delegate upstreamManager:self didDisconnectFromUpstream:url error:error];
         }
-
         if (self.autoReconnectEnabled && !self.isPaused) {
             [self scheduleReconnectForUpstream:url];
         }
@@ -310,19 +300,13 @@
 - (void)relayClient:(RelayClient *)client didReceiveCursor:(int64_t)cursor {
     NSString *url = [self urlForClient:client];
     if (url) {
-        // Capture self and delegate strongly for the block
-        __strong typeof(self) strongSelf = self;
-        __strong typeof(self.delegate) strongDelegate = self.delegate;
-        NSDictionary *hostSeqs = self.hostSeqs;
-
         dispatch_async(_managerQueue, ^{
-            if (strongSelf) {
-                strongSelf.hostSeqs[url] = @(cursor);
-            }
+            self.hostSeqs[url] = @(cursor);
         });
         [[RelayMetrics sharedMetrics] recordSequence:cursor];
-        if (strongDelegate) {
-            [strongDelegate upstreamManager:self didReceiveCursor:cursor fromUpstream:url];
+        id<RelayUpstreamManagerDelegate> delegate = self.delegate;
+        if (delegate) {
+            [delegate upstreamManager:self didReceiveCursor:cursor fromUpstream:url];
         }
     }
 }
@@ -332,21 +316,22 @@
 - (void)scheduleReconnectForUpstream:(NSString *)url {
     NSNumber *attempts = self.reconnectAttempts[url];
     if (attempts.integerValue >= self.maxReconnectAttempts) {
+        PDS_LOG_SYNC_WARN(@"Max reconnect attempts reached for upstream %@", url);
         return;
     }
-    
-    self.reconnectAttempts[url] = @(attempts.integerValue + 1);
-    [[RelayMetrics sharedMetrics] recordReconnectionCount];
-    
-    NSTimeInterval delay = self.reconnectDelays[url].doubleValue;
+
+    NSTimeInterval delay = [self.reconnectDelays[url] doubleValue];
+    PDS_LOG_SYNC_INFO(@"Scheduling reconnect for %@ in %.1fs (attempt %ld)", url, delay, (long)attempts.integerValue + 1);
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), _managerQueue, ^{
-        if (!self.isPaused && ![self.connectedUpstreams containsObject:url]) {
-            [self connectToUpstream:url];
-        }
+        self.reconnectAttempts[url] = @(attempts.integerValue + 1);
+        double nextDelay = MIN(delay * 1.5, 60.0);
+        self.reconnectDelays[url] = @(nextDelay);
+        [self connectToUpstream:url];
     });
-    
-    self.reconnectDelays[url] = @(delay * 2.0);
 }
+
+#pragma mark - Helpers
 
 - (NSString *)urlForClient:(RelayClient *)client {
     for (NSString *url in self.upstreamClients) {
@@ -357,41 +342,20 @@
     return nil;
 }
 
-#pragma mark - Host Status
+#pragma mark - Status Tracking
 
 - (int64_t)seqForUpstream:(NSString *)url {
     __block int64_t seq = 0;
     dispatch_sync(_managerQueue, ^{
-        NSNumber *seqNum = self.hostSeqs[url];
-        if (seqNum) {
-            seq = seqNum.longLongValue;
-        }
+        seq = [self.hostSeqs[url] longLongValue];
     });
     return seq;
-}
-
-- (RelayHostStatus)statusForUpstream:(NSString *)url {
-    __block RelayHostStatus status = RelayHostStatusDisconnected;
-    dispatch_sync(_managerQueue, ^{
-        if ([self.connectedUpstreams containsObject:url]) {
-            status = RelayHostStatusActive;
-        } else {
-            NSNumber *statusNum = self.hostStatuses[url];
-            if (statusNum) {
-                status = statusNum.integerValue;
-            }
-        }
-    });
-    return status;
 }
 
 - (NSUInteger)accountCountForUpstream:(NSString *)url {
     __block NSUInteger count = 0;
     dispatch_sync(_managerQueue, ^{
-        NSNumber *countNum = self.hostAccountCounts[url];
-        if (countNum) {
-            count = countNum.unsignedIntegerValue;
-        }
+        count = [self.hostAccountCounts[url] unsignedIntegerValue];
     });
     return count;
 }
@@ -400,6 +364,14 @@
     dispatch_async(_managerQueue, ^{
         self.hostAccountCounts[url] = @(count);
     });
+}
+
+- (RelayHostStatus)statusForUpstream:(NSString *)url {
+    __block RelayHostStatus status = RelayHostStatusDisconnected;
+    dispatch_sync(_managerQueue, ^{
+        status = (RelayHostStatus)[self.hostStatuses[url] integerValue];
+    });
+    return status;
 }
 
 @end
