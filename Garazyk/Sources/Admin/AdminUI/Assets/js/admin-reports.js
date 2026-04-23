@@ -31,7 +31,10 @@ async function load() {
     const container = document.getElementById('admin-reports-list');
     if (!container) return;
     
-    container.innerHTML = '<li class="loading">Loading reports...</li>';
+    container.innerHTML = `<div class="loading-state">
+      <div class="loading-indicator"></div>
+      <span class="loading-state-title">Loading reports...</span>
+    </div>`;
     
     try {
         const filters = {};
@@ -42,7 +45,18 @@ async function load() {
         reportsList = data.reports || [];
         render();
     } catch (err) {
-        container.innerHTML = '<li class="error">Failed to load: ' + AdminPanel.escapeHtml(err.message) + '</li>';
+        container.innerHTML = `<div class="loading-state">
+          <div class="empty-state-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <span class="loading-state-title">Failed to load reports</span>
+          <span class="loading-state-description">${AdminPanel.escapeHtml(err.message)}</span>
+        </div>`;
+        window.AdminUI?.showError?.('Failed to load reports: ' + err.message);
     }
 }
 
@@ -51,7 +65,11 @@ function render() {
     if (!container) return;
     
     if (reportsList.length === 0) {
-        container.innerHTML = '<li class="empty">No reports found</li>';
+        container.innerHTML = `<div class="loading-state">
+          <div class="empty-state-strawberry"></div>
+          <span class="loading-state-title">No reports found</span>
+          <span class="loading-state-description">All moderation reports have been resolved.</span>
+        </div>`;
         updateReportCount(0);
         return;
     }
@@ -167,24 +185,32 @@ async function handleAction(event) {
     const btn = event.currentTarget;
     const action = btn.dataset.action;
     const reportId = btn.dataset.report;
-    
     const resultEl = document.getElementById('admin-reports-result');
-    const notes = prompt('Enter resolution notes (optional):');
-    
-    try {
-        btn.disabled = true;
-        btn.textContent = 'Processing...';
-        
-        const status = action === 'dismiss' ? 'dismissed' : 'resolved';
-        await AdminPanel.resolveReport(reportId, status, notes);
-        
-        if (resultEl) resultEl.innerHTML = '<div class="admin-success">Report ' + status + '</div>';
-        load();
-    } catch (err) {
-        if (resultEl) resultEl.innerHTML = '<div class="admin-error">' + AdminPanel.escapeHtml(err.message) + '</div>';
-        btn.disabled = false;
-        btn.textContent = action === 'dismiss' ? 'Dismiss' : 'Resolve';
-    }
+    const status = action === 'dismiss' ? 'dismissed' : 'resolved';
+
+    const Sheet = window.AdminUI?.SheetDialog || window.SheetDialog;
+    Sheet.prompt({
+        title: 'Resolution Notes',
+        label: 'Enter resolution notes (optional):',
+        initialValue: '',
+        placeholder: 'Add notes about this resolution...',
+        confirmLabel: status === 'resolved' ? 'Resolve' : 'Dismiss',
+        onConfirm: async (notes) => {
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Processing...';
+
+                await AdminPanel.resolveReport(reportId, status, notes);
+
+                if (resultEl) resultEl.innerHTML = '<div class="admin-success">Report ' + status + '</div>';
+                load();
+            } catch (err) {
+                if (resultEl) resultEl.innerHTML = '<div class="admin-error">' + AdminPanel.escapeHtml(err.message) + '</div>';
+                btn.disabled = false;
+                btn.textContent = action === 'dismiss' ? 'Dismiss' : 'Resolve';
+            }
+        }
+    });
 }
 
 function setStatusFilter(status) {

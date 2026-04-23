@@ -46,7 +46,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <h2 class="modal-title">Edit Member Role</h2>
-      <button type="button" class="btn btn-icon" onclick="document.getElementById('edit-member-modal').close()">✕</button>
+      <button type="button" class="btn btn-icon" data-action="close-dialog" data-dialog="edit-member-modal" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <form class="form" hx-post="/admin/ozone/team/update" hx-swap="outerHTML">
@@ -61,7 +61,7 @@
         </div>
         <div class="form-footer">
           <button type="submit" class="btn btn-primary">Update Role</button>
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-member-modal').close()">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-action="close-dialog" data-dialog="edit-member-modal">Cancel</button>
         </div>
       </form>
     </div>
@@ -73,7 +73,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <h2 class="modal-title">Remove Team Member</h2>
-      <button type="button" class="btn btn-icon" onclick="document.getElementById('delete-member-modal').close()">✕</button>
+      <button type="button" class="btn btn-icon" data-action="close-dialog" data-dialog="delete-member-modal" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <p class="mb-md">Are you sure you want to remove this team member?</p>
@@ -81,7 +81,7 @@
         <input type="hidden" name="did" id="delete-member-did" />
         <div class="form-footer">
           <button type="submit" class="btn btn-destructive">Remove Member</button>
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('delete-member-modal').close()">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-action="close-dialog" data-dialog="delete-member-modal">Cancel</button>
         </div>
       </form>
     </div>

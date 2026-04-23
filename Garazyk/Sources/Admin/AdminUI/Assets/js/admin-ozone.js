@@ -4,6 +4,18 @@
 
 import { AdminPanel } from './admin-panel.js';
 
+function getSheet() {
+  return window.AdminUI?.SheetDialog || window.SheetDialog;
+}
+
+function getConfirm() {
+  return window.AdminUI?.confirm || window.confirm;
+}
+
+function getPrompt() {
+  return window.AdminUI?.prompt || window.prompt;
+}
+
 export function init() {
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
@@ -19,183 +31,351 @@ export function init() {
 
 async function handleOzoneAction(btn) {
     const action = btn.dataset.action;
+    const Sheet = getSheet();
     
     try {
         if (action === 'ozone-team-add') {
-            const email = prompt('Team member email:');
-            if (!email) return;
-            const role = prompt('Role (admin/mod):', 'mod') || 'mod';
-            await ozoneJSON('/xrpc/tools.ozone.team.addMember', { email, role });
-            window.AdminUI.showSuccess('Team member added');
-            reloadContainer('ozone-team-list-container');
+            const sheet = Sheet.open({
+                title: 'Add Team Member',
+                fields: [
+                    { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'user@example.com' },
+                    { name: 'role', label: 'Role', type: 'select', required: true, options: [
+                        { value: 'mod', label: 'Moderator' },
+                        { value: 'admin', label: 'Admin' }
+                    ]}
+                ],
+                confirmLabel: 'Add',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.team.addMember', { email: data.email, role: data.role });
+                    window.AdminUI.showSuccess('Team member added');
+                    reloadContainer('ozone-team-list-container');
+                }
+            });
         } else if (action === 'ozone-team-edit') {
             const email = btn.dataset.email;
             if (!email) throw new Error('Missing team member email');
-            const role = prompt('New role:', btn.dataset.role || 'mod');
-            if (!role) return;
-            await ozoneJSON('/xrpc/tools.ozone.team.updateMember', { email, role });
-            window.AdminUI.showSuccess('Team member updated');
-            reloadContainer('ozone-team-list-container');
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Edit Team Member',
+                initialValues: { email, role: btn.dataset.role || 'mod' },
+                fields: [
+                    { name: 'email', label: 'Email', type: 'email', required: true },
+                    { name: 'role', label: 'Role', type: 'select', required: true, options: [
+                        { value: 'mod', label: 'Moderator' },
+                        { value: 'admin', label: 'Admin' }
+                    ]}
+                ],
+                confirmLabel: 'Update',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.team.updateMember', { email: data.email, role: data.role });
+                    window.AdminUI.showSuccess('Team member updated');
+                    reloadContainer('ozone-team-list-container');
+                }
+            });
         } else if (action === 'ozone-team-delete') {
             const email = btn.dataset.email || btn.dataset.id || btn.dataset.did;
-            if (!email) {
-                throw new Error('Missing team member identifier');
-            }
-            if (confirm('Remove this team member?')) {
-                await ozoneJSON('/xrpc/tools.ozone.team.deleteMember', { email });
-                window.AdminUI.showSuccess('Team member removed');
-                btn.closest('tr')?.remove();
-            }
+            if (!email) throw new Error('Missing team member identifier');
+            const Conf = getConfirm();
+            Conf.confirm({
+                title: 'Remove Team Member',
+                message: `Remove ${email} from the team?`,
+                confirmLabel: 'Remove',
+                destructive: true,
+                onConfirm: async () => {
+                    await ozoneJSON('/xrpc/tools.ozone.team.deleteMember', { email });
+                    window.AdminUI.showSuccess('Team member removed');
+                    btn.closest('tr')?.remove();
+                }
+            });
         } else if (action === 'ozone-set-create') {
-            const name = prompt('Set name:');
-            if (!name) return;
-            const description = prompt('Set description (optional):') || '';
-            await ozoneJSON('/xrpc/tools.ozone.set.create', { name, description });
-            window.AdminUI.showSuccess('Set created');
-            reloadContainer('ozone-sets-list-container');
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Create Moderation Set',
+                fields: [
+                    { name: 'name', label: 'Set Name', required: true, placeholder: 'e.g., blocked-words' },
+                    { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Optional description' }
+                ],
+                confirmLabel: 'Create',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.set.create', { name: data.name, description: data.description || '' });
+                    window.AdminUI.showSuccess('Set created');
+                    reloadContainer('ozone-sets-list-container');
+                }
+            });
         } else if (action === 'ozone-set-edit') {
             const id = btn.dataset.id;
             if (!id) throw new Error('Missing set id');
-            const name = prompt('Updated set name (optional):', btn.dataset.name || '');
-            if (name === null) return;
-            const valuesCSV = prompt('Comma-separated values to replace (optional):', btn.dataset.values || '');
-            if (valuesCSV === null) return;
-            await ozoneJSON('/xrpc/tools.ozone.set.update', {
-                id,
-                name: name || undefined,
-                values: valuesFromCSV(valuesCSV)
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Edit Moderation Set',
+                initialValues: { name: btn.dataset.name || '', values: btn.dataset.values || '' },
+                fields: [
+                    { name: 'name', label: 'Set Name', placeholder: 'e.g., blocked-words' },
+                    { name: 'values', label: 'Values (comma-separated)', type: 'textarea', placeholder: 'word1, word2, word3' }
+                ],
+                confirmLabel: 'Update',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.set.update', {
+                        id,
+                        name: data.name || undefined,
+                        values: valuesFromCSV(data.values)
+                    });
+                    window.AdminUI.showSuccess('Set updated');
+                    reloadContainer('ozone-sets-list-container');
+                }
             });
-            window.AdminUI.showSuccess('Set updated');
-            reloadContainer('ozone-sets-list-container');
         } else if (action === 'ozone-set-delete') {
             const id = btn.dataset.id;
-            if (confirm('Delete this moderation set?')) {
-                await ozoneJSON('/xrpc/tools.ozone.set.delete', { id });
-                window.AdminUI.showSuccess('Set deleted');
-                btn.closest('tr')?.remove();
-            }
+            const Conf = getConfirm();
+            Conf.confirm({
+                title: 'Delete Set',
+                message: 'Delete this moderation set? This action cannot be undone.',
+                confirmLabel: 'Delete',
+                destructive: true,
+                onConfirm: async () => {
+                    await ozoneJSON('/xrpc/tools.ozone.set.delete', { id });
+                    window.AdminUI.showSuccess('Set deleted');
+                    btn.closest('tr')?.remove();
+                }
+            });
         } else if (action === 'ozone-template-create') {
-            const name = prompt('Template name:');
-            if (!name) return;
-            const contentMarkdown = prompt('Template markdown body:');
-            if (!contentMarkdown) return;
-            await ozoneJSON('/xrpc/tools.ozone.communication.createTemplate', { name, contentMarkdown });
-            window.AdminUI.showSuccess('Template created');
-            reloadContainer('ozone-templates-list-container');
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Create Communication Template',
+                fields: [
+                    { name: 'name', label: 'Template Name', required: true, placeholder: 'e.g., welcome-message' },
+                    { name: 'contentMarkdown', label: 'Template Body', type: 'textarea', required: true, rows: 6, placeholder: 'Markdown content...' }
+                ],
+                confirmLabel: 'Create',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.communication.createTemplate', { name: data.name, contentMarkdown: data.contentMarkdown });
+                    window.AdminUI.showSuccess('Template created');
+                    reloadContainer('ozone-templates-list-container');
+                }
+            });
         } else if (action === 'ozone-template-edit') {
             const id = btn.dataset.id;
             if (!id) throw new Error('Missing template id');
-            const name = prompt('Template name:', btn.dataset.name || '');
-            if (name === null) return;
-            const contentMarkdown = prompt('Template markdown body:', btn.dataset.contentMarkdown || '');
-            if (contentMarkdown === null) return;
-            await ozoneJSON('/xrpc/tools.ozone.communication.updateTemplate', {
-                id,
-                name: name || undefined,
-                contentMarkdown: contentMarkdown || undefined
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Edit Communication Template',
+                initialValues: { name: btn.dataset.name || '', contentMarkdown: btn.dataset.contentMarkdown || '' },
+                fields: [
+                    { name: 'name', label: 'Template Name', required: true },
+                    { name: 'contentMarkdown', label: 'Template Body', type: 'textarea', required: true, rows: 6 }
+                ],
+                confirmLabel: 'Update',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.communication.updateTemplate', {
+                        id,
+                        name: data.name || undefined,
+                        contentMarkdown: data.contentMarkdown || undefined
+                    });
+                    window.AdminUI.showSuccess('Template updated');
+                    reloadContainer('ozone-templates-list-container');
+                }
             });
-            window.AdminUI.showSuccess('Template updated');
-            reloadContainer('ozone-templates-list-container');
         } else if (action === 'ozone-template-delete') {
             const id = btn.dataset.id;
-            if (confirm('Delete this communication template?')) {
-                await ozoneJSON('/xrpc/tools.ozone.communication.deleteTemplate', { id });
-                window.AdminUI.showSuccess('Template deleted');
-                btn.closest('tr')?.remove();
-            }
+            const Conf = getConfirm();
+            Conf.confirm({
+                title: 'Delete Template',
+                message: 'Delete this communication template?',
+                confirmLabel: 'Delete',
+                destructive: true,
+                onConfirm: async () => {
+                    await ozoneJSON('/xrpc/tools.ozone.communication.deleteTemplate', { id });
+                    window.AdminUI.showSuccess('Template deleted');
+                    btn.closest('tr')?.remove();
+                }
+            });
         } else if (action === 'ozone-verification-grant') {
-            const did = prompt('DID to verify (did:plc:...):');
-            if (!did) return;
-            await ozoneJSON('/xrpc/tools.ozone.verification.grantVerification', { did });
-            window.AdminUI.showSuccess('Verification granted');
-            reloadContainer('ozone-verification-list-container');
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Grant Verification',
+                fields: [
+                    { name: 'did', label: 'DID', required: true, placeholder: 'did:plc:...' }
+                ],
+                confirmLabel: 'Grant',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.verification.grantVerification', { did: data.did });
+                    window.AdminUI.showSuccess('Verification granted');
+                    reloadContainer('ozone-verification-list-container');
+                }
+            });
         } else if (action === 'ozone-verification-revoke') {
-            const did = btn.dataset.did || prompt('DID to revoke verification for:');
-            if (!did) return;
-            if (confirm('Revoke verification for ' + did + '?')) {
-                await ozoneJSON('/xrpc/tools.ozone.verification.revokeVerification', { did });
-                window.AdminUI.showSuccess('Verification revoked');
-                btn.closest('tr')?.remove();
-            }
+            const did = btn.dataset.did;
+            if (!did) throw new Error('Missing DID');
+            const Conf = getConfirm();
+            Conf.confirm({
+                title: 'Revoke Verification',
+                message: `Revoke verification for ${did}?`,
+                confirmLabel: 'Revoke',
+                destructive: true,
+                onConfirm: async () => {
+                    await ozoneJSON('/xrpc/tools.ozone.verification.revokeVerification', { did });
+                    window.AdminUI.showSuccess('Verification revoked');
+                    btn.closest('tr')?.remove();
+                }
+            });
         } else if (action === 'ozone-safelink-add') {
-            const url = prompt('Rule URL (exact or pattern):');
-            if (!url) return;
-            const ruleAction = prompt('Action (allow/block/warn):', 'block') || 'block';
-            await ozoneJSON('/xrpc/tools.ozone.safelink.addRule', { url, action: ruleAction });
-            window.AdminUI.showSuccess('Safe link rule added');
-            reloadContainer('ozone-safelinks-list-container');
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Add Safe Link Rule',
+                fields: [
+                    { name: 'url', label: 'URL (exact or pattern)', required: true, placeholder: 'https://example.com/*' },
+                    { name: 'action', label: 'Action', type: 'select', required: true, options: [
+                        { value: 'block', label: 'Block' },
+                        { value: 'warn', label: 'Warn' },
+                        { value: 'allow', label: 'Allow' }
+                    ]}
+                ],
+                confirmLabel: 'Add',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.safelink.addRule', { url: data.url, action: data.action });
+                    window.AdminUI.showSuccess('Safe link rule added');
+                    reloadContainer('ozone-safelinks-list-container');
+                }
+            });
         } else if (action === 'ozone-safelink-update') {
             const id = btn.dataset.id;
             if (!id) throw new Error('Missing rule id');
-            const url = prompt('Updated URL:', btn.dataset.url || '');
-            if (url === null) return;
-            const ruleAction = prompt('Updated action:', btn.dataset.ruleAction || 'block');
-            if (ruleAction === null) return;
-            await ozoneJSON('/xrpc/tools.ozone.safelink.updateRule', {
-                id,
-                url: url || undefined,
-                action: ruleAction || undefined
-            });
-            window.AdminUI.showSuccess('Safe link rule updated');
-            reloadContainer('ozone-safelinks-list-container');
-        } else if (action === 'ozone-safelink-remove') {
-            const id = btn.dataset.id;
-            if (!id) throw new Error('Missing rule id');
-            if (confirm('Remove this safe link rule?')) {
-                await ozoneJSON('/xrpc/tools.ozone.safelink.removeRule', { id });
-                window.AdminUI.showSuccess('Safe link rule removed');
-                btn.closest('tr')?.remove();
-            }
-        } else if (action === 'ozone-scheduled-create') {
-            const subject = prompt('Subject DID or URI for moderation action:');
-            if (!subject) return;
-            const eventAction = prompt('Event action (e.g. takedown):', 'takedown') || 'takedown';
-            const reason = prompt('Reason/comment (optional):') || '';
-            await ozoneJSON('/xrpc/tools.ozone.moderation.scheduleAction', {
-                action: {
-                    subject,
-                    action: eventAction,
-                    comment: reason
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Edit Safe Link Rule',
+                initialValues: { url: btn.dataset.url || '', ruleAction: btn.dataset.ruleAction || 'block' },
+                fields: [
+                    { name: 'url', label: 'URL', required: true },
+                    { name: 'ruleAction', label: 'Action', type: 'select', required: true, options: [
+                        { value: 'block', label: 'Block' },
+                        { value: 'warn', label: 'Warn' },
+                        { value: 'allow', label: 'Allow' }
+                    ]}
+                ],
+                confirmLabel: 'Update',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.safelink.updateRule', {
+                        id,
+                        url: data.url || undefined,
+                        action: data.ruleAction || undefined
+                    });
+                    window.AdminUI.showSuccess('Safe link rule updated');
+                    reloadContainer('ozone-safelinks-list-container');
                 }
             });
-            window.AdminUI.showSuccess('Scheduled action created');
-            reloadContainer('ozone-scheduled-list-container');
+        } else if (action === 'ozone-safelink-remove') {
+            const id = btn.dataset.id;
+            const Conf = getConfirm();
+            Conf.confirm({
+                title: 'Remove Rule',
+                message: 'Remove this safe link rule?',
+                confirmLabel: 'Remove',
+                destructive: true,
+                onConfirm: async () => {
+                    await ozoneJSON('/xrpc/tools.ozone.safelink.removeRule', { id });
+                    window.AdminUI.showSuccess('Safe link rule removed');
+                    btn.closest('tr')?.remove();
+                }
+            });
+        } else if (action === 'ozone-scheduled-create') {
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Schedule Moderation Action',
+                fields: [
+                    { name: 'subject', label: 'Subject (DID or URI)', required: true, placeholder: 'did:plc:...' },
+                    { name: 'action', label: 'Action', type: 'select', required: true, options: [
+                        { value: 'takedown', label: 'Takedown' },
+                        { value: 'flag', label: 'Flag' },
+                        { value: 'ack', label: 'Acknowledge' },
+                        { value: 'sbom', label: 'Suspend' }
+                    ]},
+                    { name: 'comment', label: 'Reason/Comment', type: 'textarea', placeholder: 'Optional reason for this action' }
+                ],
+                confirmLabel: 'Schedule',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.moderation.scheduleAction', {
+                        action: {
+                            subject: data.subject,
+                            action: data.action,
+                            comment: data.comment || ''
+                        }
+                    });
+                    window.AdminUI.showSuccess('Scheduled action created');
+                    reloadContainer('ozone-scheduled-list-container');
+                }
+            });
         } else if (action === 'ozone-scheduled-cancel') {
             const id = btn.dataset.id;
             if (!id) throw new Error('Missing scheduled action id');
-            if (confirm('Cancel this scheduled moderation action?')) {
-                await ozoneJSON('/xrpc/tools.ozone.moderation.cancelScheduledAction', { id });
-                window.AdminUI.showSuccess('Scheduled action canceled');
-                btn.closest('tr')?.remove();
-            }
+            const Conf = getConfirm();
+            Conf.confirm({
+                title: 'Cancel Action',
+                message: 'Cancel this scheduled moderation action?',
+                confirmLabel: 'Cancel',
+                destructive: true,
+                onConfirm: async () => {
+                    await ozoneJSON('/xrpc/tools.ozone.moderation.cancelScheduledAction', { id });
+                    window.AdminUI.showSuccess('Scheduled action canceled');
+                    btn.closest('tr')?.remove();
+                }
+            });
         } else if (action === 'ozone-config-update') {
             const configSource = btn.dataset.config || document.getElementById('ozone-config-json')?.textContent || '{}';
-            const raw = prompt('Server config JSON:', configSource);
-            if (!raw) return;
-            let payload;
-            try {
-                payload = JSON.parse(raw);
-            } catch (e) {
-                throw new Error('Config must be valid JSON');
-            }
-            await ozoneJSON('/xrpc/tools.ozone.server.updateConfig', payload);
-            window.AdminUI.showSuccess('Ozone config updated');
-            reloadContainer('ozone-config-data-container');
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Update Server Config',
+                initialValues: { config: configSource },
+                fields: [
+                    { name: 'config', label: 'JSON Config', type: 'textarea', required: true, rows: 10, placeholder: '{"key": "value"}' }
+                ],
+                confirmLabel: 'Update',
+                onConfirm: async (data) => {
+                    let payload;
+                    try {
+                        payload = JSON.parse(data.config);
+                    } catch (e) {
+                        throw new Error('Config must be valid JSON');
+                    }
+                    await ozoneJSON('/xrpc/tools.ozone.server.updateConfig', payload);
+                    window.AdminUI.showSuccess('Ozone config updated');
+                    reloadContainer('ozone-config-data-container');
+                }
+            });
         } else if (action === 'ozone-setting-upsert') {
-            const key = prompt('Option key:');
-            if (!key) return;
-            const value = prompt('Option value:');
-            if (value === null) return;
-            const scope = prompt('Option scope:', 'global') || 'global';
-            await ozoneJSON('/xrpc/tools.ozone.setting.upsertOption', { key, value, scope });
-            window.AdminUI.showSuccess('Option upserted');
-            reloadContainer('ozone-config-data-container');
+            const Sheet = getSheet();
+            Sheet.open({
+                title: 'Upsert Setting',
+                fields: [
+                    { name: 'key', label: 'Option Key', required: true, placeholder: 'setting-name' },
+                    { name: 'value', label: 'Option Value', required: true, placeholder: 'setting-value' },
+                    { name: 'scope', label: 'Scope', type: 'select', required: true, options: [
+                        { value: 'global', label: 'Global' },
+                        { value: 'server', label: 'Server' },
+                        { value: 'account', label: 'Account' }
+                    ]}
+                ],
+                confirmLabel: 'Save',
+                onConfirm: async (data) => {
+                    await ozoneJSON('/xrpc/tools.ozone.setting.upsertOption', { key: data.key, value: data.value, scope: data.scope });
+                    window.AdminUI.showSuccess('Setting saved');
+                    reloadContainer('ozone-config-data-container');
+                }
+            });
         } else if (action === 'ozone-setting-remove') {
-            const key = btn.dataset.key || prompt('Option key to remove:');
-            if (!key) return;
-            await ozoneJSON('/xrpc/tools.ozone.setting.removeOptions', { keys: [key] });
-            window.AdminUI.showSuccess('Option removed');
-            btn.closest('tr')?.remove();
+            const key = btn.dataset.key;
+            if (!key) throw new Error('Missing option key');
+            const Conf = getConfirm();
+            Conf.confirm({
+                title: 'Remove Setting',
+                message: `Remove setting "${key}"?`,
+                confirmLabel: 'Remove',
+                destructive: true,
+                onConfirm: async () => {
+                    await ozoneJSON('/xrpc/tools.ozone.setting.removeOptions', { keys: [key] });
+                    window.AdminUI.showSuccess('Setting removed');
+                    btn.closest('tr')?.remove();
+                }
+            });
         } else if (action === 'ozone-audit') {
             const did = btn.dataset.did;
             // Navigate to correlations or events filtered by DID
