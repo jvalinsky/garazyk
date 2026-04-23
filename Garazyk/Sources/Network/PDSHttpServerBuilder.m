@@ -312,7 +312,7 @@ static NSString *PDSContentTypeForAssetPath(NSString *path) {
            }];
 
   // Register default route LAST (must be after all specific routes)
-  // Admin UI is served at /admin-ui/ - default route falls through to Explore
+  // Admin UI is served at /admin/ - default route falls through to Explore
   if (self.enableExploreUI && exploreHandler) {
     [server addRoute:@"GET"
                 path:@"/*"

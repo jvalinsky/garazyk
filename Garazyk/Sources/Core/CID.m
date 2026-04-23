@@ -355,4 +355,42 @@ static const NSUInteger kMaxVarintSize = 9;
     return [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
 }
 
++ (NSData *)rawSha256:(NSData *)data {
+    return [self sha256Digest:data];
+}
+
+#pragma mark - NSCopying
+
+- (id)copyWithZone:(nullable NSZone *)zone {
+    return self;
+}
+
+#pragma mark - NSSecureCoding
+
++ (BOOL)supportsSecureCoding {
+    return YES;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder {
+    [coder encodeInteger:self.version forKey:@"version"];
+    [coder encodeInteger:self.codec forKey:@"codec"];
+    [coder encodeObject:self.multihash forKey:@"multihash"];
+}
+
+- (nullable instancetype)initWithCoder:(NSCoder *)coder {
+    NSUInteger version = [coder decodeIntegerForKey:@"version"];
+    NSUInteger codec = [coder decodeIntegerForKey:@"codec"];
+    NSData *multihash = [coder decodeObjectOfClass:[NSData class] forKey:@"multihash"];
+    
+    if (!multihash) {
+        return nil;
+    }
+    
+    self = [CID cidWithMultihash:multihash codec:codec];
+    if (self) {
+        // Version is implicit in v1 format
+    }
+    return self;
+}
+
 @end

@@ -1,6 +1,7 @@
 #import "Sync/Relay/EventFormatter.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Core/ATProtoDagCBOR.h"
+#import "Core/CID.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString * const EventFormatterErrorDomain = @"com.atproto.pds.eventformatter";
@@ -232,6 +233,9 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         case 5:
             decoded = [self decodeMap:additionalInfo bytes:bytes length:length index:index error:error];
             break;
+        case 6:
+            decoded = [self decodeTag:additionalInfo bytes:bytes length:length index:index error:error];
+            break;
         case 7:
             decoded = [self decodeSpecial:additionalInfo bytes:bytes length:length index:index];
             break;
@@ -393,6 +397,25 @@ static const uint8_t kXRPCStreamOpErrorFrame = 0x20;
         dict[key] = value;
     }
     return dict;
+}
+
+- (id)decodeTag:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
+    NSNumber *tag = [self decodeUnsignedInteger:additionalInfo bytes:bytes length:length index:index];
+    if (!tag) return nil;
+    
+    id value = [self decodeCBORFromBytes:bytes length:length index:index error:error];
+    if (!value) return nil;
+    
+    if (tag.unsignedIntegerValue == 42 && [value isKindOfClass:[NSData class]]) {
+        // Tag 42 (CID)
+        NSData *cidBytes = (NSData *)value;
+        if (cidBytes.length > 1 && ((const uint8_t *)cidBytes.bytes)[0] == 0x00) {
+            return [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+        }
+        return [CID cidFromBytes:cidBytes];
+    }
+    
+    return value; // For other tags, just return the inner value
 }
 
 - (id)decodeSpecial:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index {

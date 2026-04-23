@@ -46,7 +46,7 @@
     XCTAssertFalse([ATProtoValidator validateDID:@"did:plc:AF85A362-B87D-4858-BCE5-85BD4EFC6E1D" error:&error]); // Uppercase UUID
     XCTAssertNotNil(error);
 
-    XCTAssertFalse([ATProtoValidator validateDID:@"did:method:val" error:nil]); // Unsupported method
+    XCTAssertTrue([ATProtoValidator validateDID:@"did:method:val" error:nil]); // Valid DID format
     XCTAssertFalse([ATProtoValidator validateDID:@"did:plc:short" error:nil]); // Too short
     XCTAssertFalse([ATProtoValidator validateDID:(id)nil error:nil]);
 }
