@@ -1,0 +1,30 @@
+{
+  "lexicon": 1,
+  "id": "tools.ozone.moderation.getSubjectStatus",
+  "defs": {
+    "main": {
+      "type": "query",
+      "description": "Get the moderation status of a subject (account or record).",
+      "parameters": {
+        "type": "params",
+        "properties": {
+          "did": { "type": "string", "format": "did" },
+          "uri": { "type": "string", "format": "at-uri" }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "type": "ref",
+              "ref": "tools.ozone.moderation.defs#subjectStatusView"
+            }
+          }
+        }
+      }
+    }
+  }
+}
