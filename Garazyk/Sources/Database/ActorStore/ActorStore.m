@@ -214,24 +214,38 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
     if (!hasMigrationsTable) {
         // Check if any tables exist (legacy database detection)
-        const char *checkTablesSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' LIMIT 1";
+        const char *checkTablesSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '_migrations' LIMIT 1";
         sqlite3_stmt *tableStmt = NULL;
 
         if (sqlite3_prepare_v2(self.db, checkTablesSQL, -1, &tableStmt, NULL) == SQLITE_OK) {
-            BOOL hasTables = (sqlite3_step(tableStmt) == SQLITE_ROW);
+            BOOL hasNonMigrationTables = (sqlite3_step(tableStmt) == SQLITE_ROW);
             sqlite3_finalize(tableStmt);
 
-            if (hasTables) {
-                // Legacy database without _migrations table - not supported
-                NSString *msg = @"Legacy database detected. Fresh installs only with migration system. "
-                                @"Delete database and reinitialize, or migrate manually.";
-                PDS_LOG_DB_ERROR(@"%@", msg);
-                if (error) {
-                    *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
-                                               message:msg
-                                              userInfo:@{NSLocalizedDescriptionKey: msg}];
+            if (hasNonMigrationTables && !hasMigrationsTable) {
+                // Database has tables but no _migrations table — bootstrap the
+                // migration tracking table so the migration manager can take
+                // over. This handles databases created by tests or older code
+                // that didn't use the migration system.
+                const char *createMigrationsSQL =
+                    "CREATE TABLE IF NOT EXISTS _migrations ("
+                    "version INTEGER PRIMARY KEY, "
+                    "name TEXT NOT NULL, "
+                    "applied_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))"
+                    ")";
+                char *errMsg = NULL;
+                int rc = sqlite3_exec(self.db, createMigrationsSQL, NULL, NULL, &errMsg);
+                if (rc != SQLITE_OK) {
+                    NSString *msg = [NSString stringWithFormat:@"Failed to create _migrations table: %s", errMsg ?: "unknown error"];
+                    sqlite3_free(errMsg);
+                    PDS_LOG_DB_ERROR(@"%@", msg);
+                    if (error) {
+                        *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                                   message:msg
+                                                  userInfo:@{NSLocalizedDescriptionKey: msg}];
+                    }
+                    return NO;
                 }
-                return NO;
+                PDS_LOG_DB_INFO(@"Bootstrapped _migrations table for existing database");
             }
         }
     }
@@ -308,8 +322,22 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
             return;
         }
         
+        // Check if already in a transaction using sqlite3_get_autocommit()
+        // autocommit=1 means NOT in a transaction; autocommit=0 means in a transaction
+        int autocommit = sqlite3_get_autocommit(self.db);
+        BOOL useSavepoint = (autocommit == 0);
+        
         char *errMsg = NULL;
-        int result = sqlite3_exec(self.db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
+        int result;
+        
+        if (useSavepoint) {
+            // Already in a transaction — use SAVEPOINT for nested scope
+            result = sqlite3_exec(self.db, "SAVEPOINT sp_transact", NULL, NULL, &errMsg);
+        } else {
+            // Not in a transaction — start one
+            result = sqlite3_exec(self.db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
+        }
+        
         if (result != SQLITE_OK) {
             if (error) {
                 *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
@@ -333,16 +361,29 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         }
         
         if (success) {
-            result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
+            if (useSavepoint) {
+                result = sqlite3_exec(self.db, "RELEASE sp_transact", NULL, NULL, &errMsg);
+            } else {
+                result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
+            }
             if (result != SQLITE_OK) {
                 if (error) {
                     *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
                 }
                 sqlite3_free(errMsg);
-                sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+                if (useSavepoint) {
+                    sqlite3_exec(self.db, "ROLLBACK TO sp_transact", NULL, NULL, NULL);
+                } else {
+                    sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+                }
             }
         } else {
-            sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+            if (useSavepoint) {
+                sqlite3_exec(self.db, "ROLLBACK TO sp_transact", NULL, NULL, NULL);
+                sqlite3_exec(self.db, "RELEASE sp_transact", NULL, NULL, NULL);
+            } else {
+                sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
+            }
             if (error) {
                 *error = blockError;
             }
@@ -1545,8 +1586,11 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 - (BOOL)storeRotationKeyPrivate:(NSData *)privateKey
                       publicKey:(NSData *)compressedPublicKey
                             error:(NSError **)error {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    NSString *masterSecret = config.masterSecret;
+    NSString *masterSecret = self.masterSecret;
+    if (masterSecret.length == 0) {
+        masterSecret = [PDSConfiguration sharedConfiguration].masterSecret;
+    }
+    
     if (masterSecret.length == 0) {
         PDS_LOG_AUTH_ERROR(@"Master secret is empty in ActorStore!");
         if (error) {
@@ -1615,8 +1659,11 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (nullable NSData *)rotationKeyDecryptedWithError:(NSError **)error {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    NSString *masterSecret = config.masterSecret;
+    NSString *masterSecret = self.masterSecret;
+    if (masterSecret.length == 0) {
+        masterSecret = [PDSConfiguration sharedConfiguration].masterSecret;
+    }
+    
     if (masterSecret.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
