@@ -158,6 +158,88 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         }
         return NO;
     }
+    for (id aka in alsoKnownAs) {
+        if (![aka isKindOfClass:[NSString class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                             code:11
+                                         userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs entries must be strings"}];
+            }
+            return NO;
+        }
+        if (![aka hasPrefix:@"at://"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                             code:25
+                                         userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs entry must start with at://"}];
+            }
+            return NO;
+        }
+        if ([(NSString *)aka length] > kPLCMaxAlsoKnownAsLength) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                             code:12
+                                         userInfo:@{NSLocalizedDescriptionKey: @"alsoKnownAs entry too long"}];
+            }
+            return NO;
+        }
+    }
+
+    NSDictionary *services = op[@"services"];
+    if (services && ![services isKindOfClass:[NSDictionary class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                         code:13
+                                     userInfo:@{NSLocalizedDescriptionKey: @"services must be dictionary"}];
+        }
+        return NO;
+    }
+    if (services.count > kPLCMaxServiceEntries) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                         code:14
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Too many services entries"}];
+        }
+        return NO;
+    }
+    for (NSString *key in services) {
+        NSDictionary *service = services[key];
+        if (![service isKindOfClass:[NSDictionary class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                             code:15
+                                         userInfo:@{NSLocalizedDescriptionKey: @"service entries must be dictionaries"}];
+            }
+            return NO;
+        }
+        NSString *endpoint = service[@"endpoint"];
+        if (![endpoint isKindOfClass:[NSString class]]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                             code:16
+                                         userInfo:@{NSLocalizedDescriptionKey: @"service endpoint must be string"}];
+            }
+            return NO;
+        }
+        // Reject non-HTTPS endpoints (allow localhost for testing)
+        if (![endpoint hasPrefix:@"https://"] && ![endpoint hasPrefix:@"http://localhost:"] && ![endpoint hasPrefix:@"http://127.0.0.1:"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                             code:26
+                                         userInfo:@{NSLocalizedDescriptionKey: @"service endpoint must be HTTPS (except localhost)"}];
+            }
+            return NO;
+        }
+    }
+
+    if (alsoKnownAs.count > kPLCMaxAlsoKnownAsEntries) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
+                                         code:10
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Too many alsoKnownAs entries"}];
+        }
+        return NO;
+    }
     NSMutableSet<NSString *> *akaSet = [NSMutableSet set];
     for (id aka in alsoKnownAs) {
         if (![aka isKindOfClass:[NSString class]] || [aka length] > kPLCMaxAlsoKnownAsLength) {
@@ -659,49 +741,50 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     [[PLCMetrics sharedMetrics] recordRequest];
     
     NSString *countStr = req.queryParams[@"count"];
-    NSInteger count = 10;
+    __block NSInteger remaining = 10;
     if (countStr) {
-        count = [countStr integerValue];
-        if (count < 1) count = 10;
-        if (count > 1000) count = 1000;
+        remaining = [countStr integerValue];
+        if (remaining < 1) remaining = 10;
+        if (remaining > 1000) remaining = 1000;
     }
     
     NSString *afterStr = req.queryParams[@"after"];
-    NSDate *afterDate = nil;
+    __block NSDate *cursorDate = nil;
     if (afterStr) {
-        afterDate = [NSDateFormatter atproto_dateFromString:afterStr];
-    }
-    
-    NSError *error = nil;
-    NSArray<PLCOperation *> *ops = [self.store exportOperationsAfter:afterDate count:count error:&error];
-    if (error) {
-        [[PLCMetrics sharedMetrics] recordError];
-        resp.statusCode = HttpStatusInternalServerError;
-        [resp setJsonBody:@{@"error": error.localizedDescription}];
-        return;
-    }
-    
-    NSMutableString *jsonLines = [NSMutableString string];
-    
-    for (PLCOperation *op in ops) {
-        NSMutableDictionary *entry = [NSMutableDictionary dictionary];
-        entry[@"did"] = op.did;
-        entry[@"operation"] = [op toDictionary];
-        entry[@"cid"] = op.cid;
-        entry[@"nullified"] = @(op.nullified);
-        entry[@"createdAt"] = [NSDateFormatter atproto_stringFromDate:op.createdAt ?: [NSDate date]];
-        
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
-        if (jsonData) {
-            NSString *jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-            [jsonLines appendString:jsonStr];
-            [jsonLines appendString:@"\n"];
-        }
+        cursorDate = [NSDateFormatter atproto_dateFromString:afterStr];
     }
     
     resp.statusCode = HttpStatusOK;
     resp.contentType = @"application/jsonlines; charset=utf-8";
-    [resp setBodyString:jsonLines];
+    
+    __weak typeof(self) weakSelf = self;
+    [resp setBodyChunkProducer:^NSData * _Nullable(NSError * _Nullable __autoreleasing * _Nullable error) {
+        if (remaining <= 0) return [NSData data]; // Done
+        
+        NSInteger batchSize = MIN(remaining, 100);
+        NSArray<PLCOperation *> *ops = [weakSelf.store exportOperationsAfter:cursorDate count:batchSize error:error];
+        if (!ops || ops.count == 0) return [NSData data]; // Done or error
+        
+        NSMutableData *chunkData = [NSMutableData data];
+        for (PLCOperation *op in ops) {
+            NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+            entry[@"did"] = op.did;
+            entry[@"operation"] = [op toDictionary];
+            entry[@"cid"] = op.cid;
+            entry[@"nullified"] = @(op.nullified);
+            entry[@"createdAt"] = [NSDateFormatter atproto_stringFromDate:op.createdAt ?: [NSDate date]];
+            
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:entry options:0 error:nil];
+            if (jsonData) {
+                [chunkData appendData:jsonData];
+                [chunkData appendBytes:"\n" length:1];
+            }
+            cursorDate = op.createdAt;
+        }
+        
+        remaining -= ops.count;
+        return [chunkData copy];
+    } chunkedTransferEncoding:YES];
 }
 
 - (BOOL)startWithError:(NSError **)error {

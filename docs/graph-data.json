@@ -919,9 +919,9 @@
       "node_type": "goal",
       "title": "Fix AppView Ingestion and Relay Stability",
       "description": null,
-      "status": "active",
+      "status": "completed",
       "created_at": "2026-04-22T14:37:31.227402-04:00",
-      "updated_at": "2026-04-22T14:37:31.378961-04:00",
+      "updated_at": "2026-04-23T19:28:31.040648-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -985,9 +985,9 @@
       "node_type": "decision",
       "title": "Standardize CAR Parsing across services",
       "description": "Ensure all services (PDS, Relay, AppView) use shared repository utilities.",
-      "status": "active",
+      "status": "completed",
       "created_at": "2026-04-22T14:42:48.332125-04:00",
-      "updated_at": "2026-04-22T14:42:48.362388-04:00",
+      "updated_at": "2026-04-23T19:28:30.992471-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -996,9 +996,9 @@
       "node_type": "observation",
       "title": "AppView backfill returns rev=null, records not indexed",
       "description": "Demo ran - PDS creates accounts/records, Relay streams to AppView via firehose, AppView backfill worker fetches CAR from PDS but records not indexed. Logs show completed backfill with rev=(null). CAR parsing code exists but may not be finding records in the CAR structure.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T15:16:23.632934-04:00",
-      "updated_at": "2026-04-22T15:57:02.425844-04:00",
+      "updated_at": "2026-04-23T19:28:31.001261-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1007,9 +1007,9 @@
       "node_type": "observation",
       "title": "PDSNetworkTransportMac build errors",
       "description": "Fixed ARC errors: nw_parameters_t return type mismatch, nsError used before declaration. Changed nw_parameters_create_tcp() to nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, ...) to allow plain TCP without ARC issues.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T15:16:26.662163-04:00",
-      "updated_at": "2026-04-22T15:57:02.433890-04:00",
+      "updated_at": "2026-04-23T19:28:31.009929-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/Network/PDSNetworkTransportMac.m\"]}"
     },
     {
@@ -1018,9 +1018,9 @@
       "node_type": "observation",
       "title": "CAR structure mismatch - records stored in MST not CAR format",
       "description": "The backfill worker uses CARReader which reads blocks from CAR archive. But PDS stores records in MST (Merkle Search Tree), which is a different structure. The root CID points to MST root, not directly to record data. Need to parse MST to extract record CIDs, then fetch actual record data from CAR blocks.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T15:16:45.398739-04:00",
-      "updated_at": "2026-04-22T15:57:02.441279-04:00",
+      "updated_at": "2026-04-23T19:28:31.017455-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1029,9 +1029,9 @@
       "node_type": "decision",
       "title": "How to parse records from CAR in AppViewBackfillWorker",
       "description": "Option A: Use MST class to deserialize CAR root and walk tree to get record keys/CIDs. Option B: Parse MST CBOR directly to extract entries. Option C: Keep CAR as-is but iterate differently.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T15:17:10.285611-04:00",
-      "updated_at": "2026-04-22T15:17:10.285611-04:00",
+      "updated_at": "2026-04-23T19:28:31.025671-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1073,9 +1073,9 @@
       "node_type": "action",
       "title": "Run full stack demo and verify indexing",
       "description": "Run demo script, check AppView getProfile for alice.test returns data",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T15:18:19.190029-04:00",
-      "updated_at": "2026-04-22T15:18:19.190029-04:00",
+      "updated_at": "2026-04-23T19:28:31.032976-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1084,9 +1084,9 @@
       "node_type": "goal",
       "title": "AT Protocol Spec Compliance Remediation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:03:52.669403-04:00",
-      "updated_at": "2026-04-22T16:03:52.669403-04:00",
+      "updated_at": "2026-04-23T19:39:13.923575-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Comprehensive review at docs/review-2026-04-22/ found 2 critical, 4 high, 4 medium, 2 low spec compliance gaps. Prioritized remediation plan covers firehose events, account lifecycle, PLC streaming, and migration.\"}"
     },
     {
@@ -1095,9 +1095,9 @@
       "node_type": "decision",
       "title": "Phase 1: Fix Firehose Event Emission (Critical)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:02.062732-04:00",
-      "updated_at": "2026-04-22T16:04:02.062732-04:00",
+      "updated_at": "2026-04-23T19:28:31.101582-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98,\"prompt\":\"C1: #account event only emitted on takedown, not creation/activation/deactivation. C2: Account creation emits no #identity event. Need generic broadcastAccountStatus:active:status: method and PDSAccountLifecycleNotification pattern.\"}"
     },
     {
@@ -1106,9 +1106,9 @@
       "node_type": "action",
       "title": "Add generic broadcastAccountStatus:active:status: to SubscribeReposHandler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:13.935865-04:00",
-      "updated_at": "2026-04-22T16:04:13.935865-04:00",
+      "updated_at": "2026-04-23T19:28:31.063796-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98,\"prompt\":\"Replace broadcastAccountTakedown: with generic method that accepts active/status params. Update SubscribeReposHandler.h declaration. Add tests for each lifecycle transition.\"}"
     },
     {
@@ -1117,9 +1117,9 @@
       "node_type": "action",
       "title": "Add PDSAccountLifecycleNotification pattern",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:13.971003-04:00",
-      "updated_at": "2026-04-22T16:04:13.971003-04:00",
+      "updated_at": "2026-04-23T19:28:31.071615-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"PDSAccountService has no reference to SubscribeReposHandler. Follow PDSRecordDidChangeNotification pattern: define PDSAccountCreatedNotification, PDSAccountActivatedNotification, PDSAccountDeactivatedNotification in new PDSAccountEvents.h. SubscribeReposHandler observes and broadcasts.\"}"
     },
     {
@@ -1128,9 +1128,9 @@
       "node_type": "action",
       "title": "Wire account creation to emit #identity and #account firehose events",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:14.004022-04:00",
-      "updated_at": "2026-04-22T16:04:14.004022-04:00",
+      "updated_at": "2026-04-23T19:28:31.079321-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98,\"prompt\":\"After PDSAccountService.createAccountForEmail succeeds, post PDSAccountCreatedNotification. SubscribeReposHandler observes and calls broadcastIdentityChange:handle: + broadcastAccountStatus:active:YES status:nil.\"}"
     },
     {
@@ -1139,9 +1139,9 @@
       "node_type": "action",
       "title": "Wire activate/deactivate to emit #account firehose events",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:14.036542-04:00",
-      "updated_at": "2026-04-22T16:04:14.036542-04:00",
+      "updated_at": "2026-04-23T19:28:31.086783-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"After XrpcServerMethods activateAccount/deactivateAccount handlers succeed, post notifications. SubscribeReposHandler observes and broadcasts with correct status values.\"}"
     },
     {
@@ -1150,9 +1150,9 @@
       "node_type": "action",
       "title": "Add #account event forwarding in RelayDownstreamHandler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:14.069410-04:00",
-      "updated_at": "2026-04-22T16:04:14.069410-04:00",
+      "updated_at": "2026-04-23T19:28:31.094273-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"RelayDownstreamHandler.m:90 only forwards #identity events. Add #account event handling and forwarding so relay consumers see account lifecycle events from all connected PDS instances.\"}"
     },
     {
@@ -1161,9 +1161,9 @@
       "node_type": "decision",
       "title": "Phase 2: Account Lifecycle Semantics (High)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:28.946964-04:00",
-      "updated_at": "2026-04-22T16:04:28.946964-04:00",
+      "updated_at": "2026-04-23T19:32:14.791448-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"H3: deactivateAccount uses takeDownAccount semantics (wrong status). H2: com.atproto.server.getAccount declared but not wired. M4: getAccountForDid returns email (PII leak). Need separate deactivate method, wire getAccount, remove email from response.\"}"
     },
     {
@@ -1172,9 +1172,9 @@
       "node_type": "action",
       "title": "Separate deactivation from takedown in PDSAdminController",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:28.982079-04:00",
-      "updated_at": "2026-04-22T16:04:28.982079-04:00",
+      "updated_at": "2026-04-23T19:31:45.822482-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Add deactivateAccount:reason:error: to PDSAdminController protocol with distinct 'deactivated' status. Update XrpcServerMethods deactivateAccount handler to call new method instead of takeDownAccount.\"}"
     },
     {
@@ -1183,9 +1183,9 @@
       "node_type": "action",
       "title": "Wire com.atproto.server.getAccount handler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:29.015203-04:00",
-      "updated_at": "2026-04-22T16:04:29.015203-04:00",
+      "updated_at": "2026-04-23T19:31:45.829911-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Add handler registration in registerAccountLifecycleEndpoints: that calls accountService.getAccountForDid:error:. Requires auth.\"}"
     },
     {
@@ -1194,9 +1194,9 @@
       "node_type": "action",
       "title": "Remove email from getAccountForDid: response",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:29.047301-04:00",
-      "updated_at": "2026-04-22T16:04:29.047301-04:00",
+      "updated_at": "2026-04-23T19:31:41.452242-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"PDSAccountService.m:390-399 returns email which is PII. Spec says only {did, handle}. Remove email from return dict.\"}"
     },
     {
@@ -1205,9 +1205,9 @@
       "node_type": "decision",
       "title": "Phase 3: PLC Improvements (High)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:35.081459-04:00",
-      "updated_at": "2026-04-22T16:04:35.081459-04:00",
+      "updated_at": "2026-04-23T19:31:45.902208-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"H1: PLC /export buffers all operations in memory (will OOM at scale). L1: PLC recovery window not enforced. L2: Lexicon validation not strict enough (alsoKnownAs not validated for at:// prefix, service endpoints not validated for HTTPS).\"}"
     },
     {
@@ -1216,9 +1216,9 @@
       "node_type": "action",
       "title": "Implement streaming /export endpoint in PLCServer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:35.116615-04:00",
-      "updated_at": "2026-04-22T16:04:35.116615-04:00",
+      "updated_at": "2026-04-23T19:31:41.464227-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Add chunked transfer encoding to HttpResponse. Rewrite handleExport: to stream operations in batches instead of building complete NSMutableString. Keep memory usage constant regardless of directory size.\"}"
     },
     {
@@ -1227,9 +1227,9 @@
       "node_type": "action",
       "title": "Add stricter PLC validation for alsoKnownAs and service endpoints",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:35.149599-04:00",
-      "updated_at": "2026-04-22T16:04:35.149599-04:00",
+      "updated_at": "2026-04-23T19:31:41.473985-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Validate alsoKnownAs entries start with at://. Validate service endpoints are valid HTTPS URLs. Add tests for each validation rule.\"}"
     },
     {
@@ -1238,9 +1238,9 @@
       "node_type": "action",
       "title": "Implement PLC recovery window for rotation key changes",
       "description": null,
-      "status": "pending",
+      "status": "in_progress",
       "created_at": "2026-04-22T16:04:35.181920-04:00",
-      "updated_at": "2026-04-22T16:04:35.181920-04:00",
+      "updated_at": "2026-04-23T19:31:41.483063-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Store pending rotation key changes with timestamp. Allow previous key to revert within 72-hour window. After window expires, change becomes permanent.\"}"
     },
     {
@@ -1249,9 +1249,9 @@
       "node_type": "decision",
       "title": "Phase 4: Testnet Improvements (Medium)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:05:07.222696-04:00",
-      "updated_at": "2026-04-22T16:05:07.222696-04:00",
+      "updated_at": "2026-04-23T19:32:14.783888-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"M1: Docker testnet keys in /tmp (fragile, lost on reboot). M2: E2E test stack lacks AppView (syrena) for full pipeline testing.\"}"
     },
     {
@@ -1260,9 +1260,9 @@
       "node_type": "action",
       "title": "Fix Docker key persistence with named volumes",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:05:07.259710-04:00",
-      "updated_at": "2026-04-22T16:05:07.259710-04:00",
+      "updated_at": "2026-04-23T19:32:14.766412-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Replace /tmp host mounts in docker/local-network/docker-compose.yml with named Docker volumes for PLC and PDS keys.\"}"
     },
     {
@@ -1271,9 +1271,9 @@
       "node_type": "action",
       "title": "Add AppView (syrena) to E2E Docker stack",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:05:07.294858-04:00",
-      "updated_at": "2026-04-22T16:05:07.294858-04:00",
+      "updated_at": "2026-04-23T19:32:14.775686-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Add syrena service to docker/e2e/docker-compose.yml with proper relay and PLC URL configuration. Enables full pipeline testing: PDS → Relay → AppView.\"}"
     },
     {
@@ -1326,9 +1326,9 @@
       "node_type": "action",
       "title": "Implemented broadcastAccountStatus:active:status: and refactored broadcastAccountTakedown:",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:22.789237-04:00",
-      "updated_at": "2026-04-22T17:02:22.789237-04:00",
+      "updated_at": "2026-04-23T19:31:45.837347-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 1.1 complete. SubscribeReposHandler.h/.m updated. broadcastAccountTakedown now delegates to generic method.\"}"
     },
     {
@@ -1337,9 +1337,9 @@
       "node_type": "action",
       "title": "Added PDSAccountEvents notification pattern",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:22.869598-04:00",
-      "updated_at": "2026-04-22T17:02:22.869598-04:00",
+      "updated_at": "2026-04-23T19:31:45.844057-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 1.2 complete. PDSAccountEvents.h/.m created with Created/Activated/Deactivated notifications and user info keys. SubscribeReposHandler observes all three.\"}"
     },
     {
@@ -1348,9 +1348,9 @@
       "node_type": "action",
       "title": "Wired account creation to emit #identity and #account",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:22.909510-04:00",
-      "updated_at": "2026-04-22T17:02:22.909510-04:00",
+      "updated_at": "2026-04-23T19:31:45.851425-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 1.3 complete. PDSAccountService.m posts PDSAccountCreatedNotification after account creation.\"}"
     },
     {
@@ -1359,9 +1359,9 @@
       "node_type": "action",
       "title": "Wired activate/deactivate to emit #account",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:22.946015-04:00",
-      "updated_at": "2026-04-22T17:02:22.946015-04:00",
+      "updated_at": "2026-04-23T19:31:45.858474-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 1.4 complete. XrpcServerMethods.m posts PDSAccountActivatedNotification and PDSAccountDeactivatedNotification.\"}"
     },
     {
@@ -1370,9 +1370,9 @@
       "node_type": "action",
       "title": "Added #account event forwarding in RelayDownstreamHandler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:22.984940-04:00",
-      "updated_at": "2026-04-22T17:02:22.984940-04:00",
+      "updated_at": "2026-04-23T19:31:45.865513-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 1.5 complete. RelayDownstreamHandler now handles FirehoseAccountEvent, broadcasts and formats for wire. Backfill also supports account events.\"}"
     },
     {
@@ -1381,9 +1381,9 @@
       "node_type": "action",
       "title": "Separated deactivation from takedown",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:23.020775-04:00",
-      "updated_at": "2026-04-22T17:02:23.020775-04:00",
+      "updated_at": "2026-04-23T19:31:45.872994-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 2.1 complete. Added deactivateAccount:reason:error: to PDSAdminController protocol, PDSAdminService, and PDSDatabase. Uses distinct 'deactivated' status column. XrpcServerMethods now calls deactivateAccount instead of takeDownAccount.\"}"
     },
     {
@@ -1392,9 +1392,9 @@
       "node_type": "action",
       "title": "Wired com.atproto.server.getAccount handler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:23.055697-04:00",
-      "updated_at": "2026-04-22T17:02:23.055697-04:00",
+      "updated_at": "2026-04-23T19:31:45.880301-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 2.2 complete. XrpcServerMethods.m registers getAccount handler with auth guard.\"}"
     },
     {
@@ -1403,9 +1403,9 @@
       "node_type": "action",
       "title": "Removed email from getAccountForDid: response",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:02:23.089649-04:00",
-      "updated_at": "2026-04-22T17:02:23.089649-04:00",
+      "updated_at": "2026-04-23T19:31:45.887592-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Step 2.3 complete. PDSAccountService.m getAccountForDid: now returns only did and handle.\"}"
     },
     {
@@ -1724,7 +1724,7 @@
       "description": null,
       "status": "completed",
       "created_at": "2026-04-22T20:22:47.200768-04:00",
-      "updated_at": "2026-04-22T20:22:52.508992-04:00",
+      "updated_at": "2026-04-23T19:31:45.894871-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"LexiconResolveXrpcTests failed because 19 XRPC methods had no lexicon JSON files. 11 from official atproto repo, 8 custom PDS-specific schemas.\"}"
     },
     {
@@ -1909,9 +1909,9 @@
       "node_type": "goal",
       "title": "Phase 4: Fix remaining 54 test failures",
       "description": null,
-      "status": "in_progress",
+      "status": "completed",
       "created_at": "2026-04-22T23:25:05.233440-04:00",
-      "updated_at": "2026-04-23T10:03:06.187719-04:00",
+      "updated_at": "2026-04-23T19:28:30.982548-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70,\"prompt\":\"Phase 4: Fix remaining test failures and integration bugs. \\n\\nCOMPLETED:\\n- Bug 1 (JWT signing): ES256K support in PDSAppleKeyManager (node 178) ✅\\n- Bug 2 (ops CID loss): ObjC type mismatch fix + NSDictionary+CID category (nodes 181-184, 186) ✅  \\n- Bug 3 (ws:// URL scheme): RelayUpstreamManager scheme normalization (nodes 179, 185) ✅\\n\\nREMAINING (~54 failures):\\n- XrpcProxyTests (9 — proxy routing)\\n- IdentifierTests (6 — DID/CID validation)\\n- FirehoseTests (9 — event dispatch)\\n- PDSHttpServerBuilderTests (4 — UI routes)\\n- PDSCLIAccountCommandTests (10 — account creation)\\n- PDSCLIRepoCommandTests (8 — repo commands)\\n- MSTCharacterizationTests (3 — diffFrom regression)\\n- ServiceDatabasesPruningTests (3 — pruning)\\n- RepoAuthServerTests (1)\\n- RepoAuthNotificationTests (2)\"}"
     },
     {
@@ -2118,9 +2118,9 @@
       "node_type": "action",
       "title": "Remove legacy .kiro references and metasploit skill",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T15:17:58.871493-04:00",
-      "updated_at": "2026-04-23T15:17:58.871493-04:00",
+      "updated_at": "2026-04-23T19:37:02.407449-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
     },
     {
@@ -2129,9 +2129,9 @@
       "node_type": "outcome",
       "title": "Removed legacy .kiro references and metasploit skill",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T15:18:09.323111-04:00",
-      "updated_at": "2026-04-23T15:18:09.323111-04:00",
+      "updated_at": "2026-04-23T19:37:02.417669-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5781aba\",\"confidence\":100}"
     },
     {
@@ -2140,9 +2140,9 @@
       "node_type": "action",
       "title": "Extract workflows from AGENTS.md to .opencode/workflows/",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T15:18:14.045948-04:00",
-      "updated_at": "2026-04-23T15:18:14.045948-04:00",
+      "updated_at": "2026-04-23T19:37:02.425733-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
     },
     {
@@ -2151,9 +2151,9 @@
       "node_type": "outcome",
       "title": "Extracted workflows and updated AGENTS.md to WAT framework",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T15:18:39.043836-04:00",
-      "updated_at": "2026-04-23T15:18:39.043836-04:00",
+      "updated_at": "2026-04-23T19:37:02.433514-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5781aba\",\"confidence\":100}"
     },
     {
@@ -2162,9 +2162,9 @@
       "node_type": "action",
       "title": "Consolidate skills into master audit skills",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T15:18:43.454699-04:00",
-      "updated_at": "2026-04-23T15:18:43.454699-04:00",
+      "updated_at": "2026-04-23T19:37:02.441661-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
     },
     {
@@ -2173,9 +2173,9 @@
       "node_type": "outcome",
       "title": "Consolidated 22 individual skills into 5 master audit skills",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T15:20:18.126284-04:00",
-      "updated_at": "2026-04-23T15:20:18.126284-04:00",
+      "updated_at": "2026-04-23T19:37:02.448900-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5781aba\",\"confidence\":100}"
     },
     {
@@ -2316,9 +2316,9 @@
       "node_type": "outcome",
       "title": "Phase 5 progress: 58→4 failures. Fixed: FirehoseTests, IdentifierTests, PDSCLIAccountCommandTests, PDSCLIRepoCommandTests, XrpcProxyTests, PDSHttpServerBuilderTests, RepoAuthServerTests, RepoAuthNotificationTests. Remaining: MSTCharacterizationTests (3), ServiceDatabasesPruningTests (3).",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T16:05:12.253881-04:00",
-      "updated_at": "2026-04-23T16:05:12.253881-04:00",
+      "updated_at": "2026-04-23T19:31:45.792983-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2327,9 +2327,9 @@
       "node_type": "observation",
       "title": "XRPC lexicon files committed - 19 JSON schemas in place",
       "description": "chat.bsky.convo (3), chat.bsky.group (23), app.bsky.unspecced (8), com.atproto.admin (5), tools.ozone (2)",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T16:18:21.366010-04:00",
-      "updated_at": "2026-04-23T16:18:21.366010-04:00",
+      "updated_at": "2026-04-23T19:31:45.804187-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Resources/lexicons/\"]}"
     },
     {
@@ -2360,9 +2360,9 @@
       "node_type": "outcome",
       "title": "Phase 5 complete: achieved 100% pass rate (1646/1646 tests). Fixed MST walker, ServiceDatabases pruning, CLI mock mode, and refined Validator/Proxy test expectations.",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T17:31:41.594259-04:00",
-      "updated_at": "2026-04-23T17:31:41.594259-04:00",
+      "updated_at": "2026-04-23T19:31:45.813882-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
     }
   ],
