@@ -42,6 +42,8 @@
     XCTAssertNil(error, @"Failed to create admin account: %@", error);
 
     NSError *adminAuthError = nil;
+    [PDSAdminAuth sharedAuth].dataDirectory = self.tempURL.path;
+    [PDSAdminAuth sharedAuth].controller = self.application.legacyController;
     BOOL adminAuthSuccess = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"password" error:&adminAuthError];
     XCTAssertTrue(adminAuthSuccess, @"Admin authentication failed: %@", adminAuthError);
     XCTAssertNil(adminAuthError);
@@ -64,6 +66,7 @@
 
 - (void)tearDown {
     [self.application stop];
+    [PDSAdminAuth sharedAuth].dataDirectory = nil;
     [PDSAdminAuth sharedAuth].controller = nil;
     self.dispatcher = nil;
     self.application = nil;
