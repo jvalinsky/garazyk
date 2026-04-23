@@ -143,6 +143,22 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     _queue = dispatch_queue_create("dev.garazyk.appview.db", DISPATCH_QUEUE_SERIAL);
     _relevanceCache = [NSMutableSet set];
 
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *dbDir = [path stringByDeletingLastPathComponent];
+    if (![fm fileExistsAtPath:dbDir]) {
+        NSError *createError = nil;
+        if (![fm createDirectoryAtPath:dbDir withIntermediateDirectories:YES attributes:nil error:&createError]) {
+            if (error) {
+                *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                             code:-1
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                       [NSString stringWithFormat:@"Failed to create database directory: %@",
+                                                        createError.localizedDescription]}];
+            }
+            return nil;
+        }
+    }
+
     int rc = sqlite3_open_v2(path.UTF8String, &_db,
                              SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
                              NULL);
