@@ -1,5 +1,13 @@
 [
   {
+    "hash": "f5781aba3d5bb9f77ba923d4e32af757eec19c14",
+    "short_hash": "f5781ab",
+    "author": "Security Bot",
+    "date": "2026-04-23T10:03:12-04:00",
+    "message": "docs(deciduous): update Phase 4 nodes — all 3 critical bugs fixed\n\n- Node 179: ws:// scheme fix → completed\n- Node 181-183: Bug 2 CID fix nodes → completed\n- Node 184: NSDictionary+CID category (new)\n- Node 185: rsky-relay/atproto reference validation (new)\n- Node 186: cmake GLOB_RECURSE gotcha (new)\n- Node 174/180: Phase 4 goal/outcome updated with current status\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "files_changed": 1
+  },
+  {
     "hash": "d2c541ea0ab85fe5064febf3d760087c3d9098eb",
     "short_hash": "d2c541e",
     "author": "Security Bot",
