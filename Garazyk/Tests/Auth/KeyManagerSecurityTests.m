@@ -128,11 +128,22 @@
     NSDictionary *jwk = [pair publicKeyJWK];
     XCTAssertNotNil(jwk);
 
-    NSString *modulus = jwk[@"n"];
-    XCTAssertNotNil(modulus);
-    XCTAssertFalse([modulus containsString:@"+"]);
-    XCTAssertFalse([modulus containsString:@"/"]);
-    XCTAssertFalse([modulus containsString:@"="]);
+    // ES256 keys use EC JWK format with x/y coordinates, not RSA modulus
+    NSString *crv = jwk[@"crv"];
+    XCTAssertNotNil(crv);
+    XCTAssertEqualObjects(crv, @"P-256");
+
+    NSString *x = jwk[@"x"];
+    XCTAssertNotNil(x);
+    XCTAssertFalse([x containsString:@"+"]);
+    XCTAssertFalse([x containsString:@"/"]);
+    XCTAssertFalse([x containsString:@"="]);
+
+    NSString *y = jwk[@"y"];
+    XCTAssertNotNil(y);
+    XCTAssertFalse([y containsString:@"+"]);
+    XCTAssertFalse([y containsString:@"/"]);
+    XCTAssertFalse([y containsString:@"="]);
 
     NSString *thumbprint = [pair publicKeyThumbprint];
     XCTAssertNotNil(thumbprint);
