@@ -322,6 +322,20 @@
   gap: var(--space-md);
 }
 
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+}
+
+.word-break-all {
+  word-break: break-all !important;
+}
+
+.text-mono {
+  font-family: "Monaco", "Menlo", "Courier New", monospace !important;
+}
+
 /* Stack utilities */
 .stack {
   display: flex;
@@ -376,5 +390,17 @@
 
   .md\:grid-1 {
     grid-template-columns: 1fr !important;
+  }
+
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .grid-3,
+  .grid-4,
+  .grid-2 {
+    grid-template-columns: 1fr;
   }
 }

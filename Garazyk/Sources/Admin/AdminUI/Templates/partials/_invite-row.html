@@ -1,5 +1,5 @@
 <tr>
-  <td><code style="font-size: 11px;">{{code}}</code></td>
+  <td><code class="code-inline-sm">{{code}}</code></td>
   <td>{{usesRemaining}} / {{totalUses}}</td>
   <td>{{forUser}}</td>
   <td>
@@ -26,7 +26,8 @@
       <button
         type="button"
         class="btn btn-sm btn-secondary"
-        onclick="navigator.clipboard.writeText('{{code}}')">
+        data-action="copy-to-clipboard"
+        data-value="{{code}}">
         Copy
       </button>
     </div>
