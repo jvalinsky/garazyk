@@ -12,6 +12,7 @@
 
 #import "Auth/PDSAppleKeyManager.h"
 #import "Auth/JWT.h"
+#import "Auth/Secp256k1.h"
 #import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
@@ -49,23 +50,87 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     return keyPair;
 }
 
++ (nullable instancetype)keyPairWithSecp256k1PrivateKey:(NSData *)privateKeyData
+                                              publicKey:(NSData *)publicKeyData
+                                                 keyID:(NSString *)keyID {
+    if (!privateKeyData || privateKeyData.length != 32 || !publicKeyData || !keyID) return nil;
+
+    PDSAppleKeyPair *keyPair = [[PDSAppleKeyPair alloc] init];
+    keyPair.keyID = keyID;
+    keyPair.algorithm = @"ES256K";
+    keyPair.privateKey = NULL;
+    keyPair.publicKey = NULL;
+    keyPair.secp256k1PrivateKeyData = [privateKeyData copy];
+    keyPair.createdAt = [NSDate date];
+    keyPair.isActive = YES;
+
+    // Store the public key data for JWK export
+    // We don't create SecKeyRef for secp256k1 keys since Apple Security doesn't support them
+
+    return keyPair;
+}
+
 - (void)dealloc {
     if (_privateKey) CFRelease(_privateKey);
     if (_publicKey) CFRelease(_publicKey);
 }
 
 - (nullable NSDictionary *)publicKeyJWK {
+    // For ES256K keys stored as raw secp256k1 data
+    if ([self.algorithm isEqualToString:@"ES256K"] && self.secp256k1PrivateKeyData) {
+        Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:self.secp256k1PrivateKeyData error:nil];
+        if (!kp) return nil;
+
+        NSMutableDictionary *jwk = [NSMutableDictionary dictionary];
+        jwk[@"kty"] = @"EC";
+        jwk[@"crv"] = @"secp256k1";
+        jwk[@"kid"] = self.keyID;
+        jwk[@"alg"] = @"ES256K";
+        jwk[@"use"] = @"sig";
+
+        // Export uncompressed public key for x/y coordinates
+        NSData *pubKeyData = kp.publicKey;  // Uncompressed point
+        if (pubKeyData.length > 1 && ((const uint8_t *)pubKeyData.bytes)[0] == 0x04) {
+            NSUInteger coordLen = (pubKeyData.length - 1) / 2;
+            NSData *xData = [pubKeyData subdataWithRange:NSMakeRange(1, coordLen)];
+            NSData *yData = [pubKeyData subdataWithRange:NSMakeRange(1 + coordLen, coordLen)];
+            jwk[@"x"] = PDSBase64URLStringFromData(xData);
+            jwk[@"y"] = PDSBase64URLStringFromData(yData);
+        } else {
+            jwk[@"x"] = PDSBase64URLStringFromData(pubKeyData);
+        }
+
+        return jwk;
+    }
+
     NSData *publicKeyData = [self exportPublicKeyData:self.publicKey];
     if (!publicKeyData) return nil;
 
     NSMutableDictionary *jwk = [NSMutableDictionary dictionary];
-    jwk[@"kty"] = @"RSA";
     jwk[@"kid"] = self.keyID;
     jwk[@"alg"] = self.algorithm;
     jwk[@"use"] = @"sig";
 
-    jwk[@"n"] = PDSBase64URLStringFromData(publicKeyData);
-    jwk[@"e"] = @"AQAB";
+    if ([self.algorithm hasPrefix:@"RS"]) {
+        jwk[@"kty"] = @"RSA";
+        jwk[@"n"] = PDSBase64URLStringFromData(publicKeyData);
+        jwk[@"e"] = @"AQAB";
+    } else {
+        // EC keys (ES256, ES256K, etc.)
+        jwk[@"kty"] = @"EC";
+        jwk[@"crv"] = [self.algorithm isEqualToString:@"ES256K"] ? @"secp256k1" : @"P-256";
+        // For EC keys, publicKeyData is the uncompressed point (0x04 || x || y)
+        if (publicKeyData.length > 1 && ((const uint8_t *)publicKeyData.bytes)[0] == 0x04) {
+            NSUInteger coordLen = (publicKeyData.length - 1) / 2;
+            NSData *xData = [publicKeyData subdataWithRange:NSMakeRange(1, coordLen)];
+            NSData *yData = [publicKeyData subdataWithRange:NSMakeRange(1 + coordLen, coordLen)];
+            jwk[@"x"] = PDSBase64URLStringFromData(xData);
+            jwk[@"y"] = PDSBase64URLStringFromData(yData);
+        } else {
+            // Compressed or raw format — export as-is
+            jwk[@"x"] = PDSBase64URLStringFromData(publicKeyData);
+        }
+    }
 
     return jwk;
 }
@@ -86,11 +151,6 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 }
 
 - (nullable NSData *)exportPublicKeyData:(SecKeyRef)key {
-    NSDictionary *options = @{
-        (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA,
-        (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPublic
-    };
-
     CFErrorRef error = NULL;
     NSData *keyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(key, &error));
     if (error) {
@@ -119,7 +179,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     self = [super init];
     if (self) {
         _serviceIdentifier = @"com.atproto.pds.keys";
-        _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
 #if defined(GNUSTEP)
@@ -136,7 +196,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     self = [super init];
     if (self) {
         _serviceIdentifier = [serviceIdentifier copy];
-        _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
 #if defined(GNUSTEP)
@@ -154,7 +214,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     if (self) {
         _database = database;
         _serviceIdentifier = [serviceIdentifier copy];
-        _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
 #if defined(GNUSTEP)
@@ -171,7 +231,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     self = [super init];
     if (self) {
         _serviceIdentifier = [coder decodeObjectOfClass:[NSString class] forKey:@"serviceIdentifier"];
-        _signingAlgorithm = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+        _signingAlgorithm = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
         _keyPairs = [NSMutableDictionary dictionary];
         _accessQueue = dispatch_queue_create("com.atproto.pds.keymanager", DISPATCH_QUEUE_SERIAL);
         _currentKeyID = [coder decodeObjectOfClass:[NSString class] forKey:@"currentKeyID"];
@@ -194,8 +254,43 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
                                              error:(NSError **)error {
     NSString *keyID = [[NSUUID UUID] UUIDString];
 
-    CFTypeRef keyType = kSecAttrKeyTypeRSA;
-    if ([algorithm isEqualToString:@"ES256"] || [algorithm isEqualToString:@"ECDSA"] || [algorithm isEqualToString:@"ECDSA-P256"]) {
+    // ES256K uses secp256k1 which Apple Security doesn't support natively.
+    // Generate using our secp256k1 library and store raw key bytes.
+    if ([algorithm isEqualToString:@"ES256K"]) {
+        NSError *genError = nil;
+        Secp256k1KeyPair *secpKeyPair = [Secp256k1KeyPair generateKeyPair:&genError];
+        if (!secpKeyPair) {
+            if (error) {
+                *error = genError ?: [NSError errorWithDomain:KeyManagerErrorDomain
+                                                         code:KeyManagerErrorKeyGenerationFailed
+                                                     userInfo:@{NSLocalizedDescriptionKey: @"ES256K key generation failed"}];
+            }
+            return nil;
+        }
+
+        PDSAppleKeyPair *keyPair = [PDSAppleKeyPair keyPairWithSecp256k1PrivateKey:secpKeyPair.privateKey
+                                                                        publicKey:secpKeyPair.publicKey
+                                                                           keyID:keyID];
+
+        dispatch_sync(self.accessQueue, ^{
+            self.keyPairs[keyID] = keyPair;
+        });
+
+        self.currentKeyID = keyID;
+
+        // Save to database for persistence
+        NSError *saveError = nil;
+        if (![self saveKeyPairToDatabase:keyPair error:&saveError]) {
+            PDS_LOG_AUTH_WARN(@"Failed to save ES256K JWT signing key to database: %@", saveError);
+        }
+
+        return keyPair;
+    }
+
+    CFTypeRef keyType = kSecAttrKeyTypeECSECPrimeRandom;  // Default to EC (AT Protocol convention)
+    if ([algorithm isEqualToString:@"RS256"]) {
+        keyType = kSecAttrKeyTypeRSA;
+    } else if ([algorithm isEqualToString:@"ES256"] || [algorithm isEqualToString:@"ECDSA"] || [algorithm isEqualToString:@"ECDSA-P256"]) {
         keyType = kSecAttrKeyTypeECSECPrimeRandom;
     }
 
@@ -340,7 +435,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
         }
     }
 
-    return [self generateKeyPairWithAlgorithm:@"RS256" keySize:2048 error:error];
+    return [self generateKeyPairWithAlgorithm:@"ES256K" keySize:256 error:error];
 }
 
 - (NSArray<id<PDSKeyPair>> *)allKeyPairs:(NSError **)error {
@@ -402,9 +497,25 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     PDSAppleKeyPair *keyPair = (PDSAppleKeyPair *)[self getKeyPairWithID:keyID error:error];
     if (!keyPair) return nil;
 
+    // ES256K keys use secp256k1 directly (Apple Security doesn't support secp256k1)
+    if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
+        uint8_t hash[CC_SHA256_DIGEST_LENGTH];
+        CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
+        NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+        return [[Secp256k1 shared] signHash:hashData withPrivateKey:keyPair.secp256k1PrivateKeyData error:error];
+    }
+
+    // Select the correct SecKeyAlgorithm based on the key pair's algorithm
+    SecKeyAlgorithm alg = self.signingAlgorithm;
+    if ([keyPair.algorithm isEqualToString:@"ES256"] || [keyPair.algorithm isEqualToString:@"ECDSA-P256"]) {
+        alg = kSecKeyAlgorithmECDSASignatureMessageX962SHA256;
+    } else if ([keyPair.algorithm isEqualToString:@"RS256"]) {
+        alg = kSecKeyAlgorithmRSASignatureMessagePKCS1v15SHA256;
+    }
+
     CFErrorRef cfError = NULL;
     NSData *signature = CFBridgingRelease(SecKeyCreateSignature(keyPair.privateKey,
-                                                                 self.signingAlgorithm,
+                                                                 alg,
                                                                  (__bridge CFDataRef)data,
                                                                  &cfError));
 
@@ -540,10 +651,25 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
             }
             
             if (!privateKey && privateKeyData) {
+                // ES256K keys are stored as raw secp256k1 private key bytes (32 bytes)
+                if ([algorithm isEqualToString:@"ES256K"] && privateKeyData.length == 32) {
+                    PDSAppleKeyPair *keyPair = [PDSAppleKeyPair keyPairWithSecp256k1PrivateKey:privateKeyData
+                                                                                     publicKey:publicKeyData
+                                                                                        keyID:keyID];
+                    if (keyPair) {
+                        keyPair.isActive = [isActive boolValue];
+                        self.keyPairs[keyID] = keyPair;
+                        if (keyPair.isActive && !self.currentKeyID) {
+                            self.currentKeyID = keyID;
+                        }
+                    }
+                    continue;  // Skip SecKeyRef creation for ES256K keys
+                }
+
                 // Import legacy RSA/EC key from data
                 PDS_LOG_AUTH_WARN(@"Loading legacy private key from database for key ID: %@. Migration recommended.", keyID);
                 NSDictionary *privateKeyAttrs = @{
-                    (__bridge id)kSecAttrKeyType: (__bridge id)kSecAttrKeyTypeRSA, // Default to RSA, but SecKeyCreateWithData handles it
+                    (__bridge id)kSecAttrKeyType: [algorithm hasPrefix:@"RS"] ? (__bridge id)kSecAttrKeyTypeRSA : (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
                     (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate
                 };
                 privateKey = SecKeyCreateWithData((__bridge CFDataRef)privateKeyData,
@@ -594,36 +720,51 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 - (BOOL)saveKeyPairToDatabase:(PDSAppleKeyPair *)keyPair error:(NSError **)error {
     if (!self.database) return YES; // Not an error if no database
 
-    CFErrorRef exportError = NULL;
     NSData *privateKeyData = nil;
+    NSData *publicKeyData = nil;
     NSString *keychainTag = nil;
 
-    if (self.useKeychain) {
-        keychainTag = [self keychainTagForKeyID:keyPair.keyID];
-        privateKeyData = nil;
+    // ES256K keys store raw secp256k1 private key bytes directly
+    if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
+        privateKeyData = keyPair.secp256k1PrivateKeyData;
+        // Get public key from the secp256k1 key pair
+        Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:keyPair.secp256k1PrivateKeyData error:nil];
+        publicKeyData = kp.publicKey;  // Uncompressed public key
     } else {
-        privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
-        if (exportError) {
-            if (error) {
-                *error = CFBridgingRelease(exportError);
-            } else {
-                CFRelease(exportError);
-            }
-            return NO;
-        }
-    }
+        CFErrorRef exportError = NULL;
 
-    NSData *publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &exportError));
-    if (exportError) {
-        if (error) {
-            *error = CFBridgingRelease(exportError);
+        if (self.useKeychain) {
+            keychainTag = [self keychainTagForKeyID:keyPair.keyID];
+            privateKeyData = nil;
         } else {
-            CFRelease(exportError);
+            if (keyPair.privateKey) {
+                privateKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.privateKey, &exportError));
+                if (exportError) {
+                    if (error) {
+                        *error = CFBridgingRelease(exportError);
+                    } else {
+                        CFRelease(exportError);
+                    }
+                    return NO;
+                }
+            }
         }
-        return NO;
+
+        if (keyPair.publicKey) {
+            CFErrorRef pubExportError = NULL;
+            publicKeyData = CFBridgingRelease(SecKeyCopyExternalRepresentation(keyPair.publicKey, &pubExportError));
+            if (pubExportError) {
+                if (error) {
+                    *error = CFBridgingRelease(pubExportError);
+                } else {
+                    CFRelease(pubExportError);
+                }
+                return NO;
+            }
+        }
     }
 
-    if (!publicKeyData || (self.useKeychain && !keychainTag) || (!self.useKeychain && !privateKeyData)) {
+    if (!publicKeyData || (self.useKeychain && !keychainTag && ![keyPair.algorithm isEqualToString:@"ES256K"]) || (!self.useKeychain && !privateKeyData)) {
         if (error) {
             *error = [NSError errorWithDomain:KeyManagerErrorDomain
                                          code:KeyManagerErrorExportFailed
@@ -674,7 +815,24 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     if (!keyPair) {
         return NO;
     }
-    
+
+    // ES256K verification using secp256k1 library
+    if ([keyPair.algorithm isEqualToString:@"ES256K"] && keyPair.secp256k1PrivateKeyData) {
+        Secp256k1KeyPair *kp = [Secp256k1KeyPair keyPairWithPrivateKey:keyPair.secp256k1PrivateKeyData error:nil];
+        if (!kp) {
+            if (error) {
+                *error = [NSError errorWithDomain:KeyManagerErrorDomain
+                                             code:KeyManagerErrorSigningFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to reconstruct ES256K key pair for verification"}];
+            }
+            return NO;
+        }
+        uint8_t hash[CC_SHA256_DIGEST_LENGTH];
+        CC_SHA256(data.bytes, (CC_LONG)data.length, hash);
+        NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
+        return [[Secp256k1 shared] verifySignature:signature forHash:hashData withPublicKey:kp.compressedPublicKey error:error];
+    }
+
     return [self verifySignature:signature forData:data withKey:keyPair.publicKey error:error];
 }
 
