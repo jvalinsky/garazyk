@@ -1,0 +1,40 @@
+{
+  "lexicon": 1,
+  "id": "com.atproto.admin.runBlobAudit",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Start a blob audit job. Admin only.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "default": "consistency",
+              "description": "Type of audit to run"
+            },
+            "dryRun": {
+              "type": "boolean",
+              "default": false,
+              "description": "If true, only report what would be done without making changes"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["jobId", "type", "status"],
+          "properties": {
+            "jobId": { "type": "string" },
+            "type": { "type": "string" },
+            "status": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
