@@ -40,7 +40,15 @@
     self = [super init];
     if (self) {
         nw_endpoint_t endpoint = nw_endpoint_create_host(host.UTF8String, [[NSString stringWithFormat:@"%lu", (unsigned long)port] UTF8String]);
-        nw_parameters_t parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        nw_parameters_t parameters;
+        
+        // If port is 80, 2583 (local dev), or other known plain ports, use plain TCP
+        if (port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
+            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        } else {
+            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        }
+        
         _connection = nw_connection_create(endpoint, parameters);
         [self setupHandlers];
     }
@@ -56,17 +64,22 @@
         void (^handler)(PDSNetworkConnectionState, NSError * _Nullable) = strongSelf.stateChangedHandler;
         if (handler) {
             PDSNetworkConnectionState pdsState;
+            NSError *nsError = nil;
+            if (error) {
+                nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
+            }
             switch (state) {
-                case nw_connection_state_waiting: pdsState = PDSNetworkConnectionStateWaiting; break;
+                case nw_connection_state_waiting: 
+                    pdsState = PDSNetworkConnectionStateWaiting;
+                    if (nsError) {
+                        NSLog(@"[Network] Connection waiting: %@", nsError.localizedDescription);
+                    }
+                    break;
                 case nw_connection_state_preparing: pdsState = PDSNetworkConnectionStatePreparing; break;
                 case nw_connection_state_ready: pdsState = PDSNetworkConnectionStateReady; break;
                 case nw_connection_state_failed: pdsState = PDSNetworkConnectionStateFailed; break;
                 case nw_connection_state_cancelled: pdsState = PDSNetworkConnectionStateCancelled; break;
                 default: pdsState = PDSNetworkConnectionStateWaiting; break;
-            }
-            NSError *nsError = nil;
-            if (error) {
-                nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
             }
             handler(pdsState, nsError);
         }
@@ -149,7 +162,12 @@
     self = [super init];
     if (self) {
         _port = port;
-        nw_parameters_t parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        nw_parameters_t parameters;
+        if (port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
+            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        } else {
+            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+        }
         char portStr[16];
         snprintf(portStr, sizeof(portStr), "%lu", (unsigned long)port);
         if (host.length > 0) {

@@ -94,6 +94,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)cleanup;
 
+/*!
+ @method invalidate
+
+ @abstract Invalidates the cleanup timer and closes the database.
+
+ @discussion
+    Must be called before the cache is deallocated to break the
+    timer retain cycle (NSTimer retains its target). The shared
+    instance does not need to be invalidated explicitly.
+ */
+- (void)invalidate;
+
 @end
 
 NS_ASSUME_NONNULL_END

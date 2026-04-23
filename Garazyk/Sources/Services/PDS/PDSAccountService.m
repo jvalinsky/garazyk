@@ -403,7 +403,8 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     
     return @{
         @"did": account.did ?: @"",
-        @"handle": account.handle ?: @""
+        @"handle": account.handle ?: @"",
+        @"email": account.email ?: @""
     };
 }
 
@@ -715,6 +716,23 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     }
     
     return resultDid;
+}
+
+#pragma mark - Testing Utilities
+
+- (NSString *)generatePlcIdentifier {
+    // Generate a random 24-character base32 identifier for did:plc
+    // Alphabet: 234567abcdefghijklmnopqrstuvwxyz (no 0, 1, 8, 9, no uppercase)
+    static NSString * const alphabet = @"234567abcdefghijklmnopqrstuvwxyz";
+    static const NSUInteger identifierLength = 24;
+
+    NSMutableString *identifier = [NSMutableString stringWithCapacity:identifierLength];
+    for (NSUInteger i = 0; i < identifierLength; i++) {
+        NSUInteger idx = arc4random_uniform((uint32_t)alphabet.length);
+        [identifier appendFormat:@"%C", [alphabet characterAtIndex:idx]];
+    }
+
+    return [NSString stringWithFormat:@"did:plc:%@", identifier];
 }
 
 @end

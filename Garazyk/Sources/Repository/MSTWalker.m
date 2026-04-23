@@ -140,7 +140,7 @@
     
     // Get entries of current walking node
     NSArray<MSTNodeEntry *> *entries = walking.internalEntries;
-    NSUInteger nextIndex = self.status.index + 1;
+    NSUInteger nextIndex = (self.status.index == NSNotFound) ? 0 : self.status.index + 1;
     
     if (nextIndex >= entries.count) {
         // No more entries at this level, pop stack
@@ -188,7 +188,7 @@
             // Root has a left subtree - start there
             self.status = [MSTWalkerStatus progressWithEntry:nil
                                                       walking:self.root
-                                                        index:0
+                                                        index:NSNotFound
                                                    isTreeNode:YES];
             // Actually we need to descend into internalLeft
             [self pushStateAndDescendInto:self.root.internalLeft];
@@ -243,7 +243,7 @@
         // Start by walking into left subtree
         self.status = [MSTWalkerStatus progressWithEntry:nil
                                                   walking:subtree
-                                                    index:0
+                                                    index:NSNotFound
                                                    isTreeNode:YES];
         // Descend into internalLeft recursively
         [self pushStateAndDescendInto:subtree.internalLeft];

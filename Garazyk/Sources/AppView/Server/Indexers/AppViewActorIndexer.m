@@ -9,12 +9,12 @@
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
+#import "Core/CID.h"
 
 static NSString * const kCollection = @"app.bsky.actor.profile";
 
 @interface AppViewActorIndexer ()
 @property (nonatomic, strong) AppViewDatabase *avdb;
-@property (nonatomic, strong) PDSDatabase *db; // underlying PDSDatabase for SQL writes
 @end
 
 @implementation AppViewActorIndexer
@@ -23,9 +23,6 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     self = [super init];
     if (!self) return nil;
     _avdb = database;
-    // Note: actor profile rows are written into the service database used by
-    // the existing ActorService. The AppViewDatabase tracks idempotency; the
-    // actual materialized rows go to the shared service DB via the existing schema.
     return self;
 }
 
@@ -36,20 +33,22 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
 }
 
 - (BOOL)indexRecord:(NSDictionary *)record
-                did:(NSString *)did
-         collection:(NSString *)collection
-              error:(NSError **)error {
-    // Validate required fields loosely (actor.profile is all optional)
-    NSString *displayName = record[@"displayName"];
-    NSString *description = record[@"description"];
-    id avatarBlob = record[@"avatar"];
-    id bannerBlob = record[@"banner"];
+                 did:(NSString *)did
+          collection:(NSString *)collection
+               error:(NSError **)error {
+    // record structure: {$type, $did, $rkey, record: {displayName, description, ...}}
+    NSDictionary *profileRecord = record[@"record"] ?: record;
+    NSString *displayName = profileRecord[@"displayName"];
+    NSString *description = profileRecord[@"description"];
+    NSString *rkey = record[@"rkey"] ?: @"self";
 
     NSString *avatarCID = nil;
+    id avatarBlob = profileRecord[@"avatar"];
     if ([avatarBlob isKindOfClass:[NSDictionary class]])
         avatarCID = avatarBlob[@"ref"] ?: avatarBlob[@"cid"];
 
     NSString *bannerCID = nil;
+    id bannerBlob = profileRecord[@"banner"];
     if ([bannerBlob isKindOfClass:[NSDictionary class]])
         bannerCID = bannerBlob[@"ref"] ?: bannerBlob[@"cid"];
 
@@ -57,15 +56,29 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     if (displayName.length > 640) displayName = [displayName substringToIndex:640];
     if (description.length > 2560) description = [description substringToIndex:2560];
 
-    PDS_LOG_DEBUG(@"[AppViewActorIndexer] Indexed profile for %@ (displayName=%@)", did, displayName);
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:profileRecord options:0 error:nil];
 
-    // In a full implementation, this would write to a `actor_profiles` table.
-    // The indexer pattern is intentionally minimal here: production would upsert
-    // into a dedicated table and the ActorService would read from it.
-    // For now we log success and return YES (the schema integration is done
-    // at the AppViewDatabase migration layer in a follow-up).
-    (void)avatarCID; (void)bannerCID; (void)description;
+    // Write to database via AppViewDatabase
+    // Save block first (required for AT Protocol)
+    [_avdb saveBlockWithCid:[CID sha256:jsonData].bytes
+                 repoDid:did
+               blockData:jsonData
+             contentType:@"application/json"
+                   error:nil];
 
+    // Get the CID for the record
+    NSString *recordCID = [CID sha256:jsonData].stringValue;
+
+    // Then write to records table
+    [_avdb saveRecordWithURI:uri
+                         did:did
+                   collection:collection
+                        rkey:rkey
+                          cid:recordCID
+                        value:[[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding]
+                  subjectDid:did
+                       error:nil];
     return YES;
 }
 

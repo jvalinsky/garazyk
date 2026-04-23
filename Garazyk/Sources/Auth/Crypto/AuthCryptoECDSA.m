@@ -208,4 +208,97 @@
     return YES; // Equal to N/2 is also low-S
 }
 
++ (nullable NSData *)normalizeLowS:(NSData *)rawSignature error:(NSError **)error {
+    if (rawSignature.length != 64) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoErrorDomain
+                                         code:-13
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signature must be 64 bytes for P-256 low-S normalization"}];
+        }
+        return nil;
+    }
+
+    // If already low-S, return as-is
+    if ([self isLowS:rawSignature error:nil]) {
+        return rawSignature;
+    }
+
+    // P-256 curve order N:
+    // FFFFFFFF 00000001 00000000 00000000 00000000 FFFFFFFF FFFFFFFF FFFFFFFF
+    static const uint8_t p256N[32] = {
+        0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+
+    const uint8_t *s = (const uint8_t *)rawSignature.bytes + 32;
+
+    // Compute N - s using big-endian subtraction with borrow
+    uint8_t normalizedS[32];
+    int borrow = 0;
+    for (int i = 31; i >= 0; i--) {
+        int diff = (int)p256N[i] - (int)s[i] - borrow;
+        if (diff < 0) {
+            diff += 256;
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
+        normalizedS[i] = (uint8_t)diff;
+    }
+
+    // Build new signature: r (unchanged) + normalized s
+    NSMutableData *result = [rawSignature mutableCopy];
+    memcpy(((uint8_t *)result.mutableBytes) + 32, normalizedS, 32);
+    return result;
+}
+
++ (nullable NSData *)denormalizeLowS:(NSData *)rawSignature error:(NSError **)error {
+    if (rawSignature.length != 64) {
+        if (error) {
+            *error = [NSError errorWithDomain:AuthCryptoErrorDomain
+                                         code:-14
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Signature must be 64 bytes for P-256 denormalization"}];
+        }
+        return nil;
+    }
+
+    // Only denormalize if currently low-S
+    if (![self isLowS:rawSignature error:nil]) {
+        // Already high-S, return as-is
+        return rawSignature;
+    }
+
+    // P-256 curve order N:
+    // FFFFFFFF 00000001 00000000 00000000 00000000 FFFFFFFF FFFFFFFF FFFFFFFF
+    static const uint8_t p256N[32] = {
+        0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+    };
+
+    const uint8_t *s = (const uint8_t *)rawSignature.bytes + 32;
+
+    // Compute N - s using big-endian subtraction with borrow
+    uint8_t highS[32];
+    int borrow = 0;
+    for (int i = 31; i >= 0; i--) {
+        int diff = (int)p256N[i] - (int)s[i] - borrow;
+        if (diff < 0) {
+            diff += 256;
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
+        highS[i] = (uint8_t)diff;
+    }
+
+    // Build new signature: r (unchanged) + high s
+    NSMutableData *result = [rawSignature mutableCopy];
+    memcpy(((uint8_t *)result.mutableBytes) + 32, highS, 32);
+    return result;
+}
+
 @end

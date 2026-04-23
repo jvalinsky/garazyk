@@ -575,8 +575,8 @@
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
     
     // 2. Backdate events 1 & 2 in DB to allow pruning
-    // We use the service pool directly to execute raw SQL update
-    PDSDatabasePool *pool = self.controller.serviceDatabases.servicePool;
+    // Events are stored in the sequencer pool, not the service pool
+    PDSDatabasePool *pool = self.controller.serviceDatabases.sequencerPool;
     [pool transactWithDid:@"__service__" block:^(id transactor, NSError **err) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         // Backdate to 2 hours ago
