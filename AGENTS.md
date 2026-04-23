@@ -1,126 +1,71 @@
 # AGENTS.md
 
-This file provides operational guidance for AI assistants working with this repository.
+This file provides the canonical operational guidance for AI assistants working with this repository. It serves as the project's "Global Constitution," defining non-negotiable rules and pointing to specific operational workflows.
 
 ## Quick Reference
 
-For detailed information, see the steering files in `.kiro/steering/`:
-- `product.md` - What September PDS is and does
-- `tech.md` - Build system, dependencies, testing, quality gates
-- `structure.md` - Project organization and architecture
+This project uses the **WAT (Workflows, Agents, Tools)** framework for orchestration.
+- **Workflows**: Multi-step procedures in `.opencode/workflows/`.
+- **Agents**: Orchestrator + named subagents defined as Markdown files in `.agents/agents/`. The Orchestrator delegates scoped tasks to subagents via the `Task` tool.
+- **Tools**: Two layers.
+  - `scripts/` — human-invoked runners (freeform stdout).
+  - `.opencode/tools/` — AI-invoked wrappers that emit structured JSON over those runners.
+- **Skills**: Reusable domain knowledge in `.agents/skills/` (loaded by subagents as context; orthogonal to WAT).
 
-## Critical Build Rules
+## Tool Compatibility
 
-1. **Always use out-of-source builds** - Never run `cmake` in repo root
-2. **Use XcodeGen on macOS** - Run `xcodegen generate` before building
-3. **Test runner registration** - Add new test classes to `testClasses` array in `Garazyk/Tests/test_main.m`
+The repo works with **Claude Code**, **opencode**, and **Codex CLI**. All three read `AGENTS.md` (this file) as the source of rules. The agent/skill rosters are discovered differently per tool:
 
-## Quality Gates (Pre-Push)
+| Tool | Agents | Skills |
+|---|---|---|
+| opencode | `.agents/agents/*.md` (auto) | `.agents/skills/*/SKILL.md` (auto) |
+| Claude Code | `.claude/agents/` → symlink → `.agents/agents/` | `.claude/skills/` → symlink → `.agents/skills/` |
+| Codex CLI | enumerated in `.codex/config.toml` | enumerated in `.codex/config.toml` |
 
-Before pushing code, verify:
-1. `xcodegen generate` succeeds
-2. `xcodebuild -scheme AllTests build` succeeds
-3. `./build/tests/AllTests` passes with 0 failures
-4. `xcodebuild -scheme kaszlak build` succeeds
-5. Fuzzers build successfully (if modified)
+Canonical home is `.agents/`. Do not edit the `.claude/` symlinks or duplicate content — update `.agents/` and Codex's `.codex/config.toml` together.
 
-## Production Deployment (pds.garazyk.xyz)
+## Operational Workflows
 
-**CRITICAL**: Always run `docker compose` from `docker/pds/`, NEVER from repo root.
+For detailed procedures, follow the appropriate workflow:
+- [Quality Gates](.opencode/workflows/quality_gates.md) - Mandatory pre-push checks.
+- [Production Deployment](.opencode/workflows/production_deployment.md) - Procedures for `pds.garazyk.xyz`.
+- [Session Completion](.opencode/workflows/session_completion.md) - Mandatory steps for ending a work session.
+- [Feature Implementation](.opencode/workflows/feature_implementation_workflow.md) - Deciduous-tracked implementation loop.
+- [Pull Request Review](.opencode/workflows/pull_request_review_workflow.md) - Delegation pattern for diff review.
 
-### Secure Defaults — MANDATORY
+## Agents
 
-Never weaken these without explicit user approval:
-- `session.invite_code_required`: `true`
-- `plc.url`: `"https://plc.directory"` (never `"mock"` in production)
-- All `debug.*` flags: `false`
-- `rate_limit.enabled`: `true`
-- `server.issuer`: `"https://pds.garazyk.xyz"`
+The Orchestrator MUST delegate scoped work to the subagents defined in [`.agents/agents/`](.agents/agents/). Delegation rule: **one skill per subagent invocation.** If a task crosses domains, spawn multiple subagents in parallel instead of widening any one of them.
 
-### Production Environment
+| Subagent | When to spawn |
+|---|---|
+| `security-auditor` | Changes to auth, crypto, storage, secrets, or log-emitting code. |
+| `concurrency-auditor` | Changes to threading, queues, locks, or anywhere `dispatch_*` appears. |
+| `architecture-auditor` | Changes to XRPC handlers, service boundaries, SQLite usage, or Linux/GNUstep paths. |
+| `web-ui-auditor` | Changes under `AdminUI/` or any HTML/JS asset. |
+| `atproto-coverage-auditor` | Changes to `Lexicons/` or XRPC registration. |
+| `pr-reviewer` | Any branch/PR review — the Orchestrator never reads the full diff itself. |
 
-- VM: `DEPLOY_HOST`
-- Architecture: `exe.dev HTTPS → nginx:3000 → PDS:2583`
-- Config: `docker/pds/config.json` (read-only mount)
-- Required env: `PDS_TRUST_PROXY_HEADERS=1`
+## Critical Mandates
 
-### Never Do In Production
+1. **Always use out-of-source builds** - Never run `cmake` in repo root.
+2. **Use XcodeGen on macOS** - Run `xcodegen generate` before building.
+3. **Decision Tracking** - Every significant action MUST be recorded in the `deciduous` graph.
+4. **Subagent Delegation** - Delegate complex analysis or audits to subagents to keep the Orchestrator context window clean.
+5. **No Chitchat** - Stay professional, concise, and direct.
 
-- Set `invite_code_required` to `false`
-- Use `plc.url: "mock"` outside test/dev
-- Enable any `debug.*` flags
-- Expose port 2583 directly (nginx handles TLS)
-- Store secrets in committed config files
-- Run `docker compose` from repo root
+## Repository Skills (Audits)
 
-### Deployment Commands
-
-```bash
-# On VM (DEPLOY_HOST):
-cd DEPLOY_DIR/objpds/docker/pds
-docker compose up -d
-docker compose logs -f pds
-docker exec nspds kaszlak invite create
-
-# Verify correct config:
-curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer
-# Must show: "did":"did:web:pds.garazyk.xyz"
-```
-
-### Volume Backup
-
-```bash
-mkdir -p DEPLOY_DIR/backup
-TS=$(date +%Y%m%d-%H%M%S)
-docker run --rm \
-  -v pds_pds_data:/data \
-  -v DEPLOY_DIR/backup:/backup \
-  busybox sh -c "cd /data && tar -czf /backup/pds_pds_data-$TS.tar.gz ."
-```
-
-## Session Completion Protocol
-
-When ending a work session, you MUST:
-1. Run quality gates (if code changed)
-2. Push to remote — work is NOT complete until `git push` succeeds
-3. File issues for remaining work
-
-```bash
-git pull --rebase
-deciduous sync
-git push
-git status  # Must show "up to date with origin"
-```
-
-**Never stop before pushing.** Never say "ready to push when you are" — YOU must push.
-
-## Repository Skills
-
-Audit and analysis skills in `.opencode/skills/`:
-- `atproto-endpoint-stub-finder/` - endpoint-stub auditing with XRPC coverage
-- `objc-concurrency-bug-audit/` - concurrency and race condition analysis
-- `objc-cryptographic-security-audit/` - cryptographic implementation review
-- `objc-firehose-ordering-backpressure-audit/` - firehose reliability
-- `objc-gnustep-regression-audit/` - GNUstep compatibility checks
-- `objc-locking-queue-audit/` - locking and queue safety
-- `objc-log-redaction-audit/` - sensitive data in logs
-- `objc-oauth-dpop-conformance-audit/` - OAuth/DPoP spec compliance
-- `objc-parser-hardening-audit/` - input validation and parser safety
-- `objc-rate-limiting-dos-audit/` - DoS protection
-- `objc-reentrancy-audit/` - reentrancy issues
+Consolidated audit workflows are located in `.agents/skills/`.
+- `objc-security-audit` - Deep security review (SQLi, Crypto, Secrets).
+- `objc-concurrency-audit` - Thread-safety and race condition analysis.
+- `objc-architecture-audit` - Structural integrity and platform compatibility.
+- `web-ui-audit` - Accessibility and pattern review.
+- `atproto-coverage-audit` - Lexicon and endpoint coverage.
 
 ## Utility Scripts
 
-- `scripts/stub_find.sh .` - scan for TODO/FIXME/not implemented markers
-- `scripts/wipe_and_rebuild.sh` - clean rebuild from scratch
-- `scripts/backup_pds.sh` - SQLite-safe production backup
-- `scripts/db_dump.sh` - inspect PDS database contents
-- `scripts/run-tests.sh` - run all tests
-
-## CI/CD
-
-GitHub Actions workflows:
-- `ci.yml` - macOS build+test → Linux/GNUstep build+test → Docker build → PLC integration tests
-- `security.yml` - clang-tidy, fuzzing, OSV dependency scan, TruffleHog secret scan
-- `static-analysis.yml` - code quality, ShellCheck, secrets scan
-- `linux.yml` - Docker image builds for tagged releases
+- `scripts/run-tests.sh` - Run all tests.
+- `scripts/stub_find.sh .` - Scan for TODO/FIXME markers.
+- `scripts/wipe_and_rebuild.sh` - Clean rebuild from scratch.
+- `scripts/backup_pds.sh` - SQLite-safe production backup.
