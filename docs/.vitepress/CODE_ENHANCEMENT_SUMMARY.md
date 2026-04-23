@@ -330,4 +330,3 @@ Future enhancements could include:
 - VitePress Markdown: https://vitepress.dev/guide/markdown
 - Shiki Highlighting: https://shiki.matsu.io/
 - markdown-it-container: https://github.com/markdown-it/markdown-it-container
-- Task Spec: `.kiro/specs/vitepress-docs-migration/tasks.md`

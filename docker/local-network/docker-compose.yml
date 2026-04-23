@@ -46,7 +46,7 @@ services:
     volumes:
       - local_pds_data:/var/lib/atprotopds
       - ./pds-config.json:/var/lib/atprotopds/config.json:ro
-      - /tmp/pds_keys:/var/lib/atprotopds/keys
+      - local_pds_keys:/var/lib/atprotopds/keys
     environment:
       - TZ=UTC
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
@@ -147,5 +147,6 @@ networks:
 volumes:
   local_plc_data:
   local_pds_data:
+  local_pds_keys:
   local_relay_data:
   local_appview_data:
