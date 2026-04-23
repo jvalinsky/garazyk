@@ -403,8 +403,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     
     return @{
         @"did": account.did ?: @"",
-        @"handle": account.handle ?: @"",
-        @"email": account.email ?: @""
+        @"handle": account.handle ?: @""
     };
 }
 

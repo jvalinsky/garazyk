@@ -1,0 +1,11 @@
+{
+  "server": {
+    "data_dir": "/var/lib/atprotopds",
+    "host": "localhost",
+    "port": 2585
+  },
+  "plc": {
+    "url": "http://local-plc:2582"
+  },
+  "hostname": "second.test"
+}

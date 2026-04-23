@@ -99,6 +99,44 @@ services:
     networks:
       - e2e_network
 
+  appview:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.gnustep
+      target: runtime
+    image: nspds:local
+    container_name: e2e-appview
+    ports:
+      - "3200:3200"
+    environment:
+      - TZ=UTC
+      - APPVIEW_ADMIN_SECRET=e2e-secret
+      - APPVIEW_DATA_DIR=/var/lib/appview
+      - APPVIEW_PLC_URL=http://plc-replica:2580
+      - APPVIEW_HTTP_PORT=3200
+    volumes:
+      - appview_data:/var/lib/appview
+    entrypoint: ["/usr/local/bin/syrena"]
+    command:
+      - "serve"
+      - "--relay"
+      - "ws://relay:2584"
+      - "--port"
+      - "3200"
+      - "--data-dir"
+      - "/var/lib/appview"
+    depends_on:
+      relay:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "Authorization: Bearer e2e-secret", "http://localhost:3200/admin/backfill/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - e2e_network
+
 networks:
   e2e_network:
     driver: bridge
@@ -110,3 +148,5 @@ volumes:
     name: e2e_pds_data
   relay_data:
     name: e2e_relay_data
+  appview_data:
+    name: e2e_appview_data
