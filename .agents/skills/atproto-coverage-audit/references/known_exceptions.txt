@@ -1,0 +1,3 @@
+# Method IDs to ignore in diffs (one per line).
+# Non-PDS or experimental namespaces can be added here to cut noise.
+# Example: place.stream.*
