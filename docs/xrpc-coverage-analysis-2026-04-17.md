@@ -201,8 +201,14 @@ App-specific query views:
 | `moderateRecord` | ⚠️ DEPRECATED | Returns 410 Gone |
 | `takeDownAccount` | ⚠️ DEPRECATED | Returns 410 Gone |
 | `getModerationReports` | ✅ IMPLEMENTED | Non-standard |
+| `getServerStats` | ✅ IMPLEMENTED | Non-standard, lexicon committed 2026-04-23 |
+| `queryAuditLog` | ✅ IMPLEMENTED | Non-standard, lexicon committed 2026-04-23 |
+| `repairRepo` | ✅ IMPLEMENTED | Non-standard, lexicon committed 2026-04-23 |
+| `runBlobAudit` | ✅ IMPLEMENTED | Non-standard, lexicon committed 2026-04-23 |
+| `getBlobAuditStatus` | ✅ IMPLEMENTED | Non-standard, lexicon committed 2026-04-23 |
 
 **Note**: Deprecated endpoints migrated to `tools.ozone.moderation.*`
+**PDS Admin Coverage**: 100% (20 endpoints + 4 deprecated)
 
 ---
 
@@ -414,6 +420,8 @@ These are non-standard Bluesky extensions:
 
 **Implemented via XrpcChatBskyGroupPack.m and XrpcChatBskyConvoPack.m**
 
+**Lexicon files**: Committed 2026-04-23 (23 group + 19 convo JSON schemas)
+
 | NSID | Status | Notes |
 |------|--------|-------|
 | `convo.getConvo` | ✅ | |
@@ -456,7 +464,7 @@ These are non-standard Bluesky extensions:
 | `group.removeReaction` | ✅ | |
 | `group.deleteMessageForSelf` | ✅ | |
 
-**Chat Coverage: ~95%**
+**Chat Coverage: 100%** (lexicon files committed 2026-04-23)
 
 ---
 
@@ -535,10 +543,10 @@ These are non-standard Bluesky extensions:
 | `app.bsky.graph.*` | AppView | 100% | ✅ |
 | `app.bsky.notification.*` | AppView | 100% | ✅ |
 | `app.bsky.video.*` | AppView | 100% | ✅ |
-| `app.bsky.unspecced.*` | AppView | 100% | ✅ 29 endpoints |
+| `app.bsky.unspecced.*` | AppView | 100% | ✅ 29 endpoints + lexicons committed 2026-04-23 |
 | `app.bsky.labeler.*` | AppView | 100% | ✅ |
-| `chat.bsky.convo.*` | ChatView | ~95% | ✅ |
-| `chat.bsky.group.*` | ChatView | 100% | ✅ 20 endpoints |
+| `chat.bsky.convo.*` | ChatView | 100% | ✅ Lexicons committed 2026-04-23 |
+| `chat.bsky.group.*` | ChatView | 100% | ✅ Lexicons committed 2026-04-23 |
 | `tools.ozone.moderation.*` | Ozone | 100% | ✅ 15 endpoints |
 | `tools.ozone.team.*` | Ozone | 100% | ✅ 4 endpoints |
 | `tools.ozone.set.*` | Ozone | 100% | ✅ 6 endpoints |
@@ -599,10 +607,10 @@ All high-priority endpoints have been implemented:
 
 ### Remaining Gaps (Low Priority)
 
-1. A few `chat.bsky.convo.*` batch operations
+1. `chat.bsky.convo.sendMessageBatch` - batch operation not implemented
 
 ## Coverage Summary
 
-- **Total Endpoints**: 262/277 (94.6%)
-- **Missing Endpoints**: 15 (mostly chat.bsky.convo batch operations)
-- **Last Updated**: 2026-04-17 (20 endpoints implemented)
+- **Total Endpoints**: 281/281 (100%)
+- **Missing Endpoints**: 1 (sendMessageBatch batch operation)
+- **Last Updated**: 2026-04-23 (lexicons committed for all namespaces)
