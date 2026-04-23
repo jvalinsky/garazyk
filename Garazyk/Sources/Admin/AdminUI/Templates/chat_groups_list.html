@@ -20,19 +20,9 @@
         <td>{{memberCount}}</td>
         <td>
           <div class="btn-group">
-            <button class="btn btn-xs" hx-get="/admin/partials/chat/groups/detail?groupUri={{uri}}" hx-target="#content-pane">Details</button>
-            <button class="btn btn-xs btn-warning" 
-                    hx-post="/admin/chat/groups/{{uri}}/takedown"
-                    hx-confirm="Takedown this group? Users will lose access."
-                    hx-swap="outerHTML">
-              Takedown
-            </button>
-            <button class="btn btn-xs btn-destructive" 
-                    hx-post="/admin/chat/groups/{{uri}}/delete"
-                    hx-confirm="Permanently delete this group? This cannot be undone."
-                    hx-swap="outerHTML">
-              Delete
-            </button>
+            <button class="btn btn-sm" hx-get="/admin/partials/chat/groups/detail?groupUri={{uri}}" hx-target="#content-pane">Details</button>
+            <button class="btn btn-sm btn-warning" data-action="delete-group" data-uri="{{uri}}">Takedown</button>
+            <button class="btn btn-sm btn-destructive" data-action="delete-group" data-uri="{{uri}}">Delete</button>
           </div>
         </td>
       </tr>

@@ -1,8 +1,14 @@
 <tr>
-  <td colspan="6" class="text-secondary text-center p-lg">
-    <p style="margin: 0;">{{message}}</p>
-    {{#if suggestion}}
-      <small class="text-secondary" style="display: block; margin-top: 8px;">{{suggestion}}</small>
-    {{/if}}
+  <td colspan="6" class="text-center">
+    <div class="empty-state empty-state-strawberry">
+      <div class="empty-state-icon"></div>
+      <p class="empty-state-title">{{title}}</p>
+      {{#if message}}
+        <p class="empty-state-description">{{message}}</p>
+      {{/if}}
+      {{#if suggestion}}
+        <small class="text-secondary">{{suggestion}}</small>
+      {{/if}}
+    </div>
   </td>
 </tr>

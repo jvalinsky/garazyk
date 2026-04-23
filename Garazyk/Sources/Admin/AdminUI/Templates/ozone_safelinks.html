@@ -51,7 +51,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <h2 class="modal-title">Remove Safe Link Rule</h2>
-      <button type="button" class="btn btn-icon" onclick="document.getElementById('delete-rule-modal').close()">✕</button>
+      <button type="button" class="btn btn-icon" data-action="close-dialog" data-dialog="delete-rule-modal" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <p class="mb-md">Are you sure you want to remove this safe link rule?</p>
@@ -59,7 +59,7 @@
         <input type="hidden" name="baseUrl" id="delete-rule-url" />
         <div class="form-footer">
           <button type="submit" class="btn btn-destructive">Remove Rule</button>
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('delete-rule-modal').close()">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-action="close-dialog" data-dialog="delete-rule-modal">Cancel</button>
         </div>
       </form>
     </div>

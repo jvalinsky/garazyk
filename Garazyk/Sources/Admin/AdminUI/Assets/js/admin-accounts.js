@@ -14,14 +14,28 @@ async function load() {
     const container = document.getElementById('admin-accounts-list');
     if (!container) return;
     
-    container.innerHTML = '<li class="loading">Loading accounts...</li>';
+    container.innerHTML = `<div class="loading-state">
+      <div class="loading-indicator"></div>
+      <span class="loading-state-title">Loading accounts...</span>
+    </div>`;
     
     try {
         const data = await AdminPanel.getUsers();
         accountsList = data.users || [];
         render();
     } catch (err) {
-        container.innerHTML = '<li class="error">Failed to load: ' + AdminPanel.escapeHtml(err.message) + '</li>';
+        container.innerHTML = `<div class="loading-state">
+          <div class="empty-state-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <span class="loading-state-title">Failed to load accounts</span>
+          <span class="loading-state-description">${AdminPanel.escapeHtml(err.message)}</span>
+        </div>`;
+        window.AdminUI?.showError?.('Failed to load accounts: ' + err.message);
     }
 }
 
@@ -42,7 +56,11 @@ function render() {
     const filtered = getFilteredAccounts();
     
     if (filtered.length === 0) {
-        container.innerHTML = '<li class="empty">No accounts found</li>';
+        container.innerHTML = `<div class="loading-state">
+          <div class="empty-state-strawberry"></div>
+          <span class="loading-state-title">No accounts found</span>
+          <span class="loading-state-description">${searchQuery ? 'Try adjusting your search query.' : 'No user accounts on this PDS.'}</span>
+        </div>`;
         return;
     }
     
@@ -145,27 +163,30 @@ async function handleAction(event) {
 function showAccountInfo(did) {
     const account = accountsList.find(a => a.did === did);
     if (!account) return;
-    
-    let infoHtml = '<div class="admin-info-window">';
-    infoHtml += '<div class="admin-info-header">';
-    infoHtml += '<strong>Account Info: ' + AdminPanel.escapeHtml(account.handle) + '</strong>';
-    infoHtml += '</div>';
-    
-    infoHtml += '<div class="admin-info-section"><strong>Identity</strong>';
-    infoHtml += '<div class="admin-info-row">Handle: ' + AdminPanel.escapeHtml(account.handle) + '</div>';
-    infoHtml += '<div class="admin-info-row">DID: <code>' + AdminPanel.escapeHtml(account.did) + '</code></div>';
-    infoHtml += '<div class="admin-info-row">Email: ' + AdminPanel.escapeHtml(account.email || '-') + '</div>';
-    infoHtml += '<div class="admin-info-row">Created: ' + AdminPanel.escapeHtml(account.created_at || '-') + '</div>';
-    infoHtml += '</div>';
-    
-    infoHtml += '<div class="admin-info-section"><strong>Status</strong>';
-    infoHtml += '<div class="admin-info-row">Deactivated: ' + (account.deactivated ? 'Yes' : 'No') + '</div>';
-    infoHtml += '<div class="admin-info-row">Invite Enabled: ' + (account.invite_enabled ? 'Yes' : 'No') + '</div>';
-    infoHtml += '</div>';
-    
-    infoHtml += '</div>';
-    
-    alert(infoHtml);
+
+    const status = account.deactivated ? 'Disabled' : 'Active';
+    const info = [
+        { label: 'Handle', value: account.handle || '-' },
+        { label: 'DID', value: account.did },
+        { label: 'Email', value: account.email || '-' },
+        { label: 'Created', value: account.created_at || '-' },
+        { label: 'Deactivated', value: account.deactivated ? 'Yes' : 'No' },
+        { label: 'Invite Enabled', value: account.invite_enabled ? 'Yes' : 'No' }
+    ];
+
+    const Sheet = window.AdminUI?.SheetDialog || window.SheetDialog;
+    Sheet.open({
+        title: 'Account Info: ' + (account.handle || did.substring(0, 20)),
+        fields: info.map(item => ({
+            name: item.label.toLowerCase().replace(/\s+/g, '_'),
+            label: item.label,
+            type: 'text',
+            value: item.value,
+            readonly: true
+        })),
+        confirmLabel: 'Close',
+        onConfirm: () => {}
+    });
 }
 
 function search(query) {

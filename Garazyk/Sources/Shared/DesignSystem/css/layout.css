@@ -195,22 +195,14 @@ aside[role="complementary"] {
   background: var(--color-accent);
   color: white;
   font-weight: 500;
-  position: relative;
-}
-
-.sidebar-item.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 3px;
-  background: white;
-  border-radius: 0 2px 2px 0;
-  opacity: 0.8;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, white 24%, transparent);
 }
 
 .sidebar-items.hidden {
+  display: none;
+}
+
+.sidebar-section.is-hidden {
   display: none;
 }
 
@@ -455,6 +447,11 @@ ul[role="menu-bar"] [role="menu-item"] a:hover {
   opacity: 1;
 }
 
+ul[role="menu-bar"] [role="menu-item"] a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
 ul[role="menu-bar"] [role="menu-item"].divider {
   border-top: 1px solid var(--separator-color);
   margin: var(--space-xs) 0;
@@ -584,4 +581,120 @@ ul[role="menu-bar"] [role="menu-item"].divider {
 
 .title-bar .close {
   margin-left: auto;
+}
+
+/* Shared state classes across shipped web UIs */
+.is-hidden {
+  display: none !important;
+}
+
+.is-active {
+  opacity: 1;
+}
+
+.is-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.is-error {
+  color: var(--color-destructive);
+}
+
+/* Three-pane layout - AppKit inspector pattern */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+main[role="main"] {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+}
+
+main[role="main"] > .content-area {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+main[role="main"] > .inspector-pane {
+  width: 320px;
+  min-width: 280px;
+  max-width: 480px;
+  border-left: 1px solid var(--separator-color);
+  background: var(--color-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+main[role="main"] > .inspector-pane:not([hidden]) {
+  display: flex;
+}
+
+.inspector-pane[hidden] {
+  display: none;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--separator-color);
+  background: var(--color-bg-tertiary);
+  flex-shrink: 0;
+}
+
+.inspector-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+.inspector-section {
+  margin-bottom: var(--space-lg);
+}
+
+.inspector-section-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
+}
+
+.inspector-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  font-size: var(--font-size-sm);
+}
+
+.inspector-row label {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.inspector-row span,
+.inspector-row code {
+  color: var(--color-text-primary);
+  text-align: right;
+  word-break: break-all;
 }

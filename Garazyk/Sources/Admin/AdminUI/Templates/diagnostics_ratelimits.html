@@ -22,13 +22,13 @@
             <option value="blob">Blob Uploads</option>
           </select>
         </div>
-        <div class="form-group" style="display: flex; align-items: flex-end;">
+        <div class="form-group form-row-actions">
           <button type="submit" class="btn btn-primary">Query</button>
         </div>
       </div>
     </form>
 
-    <div id="queryResults" style="display: none;" class="mt-lg">
+    <div id="queryResults" class="mt-lg hidden is-hidden">
       <div class="metric-row">
         <div class="metric">
           <div class="metric-label">Current Usage</div>
@@ -47,7 +47,7 @@
           <div class="metric-value" id="resetTime">-</div>
         </div>
       </div>
-      <button id="clearBtn" class="btn btn-danger mt-md" style="display: none;">Clear Limit</button>
+      <button id="clearBtn" class="btn btn-destructive mt-md hidden is-hidden">Clear Limit</button>
     </div>
   </div>
 </div>

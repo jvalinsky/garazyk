@@ -65,6 +65,17 @@
   transform: scale(0.98);
 }
 
+/* Legacy compatibility alias */
+.btn-danger {
+  background: var(--color-destructive);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #ff3b30;
+  box-shadow: var(--shadow-md);
+}
+
 .btn-success {
   background: var(--color-success);
   color: white;
@@ -96,6 +107,23 @@
   padding: var(--space-md) var(--space-lg);
   font-size: var(--font-size-md);
   min-height: 36px;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+}
+
+.btn-close-inline {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0;
+  line-height: 1;
 }
 
 /* Button groups */
@@ -283,6 +311,19 @@
   gap: var(--space-md);
 }
 
+.form-row-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
 /* Cards */
 .card {
   padding: var(--space-lg);
@@ -359,6 +400,11 @@
   word-break: break-word;
 }
 
+.code-inline-sm {
+  font-size: var(--font-size-xs);
+  word-break: break-all;
+}
+
 /* Stat cards */
 .stat-card {
   padding: var(--space-md);
@@ -393,6 +439,51 @@
 }
 
 .stat-change.negative {
+  color: var(--color-destructive);
+}
+
+/* Metric blocks used across diagnostics and ops panels */
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-md);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+}
+
+.metric-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+.metric-value {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.metric-value.status-healthy,
+.metric-value.status-ok {
+  color: var(--color-success);
+}
+
+.metric-value.status-warning {
+  color: var(--color-warning);
+}
+
+.metric-value.status-critical,
+.metric-value.status-error {
   color: var(--color-destructive);
 }
 
@@ -432,6 +523,11 @@
   color: var(--color-text-secondary);
 }
 
+.badge-danger {
+  background: rgba(255, 69, 58, 0.12);
+  color: var(--color-destructive);
+}
+
 /* Alerts - Using full border instead of side-stripe to avoid AI slop pattern */
 .alert {
   padding: var(--space-md) var(--space-lg);
@@ -467,6 +563,12 @@
   color: var(--color-destructive);
 }
 
+.alert-danger {
+  background: rgba(255, 69, 58, 0.08);
+  border-color: var(--color-destructive);
+  color: var(--color-destructive);
+}
+
 .alert-title {
   font-weight: 600;
   margin-bottom: 4px;
@@ -495,6 +597,105 @@ dialog::backdrop {
 
 dialog article {
   padding: var(--space-lg);
+}
+
+dialog.modal .modal-box {
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--separator-color);
+  padding-bottom: var(--space-sm);
+}
+
+.modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Sheet Dialog - In-UI replacement for browser prompt/confirm */
+sheet-dialog {
+  display: block;
+}
+
+dialog.sheet-dialog {
+  width: min(480px, 90%);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+}
+
+sheet-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.sheet-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+
+.sheet-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.sheet-dialog-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin: 0;
+}
+
+.sheet-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.sheet-dialog-message {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  padding: var(--space-sm) 0;
+}
+
+.sheet-dialog-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.sheet-dialog-form .form-group.form-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.sheet-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--separator-color);
 }
 
 /* Tabs */
@@ -551,6 +752,62 @@ dialog article {
 
 .progress-bar.destructive {
   background: var(--color-destructive);
+}
+
+/* Loading state components */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.loading-state .loading-indicator {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+.loading-state-title {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.loading-state-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary) 25%,
+    var(--color-bg-secondary) 50%,
+    var(--color-bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-line {
+  height: 1em;
+  margin-bottom: var(--space-sm);
+}
+
+.skeleton-line:last-child {
+  width: 60%;
 }
 
 /* Lists */
@@ -706,6 +963,10 @@ pre code {
   display: none;
 }
 
+.auth-error.is-visible {
+  display: block;
+}
+
 .auth-note {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
@@ -713,4 +974,42 @@ pre code {
 
 .input-readonly {
   background: var(--color-bg-tertiary);
+}
+
+.auth-status {
+  min-height: 1.25rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.auth-status.is-error {
+  color: var(--color-destructive);
+}
+
+.auth-status.is-success {
+  color: var(--color-success);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-lg);
+}
+
+.chart-canvas {
+  max-height: 300px;
+}
+
+.scroll-panel {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.empty-state-message {
+  margin: 0;
+}
+
+.empty-state-suggestion {
+  display: block;
+  margin-top: var(--space-sm);
 }

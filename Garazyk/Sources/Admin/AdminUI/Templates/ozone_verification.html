@@ -44,7 +44,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <h2 class="modal-title">Revoke Verification</h2>
-      <button type="button" class="btn btn-icon" onclick="document.getElementById('revoke-verification-modal').close()">✕</button>
+      <button type="button" class="btn btn-icon" data-action="close-dialog" data-dialog="revoke-verification-modal" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
       <form class="form" hx-post="/admin/ozone/verification/revoke" hx-swap="outerHTML">
@@ -55,7 +55,7 @@
         </div>
         <div class="form-footer">
           <button type="submit" class="btn btn-warning">Revoke Verification</button>
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('revoke-verification-modal').close()">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-action="close-dialog" data-dialog="revoke-verification-modal">Cancel</button>
         </div>
       </form>
     </div>

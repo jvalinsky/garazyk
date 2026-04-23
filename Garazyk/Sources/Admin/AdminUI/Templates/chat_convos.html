@@ -50,11 +50,11 @@
           </td>
           <td>
             <div class="btn-group">
-              <button class="btn btn-xs" hx-get="/admin/partials/chat/messages?convoId={{id}}" hx-target="#content-pane" hx-push-url="/admin/chat/messages">View</button>
+              <button class="btn btn-sm" hx-get="/admin/partials/chat/messages?convoId={{id}}" hx-target="#content-pane" hx-push-url="/admin/chat/messages">View</button>
               {{#if locked}}
-              <button class="btn btn-xs" hx-post="/xrpc/chat.bsky.convo.unlockConvo" hx-vals='{"convoId": "{{id}}"}' hx-swap="none">Unlock</button>
+              <button class="btn btn-sm" hx-post="/xrpc/chat.bsky.convo.unlockConvo" hx-vals='{"convoId": "{{id}}"}' hx-swap="none">Unlock</button>
               {{else}}
-              <button class="btn btn-xs btn-destructive" hx-post="/xrpc/chat.bsky.convo.lockConvo" hx-vals='{"convoId": "{{id}}"}' hx-swap="none">Lock</button>
+              <button class="btn btn-sm btn-destructive" hx-post="/xrpc/chat.bsky.convo.lockConvo" hx-vals='{"convoId": "{{id}}"}' hx-swap="none">Lock</button>
               {{/if}}
             </div>
           </td>

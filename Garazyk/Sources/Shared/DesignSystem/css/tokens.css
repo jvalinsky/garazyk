@@ -1,21 +1,32 @@
-/* Apple HIG-aligned color tokens and CSS variables */
+/* Apple HIG-aligned color tokens and CSS variables
+ * Migrated to OKLCH for perceptually uniform color manipulation
+ * Brand hue: warm strawberry red (~15°) at low chroma for tinted neutrals
+ */
 :root {
-  /* Light mode semantic colors */
-  --color-bg-primary: #f5f5f7;
-  --color-bg-secondary: #ffffff;
-  --color-bg-tertiary: #efefef;
-  --color-text-primary: #1d1d1d;
-  --color-text-secondary: #666666;
-  --color-text-tertiary: #999999;
-  --color-accent: #0071e3;
-  --color-destructive: #ff453a;
-  --color-success: #34c759;
-  --color-warning: #ff9500;
-  --color-info: #30b0c0;
+  /* Light mode semantic colors - OKLCH */
+  --color-bg-primary: oklch(96% 0.003 200);
+  --color-bg-secondary: oklch(99% 0.003 200);
+  --color-bg-tertiary: oklch(93% 0.005 200);
+  --color-text-primary: oklch(13% 0.005 200);
+  --color-text-secondary: oklch(45% 0.005 200);
+  --color-text-tertiary: oklch(60% 0.003 200);
+
+  /* Brand accent - Apple blue with OKLCH */
+  --color-accent: oklch(52% 0.18 255);
+
+  /* Action colors */
+  --color-destructive: oklch(58% 0.22 25);
+  --color-success: oklch(60% 0.18 145);
+  --color-warning: oklch(75% 0.18 70);
+  --color-info: oklch(60% 0.15 210);
+
+  /* Strawberry brand tint on neutrals - subtle warmth */
+  /* Background secondary gets slight chroma toward strawberry */
+  --color-bg-secondary-tinted: oklch(99% 0.004 15);
 
   /* Separators and borders */
-  --separator-color: #d1d1d6;
-  --separator-color-secondary: #e5e5ea;
+  --separator-color: oklch(85% 0.003 200);
+  --separator-color-secondary: oklch(91% 0.002 200);
 
   /* System font stack */
   --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
@@ -51,9 +62,9 @@
   --radius-full: 50%;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 3px oklch(0% 0 0 / 0.08);
+  --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.12);
+  --shadow-lg: 0 4px 16px oklch(0% 0 0 / 0.15);
 
   /* Z-index scale */
   --z-base: 1;
@@ -69,17 +80,25 @@
   --transition-slow: 0.3s ease;
 }
 
-/* Dark mode overrides */
+/* Dark mode overrides - OKLCH with brand tint on backgrounds */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg-primary: #1d1d1d;
-    --color-bg-secondary: #2d2d2d;
-    --color-bg-tertiary: #3d3d3d;
-    --color-text-primary: #f5f5f7;
-    --color-text-secondary: #a1a1a6;
-    --color-text-tertiary: #8e8e93;
+    --color-bg-primary: oklch(15% 0.005 200);
+    --color-bg-secondary: oklch(22% 0.006 200);
+    --color-bg-tertiary: oklch(28% 0.007 200);
+    --color-text-primary: oklch(96% 0.003 200);
+    --color-text-secondary: oklch(70% 0.005 200);
+    --color-text-tertiary: oklch(55% 0.004 200);
 
-    --separator-color: #424245;
-    --separator-color-secondary: #3a3a3c;
+    /* Dark mode - slightly more visible brand tint on secondary bg */
+    --color-bg-secondary-tinted: oklch(22% 0.008 15);
+
+    --separator-color: oklch(32% 0.005 200);
+    --separator-color-secondary: oklch(28% 0.004 200);
+
+    /* Shadows for dark mode */
+    --shadow-sm: 0 1px 3px oklch(0% 0 0 / 0.3);
+    --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.4);
+    --shadow-lg: 0 4px 16px oklch(0% 0 0 / 0.5);
   }
 }
