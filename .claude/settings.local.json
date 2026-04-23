@@ -42,7 +42,10 @@
       "Bash(do find \"$dir\" -name \"*.json\" -exec sh -c 'if grep -q \"\"\\\\\"\"type\\\\\"\".*\\\\\"\"record\\\\\"\"\"\" \"\"$1\"\"; then basename \"\"$1\"\" .json; fi' _ {} ;)",
       "Bash(done)",
       "Bash(git push:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(tee \"test-output-$\\(date +%Y%m%d-%H%M%S\\).log\")",
+      "WebSearch",
+      "Bash(tail -100 test-output-*.log)"
     ]
   }
 }

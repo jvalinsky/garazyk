@@ -165,6 +165,9 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Key manager for cryptographic operations. */
 @property (nonatomic, strong) id<PDSActorKeyManager> keyManager;
 
+/*! Master secret for database encryption/decryption. */
+@property (nonatomic, copy, nullable) NSString *masterSecret;
+
 /*! Sign data using the active key. */
 - (nullable NSData *)signData:(NSData *)data error:(NSError **)error;
 

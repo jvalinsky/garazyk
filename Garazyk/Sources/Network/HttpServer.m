@@ -425,6 +425,9 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   
   NSArray<NSNumber *> *events = [state.session feedData:data];
   for (NSNumber *eventNumber in events) {
+    if (state.session.upgradedToWebSocket) {
+        break; // Stop processing HTTP events if upgraded
+    }
     HttpSessionEvent event = (HttpSessionEvent)[eventNumber integerValue];
     switch (event) {
       case HttpSessionEventRequestReady:
@@ -454,14 +457,16 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)handleUpgradeEventForState:(HttpConnectionState *)state
-                        connection:(id<PDSNetworkConnection>)connection {
+                         connection:(id<PDSNetworkConnection>)connection {
   HttpRequest *request = state.session.currentUpgradeRequest;
   if (!request) return;
 
   NSString *path = request.path;
+  PDS_LOG_HTTP_DEBUG(@"Attempting WebSocket upgrade for path: %@", path);
   WebSocketRequestHandler webSocketHandler = self.webSocketHandlers[path];
   
   if (webSocketHandler) {
+
     HttpResponse *upgradeResponse = [HttpResponse response];
     BOOL shouldUpgrade = [self.webSocketUpgradeHandler handleUpgradeRequest:request
                                                                   response:upgradeResponse];

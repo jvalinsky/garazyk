@@ -397,6 +397,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
         return;
     }
 
+    // Actor can be a DID or handle - query both formats
     NSError *error = nil;
     NSDictionary *profile = [_actorService getProfileForActor:actor error:&error];
 

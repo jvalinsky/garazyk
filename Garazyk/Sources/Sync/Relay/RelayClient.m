@@ -68,7 +68,9 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
 - (NSURL *)buildWebSocketURL {
     NSString *scheme = @"wss";
-    if ([self.serverURL.scheme.lowercaseString isEqualToString:@"https"]) {
+    if ([self.serverURL.scheme.lowercaseString isEqualToString:@"http"]) {
+        scheme = @"ws";
+    } else {
         scheme = @"wss";
     }
 

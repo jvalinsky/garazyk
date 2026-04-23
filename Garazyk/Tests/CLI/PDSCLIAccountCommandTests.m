@@ -64,13 +64,14 @@
     self.context.configPath = [self.tempDir stringByAppendingPathComponent:@"config.json"];
     
     // Write a dummy config file to avoid picking up the project's config.json
-    NSDictionary *dummyConfig = @{@"server": @{}};
+    NSDictionary *dummyConfig = @{@"server": @{}, @"plc": @{@"url": @"mock"}};
     NSData *configData = [NSJSONSerialization dataWithJSONObject:dummyConfig options:0 error:nil];
     [configData writeToFile:self.context.configPath atomically:YES];
     
     // Ensure we start with a clean state for the command execution
     // (Though PDSDatabase handles schema creation, we rely on the command to open it)
     setenv("PDS_NON_INTERACTIVE", "1", 1);
+    setenv("PLC_URL", "mock", 1);
 }
 
 - (void)tearDown {

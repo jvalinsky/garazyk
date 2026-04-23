@@ -134,11 +134,13 @@
         XCTAssertNotNil(storeError);
         XCTAssertEqual(storeError.code, PDSKeychainSecretsProviderErrorStorageFailed);
 
+        // Delete of a non-existent item is idempotent per provider semantics:
+        // errSecItemNotFound is treated as success (RESTful DELETE behavior).
+        // This aligns with AT Protocol's idempotent design philosophy.
         NSError *deleteError = nil;
         BOOL deleted = [self.provider deleteSecretForKey:testKey error:&deleteError];
-        XCTAssertFalse(deleted);
-        XCTAssertNotNil(deleteError);
-        XCTAssertEqual(deleteError.code, PDSKeychainSecretsProviderErrorDeletionFailed);
+        XCTAssertTrue(deleted, @"Delete of non-existent item should succeed (idempotent)");
+        XCTAssertNil(deleteError);
         return;
     }
     XCTAssertTrue(stored);

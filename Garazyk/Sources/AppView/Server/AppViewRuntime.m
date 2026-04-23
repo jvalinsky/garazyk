@@ -198,6 +198,7 @@ static AppViewRuntime *_sharedRuntime = nil;
 
 
     if (config.adminSecret.length > 0) {
+        PDS_LOG_INFO(@"[AppViewRuntime] Registering admin routes");
         [AppViewIdentityHelper configureWithPlcURL:config.plcURL cacheTTLSeconds:300];
         [AppViewAdminRoutePack registerWithServer:_httpServer
                                     orchestrator:_orchestrator
@@ -206,6 +207,8 @@ static AppViewRuntime *_sharedRuntime = nil;
                                         database:_database
                                     actorService:_actorService
                                      adminSecret:config.adminSecret];
+    } else {
+        PDS_LOG_WARN(@"[AppViewRuntime] Admin secret not set, admin routes disabled");
     }
 
     NSError *listenErr = nil;

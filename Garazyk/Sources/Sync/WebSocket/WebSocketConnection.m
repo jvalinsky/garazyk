@@ -16,7 +16,10 @@ NSInteger const WebSocketConnectionErrorCodeConnectionClosed = 2000;
 NSInteger const WebSocketConnectionErrorCodeInvalidFrame = 2001;
 NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
-@interface WebSocketConnection ()
+@interface WebSocketConnection () {
+    NSString *_handshakeKey;
+    BOOL _waitingForHandshakeResponse;
+}
 
 @property(nonatomic, assign, readwrite) WebSocketConnectionState state;
 @property(nonatomic, copy, readwrite) NSString *queryString;
@@ -213,17 +216,26 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
 - (void)handlePDSStateChange:(PDSNetworkConnectionState)state
                        error:(NSError *_Nullable)error {
+  PDS_LOG_SYNC_DEBUG(@"WebSocket connection %p state change: %ld", self, (long)state);
   dispatch_async(dispatch_get_main_queue(), ^{
     switch (state) {
     case PDSNetworkConnectionStateReady: {
-      self.state = WebSocketConnectionStateConnected;
-      [self startReading];
-      [self startHeartbeat];
-      if ([self.delegate respondsToSelector:@selector(webSocketConnectionStateDidChange:)]) {
-        [self.delegate webSocketConnectionStateDidChange:self];
+      if (self.host && self.path) {
+          [self sendHandshake];
+      } else {
+          self.state = WebSocketConnectionStateConnected;
+          [self startReading];
+          [self startHeartbeat];
+          if ([self.delegate respondsToSelector:@selector(webSocketConnectionStateDidChange:)]) {
+            [self.delegate webSocketConnectionStateDidChange:self];
+          }
       }
       break;
     }
+
+    case PDSNetworkConnectionStateWaiting:
+      PDS_LOG_SYNC_DEBUG(@"WebSocket connection %p is waiting for network availability: %@", self, error.localizedDescription ?: @"no error");
+      break;
 
     case PDSNetworkConnectionStateCancelled:
       self.state = WebSocketConnectionStateClosed;
@@ -292,13 +304,79 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                     }];
 }
 
+- (void)sendHandshake {
+    uint8_t randomBytes[16];
+    arc4random_buf(randomBytes, 16);
+    NSData *keyData = [NSData dataWithBytes:randomBytes length:16];
+    NSString *key = [keyData base64EncodedStringWithOptions:0];
+    _handshakeKey = key;
+    
+    NSMutableString *handshake = [NSMutableString string];
+    [handshake appendFormat:@"GET %@ HTTP/1.1\r\n", self.path];
+    [handshake appendFormat:@"Host: %@:%u\r\n", self.host, self.port];
+    [handshake appendString:@"Upgrade: websocket\r\n"];
+    [handshake appendString:@"Connection: Upgrade\r\n"];
+    [handshake appendFormat:@"Sec-WebSocket-Key: %@\r\n", key];
+    [handshake appendString:@"Sec-WebSocket-Version: 13\r\n"];
+    if (self.subprotocol) {
+        [handshake appendFormat:@"Sec-WebSocket-Protocol: %@\r\n", self.subprotocol];
+    }
+    [handshake appendString:@"\r\n"];
+    
+    PDS_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);
+    
+    NSData *data = [handshake dataUsingEncoding:NSUTF8StringEncoding];
+    [self writeData:data];
+    
+    // We expect a 101 response next.
+    // For simplicity, we'll reuse handleReceivedData but we need to know we're waiting for a handshake.
+    _waitingForHandshakeResponse = YES;
+    [self startReading];
+}
+
 - (void)handleReceivedData:(NSData *)data {
-  NSArray<WSSessionAction *> *actions = [self.session
+    if (_waitingForHandshakeResponse) {
+        [self handleHandshakeResponse:data];
+        return;
+    }
+    
+    PDS_LOG_SYNC_DEBUG(@"WebSocket received %lu bytes from wire", (unsigned long)data.length);
+    NSArray<WSSessionAction *> *actions = [self.session
       feedData:data
       receivedAt:[NSDate timeIntervalSinceReferenceDate]];
-  for (WSSessionAction *action in actions) {
-    [self processAction:action];
-  }
+    for (WSSessionAction *action in actions) {
+        [self processAction:action];
+    }
+}
+
+- (void)handleHandshakeResponse:(NSData *)data {
+    // Very basic 101 parser
+    NSString *resp = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    if ([resp hasPrefix:@"HTTP/1.1 101"] || [resp hasPrefix:@"HTTP/1.0 101"]) {
+        PDS_LOG_SYNC_INFO(@"WebSocket: Handshake successful");
+        _waitingForHandshakeResponse = NO;
+        self.state = WebSocketConnectionStateConnected;
+        [self startHeartbeat];
+        if ([self.delegate respondsToSelector:@selector(webSocketConnectionStateDidChange:)]) {
+            [self.delegate webSocketConnectionStateDidChange:self];
+        }
+        
+        // If there was extra data after headers, feed it to session
+        NSRange range = [resp rangeOfString:@"\r\n\r\n"];
+        if (range.location != NSNotFound) {
+            NSUInteger headerLen = range.location + 4;
+            if (data.length > headerLen) {
+                NSData *remaining = [data subdataWithRange:NSMakeRange(headerLen, data.length - headerLen)];
+                [self handleReceivedData:remaining];
+            }
+        }
+    } else {
+        PDS_LOG_SYNC_ERROR(@"WebSocket: Handshake failed: %@", resp);
+        [self notifyError:[NSError errorWithDomain:WebSocketConnectionErrorDomain 
+                                              code:WebSocketConnectionErrorCodeConnectionClosed 
+                                          userInfo:@{NSLocalizedDescriptionKey: @"WebSocket handshake failed"}]];
+        [self close];
+    }
 }
 
 - (void)processAction:(WSSessionAction *)action {
@@ -343,6 +421,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)handlePongFrame:(NSData *)payload {
+  [self.heartbeatPolicy pongReceived:[[NSDate date] timeIntervalSince1970]];
 }
 
 - (void)close {

@@ -481,7 +481,7 @@
     XCTAssertNil(error);
 }
 
-- (void)testUiRoutesServeObjectiveJShellAndPreserveLegacyRoot {
+- (void)testAdminRoutesServeHtmxUi {
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir
                                                             serviceMaxSize:10
@@ -491,12 +491,12 @@
     builder.controller = controller;
     builder.port = 0;
 
-    // Keep Explore UI enabled to validate wildcard precedence against /ui/*.
     builder.enableOAuth = NO;
     builder.enableXrpc = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
+    // Admin routes are enabled by default through PDSHttpAdminRoutePack registration
 
     NSError *buildError = nil;
     self.testServer = [builder buildWithError:&buildError];
@@ -524,23 +524,15 @@
 
     UInt16 actualPort = self.testServer.port;
 
-    NSString *uiURL = [NSString stringWithFormat:@"http://localhost:%d/ui", actualPort];
-    [self verifyEndpointReturns200:uiURL
+    NSString *adminURL = [NSString stringWithFormat:@"http://localhost:%d/admin/ui", actualPort];
+    [self verifyEndpointReturns200:adminURL
                    withContentType:@"text/html"
-                       expectation:@"Objective-J UI root"];
+                       expectation:@"HTMX Admin UI root"];
 
-    NSString *uiWildcardURL =
-        [NSString stringWithFormat:@"http://localhost:%d/ui/explore/accounts",
-                                   actualPort];
-    [self verifyEndpointReturns200:uiWildcardURL
+    NSString *rootURL = [NSString stringWithFormat:@"http://localhost:%d/", actualPort];
+    [self verifyEndpointReturns200:rootURL
                    withContentType:@"text/html"
-                       expectation:@"Objective-J UI wildcard"];
-
-    NSString *legacyRootURL = [NSString stringWithFormat:@"http://localhost:%d/",
-                               actualPort];
-    [self verifyEndpointReturns200:legacyRootURL
-                   withContentType:@"text/html"
-                       expectation:@"Legacy Explore root"];
+                       expectation:@"Explore root portal"];
 
     [self.testServer stop];
     self.testServer = nil;
