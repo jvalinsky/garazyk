@@ -145,6 +145,18 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
 
 @implementation XrpcAuthHelper
 
+#pragma mark - Private Helpers
+
++ (void)setAuthRequiredResponse:(HttpResponse *)response {
+    if (response && response.statusCode == HttpStatusOK) {
+        response.statusCode = HttpStatusUnauthorized;
+        [response setJsonBody:@{
+            @"error": @"AuthRequired",
+            @"message": @"Authentication required"
+        }];
+    }
+}
+
 #pragma mark - Public Methods
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
@@ -163,7 +175,10 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                        adminController:(id<PDSAdminController>)adminController
                                request:(HttpRequest *)request
                               response:(HttpResponse *)response {
-    if (!authHeader) return nil;
+    if (!authHeader) {
+        [self setAuthRequiredResponse:response];
+        return nil;
+    }
     
     // Parse Bearer or DPoP token
     NSString *token = nil;
@@ -177,6 +192,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
         token = [authHeader substringFromIndex:5];
         isDPoP = YES;
     } else {
+        [self setAuthRequiredResponse:response];
         return nil;
     }
 
@@ -186,12 +202,14 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
         NSString *dpopProof = [request headerForKey:@"DPoP"];
         if (dpopProof.length == 0) {
             PDS_LOG_AUTH_WARN(@"Missing DPoP header for DPoP authorization");
+            [self setAuthRequiredResponse:response];
             return nil;
         }
 
         NSURL *dpopURL = XrpcAuthExpectedDPoPURL(request, jwtMinter);
         if (!dpopURL) {
             PDS_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
+            [self setAuthRequiredResponse:response];
             return nil;
         }
 
@@ -222,6 +240,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                 return nil;
             }
             PDS_LOG_AUTH_WARN(@"Invalid DPoP proof (%@)", XrpcAuthSanitizedErrorSummary(dpopError));
+            [self setAuthRequiredResponse:response];
             return nil;
         }
 
@@ -233,6 +252,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     JWT *jwt = [JWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
         PDS_LOG_HTTP_WARN(@"Failed to parse JWT token from authorization header");
+        [self setAuthRequiredResponse:response];
         return nil;
     }
 
@@ -255,6 +275,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {
         PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
+        [self setAuthRequiredResponse:response];
         return nil;
     }
 
@@ -277,6 +298,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
         }
         if (!validAud) {
             PDS_LOG_AUTH_WARN(@"JWT verification failed due to invalid audience: %@", tokenAud);
+            [self setAuthRequiredResponse:response];
             return nil;
         }
     }
@@ -286,14 +308,17 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     if (isDPoP) {
         if (!tokenJkt) {
             PDS_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
+            [self setAuthRequiredResponse:response];
             return nil;
         }
         if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
             PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
+            [self setAuthRequiredResponse:response];
             return nil;
         }
     } else if (tokenJkt) {
         PDS_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
+        [self setAuthRequiredResponse:response];
         return nil;
     }
 
@@ -301,6 +326,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     NSString *did = jwt.payload.sub;
     if (!did || ![did hasPrefix:@"did:"]) {
         PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim");
+        [self setAuthRequiredResponse:response];
         return nil;
     }
 
@@ -309,10 +335,12 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     BOOL isTakedown = [adminController isAccountTakedownActive:did error:&takedownError];
     if (takedownError) {
         PDS_LOG_AUTH_WARN(@"Failed to check takedown status (%@)", XrpcAuthSanitizedErrorSummary(takedownError));
+        [self setAuthRequiredResponse:response];
         return nil;
     }
     if (isTakedown) {
         PDS_LOG_AUTH_WARN(@"Rejected request for suspended account %@", did);
+        [self setAuthRequiredResponse:response];
         return nil;
     }
 

@@ -15,6 +15,7 @@
     setenv("PDS_AVAILABLE_USER_DOMAINS", "test", 1);
     setenv("PDS_ADMIN_PASSWORD", "password", 1);
     setenv("PDS_MASTER_SECRET", "test-master-secret-123", 1);
+    setenv("PDS_PLC_URL", "mock", 1);
     [[PDSConfiguration sharedConfiguration] applyConfig:@{@"server": @{}}];
 
     self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
@@ -22,6 +23,7 @@
     [[NSFileManager defaultManager] createDirectoryAtURL:self.tempURL withIntermediateDirectories:YES attributes:nil error:nil];
 
     PDSApplication *app = [[PDSApplication alloc] initWithDataDirectory:self.tempURL.path];
+    self.application = app;
     self.controller = app.legacyController;
     self.dispatcher = [[XrpcDispatcher alloc] init];
     [XrpcMethodRegistry registerMethodsWithDispatcher:self.dispatcher application:app];
@@ -68,6 +70,13 @@
 }
 
 - (void)tearDown {
+    // Stop the application to close database connections and release file descriptors
+    [self.application stop];
+    [PDSAdminAuth sharedAuth].controller = nil;
+    self.controller = nil;
+    self.dispatcher = nil;
+    self.application = nil;
+
     [[NSFileManager defaultManager] removeItemAtURL:self.tempURL error:nil];
     [super tearDown];
 }

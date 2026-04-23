@@ -615,12 +615,12 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NSString *plcURLString = config.plcURL;
     
-    // Check for "skip" mode - generate DID without network registration (for tests)
-    if ([plcURLString isEqualToString:@"skip"]) {
+    // Check for "skip" or "mock" mode - generate DID without network registration (for tests)
+    if ([plcURLString isEqualToString:@"skip"] || [plcURLString isEqualToString:@"mock"]) {
         return [self _generateDIDWithHandle:handle signingKey:signingKey rotationKey:rotationKey error:error];
     }
     
-    if ([plcURLString isEqualToString:@"mock"] || plcURLString.length == 0) {
+    if (plcURLString.length == 0) {
         plcURLString = @"http://127.0.0.1:2582";
     }
     
