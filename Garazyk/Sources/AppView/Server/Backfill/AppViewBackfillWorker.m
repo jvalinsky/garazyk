@@ -11,6 +11,7 @@
 #import "Repository/MST.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
+#import "Debug/PDSLogger.h"
 
 @interface AppViewBackfillWorker ()
 @property (nonatomic, copy)   NSString *did;

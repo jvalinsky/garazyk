@@ -67,7 +67,10 @@ typedef NS_ENUM(NSInteger, AppViewMode) {
 /*! Port for the AppView HTTP query API. Default 3200. */
 @property (nonatomic, assign) NSUInteger httpPort;
 
-/*! Admin API secret for /admin/* endpoints. */
+/*! Shared master secret for verifying PDS-signed JWTs. */
+@property (nonatomic, copy, nullable) NSString *masterSecret;
+
+/*! Admin API secret for admin endpoints. */
 @property (nonatomic, copy, nullable) NSString *adminSecret;
 
 #pragma mark - Cursor / Checkpoint

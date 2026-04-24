@@ -327,8 +327,24 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (BOOL)logHostingEvent:(NSString *)did
                    type:(NSString *)type
                 details:(nullable NSDictionary *)details
-              createdBy:(nullable NSString *)createdBy
-                  error:(NSError **)error;
+               createdBy:(nullable NSString *)createdBy
+                   error:(NSError **)error;
+
+/*!
+ @method listHostingEventsForDID:limit:offset:error:
+ 
+ @abstract List hosting events for an account.
+ 
+ @param did Optional DID filter. If nil, returns events for all accounts.
+ @param limit Maximum number of events to return.
+ @param offset Pagination offset.
+ @param error Error pointer.
+ @return Array of dictionaries containing event data.
+ */
+- (nullable NSArray<NSDictionary *> *)listHostingEventsForDID:(nullable NSString *)did
+                                                        limit:(NSInteger)limit
+                                                       offset:(NSInteger)offset
+                                                        error:(NSError **)error;
 
 /*!
  @method persistEvent:seq:type:data:error:
