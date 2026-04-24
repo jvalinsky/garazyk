@@ -48,7 +48,12 @@
 
     XCTAssertTrue(success);
     XCTAssertNil(error);
-    XCTAssertGreaterThan(self.server.port, 0);
+
+    NSPredicate *portPredicate = [NSPredicate predicateWithBlock:^BOOL(id evaluatedObject, NSDictionary *bindings) {
+        return [(PDSWebSocketServer *)evaluatedObject port] > 0;
+    }];
+    [self expectationForPredicate:portPredicate evaluatedWithObject:self.server handler:nil];
+    [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
 
 - (void)testServerStopCancelsListener {
@@ -96,17 +101,17 @@
 }
 
 - (void)testDelegateNewTransportRoutesToConnectionHandler {
-    __block BOOL handlerCalled = NO;
+    XCTestExpectation *handlerExpectation = [self expectationWithDescription:@"Handler called"];
 
     self.server.connectionHandler = ^(id<PDSWebSocketTransport> transport) {
-        handlerCalled = YES;
         XCTAssertNotNil(transport);
+        [handlerExpectation fulfill];
     };
 
     MockWebSocketTransport *mockTransport = [[MockWebSocketTransport alloc] init];
     [self.server delegateNewTransport:mockTransport forPath:@"/ws"];
 
-    XCTAssertTrue(handlerCalled);
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 
 - (void)testStartFailsWithInvalidPort {

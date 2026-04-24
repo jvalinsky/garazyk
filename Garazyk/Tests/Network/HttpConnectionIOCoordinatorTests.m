@@ -3,10 +3,13 @@
 #import "Network/HttpProtocolDriver.h"
 #import "Network/HttpResponseSender.h"
 #import "Network/HttpRequest.h"
+#import "Network/PDSNetworkTransport.h"
 
 @interface MockIOConnection : NSObject <PDSNetworkConnection>
 @property (nonatomic, strong) NSMutableData *sentData;
 @property (nonatomic, copy) void (^receiveCompletion)(NSData *data, BOOL isComplete, NSError *error);
+@property (nonatomic, strong) NSMutableArray<NSData *> *pendingData;
+@property (nonatomic, assign) BOOL isEOF;
 - (void)injectReceiveData:(NSData *)data;
 - (void)injectReceiveComplete;
 @end
@@ -17,6 +20,8 @@
     self = [super init];
     if (self) {
         self.sentData = [NSMutableData data];
+        self.pendingData = [NSMutableArray array];
+        self.isEOF = NO;
     }
     return self;
 }
@@ -31,26 +36,42 @@
 - (void)receiveWithMinimumLength:(NSUInteger)minLength
                   maximumLength:(NSUInteger)maxLength
                      completion:(void (^)(NSData * _Nullable, BOOL, NSError * _Nullable))completion {
-    self.receiveCompletion = completion;
+    if (self.pendingData.count > 0) {
+        NSData *data = self.pendingData.firstObject;
+        [self.pendingData removeObjectAtIndex:0];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(data, NO, nil);
+        });
+    } else if (self.isEOF) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(nil, YES, nil);
+        });
+    } else {
+        self.receiveCompletion = completion;
+    }
 }
 
 - (void)injectReceiveData:(NSData *)data {
     if (self.receiveCompletion) {
+        void (^completion)(NSData *, BOOL, NSError *) = self.receiveCompletion;
+        self.receiveCompletion = nil;
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (self.receiveCompletion) {
-                self.receiveCompletion(data, NO, nil);
-            }
+            completion(data, NO, nil);
         });
+    } else {
+        [self.pendingData addObject:data];
     }
 }
 
 - (void)injectReceiveComplete {
     if (self.receiveCompletion) {
+        void (^completion)(NSData *, BOOL, NSError *) = self.receiveCompletion;
+        self.receiveCompletion = nil;
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (self.receiveCompletion) {
-                self.receiveCompletion(nil, YES, nil);
-            }
+            completion(nil, YES, nil);
         });
+    } else {
+        self.isEOF = YES;
     }
 }
 
@@ -100,10 +121,7 @@
     NSData *reqData = [reqStr dataUsingEncoding:NSUTF8StringEncoding];
 
     [self.coordinator start];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        [self.mockConnection injectReceiveData:reqData];
-    });
+    [self.mockConnection injectReceiveData:reqData];
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
@@ -120,10 +138,7 @@
     NSData *reqData = [upgradeReq dataUsingEncoding:NSUTF8StringEncoding];
 
     [self.coordinator start];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        [self.mockConnection injectReceiveData:reqData];
-    });
+    [self.mockConnection injectReceiveData:reqData];
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
@@ -136,13 +151,10 @@
         [handlerExpectation fulfill];
     };
 
-    NSData *malformedData = [@"GARBAGE!!!" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *malformedData = [@"GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\nContent-Length: 10\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding];
 
     [self.coordinator start];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        [self.mockConnection injectReceiveData:malformedData];
-    });
+    [self.mockConnection injectReceiveData:malformedData];
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
@@ -175,10 +187,7 @@
     [self.coordinator start];
     [self.coordinator pause];
     [self.coordinator resume];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        [self.mockConnection injectReceiveData:reqData];
-    });
+    [self.mockConnection injectReceiveData:reqData];
 
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }

@@ -111,7 +111,7 @@
     ];
     
     NSArray *blobs = @[
-        [CID cidFromString:@"bafkreidmv76shvthv2m762sk26atksnk7v7hxuvrk6kk6kk6kk6kk6k"]
+        [CID cidFromString:@"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu"] ?: [[CID alloc] init]
     ];
     
     // This is a minimal test to ensure we can pass ops and blobs
