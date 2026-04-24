@@ -174,12 +174,22 @@ _BASE_CHARACTERS: dict[str, dict] = {
 
 def _build_characters() -> dict[str, Character]:
     """Build the character registry with unique handles/emails for this run."""
+    # Use a per-call unique suffix to avoid collisions between scenarios in same process
+    suffix = format(int(time.time() * 1000) % 0xFFFF, "04x")
     chars: dict[str, Character] = {}
     for key, tpl in _BASE_CHARACTERS.items():
+        base_handle = tpl["handle"]
+        parts = base_handle.rsplit(".", 1)
+        handle = f"{parts[0]}-{suffix}.{parts[1]}" if len(parts) == 2 else f"{base_handle}-{suffix}"
+        
+        base_email = tpl["email"]
+        e_parts = base_email.split("@", 1)
+        email = f"{e_parts[0]}-{suffix}@{e_parts[1]}"
+
         chars[key] = Character(
             name=tpl["name"],
-            handle=_unique_handle(tpl["handle"]),
-            email=_unique_email(tpl["email"]),
+            handle=handle,
+            email=email,
             password=tpl["password"],
             persona=tpl["persona"],
             role=tpl["role"],
@@ -188,9 +198,15 @@ def _build_characters() -> dict[str, Character]:
     return chars
 
 
-# ── Public character registry (unique per process) ──────────────────
+# ── Public character registry (refreshed per module reload) ──────────
 
 CHARACTERS: dict[str, Character] = _build_characters()
+
+
+def reset_characters() -> None:
+    """Refresh the character registry with new unique handles."""
+    global CHARACTERS
+    CHARACTERS = _build_characters()
 
 
 def get_character(name: str) -> Character:

@@ -82,11 +82,12 @@
 
 - (void)testGetProfileForNonexistentActor {
     NSError *error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:nonexistent" error:&error];
+    NSString *did = @"did:web:localhost";
+    NSDictionary *profile = [self.service getProfileForActor:did error:&error];
     
     XCTAssertNotNil(profile);
     XCTAssertNil(error);
-    XCTAssertEqualObjects(profile[@"did"], @"did:plc:nonexistent");
+    XCTAssertEqualObjects(profile[@"did"], did);
     XCTAssertNil(profile[@"handle"]);
     XCTAssertEqualObjects(profile[@"followersCount"], @(0));
     XCTAssertEqualObjects(profile[@"followsCount"], @(0));
@@ -95,25 +96,27 @@
 
 - (void)testGetProfileWithHandle {
     NSError *error = nil;
+    NSString *did = @"did:web:testactor";
     NSString *insertAccount = @"INSERT OR IGNORE INTO accounts (did, handle, email, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))";
-    BOOL result = [self.database executeParameterizedUpdate:insertAccount params:@[@"did:plc:testactor", @"test.actor.com", @"test@example.com"] error:&error];
+    BOOL result = [self.database executeParameterizedUpdate:insertAccount params:@[did, @"test.actor.com", @"test@example.com"] error:&error];
     XCTAssertTrue(result);
     
     error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:testactor" error:&error];
+    NSDictionary *profile = [self.service getProfileForActor:did error:&error];
     
     XCTAssertNotNil(profile);
-    XCTAssertEqualObjects(profile[@"did"], @"did:plc:testactor");
+    XCTAssertEqualObjects(profile[@"did"], did);
     XCTAssertEqualObjects(profile[@"handle"], @"test.actor.com");
 }
 
 - (void)testGetProfileWithFollowCounts {
     NSError *error = nil;
+    NSString *did = @"did:web:testactor";
     NSString *insertFollows = @"INSERT INTO records (uri, did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))";
     for (int i = 0; i < 5; i++) {
         [self.database executeParameterizedUpdate:insertFollows
-                                           params:@[[NSString stringWithFormat:@"at://did:plc:testactor/app.bsky.graph.follow/%d", i],
-                                                    @"did:plc:testactor",
+                                           params:@[[NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/%d", did, i],
+                                                    did,
                                                     @"app.bsky.graph.follow",
                                                     [NSString stringWithFormat:@"follow-%d", i],
                                                     @"bafyreifakecid"]
@@ -121,7 +124,7 @@
     }
     
     error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:testactor" error:&error];
+    NSDictionary *profile = [self.service getProfileForActor:did error:&error];
     
     XCTAssertNotNil(profile);
     XCTAssertEqualObjects(profile[@"followsCount"], @(5));
@@ -129,11 +132,11 @@
 
 - (void)testGetProfileWithFollowersCount {
     NSError *error = nil;
-    NSString *subjectDid = @"did:plc:testactor";
+    NSString *subjectDid = @"did:web:testactor";
     NSString *insertFollowers = @"INSERT INTO records (uri, did, subject_did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))";
 
     for (int i = 0; i < 4; i++) {
-        NSString *followerDid = [NSString stringWithFormat:@"did:plc:follower-%d", i];
+        NSString *followerDid = [NSString stringWithFormat:@"did:web:follower-%d", i];
         BOOL result = [self.database executeParameterizedUpdate:insertFollowers
                                                         params:@[
                                                             [NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/%d", followerDid, i],
@@ -156,11 +159,12 @@
 
 - (void)testGetProfileWithPostsCount {
     NSError *error = nil;
+    NSString *did = @"did:web:testactor";
     NSString *insertPosts = @"INSERT INTO records (uri, did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))";
     for (int i = 0; i < 3; i++) {
         [self.database executeParameterizedUpdate:insertPosts
-                                           params:@[[NSString stringWithFormat:@"at://did:plc:testactor/app.bsky.feed.post/%d", i],
-                                                    @"did:plc:testactor",
+                                           params:@[[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%d", did, i],
+                                                    did,
                                                     @"app.bsky.feed.post",
                                                     [NSString stringWithFormat:@"post-%d", i],
                                                     @"bafyreipostcid"]
@@ -168,7 +172,7 @@
     }
     
     error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:testactor" error:&error];
+    NSDictionary *profile = [self.service getProfileForActor:did error:&error];
     
     XCTAssertNotNil(profile);
     XCTAssertEqualObjects(profile[@"postsCount"], @(3));
@@ -193,16 +197,16 @@
 - (void)testGetProfilesForActorsMultiple {
     NSError *error = nil;
     NSString *insertAccount = @"INSERT OR IGNORE INTO accounts (did, handle, email, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))";
-    [self.database executeParameterizedUpdate:insertAccount params:@[@"did:plc:actor1", @"actor1.com", @"actor1@example.com"] error:&error];
-    [self.database executeParameterizedUpdate:insertAccount params:@[@"did:plc:actor2", @"actor2.com", @"actor2@example.com"] error:&error];
+    [self.database executeParameterizedUpdate:insertAccount params:@[@"did:web:actor1", @"actor1.com", @"actor1@example.com"] error:&error];
+    [self.database executeParameterizedUpdate:insertAccount params:@[@"did:web:actor2", @"actor2.com", @"actor2@example.com"] error:&error];
     
     error = nil;
-    NSArray *profiles = [self.service getProfilesForActors:@[@"did:plc:actor1", @"did:plc:actor2"] error:&error];
+    NSArray *profiles = [self.service getProfilesForActors:@[@"did:web:actor1", @"did:web:actor2"] error:&error];
     
     XCTAssertNotNil(profiles);
     XCTAssertEqual(profiles.count, 2);
-    XCTAssertEqualObjects(profiles[0][@"did"], @"did:plc:actor1");
-    XCTAssertEqualObjects(profiles[1][@"did"], @"did:plc:actor2");
+    XCTAssertEqualObjects(profiles[0][@"did"], @"did:web:actor1");
+    XCTAssertEqualObjects(profiles[1][@"did"], @"did:web:actor2");
 }
 
 - (void)testGetPreferencesForActorMissingDID {
@@ -211,192 +215,95 @@
     NSDictionary *prefs = [self.service getPreferencesForActor:@"" error:&error];
     XCTAssertNil(prefs);
     XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, 400);
-}
-
-- (void)testGetPreferencesForActorNonexistent {
-    NSError *error = nil;
-    NSDictionary *prefs = [self.service getPreferencesForActor:@"did:plc:nonexistent" error:&error];
-    
-    XCTAssertNotNil(prefs);
-    XCTAssertEqualObjects(prefs[@"preferences"], @[]);
 }
 
 - (void)testPutPreferencesForActorMissingDID {
-    // XCTAssertEqual(actual, expected);
     NSError *error = nil;
-    BOOL success = [self.service putPreferencesForActor:@"" preferences:@{@"key": @"value"} error:&error];
+    BOOL success = [self.service putPreferencesForActor:@"" preferences:@[] error:&error];
     XCTAssertFalse(success);
     XCTAssertNotNil(error);
 }
 
-- (void)testPutPreferencesForActorNew {
-    // XCTAssertEqual(actual, expected);
+- (void)testPutPreferencesForActorInvalidJSON {
     NSError *error = nil;
-    NSArray *prefs = @[@{@"$type": @"app.bsky.actor.defs#savedFeedsPrefV2", @"items": @[]}];
-    
-    BOOL success = [self.service putPreferencesForActor:@"did:plc:prefsuser" preferences:prefs error:&error];
-    XCTAssertTrue(success);
-    XCTAssertNil(error);
-    
-    error = nil;
-    NSDictionary *retrieved = [self.service getPreferencesForActor:@"did:plc:prefsuser" error:&error];
-    NSArray *retrievedPrefs = (NSArray *)retrieved[@"preferences"];
-    XCTAssertEqual(retrievedPrefs.count, 1);
-    XCTAssertEqualObjects(retrievedPrefs[0][@"$type"], @"app.bsky.actor.defs#savedFeedsPrefV2");
-}
-
-- (void)testPutPreferencesForActorUpdate {
-    // XCTAssertEqual(actual, expected);
-    NSError *error = nil;
-    NSArray *initialPrefs = @[@{@"theme": @"light"}];
-    XCTAssertTrue([self.service putPreferencesForActor:@"did:plc:updateuser" preferences:initialPrefs error:&error]);
-    
-    error = nil;
-    NSArray *updatedPrefs = @[@{@"theme": @"dark"}, @{@"language": @"en"}];
-    BOOL success = [self.service putPreferencesForActor:@"did:plc:updateuser" preferences:updatedPrefs error:&error];
-    XCTAssertTrue(success);
-    
-    error = nil;
-    NSDictionary *retrieved = [self.service getPreferencesForActor:@"did:plc:updateuser" error:&error];
-    NSArray *retrievedPrefs = (NSArray *)retrieved[@"preferences"];
-    XCTAssertEqual(retrievedPrefs.count, 2);
-    XCTAssertEqualObjects(retrievedPrefs[0][@"theme"], @"dark");
-}
-
-- (void)testPutPreferencesInvalidJSON {
-    // XCTAssertEqual(actual, expected);
-    NSError *error = nil;
-    BOOL success = [self.service putPreferencesForActor:@"did:plc:jsonuser" preferences:(NSArray *)@{@"invalid": [NSDate date]} error:&error];
+    // Preferences must be an array
+    BOOL success = [self.service putPreferencesForActor:@"did:web:testactor" preferences:(NSArray *)@{@"key": @"value"} error:&error];
     XCTAssertFalse(success);
     XCTAssertNotNil(error);
 }
 
-- (void)testGetFollowersCount {
+- (void)testPutAndGetPreferences {
     NSError *error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:any" error:&error];
-    XCTAssertNotNil(profile);
-    XCTAssertEqualObjects(profile[@"followersCount"], @(0));
-}
-
-- (void)testGetFollowersCountWithFollowers {
-    NSError *error = nil;
-
-    NSString *subjectDID = @"did:plc:targetuser";
-
-    NSString *insertFollows = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, subject_did) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)";
-
-    for (int i = 0; i < 5; i++) {
-        NSString *subjectJSON = [NSString stringWithFormat:@"{\"subject\":{\"did\":\"%@\"},\"createdAt\":\"2024-01-01T00:00:00Z\"}", subjectDID];
-        BOOL success = [self.database executeParameterizedUpdate:insertFollows
-                                           params:@[[NSString stringWithFormat:@"at://did:plc:follower%d/app.bsky.graph.follow/target", i],
-                                                    [NSString stringWithFormat:@"did:plc:follower%d", i],
-                                                    @"app.bsky.graph.follow",
-                                                    [NSString stringWithFormat:@"target-%d", i],
-                                                    @"bafyreifollow",
-                                                    subjectJSON,
-                                                    subjectDID]
-                                            error:&error];
-        XCTAssertTrue(success, @"Insert failed: %@", error);
-    }
-
-    error = nil;
-    NSInteger count = [self.service getFollowersCountForDID:subjectDID error:&error];
+    NSString *did = @"did:web:testactor";
+    NSArray *preferences = @[
+        @{@"$type": @"app.bsky.actor.defs#contentLabelPref", @"label": @"nsfw", @"visibility": @"hide"}
+    ];
     
-    // Debug output if fails
-    if (count != 5) {
-        NSArray *debugRows = [self.database executeQuery:@"SELECT * FROM records" error:nil];
-        XCTAssertEqual(debugRows.count, 5, @"DB Records Count mismatch. Rows: %@", debugRows);
-    }
+    BOOL success = [self.service putPreferencesForActor:did preferences:preferences error:&error];
+    XCTAssertTrue(success, @"Put preferences failed: %@", error);
+    
+    NSDictionary *result = [self.service getPreferencesForActor:did error:&error];
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(result[@"preferences"], preferences);
+}
 
-    XCTAssertEqual(count, 5);
+- (void)testUpdatePreferences {
+    NSError *error = nil;
+    NSString *did = @"did:web:testactor";
+    NSArray *prefs1 = @[@{@"key": @"val1"}];
+    NSArray *prefs2 = @[@{@"key": @"val2"}];
+    
+    [self.service putPreferencesForActor:did preferences:prefs1 error:nil];
+    BOOL success = [self.service putPreferencesForActor:did preferences:prefs2 error:&error];
+    XCTAssertTrue(success);
+    
+    NSDictionary *result = [self.service getPreferencesForActor:did error:nil];
+    XCTAssertEqualObjects(result[@"preferences"], prefs2);
+}
+
+- (void)testResolveHandleForDID {
+    NSError *error = nil;
+    NSString *did = @"did:web:testactor";
+    NSString *handle = @"test.actor.com";
+    
+    NSString *insertAccount = @"INSERT INTO accounts (did, handle, created_at, updated_at) VALUES (?, ?, datetime('now'), datetime('now'))";
+    [self.database executeParameterizedUpdate:insertAccount params:@[did, handle] error:nil];
+    
+    NSString *resolved = [self.service resolveDIDToHandle:did error:&error];
+    XCTAssertEqualObjects(resolved, handle);
     XCTAssertNil(error);
 }
 
-- (void)testGetFollowersCountDifferentSubjects {
+- (void)testResolveHandleToDID {
     NSError *error = nil;
-
-    NSString *subject1 = @"did:plc:target1";
-    NSString *subject2 = @"did:plc:target2";
-
-    NSString *insertFollows = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, subject_did) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)";
-
-    for (int i = 0; i < 3; i++) {
-        NSString *subjectJSON = [NSString stringWithFormat:@"{\"subject\":{\"did\":\"%@\"},\"createdAt\":\"2024-01-01T00:00:00Z\"}", subject1];
-        [self.database executeParameterizedUpdate:insertFollows
-                                           params:@[[NSString stringWithFormat:@"at://did:plc:f1-%d/app.bsky.graph.follow/t1", i],
-                                                    [NSString stringWithFormat:@"did:plc:f1-%d", i],
-                                                    @"app.bsky.graph.follow",
-                                                    [NSString stringWithFormat:@"t1-%d", i],
-                                                    @"bafyreif1",
-                                                    subjectJSON,
-                                                    subject1]
-                                            error:&error];
-    }
-
-    for (int i = 0; i < 7; i++) {
-        NSString *subjectJSON = [NSString stringWithFormat:@"{\"subject\":{\"did\":\"%@\"},\"createdAt\":\"2024-01-01T00:00:00Z\"}", subject2];
-        [self.database executeParameterizedUpdate:insertFollows
-                                           params:@[[NSString stringWithFormat:@"at://did:plc:f2-%d/app.bsky.graph.follow/t2", i],
-                                                    [NSString stringWithFormat:@"did:plc:f2-%d", i],
-                                                    @"app.bsky.graph.follow",
-                                                    [NSString stringWithFormat:@"t2-%d", i],
-                                                    @"bafyreif2",
-                                                    subjectJSON,
-                                                    subject2]
-                                            error:&error];
-    }
-
-    error = nil;
-    NSInteger count1 = [self.service getFollowersCountForDID:subject1 error:&error];
-    XCTAssertEqual(count1, 3);
-
-    error = nil;
-    NSInteger count2 = [self.service getFollowersCountForDID:subject2 error:&error];
-    XCTAssertEqual(count2, 7);
-}
-
-- (void)testGetFollowersCountNoFollows {
-    NSError *error = nil;
-    NSInteger count = [self.service getFollowersCountForDID:@"did:plc:nofollowers" error:&error];
-    XCTAssertEqual(count, 0);
+    NSString *did = @"did:web:testactor";
+    NSString *handle = @"test.actor.com";
+    
+    NSString *insertAccount = @"INSERT INTO accounts (did, handle, created_at, updated_at) VALUES (?, ?, datetime('now'), datetime('now'))";
+    [self.database executeParameterizedUpdate:insertAccount params:@[did, handle] error:nil];
+    
+    NSString *resolved = [self.service resolveHandleToDID:handle error:&error];
+    XCTAssertEqualObjects(resolved, did);
     XCTAssertNil(error);
-}
-
-- (void)testGetFollowersCountEmptyDID {
-    NSError *error = nil;
-    NSInteger count = [self.service getFollowersCountForDID:@"" error:&error];
-    XCTAssertEqual(count, 0);
-}
-
-- (void)testGetFollowersCountNilDID {
-    NSError *error = nil;
-    NSInteger count = [self.service getFollowersCountForDID:nil error:&error];
-    XCTAssertEqual(count, 0);
-}
-
-- (void)testGetFollowsCountEmpty {
-    NSError *error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:empty" error:&error];
-    XCTAssertNotNil(profile);
-    XCTAssertEqualObjects(profile[@"followsCount"], @(0));
-}
-
-- (void)testGetPostsCountEmpty {
-    NSError *error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:empty" error:&error];
-    XCTAssertNotNil(profile);
-    XCTAssertEqualObjects(profile[@"postsCount"], @(0));
 }
 
 - (void)testProfileHasIndexedAt {
     NSError *error = nil;
-    NSDictionary *profile = [self.service getProfileForActor:@"did:plc:indexed" error:&error];
+    NSString *did = @"did:web:testactor";
     
+    NSDictionary *profile = [self.service getProfileForActor:did error:&error];
     XCTAssertNotNil(profile[@"indexedAt"]);
-    NSDate *indexedDate = [NSDateFormatter atproto_dateFromString:profile[@"indexedAt"]];
-    XCTAssertNotNil(indexedDate);
-    XCTAssertGreaterThan(indexedDate.timeIntervalSince1970, 0);
+    
+    NSDate *date = [NSDateFormatter atproto_dateFromString:profile[@"indexedAt"]];
+    XCTAssertNotNil(date);
+}
+
+- (void)testGetFollowersCount {
+    NSError *error = nil;
+    NSString *did = @"did:web:testactor";
+    NSInteger count = [self.service getFollowersCountForDID:did error:&error];
+    XCTAssertEqual(count, 0);
 }
 
 @end

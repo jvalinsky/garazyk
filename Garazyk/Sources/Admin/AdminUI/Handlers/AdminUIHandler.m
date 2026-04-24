@@ -4,6 +4,8 @@
 #import "Admin/AdminPartialHandler.h"
 #import "Admin/PDSAdminHandler.h"
 #import "Network/HttpRequest.h"
+#import "AppView/Server/AppViewRuntime.h"
+#import "AppView/Server/AppViewDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -347,6 +349,8 @@ NS_ASSUME_NONNULL_BEGIN
         return [self renderReportsListWithStatusCode:statusCode contentType:contentType];
     } else if ([partial isEqualToString:@"audit-log"]) {
         return [self renderAuditLogPartialWithStatusCode:statusCode contentType:contentType];
+    } else if ([partial isEqualToString:@"hosting-history"]) {
+        return [self renderHostingHistoryPartialWithStatusCode:statusCode contentType:contentType];
     }
 
     if (statusCode) *statusCode = 404;
@@ -849,31 +853,48 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NSString *)renderAppViewIndexPartialWithStatusCode:(nullable NSInteger *)statusCode
-                                        contentType:(NSString * _Nullable * _Nullable)contentType {
+                                         contentType:(NSString * _Nullable * _Nullable)contentType {
     if (statusCode) *statusCode = 200;
     if (contentType) *contentType = @"text/html";
-    return @"<div class=\"content-header\">"
+    
+    AppViewDatabase *db = [AppViewRuntime sharedRuntime].database;
+    NSInteger postsCount = [db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:nil];
+    NSInteger profilesCount = [db getTotalRecordsCountForCollection:@"app.bsky.actor.profile" error:nil];
+    
+    return [NSString stringWithFormat:
+           @"<div class=\"content-header\">"
            @"<h2>Index Status</h2>"
            @"<p class=\"text-secondary\">Status of the main AppView search and feed indexes.</p>"
            @"</div>"
            @"<ul class=\"list-group\">"
-           @"<li class=\"list-item\"><span>Posts Index</span><span class=\"status-tag success\">Synced</span></li>"
-           @"<li class=\"list-item\"><span>Profiles Index</span><span class=\"status-tag success\">Synced</span></li>"
-           @"</ul>";
+           @"<li class=\"list-item\">"
+           @"<div><strong>Posts Index</strong><br/><small class=\"text-secondary\">%ld records materialized</small></div>"
+           @"<span class=\"status-tag success\">Synced</span>"
+           @"</li>"
+           @"<li class=\"list-item\">"
+           @"<div><strong>Profiles Index</strong><br/><small class=\"text-secondary\">%ld records materialized</small></div>"
+           @"<span class=\"status-tag success\">Synced</span>"
+           @"</li>"
+           @"</ul>", (long)postsCount, (long)profilesCount];
 }
 
 - (NSString *)renderAppViewMetricsPartialWithStatusCode:(nullable NSInteger *)statusCode
-                                          contentType:(NSString * _Nullable * _Nullable)contentType {
+                                           contentType:(NSString * _Nullable * _Nullable)contentType {
     if (statusCode) *statusCode = 200;
     if (contentType) *contentType = @"text/html";
-    return @"<div class=\"content-header\">"
+    
+    AppViewDatabase *db = [AppViewRuntime sharedRuntime].database;
+    NSInteger blocksCount = [db getTotalBlocksCountWithError:nil];
+    
+    return [NSString stringWithFormat:
+           @"<div class=\"content-header\">"
            @"<h2>AppView Metrics</h2>"
            @"<p class=\"text-secondary\">Query latency and indexing throughput metrics.</p>"
            @"</div>"
            @"<div class=\"grid-2\">"
+           @"<div class=\"card\"><h4>Materialized Blocks</h4><div class=\"stat-value\">%ld</div></div>"
            @"<div class=\"card\"><h4>Query Latency (p99)</h4><div class=\"stat-value\">12ms</div></div>"
-           @"<div class=\"card\"><h4>Index Throughput</h4><div class=\"stat-value\">450 ev/s</div></div>"
-           @"</div>";
+           @"</div>", (long)blocksCount];
 }
 
 - (NSString *)renderChatConvosPartialWithStatusCode:(nullable NSInteger *)statusCode
@@ -1525,6 +1546,74 @@ NS_ASSUME_NONNULL_BEGIN
             @"<button class=\"btn btn-secondary\" hx-get=\"/admin/partials/audit-log?cursor=%@\" hx-target=\".table-wrapper tbody\">Load More</button>"
             @"</div>", cursor];
     }
+    
+    return html;
+}
+
+#pragma mark - Hosting History
+
+- (NSString *)renderHostingHistoryPartialWithStatusCode:(nullable NSInteger *)statusCode
+                                           contentType:(NSString * _Nullable * _Nullable)contentType {
+    if (statusCode) *statusCode = 200;
+    if (contentType) *contentType = @"text/html";
+    
+    // Get hosting history data
+    PDSAdminHandler *adminHandler = [PDSAdminHandler sharedHandler];
+    NSDictionary *hostingData = [adminHandler getHostingHistoryDataWithDid:nil limit:100 offset:0];
+    
+    NSMutableString *html = [NSMutableString stringWithString:
+        @"<div class=\"content-header\">"
+        @"<h2>Hosting History</h2>"
+        @"<p class=\"text-secondary\">View PDS hosting events and account transitions.</p>"
+        @"</div>"];
+    
+    if (!hostingData) {
+        [html appendString:@"<div class=\"card\"><p class=\"text-secondary\">No hosting history available.</p></div>"];
+        return html;
+    }
+    
+    // Render table
+    [html appendString:
+        @"<div class=\"table-wrapper\">"
+        @"<table class=\"table\">"
+        @"<thead><tr>"
+        @"<th>Timestamp</th><th>DID</th><th>Event Type</th><th>Created By</th><th>Details</th>"
+        @"</tr></thead><tbody>"];
+    
+    NSArray *events = hostingData[@"events"] ?: @[];
+    
+    for (NSDictionary *entry in events) {
+        NSString *timestamp = entry[@"created_at"] ?: @"";
+        NSString *did = entry[@"did"] ?: @"";
+        NSString *type = entry[@"event_type"] ?: @"";
+        NSString *admin = entry[@"created_by"] ?: @"";
+        
+        // Format details as JSON
+        NSDictionary *details = entry[@"details"] ?: @{};
+        NSString *detailsStr = @"";
+        if (details.count > 0) {
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:details options:0 error:nil];
+            if (jsonData) {
+                detailsStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            }
+        }
+        
+        [html appendFormat:
+            @"<tr>"
+            @"<td><small>%@</small></td>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td><span class=\"badge badge-info\">%@</span></td>"
+            @"<td><code style=\"font-size: 11px;\">%@</code></td>"
+            @"<td><small style=\"word-break: break-all;\">%@</small></td>"
+            @"</tr>",
+            timestamp, did, type, admin, detailsStr];
+    }
+    
+    if (events.count == 0) {
+        [html appendString:@"<tr><td colspan=\"5\" class=\"text-secondary text-center\">No hosting entries found.</td></tr>"];
+    }
+    
+    [html appendString:@"</tbody></table></div>"];
     
     return html;
 }
@@ -2497,13 +2586,14 @@ NS_ASSUME_NONNULL_BEGIN
         return [NSString stringWithFormat:@"<p class=\"text-destructive\">%@</p>", error];
     }
 
-    return @"<form class=\"form\" hx-post=\"%@\" hx-swap=\"innerHTML\">"
+    return [NSString stringWithFormat:
+           @"<form class=\"form\" hx-post=\"%@\" hx-swap=\"innerHTML\">"
            @"<div class=\"form-group\">"
            @"<label class=\"form-label\">Values (one per line)</label>"
            @"<textarea name=\"values\" class=\"form-input\" style=\"min-height: 100px;\" placeholder=\"did:plc:...\"></textarea>"
            @"</div>"
            @"<button type=\"submit\" class=\"btn btn-primary\">Add Values</button>"
-           @"</form>", path;
+           @"</form>", path];
 }
 
 #pragma mark - Ozone Templates Management

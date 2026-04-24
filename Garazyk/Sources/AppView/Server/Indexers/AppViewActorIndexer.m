@@ -39,7 +39,6 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
           collection:(NSString *)collection
                  cid:(nullable NSString *)cid
                error:(NSError **)error {
-    // record structure: {$type, $did, $rkey, record: {displayName, description, ...}}
     NSDictionary *profileRecord = record[@"record"] ?: record;
     NSString *displayName = profileRecord[@"displayName"];
     NSString *description = profileRecord[@"description"];
@@ -55,14 +54,12 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     if ([bannerBlob isKindOfClass:[NSDictionary class]])
         bannerCID = bannerBlob[@"ref"] ?: bannerBlob[@"cid"];
 
-    // Truncate to reasonable lengths (guard against malformed data)
     if (displayName.length > 640) displayName = [displayName substringToIndex:640];
     if (description.length > 2560) description = [description substringToIndex:2560];
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:profileRecord options:0 error:nil];
 
-    // Get the CID for the record — prefer provided CID, fall back to computing with correct codec
     NSString *recordCID = cid;
     if (!recordCID) {
         NSError *cborError = nil;
@@ -75,14 +72,10 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
         }
     }
 
-    // Write to database via AppViewDatabase
-    // Save block first (required for AT Protocol)
     if (recordCID) {
         CID *rcid = [CID cidFromString:recordCID];
-        NSData *blockData = nil;
         if (rcid) {
-            // If we have CBOR data, use it, otherwise use JSON (best effort)
-            blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:profileRecord error:nil] ?: jsonData;
+            NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:profileRecord error:nil] ?: jsonData;
             [_avdb saveBlockWithCid:rcid.bytes
                          repoDid:did
                        blockData:blockData
@@ -91,17 +84,16 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
         }
     }
 
-    // Then write to records table
     NSString *handle = [AppViewIdentityHelper resolveHandleForDID:did error:nil];
     [_avdb saveRecordWithURI:uri
-                         did:did
-                   collection:collection
-                        rkey:rkey
-                          cid:recordCID
-                       handle:handle
-                        value:[[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding]
-                  subjectDid:did
-                       error:nil];
+                      did:did
+                collection:collection
+                     rkey:rkey
+                       cid:recordCID
+                    handle:handle
+                     value:[[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding]
+               subjectDid:did
+                    error:nil];
     return YES;
 }
 
@@ -110,7 +102,6 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
         NSString *action = op[@"action"];
         NSString *path   = op[@"path"];
 
-        // path format: "collection/rkey"
         if (![path hasPrefix:kCollection]) continue;
 
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
@@ -120,7 +111,6 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
                 [self indexRecord:record did:event.did collection:kCollection cid:cid error:nil];
             }
         } else if ([action isEqualToString:@"delete"]) {
-            // Profile delete — clear materialized data
             PDS_LOG_DEBUG(@"[AppViewActorIndexer] Deleted profile for %@", event.did);
         }
     }
@@ -128,19 +118,7 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
 }
 
 - (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
-    // Pending deltas carry raw envelopes. For now we log and return YES;
-    // a production implementation would re-decode and call handleIngestEvent:.
     PDS_LOG_DEBUG(@"[AppViewActorIndexer] Replaying pending delta for %@", delta.did);
-    return YES;
-}
-
-- (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error {
-    PDS_LOG_DEBUG(@"[AppViewActorIndexer] Delete record %@/%@ for %@", collection, rkey, did);
-    return YES;
-}
-
-@end
-;
     return YES;
 }
 

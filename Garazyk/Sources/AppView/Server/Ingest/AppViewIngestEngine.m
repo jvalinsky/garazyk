@@ -14,6 +14,7 @@
 #import "Core/CID.h"
 #import "Core/NSDictionary+CID.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATProtoDagCBOR.h"
 #import "Repository/CAR.h"
 
 // ---------------------------------------------------------------------------
@@ -22,6 +23,74 @@
 
 @implementation AppViewIngestEvent
 @end
+
+// ---------------------------------------------------------------------------
+// CID Link Resolution
+// ---------------------------------------------------------------------------
+
+/**
+ Recursively resolve CID links in decoded IPLD objects.
+ When DAG-CBOR decoding produces CID objects (from tag 42), they need to be
+ resolved by looking up the referenced blocks in the CAR and decoding them.
+ */
+static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *visitedCIDs, int depth) {
+    // Prevent infinite loops and excessive recursion
+    if (depth > 10 || !reader) {
+        return object;
+    }
+
+    if ([object isKindOfClass:[CID class]]) {
+        CID *cid = (CID *)object;
+        NSString *cidString = cid.stringValue;
+
+        // Prevent cycles
+        if ([visitedCIDs containsObject:cidString]) {
+            PDS_LOG_DEBUG(@"[AppView Ingest] CID cycle at depth %d: %@", depth, cidString);
+            return object;
+        }
+        [visitedCIDs addObject:cidString];
+
+        // Look up the block and decode it
+        CARBlock *block = [reader blockWithCID:cid];
+        if (block) {
+            NSError *decodeErr = nil;
+            id decoded = [ATProtoDagCBOR decodeDataAsJSON:block.data error:&decodeErr];
+            if (!decoded) {
+                decoded = [ATProtoDagCBOR decodeData:block.data error:&decodeErr];
+            }
+            if (decoded) {
+                PDS_LOG_DEBUG(@"[AppView Ingest] Resolved CID link at depth %d, got type %@, keys=%@",
+                             depth, NSStringFromClass([decoded class]),
+                             [decoded isKindOfClass:[NSDictionary class]] ? [(NSDictionary *)decoded allKeys] : @"N/A");
+                return ResolveCIDLinksInObject(decoded, reader, visitedCIDs, depth + 1);
+            } else {
+                PDS_LOG_DEBUG(@"[AppView Ingest] Failed to decode CID link %@: %@", cidString, decodeErr.localizedDescription);
+            }
+        } else {
+            PDS_LOG_DEBUG(@"[AppView Ingest] CID link not found in CAR: %@", cidString);
+        }
+        return object;
+
+    } else if ([object isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dict = (NSDictionary *)object;
+        NSMutableDictionary *resolved = [NSMutableDictionary dictionaryWithCapacity:dict.count];
+        for (id key in dict) {
+            id value = dict[key];
+            resolved[key] = ResolveCIDLinksInObject(value, reader, visitedCIDs, depth + 1);
+        }
+        return resolved;
+
+    } else if ([object isKindOfClass:[NSArray class]]) {
+        NSArray *array = (NSArray *)object;
+        NSMutableArray *resolved = [NSMutableArray arrayWithCapacity:array.count];
+        for (id item in array) {
+            [resolved addObject:ResolveCIDLinksInObject(item, reader, visitedCIDs, depth + 1)];
+        }
+        return resolved;
+    }
+
+    return object;
+}
 
 // ---------------------------------------------------------------------------
 // Per-relay connection state
@@ -260,29 +329,48 @@
             // Try by CID first, then fall back to path matching if CID is missing
             NSDictionary *record = op[@"record"];
             if (!record && reader && opCID) {
-                for (CARBlock *block in reader.blocks) {
-                    if ([block.cid isEqual:opCID]) {
-                        record = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
-                        if (record) enrichedOp[@"record"] = record;
-                        break;
+                CARBlock *block = [reader blockWithCID:opCID];
+                if (block) {
+                    id decoded = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
+                    if (!decoded) {
+                        decoded = [ATProtoDagCBOR decodeData:block.data error:nil];
+                    }
+                    // Resolve any CID links in the decoded object
+                    if (decoded) {
+                        decoded = ResolveCIDLinksInObject(decoded, reader, [NSMutableSet set], 0);
+                        if ([decoded isKindOfClass:[NSDictionary class]]) {
+                            record = (NSDictionary *)decoded;
+                            enrichedOp[@"record"] = record;
+                            PDS_LOG_DEBUG(@"[AppView Ingest] Decoded record from CID block: keys=%@", record.allKeys);
+                        }
                     }
                 }
             }
             // If still no record, try path-based matching in CAR blocks
             if (!record && reader) {
                 for (CARBlock *block in reader.blocks) {
+                    NSError *decodeErr = nil;
                     id decoded = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
-                    if ([decoded isKindOfClass:[NSDictionary class]]) {
+
+                    // Try DAG-CBOR if regular CBOR fails
+                    if (!decoded) {
+                        decoded = [ATProtoDagCBOR decodeDataAsJSON:block.data error:&decodeErr];
+                    }
+
+                    if (decoded && [decoded isKindOfClass:[NSDictionary class]]) {
                         NSDictionary *dictDecoded = (NSDictionary *)decoded;
-                        NSString *blockKey = nil;
-                        if ([collection isEqualToString:@"app.bsky.actor.profile"]) {
-                            blockKey = @"self";
-                        } else {
-                            blockKey = rkey;
-                        }
-                        if (blockKey && dictDecoded.count > 0) {
-                            record = dictDecoded;
+                        // Check if this is a valid record entry
+                        NSString *recordType = dictDecoded[@"$type"];
+                        // Look for actual record fields beyond just having content
+                        BOOL hasRecordFields = recordType || dictDecoded[@"text"] || dictDecoded[@"value"] ||
+                                              dictDecoded[@"subject"] || dictDecoded[@"created"];
+
+                        if (hasRecordFields) {
+                            // Resolve any CID links in the record
+                            record = (NSDictionary *)ResolveCIDLinksInObject(dictDecoded, reader, [NSMutableSet set], 0);
                             enrichedOp[@"record"] = record;
+                            PDS_LOG_DEBUG(@"[AppView Ingest] Found record in CAR block: keys=%@", record.allKeys);
+
                             if (!cidStr) {
                                 CID *computedCID = [CID cidWithDigest:[CID sha256Digest:block.data] codec:0x71];
                                 if (computedCID) {
@@ -291,18 +379,22 @@
                                     opCID = computedCID;
                                 }
                             }
+                            // Exit loop on first valid record
                             break;
                         }
+                    } else if (decodeErr) {
+                        PDS_LOG_DEBUG(@"[AppView Ingest] Failed to decode CAR block: %@", decodeErr.localizedDescription);
                     }
                 }
             }
 
-            // Extract subject DID if applicable (e.g. follow target)
+// Extract subject DID if applicable (e.g. follow target)
             // Use enrichedOp record if available, fall back to op record
             NSDictionary *recordForSubject = enrichedOp[@"record"] ?: op[@"record"];
+            PDS_LOG_DEBUG(@"[AppView Ingest] Subject extraction: enrichedOp.record keys=%@", recordForSubject.allKeys);
             NSString *subjectDid = nil;
             if (recordForSubject && [recordForSubject isKindOfClass:[NSDictionary class]]) {
-                id subject = record[@"subject"];
+                id subject = recordForSubject[@"subject"];
                 if ([subject isKindOfClass:[NSString class]]) {
                     if ([subject hasPrefix:@"did:"]) {
                         subjectDid = subject;

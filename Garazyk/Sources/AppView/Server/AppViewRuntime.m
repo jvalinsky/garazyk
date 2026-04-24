@@ -28,6 +28,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
 
 @interface AppViewRuntime () <AppViewIngestEngineDelegate,
@@ -186,14 +187,22 @@ static AppViewRuntime *_sharedRuntime = nil;
                                                            emailProvider:nil];
     _chatModerationService = [[ChatModerationService alloc] initWithDatabase:_database];
 
+    // Initialize JWTMinter for token verification (using shared master secret)
+    JWTMinter *jwtMinter = nil;
+    if (config.masterSecret.length > 0) {
+        jwtMinter = [[JWTMinter alloc] init];
+        jwtMinter.issuer = @"http://localhost:2583"; // The PDS issuer we expect tokens from
+    }
+
     // Register XRPC routes
     AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
                                                                     actorService:_actorService
                                                                     graphService:_graphService
-                                                             notificationService:_notificationService
-                                                             ageAssuranceService:_ageAssuranceService
-                                                            chatModerationService:_chatModerationService
-                                                                      database:_database];
+                                                              notificationService:_notificationService
+                                                              ageAssuranceService:_ageAssuranceService
+                                                             chatModerationService:_chatModerationService
+                                                                       database:_database
+                                                                      jwtMinter:jwtMinter];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
 
@@ -251,6 +260,9 @@ static AppViewRuntime *_sharedRuntime = nil;
 
 - (void)ingestEngine:(AppViewIngestEngine *)engine
    didReceiveCommit:(AppViewIngestEvent *)event {
+    // Notify orchestrator to ensure repo is scheduled for backfill if new
+    [_orchestrator enqueueDIDs:@[event.did]];
+
     // Dispatch to all capable indexers
     for (id<AppViewIndexer> indexer in _indexers) {
         if ([indexer respondsToSelector:@selector(handleIngestEvent:error:)]) {
@@ -274,6 +286,7 @@ static AppViewRuntime *_sharedRuntime = nil;
 - (void)ingestEngine:(AppViewIngestEngine *)engine
 didReceiveIdentityChange:(AppViewIngestEvent *)event {
     PDS_LOG_DEBUG(@"[AppViewRuntime] Identity change for %@", event.did);
+    [_orchestrator enqueueDIDs:@[event.did]];
 }
 
 // ---------------------------------------------------------------------------

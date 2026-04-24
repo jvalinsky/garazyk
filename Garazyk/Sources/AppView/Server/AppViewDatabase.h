@@ -312,6 +312,20 @@ extern NSString * const AppViewDatabaseErrorDomain;
             contentType:(nullable NSString *)contentType
                   error:(NSError **)error;
 
+#pragma mark - Stats
+
+/*!
+ @method getTotalRecordsCountForCollection:error:
+ @abstract Get total number of materialized records in a collection.
+ */
+- (NSInteger)getTotalRecordsCountForCollection:(NSString *)collection error:(NSError **)error;
+
+/*!
+ @method getTotalBlocksCountWithError:
+ @abstract Get total number of materialized blocks.
+ */
+- (NSInteger)getTotalBlocksCountWithError:(NSError **)error;
+
 #pragma mark - Handle Resolution
 
 /*!

@@ -971,12 +971,15 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             ? recordCBORByURI[uri]
             : nil;
 
+        PDSDatabaseRecord *preparedRecord = prepared[@"record"];
+        NSString *actualRkey = (preparedRecord && preparedRecord.rkey) ? preparedRecord.rkey : rkey;
+
         [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
                                                             object:self
                                                           userInfo:@{
             @"did": did,
             @"collection": collection ?: @"",
-            @"rkey": rkey ?: @"",
+            @"rkey": actualRkey ?: @"",
             @"action": normalizedAction,
             @"cid": resultCID ?: [NSNull null],
             @"prev": prevRoot ? prevRoot.stringValue : [NSNull null],

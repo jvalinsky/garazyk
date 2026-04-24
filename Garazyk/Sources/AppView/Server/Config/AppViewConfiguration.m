@@ -21,6 +21,7 @@
     _dataDirectory             = [NSHomeDirectory() stringByAppendingPathComponent:
                                   @"Library/Application Support/AppView"];
     _httpPort                  = 3200;
+    _masterSecret              = nil;
     _adminSecret               = nil;
     _cursorCheckpointIntervalMs = 5000;
     _backfillEnabled           = YES;
@@ -66,6 +67,10 @@
     // Admin secret
     NSString *secret = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_ADMIN_SECRET"];
     if (secret.length > 0) config.adminSecret = secret;
+
+    // Master secret
+    NSString *master = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_MASTER_SECRET"];
+    if (master.length > 0) config.masterSecret = master;
 
     // Checkpoint interval
     NSString *checkpointMs = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_CURSOR_CHECKPOINT_MS"];
@@ -130,6 +135,10 @@
     // admin_secret
     NSString *secret = dict[@"admin_secret"];
     if (secret.length > 0) _adminSecret = secret;
+
+    // master_secret
+    NSString *master = dict[@"master_secret"];
+    if (master.length > 0) _masterSecret = master;
 
     // cursor.checkpoint_interval_ms
     id ckpt = dict[@"cursor.checkpoint_interval_ms"];

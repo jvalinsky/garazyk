@@ -7,6 +7,7 @@
 @class NotificationService;
 @class AgeAssuranceService;
 @class ChatModerationService;
+@class JWTMinter;
 @class HttpServer;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -19,7 +20,8 @@ NS_ASSUME_NONNULL_BEGIN
                  notificationService:(NotificationService *)notificationService
                 ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
                chatModerationService:(nullable ChatModerationService *)chatModerationService
-                          database:(nullable id<PDSQueryDatabase>)database;
+                          database:(nullable id<PDSQueryDatabase>)database
+                         jwtMinter:(nullable JWTMinter *)jwtMinter;
 
 
 - (void)registerRoutesWithServer:(HttpServer *)server;

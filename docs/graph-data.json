@@ -50,9 +50,9 @@
       "node_type": "decision",
       "title": "Phase 1: Empty State & 401 Handling",
       "description": "Auth required templates, HTMX error handling, empty state components",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T00:00:00-04:00",
-      "updated_at": "2026-04-20T00:00:00-04:00",
+      "updated_at": "2026-04-23T20:30:43.228105-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\".deciduous/scratch/2026-04-20-admin-ui-design/phase1-slop-fix.md\"]}"
     },
     {
@@ -215,9 +215,9 @@
       "node_type": "action",
       "title": "Fix NotificationServiceTests setup",
       "description": "62 failures in NotificationServiceTests. File: Garazyk/Tests/AppView/NotificationServiceTests.m",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T13:40:50.816366-04:00",
-      "updated_at": "2026-04-20T13:40:50.816366-04:00",
+      "updated_at": "2026-04-23T20:30:43.238427-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -226,9 +226,9 @@
       "node_type": "action",
       "title": "Fix XrpcProxy ozone fallback routing",
       "description": "XrpcProxyTests failing - ozone methods not routing correctly. Files: XrpcProxy.m, OzoneHandler.m. Returns 200 instead of expected routing or 404.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T13:40:54.911437-04:00",
-      "updated_at": "2026-04-20T13:40:54.911437-04:00",
+      "updated_at": "2026-04-23T20:30:43.248056-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -611,9 +611,9 @@
       "node_type": "goal",
       "title": "Admin UI Remaining Features",
       "description": "AppView Stats, Hosting History, Scheduled Actions",
-      "status": "pending",
+      "status": "in_progress",
       "created_at": "2026-04-21T16:05:52.030987-04:00",
-      "updated_at": "2026-04-21T16:05:52.030987-04:00",
+      "updated_at": "2026-04-23T20:30:43.287706-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1744,9 +1744,9 @@
       "node_type": "decision",
       "title": "Fix remaining 57 test failures: 3 root causes (DB open, interop fixtures, SQLite transaction)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T20:24:32.518949-04:00",
-      "updated_at": "2026-04-22T20:24:32.518949-04:00",
+      "updated_at": "2026-04-23T20:30:43.255956-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"After adding 19 lexicon files, 57 test cases still fail across 8 test suites. Root causes: (1) AdminAuthXrpcTestBase DB open failure sqlite_code=14 cascades to 35 XRPC tests, (2) Interop fixture path resolution fails for 13 tests in SyntaxInterop/AtprotoInterop/LexiconValidator, (3) AppViewBackfillWorker DB open failure for 2 tests, (4) SubscribeReposHandler 'cannot commit - no transaction is active' errors in background\"}"
     },
     {
@@ -1755,9 +1755,9 @@
       "node_type": "decision",
       "title": "Fix AdminAuthXrpcTestBase: align env vars and tearDown with RepoAuthXrpcTestBase",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T20:32:31.431205-04:00",
-      "updated_at": "2026-04-22T20:32:31.431205-04:00",
+      "updated_at": "2026-04-23T20:30:43.263936-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"AdminAuthXrpcTestBase fails with sqlite_code=14 because it doesn't set PDS_AVAILABLE_USER_DOMAINS, PDS_ADMIN_PASSWORD, PDS_MASTER_SECRET before creating PDSApplication. RepoAuthXrpcTestBase (which passes) sets these env vars + calls applyConfig + stops app in tearDown. Two choices: (1) Align AdminAuthXrpcTestBase with RepoAuthXrpcTestBase pattern — set env vars before PDSApplication init, add applyConfig call, add application stop in tearDown, add error checking on dir creation. (2) Refactor both to share a common base class. Chose option 1 because it's the minimal fix that matches the proven working pattern; option 2 is a larger refactor that could introduce regressions.\"}"
     },
     {
@@ -1766,9 +1766,9 @@
       "node_type": "action",
       "title": "AdminAuthXrpcTestBase: set env vars before PDSApplication init, add applyConfig, add tearDown stop, add error checking",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T21:39:30.436393-04:00",
-      "updated_at": "2026-04-22T21:39:30.436393-04:00",
+      "updated_at": "2026-04-23T20:30:43.271309-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Changes made to AdminAuthXrpcTestBase.m: (1) Added #import for PDSConfiguration and ServiceDatabases, (2) Added PDSConfiguration test category declaration for applyConfig, (3) Set PDS_AVAILABLE_USER_DOMAINS=test, PDS_ADMIN_PASSWORD=password, PDS_MASTER_SECRET=test-master-secret-123 before PDSApplication init, (4) Added [[PDSConfiguration sharedConfiguration] applyConfig:@{@\\\"server\\\": @{}}], (5) Added error checking on temp directory creation, (6) Added [self.application stop] in tearDown, (7) Added better XCTAssertNil messages with error descriptions, (8) Moved setenv for PDS_ADMIN_PASSWORD before PDSApplication init (was after), (9) Added [PDSAdminAuth sharedAuth].controller = nil in tearDown\"}"
     },
     {
@@ -2030,9 +2030,9 @@
       "node_type": "action",
       "title": "Validate ws:// fix against rsky-relay and atproto TS reference implementations",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T10:01:53.149109-04:00",
-      "updated_at": "2026-04-23T10:01:53.149109-04:00",
+      "updated_at": "2026-04-23T20:30:43.279099-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Checked rsky-relay (Rust): Connection::connect always constructs wss://{hostname}/xrpc/{path} from bare hostname. tungstenite client::connect handles ws:// vs wss:// via uri_mode(). Checked atproto TS SDK: Subscription class uses service URL as-is (e.g. wss://bsky.network). Both accept ws:// and wss:// as valid schemes. Our fix normalizes ws://→http:// and wss://→https:// before NSURL validation, then RelayClient.buildWebSocketURL converts back to ws/wss when connecting. Round-trip is correct.\"}"
     },
     {
@@ -2382,9 +2382,9 @@
       "node_type": "outcome",
       "title": "AppView Federation Readiness: hardened CAR parsing and implemented persistent handle resolution mapping. Achieved 100% test pass rate including AppView backfill suites.",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T20:22:43.620560-04:00",
-      "updated_at": "2026-04-23T20:22:43.620560-04:00",
+      "updated_at": "2026-04-23T20:25:40.396956-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
     }
   ],

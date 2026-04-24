@@ -650,7 +650,74 @@ static NSString *appPasswordGenerateSecret(void) {
     return success;
 }
 
-- (BOOL)persistEvent:(int64_t)seq type:(NSString *)type data:(NSData *)data error:(NSError **)error {
+- (nullable NSArray<NSDictionary *> *)listHostingEventsForDID:(nullable NSString *)did
+                                                        limit:(NSInteger)limit
+                                                       offset:(NSInteger)offset
+                                                        error:(NSError **)error {
+    __block NSMutableArray<NSDictionary *> *results = [NSMutableArray array];
+    __block NSError *queryError = nil;
+
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        
+        NSMutableString *sql = [@"SELECT id, did, event_type, details_json, created_by, created_at FROM hosting_events" mutableCopy];
+        NSMutableArray *params = [NSMutableArray array];
+        
+        if (did) {
+            [sql appendString:@" WHERE did = ?"];
+            [params addObject:did];
+        }
+        
+        [sql appendString:@" ORDER BY id DESC LIMIT ? OFFSET ?"];
+        [params addObject:@(limit)];
+        [params addObject:@(offset)];
+        
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+        
+        for (int i = 0; i < params.count; i++) {
+            id val = params[i];
+            if ([val isKindOfClass:[NSString class]]) {
+                sqlite3_bind_text(stmt, i + 1, [val UTF8String], -1, SQLITE_TRANSIENT);
+            } else if ([val isKindOfClass:[NSNumber class]]) {
+                sqlite3_bind_int64(stmt, i + 1, [val longLongValue]);
+            }
+        }
+        
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            row[@"id"] = @(sqlite3_column_int64(stmt, 0));
+            
+            const char *didVal = (const char *)sqlite3_column_text(stmt, 1);
+            if (didVal) row[@"did"] = [NSString stringWithUTF8String:didVal];
+            
+            const char *typeVal = (const char *)sqlite3_column_text(stmt, 2);
+            if (typeVal) row[@"event_type"] = [NSString stringWithUTF8String:typeVal];
+            
+            const char *detailsVal = (const char *)sqlite3_column_text(stmt, 3);
+            if (detailsVal) {
+                NSString *json = [NSString stringWithUTF8String:detailsVal];
+                NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
+                NSDictionary *details = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+                row[@"details"] = details ?: @{};
+            }
+            
+            const char *createdByVal = (const char *)sqlite3_column_text(stmt, 4);
+            if (createdByVal) row[@"created_by"] = [NSString stringWithUTF8String:createdByVal];
+            
+            NSTimeInterval createdAt = sqlite3_column_double(stmt, 5);
+            row[@"created_at"] = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]];
+            
+            [results addObject:[row copy]];
+        }
+    } error:&queryError];
+
+    if (error && queryError) *error = queryError;
+    return results;
+}
+
+- (BOOL)persistEvent:(int64_t)seq
+ type:(NSString *)type data:(NSData *)data error:(NSError **)error {
     __block BOOL success = NO;
     [self.sequencerPool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;

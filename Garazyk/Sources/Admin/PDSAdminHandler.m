@@ -7,6 +7,7 @@
 #endif
 #import "Metrics/PDSMetrics.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Services/Core/PDSAdminService.h"
 #import "App/PDSController.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -1351,6 +1352,21 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
     NSError *error = nil;
     NSDictionary *result = [adminService queryAuditLog:filters limit:limit cursor:cursor error:&error];
     return result;
+}
+
+- (nullable NSDictionary *)getHostingHistoryDataWithDid:(nullable NSString *)did
+                                                  limit:(NSInteger)limit
+                                                 offset:(NSInteger)offset {
+    PDSServiceDatabases *dbs = [PDSServiceDatabases sharedInstance];
+    NSError *error = nil;
+    NSArray *events = [dbs listHostingEventsForDID:did limit:limit offset:offset error:&error];
+    if (!events) return nil;
+    
+    // For now, always return events, pagination cursor can be implemented if needed
+    return @{
+        @"events": events,
+        @"total": @(events.count) // Simple count for now
+    };
 }
 
 @end
