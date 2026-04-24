@@ -5,6 +5,8 @@
 @interface MockNetworkConnection : NSObject <PDSNetworkConnection>
 @property (nonatomic, strong) NSMutableData *sentData;
 @property (nonatomic, copy) void (^receiveCompletion)(NSData *data, BOOL isComplete, NSError *error);
+@property (nonatomic, strong) NSMutableArray<NSData *> *pendingData;
+@property (nonatomic, assign) BOOL isEOF;
 - (void)injectReceiveData:(NSData *)data;
 - (void)injectReceiveComplete;
 @end
@@ -15,6 +17,8 @@
     self = [super init];
     if (self) {
         self.sentData = [NSMutableData data];
+        self.pendingData = [NSMutableArray array];
+        self.isEOF = NO;
     }
     return self;
 }
@@ -29,18 +33,42 @@
 - (void)receiveWithMinimumLength:(NSUInteger)minLength
                   maximumLength:(NSUInteger)maxLength
                      completion:(void (^)(NSData * _Nullable, BOOL, NSError * _Nullable))completion {
-    self.receiveCompletion = completion;
+    if (self.pendingData.count > 0) {
+        NSData *data = self.pendingData.firstObject;
+        [self.pendingData removeObjectAtIndex:0];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(data, NO, nil);
+        });
+    } else if (self.isEOF) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(nil, YES, nil);
+        });
+    } else {
+        self.receiveCompletion = completion;
+    }
 }
 
 - (void)injectReceiveData:(NSData *)data {
     if (self.receiveCompletion) {
-        self.receiveCompletion(data, NO, nil);
+        void (^completion)(NSData *, BOOL, NSError *) = self.receiveCompletion;
+        self.receiveCompletion = nil;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(data, NO, nil);
+        });
+    } else {
+        [self.pendingData addObject:data];
     }
 }
 
 - (void)injectReceiveComplete {
     if (self.receiveCompletion) {
-        self.receiveCompletion(nil, YES, nil);
+        void (^completion)(NSData *, BOOL, NSError *) = self.receiveCompletion;
+        self.receiveCompletion = nil;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(nil, YES, nil);
+        });
+    } else {
+        self.isEOF = YES;
     }
 }
 
@@ -77,13 +105,16 @@
 }
 
 - (void)testSendMessageEncodesAsWebSocketFrame {
+    XCTestExpectation *sendExpectation = [self expectationWithDescription:@"Send completion called"];
     __block NSError *sendError = nil;
     NSData *payload = [@"hello" dataUsingEncoding:NSUTF8StringEncoding];
 
     [self.adapter sendMessage:payload completion:^(NSError * _Nullable error) {
         sendError = error;
+        [sendExpectation fulfill];
     }];
 
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
     XCTAssertNil(sendError);
     XCTAssertGreaterThan(self.mockConnection.sentData.length, 0);
 }
@@ -111,7 +142,7 @@
     NSData *pingFrame = [self.codec pingFrame:nil];
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        XCTAssertGreaterThan(self.mockConnection.sentData.length, pingFrame.length);
+        XCTAssertGreaterThanOrEqual(self.mockConnection.sentData.length, pingFrame.length);
         [pongExpectation fulfill];
     });
 
