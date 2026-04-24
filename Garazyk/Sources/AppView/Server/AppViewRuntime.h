@@ -22,16 +22,20 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewConfiguration;
+@class AppViewDatabase;
 
 /*!
  @class AppViewRuntime
-
+ 
  @abstract Manages the complete AppView server lifecycle.
  */
 @interface AppViewRuntime : NSObject
 
 /*! The active configuration. Populated after loadConfiguration*. */
 @property (nonatomic, strong, readonly) AppViewConfiguration *configuration;
+
+/*! Returns the AppView database. */
+@property (nonatomic, strong, readonly) AppViewDatabase *database;
 
 /*! Returns YES if the runtime is running. */
 @property (nonatomic, readonly) BOOL isRunning;

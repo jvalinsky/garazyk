@@ -506,6 +506,7 @@ target_include_directories(kaszlak PRIVATE
 
 if(APPLE)
   target_link_libraries(kaszlak PRIVATE
+    ATProtoAppViewServer
     ATProtoRuntime
     ATProtoServices
     ATProtoTransport
@@ -525,6 +526,7 @@ if(APPLE)
 else()
   target_link_libraries(kaszlak PRIVATE
     -Wl,--whole-archive
+    ATProtoAppViewServer
     ATProtoRuntime
     ATProtoServices
     ATProtoTransport
@@ -563,6 +565,7 @@ target_include_directories(campagnola PRIVATE
 
 if(APPLE)
   target_link_libraries(campagnola PRIVATE
+    ATProtoAppViewServer
     ATProtoPLC
     ATProtoTransport
     ATProtoCore
@@ -575,6 +578,7 @@ if(APPLE)
 else()
   target_link_libraries(campagnola PRIVATE
     -Wl,--whole-archive
+    ATProtoAppViewServer
     ATProtoPLC
     ATProtoTransport
     ATProtoCore
@@ -610,6 +614,7 @@ target_include_directories(zuk PRIVATE
 
 if(APPLE)
   target_link_libraries(zuk PRIVATE
+    ATProtoAppViewServer
     ATProtoSync
     ATProtoTransport
     ATProtoCore
@@ -623,6 +628,7 @@ if(APPLE)
 else()
   target_link_libraries(zuk PRIVATE
     -Wl,--whole-archive
+    ATProtoAppViewServer
     ATProtoSync
     ATProtoTransport
     ATProtoCore

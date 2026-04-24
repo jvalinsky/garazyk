@@ -99,8 +99,13 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
 
 /// Get audit log entries
 - (nullable NSDictionary *)getAuditLogDataWithAdminDid:(nullable NSString *)adminDid
-                                                limit:(NSInteger)limit
-                                               cursor:(nullable NSString *)cursor;
+                                                 limit:(NSInteger)limit
+                                                cursor:(nullable NSString *)cursor;
+
+/// Get hosting history entries
+- (nullable NSDictionary *)getHostingHistoryDataWithDid:(nullable NSString *)did
+                                                  limit:(NSInteger)limit
+                                                 offset:(NSInteger)offset;
 
 #pragma mark - Bulk Operations
 

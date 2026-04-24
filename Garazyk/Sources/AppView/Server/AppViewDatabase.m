@@ -1033,7 +1033,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
               subjectDid:(nullable NSString *)subjectDid
                    error:(NSError **)error {
     NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, handle, value, subject_did) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    NSArray *params = @[uri, did, collection, rkey, cid, handle ?: [NSNull null], value ?: [NSNull null], subjectDid ?: [NSNull null]];
+    NSArray *params = @[uri, did, collection, rkey, cid ?: [NSNull null], handle ?: [NSNull null], value ?: [NSNull null], subjectDid ?: [NSNull null]];
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
@@ -1045,6 +1045,39 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
     NSArray *params = @[cid, repoDid, blockData, contentType ?: @"application/cbor", @(blockData.length), iso8601Now()];
     return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+#pragma mark - Stats
+
+- (NSInteger)getTotalRecordsCountForCollection:(NSString *)collection error:(NSError **)error {
+    __block NSInteger count = 0;
+    dispatch_sync(_queue, ^{
+        const char *sql = "SELECT COUNT(*) FROM records WHERE collection = ?";
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, collection.UTF8String, -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                count = sqlite3_column_int64(stmt, 0);
+            }
+            sqlite3_finalize(stmt);
+        }
+    });
+    return count;
+}
+
+- (NSInteger)getTotalBlocksCountWithError:(NSError **)error {
+    __block NSInteger count = 0;
+    dispatch_sync(_queue, ^{
+        const char *sql = "SELECT COUNT(*) FROM blocks";
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                count = sqlite3_column_int64(stmt, 0);
+            }
+            sqlite3_finalize(stmt);
+        }
+    });
+    return count;
 }
 
 #pragma mark - Handle Resolution
