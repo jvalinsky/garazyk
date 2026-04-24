@@ -52,6 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+                cid:(nullable NSString *)cid
               error:(NSError **)error;
 
 @optional

@@ -92,6 +92,7 @@ static NSString * const kSchemaV1 = @""
 "  collection TEXT NOT NULL,"
 "  rkey TEXT NOT NULL,"
 "  cid TEXT NOT NULL,"
+"  handle TEXT,"
 "  value TEXT,"
 "  subject_did TEXT,"
 "  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
@@ -111,6 +112,12 @@ static NSString * const kSchemaV1 = @""
 "  created_at TEXT NOT NULL"
 ");"
 "CREATE INDEX IF NOT EXISTS idx_blocks_repo_did ON blocks(repo_did);"
+
+"CREATE TABLE IF NOT EXISTS handles ("
+"  handle TEXT PRIMARY KEY,"
+"  did    TEXT NOT NULL"
+");"
+"CREATE INDEX IF NOT EXISTS idx_handles_did ON handles(did);"
 ;
 
 // ---------------------------------------------------------------------------
@@ -1021,11 +1028,12 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
               collection:(NSString *)collection
                     rkey:(NSString *)rkey
                      cid:(NSString *)cid
+                  handle:(nullable NSString *)handle
                    value:(nullable NSString *)value
               subjectDid:(nullable NSString *)subjectDid
                    error:(NSError **)error {
-    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, subject_did) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    NSArray *params = @[uri, did, collection, rkey, cid, value ?: [NSNull null], subjectDid ?: [NSNull null]];
+    NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, handle, value, subject_did) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    NSArray *params = @[uri, did, collection, rkey, cid, handle ?: [NSNull null], value ?: [NSNull null], subjectDid ?: [NSNull null]];
     return [self executeParameterizedUpdate:sql params:params error:error];
 }
 
@@ -1037,6 +1045,51 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
     NSArray *params = @[cid, repoDid, blockData, contentType ?: @"application/cbor", @(blockData.length), iso8601Now()];
     return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+#pragma mark - Handle Resolution
+
+- (BOOL)saveHandle:(NSString *)handle did:(NSString *)did error:(NSError **)error {
+    // Delete any existing entries for this DID first (handle might have changed)
+    [self executeParameterizedUpdate:@"DELETE FROM handles WHERE did = ?" params:@[did] error:nil];
+    
+    NSString *sql = @"INSERT OR REPLACE INTO handles (handle, did) VALUES (?, ?)";
+    NSArray *params = @[handle, did];
+    return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (nullable NSString *)resolveHandleToDID:(NSString *)handle error:(NSError **)error {
+    __block NSString *did = nil;
+    dispatch_sync(_queue, ^{
+        const char *sql = "SELECT did FROM handles WHERE handle = ?";
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                const char *val = (const char *)sqlite3_column_text(stmt, 0);
+                if (val) did = [NSString stringWithUTF8String:val];
+            }
+            sqlite3_finalize(stmt);
+        }
+    });
+    return did;
+}
+
+- (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error {
+    __block NSString *handle = nil;
+    dispatch_sync(_queue, ^{
+        const char *sql = "SELECT handle FROM handles WHERE did = ?";
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                const char *val = (const char *)sqlite3_column_text(stmt, 0);
+                if (val) handle = [NSString stringWithUTF8String:val];
+            }
+            sqlite3_finalize(stmt);
+        }
+    });
+    return handle;
 }
 
 @end
