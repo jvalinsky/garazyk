@@ -124,70 +124,115 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable instancetype)cidFromBytes:(NSData *)data {
-    if (!data || data.length < 2) {
-        return nil;
-    }
-    if (data.length > 256) {
+    if (!data || data.length < 2 || data.length > 256) {
         return nil;
     }
 
-    const uint8_t *bytes = data.bytes;
-    NSUInteger offset = 0;
+    NSUInteger consumed = 0;
+    CID *cid = [self cidFromBuffer:data.bytes length:data.length consumed:&consumed];
+    if (!cid || consumed != data.length) {
+        return nil;
+    }
+    return cid;
+}
 
-    // Check for CIDv0 (starts with 0x12 0x20)
-    if (data.length == 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
++ (nullable instancetype)cidFromBuffer:(const uint8_t *)bytes
+                                length:(NSUInteger)length
+                              consumed:(nullable NSUInteger *)consumed {
+    if (!bytes || length < 2) {
+        return nil;
+    }
+
+    // CIDv0 fast-path: sha2-256 (0x12) + length 32 (0x20) + 32-byte digest.
+    if (length >= 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
         CID *cid = [[CID alloc] init];
         if (cid) {
             cid->_version = 0;
             cid->_codec = 0x70; // dag-pb (standard for CIDv0)
-            cid->_multihash = [data copy];
+            cid->_multihash = [NSData dataWithBytes:bytes length:34];
         }
+        if (consumed) *consumed = 34;
         return cid;
     }
 
-    uint64_t versionMulticodec;
+    NSUInteger offset = 0;
+
+    uint64_t versionMulticodec = 0;
     NSUInteger versionSize = [self readVarint:bytes + offset
-                                     maxLength:data.length - offset
-                                       value:&versionMulticodec];
+                                    maxLength:length - offset
+                                        value:&versionMulticodec];
     if (versionSize == 0) {
         return nil;
     }
-
-    if (versionMulticodec == 0) {
-        // Handle case where version is 0? (Standard CIDv1 with version 0 is rare)
-        offset += versionSize;
-        if (offset >= data.length) {
-            return nil;
-        }
-        versionSize = [self readVarint:bytes + offset
-                              maxLength:data.length - offset
-                                value:&versionMulticodec];
-        if (versionSize == 0 || versionMulticodec != kCIDv1Multicodec) {
-            return nil;
-        }
-    } else if (versionMulticodec != kCIDv1Multicodec) {
-        // Not version 1? If it's 0x12 it would have been caught above.
-        return nil; 
-    }
     offset += versionSize;
 
-    uint64_t codec;
+    // Tolerate legacy encoding where the first varint is 0 and a second
+    // varint carries the actual CIDv1 multicodec (0x01).
+    if (versionMulticodec == 0) {
+        if (offset >= length) {
+            return nil;
+        }
+        NSUInteger innerSize = [self readVarint:bytes + offset
+                                      maxLength:length - offset
+                                          value:&versionMulticodec];
+        if (innerSize == 0) {
+            return nil;
+        }
+        offset += innerSize;
+    }
+
+    if (versionMulticodec != kCIDv1Multicodec) {
+        return nil;
+    }
+
+    uint64_t codec = 0;
     NSUInteger codecSize = [self readVarint:bytes + offset
-                                     maxLength:data.length - offset
-                                       value:&codec];
+                                  maxLength:length - offset
+                                      value:&codec];
     if (codecSize == 0 || codec > UINT32_MAX) {
         return nil;
     }
     offset += codecSize;
 
-    if (offset >= data.length) {
+    // Remember where the multihash (code + length + digest) begins so we can
+    // slice it out once the digest length is known.
+    NSUInteger multihashStart = offset;
+
+    uint64_t mhCode = 0;
+    NSUInteger mhCodeSize = [self readVarint:bytes + offset
+                                   maxLength:length - offset
+                                       value:&mhCode];
+    if (mhCodeSize == 0) {
+        return nil;
+    }
+    offset += mhCodeSize;
+
+    uint64_t mhLen = 0;
+    NSUInteger mhLenSize = [self readVarint:bytes + offset
+                                  maxLength:length - offset
+                                      value:&mhLen];
+    if (mhLenSize == 0) {
+        return nil;
+    }
+    offset += mhLenSize;
+
+    // Overflow-safe bounds check. 128 is a defense-in-depth cap — real
+    // multihashes never exceed 64 bytes and we reject hostile oversized values.
+    if (mhLen > 128 || mhLen > (uint64_t)(length - offset)) {
         return nil;
     }
 
-    NSUInteger multihashLength = data.length - offset;
-    NSData *multihash = [data subdataWithRange:NSMakeRange(offset, multihashLength)];
+    NSUInteger digestLen = (NSUInteger)mhLen;
+    NSUInteger multihashLen = (offset - multihashStart) + digestLen;
+    NSData *multihash = [NSData dataWithBytes:(bytes + multihashStart) length:multihashLen];
 
-    return [self cidWithMultihash:multihash codec:(NSUInteger)codec];
+    CID *cid = [self cidWithMultihash:multihash codec:(NSUInteger)codec];
+    if (!cid) {
+        return nil;
+    }
+
+    if (consumed) *consumed = offset + digestLen;
+    return cid;
 }
 
 - (NSString *)stringValue {
