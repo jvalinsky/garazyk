@@ -50,6 +50,7 @@ static NSSet<NSString *> *graphCollections(void) {
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+                cid:(nullable NSString *)cid
               error:(NSError **)error {
     // Follow: validate subject
     if ([collection isEqualToString:@"app.bsky.graph.follow"]) {
@@ -84,7 +85,8 @@ static NSSet<NSString *> *graphCollections(void) {
 
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSDictionary *record = op[@"record"];
-            if (record) [self indexRecord:record did:event.did collection:collection error:nil];
+            NSString *cid = op[@"cid"];
+            if (record) [self indexRecord:record did:event.did collection:collection cid:cid error:nil];
         } else if ([action isEqualToString:@"delete"]) {
             NSString *rkey = (slash.location != NSNotFound)
                 ? [path substringFromIndex:slash.location + 1] : @"";

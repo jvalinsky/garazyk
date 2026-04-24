@@ -134,6 +134,17 @@ static const NSUInteger kMaxVarintSize = 9;
     const uint8_t *bytes = data.bytes;
     NSUInteger offset = 0;
 
+    // Check for CIDv0 (starts with 0x12 0x20)
+    if (data.length == 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
+        CID *cid = [[CID alloc] init];
+        if (cid) {
+            cid->_version = 0;
+            cid->_codec = 0x70; // dag-pb (standard for CIDv0)
+            cid->_multihash = [data copy];
+        }
+        return cid;
+    }
+
     uint64_t versionMulticodec;
     NSUInteger versionSize = [self readVarint:bytes + offset
                                      maxLength:data.length - offset
@@ -143,6 +154,7 @@ static const NSUInteger kMaxVarintSize = 9;
     }
 
     if (versionMulticodec == 0) {
+        // Handle case where version is 0? (Standard CIDv1 with version 0 is rare)
         offset += versionSize;
         if (offset >= data.length) {
             return nil;
@@ -154,14 +166,15 @@ static const NSUInteger kMaxVarintSize = 9;
             return nil;
         }
     } else if (versionMulticodec != kCIDv1Multicodec) {
+        // Not version 1? If it's 0x12 it would have been caught above.
         return nil; 
     }
     offset += versionSize;
 
     uint64_t codec;
     NSUInteger codecSize = [self readVarint:bytes + offset
-                                    maxLength:data.length - offset
-                                      value:&codec];
+                                     maxLength:data.length - offset
+                                       value:&codec];
     if (codecSize == 0 || codec > UINT32_MAX) {
         return nil;
     }

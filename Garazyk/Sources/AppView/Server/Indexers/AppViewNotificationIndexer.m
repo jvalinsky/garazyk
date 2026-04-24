@@ -43,6 +43,7 @@ static NSSet<NSString *> *notifSources(void) {
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+                cid:(nullable NSString *)cid
               error:(NSError **)error {
     // Notification fan-out:
     // - like/repost: extract subject AT-URI, parse DID from authority, fan to author
@@ -86,7 +87,8 @@ static NSSet<NSString *> *notifSources(void) {
 
         if ([action isEqualToString:@"create"]) {
             NSDictionary *record = op[@"record"];
-            if (record) [self indexRecord:record did:event.did collection:collection error:nil];
+            NSString *cid = op[@"cid"];
+            if (record) [self indexRecord:record did:event.did collection:collection cid:cid error:nil];
         } else if ([action isEqualToString:@"delete"]) {
             // Retract notification if record deleted
         }

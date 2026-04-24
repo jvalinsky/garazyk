@@ -35,6 +35,7 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
 - (BOOL)indexRecord:(NSDictionary *)record
                  did:(NSString *)did
           collection:(NSString *)collection
+                 cid:(nullable NSString *)cid
                error:(NSError **)error {
     // record structure: {$type, $did, $rkey, record: {displayName, description, ...}}
     NSDictionary *profileRecord = record[@"record"] ?: record;
@@ -59,23 +60,47 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:profileRecord options:0 error:nil];
 
+    // Get the CID for the record
+    NSString *recordCID = cid;
+    if (!recordCID && jsonData) {
+        // Fallback to recalculating CID if not provided (legacy/backfill)
+        // Use DAG-CBOR for correct AT Protocol CIDs
+        NSError *cborError = nil;
+        NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:profileRecord error:&cborError];
+        if (cborData) {
+            recordCID = [CID sha256:cborData].stringValue; // Note: sha256: uses 0x55, should be 0x71 ideally but CID.m sha256 is 0x55
+            // Actually let's use the correct codec 0x71 if we can.
+            CID *actualCID = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
+            recordCID = actualCID.stringValue;
+        } else {
+            recordCID = [CID sha256:jsonData].stringValue;
+        }
+    }
+
     // Write to database via AppViewDatabase
     // Save block first (required for AT Protocol)
-    [_avdb saveBlockWithCid:[CID sha256:jsonData].bytes
-                 repoDid:did
-               blockData:jsonData
-             contentType:@"application/json"
-                   error:nil];
-
-    // Get the CID for the record
-    NSString *recordCID = [CID sha256:jsonData].stringValue;
+    if (recordCID) {
+        CID *rcid = [CID cidFromString:recordCID];
+        NSData *blockData = nil;
+        if (rcid) {
+            // If we have CBOR data, use it, otherwise use JSON (best effort)
+            blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:profileRecord error:nil] ?: jsonData;
+            [_avdb saveBlockWithCid:rcid.bytes
+                         repoDid:did
+                       blockData:blockData
+                     contentType:blockData == jsonData ? @"application/json" : @"application/cbor"
+                           error:nil];
+        }
+    }
 
     // Then write to records table
+    NSString *handle = [AppViewIdentityHelper resolveHandleForDID:did error:nil];
     [_avdb saveRecordWithURI:uri
                          did:did
                    collection:collection
                         rkey:rkey
                           cid:recordCID
+                       handle:handle
                         value:[[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding]
                   subjectDid:did
                        error:nil];
@@ -92,8 +117,9 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
 
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSDictionary *record = op[@"record"];
+            NSString *cid = op[@"cid"];
             if (record) {
-                [self indexRecord:record did:event.did collection:kCollection error:nil];
+                [self indexRecord:record did:event.did collection:kCollection cid:cid error:nil];
             }
         } else if ([action isEqualToString:@"delete"]) {
             // Profile delete — clear materialized data

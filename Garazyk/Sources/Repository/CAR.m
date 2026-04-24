@@ -114,65 +114,63 @@ static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
 }
 
 static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
-    if (!bytes || length < 4) {
+    if (!bytes || length < 2) {
         return NO;
     }
 
     NSUInteger offset = 0;
 
-    // Read version varint (should be 1 for CIDv1)
-    uint64_t version = 0;
-    NSUInteger versionSize = ReadVarint(bytes, length, &version);
-    if (versionSize == 0 || version != 1) {
-        return NO;
+    // Check for CIDv0 (starts with 0x12 0x20)
+    if (length >= 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
+        NSData *cidData = [NSData dataWithBytes:bytes length:34];
+        CID *cid = [CID cidFromBytes:cidData];
+        if (cid) {
+            if (cidOut) *cidOut = cid;
+            if (cidLengthOut) *cidLengthOut = 34;
+            return YES;
+        }
     }
+
+    // Read version varint
+    uint64_t version = 0;
+    NSUInteger versionSize = ReadVarint(bytes + offset, length - offset, &version);
+    if (versionSize == 0) return NO;
     offset += versionSize;
 
-    // Read codec varint (should be 0x71 for dag-cbor)
-    uint64_t codec = 0;
-    NSUInteger codecSize = ReadVarint(bytes + offset, length - offset, &codec);
-    if (codecSize == 0 || codec > UINT32_MAX) {
-        return NO;
-    }
-    offset += codecSize;
+    if (version == 1) {
+        // CIDv1
+        // Read codec varint
+        uint64_t codec = 0;
+        NSUInteger codecSize = ReadVarint(bytes + offset, length - offset, &codec);
+        if (codecSize == 0) return NO;
+        offset += codecSize;
 
-    // Need at least 2 more bytes for hash code (0x12) and hash length (0x20)
-    if (offset + 2 > length) {
-        return NO;
-    }
+        // Read multihash code
+        uint64_t mhc = 0;
+        NSUInteger mhcSize = ReadVarint(bytes + offset, length - offset, &mhc);
+        if (mhcSize == 0) return NO;
+        offset += mhcSize;
 
-    // Validate hash code is sha2-256 (0x12)
-    if (bytes[offset] != 0x12) {
-        return NO;
-    }
-    offset++;
+        // Read multihash length
+        uint64_t mhl = 0;
+        NSUInteger mhlSize = ReadVarint(bytes + offset, length - offset, &mhl);
+        if (mhlSize == 0) return NO;
+        offset += mhlSize;
 
-    // Validate hash length is 32
-    if (bytes[offset] != 0x20) {
-        return NO;
-    }
-    offset++;
+        // Total CID length is current offset + multihash length
+        if (offset + mhl > length) return NO;
+        NSUInteger totalCidLen = offset + (NSUInteger)mhl;
 
-    // Skip the 32-byte hash digest
-    if (offset + 32 > length) {
-        return NO;
-    }
-    offset += 32;
+        NSData *cidData = [NSData dataWithBytes:bytes length:totalCidLen];
+        CID *cid = [CID cidFromBytes:cidData];
+        if (!cid) return NO;
 
-    // Create CID from the full CID bytes
-    NSData *cidData = [NSData dataWithBytes:bytes length:offset];
-    CID *cid = [CID cidFromBytes:cidData];
-    if (!cid) {
-        return NO;
+        if (cidOut) *cidOut = cid;
+        if (cidLengthOut) *cidLengthOut = totalCidLen;
+        return YES;
     }
 
-    if (cidOut) {
-        *cidOut = cid;
-    }
-    if (cidLengthOut) {
-        *cidLengthOut = offset;
-    }
-    return YES;
+    return NO;
 }
 
 + (instancetype)readFromData:(NSData *)data error:(NSError **)error {

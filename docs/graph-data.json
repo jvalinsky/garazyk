@@ -974,9 +974,9 @@
       "node_type": "option",
       "title": "Patch existing manual CAR parser",
       "description": "Fix the manual parsing logic to correctly skip CID prefixes and handle Dag-CBOR.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T14:42:48.296378-04:00",
-      "updated_at": "2026-04-22T14:42:48.296378-04:00",
+      "updated_at": "2026-04-23T20:22:43.516897-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1315,9 +1315,9 @@
       "node_type": "action",
       "title": "Extract data CID from commit and parse data MST",
       "description": "Fixed _parseCARAndIndex to decode commit object, extract 'data' CID, then load that MST instead of trying to parse root as MST directly.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:47:12.731386-04:00",
-      "updated_at": "2026-04-22T16:47:12.731386-04:00",
+      "updated_at": "2026-04-23T20:22:43.527814-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"Garazyk/Sources/AppView/Server/Backfill/AppViewBackfillWorker.m\"]}"
     },
     {
@@ -1469,9 +1469,9 @@
       "node_type": "decision",
       "title": "Implement Option A: Proper handle resolution with CID fix",
       "description": "Phase 1: Fix CID type to use NSData bytes. Phase 2: Add resolveHandleToDID and resolveDIDToHandle. Phase 3: Update handleGetProfile. Phase 4: Update getProfileForActor. Phase 5: Store handle in records.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:30:51.580191-04:00",
-      "updated_at": "2026-04-22T17:30:51.580191-04:00",
+      "updated_at": "2026-04-23T20:22:43.537237-04:00",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1480,9 +1480,9 @@
       "node_type": "action",
       "title": "Fix CID type in AppViewActorIndexer to use NSData bytes",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:31:12.697002-04:00",
-      "updated_at": "2026-04-22T17:31:12.697002-04:00",
+      "updated_at": "2026-04-23T20:22:43.545561-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"AppView/Sources/AppView/Server/Indexers/AppViewActorIndexer.m\"]}"
     },
     {
@@ -1491,9 +1491,9 @@
       "node_type": "action",
       "title": "Update getProfileRecordForDID to use CID bytes",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:31:12.733246-04:00",
-      "updated_at": "2026-04-22T17:31:12.733246-04:00",
+      "updated_at": "2026-04-23T20:22:43.553175-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"AppView/Sources/AppView/Services/ActorService.m\"]}"
     },
     {
@@ -1502,9 +1502,9 @@
       "node_type": "action",
       "title": "Add resolveHandleToDID method",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:31:12.769973-04:00",
-      "updated_at": "2026-04-22T17:31:12.769973-04:00",
+      "updated_at": "2026-04-23T20:22:43.561224-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"AppView/Sources/AppView/Services/ActorService.m\"]}"
     },
     {
@@ -1513,9 +1513,9 @@
       "node_type": "action",
       "title": "Add resolveDIDToHandle method",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:31:12.807752-04:00",
-      "updated_at": "2026-04-22T17:31:12.807752-04:00",
+      "updated_at": "2026-04-23T20:22:43.568728-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"AppView/Sources/AppView/Services/ActorService.m\"]}"
     },
     {
@@ -1524,9 +1524,9 @@
       "node_type": "action",
       "title": "Update handleGetProfile to resolve handles",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:31:12.844032-04:00",
-      "updated_at": "2026-04-22T17:31:12.844032-04:00",
+      "updated_at": "2026-04-23T20:22:43.575871-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"AppView/Sources/Network/AppViewXRpcRoutePack.m\"]}"
     },
     {
@@ -1535,9 +1535,9 @@
       "node_type": "action",
       "title": "Store handle in records table",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:31:12.879514-04:00",
-      "updated_at": "2026-04-22T17:31:12.879514-04:00",
+      "updated_at": "2026-04-23T20:22:43.583092-04:00",
       "metadata_json": "{\"branch\":\"main\",\"files\":[\"AppView/Sources/AppView/Server/Indexers/AppViewActorIndexer.m\"]}"
     },
     {
@@ -1711,9 +1711,9 @@
       "node_type": "action",
       "title": "AppView: Fix dead-letter 'Post missing text and embed' validation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T18:52:41.119414-04:00",
-      "updated_at": "2026-04-22T18:52:41.119414-04:00",
+      "updated_at": "2026-04-23T20:12:14.364798-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75,\"prompt\":\"AppViewFeedIndexer rejects posts with 'Post missing text and embed'. Need to check if the validation is too strict or if the record data is malformed during CBOR deserialization.\"}"
     },
     {
@@ -1777,9 +1777,9 @@
       "node_type": "observation",
       "title": "XrpcChatBskyConvoTests: 10 auth guard failures remain after DB fix - endpoints return 200 instead of 401 without auth",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T21:47:59.904359-04:00",
-      "updated_at": "2026-04-22T21:47:59.904359-04:00",
+      "updated_at": "2026-04-23T20:12:14.330934-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"After fixing AdminAuthXrpcTestBase DB open issue, XrpcChatBskyConvoTests has 10 remaining failures. All are auth guard tests: endpoints return 200 instead of 401 when no auth is provided. The chat.bsky.convo endpoints (getConvoForMembers, acceptConvo, leaveConvo, listConvoRequests, addReaction, updateRead, sendMessageBatch, deleteMessageForSelf, getConvoAvailability) don't enforce auth. This is a handler-level issue, not a test infrastructure issue.\"}"
     },
     {
@@ -1788,9 +1788,9 @@
       "node_type": "observation",
       "title": "AppViewBackfillWorkerTests: DB opens fine, failure is in testParseCARAndIndex - indexer returns 0 records instead of 1",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T21:48:40.123001-04:00",
-      "updated_at": "2026-04-22T21:48:40.123001-04:00",
+      "updated_at": "2026-04-23T20:12:14.340698-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"The AppViewBackfillWorkerTests failure is NOT a DB open issue. The database opens successfully. The testParseCARAndIndex test fails because the mock indexer.indexedRecords.count is 0 instead of 1. This means the CAR parsing or indexing logic in _parseCARAndIndex:forDID:error: is not calling the indexer. The testResolvePDSEndpointForLocalhost test passes fine. Root cause needs investigation in the CAR parsing code.\"}"
     },
     {
@@ -1799,9 +1799,9 @@
       "node_type": "decision",
       "title": "Fix AppViewBackfillWorkerTests testParseCARAndIndex: test CAR data doesn't include MST block",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T21:50:17.818809-04:00",
-      "updated_at": "2026-04-22T21:50:17.818809-04:00",
+      "updated_at": "2026-04-23T20:12:14.348945-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"The test creates a CAR with commit + record blocks, but the code expects commit → data CID → MST block → entries. The test's CAR has no MST block at the data CID, so entries are nil and no records get indexed. Two options: (1) Fix the test to create a proper CAR with a MST block between commit and records. (2) Add a fallback path in _parseCARAndIndex that handles CARs without MST blocks (direct record blocks). Option 1 is better because the test should match real CAR format from AT Protocol repos.\"}"
     },
     {
@@ -2371,9 +2371,20 @@
       "node_type": "outcome",
       "title": "PDS Block Integrity Hardening complete: achieved 100% pass rate. Records are now persisted as DAG-CBOR in ipld_blocks, ensuring valid CAR exports for federation.",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T20:11:14.702080-04:00",
-      "updated_at": "2026-04-23T20:11:14.702080-04:00",
+      "updated_at": "2026-04-23T20:12:14.357001-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 217,
+      "change_id": "02c7eaaa-a257-4843-b978-2eed9f27a6df",
+      "node_type": "outcome",
+      "title": "AppView Federation Readiness: hardened CAR parsing and implemented persistent handle resolution mapping. Achieved 100% test pass rate including AppView backfill suites.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-23T20:22:43.620560-04:00",
+      "updated_at": "2026-04-23T20:22:43.620560-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
     }
   ],

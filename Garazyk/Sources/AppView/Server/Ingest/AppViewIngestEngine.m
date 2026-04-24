@@ -278,9 +278,10 @@
                              collection:collection
                                    rkey:rkey
                                     cid:cidStr
+                                 handle:nil // Will be populated by indexers if needed
                                   value:nil // value field in records table is optional/nullable
                              subjectDid:subjectDid
-                                  error:nil];
+                                   error:nil];
         } else if ([action isEqualToString:@"delete"]) {
             [_database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:nil];
         }
@@ -329,6 +330,11 @@
 - (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL {
     NSData *dummy = [NSData data];
     [_database logEvent:event.seq did:event.did rev:nil cid:nil rawEnvelope:dummy error:nil];
+
+    if (event.handle) {
+        [_database saveHandle:event.handle did:event.did error:nil];
+        PDS_LOG_INFO(@"[AppView Ingest] Updated handle mapping: %@ -> %@", event.handle, event.did);
+    }
 
     AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
     ingestEvent.seq        = event.seq;

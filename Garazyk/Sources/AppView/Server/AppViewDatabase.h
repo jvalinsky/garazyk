@@ -297,6 +297,7 @@ extern NSString * const AppViewDatabaseErrorDomain;
               collection:(NSString *)collection
                     rkey:(NSString *)rkey
                      cid:(NSString *)cid
+                  handle:(nullable NSString *)handle
                    value:(nullable NSString *)value
               subjectDid:(nullable NSString *)subjectDid
                    error:(NSError **)error;
@@ -310,6 +311,26 @@ extern NSString * const AppViewDatabaseErrorDomain;
               blockData:(NSData *)blockData
             contentType:(nullable NSString *)contentType
                   error:(NSError **)error;
+
+#pragma mark - Handle Resolution
+
+/*!
+ @method saveHandle:did:error:
+ @abstract Update handle-to-DID mapping.
+ */
+- (BOOL)saveHandle:(NSString *)handle did:(NSString *)did error:(NSError **)error;
+
+/*!
+ @method resolveHandleToDID:error:
+ @abstract Find DID for a given handle.
+ */
+- (nullable NSString *)resolveHandleToDID:(NSString *)handle error:(NSError **)error;
+
+/*!
+ @method resolveDIDToHandle:error:
+ @abstract Find handle for a given DID.
+ */
+- (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error;
 
 #pragma mark - Lifecycle
 

@@ -45,6 +45,7 @@ static NSSet<NSString *> *feedCollections(void) {
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+                cid:(nullable NSString *)cid
               error:(NSError **)error {
     // Validate presence of $type
     if (!record[@"$type"]) {
@@ -93,8 +94,9 @@ static NSSet<NSString *> *feedCollections(void) {
 
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSDictionary *record = op[@"record"];
+            NSString *cid = op[@"cid"];
             if (record) {
-                [self indexRecord:record did:event.did collection:collection error:nil];
+                [self indexRecord:record did:event.did collection:collection cid:cid error:nil];
             }
         } else if ([action isEqualToString:@"delete"]) {
             NSString *rkey = (slash.location != NSNotFound)
