@@ -332,7 +332,8 @@ int main(int argc, char *argv[]) {
       @"SyntaxInteropTests",
       @"MSTInteropTests",
       @"CARInteropTests",
-      @"AppViewBackfillWorkerTests"
+      @"AppViewBackfillWorkerTests",
+      @"IPLDBlockIntegrityTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

@@ -1228,7 +1228,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     __block NSError *blockError = nil;
     
     [self safeExecuteSync:^{
-        NSString *sql = @"SELECT cid, size, rev FROM ipld_blocks LIMIT ? OFFSET ?";
+        NSString *sql = @"SELECT cid, block, size, rev FROM ipld_blocks LIMIT ? OFFSET ?";
         NSError *prepError = nil;
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [self prepareStatement:sql error:&prepError];
         if (!stmt) {
@@ -1243,8 +1243,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
             PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
             block.cid = [NSData dataWithBytes:sqlite3_column_blob(stmt, 0) 
                                        length:sqlite3_column_bytes(stmt, 0)];
-            block.size = sqlite3_column_int64(stmt, 1);
-            const char *revText = (const char *)sqlite3_column_text(stmt, 2);
+            block.blockData = [NSData dataWithBytes:sqlite3_column_blob(stmt, 1) 
+                                             length:sqlite3_column_bytes(stmt, 1)];
+            block.size = sqlite3_column_int64(stmt, 2);
+            const char *revText = (const char *)sqlite3_column_text(stmt, 3);
             if (revText) {
                 block.rev = [NSString stringWithUTF8String:revText];
             }

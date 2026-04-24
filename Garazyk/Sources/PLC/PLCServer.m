@@ -301,53 +301,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         return NO;
     }
 
-    NSDictionary *services = op[@"services"];
-    if (![services isKindOfClass:[NSDictionary class]]) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                         code:16
-                                     userInfo:@{NSLocalizedDescriptionKey: @"services must be object"}];
-        }
-        return NO;
-    }
-    if (services.count > kPLCMaxServiceEntries) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                         code:17
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Too many service entries"}];
-        }
-        return NO;
-    }
-    for (NSString *serviceId in services) {
-        if (serviceId.length > kPLCMaxIdentifierLength) {
-            if (error) {
-                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:18
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Service id too long"}];
-            }
-            return NO;
-        }
-        NSDictionary *service = services[serviceId];
-        if (![service isKindOfClass:[NSDictionary class]]) {
-            if (error) {
-                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:19
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid service entry"}];
-            }
-            return NO;
-        }
-        NSString *serviceType = service[@"type"];
-        NSString *endpoint = service[@"endpoint"];
-        if (![serviceType isKindOfClass:[NSString class]] || serviceType.length > kPLCMaxServiceTypeLength ||
-            ![endpoint isKindOfClass:[NSString class]] || endpoint.length > kPLCMaxServiceEndpointLength) {
-            if (error) {
-                *error = [NSError errorWithDomain:@"PLCValidationErrorDomain"
-                                             code:20
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid service entry"}];
-            }
-            return NO;
-        }
-    }
+    // services already validated above
 
     NSDictionary *verificationMethods = op[@"verificationMethods"];
     if (![verificationMethods isKindOfClass:[NSDictionary class]]) {
