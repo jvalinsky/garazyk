@@ -13,7 +13,29 @@
 #ifndef PDSTypes_h
 #define PDSTypes_h
 
+/**
+ * @def PDS_PLATFORM_APPLE
+ * @brief Defined when building for macOS/Apple platforms.
+ * Replaces: __APPLE__, defined(__APPLE__), TARGET_OS_MAC
+ */
+#if defined(__APPLE__)
+#define PDS_PLATFORM_APPLE 1
+#else
+#define PDS_PLATFORM_APPLE 0
+#endif
+
+/**
+ * @def PDS_PLATFORM_LINUX
+ * @brief Defined when building for Linux/GNUstep platforms.
+ * Replaces: __linux__, defined(__linux__), GNUSTEP, defined(__GNUstep__), !defined(__APPLE__)
+ */
 #if !defined(__APPLE__)
+#define PDS_PLATFORM_LINUX 1
+#else
+#define PDS_PLATFORM_LINUX 0
+#endif
+
+#if PDS_PLATFORM_LINUX
 #import "Foundation/NSDataCompat.h"
 
 // CF Bridging macros for ARC (GNUstep doesn't define these)
@@ -32,14 +54,10 @@
  * @def PDS_GCD_OBJC_SUPPORT
  * @brief Whether platform supports GCD Objective-C integration.
  *
- * macOS: 1 (GCD with Objective-C object support)
+ * Apple: 1 (GCD with Objective-C object support)
  * Linux: 0 (libdispatch without full Objective-C integration)
  */
-#if defined(__APPLE__)
-#define PDS_GCD_OBJC_SUPPORT 1
-#else
-#define PDS_GCD_OBJC_SUPPORT 0
-#endif
+#define PDS_GCD_OBJC_SUPPORT PDS_PLATFORM_APPLE
 
 /**
  * @def PDS_DISPATCH_QUEUE_STRONG
@@ -58,13 +76,9 @@
 #undef DEPRECATED_MSG_ATTRIBUTE
 #endif
 
-#if defined(__APPLE__)
 #define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
-#else
-#define DEPRECATED_MSG_ATTRIBUTE(s) __attribute__((deprecated(s)))
-#endif
 
-#if !defined(__APPLE__)
+#if PDS_PLATFORM_LINUX
 #ifndef NSErrorUserInfoKey
 #define NSErrorUserInfoKey NSString *
 #endif
