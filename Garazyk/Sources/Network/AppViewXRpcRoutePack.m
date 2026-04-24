@@ -2,6 +2,8 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/XrpcAuthHelper.h"
+#import "Auth/JWT.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
@@ -29,6 +31,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     AgeAssuranceService *_ageAssuranceService;
     ChatModerationService *_chatModerationService;
     id<PDSQueryDatabase> _database;
+    JWTMinter *_jwtMinter;
 }
 
 - (instancetype)initWithFeedService:(FeedService *)feedService
@@ -38,6 +41,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                 ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
                chatModerationService:(nullable ChatModerationService *)chatModerationService
                           database:(nullable id<PDSQueryDatabase>)database
+                         jwtMinter:(nullable JWTMinter *)jwtMinter
 {
     self = [super init];
     if (self)
@@ -49,6 +53,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
         _ageAssuranceService = ageAssuranceService;
         _chatModerationService = chatModerationService;
         _database = database;
+        _jwtMinter = jwtMinter;
     }
     return self;
 }
@@ -347,10 +352,18 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     if (token.length == 0)
         return nil;
 
-    for (NSString *did in @[@"did:plc:", @"did:web:"])
+    // Check if it's a direct DID (for dev/testing)
+    for (NSString *prefix in @[@"did:plc:", @"did:web:"])
     {
-        if ([token hasPrefix:did])
+        if ([token hasPrefix:prefix])
             return token;
+    }
+
+    // Attempt to parse as JWT and extract subject (DID)
+    NSError *error = nil;
+    JWT *jwt = [JWT jwtWithToken:token error:&error];
+    if (jwt && jwt.payload.sub) {
+        return jwt.payload.sub;
     }
 
     return nil;
@@ -369,6 +382,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
         return nil;
     }
 
+    // Attempt to extract DID (supports direct DID for testing or unverified JWT sub)
     NSString *actorDID = [self extractDIDFromAuth:authHeader request:request];
     if (!actorDID)
     {

@@ -32,7 +32,13 @@ static NSTimeInterval s_cacheTTL = 300; // 5 minutes
 + (nullable NSString *)resolveHandleForDID:(NSString *)did 
                                      error:(NSError **)error {
     if (!did || did.length == 0) {
-        return @"invalid.handle";
+        return nil;
+    }
+
+    if (![did hasPrefix:@"did:plc:"]) {
+        // We only support PLC resolution in this helper for now.
+        // Returns nil (handle not found) without error.
+        return nil;
     }
 
     NSString *cached = [s_handleCache objectForKey:did];
@@ -58,18 +64,18 @@ static NSTimeInterval s_cacheTTL = 300; // 5 minutes
     long waitResult = dispatch_semaphore_wait(sema, timeout);
     
     if (waitResult != 0 || resolveErr || !doc) {
-        if (error && resolveErr) {
-            *error = resolveErr;
-        }
-        return @"invalid.handle";
+        // Do not report errors for missing or invalid DIDs during handle resolution,
+        // just return nil to indicate handle couldn't be determined.
+        if (error) *error = nil;
+        return nil;
     }
     
     NSArray *alsoKnownAs = doc[@"alsoKnownAs"];
     if (!alsoKnownAs || ![alsoKnownAs isKindOfClass:[NSArray class]]) {
-        return @"invalid.handle";
+        return nil;
     }
     
-    NSString *handle = @"invalid.handle";
+    NSString *handle = nil;
     for (id value in alsoKnownAs) {
         if ([value isKindOfClass:[NSString class]]) {
             NSString *candidate = (NSString *)value;
