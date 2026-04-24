@@ -93,6 +93,67 @@
     XCTAssertNil([CID cidFromString:nil]);
 }
 
+- (void)testCIDFromBufferReportsConsumedLength {
+    NSData *digest = [CID sha256Digest:[@"buffer-consume" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *original = [CID cidWithDigest:digest codec:0x71];
+    NSData *cidBytes = original.bytes;
+
+    NSMutableData *withTrailer = [NSMutableData dataWithData:cidBytes];
+    uint8_t trailer[] = {0xDE, 0xAD, 0xBE, 0xEF};
+    [withTrailer appendBytes:trailer length:sizeof(trailer)];
+
+    NSUInteger consumed = 0;
+    CID *parsed = [CID cidFromBuffer:withTrailer.bytes length:withTrailer.length consumed:&consumed];
+
+    XCTAssertNotNil(parsed);
+    XCTAssertEqual(consumed, cidBytes.length);
+    XCTAssertTrue([parsed isEqualToCID:original]);
+}
+
+- (void)testCIDFromBufferCIDv0 {
+    uint8_t v0[34] = {0x12, 0x20};
+    for (int i = 2; i < 34; i++) v0[i] = (uint8_t)i;
+    NSMutableData *buffer = [NSMutableData dataWithBytes:v0 length:34];
+    uint8_t junk[] = {0x01, 0x02, 0x03};
+    [buffer appendBytes:junk length:sizeof(junk)];
+
+    NSUInteger consumed = 0;
+    CID *parsed = [CID cidFromBuffer:buffer.bytes length:buffer.length consumed:&consumed];
+
+    XCTAssertNotNil(parsed);
+    XCTAssertEqual(consumed, (NSUInteger)34);
+    XCTAssertEqual(parsed.version, (NSUInteger)0);
+}
+
+- (void)testCIDFromBufferRejectsTruncatedVarint {
+    uint8_t truncated[] = {0x81}; // continuation bit set, no next byte
+    NSUInteger consumed = 999;
+    CID *parsed = [CID cidFromBuffer:truncated length:sizeof(truncated) consumed:&consumed];
+    XCTAssertNil(parsed);
+}
+
+- (void)testCIDFromBufferRejectsOversizeMultihash {
+    // version=1, codec=0x71 (dag-cbor), mh_code=0x12, mh_len = 0xFFFFFFFF (varint)
+    uint8_t hostile[] = {0x01, 0x71, 0x12, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F};
+    NSUInteger consumed = 999;
+    CID *parsed = [CID cidFromBuffer:hostile length:sizeof(hostile) consumed:&consumed];
+    XCTAssertNil(parsed);
+}
+
+- (void)testCIDFromBufferAcceptsArbitraryCodec {
+    NSData *digest = [CID sha256Digest:[@"raw-codec" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *rawCID = [CID cidWithDigest:digest codec:0x55]; // raw
+    NSData *cidBytes = rawCID.bytes;
+
+    NSUInteger consumed = 0;
+    CID *parsed = [CID cidFromBuffer:cidBytes.bytes length:cidBytes.length consumed:&consumed];
+
+    XCTAssertNotNil(parsed);
+    XCTAssertEqual(consumed, cidBytes.length);
+    XCTAssertEqual(parsed.codec, (NSUInteger)0x55);
+    XCTAssertTrue([parsed isEqualToCID:rawCID]);
+}
+
 - (void)testCIDFromEmptyBytes {
     XCTAssertNil([CID cidFromBytes:[NSData data]]);
     XCTAssertNil([CID cidFromBytes:nil]);
