@@ -6,10 +6,12 @@
 
 #import "AppView/Server/Indexers/AppViewActorIndexer.h"
 #import "AppView/Server/AppViewDatabase.h"
+#import "AppView/Server/AppViewIdentityHelper.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 
 static NSString * const kCollection = @"app.bsky.actor.profile";
 
@@ -60,19 +62,15 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:profileRecord options:0 error:nil];
 
-    // Get the CID for the record
+    // Get the CID for the record — prefer provided CID, fall back to computing with correct codec
     NSString *recordCID = cid;
-    if (!recordCID && jsonData) {
-        // Fallback to recalculating CID if not provided (legacy/backfill)
-        // Use DAG-CBOR for correct AT Protocol CIDs
+    if (!recordCID) {
         NSError *cborError = nil;
         NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:profileRecord error:&cborError];
         if (cborData) {
-            recordCID = [CID sha256:cborData].stringValue; // Note: sha256: uses 0x55, should be 0x71 ideally but CID.m sha256 is 0x55
-            // Actually let's use the correct codec 0x71 if we can.
-            CID *actualCID = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
-            recordCID = actualCID.stringValue;
-        } else {
+            CID *computedCID = [CID cidWithDigest:[CID sha256Digest:cborData] codec:0x71];
+            recordCID = computedCID.stringValue;
+        } else if (jsonData) {
             recordCID = [CID sha256:jsonData].stringValue;
         }
     }
@@ -133,6 +131,16 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     // Pending deltas carry raw envelopes. For now we log and return YES;
     // a production implementation would re-decode and call handleIngestEvent:.
     PDS_LOG_DEBUG(@"[AppViewActorIndexer] Replaying pending delta for %@", delta.did);
+    return YES;
+}
+
+- (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error {
+    PDS_LOG_DEBUG(@"[AppViewActorIndexer] Delete record %@/%@ for %@", collection, rkey, did);
+    return YES;
+}
+
+@end
+;
     return YES;
 }
 

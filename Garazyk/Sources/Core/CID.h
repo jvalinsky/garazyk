@@ -72,6 +72,23 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable instancetype)cidFromBytes:(NSData *)data;
 
 /*!
+ @method cidFromBuffer:length:consumed:
+ @abstract Parse a CID from the start of a buffer, reporting how many
+ bytes were consumed. Unlike cidFromBytes:, this accepts trailing data
+ after the CID (as occurs inside a CAR block entry where the CID is
+ immediately followed by the block payload).
+ @param bytes Pointer to the buffer.
+ @param length Maximum number of bytes the parser may read.
+ @param consumed On success, set to the number of bytes the CID occupied.
+ May be NULL if the caller does not care.
+ @return A parsed CID, or nil if the buffer is malformed, truncated, or
+ exceeds bounds.
+ */
++ (nullable instancetype)cidFromBuffer:(const uint8_t *)bytes
+                                length:(NSUInteger)length
+                              consumed:(nullable NSUInteger *)consumed;
+
+/*!
  @method base32Encode:
  @abstract Base32 encode data.
  @param data The data to encode.

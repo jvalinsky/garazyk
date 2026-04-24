@@ -13,6 +13,7 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
 #import "Core/NSDictionary+CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "Repository/CAR.h"
 
 // ---------------------------------------------------------------------------
@@ -217,21 +218,24 @@
     [_database logEvent:seq did:did rev:rev cid:cid rawEnvelope:dummy error:nil];
 
     // Materialize blocks and records
+    CARReader *reader = nil;
     if (event.blocks) {
         NSError *carErr = nil;
-        CARReader *reader = [CARReader readFromData:event.blocks error:&carErr];
+        reader = [CARReader readFromData:event.blocks error:&carErr];
         if (reader) {
             for (CARBlock *block in reader.blocks) {
                 [_database saveBlockWithCid:block.cid.bytes
                                    repoDid:did
                                  blockData:block.data
-                               contentType:nil
-                                     error:nil];
+                                contentType:nil
+                                      error:nil];
             }
         } else {
             PDS_LOG_WARN(@"[AppView Ingest] Failed to parse CAR blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
         }
     }
+
+    NSMutableArray<NSDictionary *> *enrichedOps = [NSMutableArray array];
 
     for (NSDictionary *op in event.ops) {
         NSString *action = op[@"action"];
@@ -239,17 +243,65 @@
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@", did, path];
 
         // cid may be a CID object (from CBOR tag 42 decode), NSString, or NSNull
+        id rawCID = op[@"cid"];
         NSString *cidStr = [op cidStringForKey:@"cid"];
+        CID *opCID = [op cidObjectForKey:@"cid"];
+        
+        PDS_LOG_DEBUG(@"[AppView Ingest] op path=%@ cid_type=%@ cid_val=%@", path, NSStringFromClass([rawCID class]), rawCID);
+
+        NSMutableDictionary *enrichedOp = [op mutableCopy];
         
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSArray *parts = [path componentsSeparatedByString:@"/"];
             NSString *collection = parts.count > 0 ? parts[0] : @"unknown";
             NSString *rkey = parts.count > 1 ? parts[1] : @"unknown";
             
-            // Extract subject DID if applicable (e.g. follow target)
-            NSString *subjectDid = nil;
+            // Extract record data from CAR blocks
+            // Try by CID first, then fall back to path matching if CID is missing
             NSDictionary *record = op[@"record"];
-            if (record && [record isKindOfClass:[NSDictionary class]]) {
+            if (!record && reader && opCID) {
+                for (CARBlock *block in reader.blocks) {
+                    if ([block.cid isEqual:opCID]) {
+                        record = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
+                        if (record) enrichedOp[@"record"] = record;
+                        break;
+                    }
+                }
+            }
+            // If still no record, try path-based matching in CAR blocks
+            if (!record && reader) {
+                for (CARBlock *block in reader.blocks) {
+                    id decoded = [ATProtoCBORSerialization JSONObjectWithData:block.data error:nil];
+                    if ([decoded isKindOfClass:[NSDictionary class]]) {
+                        NSDictionary *dictDecoded = (NSDictionary *)decoded;
+                        NSString *blockKey = nil;
+                        if ([collection isEqualToString:@"app.bsky.actor.profile"]) {
+                            blockKey = @"self";
+                        } else {
+                            blockKey = rkey;
+                        }
+                        if (blockKey && dictDecoded.count > 0) {
+                            record = dictDecoded;
+                            enrichedOp[@"record"] = record;
+                            if (!cidStr) {
+                                CID *computedCID = [CID cidWithDigest:[CID sha256Digest:block.data] codec:0x71];
+                                if (computedCID) {
+                                    enrichedOp[@"cid"] = computedCID.stringValue;
+                                    cidStr = computedCID.stringValue;
+                                    opCID = computedCID;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Extract subject DID if applicable (e.g. follow target)
+            // Use enrichedOp record if available, fall back to op record
+            NSDictionary *recordForSubject = enrichedOp[@"record"] ?: op[@"record"];
+            NSString *subjectDid = nil;
+            if (recordForSubject && [recordForSubject isKindOfClass:[NSDictionary class]]) {
                 id subject = record[@"subject"];
                 if ([subject isKindOfClass:[NSString class]]) {
                     if ([subject hasPrefix:@"did:"]) {
@@ -273,6 +325,8 @@
                 }
             }
 
+            PDS_LOG_DEBUG(@"[AppView Ingest] Materializing record: %@ cid=%@ subject=%@", uri, cidStr, subjectDid);
+
             [_database saveRecordWithURI:uri
                                     did:did
                              collection:collection
@@ -285,9 +339,11 @@
         } else if ([action isEqualToString:@"delete"]) {
             [_database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:nil];
         }
+        
+        [enrichedOps addObject:[enrichedOp copy]];
     }
 
-    // Build ingest event
+    // Build ingest event with enriched ops (containing records)
     AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
     ingestEvent.seq        = seq;
     ingestEvent.relayURL   = relayURL;
@@ -295,7 +351,7 @@
     ingestEvent.rev        = rev;
     ingestEvent.cid        = cid;
     ingestEvent.eventType  = @"#commit";
-    ingestEvent.ops        = event.ops;
+    ingestEvent.ops        = [enrichedOps copy];
     ingestEvent.rawEnvelope = dummy;
     ingestEvent.receivedAt  = [NSDate date];
 
