@@ -208,6 +208,27 @@ static NSData *HexToNSData(NSString *hex) {
     XCTAssertNil(notFound, @"Should not find nonexistent CID");
 }
 
+- (void)testCARReaderRejectsMalformedCIDInBlock {
+    NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
+    CID *rootCID = [CID cidFromString:cidStr];
+    XCTAssertNotNil(rootCID);
+
+    NSError *headerError = nil;
+    NSData *header = [CARWriter encodedHeaderWithRootCID:rootCID error:&headerError];
+    XCTAssertNotNil(header);
+    XCTAssertNil(headerError);
+
+    NSMutableData *carData = [NSMutableData dataWithData:header];
+    // Block entry: length varint = 1, payload = {0x81} (truncated CID varint).
+    uint8_t malformedEntry[] = {0x01, 0x81};
+    [carData appendBytes:malformedEntry length:sizeof(malformedEntry)];
+
+    NSError *parseError = nil;
+    CARReader *reader = [CARReader readFromData:carData error:&parseError];
+    XCTAssertNil(reader, @"CARReader should reject block with malformed CID");
+    XCTAssertNotNil(parseError, @"Parse error should be reported");
+}
+
 - (void)testCARv1BlockCIDConsistency {
     NSString *cidStr = @"bafyreieovfuizojpw3zresz7sx3nk4trm2by23pt5rxbey3jme4uo5ogiu";
     CID *rootCID = [CID cidFromString:cidStr];
