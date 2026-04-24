@@ -132,14 +132,39 @@ class XrpcClient:
     # ── Account & Session ───────────────────────────────────────────
 
     def create_account(
-        self, handle: str, email: str, password: str
+        self, handle: str, email: str, password: str, _retries: int = 3
     ) -> dict:
-        """Create a new account. Returns session dict with did, handle, accessJwt, refreshJwt."""
+        """Create a new account. Returns session dict with did, handle, accessJwt, refreshJwt.
+
+        Retries on transient PLC/network errors since PDS→PLC communication
+        can be flaky on first attempt.
+        """
         logger.info("Creating account: %s", handle)
-        return self.xrpc_post(
-            "com.atproto.server.createAccount",
-            {"email": email, "handle": handle, "password": password},
-        )
+        last_error = None
+        for attempt in range(1, _retries + 1):
+            try:
+                return self.xrpc_post(
+                    "com.atproto.server.createAccount",
+                    {"email": email, "handle": handle, "password": password},
+                )
+            except XrpcError as exc:
+                last_error = exc
+                # Retry on PLC/network-related 400s (not validation errors)
+                if exc.status == 400 and isinstance(exc.body, dict):
+                    msg = str(exc.body.get("message", "")).lower()
+                    if any(
+                        s in msg
+                        for s in ("network connection", "could not connect", "timed out")
+                    ):
+                        logger.warning(
+                            "Account creation retry %d/%d for %s: %s",
+                            attempt, _retries, handle, exc.body.get("message"),
+                        )
+                        if attempt < _retries:
+                            time.sleep(1.0 * attempt)
+                            continue
+                raise
+        raise last_error  # type: ignore[misc]
 
     def create_session(
         self, identifier: str, password: str

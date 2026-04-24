@@ -167,11 +167,6 @@ NS_ASSUME_NONNULL_END
     }
     HttpResponseBodyChunkProducer producer = self.bodyChunkProducer;
     if (producer) {
-        if (self.chunkedTransferEncoding) {
-            // When using chunked transfer encoding, we don't resolve the whole body data
-            // at once. The body is resolved chunk-by-chunk during serialization/send.
-            return nil;
-        }
         NSMutableData *collected = [NSMutableData data];
         while (YES) {
             NSError *chunkError = nil;
@@ -186,7 +181,7 @@ NS_ASSUME_NONNULL_END
         }
         _body = [collected copy];
         _bodyChunkProducer = nil;
-        _chunkedTransferEncoding = NO;
+        // Don't clear chunkedTransferEncoding here; it just means we had a producer.
         return _body;
     }
     if (self.bodyFilePath.length > 0) {
