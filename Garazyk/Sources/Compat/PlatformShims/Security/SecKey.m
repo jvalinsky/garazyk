@@ -270,6 +270,15 @@ Boolean SecKeyVerifySignature(SecKeyRef key, CFStringRef algorithm, CFDataRef si
     return true;
 }
 
+// SecKeyRelease - safely release manually-allocated SecKey structs
+void SecKeyRelease(SecKeyRef key) {
+    if (!key) return;
+    if (key->pkey) {
+        EVP_PKEY_free(key->pkey);
+    }
+    free(key);
+}
+
 #endif // !__APPLE__
 
 // Placeholder for SecKeyWrapper implementation (Stub for now, or use C functions)

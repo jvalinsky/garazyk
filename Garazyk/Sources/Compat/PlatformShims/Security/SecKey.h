@@ -45,6 +45,9 @@ SecKeyRef _Nullable SecKeyCreateWithData(CFDataRef _Nonnull keyData, CFDictionar
 CFDataRef _Nullable SecKeyCreateSignature(SecKeyRef _Nonnull key, CFStringRef _Nonnull algorithm, CFDataRef _Nonnull dataToSign, CFErrorRef _Nullable * _Nullable error);
 Boolean SecKeyVerifySignature(SecKeyRef _Nonnull key, CFStringRef _Nonnull algorithm, CFDataRef _Nonnull signedData, CFDataRef _Nonnull signature, CFErrorRef _Nullable * _Nullable error);
 
+// SecKeyRelease - safely release SecKey structs (Linux only; macOS uses CFRelease)
+void SecKeyRelease(SecKeyRef _Nullable key);
+
 #endif /* __APPLE__ */
 
 NS_ASSUME_NONNULL_BEGIN

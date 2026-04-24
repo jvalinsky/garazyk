@@ -71,6 +71,13 @@ static inline void CFRelease(CFTypeRef cf) {
     (void)cf;
 }
 
+// CFAutorelease - adds object to autorelease pool for deferred release
+static inline CFTypeRef CFAutorelease(CFTypeRef cf) {
+    if (cf == NULL) return NULL;
+    id obj = (__bridge id)cf;
+    return (__bridge CFTypeRef)[obj autorelease];
+}
+
 // CFGetRetainCount (not meaningful under ARC)
 static inline CFIndex CFGetRetainCount(CFTypeRef cf) {
     if (cf == NULL) return 0;
