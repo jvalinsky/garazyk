@@ -24,8 +24,9 @@
 #import "Network/WebSocketUpgradeHandler.h"
 #import "Network/HttpProtocolSession.h"
 #import "Network/HttpRequestDispatcher.h"
-#import "Network/HttpConnectionDriver.h"
 #import "Network/HttpResponseSender.h"
+#import "Network/HttpProtocolDriver.h"
+#import "Network/HttpConnectionIOCoordinator.h"
 #import <CoreFoundation/CoreFoundation.h>
 
 @class HttpRouteTrie;
@@ -45,13 +46,15 @@
 
 @interface HttpConnectionState : NSObject
 
-@property(nonatomic, strong) HttpProtocolSession *session;
+@property(nonatomic, strong) HttpProtocolDriver *driver;
 @property(nonatomic, assign) NSTimeInterval headerStartTime;
 @property(nonatomic, strong) NSMutableArray<HttpQueuedResponse *> *outputQueue;
 @property(nonatomic, assign) NSUInteger outputQueueSize;
 @property(nonatomic, assign) BOOL sendingActive;
+@property(nonatomic, assign) BOOL upgradedToWebSocket;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_queue_t transportQueue;
+@property(nonatomic, strong, nullable) HttpConnectionIOCoordinator *coordinator;
 
 @end
 
@@ -89,27 +92,26 @@
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, WebSocketRequestHandler> *webSocketHandlers;
 @property(nonatomic, strong) HttpRequestDispatcher *requestDispatcher;
-@property(nonatomic, strong) HttpConnectionDriver *connectionDriver;
 @property(nonatomic, strong) HttpResponseSender *responseSender;
 
 - (HttpQueuedResponse *)queueItemForResponse:(HttpResponse *)response;
 - (void)enqueueResponse:(HttpResponse *)response
-          forConnection:(id<PDSNetworkConnection>)connection;
+           forConnection:(id<PDSNetworkConnection>)connection;
 - (void)sendNextQueuedResponseForState:(HttpConnectionState *)state
-                            connection:(id<PDSNetworkConnection>)connection;
+                             connection:(id<PDSNetworkConnection>)connection;
 - (void)finalizeQueuedResponseSend:(HttpQueuedResponse *)queueItem
-                           forState:(HttpConnectionState *)state
-                         connection:(id<PDSNetworkConnection>)connection;
+                          forState:(HttpConnectionState *)state
+                        connection:(id<PDSNetworkConnection>)connection;
 - (void)streamFileQueueItem:(HttpQueuedResponse *)queueItem
-                   forState:(HttpConnectionState *)state
-                 connection:(id<PDSNetworkConnection>)connection;
+                 forState:(HttpConnectionState *)state
+               connection:(id<PDSNetworkConnection>)connection;
 - (void)streamGeneratedQueueItem:(HttpQueuedResponse *)queueItem
-                         forState:(HttpConnectionState *)state
-                       connection:(id<PDSNetworkConnection>)connection;
+                       forState:(HttpConnectionState *)state
+                     connection:(id<PDSNetworkConnection>)connection;
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
 - (RequestHandler _Nullable)handlerForRoute:(NSString *)path
-                                     method:(NSString *)method
-                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
+                                   method:(NSString *)method
+                               parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
 
 @end
 
@@ -131,11 +133,12 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _session = [[HttpProtocolSession alloc] init];
+    _driver = [[HttpProtocolDriver alloc] init];
     _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
     _outputQueue = [NSMutableArray array];
     _outputQueueSize = 0;
     _sendingActive = NO;
+    _upgradedToWebSocket = NO;
   }
   return self;
 }
@@ -202,7 +205,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           }
           return [strongSelf handlerForRoute:path method:method parameters:parameters];
         }];
-    _connectionDriver = [[HttpConnectionDriver alloc] init];
+    
     _responseSender = [[HttpResponseSender alloc] init];
     _listenerReady = NO;
     _startupFinished = NO;
@@ -341,7 +344,39 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
         switch (state) {
         case PDSNetworkConnectionStateReady: {
-          [strongSelf readRequestFromConnection:strongConnection];
+          HttpConnectionState *connState = [strongSelf connectionStateForConnection:strongConnection];
+          [connState.driver setRemoteAddressForRequests:strongConnection.remoteAddress];
+          HttpConnectionIOCoordinator *coordinator = [[HttpConnectionIOCoordinator alloc]
+              initWithConnection:strongConnection
+                          protocol:connState.driver
+                      responseSender:strongSelf.responseSender];
+          coordinator.requestReadyHandler = ^(HttpRequest *request) {
+            [strongSelf dispatchRequest:request onConnection:strongConnection];
+          };
+          coordinator.upgradeHandler = ^(HttpRequest *request) {
+            [strongSelf handleUpgradeEventForState:connState
+                                       connection:strongConnection];
+          };
+          coordinator.errorHandler = ^(NSError *error) {
+            dispatch_async(strongSelf.connectionQueue, ^{
+              [strongSelf.activeConnections removeObject:strongConnection];
+              [strongSelf.connectionStates removeObjectForKey:strongConnection];
+              [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
+            });
+            HttpConnectionState *state = [strongSelf connectionStateForConnection:strongConnection];
+            HttpResponse *response = [HttpResponse responseWithStatusCode:error.code ?: 400];
+            response.keepAlive = NO;
+            [response setJsonBody:@{
+              @"error": error.userInfo[@"errorCode"] ?: @"ProtocolError",
+              @"message": error.localizedDescription ?: @"Protocol error"
+            }];
+            [strongSelf enqueueResponse:response forConnection:strongConnection];
+          };
+          coordinator.outputQueueSizeProvider = ^NSUInteger {
+            return connState.outputQueueSize;
+          };
+          connState.coordinator = coordinator;
+          [coordinator start];
           break;
         }
         case PDSNetworkConnectionStateFailed: {
@@ -354,7 +389,6 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           break;
         }
         case PDSNetworkConnectionStateCancelled: {
-          // Already cancelled, just clean up
           dispatch_async(strongSelf.connectionQueue, ^{
             [strongSelf.activeConnections removeObject:strongConnection];
             [strongSelf.connectionStates removeObjectForKey:strongConnection];
@@ -370,95 +404,9 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   [connection startWithQueue:transportQueue];
 }
 
-- (void)readRequestFromConnection:(id<PDSNetworkConnection>)connection {
-  HttpConnectionState *state = [self connectionStateForConnection:connection];
-  if (state.session.upgradedToWebSocket) {
-    return;
-  }
-  if (![self.connectionDriver shouldBeginReadForSession:state.session
-                                        outputQueueSize:state.outputQueue.count
-                                           headerOpened:state.headerStartTime
-                                                    now:[NSDate timeIntervalSinceReferenceDate]
-                                          headerTimeout:kHttpHeaderTimeout]) {
-    if ([NSDate timeIntervalSinceReferenceDate] - state.headerStartTime >
-        kHttpHeaderTimeout) {
-      [connection cancel];
-    }
-    return;
-  }
-
-  __weak typeof(self) weakSelf = self;
-
-  // Do NOT use dispatch_group for individual reads — the completion may fire
-  // from processReadRequests in contexts where group_enter wasn't called
-  // (e.g., when isComplete propagates through a while loop).
-  // The taskGroup is only needed for dispatchRequest and server shutdown.
-  [connection
-      receiveWithMinimumLength:1
-                 maximumLength:UINT32_MAX
-                    completion:^(NSData *_Nullable content, BOOL isComplete,
-                                 NSError *_Nullable error) {
-                      __strong typeof(weakSelf) strongSelf = weakSelf;
-                      if (!strongSelf) {
-                        return;
-                      }
-
-                      if (error) {
-                        [connection cancel];
-                        return;
-                      }
-
-                      if (content && content.length > 0) {
-                        [strongSelf handleReceivedData:content
-                                          onConnection:connection];
-                      } else if (isComplete) {
-                        [connection cancel];
-                      }
-                    }];
-}
-
-- (void)handleReceivedData:(NSData *)data
-               onConnection:(id<PDSNetworkConnection>)connection {
-  HttpConnectionState *state = [self connectionStateForConnection:connection];
-  
-  [state.session setRemoteAddressIfNeeded:connection.remoteAddress];
-  
-  NSArray<NSNumber *> *events = [state.session feedData:data];
-  for (NSNumber *eventNumber in events) {
-    if (state.session.upgradedToWebSocket) {
-        break; // Stop processing HTTP events if upgraded
-    }
-    HttpSessionEvent event = (HttpSessionEvent)[eventNumber integerValue];
-    switch (event) {
-      case HttpSessionEventRequestReady:
-        [self processPipelinedRequestsForState:state connection:connection];
-        break;
-      case HttpSessionEventError: {
-        Http1ParserError *parseError = state.session.currentParseError;
-        HttpResponse *response = [HttpResponse responseWithStatusCode:parseError.statusCode];
-        response.keepAlive = NO;
-        [response setJsonBody:@{@"error": parseError.errorCode, @"message": parseError.message}];
-        [self enqueueResponse:response forConnection:connection];
-        break;
-      }
-      case HttpSessionEventUpgrade:
-        [self handleUpgradeEventForState:state connection:connection];
-        break;
-      case HttpSessionEventClose:
-        [connection cancel];
-        break;
-    }
-  }
-
-  if ([self.connectionDriver shouldResumeReadForSession:state.session
-                                        outputQueueSize:state.outputQueue.count]) {
-    [self readRequestFromConnection:connection];
-  }
-}
-
 - (void)handleUpgradeEventForState:(HttpConnectionState *)state
                          connection:(id<PDSNetworkConnection>)connection {
-  HttpRequest *request = state.session.currentUpgradeRequest;
+  HttpRequest *request = [state.driver currentUpgradeRequest];
   if (!request) return;
 
   NSString *path = request.path;
@@ -471,12 +419,11 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     BOOL shouldUpgrade = [self.webSocketUpgradeHandler handleUpgradeRequest:request
                                                                   response:upgradeResponse];
     if (!shouldUpgrade) {
-      [state.session resetForNextRequest];
       [self enqueueResponse:upgradeResponse forConnection:connection];
       return;
     }
 
-    state.session.upgradedToWebSocket = YES;
+    state.upgradedToWebSocket = YES;
     [state.outputQueue removeAllObjects];
     state.outputQueueSize = 0;
 
@@ -511,14 +458,6 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     }
   });
   return state;
-}
-
-- (void)processPipelinedRequestsForState:(HttpConnectionState *)state
-                               connection:(id<PDSNetworkConnection>)connection {
-  HttpRequest *request;
-  while ((request = [state.session nextRequestToDispatch])) {
-    [self dispatchRequest:request onConnection:connection];
-  }
 }
 
 - (void)dispatchRequest:(HttpRequest *)request
@@ -712,16 +651,21 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   state.outputQueueSize =
       [self.responseSender clampedQueueSizeAfterDequeue:state.outputQueueSize
                                               itemBytes:queueItem.queueByteSize];
-  
-  [state.session responseDidFinishSending];
   state.sendingActive = NO;
-  
-  // Try to send next if any
   [self sendNextQueuedResponseForState:state connection:connection];
   
-  // Continue connection if idle
-  if (state.outputQueue.count == 0 && [state.session shouldReadMoreData]) {
-    [self readRequestFromConnection:connection];
+  // Continue connection if idle and not upgraded to WebSocket
+  if (state.outputQueue.count == 0 && !state.upgradedToWebSocket) {
+    [self continueReadingForConnection:connection state:state];
+  }
+}
+
+- (void)continueReadingForConnection:(id<PDSNetworkConnection>)connection
+                                state:(HttpConnectionState *)state {
+  // The coordinator now handles all read scheduling for new connections.
+  // This method is kept for backward compatibility but is a no-op.
+  if (state.coordinator) {
+    return;
   }
 }
 
