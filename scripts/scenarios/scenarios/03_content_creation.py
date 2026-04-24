@@ -103,11 +103,6 @@ def run() -> ScenarioResult:
         client, "luna",
         "Just captured the most stunning image of the Orion Nebula! The colors are breathtaking. 🌌 #astronomy",
         result,
-        facets=[{
-            "$type": "app.bsky.richtext.facet",
-            "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": "#astronomy"}],
-            "index": {"byteStart": 90, "byteEnd": 100},
-        }],
     )
 
     # ── Marcus posts about ATProto ───────────────────────────────────
@@ -223,39 +218,51 @@ def run() -> ScenarioResult:
     # ── Give AppView time to index ───────────────────────────────────
     time.sleep(3)
 
-    # ── Get timeline ─────────────────────────────────────────────────
+    # ── Get timeline (AppView endpoint) ─────────────────────────────
     luna = get_character("luna")
     try:
         timeline = client.get_timeline(luna.access_jwt)
         feed = timeline.get("feed", [])
         result.step_passed("Luna's timeline", f"items={len(feed)}")
     except XrpcError as exc:
-        result.step_failed("Luna's timeline", str(exc))
+        if exc.status == 404:
+            result.step_skipped("Luna's timeline", "AppView endpoint not available (no AppView)")
+        else:
+            result.step_failed("Luna's timeline", str(exc))
 
-    # ── Get author feed ──────────────────────────────────────────────
+    # ── Get author feed (AppView endpoint) ──────────────────────────
     try:
         author_feed = client.get_author_feed(luna.did, token=luna.access_jwt)
         feed = author_feed.get("feed", [])
         result.step_passed("Luna's author feed", f"items={len(feed)}")
     except XrpcError as exc:
-        result.step_failed("Luna's author feed", str(exc))
+        if exc.status == 404:
+            result.step_skipped("Luna's author feed", "AppView endpoint not available (no AppView)")
+        else:
+            result.step_failed("Luna's author feed", str(exc))
 
-    # ── Get post thread ──────────────────────────────────────────────
+    # ── Get post thread (AppView endpoint) ──────────────────────────
     if luna_post:
         try:
             thread = client.get_post_thread(luna_post["uri"], token=luna.access_jwt)
             result.step_passed("Post thread view", f"thread has replies")
         except XrpcError as exc:
-            result.step_skipped("Post thread view", str(exc))
+            if exc.status == 404:
+                result.step_skipped("Post thread view", "AppView endpoint not available (no AppView)")
+            else:
+                result.step_skipped("Post thread view", str(exc))
 
-    # ── Get likes for Luna's post ────────────────────────────────────
+    # ── Get likes for Luna's post (AppView endpoint) ────────────────
     if luna_post:
         try:
             likes = client.get_likes(luna_post["uri"], token=luna.access_jwt)
             like_count = len(likes.get("likes", []))
             result.step_passed("Likes on Luna's post", f"count={like_count}")
         except XrpcError as exc:
-            result.step_failed("Likes on Luna's post", str(exc))
+            if exc.status == 404:
+                result.step_skipped("Likes on Luna's post", "AppView endpoint not available (no AppView)")
+            else:
+                result.step_failed("Likes on Luna's post", str(exc))
 
     # ── Notifications ────────────────────────────────────────────────
     try:

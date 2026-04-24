@@ -79,10 +79,11 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                       store:(PDSActorStore *)store
                                       error:(NSError **)error;
 - (nullable NSDictionary<NSString *, NSString *> *)refreshRepoRootMetadataForDid:(NSString *)did
-                                                                     preferredRev:(nullable NSString *)preferredRev
-                                                               mutationCIDsByKey:(nullable NSDictionary<NSString *, id> *)mutationCIDsByKey
-                                                                       changedKeys:(nullable NSArray<NSString *> *)changedKeys
-                                                                            error:(NSError **)error;
+                                                                    preferredRev:(nullable NSString *)preferredRev
+                                                              mutationCIDsByKey:(nullable NSDictionary<NSString *, id> *)mutationCIDsByKey
+                                                             mutationBlocksByCID:(nullable NSDictionary<NSString *, NSData *> *)mutationBlocksByCID
+                                                                     changedKeys:(nullable NSArray<NSString *> *)changedKeys
+                                                                           error:(NSError **)error;
 - (nullable NSArray<PDSDatabaseBlock *> *)changedMSTBlocksForMST:(MST *)mst
                                                        changedKeys:(NSArray<NSString *> *)changedKeys
                                                               rev:(NSString *)rev
@@ -332,11 +333,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             recordKey: cidString ?: [NSNull null]
         };
 
+        NSDictionary<NSString *, NSData *> *mutationBlocksByCID = (cidString && cborData) ? @{cidString: cborData} : nil;
+
         NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did
                                                            preferredRev:writeRev
-                                                    mutationCIDsByKey:mutationCIDsByKey
-                                                            changedKeys:@[ recordKey ]
-                                                                  error:nil];
+                                                     mutationCIDsByKey:mutationCIDsByKey
+                                                    mutationBlocksByCID:mutationBlocksByCID
+                                                             changedKeys:@[ recordKey ]
+                                                                   error:nil];
         NSString *newRootCID = newRootMeta[@"cid"];
         NSString *newRev = newRootMeta[@"rev"];
 
@@ -445,9 +449,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 
         NSDictionary *newRootMeta = [self refreshRepoRootMetadataForDid:did
                                                            preferredRev:writeRev
-                                                    mutationCIDsByKey:mutationCIDsByKey
-                                                            changedKeys:@[ recordKey ]
-                                                                  error:nil];
+                                                     mutationCIDsByKey:mutationCIDsByKey
+                                                    mutationBlocksByCID:nil
+                                                             changedKeys:@[ recordKey ]
+                                                                   error:nil];
         NSString *newRootCID = newRootMeta[@"cid"];
         NSString *newRev = newRootMeta[@"rev"];
 
@@ -886,9 +891,22 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         [changedKeys addObject:key];
     }
 
+    NSMutableDictionary<NSString *, NSData *> *mutationBlocksByCID = [NSMutableDictionary dictionary];
+    for (NSDictionary *op in preparedOps) {
+        NSString *action = op[@"action"];
+        if ([action isEqualToString:@"delete"]) continue;
+        
+        PDSDatabaseRecord *record = op[@"record"];
+        NSData *recordCBOR = [op[@"recordCBOR"] isKindOfClass:[NSData class]] ? op[@"recordCBOR"] : nil;
+        if (record && record.cid && recordCBOR) {
+            mutationBlocksByCID[record.cid] = recordCBOR;
+        }
+    }
+
     NSDictionary<NSString *, NSString *> *commitMeta = [self refreshRepoRootMetadataForDid:did
                                                                                preferredRev:batchRev
                                                                         mutationCIDsByKey:mutationCIDsByKey
+                                                                       mutationBlocksByCID:mutationBlocksByCID
                                                                                 changedKeys:changedKeys.array
                                                                                       error:nil];
     NSString *commitCID = commitMeta[@"cid"];
@@ -1132,10 +1150,11 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 }
 
 - (nullable NSDictionary<NSString *, NSString *> *)refreshRepoRootMetadataForDid:(NSString *)did
-                                                                     preferredRev:(nullable NSString *)preferredRev
-                                                               mutationCIDsByKey:(nullable NSDictionary<NSString *, id> *)mutationCIDsByKey
-                                                                       changedKeys:(nullable NSArray<NSString *> *)changedKeys
-                                                                            error:(NSError **)error {
+                                                                    preferredRev:(nullable NSString *)preferredRev
+                                                              mutationCIDsByKey:(nullable NSDictionary<NSString *, id> *)mutationCIDsByKey
+                                                             mutationBlocksByCID:(nullable NSDictionary<NSString *, NSData *> *)mutationBlocksByCID
+                                                                     changedKeys:(nullable NSArray<NSString *> *)changedKeys
+                                                                           error:(NSError **)error {
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
         PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to get store for DID %@", did);
@@ -1233,6 +1252,20 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 
         NSMutableArray<PDSDatabaseBlock *> *blocksToPersist = [NSMutableArray arrayWithObject:commitBlock];
         [blocksToPersist addObjectsFromArray:mstBlocks];
+
+        // Add mutation blocks (the actual records)
+        [mutationBlocksByCID enumerateKeysAndObjectsUsingBlock:^(NSString *cidStr, NSData *data, BOOL *stop) {
+            CID *cid = [CID cidFromString:cidStr];
+            if (cid && data.length > 0) {
+                PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
+                recordBlock.cid = [cid bytes];
+                recordBlock.blockData = data;
+                recordBlock.size = data.length;
+                recordBlock.createdAt = [NSDate date];
+                recordBlock.rev = rev;
+                [blocksToPersist addObject:recordBlock];
+            }
+        }];
 
         __block BOOL updated = NO;
         [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {

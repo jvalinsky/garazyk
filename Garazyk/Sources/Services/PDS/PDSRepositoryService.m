@@ -1140,6 +1140,23 @@
 
 
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record {
+    if (!record.cid) {
+        return nil;
+    }
+
+    // 1. Try to fetch from ipld_blocks first (canonical store)
+    PDSActorStore *store = [self.databasePool storeForDid:record.did error:nil];
+    if (store) {
+        CID *cid = [CID cidFromString:record.cid];
+        if (cid) {
+            NSData *blockData = [store getBlockForCID:cid.bytes forDid:record.did error:nil];
+            if (blockData.length > 0) {
+                return blockData;
+            }
+        }
+    }
+
+    // 2. Fallback to materializing from JSON (legacy/self-healing)
     if (record.value.length == 0) {
         return nil;
     }
