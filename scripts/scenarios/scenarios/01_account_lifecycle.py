@@ -82,7 +82,9 @@ def run() -> ScenarioResult:
         plc_resp = requests.get(f"http://localhost:2582/{luna.did}", timeout=10)
         if plc_resp.status_code == 200:
             did_doc = plc_resp.json()
-            assert_contains(did_doc, "did", luna.did, operation="PLC DID resolution")
+            # W3C DID spec uses "id" not "did" in DID documents
+            did_field = did_doc.get("id") or did_doc.get("did")
+            assert did_field == luna.did, f"PLC DID mismatch: expected {luna.did}, got {did_field}"
             result.step_passed("PLC DID resolution", f"method={did_doc.get('verificationMethod', 'N/A')}")
         else:
             result.step_skipped("PLC DID resolution", f"PLC returned {plc_resp.status_code}")
