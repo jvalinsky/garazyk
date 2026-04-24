@@ -42,7 +42,7 @@
 
     profile[@"did"] = actorDID;
 
-    NSString *handle = [self resolveHandleForDID:actorDID error:error];
+    NSString *handle = [self resolveDIDToHandle:actorDID error:error];
     if (handle) {
         profile[@"handle"] = handle;
     }
@@ -179,18 +179,32 @@
     return success;
 }
 
-- (nullable NSString *)resolveHandleForDID:(NSString *)did error:(NSError **)error {
+- (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error {
     if (!did || did.length == 0) return nil;
     
-    // Use the AppViewDatabase handles table
+    // 1. Use the AppViewDatabase handles table if available
     if ([self.database respondsToSelector:@selector(resolveDIDToHandle:error:)]) {
         AppViewDatabase *avdb = (AppViewDatabase *)self.database;
         NSString *handle = [avdb resolveDIDToHandle:did error:error];
         if (handle) return handle;
     }
 
-    // Fallback to IdentityHelper (PLC resolution)
-    return [AppViewIdentityHelper resolveHandleForDID:did error:error];
+    // 2. Fallback to PDS accounts table (for tests or PDS-mode resolution)
+    NSString *query = @"SELECT handle FROM accounts WHERE did = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[did] error:nil];
+    if (rows && rows.count > 0) {
+        NSString *handle = rows.firstObject[@"handle"];
+        if ([handle isKindOfClass:[NSString class]] && handle.length > 0) {
+            return handle;
+        }
+    }
+
+    // 3. Fallback to IdentityHelper (PLC resolution)
+    NSString *plcHandle = [AppViewIdentityHelper resolveHandleForDID:did error:error];
+    if (plcHandle && ![plcHandle isEqualToString:@"invalid.handle"]) {
+        return plcHandle;
+    }
+    return nil;
 }
 
 - (nullable NSString *)resolveHandleToDID:(NSString *)handle error:(NSError **)error {
@@ -205,13 +219,17 @@
         if (did) return did;
     }
 
-    // 2. Fallback: try to resolve via PDS or PLC (synchronous network call - not ideal but better than failing)
-    // For now we assume firehose events keep the handles table up to date.
-    return nil;
-}
+    // 2. Fallback to PDS accounts table
+    NSString *query = @"SELECT did FROM accounts WHERE handle = ?";
+    NSArray *rows = [self.database executeParameterizedQuery:query params:@[handle] error:nil];
+    if (rows && rows.count > 0) {
+        NSString *did = rows.firstObject[@"did"];
+        if ([did isKindOfClass:[NSString class]] && did.length > 0) {
+            return did;
+        }
+    }
 
-- (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error {
-    return [self resolveHandleForDID:did error:error];
+    return nil;
 }
 
 - (nullable NSDictionary *)getProfileRecordForDID:(NSString *)did error:(NSError **)error {
@@ -285,7 +303,7 @@
 
     NSString *query = @"SELECT DISTINCT did FROM records "
                       @"WHERE collection = 'app.bsky.actor.profile' "
-                      @"AND (record LIKE ? OR record LIKE ?) ";
+                      @"AND (value LIKE ? OR value LIKE ?) ";
     NSMutableArray *params = [NSMutableArray arrayWithObjects:searchPattern, searchPattern, nil];
 
     if (cursor) {
@@ -332,7 +350,7 @@
 
     NSString *query = @"SELECT DISTINCT did FROM records "
                       @"WHERE collection = 'app.bsky.actor.profile' "
-                      @"AND (record LIKE ? OR record LIKE ?) "
+                      @"AND (value LIKE ? OR value LIKE ?) "
                       @"ORDER BY did DESC LIMIT ?";
     NSArray *params = @[searchPattern, searchPattern, @(limit)];
 

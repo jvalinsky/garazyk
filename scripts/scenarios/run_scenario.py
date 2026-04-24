@@ -70,6 +70,13 @@ def run_scenario(scenario_id: str, verbose: bool = False) -> ScenarioResult:
 
     sid, module_name, desc = entry
 
+    # Reset character handles for each scenario to avoid PDS collisions
+    try:
+        from lib.characters import reset_characters
+        reset_characters()
+    except ImportError:
+        pass
+
     # Set up logging
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(name)s: %(message)s")
@@ -125,6 +132,11 @@ def main() -> None:
         help="Stop the local network after running scenarios",
     )
     parser.add_argument(
+        "--binary",
+        action="store_true",
+        help="Use built binaries instead of Docker containers",
+    )
+    parser.add_argument(
         "--pds2",
         action="store_true",
         help="Start a second PDS for federation scenarios",
@@ -156,8 +168,8 @@ def main() -> None:
     # Setup
     if args.setup_only:
         from lib.docker import start_local_network
-        print("Starting local network (setup only)...")
-        start_local_network(with_pds2=args.pds2)
+        print(f"Starting local network (setup only, binary={args.binary})...")
+        start_local_network(with_pds2=args.pds2, use_binary=args.binary)
         print("Network is running. Press Ctrl+C to stop.")
         try:
             while True:
@@ -183,7 +195,7 @@ def main() -> None:
     if args.teardown:
         from lib.docker import stop_local_network
         print("\nTearing down local network...")
-        stop_local_network(wipe_volumes=True)
+        stop_local_network(use_binary=args.binary)
 
     # Final summary
     total_passed = sum(r.passed for r in results)
