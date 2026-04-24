@@ -7,8 +7,6 @@
 #import "AppView/Server/Backfill/AppViewBackfillWorker.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Indexers/AppViewIndexer.h"
-#import "AppView/Server/AppViewTypes.h"
-#import "Debug/PDSLogger.h"
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
 #import "Core/ATProtoDagCBOR.h"
@@ -192,6 +190,17 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
     NSDictionary *doc = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonErr];
     if (!doc) return nil;
 
+    // Extract handle (alsoKnownAs)
+    NSArray *akas = doc[@"alsoKnownAs"];
+    for (NSString *aka in akas) {
+        if ([aka hasPrefix:@"at://"]) {
+            NSString *handle = [aka substringFromIndex:5];
+            [_database saveHandle:handle did:did error:nil];
+            PDS_LOG_INFO(@"[AppView BackfillWorker] Discovered handle mapping during backfill: %@ -> %@", handle, did);
+            break;
+        }
+    }
+
     // Extract pds service endpoint from DID document
     NSArray *services = doc[@"service"];
     for (NSDictionary *svc in services) {
@@ -338,14 +347,21 @@ CARReader *reader = [CARReader readFromData:carData error:error];
                 if (!mutableRecord[@"$type"]) {
                     mutableRecord[@"$type"] = collection;
                 }
-                [records addObject:mutableRecord.count > 0 ? [mutableRecord copy] : record];
+                [records addObject:@{
+                    @"record": mutableRecord.count > 0 ? [mutableRecord copy] : record,
+                    @"cid": valueCID.stringValue,
+                    @"collection": collection
+                }];
             }
         }
     }
 
     PDS_LOG_INFO(@"[AppView BackfillWorker] Found %lu records in CAR for %@", (unsigned long)records.count, did);
-    for (NSDictionary *record in records) {
-        NSString *collection = record[@"$type"];
+    for (NSDictionary *item in records) {
+        NSDictionary *record = item[@"record"];
+        NSString *cid = item[@"cid"];
+        NSString *collection = item[@"collection"];
+        
         NSLog(@"[DEBUG] Calling indexers for collection=%@", collection);
         for (id<AppViewIndexer> indexer in _indexers) {
             if ([indexer canIndexCollection:collection]) {
@@ -353,6 +369,7 @@ CARReader *reader = [CARReader readFromData:carData error:error];
                 BOOL ok = [indexer indexRecord:record
                                            did:did
                                     collection:collection
+                                           cid:cid
                                          error:&indexErr];
                 if (!ok && indexErr) {
                     PDS_LOG_DEBUG(@"[AppView BackfillWorker] Dead-letter %@ for %@: %@",
@@ -363,7 +380,7 @@ CARReader *reader = [CARReader readFromData:carData error:error];
                                                 seq:0
                                                 did:did
                                                 rev:lastRev
-                                                cid:nil
+                                                cid:cid
                                           rawRecord:raw
                                     validationError:indexErr.localizedDescription ?: @"unknown"
                                               error:nil];
