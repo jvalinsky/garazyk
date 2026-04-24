@@ -45,7 +45,8 @@
       "Bash(sqlite3:*)",
       "Bash(tee \"test-output-$\\(date +%Y%m%d-%H%M%S\\).log\")",
       "WebSearch",
-      "Bash(tail -100 test-output-*.log)"
+      "Bash(tail -100 test-output-*.log)",
+      "Bash(deciduous show *)"
     ]
   }
 }

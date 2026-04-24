@@ -1,0 +1,8 @@
+# XRPC coverage scope - expanded for audit
+# Expanded to include chat.bsky.* and tools.ozone.*
+
++com.atproto.*
++app.bsky.*
+-app.bsky.unspecced.*
++chat.bsky.*
++tools.ozone.*
