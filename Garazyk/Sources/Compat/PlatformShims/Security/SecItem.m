@@ -1,12 +1,13 @@
 /**
  * @file SecItem.m
  *
- * @brief SecItem operations implementation for Linux (Memory-based stub).
+ * @brief SecItem operations implementation for Linux (SQLite-backed persistent store).
  *
  * @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import "SecItem.h"
+#import "SecItemLinuxStore.h"
 
 #if !defined(__APPLE__)
 
@@ -42,70 +43,53 @@ const CFStringRef kSecMatchLimit = (CFStringRef)@"kSecMatchLimit";
 const CFStringRef kSecMatchLimitOne = (CFStringRef)@"kSecMatchLimitOne";
 const CFStringRef kSecMatchLimitAll = (CFStringRef)@"kSecMatchLimitAll";
 
-// Simple in-memory keychain for testing/stubbing
-static NSMutableDictionary *gKeychain = nil;
-
-static void InitKeychain(void) {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        gKeychain = [NSMutableDictionary dictionary];
-    });
-}
-
 OSStatus SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result) {
-    InitKeychain();
     NSDictionary *attrs = (__bridge NSDictionary *)attributes;
-    
-    // Use kSecAttrService + kSecAttrAccount as key
+
     NSString *service = attrs[(__bridge NSString *)kSecAttrService];
     NSString *account = attrs[(__bridge NSString *)kSecAttrAccount];
-    
+
     if (!service || !account) {
         return -50; // errSecParam
     }
-    
-    NSString *key = [NSString stringWithFormat:@"%@:%@", service, account];
-    
-    @synchronized(gKeychain) {
-        if (gKeychain[key]) {
+
+    NSError *error = nil;
+    BOOL success = [[SecItemLinuxStore sharedStore] addItemWithService:service
+                                                               account:account
+                                                            attributes:attrs
+                                                                 error:&error];
+    if (!success) {
+        if ([error.domain isEqual:SecItemLinuxStoreErrorDomain] && error.code == -25299) {
             return -25299; // errSecDuplicateItem
         }
-        gKeychain[key] = attrs;
+        return error ? (OSStatus)error.code : -50;
     }
-    
+
     return 0; // errSecSuccess
 }
 
 OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
-    InitKeychain();
     NSDictionary *q = (__bridge NSDictionary *)query;
-    
+
     NSString *service = q[(__bridge NSString *)kSecAttrService];
     NSString *account = q[(__bridge NSString *)kSecAttrAccount];
-    
-    // Handle kSecClassIdentity or generic queries
-    // Simplified: only support service+account lookup
-    
+
     if (!service || !account) {
         return -25300; // errSecItemNotFound
     }
-    
-    NSString *key = [NSString stringWithFormat:@"%@:%@", service, account];
-    NSDictionary *item = nil;
-    
-    @synchronized(gKeychain) {
-        item = gKeychain[key];
-    }
-    
+
+    NSError *error = nil;
+    NSDictionary *item = [[SecItemLinuxStore sharedStore] itemWithService:service
+                                                                  account:account
+                                                                    error:&error];
     if (!item) {
         return -25300; // errSecItemNotFound
     }
-    
+
     if (result) {
         if ([q[(__bridge NSString *)kSecReturnData] boolValue]) {
             *result = (__bridge_retained CFTypeRef)item[(__bridge NSString *)kSecValueData];
         } else if ([q[(__bridge NSString *)kSecReturnRef] boolValue]) {
-            // Return persistent ref or object?
             *result = (__bridge_retained CFTypeRef)item;
         } else if ([q[(__bridge NSString *)kSecReturnAttributes] boolValue]) {
             *result = (__bridge_retained CFTypeRef)item;
@@ -113,49 +97,40 @@ OSStatus SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
             *result = NULL;
         }
     }
-    
+
     return 0;
 }
 
 OSStatus SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributesToUpdate) {
-    InitKeychain();
     NSDictionary *q = (__bridge NSDictionary *)query;
     NSDictionary *update = (__bridge NSDictionary *)attributesToUpdate;
-    
+
     NSString *service = q[(__bridge NSString *)kSecAttrService];
     NSString *account = q[(__bridge NSString *)kSecAttrAccount];
-    
+
     if (!service || !account) return -25300;
-    
-    NSString *key = [NSString stringWithFormat:@"%@:%@", service, account];
-    
-    @synchronized(gKeychain) {
-        NSMutableDictionary *item = [gKeychain[key] mutableCopy];
-        if (!item) return -25300;
-        
-        [item addEntriesFromDictionary:update];
-        gKeychain[key] = item;
-    }
-    return 0;
+
+    NSError *error = nil;
+    BOOL success = [[SecItemLinuxStore sharedStore] updateItemWithService:service
+                                                                  account:account
+                                                        attributesToUpdate:update
+                                                                    error:&error];
+    return success ? 0 : -25300; // Return item not found if update fails
 }
 
 OSStatus SecItemDelete(CFDictionaryRef query) {
-    InitKeychain();
     NSDictionary *q = (__bridge NSDictionary *)query;
-    
+
     NSString *service = q[(__bridge NSString *)kSecAttrService];
     NSString *account = q[(__bridge NSString *)kSecAttrAccount];
-    
+
     if (!service || !account) return -25300;
-    
-    NSString *key = [NSString stringWithFormat:@"%@:%@", service, account];
-    
-    @synchronized(gKeychain) {
-        if (!gKeychain[key]) return -25300;
-        [gKeychain removeObjectForKey:key];
-    }
-    
-    return 0;
+
+    NSError *error = nil;
+    BOOL success = [[SecItemLinuxStore sharedStore] deleteItemWithService:service
+                                                                  account:account
+                                                                    error:&error];
+    return success ? 0 : -25300;
 }
 
 #endif
