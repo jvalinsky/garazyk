@@ -114,63 +114,14 @@ static CID *CIDFromTaggedCBOR(CBORValue *value, NSError **error) {
 }
 
 static BOOL DecodeCIDFromBlock(const uint8_t *bytes, NSUInteger length, CID **cidOut, NSUInteger *cidLengthOut) {
-    if (!bytes || length < 2) {
+    NSUInteger consumed = 0;
+    CID *cid = [CID cidFromBuffer:bytes length:length consumed:&consumed];
+    if (!cid) {
         return NO;
     }
-
-    NSUInteger offset = 0;
-
-    // Check for CIDv0 (starts with 0x12 0x20)
-    if (length >= 34 && bytes[0] == 0x12 && bytes[1] == 0x20) {
-        NSData *cidData = [NSData dataWithBytes:bytes length:34];
-        CID *cid = [CID cidFromBytes:cidData];
-        if (cid) {
-            if (cidOut) *cidOut = cid;
-            if (cidLengthOut) *cidLengthOut = 34;
-            return YES;
-        }
-    }
-
-    // Read version varint
-    uint64_t version = 0;
-    NSUInteger versionSize = ReadVarint(bytes + offset, length - offset, &version);
-    if (versionSize == 0) return NO;
-    offset += versionSize;
-
-    if (version == 1) {
-        // CIDv1
-        // Read codec varint
-        uint64_t codec = 0;
-        NSUInteger codecSize = ReadVarint(bytes + offset, length - offset, &codec);
-        if (codecSize == 0) return NO;
-        offset += codecSize;
-
-        // Read multihash code
-        uint64_t mhc = 0;
-        NSUInteger mhcSize = ReadVarint(bytes + offset, length - offset, &mhc);
-        if (mhcSize == 0) return NO;
-        offset += mhcSize;
-
-        // Read multihash length
-        uint64_t mhl = 0;
-        NSUInteger mhlSize = ReadVarint(bytes + offset, length - offset, &mhl);
-        if (mhlSize == 0) return NO;
-        offset += mhlSize;
-
-        // Total CID length is current offset + multihash length
-        if (offset + mhl > length) return NO;
-        NSUInteger totalCidLen = offset + (NSUInteger)mhl;
-
-        NSData *cidData = [NSData dataWithBytes:bytes length:totalCidLen];
-        CID *cid = [CID cidFromBytes:cidData];
-        if (!cid) return NO;
-
-        if (cidOut) *cidOut = cid;
-        if (cidLengthOut) *cidLengthOut = totalCidLen;
-        return YES;
-    }
-
-    return NO;
+    if (cidOut) *cidOut = cid;
+    if (cidLengthOut) *cidLengthOut = consumed;
+    return YES;
 }
 
 + (instancetype)readFromData:(NSData *)data error:(NSError **)error {
