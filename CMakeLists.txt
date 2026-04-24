@@ -982,10 +982,11 @@ if(BUILD_TESTS)
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2Tests.m")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/OAuth2EndpointTests.m")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Auth/TOTPTests.m")
-  
-  if(APPLE)
-      list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/.*")
-  endif()
+
+  # Compat tests are now enabled on all platforms (Phase A/B/C implementation)
+  # if(APPLE)
+  #     list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Compat/.*")
+  # endif()
 
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSIntegrationTests.m")
 

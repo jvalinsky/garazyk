@@ -26,8 +26,28 @@
 }
 
 - (NSArray<NSNumber *> *)feedData:(NSData *)data {
-    // Delegate to the session, which returns protocol events
-    return [self.session feedData:data];
+    NSArray<NSNumber *> *sessionEvents = [self.session feedData:data];
+    
+    NSMutableArray<NSNumber *> *protocolEvents = [NSMutableArray array];
+    for (NSNumber *eventNum in sessionEvents) {
+        HttpSessionEvent sessionEvent = (HttpSessionEvent)[eventNum integerValue];
+        switch (sessionEvent) {
+            case HttpSessionEventRequestReady:
+                [protocolEvents addObject:@(HttpProtocolEventRequestReady)];
+                break;
+            case HttpSessionEventError:
+                [protocolEvents addObject:@(HttpProtocolEventProtocolError)];
+                break;
+            case HttpSessionEventUpgrade:
+                [protocolEvents addObject:@(HttpProtocolEventUpgradeRequested)];
+                break;
+            case HttpSessionEventClose:
+                [protocolEvents addObject:@(HttpProtocolEventConnectionClose)];
+                break;
+        }
+    }
+    
+    return protocolEvents;
 }
 
 - (nullable HttpRequest *)nextDispatchableRequest {
@@ -44,7 +64,10 @@
 
     return [NSError errorWithDomain:@"HttpProtocol"
                                code:(NSInteger)parserError.statusCode
-                           userInfo:@{NSLocalizedDescriptionKey: parserError.message ?: @"Parse error"}];
+                           userInfo:@{
+                               NSLocalizedDescriptionKey: parserError.message ?: @"Parse error",
+                               @"errorCode": parserError.errorCode ?: @"ProtocolError"
+                           }];
 }
 
 - (void)setRemoteAddressForRequests:(nullable NSString *)remoteAddress {
