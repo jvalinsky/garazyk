@@ -133,12 +133,15 @@
     });
     [self waitForExpectations:@[exp] timeout:2.0];
     
-    // Also wait for main queue since Mock connection dispatches there
     XCTestExpectation *mainExp = [self expectationWithDescription:@"Wait for main queue"];
     dispatch_async(dispatch_get_main_queue(), ^{
         [mainExp fulfill];
     });
     [self waitForExpectations:@[mainExp] timeout:2.0];
+    
+    dispatch_group_wait(self.server.taskGroup, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
+    
+    [[NSRunLoop mainRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.3]];
 }
 
 - (void)testKeepAliveRequests {
@@ -147,9 +150,7 @@
     NSString *req1 = @"GET /test HTTP/1.1\r\nHost: localhost\r\n\r\n";
     [self.connection simulateReceivedData:[req1 dataUsingEncoding:NSUTF8StringEncoding]];
     
-    // Wait for dispatch group to clear
-    dispatch_group_wait(self.server.taskGroup, dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC));
-    [self waitForQueue]; // Wait for queueing to finish
+    [self waitForQueue];
     
     NSString *respStr = [[NSString alloc] initWithData:self.connection.writtenData encoding:NSUTF8StringEncoding];
     NSLog(@"testKeepAliveRequests req1 respStr: %@", respStr);

@@ -333,7 +333,16 @@ int main(int argc, char *argv[]) {
       @"MSTInteropTests",
       @"CARInteropTests",
       @"AppViewBackfillWorkerTests",
-      @"IPLDBlockIntegrityTests"
+      @"IPLDBlockIntegrityTests",
+      @"SecItemPersistenceTests",
+      @"Arc4randomTests",
+      @"CFReleaseTests",
+      @"PlatformGuardTests",
+      @"PDSWebSocketTransportTests",
+      @"PDSWebSocketServerTests",
+      @"HttpProtocolDriverTests",
+      @"HttpResponseSenderTests",
+      @"HttpConnectionIOCoordinatorTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
