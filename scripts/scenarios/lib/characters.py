@@ -2,10 +2,16 @@
 
 Each character has a name, handle, email, password, persona description,
 role (user, admin, mod), and the PDS URL they belong to.
+
+Handles are made unique per process run by appending a short run ID
+(e.g. "luna-a3f2.test") to avoid collisions when re-running scenarios
+against the same PDS instance.
 """
 
 from __future__ import annotations
 
+import os
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -35,13 +41,44 @@ class Character:
         return f"Character({self.name!r}, {self.handle!r}, did={self.did!r})"
 
 
-# ── PDS 1: "The Neighborhood" ──────────────────────────────────────
+# ── Run ID: short hex suffix for unique handles per process ────────
+
+_RUN_ID: str = os.environ.get(
+    "ATPROTO_SCENARIO_RUN_ID",
+    format(int(time.time() * 100) % 0xFFFF, "04x"),
+)
+
+
+def _unique_handle(base_handle: str) -> str:
+    """Append the run ID before the TLD to make handles unique per run.
+
+    E.g. "luna.test" -> "luna-a3f2.test"
+         "nova.second.test" -> "nova-a3f2.second.test"
+    """
+    parts = base_handle.rsplit(".", 1)
+    if len(parts) == 2:
+        return f"{parts[0]}-{_RUN_ID}.{parts[1]}"
+    return f"{base_handle}-{_RUN_ID}"
+
+
+def _unique_email(base_email: str) -> str:
+    """Append the run ID to the local part of the email.
+
+    E.g. "luna@test.com" -> "luna-a3f2@test.com"
+    """
+    local, domain = base_email.split("@", 1)
+    return f"{local}-{_RUN_ID}@{domain}"
+
+
+# ── PDS endpoints ──────────────────────────────────────────────────
 
 PDS1 = "http://localhost:2583"
 PDS2 = "http://localhost:2585"
 
-CHARACTERS: dict[str, Character] = {
-    "luna": Character(
+# ── Base character templates (before unique suffixes) ──────────────
+
+_BASE_CHARACTERS: dict[str, dict] = {
+    "luna": dict(
         name="Luna Starfield",
         handle="luna.test",
         email="luna@test.com",
@@ -50,7 +87,7 @@ CHARACTERS: dict[str, Character] = {
         role="user",
         pds_url=PDS1,
     ),
-    "marcus": Character(
+    "marcus": dict(
         name="Marcus Code",
         handle="marcus.test",
         email="marcus@test.com",
@@ -59,7 +96,7 @@ CHARACTERS: dict[str, Character] = {
         role="user",
         pds_url=PDS1,
     ),
-    "rosa": Character(
+    "rosa": dict(
         name="Chef Rosa",
         handle="rosa.test",
         email="rosa@test.com",
@@ -68,7 +105,7 @@ CHARACTERS: dict[str, Character] = {
         role="user",
         pds_url=PDS1,
     ),
-    "volt": Character(
+    "volt": dict(
         name="DJ Volt",
         handle="volt.test",
         email="volt@test.com",
@@ -77,7 +114,7 @@ CHARACTERS: dict[str, Character] = {
         role="user",
         pds_url=PDS1,
     ),
-    "troll": Character(
+    "troll": dict(
         name="Trollface McGee",
         handle="troll.test",
         email="troll@test.com",
@@ -86,7 +123,7 @@ CHARACTERS: dict[str, Character] = {
         role="user",
         pds_url=PDS1,
     ),
-    "quiet": Character(
+    "quiet": dict(
         name="Quiet Observer",
         handle="quiet.test",
         email="quiet@test.com",
@@ -95,7 +132,7 @@ CHARACTERS: dict[str, Character] = {
         role="user",
         pds_url=PDS1,
     ),
-    "admin": Character(
+    "admin": dict(
         name="Admin Sentinel",
         handle="admin.test",
         email="admin@test.com",
@@ -104,7 +141,7 @@ CHARACTERS: dict[str, Character] = {
         role="admin",
         pds_url=PDS1,
     ),
-    "mod": Character(
+    "mod": dict(
         name="Mod Justice",
         handle="mod.test",
         email="mod@test.com",
@@ -114,7 +151,7 @@ CHARACTERS: dict[str, Character] = {
         pds_url=PDS1,
     ),
     # ── PDS 2: "The Other Side" ────────────────────────────────────
-    "nova": Character(
+    "nova": dict(
         name="Nova Bright",
         handle="nova.second.test",
         email="nova@second.test",
@@ -123,7 +160,7 @@ CHARACTERS: dict[str, Character] = {
         role="user",
         pds_url=PDS2,
     ),
-    "rex": Character(
+    "rex": dict(
         name="Rex Storm",
         handle="rex.second.test",
         email="rex@second.test",
@@ -133,6 +170,27 @@ CHARACTERS: dict[str, Character] = {
         pds_url=PDS2,
     ),
 }
+
+
+def _build_characters() -> dict[str, Character]:
+    """Build the character registry with unique handles/emails for this run."""
+    chars: dict[str, Character] = {}
+    for key, tpl in _BASE_CHARACTERS.items():
+        chars[key] = Character(
+            name=tpl["name"],
+            handle=_unique_handle(tpl["handle"]),
+            email=_unique_email(tpl["email"]),
+            password=tpl["password"],
+            persona=tpl["persona"],
+            role=tpl["role"],
+            pds_url=tpl["pds_url"],
+        )
+    return chars
+
+
+# ── Public character registry (unique per process) ──────────────────
+
+CHARACTERS: dict[str, Character] = _build_characters()
 
 
 def get_character(name: str) -> Character:
