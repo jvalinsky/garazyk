@@ -10,7 +10,8 @@
   <div class="card-body">
     <form class="form flex gap-md" hx-get="/admin/partials/chat/invite-links/search" hx-target="#link-list-container">
       <div class="form-group flex-1">
-        <input type="text" name="q" class="form-input" placeholder="Search by ID or Group URI...">
+        <label for="chat-invite-search" class="sr-only">Search invite links</label>
+        <input type="text" id="chat-invite-search" name="q" class="form-input" placeholder="Search by ID or Group URI...">
       </div>
       <button type="submit" class="btn btn-primary">Search</button>
     </form>
