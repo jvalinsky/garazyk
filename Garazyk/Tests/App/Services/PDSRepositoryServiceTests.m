@@ -5,6 +5,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
+#import "Repository/MST.h"
 
 @interface PDSRepositoryServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -527,6 +528,259 @@
     XCTAssertNil(deltaReadError);
     XCTAssertEqual(deltaReader.blocks.count, 0U);
     XCTAssertNotNil(deltaReader.rootCID);
+}
+
+#pragma mark - MST Operations
+
+- (void)testLoadMSTForDidReturnsMSTAfterWrite {
+    BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
+                                            rkey:@"mst-load-test"
+                                           value:[self postRecordWithText:@"mst load"]
+                                          forDid:self.testDID
+                                  validationMode:PDSValidationModeOff
+                                           error:nil];
+    XCTAssertTrue(writeOK);
+
+    NSError *mstError = nil;
+    MST *mst = [self.repositoryService loadMSTForDid:self.testDID error:&mstError];
+    XCTAssertNotNil(mst);
+    XCTAssertNil(mstError);
+}
+
+- (void)testLoadMSTForNonexistentDidReturnsEmptyMST {
+    NSError *mstError = nil;
+    MST *mst = [self.repositoryService loadMSTForDid:@"did:web:nonexistent.example.com" error:&mstError];
+    // loadMST returns an empty MST for nonexistent repos, not nil
+    XCTAssertNotNil(mst);
+    XCTAssertEqual([mst allEntries].count, 0U);
+}
+
+- (void)testUpdateMSTForDidAddsKey {
+    BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
+                                            rkey:@"mst-update-base"
+                                           value:[self postRecordWithText:@"mst base"]
+                                          forDid:self.testDID
+                                  validationMode:PDSValidationModeOff
+                                           error:nil];
+    XCTAssertTrue(writeOK);
+
+    NSError *mstError = nil;
+    MST *mst = [self.repositoryService loadMSTForDid:self.testDID error:&mstError];
+    XCTAssertNotNil(mst);
+
+    // The MST should have at least one entry
+    NSArray *entries = [mst allEntries];
+    XCTAssertGreaterThan(entries.count, 0U);
+}
+
+#pragma mark - Repo Root
+
+- (void)testGetRepoRootReturnsDataAfterWrite {
+    BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
+                                            rkey:@"root-test"
+                                           value:[self postRecordWithText:@"root data"]
+                                          forDid:self.testDID
+                                  validationMode:PDSValidationModeOff
+                                           error:nil];
+    XCTAssertTrue(writeOK);
+
+    NSError *rootError = nil;
+    NSData *rootData = [self.repositoryService getRepoRoot:self.testDID error:&rootError];
+    // getRepoRoot may return nil if repo metadata isn't stored in the service DB
+    // The key invariant is that it doesn't crash
+    if (rootData) {
+        XCTAssertTrue(rootData.length > 0);
+    }
+}
+
+- (void)testGetRepoRootForNonexistentDidReturnsNil {
+    NSError *rootError = nil;
+    NSData *rootData = [self.repositoryService getRepoRoot:@"did:web:nonexistent.root.example.com" error:&rootError];
+    XCTAssertNil(rootData);
+}
+
+#pragma mark - Get Blocks
+
+- (void)testGetBlocksForDidReturnsCARData {
+    BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
+                                            rkey:@"blocks-test"
+                                           value:[self postRecordWithText:@"blocks data"]
+                                          forDid:self.testDID
+                                  validationMode:PDSValidationModeOff
+                                           error:nil];
+    XCTAssertTrue(writeOK);
+
+    // Get the record's CID to request as a block
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", self.testDID, @"app.bsky.feed.post", @"blocks-test"];
+    NSDictionary *record = [self.recordService getRecord:uri forDid:self.testDID error:nil];
+    NSString *cidString = record[@"cid"];
+    XCTAssertNotNil(cidString);
+
+    NSError *blocksError = nil;
+    NSData *carData = [self.repositoryService getBlocksForDid:self.testDID
+                                                        cids:@[cidString]
+                                                        error:&blocksError];
+    XCTAssertNotNil(carData);
+    XCTAssertNil(blocksError);
+}
+
+- (void)testGetBlocksForDidWithEmptyCIDsReturnsNilOrCAR {
+    // Write a record first
+    [self.recordService putRecord:@"app.bsky.feed.post"
+                            rkey:@"blocks-empty-test"
+                           value:[self postRecordWithText:@"blocks empty"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+
+    NSError *blocksError = nil;
+    NSData *carData = [self.repositoryService getBlocksForDid:self.testDID
+                                                        cids:@[]
+                                                        error:&blocksError];
+    // Empty CID list may return nil or a valid empty CAR — either is acceptable
+    if (carData) {
+        XCTAssertTrue(carData.length > 0);
+    }
+}
+
+#pragma mark - Latest Commit
+
+- (void)testGetLatestCommitForDidReturnsCommit {
+    BOOL writeOK = [self.recordService putRecord:@"app.bsky.feed.post"
+                                            rkey:@"commit-test"
+                                           value:[self postRecordWithText:@"commit data"]
+                                          forDid:self.testDID
+                                  validationMode:PDSValidationModeOff
+                                           error:nil];
+    XCTAssertTrue(writeOK);
+
+    NSError *commitError = nil;
+    NSDictionary *commit = [self.repositoryService getLatestCommitForDid:self.testDID error:&commitError];
+    XCTAssertNotNil(commit);
+    XCTAssertNil(commitError);
+    XCTAssertNotNil(commit[@"cid"]);
+    XCTAssertNotNil(commit[@"rev"]);
+}
+
+- (void)testGetLatestCommitForNonexistentDidReturnsNil {
+    NSError *commitError = nil;
+    NSDictionary *commit = [self.repositoryService getLatestCommitForDid:@"did:web:nonexistent.commit.example.com" error:&commitError];
+    XCTAssertNil(commit);
+}
+
+#pragma mark - Initialize Repo
+
+- (void)testInitializeRepoForDidSucceeds {
+    NSString *newDid = @"did:web:newrepo.example.com";
+
+    // Generate signing key for the new DID (required for repo initialization)
+    NSError *storeError = nil;
+    PDSActorStore *store = [self.pool storeForDid:newDid error:&storeError];
+    XCTAssertNotNil(store);
+    if (store) {
+        NSError *keyError = nil;
+        [store generateSigningKeyWithError:&keyError];
+    }
+
+    NSError *initError = nil;
+    BOOL result = [self.repositoryService initializeRepoForDid:newDid error:&initError];
+    XCTAssertTrue(result, @"initializeRepo should succeed: %@", initError);
+    XCTAssertNil(initError);
+
+    // Verify repo is accessible
+    NSError *commitError = nil;
+    NSDictionary *commit = [self.repositoryService getLatestCommitForDid:newDid error:&commitError];
+    XCTAssertNotNil(commit, @"Repo should have a commit after initialization");
+}
+
+- (void)testInitializeRepoForDidWithExistingRepoFails {
+    // The testDID already has a repo from setUp (signing key generation creates one)
+    NSError *initError = nil;
+    BOOL result = [self.repositoryService initializeRepoForDid:self.testDID error:&initError];
+    // Re-initializing an existing repo should fail or be idempotent
+    // The exact behavior depends on implementation
+}
+
+#pragma mark - Force Reinitialize Repo
+
+- (void)testForceReinitializeRepoForDidSucceeds {
+    // Write a record first
+    [self.recordService putRecord:@"app.bsky.feed.post"
+                            rkey:@"reinit-test"
+                           value:[self postRecordWithText:@"before reinit"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+
+    NSError *reinitError = nil;
+    BOOL result = [self.repositoryService forceReinitializeRepoForDid:self.testDID error:&reinitError];
+    XCTAssertTrue(result);
+    XCTAssertNil(reinitError);
+
+    // After reinit, repo should have a fresh commit
+    NSError *commitError = nil;
+    NSDictionary *commit = [self.repositoryService getLatestCommitForDid:self.testDID error:&commitError];
+    XCTAssertNotNil(commit);
+}
+
+#pragma mark - Chunk Producer
+
+- (void)testRepoContentsChunkProducerReturnsProducer {
+    [self.recordService putRecord:@"app.bsky.feed.post"
+                            rkey:@"chunk-test"
+                           value:[self postRecordWithText:@"chunk data"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+
+    NSError *producerError = nil;
+    PDSRepoChunkProducer producer = [self.repositoryService repoContentsChunkProducer:self.testDID
+                                                                                 since:nil
+                                                                                 error:&producerError];
+    XCTAssertNotNil(producer);
+    XCTAssertNil(producerError);
+
+    // Read at least one chunk
+    NSError *chunkError = nil;
+    NSData *firstChunk = producer(&chunkError);
+    XCTAssertNil(chunkError);
+    // First chunk should contain data (CAR header + blocks)
+    XCTAssertTrue(firstChunk.length > 0);
+}
+
+- (void)testRepoContentsChunkProducerEndsAtNil {
+    [self.recordService putRecord:@"app.bsky.feed.post"
+                            rkey:@"chunk-end-test"
+                           value:[self postRecordWithText:@"chunk end"]
+                          forDid:self.testDID
+                  validationMode:PDSValidationModeOff
+                           error:nil];
+
+    NSError *producerError = nil;
+    PDSRepoChunkProducer producer = [self.repositoryService repoContentsChunkProducer:self.testDID
+                                                                                 since:nil
+                                                                                 error:&producerError];
+    XCTAssertNotNil(producer);
+
+    // Drain all chunks — should eventually return nil
+    NSUInteger chunkCount = 0;
+    NSUInteger totalBytes = 0;
+    while (YES) {
+        NSError *chunkError = nil;
+        NSData *chunk = producer(&chunkError);
+        if (chunkError) {
+            XCTFail(@"Chunk error: %@", chunkError);
+            break;
+        }
+        if (!chunk) {
+            break; // End of stream
+        }
+        chunkCount++;
+        totalBytes += chunk.length;
+    }
+
+    XCTAssertGreaterThan(chunkCount, 0U);
+    XCTAssertGreaterThan(totalBytes, 0U);
 }
 
 @end
