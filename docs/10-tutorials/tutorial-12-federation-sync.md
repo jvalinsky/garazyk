@@ -103,7 +103,7 @@ tail -f pds.log | grep RelayClient
 
 ---
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Failure Mode | Symptom | Mitigation |
 | --- | --- | --- |
@@ -112,7 +112,11 @@ tail -f pds.log | grep RelayClient
 | **Authentication Failed** | Status 401 on connect. | The upstream Relay requires a valid `accessToken` which is missing or expired in your configuration. |
 | **Backpressure** | `RelayEventBuffer` full or dropped events. | The PDS is consuming events slower than the Relay is sending them. Optimize the `RelayDownstreamHandler`. |
 
----
+## Next Steps
+
+1. Move to [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals).
+2. Review [Firehose Overview](../08-sync-firehose/firehose-overview) for protocol-level sync rules.
+3. Check [Metrics Collection](../11-reference/metrics-collection) for relay monitoring.
 
 ## Summary
 

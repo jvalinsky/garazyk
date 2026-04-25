@@ -160,9 +160,10 @@ Payload examples are useful, but only after those questions are answered.
 ## Next Steps
 
 1. Apply this workflow to one existing endpoint you know well.
-2. Compare the runtime behavior to [API Reference](../11-reference/api-reference).
-3. Verify how the same feature appears in [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui).
-4. Use the same sequence for your next real feature change.
+2. Move to [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations) to see how to handle binary data and schema changes.
+3. Compare the runtime behavior to [API Reference](../11-reference/api-reference).
+4. Verify how the same feature appears in [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui).
+5. Use the same sequence for your next real feature change.
 
 ## Summary
 

@@ -10,7 +10,8 @@ This hub maps Admin UI documentation into the canonical `docs/` path.
 
 - [Documentation Map](./documentation-map)
 - [Explorer, OpenAPI & UI](./explorer-openapi-ui)
-- [Tutorial 7: Objective-J UI](../10-tutorials/tutorial-7-objective-j-ui)
+- [Tutorial 7a: Objective-J for Contributors](../10-tutorials/tutorial-7a-objective-j-intro)
+- [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui)
 
 ## Root Entrypoints
 
