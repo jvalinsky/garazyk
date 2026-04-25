@@ -1000,6 +1000,10 @@ if(BUILD_FUZZERS)
   add_pds_fuzzer_with_mutator(fuzz_jwt_struct "fuzzing/harness/FuzzJWT.m" "fuzzing/mutators/JWTMutator.mm")
   add_pds_fuzzer_with_mutator(fuzz_http_struct "fuzzing/harness/FuzzHttp1Parser.m" "fuzzing/mutators/HTTPMutator.mm")
 
+  # Extended mutator fuzzers (Phase improvements)
+  add_pds_fuzzer_with_mutator(fuzz_cbor_struct "fuzzing/harness/FuzzCBORDecoder.m" "fuzzing/mutators/CBORMutator.mm")
+  add_pds_fuzzer_with_mutator(fuzz_xrpc_struct "fuzzing/harness/FuzzXrpcDispatcher.m" "fuzzing/mutators/XrpcMutator.mm")
+
 endif()
 
 #=============================
@@ -1304,13 +1308,15 @@ add_custom_target(run-tests COMMAND "${CMAKE_BINARY_DIR}/scripts/run-tests.sh"
 
 if(BUILD_FUZZERS)
   # Alias targets for convenience
-  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst)
+  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_cbor_struct fuzz_xrpc_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst)
   add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
   add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
   add_custom_target(fuzz-http DEPENDS fuzz_http)
   add_custom_target(fuzz-jwt DEPENDS fuzz_jwt)
   add_custom_target(fuzz-jwt-struct DEPENDS fuzz_jwt_struct)
   add_custom_target(fuzz-http-struct DEPENDS fuzz_http_struct)
+  add_custom_target(fuzz-cbor-struct DEPENDS fuzz_cbor_struct)
+  add_custom_target(fuzz-xrpc-struct DEPENDS fuzz_xrpc_struct)
   add_custom_target(fuzz-dpop DEPENDS fuzz_dpop)
   add_custom_target(fuzz-mime DEPENDS fuzz_mime)
   add_custom_target(fuzz-sqlite DEPENDS fuzz_sqlite)
