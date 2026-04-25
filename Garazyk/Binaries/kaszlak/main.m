@@ -111,6 +111,8 @@ static int fail_with_usage(NSString *errorMessage) {
  * Flags before command are rejected.
  */
 int main(int argc, const char * argv[]) {
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
     @autoreleasepool {
         PDSCLIRegisterAllCommands();
 #ifdef LINUX

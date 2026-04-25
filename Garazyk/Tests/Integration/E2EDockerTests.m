@@ -24,6 +24,7 @@
 - (BOOL)isLocalNetworkStackReachable:(NSError **)error {
     NSArray<NSString *> *probeURLs = @[
         [NSString stringWithFormat:@"%@/xrpc/com.atproto.server.describeServer", self.pdsBaseURL],
+        [NSString stringWithFormat:@"%@/xrpc/_health", self.plcBaseURL],
         [NSString stringWithFormat:@"%@/xrpc/com.atproto.sync.listHosts", self.relayBaseURL]
     ];
 

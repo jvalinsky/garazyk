@@ -90,6 +90,9 @@ def run() -> ScenarioResult:
     # ── Try WebSocket firehose subscription ───────────────────────────
     firehose_events = []
     firehose_connected = False
+    
+    # Wait for relay to be ready and connected to upstreams
+    time.sleep(2)
 
     try:
         from lib.firehose import FirehoseClient
@@ -180,12 +183,32 @@ def run() -> ScenarioResult:
         try:
             from lib.firehose import FirehoseClient
             fh_client = FirehoseClient("ws://localhost:2584")
-            events = asyncio.run(fh_client.collect(duration_s=5.0))
+            events = []
+            
+            # ATProto firehose can be slow to start streaming. Retry collection
+            # for up to 30 seconds to ensure events are captured.
+            target_count = 3
+            start_wait = time.time()
+            while len(events) < target_count and time.time() - start_wait < 30:
+                try:
+                    batch = asyncio.run(fh_client.collect(duration_s=5.0))
+                    events.extend(batch)
+                except Exception as exc:
+                    print(f"Firehose batch collection failed: {exc}")
+                    time.sleep(1)
+            
             result.step_passed("Post-operation firehose collection", f"events={len(events)}")
 
             # Check for sequencing
-            if events:
-                seqs = [e.seq for e in events if e.seq > 0]
+            if len(events) >= target_count:
+                # Extract seqs from events (including #identity and #account)
+                seqs = []
+                for e in events:
+                    if hasattr(e, 'seq') and e.seq > 0:
+                        seqs.append(e.seq)
+                    elif isinstance(e.payload, dict) and 'seq' in e.payload:
+                        seqs.append(e.payload['seq'])
+                
                 if seqs:
                     is_ordered = all(seqs[i] <= seqs[i+1] for i in range(len(seqs)-1))
                     if is_ordered:
@@ -193,11 +216,11 @@ def run() -> ScenarioResult:
                     else:
                         result.step_failed("Event sequencing", f"seqs not ordered: {seqs}")
                 else:
-                    result.step_skipped("Event sequencing", "No seq numbers in events")
+                    result.step_failed("Event sequencing", f"No seq numbers found in {len(events)} events")
             else:
-                result.step_skipped("Event sequencing", "No events collected")
+                result.step_failed("Event sequencing", f"Only {len(events)} events collected, need {target_count}")
         except Exception as exc:
-            result.step_skipped("Post-operation firehose collection", str(exc))
+            result.step_failed("Post-operation firehose collection", str(exc))
 
     # ── Verify sync endpoints ─────────────────────────────────────────
     try:
@@ -207,16 +230,27 @@ def run() -> ScenarioResult:
         )
         result.step_passed("Sync getHead", f"root={repo_head.get('root', 'N/A')[:20]}")
     except XrpcError as exc:
-        result.step_skipped("Sync getHead", str(exc))
+        result.step_failed("Sync getHead", str(exc))
 
     try:
-        repo_info = client.xrpc_get(
+        status, content_type, body = client.xrpc_get_binary(
             "com.atproto.sync.getRepo",
             {"did": luna.did},
         )
-        result.step_passed("Sync getRepo", "repo data retrieved")
+        if "application/vnd.ipld.car" not in content_type:
+            result.step_failed(
+                "Sync getRepo",
+                f"unexpected content_type={content_type!r} status={status}",
+            )
+        elif len(body) == 0:
+            result.step_failed("Sync getRepo", "empty CAR body")
+        else:
+            result.step_passed(
+                "Sync getRepo",
+                f"car bytes={len(body)} content_type={content_type}",
+            )
     except XrpcError as exc:
-        result.step_skipped("Sync getRepo", str(exc))
+        result.step_failed("Sync getRepo", str(exc))
 
     # ── AppView indexing verification ─────────────────────────────────
     time.sleep(3)
@@ -231,9 +265,9 @@ def run() -> ScenarioResult:
         if appview_resp.status_code == 200:
             result.step_passed("AppView backfill status", f"body={appview_resp.text[:100]}")
         else:
-            result.step_skipped("AppView backfill status", f"status={appview_resp.status_code}")
+            result.step_failed("AppView backfill status", f"status={appview_resp.status_code}")
     except Exception as exc:
-        result.step_skipped("AppView backfill status", str(exc))
+        result.step_failed("AppView backfill status", str(exc))
 
     # ── Verify Luna's post is indexed by AppView ─────────────────────
     try:
@@ -241,7 +275,7 @@ def run() -> ScenarioResult:
         feed_items = feed.get("feed", [])
         result.step_passed("AppView indexed Luna's posts", f"items={len(feed_items)}")
     except XrpcError as exc:
-        result.step_skipped("AppView indexed Luna's posts", str(exc))
+        result.step_failed("AppView indexed Luna's posts", str(exc))
 
     result.finish()
     return result

@@ -13,6 +13,8 @@
 #import <Foundation/Foundation.h>
 #import "Compat/PDSTypes.h"
 
+#import "Sync/Firehose/Firehose.h"
+
 @class WebSocketServer;
 @class WebSocketConnection;
 @class PDSServiceDatabases;
@@ -22,6 +24,7 @@
 @class HttpRequest;
 @protocol PDSNetworkConnection;
 @class PDSDatabasePool;
+@class RelayMetrics;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -72,6 +75,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 /*! Backward-compatible test hook for legacy signing-key injection. */
 @property (nonatomic, copy, nullable) NSData *signingKey;
 
+/*! Relay metrics sink. Set when running inside the Relay (`zuk`); nil for plain PDS. */
+@property (nonatomic, strong, nullable) RelayMetrics *relayMetrics;
+
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
 
@@ -87,6 +93,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 
 /*! Accepts a WebSocket-upgraded connection from the main HTTP server. */
 - (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection request:(HttpRequest *)request;
+
+/*! Broadcasts a repository commit event object. */
+- (void)broadcastCommitEvent:(FirehoseCommitEvent *)event;
 
 /*! Broadcasts a repository commit event. */
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit 
@@ -110,6 +119,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 
 /*! Broadcasts pre-encoded raw CBOR data to all connected clients. */
 - (void)broadcastEventData:(NSData *)eventData;
+
+/*! Returns and increments the next sequence number for this handler's stream. */
+- (NSUInteger)nextSequenceNumber;
 
 @end
 

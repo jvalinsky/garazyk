@@ -3,6 +3,7 @@
 
 @interface FirehoseProtocolSession ()
 @property(nonatomic, strong, readwrite) EventFormatter *eventFormatter;
+@property(nonatomic, assign, readwrite) NSUInteger sequenceNumber;
 @end
 
 @implementation FirehoseProtocolSession
@@ -17,8 +18,12 @@
 }
 
 - (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event {
-  self.sequenceNumber++;
-  event.seq = self.sequenceNumber;
+  NSUInteger seq;
+  @synchronized(self) {
+    _sequenceNumber++;
+    seq = _sequenceNumber;
+  }
+  event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeCommitEvent:event error:&error];
   if (!data) {
@@ -28,8 +33,12 @@
 }
 
 - (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event {
-  self.sequenceNumber++;
-  event.seq = self.sequenceNumber;
+  NSUInteger seq;
+  @synchronized(self) {
+    _sequenceNumber++;
+    seq = _sequenceNumber;
+  }
+  event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeIdentityEvent:event error:&error];
   if (!data) {
@@ -39,8 +48,12 @@
 }
 
 - (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event {
-  self.sequenceNumber++;
-  event.seq = self.sequenceNumber;
+  NSUInteger seq;
+  @synchronized(self) {
+    _sequenceNumber++;
+    seq = _sequenceNumber;
+  }
+  event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeAccountEvent:event error:&error];
   if (!data) {
@@ -50,7 +63,9 @@
 }
 
 - (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event {
-  self.sequenceNumber++;
+  @synchronized(self) {
+    _sequenceNumber++;
+  }
   // Info events don't strictly require seq in some lexicons, but we increment anyway if it's there
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeInfoEvent:event error:&error];
@@ -67,6 +82,13 @@
     PDS_LOG_SYNC_ERROR(@"Failed to encode error event: %@", error);
   }
   return data;
+}
+
+- (NSUInteger)nextSequenceNumber {
+  @synchronized(self) {
+    _sequenceNumber++;
+    return _sequenceNumber;
+  }
 }
 
 @end

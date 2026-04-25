@@ -3,6 +3,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
+#import "Debug/PDSLogger.h"
 #import "Auth/JWT.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
@@ -147,6 +148,18 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                  [self handleGetFeedGenerators:request response:response];
              }];
 
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.feed.getLikes"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetLikes:request response:response];
+             }];
+
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.feed.getRepostedBy"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetRepostedBy:request response:response];
+             }];
+
     // --- app.bsky.graph ---
     if (_graphService) {
         [server addRoute:@"GET"
@@ -177,18 +190,6 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                     path:@"/xrpc/app.bsky.graph.getRelationships"
                  handler:^(HttpRequest *request, HttpResponse *response) {
                      [self handleGetRelationships:request response:response];
-                 }];
-
-        [server addRoute:@"GET"
-                    path:@"/xrpc/app.bsky.graph.getLikes"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-                     [self handleGetLikes:request response:response];
-                 }];
-
-        [server addRoute:@"GET"
-                    path:@"/xrpc/app.bsky.graph.getRepostedBy"
-                 handler:^(HttpRequest *request, HttpResponse *response) {
-                     [self handleGetRepostedBy:request response:response];
                  }];
 
         [server addRoute:@"GET"
@@ -462,7 +463,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
 
 - (void)handleSearchActors:(HttpRequest *)request response:(HttpResponse *)response
 {
-    NSString *term = [request queryParamForKey:@"term"] ?: @"";
+    NSString *term = [request queryParamForKey:@"q"] ?: [request queryParamForKey:@"term"] ?: @"";
     NSInteger limit = parseLimitParam(request, 25, 100);
     NSString *cursor = [request queryParamForKey:@"cursor"];
 
@@ -485,7 +486,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
 
 - (void)handleSearchActorsTypeahead:(HttpRequest *)request response:(HttpResponse *)response
 {
-    NSString *term = [request queryParamForKey:@"term"] ?: @"";
+    NSString *term = [request queryParamForKey:@"q"] ?: [request queryParamForKey:@"term"] ?: @"";
     NSInteger limit = parseLimitParam(request, 20, 100);
 
     NSError *error = nil;

@@ -48,7 +48,10 @@
 }
 
 - (void)testFeedMalformedRequestEmitsProtocolError {
-    NSData *reqData = [@"GARBAGE!!!" dataUsingEncoding:NSUTF8StringEncoding];
+    // Send a request with both Transfer-Encoding and Content-Length,
+    // which the parser detects as an ambiguous framing error.
+    NSString *malformed = @"POST /test HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n";
+    NSData *reqData = [malformed dataUsingEncoding:NSUTF8StringEncoding];
 
     NSArray<NSNumber *> *events = [self.driver feedData:reqData];
 
@@ -125,11 +128,13 @@
 
     [self.driver feedData:combinedData];
 
-    NSUInteger count = [self.driver pendingRequestCount];
-    XCTAssertGreaterThan(count, 0);
-
+    // Dispatch one request — pendingRequestCount tracks in-flight
+    // (dispatched but not yet responded to) requests, not queued ones.
     HttpRequest *req = [self.driver nextDispatchableRequest];
     XCTAssertNotNil(req);
+
+    NSUInteger count = [self.driver pendingRequestCount];
+    XCTAssertGreaterThan(count, 0);
 }
 
 @end
