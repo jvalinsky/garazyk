@@ -6,7 +6,7 @@ body {
     background: var(--color-bg-primary);
 }
 
-.apple-header {
+.mst-header {
     min-height: 52px;
     display: flex;
     align-items: center;
@@ -16,11 +16,11 @@ body {
     border-bottom: 1px solid var(--separator-color);
 }
 
-.apple-logo {
+.mst-logo {
     font-size: var(--font-size-lg);
 }
 
-.apple-header h1 {
+.mst-header h1 {
     font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--color-text-primary);
@@ -123,31 +123,9 @@ body {
     color: var(--color-text-primary);
 }
 
-.btn-export,
-.btn-zoom {
+.btn-full-width {
     width: 100%;
     margin-top: var(--space-xs);
-}
-
-.btn-export,
-.btn-zoom {
-    padding: var(--space-sm);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--separator-color);
-    background: var(--color-bg-secondary);
-    color: var(--color-text-primary);
-    cursor: pointer;
-}
-
-.btn-export:hover,
-.btn-zoom:hover {
-    background: var(--color-bg-primary);
-}
-
-.btn-export:disabled,
-.btn-zoom:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 .content {
@@ -272,7 +250,7 @@ svg.mst-tree {
 
 .mst-tree .node-label.cid {
     font-family: "Menlo", "Monaco", "SF Mono", "Courier New", monospace;
-    font-size: 10px;
+    font-size: var(--font-size-xs);
     fill: var(--color-text-secondary);
 }
 
