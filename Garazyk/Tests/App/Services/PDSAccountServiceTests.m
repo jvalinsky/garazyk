@@ -212,4 +212,163 @@
     XCTAssertTrue(hasNonZeroTailByte, @"Salt tail bytes should contain entropy");
 }
 
+#pragma mark - Login with Identifier
+
+- (void)testLoginWithIdentifierUsingHandle {
+    [self.service createAccountForEmail:@"idhandle@example.com"
+                               password:@"password123"
+                                 handle:@"idhandle.example.com"
+                                    did:nil
+                                  error:nil];
+
+    NSError *error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"idhandle.example.com"
+                                                     password:@"password123"
+                                                        error:&error];
+    XCTAssertNotNil(session);
+    XCTAssertNil(error);
+    XCTAssertNotNil(session[@"accessJwt"]);
+}
+
+- (void)testLoginWithIdentifierUsingEmail {
+    [self.service createAccountForEmail:@"idemail@example.com"
+                               password:@"password123"
+                                 handle:@"idemail.example.com"
+                                    did:nil
+                                  error:nil];
+
+    NSError *error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"idemail@example.com"
+                                                     password:@"password123"
+                                                        error:&error];
+    XCTAssertNotNil(session);
+    XCTAssertNil(error);
+    XCTAssertNotNil(session[@"accessJwt"]);
+}
+
+- (void)testLoginWithIdentifierInvalidPassword {
+    [self.service createAccountForEmail:@"idfail@example.com"
+                               password:@"correct"
+                                 handle:@"idfail.example.com"
+                                    did:nil
+                                  error:nil];
+
+    NSError *error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"idfail.example.com"
+                                                     password:@"wrong"
+                                                        error:&error];
+    XCTAssertNil(session);
+    XCTAssertNotNil(error);
+}
+
+- (void)testLoginWithIdentifierNonexistentIdentifier {
+    NSError *error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"nonexistent.example.com"
+                                                     password:@"password123"
+                                                        error:&error];
+    XCTAssertNil(session);
+    XCTAssertNotNil(error);
+}
+
+#pragma mark - Get Account
+
+- (void)testGetAccountForDidReturnsAccount {
+    NSError *error = nil;
+    NSDictionary *created = [self.service createAccountForEmail:@"getdid@example.com"
+                                                        password:@"password123"
+                                                          handle:@"getdid.example.com"
+                                                             did:nil
+                                                           error:&error];
+    XCTAssertNotNil(created);
+    NSString *did = created[@"did"];
+    XCTAssertNotNil(did);
+
+    error = nil;
+    NSDictionary *account = [self.service getAccountForDid:did error:&error];
+    XCTAssertNotNil(account);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(account[@"did"], did);
+    XCTAssertEqualObjects(account[@"handle"], @"getdid.example.com");
+}
+
+- (void)testGetAccountForNonexistentDidReturnsNil {
+    NSError *error = nil;
+    NSDictionary *account = [self.service getAccountForDid:@"did:web:nonexistent.example.com" error:&error];
+    XCTAssertNil(account);
+}
+
+#pragma mark - Get All Accounts
+
+- (void)testGetAllAccountsReturnsCreatedAccounts {
+    [self.service createAccountForEmail:@"all1@example.com"
+                                password:@"password123"
+                                  handle:@"all1.example.com"
+                                     did:nil
+                                   error:nil];
+
+    [self.service createAccountForEmail:@"all2@example.com"
+                                password:@"password123"
+                                  handle:@"all2.example.com"
+                                     did:nil
+                                   error:nil];
+
+    NSError *error = nil;
+    NSArray *accounts = [self.service getAllAccountsWithError:&error];
+    XCTAssertNotNil(accounts);
+    XCTAssertNil(error);
+    XCTAssertGreaterThanOrEqual(accounts.count, 2);
+}
+
+#pragma mark - Delete Account
+
+- (void)testDeleteAccountSucceedsWithCorrectPassword {
+    NSError *error = nil;
+    NSDictionary *created = [self.service createAccountForEmail:@"delete@example.com"
+                                                        password:@"deletepass"
+                                                          handle:@"delete.example.com"
+                                                             did:nil
+                                                           error:&error];
+    XCTAssertNotNil(created);
+    NSString *did = created[@"did"];
+
+    error = nil;
+    BOOL deleted = [self.service deleteAccount:did password:@"deletepass" error:&error];
+    XCTAssertTrue(deleted);
+    XCTAssertNil(error);
+
+    // Verify account is gone
+    error = nil;
+    NSDictionary *account = [self.service getAccountForDid:did error:&error];
+    XCTAssertNil(account);
+}
+
+- (void)testDeleteAccountFailsWithWrongPassword {
+    NSError *error = nil;
+    NSDictionary *created = [self.service createAccountForEmail:@"deletewrong@example.com"
+                                                        password:@"correctpass"
+                                                          handle:@"deletewrong.example.com"
+                                                             did:nil
+                                                           error:&error];
+    XCTAssertNotNil(created);
+    NSString *did = created[@"did"];
+
+    error = nil;
+    BOOL deleted = [self.service deleteAccount:did password:@"wrongpass" error:&error];
+    XCTAssertFalse(deleted);
+    XCTAssertNotNil(error);
+
+    // Verify account still exists
+    NSDictionary *account = [self.service getAccountForDid:did error:nil];
+    XCTAssertNotNil(account);
+}
+
+- (void)testDeleteAccountNonexistentFails {
+    NSError *error = nil;
+    BOOL deleted = [self.service deleteAccount:@"did:web:nonexistent.example.com"
+                                       password:@"password123"
+                                          error:&error];
+    XCTAssertFalse(deleted);
+    XCTAssertNotNil(error);
+}
+
 @end
