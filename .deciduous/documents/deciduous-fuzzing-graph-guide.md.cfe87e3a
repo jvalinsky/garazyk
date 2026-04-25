@@ -1,7 +1,7 @@
-# Deciduous Decision Graph — Fuzzing Harness Review & Improvement
+# Deciduous Decision Graph — Fuzzing Infrastructure Complete
 
 **Graph Created:** 2026-04-25  
-**Status:** ✅ Complete (Phase 1-2) | 📋 Planned (Phase 3+)  
+**Status:** ✅ Complete (All 10 Phases)  
 **Main Goal Node:** #356  
 **Narrative Document:** `/Users/jack/.claude/scratchpads/fuzzing-improvements-narrative.md`
 
@@ -299,38 +299,90 @@ All nodes are linked to one of two scratchpad files:
 |-------|-------------|--------|----------|
 | **Phase 1** | Code review & issue identification | ✅ Complete | #357, #358-367 |
 | **Phase 2** | Web research & extended strategy | ✅ Complete | #369-371 |
-| **Phase 3** | Seed corpus enrichment | 📋 Planned | — |
-| **Phase 4** | Custom mutator implementation | 📋 Planned | — |
-| **Phase 5** | CI/CD integration | 📋 Planned | — |
+| **Phase 3** | Seed corpus enrichment | ✅ Complete | 131 files across 8 dirs |
+| **Phase 4** | Custom mutator implementation | ✅ Complete | JWT/HTTP/CBOR/XRPC |
+| **Phase 5** | Protocol-aware corpus | ✅ Complete | XRPC 38 test cases |
+| **Phase 6** | Coverage + dashboard | ✅ Complete | HTML dashboard |
+| **Phase 7** | CI workflow | ✅ Complete | Daily + manual dispatch |
+| **Phase 8** | Minimizer + triage + dicts | ✅ Complete | 4 token dicts |
+| **Phase 9** | Regression + diff + multi-path | ✅ Complete | 3 new scripts |
+| **Phase 10** | Grammars + sanitizers | ✅ Complete | MSAN/UBSAN options |
+
+---
+
+## Completed Work (All Phases)
+
+### Phase 3: Seed Corpus (Complete)
+- 131 seed files across 8 corpus directories
+- XRPC, CBOR, HTTP, JWT, MST, SQL, MIME, Lexicon
+
+### Phase 4: Custom Mutators (Complete)
+- JWTMutator.mm - JWT segment-aware mutations
+- HTTPMutator.mm - HTTP grammar mutations
+- CBORMutator.mm - CBOR type mutations
+- XrpcMutator.mm - JSON mutations
+
+### Phase 5: Protocol Corpus (Complete)
+- 38 XRPC test cases covering all major methods
+- Session, Identity, Repo, Graph, Feed, Sync
+
+### Phase 6: Coverage Instrumentation (Complete)
+- FuzzCoverageTracker.m
+- FUZZER_COVERAGE CMake option
+- fuzzing-metrics.html dashboard
+
+### Phase 7: CI Integration (Complete)
+- .github/workflows/fuzzing.yml
+- Daily schedule (2 AM UTC)
+- Manual dispatch support
+
+### Phase 8: Minimizer + Triage + Dictionaries (Complete)
+- FuzzMinimizer.m
+- minimize-corpus.sh
+- triage-crashes.sh
+- json.dict, cbor.dict, http.dict, jwt.dict
+
+### Phase 9: Regression + Coverage Diff + Multi-path (Complete)
+- regression-runner.sh
+- coverage-diff.sh
+- fuzz_multi_json (7 parsing paths)
+- known-bad baseline
+
+### Phase 10: Grammars + Sanitizers (Complete)
+- json.dict, cbor.dict, http.dict grammars
+- BUILD_FUZZERS_USE_MSAN option
+- BUILD_FUZZERS_USE_UBSAN option
+
+---
+
+## Fuzzer Targets (14 Total)
+
+| Target | Type | Binary Size |
+|--------|------|-------------|
+| fuzz_xrpc | Baseline | 8 MB |
+| fuzz_cbor | Baseline | 11 MB |
+| fuzz_http | Baseline | 8 MB |
+| fuzz_jwt | Baseline | 8 MB |
+| fuzz_dpop | Baseline | — |
+| fuzz_mime | Baseline | — |
+| fuzz_sqlite | Baseline | — |
+| fuzz_lexicon | Baseline | — |
+| fuzz_mst | Baseline | — |
+| fuzz_jwt_struct | Mutator | 8 MB |
+| fuzz_http_struct | Mutator | 8 MB |
+| fuzz_cbor_struct | Mutator | 11 MB |
+| fuzz_xrpc_struct | Mutator | 11 MB |
+| fuzz_multi_json | Multi-path | 8 MB |
 
 ---
 
 ## Next Actions
 
-### Immediate (Next Session)
+### Future Enhancements (Not Yet Implemented)
 
-1. **Create seed corpus** (2h)
-   - CBOR: major types, indefinite sequences
-   - JWT: valid/invalid/expired tokens
-   - HTTP: headers variants, chunked encoding
-   - MIME: real file magic numbers
-
-2. **Add CI regression test** (3h)
-   - GitHub Actions workflow
-   - Run each fuzzer for N minutes
-   - Collect coverage, store artifacts
-
-### Short-term (This Week)
-
-3. **Build custom mutators** (1d)
-   - libprotobuf-mutator for JWT
-   - Hand-written for HTTP
-   - Test improved coverage on seed inputs
-
-4. **Measure coverage** (4h)
-   - Rebuild with coverage flags
-   - Run corpus, generate reports
-   - Identify remaining gaps
+1. **Persistent mode** - In-process fuzzing for speed
+2. **Seed scheduling** - Priority-based input selection
+3. **Directed fuzzing** - Target specific code paths
 
 ---
 
