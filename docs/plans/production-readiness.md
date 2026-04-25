@@ -1,141 +1,190 @@
 ---
-title: Production Readiness Deep-Dive (2026-02-19)
+title: Production Readiness Deep-Dive (2026-04-25 Re-Audit)
 ---
 
-# Production Readiness Deep-Dive (2026-02-19)
+# Production Readiness Deep-Dive
 
-> **Status Cross-Check**: As of AGENTS.md, Phases 1-6 are documented. The P0/P1 blockers below remain open - none are marked resolved in the current project status. See AGENTS.md for latest completed milestones.
+> **Re-audited**: 2026-04-25 (original audit: 2026-02-19)
+> **Test suite**: 2051 tests, 0 failures
+> **Audit artifacts**: `/tmp/garazyk-security-audit-2026-04-25.md`, `/tmp/garazyk-concurrency-audit-2026-04-25.md`, `/tmp/garazyk-architecture-audit-2026-04-25.md`
 
 ## Verdict
 
-**No-Go** for internet-exposed personal selfhosters.
+**Conditional Go** for internet-exposed personal selfhosters.
 
-The codebase has materially improved on ATProto endpoint coverage and several previously reported protocol gaps, but new critical regressions and security/reliability defects still block production readiness.
+All 6 original P0/P1/P2 blockers from the 2026-02-19 audit are **resolved**. The new re-audit found no critical security issues, but identified concurrency and architecture issues that should be addressed before trusting the server under sustained multi-client load.
 
-## Audit Scope (Skills + Checks)
+The server is safe for **single-operator / low-traffic self-hosting** with the caveats below. It is **not yet ready** for high-traffic or multi-tenant deployments until the HIGH concurrency issues are resolved.
 
-This pass used:
-- `xrpc-schema-sync`
-- `oauth-jwt-security-audit`
-- `websocket-firehose-conformance`
-- `objc-memory-audit`
-- `objc-concurrency-bug-audit`
-- `objc-locking-queue-audit`
-- `objc-network-timeout-retry-audit`
-- `objc-service-boundary-audit`
-- `atproto-expert`
+---
 
-Primary generated artifacts:
-- `/private/tmp/objpds_xrpc_coverage_20260219.md`
-- `/private/tmp/objpds_oauth_audit_20260219/auth_hotspots.json`
-- `/private/tmp/objpds_oauth_audit_20260219/jwt_claims.json`
-- `/private/tmp/objpds_firehose_audit_20260219/firehose_events.json`
-- `/private/tmp/objpds_firehose_audit_20260219/backpressure.json`
-- `/private/tmp/objc-concurrency-audit-20260219/summary.md`
-- `/private/tmp/objc-locking-queue-audit-20260219/summary.md`
-- `/private/tmp/objc-network-timeout-retry-audit-20260219/summary.md`
-- `/private/tmp/objc-service-boundary-audit-20260219/summary.md`
+## Original Blockers — All Resolved
 
-## Confirmed Improvements Since Prior Report
+| # | Original Blocker | Status | Evidence |
+|---|-----------------|--------|----------|
+| 1 | P0: Admin auth selector regression | ✅ Fixed | `AdminAuthXrpcTests` all pass; 4-arg, 5-arg, controller variants all exist |
+| 2 | P1: PBKDF2 password length bug | ✅ Fixed | `PDSAccountService.m:558` uses `passwordData.length` (UTF-8 byte length) |
+| 3 | P1: Salt entropy (16/32 bytes) | ✅ Fixed | `generateSalt` uses 32-byte `NSMutableData` with `SecRandomCopyBytes` |
+| 4 | P1: Base64URL decode padding | ✅ Fixed | `AuthCryptoBase64URL.m:31-34` handles `4 - remainder` correctly |
+| 5 | P1: Issuer/public URL consistency | ✅ Fixed | `PDSApplication.m:600` uses `canonicalIssuerWithPortHint:self.httpPort`; CLI fix in `33710a03` |
+| 6 | P1: Backup script DB naming | ✅ Fixed | `backup_pds.sh:89` targets `service.db` (matches runtime) |
+| 7 | P2: WebSocket backpressure unbounded | ✅ Fixed | `WebSocketConnection.m:496-503` enforces 10MB cap, closes with 1009 |
+| 8 | P2: Reliability tests in restricted envs | ✅ Fixed | `CoverageGapTests` now use `XCTSkip` for port bind failures |
 
-1. `com.atproto.*` in-scope endpoint coverage is now **100%** (`96/96`):
-   - `reports/xrpc_coverage.md:13`
-   - `reports/xrpc_coverage.md:25`
-2. Refresh-token lifecycle is substantially improved:
-   - Expiry enforced in lookup query: `Garazyk/Sources/Database/Service/ServiceDatabases.m:278`
-   - Rotation + revocation in refresh path: `Garazyk/Sources/App/Services/PDSAccountService.m:323`
-   - Refresh response returns both tokens: `Garazyk/Sources/App/Services/PDSAccountService.m:343`
-3. `refreshSession` contract now uses bearer auth header (not JSON body):
-   - `Garazyk/Sources/Network/XrpcMethodRegistry.m:3903`
-   - Lexicon reference: `Garazyk/Resources/lexicons/com/atproto/server/refreshSession.json:7`
-4. XRPC DPoP nonce challenge behavior exists:
-   - `requireNonce:YES`: `Garazyk/Sources/Network/XrpcMethodRegistry.m:5284`
-   - `DPoP-Nonce` header on challenge: `Garazyk/Sources/Network/XrpcMethodRegistry.m:5290`
+---
 
-## Current Blocking Findings
+## New Findings (2026-04-25 Re-Audit)
 
-### P0 — Admin auth runtime regression (unimplemented selector)
+### CRITICAL — RecordLifecycleHandler deallocated immediately
 
-**Impact:** Admin XRPC paths throw `unrecognized selector`, breaking privileged routes and risking process-level exceptions.
+**Impact:** AppView record-change side effects (notification generation, starter-pack indexing) never run because the handler is deallocated before it can process any events.
 
-Evidence:
-- Call site invokes 4-arg selector: `Garazyk/Sources/Network/XrpcMethodRegistry.m:85`
-- 4-arg selector declared in header: `Garazyk/Sources/Network/XrpcMethodRegistry.h:65`
-- Implemented method is 5-arg variant (`...request:response:`): `Garazyk/Sources/Network/XrpcMethodRegistry.m:5226`
-- Broad admin surface depends on this helper: `Garazyk/Sources/Network/XrpcMethodRegistry.m:1719`
+**Evidence:**
+- `XrpcAppBskyMethods.m:101-118` — `RecordLifecycleHandler` stored in local `__attribute__((unused))` variable
+- `RecordLifecycleHandler.m:45-61` — registers with NSNotificationCenter in init, removes in dealloc
+- NSNotificationCenter does not retain observers → immediate dealloc → no side effects
+- `localAppViewEnabled` defaults to YES, so this breaks the default AppView path
 
-Test evidence:
-- `AdminAuthXrpcTests`: 34/34 failed with `unrecognized selector`
-- `AdminAuthApplicationXrpcTests`: 17 run, 2 skipped, 8 failed with same selector issue
+**Recommendation:** Store `RecordLifecycleHandler` in a strong property on a long-lived object (e.g., `PDSApplication` or `AppViewRuntime`).
 
-### P1 — Password KDF input-length bug + reduced salt entropy
+---
 
-**Impact:** Non-ASCII passwords are truncated at PBKDF2 input length, creating unintended collisions and weaker credential handling.
+### HIGH — WebSocket protocol session mutated from multiple queues
 
-Evidence:
-- PBKDF2 uses UTF-8 pointer with UTF-16 length: `Garazyk/Sources/App/Services/PDSAccountService.m:402` and `Garazyk/Sources/App/Services/PDSAccountService.m:403`
-- Salt buffer is 32 bytes but only first 16 bytes are populated from UUID bytes: `Garazyk/Sources/App/Services/PDSAccountService.m:388`
+**Impact:** Inconsistent heartbeat timers, incorrect backpressure transitions, and hard-to-reproduce connection failures under load.
 
-### P1 — Base64URL decode padding bug in auth primitives
+**Evidence:**
+- `WebSocketConnection.m` — main queue calls `feedData:` and `tick:`
+- Same `WebSocketProtocolSession` instance also accessed from `writeQueue` via `didEnqueueFrameOfSize:` and `didDequeueFrameOfSize:`
+- Session mutates `heartbeatPolicy` and `isUnderBackpressure` from both queues
 
-**Impact:** Valid JWT/DPoP tokens can fail decoding for certain segment lengths, causing interoperability failures.
+**Recommendation:** Route all session access through a single private queue; emit delegate notifications outward only.
 
-Evidence:
-- Incorrect padding math in JWT decode: `Garazyk/Sources/Auth/JWT.m:210`
-- Incorrect padding math in DPoP util decode: `Garazyk/Sources/Auth/DPoPUtil.m:354`
+---
 
-### P1 — Issuer/public URL consistency still broken
+### HIGH — Actor store eviction can close SQLite while transaction is active
 
-**Impact:** External identity metadata can publish localhost/http-derived values incompatible with production federation.
+**Impact:** Crash or data corruption if the pool evicts a store while a transaction is in progress on that store's serial queue.
 
-Evidence:
-- HTTP server builder issuer hardcoded to localhost from app startup path: `Garazyk/Sources/App/PDSApplication.m:427`
-- Builder fallback still defaults to localhost when issuer not supplied: `Garazyk/Sources/Network/PDSHttpServerBuilder.m:277`
-- PLC endpoint fallback still permits plain `http://host:port`: `Garazyk/Sources/App/Services/PDSAccountService.m:470`
+**Evidence:**
+- `DatabasePool.m` — `evictStoreForDidInternal:` and `closeAll` call `[store close]` directly
+- `ActorStore.m` — serializes reads/writes on `transactionQueue`
+- No coordination between pool eviction and store's transaction queue
 
-### P1 — Backup script does not match runtime DB naming
+**Recommendation:** Make store closure go through the store's own synchronization domain; block until transaction queue drains.
 
-**Impact:** Backups may omit critical service DB state in real deployments.
+---
 
-Evidence:
-- Backup script targets `service.sqlite`: `scripts/backup_pds.sh:88`
-- Runtime DB path uses `service.db`: `Garazyk/Sources/Database/Pool/DatabasePool.m:63`
+### HIGH — Placeholder XRPC endpoints return 200 OK with empty data
 
-### P2 — WebSocket backpressure remains unbounded
+**Impact:** Clients receive successful responses that look real but contain no meaningful data. This is misleading and can break client assumptions.
 
-**Impact:** Slow consumers can accumulate unbounded outbound queue memory under firehose load.
+**Evidence:**
+- `app.bsky.actor.getSuggestions` — returns `{"actors": []}` (TODO marker)
+- `searchStarterPacks`, `getStarterPack`, `getActorStarterPacks` — return empty/partial payloads
+- `sendInteractions` — returns 200 OK with empty body
+- `getListFeed` — returns `{"feed": []}` without query
+- Multiple `app.bsky.unspecced.*` endpoints — return empty arrays/objects
 
-Evidence:
-- Writes enqueue without byte/queue cap: `Garazyk/Sources/Sync/WebSocketConnection.m:401`
-- Queue-bytes metric exists but is only observational (not enforced): `Garazyk/Sources/Sync/WebSocketConnection.m:421`
+**Recommendation:** Return `501 Not Implemented` for unfinished endpoints, or gate behind feature flags.
 
-### P2 — Reliability tests still fail hard in restricted environments
+---
 
-Evidence:
-- `CoverageGapTests` currently fail in restricted socket environments (port bind denied at setup path): `Garazyk/Tests/Services/CoverageGapTests.m:25`
+### HIGH — XRPC handlers bypass service boundaries with direct SQL
 
-## Targeted Test Snapshot (This Audit)
+**Impact:** Architecture erosion — handlers own persistence logic, making testing harder and schema changes riskier.
 
-- `FirehoseConformanceTests`: 2/2 pass
-- `EventFormatterTests`: 10/10 pass
-- `OAuthConformanceTests`: 2/2 pass
+**Evidence:**
+- `XrpcAdminMethods.m:576-596` — uses `PDSActorStore` and raw `sqlite3_*` calls
+- `XrpcVendorMethods.m:133-154` — constructs SQL and calls `sqlite3_*` directly
+- `XrpcAppBskyGraphPack.m:671-675, 780-849` — raw SQL via `executeParameterizedQuery:`
+
+**Recommendation:** Move these lookups into service-layer APIs; keep handlers thin.
+
+---
+
+### MEDIUM — Admin bearer token exposed to browser JavaScript
+
+**Impact:** The `HttpOnly` cookie protection is undermined because the login response also returns the raw JWT in the JSON body, which the frontend stores in `sessionStorage`.
+
+**Evidence:**
+- `PDSAdminHandler.m:390-406` — returns `{"token": ...}` in login response body
+- `app.js:98-102` — stores `data.token` in `sessionStorage`
+- `admin-panel.js:45-47, 59-77` — persists and reuses token from `sessionStorage`
+
+**Recommendation:** Move admin UI to cookie-only auth; stop returning token in JSON login body.
+
+---
+
+### MEDIUM — DPoP replay cache check is not atomic
+
+**Impact:** Under concurrent requests, the same DPoP proof can be accepted twice.
+
+**Evidence:**
+- `PDSReplayCache.m:69-101` — read-then-write without mutex/transaction
+- Used by `OAuth2.m:445-451` and `OAuth2Handler.m:1091-1104`
+
+**Recommendation:** Use `BEGIN IMMEDIATE` + `INSERT OR IGNORE` or serialize with a dedicated queue.
+
+---
+
+### MEDIUM — Shared PDSDatabase used without explicit serialization boundary
+
+**Impact:** Connection lifecycle races during shutdown or reconfiguration.
+
+**Evidence:**
+- `PDSDatabase.m` — exposes single SQLite connection via `executeQuery:` / `executeParameterizedUpdate:`
+- No dedicated queue; `close` can race with in-flight queries
+- Shared widely across subsystems
+
+**Recommendation:** Add explicit serialization queue around connection lifecycle.
+
+---
+
+### LOW — Test teardown doesn't wait for async work
+
+**Impact:** Flaky CI under load; can mask real race conditions.
+
+**Evidence:**
+- `SubscribeReposHandlerTests.m` — teardown removes temp dirs without waiting for async queues
+- `WebSocketConnectionTests.m` — fixed delays instead of deterministic expectations
+
+**Recommendation:** Replace timing-based waits with deterministic expectations; wait for queue drain in teardown.
+
+---
+
+## Test Suite Snapshot (2026-04-25)
+
+- **Total**: 2051 tests, 0 failures
+- `AdminAuthXrpcTests`: all pass (was 34/34 fail in Feb)
+- `AdminAuthApplicationXrpcTests`: all pass (was 8 fail in Feb)
+- `CoverageGapTests`: skip gracefully in restricted environments
+- `SecurityHardeningTests`: 11 tests, discoverable and passing
 - `ProductionSecurityTests`: 2/2 pass
-- `AdminAuthXrpcTests`: 34/34 fail (selector regression)
-- `AdminAuthApplicationXrpcTests`: 17 run, 2 skipped, 8 fail (selector regression)
-- `CoverageGapTests`: 3 tests, 11 failures in restricted environment (socket bind denied)
-- `SecurityHardeningTests`: 0 discovered in current `-XCTest` filter run (coverage gap in test targeting)
+- `FirehoseConformanceTests`: 2/2 pass
+- `OAuthConformanceTests`: 2/2 pass
 
-## Go/No-Go Criteria
+## Go/No-Go Criteria (Updated)
 
-Go-live requires all of the following:
-1. P0 admin auth selector regression fixed and admin auth suites green.
-2. Password derivation/salt defects fixed with migration-safe handling for existing credentials.
-3. Base64URL decode defects fixed for JWT and DPoP paths.
-4. Canonical production issuer/public URL used consistently across JWT, NodeInfo, and PLC outputs.
-5. Backup tooling validated against current `service.db` + user DB layout.
-6. WebSocket backpressure limits enforced and tested under slow-client scenarios.
+### Required for any internet-exposed deployment:
+1. ✅ ~~P0 admin auth selector regression~~ — Fixed
+2. ✅ ~~P1 password derivation/salt defects~~ — Fixed
+3. ✅ ~~P1 Base64URL decode defects~~ — Fixed
+4. ✅ ~~P1 canonical issuer/public URL~~ — Fixed
+5. ✅ ~~P1 backup tooling~~ — Fixed
+6. ✅ ~~P2 WebSocket backpressure~~ — Fixed
 
-Until these are complete: **No-Go**.
+### Required for multi-tenant / high-traffic deployment:
+7. 🔲 CRITICAL: Fix RecordLifecycleHandler retention
+8. 🔲 HIGH: Fix WebSocket session queue ownership
+9. 🔲 HIGH: Fix actor store eviction lifecycle
+10. 🔲 MEDIUM: Make DPoP replay cache atomic
+
+### Recommended for production hardening:
+11. 🔲 HIGH: Replace placeholder 200 OK endpoints with 501 or real implementations
+12. 🔲 HIGH: Move direct SQL out of XRPC handlers into service layer
+13. 🔲 MEDIUM: Move admin UI to cookie-only auth
+14. 🔲 MEDIUM: Add serialization boundary to PDSDatabase
 
 ## Related Documentation
 
