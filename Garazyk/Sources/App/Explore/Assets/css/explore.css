@@ -134,7 +134,7 @@ body {
 }
 
 .account-indicator {
-    font-size: 14px;
+    font-size: var(--font-size-md);
 }
 
 .account-empty {
@@ -326,7 +326,7 @@ body {
 
 .poster-recent-item-date {
     color: var(--color-text-tertiary);
-    font-size: 10px;
+    font-size: var(--font-size-xs);
 }
 
 .poster-result {
@@ -474,7 +474,7 @@ body {
 }
 
 .admin-did-code {
-    font-size: 10px;
+    font-size: var(--font-size-xs);
 }
 
 .admin-result-error {
@@ -609,7 +609,7 @@ body {
 }
 
 .profile-did {
-    font-size: 10px;
+    font-size: var(--font-size-xs);
 }
 
 .profile-classic-bio {
