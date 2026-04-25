@@ -54,6 +54,9 @@
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args
                     context:(PDSCLICommandContext *)context {
+  // Ignore SIGPIPE to prevent crash when a client closes connection unexpectedly
+  signal(SIGPIPE, SIG_IGN);
+
   NSInteger port = 2583;
   BOOL foreground = NO;
   NSString *logLevel = @"info";

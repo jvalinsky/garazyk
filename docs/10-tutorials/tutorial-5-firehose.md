@@ -154,8 +154,13 @@ Contributors who debug it at the right layer move much faster than contributors 
 ### Small verification loop
 
 ```bash
+./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground &
+PID=$!
+sleep 2
 ./build/tests/AllTests -XCTest SubscribeReposHandlerTests
 ./build/tests/AllTests -XCTest WebSocketUpgradeHandlerTests
+# Note: websocat will run until interrupted
 websocat ws://127.0.0.1:2583/xrpc/com.atproto.sync.subscribeRepos
+kill $PID
 ```
 \n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

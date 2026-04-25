@@ -948,14 +948,15 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
             
             if ([discriminator isEqualToString:variantNSID]) {
                 // Resolve ref to definition
-                ATProtoLexiconDef *variantDef = [self resolveRef:ref inSchema:schema];
+                ATProtoLexiconSchema *resolvedSchema = nil;
+                ATProtoLexiconDef *variantDef = [self resolveRef:ref inSchema:schema resolvedSchema:&resolvedSchema];
 
                 if (variantDef) {
                     return [self validateValue:value
                                     againstDef:variantDef
                                        context:context
                                  recursionDepth:depth
-                                        schema:schema
+                                        schema:resolvedSchema ?: schema
                                          error:error];
                 }
             }
@@ -995,7 +996,8 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
     }
 
     // Resolve reference
-    ATProtoLexiconDef *targetDef = [self resolveRef:constraints.ref inSchema:schema];
+    ATProtoLexiconSchema *resolvedSchema = nil;
+    ATProtoLexiconDef *targetDef = [self resolveRef:constraints.ref inSchema:schema resolvedSchema:&resolvedSchema];
 
     if (!targetDef) {
         if (error) {
@@ -1015,9 +1017,12 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
                          error:error];
 }
 
-- (nullable ATProtoLexiconDef *)resolveRef:(NSString *)ref inSchema:(ATProtoLexiconSchema *)schema {
+- (nullable ATProtoLexiconDef *)resolveRef:(NSString *)ref inSchema:(ATProtoLexiconSchema *)schema resolvedSchema:(ATProtoLexiconSchema * __autoreleasing *)outSchema {
     if ([ref hasPrefix:@"#"]) {
         // Local reference
+        if (outSchema) {
+            *outSchema = schema;
+        }
         NSString *defName = [ref substringFromIndex:1];
         return [schema definitionForName:defName];
     } else {
@@ -1035,6 +1040,9 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
             return nil;
         }
 
+        if (outSchema) {
+            *outSchema = targetSchema;
+        }
         return [targetSchema definitionForName:defName];
     }
 }

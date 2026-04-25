@@ -157,24 +157,14 @@ def run() -> ScenarioResult:
         follows = client.get_follows(marcus.did, token=marcus.access_jwt)
         assert_contains(follows, "follows", operation="getFollows for Marcus")
         result.step_passed("Marcus's follows list", f"count={len(follows.get('follows', []))}")
-    except XrpcError as exc:
-        if _is_appview_endpoint(exc):
-            result.step_skipped("Marcus's follows list", "AppView endpoint not available (no AppView)")
-        else:
-            result.step_failed("Marcus's follows list", str(exc))
-    except AssertionError as exc:
+    except (XrpcError, AssertionError) as exc:
         result.step_failed("Marcus's follows list", str(exc))
 
     try:
         followers = client.get_followers(luna.did, token=luna.access_jwt)
         assert_contains(followers, "followers", operation="getFollowers for Luna")
         result.step_passed("Luna's followers list", f"count={len(followers.get('followers', []))}")
-    except XrpcError as exc:
-        if _is_appview_endpoint(exc):
-            result.step_skipped("Luna's followers list", "AppView endpoint not available (no AppView)")
-        else:
-            result.step_failed("Luna's followers list", str(exc))
-    except AssertionError as exc:
+    except (XrpcError, AssertionError) as exc:
         result.step_failed("Luna's followers list", str(exc))
 
     # ── Marcus unfollows DJ Volt ────────────────────────────────────
@@ -224,18 +214,12 @@ def run() -> ScenarioResult:
     # ── Verify blocks (AppView endpoint) ──────────────────────────────
     if not luna.did or not luna.access_jwt:
         result.step_skipped("Luna's blocks list", "Luna account not created")
-    else:
-        try:
-            blocks = client.get_blocks(luna.access_jwt)
-            assert_contains(blocks, "blocks", operation="getBlocks for Luna")
-            result.step_passed("Luna's blocks list", f"count={len(blocks.get('blocks', []))}")
-        except XrpcError as exc:
-            if _is_appview_endpoint(exc):
-                result.step_skipped("Luna's blocks list", "AppView endpoint not available (no AppView)")
-            else:
-                result.step_failed("Luna's blocks list", str(exc))
-        except AssertionError as exc:
-            result.step_failed("Luna's blocks list", str(exc))
+    try:
+        blocks = client.get_blocks(luna.access_jwt)
+        assert_contains(blocks, "blocks", operation="getBlocks for Luna")
+        result.step_passed("Luna's blocks list", f"count={len(blocks.get('blocks', []))}")
+    except (XrpcError, AssertionError) as exc:
+        result.step_failed("Luna's blocks list", str(exc))
 
     # ── Profile shows updated counts ─────────────────────────────────
     try:
@@ -251,19 +235,13 @@ def run() -> ScenarioResult:
 
     # ── Search actors (AppView endpoint) ──────────────────────────────
     if not luna.did or not luna.access_jwt:
-        result.step_skipped("Search actors", "Luna account not created")
+        result.step_failed("Search actors", "Luna account not created")
     else:
         try:
             search = client.search_actors("Luna", token=luna.access_jwt)
             assert_contains(search, "actors", operation="searchActors")
             result.step_passed("Search actors", f"found={len(search.get('actors', []))}")
-        except XrpcError as exc:
-            # searchActors is an AppView endpoint; skip if not available or broken
-            if _is_appview_endpoint(exc) or exc.status in (500, 0):
-                result.step_skipped("Search actors", "AppView endpoint not available (no AppView)")
-            else:
-                result.step_failed("Search actors", str(exc))
-        except AssertionError as exc:
+        except (XrpcError, AssertionError) as exc:
             result.step_failed("Search actors", str(exc))
 
     result.finish()

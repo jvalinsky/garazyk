@@ -116,7 +116,7 @@ def run() -> ScenarioResult:
                         "$type": "app.bsky.embed.images",
                         "images": [{
                             "alt": "Fresh sourdough bread",
-                            "image": rosa_blob.get("ref", rosa_blob),
+                            "image": rosa_blob,
                         }],
                     },
                 },
@@ -124,12 +124,7 @@ def run() -> ScenarioResult:
             )
             result.step_passed("Rosa posts with image embed", f"uri={post['uri']}")
         except XrpcError as exc:
-            # PDS may not support #image refs in embeds — skip gracefully
-            msg = str(exc.body) if isinstance(exc.body, dict) else str(exc.body)
-            if "Cannot resolve ref" in msg or "#image" in msg:
-                result.step_skipped("Rosa posts with image embed", "PDS doesn't support image embed refs")
-            else:
-                result.step_failed("Rosa posts with image embed", str(exc))
+            result.step_failed("Rosa posts with image embed", str(exc))
     else:
         result.step_skipped("Rosa posts with image embed", "No blob available")
 
@@ -159,7 +154,7 @@ def run() -> ScenarioResult:
                         "$type": "app.bsky.embed.images",
                         "images": [{
                             "alt": f"Album concept {i+1}",
-                            "image": b.get("ref", b),
+                            "image": b,
                         } for i, b in enumerate(volt_blobs[:4])],
                     },
                 },
@@ -167,11 +162,7 @@ def run() -> ScenarioResult:
             )
             result.step_passed("DJ Volt posts 4-image album")
         except XrpcError as exc:
-            msg = str(exc.body) if isinstance(exc.body, dict) else str(exc.body)
-            if "Cannot resolve ref" in msg or "#image" in msg:
-                result.step_skipped("DJ Volt posts 4-image album", "PDS doesn't support image embed refs")
-            else:
-                result.step_failed("DJ Volt posts 4-image album", str(exc))
+            result.step_failed("DJ Volt posts 4-image album", str(exc))
     else:
         result.step_skipped("DJ Volt posts 4-image album", "Not enough blobs uploaded")
 
@@ -195,7 +186,7 @@ def run() -> ScenarioResult:
                     "$type": "app.bsky.actor.profile",
                     "displayName": "Luna Starfield",
                     "description": "Astronomy enthusiast. Looking up, always. 🌌",
-                    "banner": banner_blob.get("ref", banner_blob),
+                    "banner": banner_blob,
                 },
                 luna.access_jwt,
             )

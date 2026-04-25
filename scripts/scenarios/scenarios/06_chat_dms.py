@@ -28,23 +28,14 @@ def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-def _try_chat_step(result: ScenarioResult, step_name: str, func, *args, **kwargs):
-    """Try a chat step, marking SKIP if the endpoint is not implemented."""
+def _chat_step(result: ScenarioResult, step_name: str, func, *args, **kwargs):
+    """Execute a chat step, failing strictly on error."""
     try:
         response = func(*args, **kwargs)
         result.step_passed(step_name, detail=str(response)[:100])
         return response
-    except XrpcError as exc:
-        # Chat endpoints may not be implemented — skip gracefully
-        body = exc.body if isinstance(exc.body, dict) else {}
-        error = body.get("error", "")
-        if error in ("NotImplemented", "MethodNotFound", "NotFound") or exc.status in (404, 501):
-            result.step_skipped(step_name, f"Endpoint not implemented: {error}")
-        else:
-            result.step_skipped(step_name, f"XrpcError {exc.status}: {error}")
-        return None
     except Exception as exc:
-        result.step_skipped(step_name, str(exc))
+        result.step_failed(step_name, str(exc))
         return None
 
 
@@ -87,19 +78,20 @@ def run() -> ScenarioResult:
 
     # ── Luna starts a DM with Marcus ─────────────────────────────────
     convo_id = None
-    convo = _try_chat_step(
+    convo = _chat_step(
         result,
         "Luna gets/creates DM convo with Marcus",
         client.xrpc_get,
         "chat.bsky.convo.getConvoForMembers",
-        {"members": marcus.did},
+        {"members": [luna.did, marcus.did]},
         luna.access_jwt,
     )
     if convo and "convo" in convo:
         convo_id = convo["convo"].get("id")
 
     # ── Luna sends a DM to Marcus ────────────────────────────────────
-    _try_chat_step(
+    luna_msg_id = None
+    luna_msg = _chat_step(
         result,
         "Luna sends DM to Marcus",
         client.xrpc_post,
@@ -114,9 +106,11 @@ def run() -> ScenarioResult:
         },
         luna.access_jwt,
     )
+    if luna_msg and "id" in luna_msg:
+        luna_msg_id = luna_msg["id"]
 
     # ── Marcus replies to Luna's DM ───────────────────────────────────
-    _try_chat_step(
+    _chat_step(
         result,
         "Marcus replies to Luna's DM",
         client.xrpc_post,
@@ -133,18 +127,18 @@ def run() -> ScenarioResult:
     )
 
     # ── Marcus lists his conversations ───────────────────────────────
-    _try_chat_step(
+    _chat_step(
         result,
         "Marcus lists conversations",
         client.xrpc_get,
-        "chat.bsky.convo.getList",
+        "chat.bsky.convo.listConvos",
         {"limit": 10},
         marcus.access_jwt,
     )
 
     # ── Marcus gets conversation messages ────────────────────────────
     if convo_id:
-        _try_chat_step(
+        _chat_step(
             result,
             "Marcus gets conversation messages",
             client.xrpc_get,
@@ -155,7 +149,7 @@ def run() -> ScenarioResult:
 
     # ── Marcus mutes the conversation ────────────────────────────────
     if convo_id:
-        _try_chat_step(
+        _chat_step(
             result,
             "Marcus mutes conversation",
             client.xrpc_post,
@@ -166,7 +160,7 @@ def run() -> ScenarioResult:
 
     # ── Rosa creates a group chat ────────────────────────────────────
     group_id = None
-    group = _try_chat_step(
+    group = _chat_step(
         result,
         "Rosa creates group chat",
         client.xrpc_post,
@@ -182,7 +176,7 @@ def run() -> ScenarioResult:
 
     # ── Rosa adds a member to the group ──────────────────────────────
     if group_id:
-        _try_chat_step(
+        _chat_step(
             result,
             "Rosa adds member to group",
             client.xrpc_post,
@@ -193,7 +187,7 @@ def run() -> ScenarioResult:
 
     # ── Rosa gets group info ─────────────────────────────────────────
     if group_id:
-        _try_chat_step(
+        _chat_step(
             result,
             "Rosa gets group info",
             client.xrpc_get,
@@ -203,19 +197,19 @@ def run() -> ScenarioResult:
         )
 
     # ── Luna updates read status ─────────────────────────────────────
-    if convo_id:
-        _try_chat_step(
+    if convo_id and luna_msg_id:
+        _chat_step(
             result,
             "Luna marks conversation as read",
             client.xrpc_post,
             "chat.bsky.convo.updateRead",
-            {"convoId": convo_id},
+            {"convoId": convo_id, "messageId": luna_msg_id},
             luna.access_jwt,
         )
 
     # ── Marcus unmutes the conversation ──────────────────────────────
     if convo_id:
-        _try_chat_step(
+        _chat_step(
             result,
             "Marcus unmutes conversation",
             client.xrpc_post,
@@ -226,7 +220,7 @@ def run() -> ScenarioResult:
 
     # ── Marcus leaves the conversation ──────────────────────────────
     if convo_id:
-        _try_chat_step(
+        _chat_step(
             result,
             "Marcus leaves conversation",
             client.xrpc_post,

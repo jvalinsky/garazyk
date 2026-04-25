@@ -50,6 +50,21 @@ log()  { echo -e "${CYAN}[SETUP]${NC} $1"; }
 ok()   { echo -e "${GREEN}[OK]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 
+# ── Python deps for scenario runner ─────────────────────────────────────────
+# requests is required by lib/client.py; websockets is needed for the firehose
+# scenario. Install once into the user's site-packages so run_scenario.py works
+# out of the box. Skipped during teardown.
+if [[ "$TEARDOWN" != "true" ]]; then
+    REQ_FILE="$SCRIPT_DIR/requirements.txt"
+    if [[ -f "$REQ_FILE" ]]; then
+        if ! python3 -c "import websockets, requests" >/dev/null 2>&1; then
+            log "Installing scenario Python dependencies (requests, websockets)..."
+            python3 -m pip install --user -q -r "$REQ_FILE" || \
+                warn "pip install failed; firehose tests may skip"
+        fi
+    fi
+fi
+
 # ── Teardown ────────────────────────────────────────────────────────────────
 if [[ "$TEARDOWN" == "true" ]]; then
     if [[ "$BINARY_MODE" == "true" ]]; then

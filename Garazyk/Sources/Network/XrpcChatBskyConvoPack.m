@@ -33,8 +33,13 @@
 
         NSDictionary *body = request.jsonBody;
         NSArray *memberDids = body[@"members"];
+        if (!memberDids) {
+            memberDids = [request queryParamsForKey:@"members"];
+        }
+
         if (![memberDids isKindOfClass:[NSArray class]] || memberDids.count < 2) {
             [XrpcErrorHelper setValidationError:response message:@"members must be an array with at least 2 DIDs"];
+            response.statusCode = HttpStatusBadRequest;
             return;
         }
 

@@ -350,30 +350,45 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
               initWithConnection:strongConnection
                           protocol:connState.driver
                       responseSender:strongSelf.responseSender];
+          __weak typeof(strongSelf) weakInnerSelf = strongSelf;
+          __weak typeof(strongConnection) weakInnerConn = strongConnection;
+          __weak HttpConnectionState *weakConnState = connState;
+          __weak HttpConnectionIOCoordinator *weakCoord = coordinator;
           coordinator.requestReadyHandler = ^(HttpRequest *request) {
-            [strongSelf dispatchRequest:request onConnection:strongConnection];
+            __strong typeof(weakInnerSelf) s = weakInnerSelf;
+            __strong typeof(weakInnerConn) c = weakInnerConn;
+            if (!s || !c) return;
+            [s dispatchRequest:request onConnection:c];
           };
           coordinator.upgradeHandler = ^(HttpRequest *request) {
-            [strongSelf handleUpgradeEventForState:connState
-                                       connection:strongConnection];
+            __strong typeof(weakInnerSelf) s = weakInnerSelf;
+            __strong typeof(weakInnerConn) c = weakInnerConn;
+            HttpConnectionState *cs = weakConnState;
+            if (!s || !c || !cs) return;
+            [s handleUpgradeEventForState:cs connection:c];
           };
           coordinator.errorHandler = ^(NSError *error) {
-            dispatch_async(strongSelf.connectionQueue, ^{
-              [strongSelf.activeConnections removeObject:strongConnection];
-              [strongSelf.connectionStates removeObjectForKey:strongConnection];
-              [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)strongSelf.activeConnections.count];
+            __strong typeof(weakInnerSelf) s = weakInnerSelf;
+            __strong typeof(weakInnerConn) c = weakInnerConn;
+            HttpConnectionIOCoordinator *coord = weakCoord;
+            if (!s || !c) return;
+            [coord close];
+            dispatch_async(s.connectionQueue, ^{
+              [s.activeConnections removeObject:c];
+              [s.connectionStates removeObjectForKey:c];
+              [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)s.activeConnections.count];
             });
-            HttpConnectionState *state = [strongSelf connectionStateForConnection:strongConnection];
             HttpResponse *response = [HttpResponse responseWithStatusCode:error.code ?: 400];
             response.keepAlive = NO;
             [response setJsonBody:@{
               @"error": error.userInfo[@"errorCode"] ?: @"ProtocolError",
               @"message": error.localizedDescription ?: @"Protocol error"
             }];
-            [strongSelf enqueueResponse:response forConnection:strongConnection];
+            [s enqueueResponse:response forConnection:c];
           };
           coordinator.outputQueueSizeProvider = ^NSUInteger {
-            return connState.outputQueueSize;
+            HttpConnectionState *cs = weakConnState;
+            return cs ? cs.outputQueueSize : 0;
           };
           connState.coordinator = coordinator;
           [coordinator start];
@@ -424,16 +439,20 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     }
 
     state.upgradedToWebSocket = YES;
+    state.driver.session.upgradedToWebSocket = YES;
     [state.outputQueue removeAllObjects];
     state.outputQueueSize = 0;
 
+    HttpConnectionIOCoordinator *priorCoordinator = state.coordinator;
     NSData *responseData = [upgradeResponse serialize];
     [connection sendData:responseData
               completion:^(NSError *_Nullable error) {
                 if (error) {
+                  [priorCoordinator close];
                   [connection cancel];
                   return;
                 }
+                [priorCoordinator close];
                 webSocketHandler(request, upgradeResponse, connection);
               }];
   }
@@ -488,6 +507,18 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         __strong typeof(weakSelf) strongSelf = weakSelf;
         __strong typeof(weakConnection) strongConnection = weakConnection;
         if (!strongSelf || !strongConnection) {
+          dispatch_semaphore_signal(semaphore);
+          dispatch_group_leave(group);
+#ifndef __APPLE__
+          dispatch_release(semaphore);
+          dispatch_release(group);
+          dispatch_release(serverQ);
+#endif
+          return;
+        }
+
+        HttpConnectionState *state = [strongSelf connectionStateForConnection:strongConnection];
+        if (state.upgradedToWebSocket) {
           dispatch_semaphore_signal(semaphore);
           dispatch_group_leave(group);
 #ifndef __APPLE__
@@ -652,6 +683,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
       [self.responseSender clampedQueueSizeAfterDequeue:state.outputQueueSize
                                               itemBytes:queueItem.queueByteSize];
   state.sendingActive = NO;
+  [state.driver responseDidFinishSending];
   [self sendNextQueuedResponseForState:state connection:connection];
   
   // Continue connection if idle and not upgraded to WebSocket

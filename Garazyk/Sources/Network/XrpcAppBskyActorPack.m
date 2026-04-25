@@ -9,10 +9,10 @@
 
 @implementation XrpcAppBskyActorPack
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController {
++ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                                     jwtMinter:(JWTMinter *)jwtMinter
+                               adminController:(id<PDSAdminController>)adminController {
     
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
     
@@ -27,8 +27,8 @@
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                             jwtMinter:jwtMinter
                                                       adminController:adminController
-                                                              request:request
-                                                             response:response];
+                                                               request:request
+                                                              response:response];
         if (!actorDID) {
             return;
         }
@@ -55,36 +55,39 @@
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
                                                             jwtMinter:jwtMinter
                                                       adminController:adminController
-                                                              request:request
-                                                             response:response];
+                                                               request:request
+                                                              response:response];
         if (!actorDID) {
             return;
         }
         
         NSDictionary *body = request.jsonBody;
-        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
-            return;
-        }
-        
-        id preferences = body[@"preferences"];
-        if (!preferences || (![preferences isKindOfClass:[NSDictionary class]] && ![preferences isKindOfClass:[NSArray class]])) {
-            [XrpcErrorHelper setValidationError:response message:@"Missing preferences in body"];
+        NSArray *preferences = body[@"preferences"];
+        if (!preferences || ![preferences isKindOfClass:[NSArray class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Invalid preferences JSON (expected array under 'preferences' key)"];
             return;
         }
         
         NSError *error = nil;
         BOOL success = [actorService putPreferencesForActor:actorDID preferences:preferences error:&error];
-        if (!success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
+        if (error || !success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to store preferences"];
             return;
         }
         
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"preferences": preferences}];
+        [response setJsonBody:@{}];
     }];
+}
+
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                       jwtMinter:(JWTMinter *)jwtMinter
+                 adminController:(id<PDSAdminController>)adminController {
     
-    // app.bsky.actor.getProfile - Get actor profile
+    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
+    
+    // app.bsky.actor.getProfile - Get an actor profile
     [dispatcher registerAppBskyActorGetProfile:^(HttpRequest *request, HttpResponse *response) {
         NSString *actor = [request queryParamForKey:@"actor"];
         if (!actor) {
@@ -138,6 +141,7 @@
         NSString *term = [request queryParamForKey:@"q"];
         if (!term || term.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
+            response.statusCode = HttpStatusBadRequest;
             return;
         }
         
@@ -171,6 +175,7 @@
         NSString *term = [request queryParamForKey:@"q"];
         if (!term || term.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"Missing search term (q parameter)"];
+            response.statusCode = HttpStatusBadRequest;
             return;
         }
         
