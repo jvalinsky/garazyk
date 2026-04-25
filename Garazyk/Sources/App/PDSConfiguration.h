@@ -317,6 +317,20 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! @abstract Reset data on startup. */
 @property (nonatomic, readonly) BOOL debugResetOnStartup;
 
+#pragma mark - Soft Quotas
+
+/*! @abstract Soft quota for blob storage in bytes (0 = unlimited). When exceeded, a warning is logged and a Prometheus counter incremented. */
+@property (nonatomic, readonly) unsigned long long softQuotaBlobBytes;
+
+/*! @abstract Soft quota for total record count (0 = unlimited). When exceeded, a warning is logged and a Prometheus counter incremented. */
+@property (nonatomic, readonly) NSUInteger softQuotaRecordCount;
+
+/*! @abstract Soft quota for repo storage in bytes (0 = unlimited). When exceeded, a warning is logged and a Prometheus counter incremented. */
+@property (nonatomic, readonly) unsigned long long softQuotaRepoBytes;
+
+/*! @abstract Whether per-account Prometheus labels are enabled (default: NO, high cardinality risk on large hosts). */
+@property (nonatomic, readonly) BOOL metricsPerAccountLabels;
+
 /*! Returns the shared configuration. */
 + (nullable instancetype)sharedConfiguration;
 

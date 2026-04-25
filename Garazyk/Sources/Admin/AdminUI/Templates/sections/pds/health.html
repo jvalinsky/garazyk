@@ -106,3 +106,36 @@
     View detailed Prometheus metrics at <a href="/metrics" target="_blank">/metrics</a>
   </span>
 </div>
+
+<!-- Quota Status -->
+<div class="card mt-lg">
+  <div class="card-header">
+    <h3 class="card-title">Quota Status</h3>
+  </div>
+  <div class="card-body">
+    <div class="list">
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>Blob Quota Exceeded</span>
+          <span class="badge badge-secondary">See /metrics</span>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>Record Quota Exceeded</span>
+          <span class="badge badge-secondary">See /metrics</span>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="flex-row items-center justify-between">
+          <span>Repo Quota Exceeded</span>
+          <span class="badge badge-secondary">See /metrics</span>
+        </div>
+      </div>
+    </div>
+    <p class="text-secondary mt-md" style="font-size: var(--font-size-sm);">
+      Quota counters are exported via Prometheus at <a href="/metrics" target="_blank">/metrics</a>.
+      Search for <code>pds_quota_exceeded_total</code> to see current counts.
+    </p>
+  </div>
+</div>
