@@ -201,4 +201,4 @@ targets:
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=OFF \
               -DBUILD_FUZZERS=ON
-            cmake --build . --parallel $(sysctl -n hw.ncpu) --target fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth
+            cmake --build . --parallel $(sysctl -n hw.ncpu) --target fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst
