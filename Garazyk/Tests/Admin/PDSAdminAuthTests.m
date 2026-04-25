@@ -271,4 +271,49 @@
     XCTAssertFalse([authError.localizedDescription containsString:@"secret-token-fragment"]);
 }
 
+- (void)testAuthenticateHeadersAcceptsCookieBasedToken {
+    [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+
+    NSError *error = nil;
+    BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
+    XCTAssertTrue(authenticated);
+    XCTAssertNil(error);
+
+    NSString *token = [PDSAdminAuth sharedAuth].adminToken;
+    XCTAssertTrue(token.length > 0);
+
+    // Auth via Cookie header (as set by the Set-Cookie login response)
+    NSDictionary *cookieHeaders = @{@"Cookie": [NSString stringWithFormat:@"admin_token=%@", token]};
+    NSError *cookieError = nil;
+    BOOL cookieAuth = [[PDSAdminAuth sharedAuth] authenticateHeaders:cookieHeaders error:&cookieError];
+    XCTAssertTrue(cookieAuth, @"Cookie-based auth should succeed with a valid admin_token");
+    XCTAssertNil(cookieError);
+}
+
+- (void)testAuthenticateHeadersRejectsInvalidCookieToken {
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+
+    NSDictionary *cookieHeaders = @{@"Cookie": @"admin_token=invalid-jwt-value"};
+    NSError *cookieError = nil;
+    BOOL cookieAuth = [[PDSAdminAuth sharedAuth] authenticateHeaders:cookieHeaders error:&cookieError];
+    XCTAssertFalse(cookieAuth, @"Cookie-based auth should reject an invalid token");
+    XCTAssertNotNil(cookieError);
+}
+
+- (void)testAuthenticateHeadersAcceptsCookieAmongOtherCookies {
+    [self setEnv:@"PDS_ADMIN_PASSWORD" value:@"secret-password"];
+    [self setEnv:@"PDS_ISSUER" value:@"https://administrator.pds.example"];
+
+    NSError *error = nil;
+    BOOL authenticated = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"secret-password" error:&error];
+    XCTAssertTrue(authenticated);
+
+    NSString *token = [PDSAdminAuth sharedAuth].adminToken;
+    NSDictionary *cookieHeaders = @{@"Cookie": [NSString stringWithFormat:@"pref=light; admin_token=%@; session=abc", token]};
+    NSError *cookieError = nil;
+    BOOL cookieAuth = [[PDSAdminAuth sharedAuth] authenticateHeaders:cookieHeaders error:&cookieError];
+    XCTAssertTrue(cookieAuth, @"Should find admin_token among multiple cookies");
+}
+
 @end

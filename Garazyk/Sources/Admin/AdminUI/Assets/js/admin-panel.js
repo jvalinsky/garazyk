@@ -71,6 +71,8 @@ async function login(password) {
 }
 
 function logout() {
+    // Notify server to clear the HttpOnly cookie
+    fetch(API_BASE + '/logout', { method: 'POST' }).catch(() => {});
     clearToken();
 }
 
