@@ -483,6 +483,57 @@
     if ([partialName isEqualToString:@"security/app-passwords/list"]) {
         return [self renderSecurityAppPasswordsListPartial:adminHandler headers:headers body:body params:params];
     }
+    if ([partialName isEqualToString:@"diagnostics/overview"]) {
+        return [self renderPartialWithTemplate:@"diagnostics_overview" context:@{}];
+    }
+    if ([partialName isEqualToString:@"diagnostics/sequencer"]) {
+        return [self renderPartialWithTemplate:@"diagnostics_sequencer" context:@{}];
+    }
+    if ([partialName isEqualToString:@"diagnostics/blobs"]) {
+        return [self renderPartialWithTemplate:@"diagnostics_blobs" context:@{}];
+    }
+    if ([partialName isEqualToString:@"diagnostics/ratelimits"]) {
+        return [self renderPartialWithTemplate:@"diagnostics_ratelimits" context:@{}];
+    }
+    if ([partialName isEqualToString:@"relay/events"]) {
+        return [self renderPartialWithTemplate:@"relay/events" context:@{}];
+    }
+    if ([partialName isEqualToString:@"relay/upstreams"]) {
+        return [self renderPartialWithTemplate:@"relay/upstreams" context:@{}];
+    }
+    if ([partialName isEqualToString:@"relay/crawl"]) {
+        return [self renderPartialWithTemplate:@"sections/relay/crawl" context:@{}];
+    }
+    if ([partialName isEqualToString:@"appview/index"]) {
+        return [self renderPartialWithTemplate:@"appview/index" context:@{}];
+    }
+    if ([partialName isEqualToString:@"appview/backfill"]) {
+        return [self renderPartialWithTemplate:@"appview/backfill" context:@{}];
+    }
+    if ([partialName isEqualToString:@"appview/metrics"]) {
+        return [self renderPartialWithTemplate:@"sections/appview/metrics" context:@{}];
+    }
+    if ([partialName isEqualToString:@"security/sessions"]) {
+        return [self renderPartialWithTemplate:@"security_sessions" context:@{}];
+    }
+    if ([partialName isEqualToString:@"security/app-passwords"]) {
+        return [self renderPartialWithTemplate:@"security_app_passwords" context:@{}];
+    }
+    if ([partialName isEqualToString:@"reports"]) {
+        return [self renderPartialWithTemplate:@"reports" context:@{}];
+    }
+    if ([partialName isEqualToString:@"reports/list"]) {
+        return [self renderPartialWithTemplate:@"reports_list" context:@{}];
+    }
+    if ([partialName isEqualToString:@"audit-log"]) {
+        return [self renderPartialWithTemplate:@"audit_log" context:@{}];
+    }
+    if ([partialName isEqualToString:@"hosting-history"]) {
+        return [self renderPartialWithTemplate:@"hosting_history" context:@{}];
+    }
+    if ([partialName isEqualToString:@"ozone/correlations"]) {
+        return [self renderPartialWithTemplate:@"ozone_correlations" context:@{}];
+    }
 
     PDS_LOG_WARN(@"Partial not handled by template handler: %@", partialName);
     return nil;
