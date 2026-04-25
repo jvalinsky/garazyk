@@ -244,20 +244,25 @@
     self.connection.maxOutboundQueueBytes = 10 * 1024 * 1024;
     self.connection.backpressureWarningThreshold = 0.7;
 
+    // Wait for the actual warning callback via delegate expectation
+    // (avoids race with writeQueue dispatching to main queue)
+    XCTestExpectation *warningExp = [self expectationWithDescription:@"First warning callback"];
+    self.delegate.warningExpectation = warningExp;
+
     NSData *frame8MB = [NSMutableData dataWithLength:8 * 1024 * 1024];
     [self.connection sendFrame:frame8MB]; // First warning
 
-    // Wait for callback
-    XCTestExpectation *exp1 = [self expectationWithDescription:@"First warning"];
-    dispatch_async(dispatch_get_main_queue(), ^{ [exp1 fulfill]; });
-    [self waitForExpectations:@[exp1] timeout:1.0];
+    [self waitForExpectations:@[warningExp] timeout:1.0];
+    self.delegate.warningExpectation = nil;
 
-    NSInteger warningCount = self.delegate.didReceiveBackpressureWarning ? 1 : 0;
+    XCTAssertTrue(self.delegate.didReceiveBackpressureWarning, @"Should have received first warning");
 
     // Send another small frame - should NOT trigger another warning
+    // (isUnderBackpressure is already YES, so duplicate warning is suppressed)
     NSData *frame1MB = [NSMutableData dataWithLength:1 * 1024 * 1024];
     [self.connection sendFrame:frame1MB];
 
+    // Wait for writeQueue to process the second frame
     XCTestExpectation *exp2 = [self expectationWithDescription:@"No duplicate warning"];
     dispatch_async(dispatch_get_main_queue(), ^{ [exp2 fulfill]; });
     [self waitForExpectations:@[exp2] timeout:1.0];
