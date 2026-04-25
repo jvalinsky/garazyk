@@ -1,0 +1,19 @@
+{
+  "lexicon": 1,
+  "id": "com.example.subscription",
+  "type": "subscription",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "cursor": {"type": "integer"}
+    }
+  },
+  "message": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {"action": {"type": "string"}}
+      }
+    ]
+  }
+}

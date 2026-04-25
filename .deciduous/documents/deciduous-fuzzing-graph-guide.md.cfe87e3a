@@ -1,0 +1,339 @@
+# Deciduous Decision Graph — Fuzzing Harness Review & Improvement
+
+**Graph Created:** 2026-04-25  
+**Status:** ✅ Complete (Phase 1-2) | 📋 Planned (Phase 3+)  
+**Main Goal Node:** #356  
+**Narrative Document:** `/Users/jack/.claude/scratchpads/fuzzing-improvements-narrative.md`
+
+---
+
+## Graph Structure Overview
+
+```
+┌─────────────────────────────────────────────────────┐
+│ GOAL #356: Comprehensive Fuzzing Harness Review     │
+│ Review 9 fuzzers, fix issues, design extended      │
+│ strategy. Confidence: 90% | Branch: main            │
+└─────────────────────┬───────────────────────────────┘
+          │                    │                    │
+          ↓ leads_to           ↓ leads_to          ↓ leads_to
+    ┌──────────────┐     ┌──────────────┐      ┌──────────────┐
+    │ ACTION #357  │     │ ACTION #369  │      │ OUTCOME #372 │
+    │ Code Review  │     │ Web Research │      │ Complete     │
+    │ Confidence:  │     │ Confidence:  │      │ Confidence:  │
+    │ 95%          │     │ 92%          │      │ 94%          │
+    └──────────────┘     └─────┬────────┘      └──────────────┘
+          │                     │
+          ├─ leads_to ──────────┤ 
+          │                     │
+          ↓                     ↓ leads_to
+    ┌──────────────┐       ┌──────────────┐
+    │ ACTIONS      │       │ ACTION #370  │
+    │ 358-361      │       │ Extended     │
+    │ (Critical    │       │ Strategy &   │
+    │ Fixes C1-C4) │       │ Roadmap      │
+    └──────────────┘       │ Confidence:  │
+                           │ 85%          │
+                           └────┬─────────┘
+                                │ leads_to
+                                ↓
+                           ┌──────────────┐
+                           │ ACTION #371  │
+                           │ Reference    │
+                           │ Sources      │
+                           │ Confidence:  │
+                           │ 88%          │
+                           └──────────────┘
+```
+
+---
+
+## Nodes in Detail
+
+### Goal Node #356
+
+**Title:** Comprehensive Fuzzing Harness Review & Improvement  
+**Status:** Pending (design complete, implementation done)  
+**Confidence:** 90%  
+**Description:** Review 9 fuzzer harnesses for correctness and coverage gaps. Fix critical bugs, implement high-priority improvements, and design extended fuzzing strategy per web research.
+
+**Attached Document:**
+- `fuzzing-improvements-narrative.md` — Full narrative with detailed findings, fixes, and roadmap
+
+**Outgoing Edges:**
+- **→ #357:** Code review prerequisite
+- **→ #369:** Web research inputs
+- **→ #372:** Completion outcome
+
+---
+
+### Action Nodes: Code Review & Fixes
+
+#### #357 — Phase 1: Thorough Code Review
+- **Confidence:** 95%
+- **Files:** `fuzzing/harness/*.m`, `fuzzing/standalone_driver.cpp`
+- **Description:** Reviewed all 9 harnesses + standalone driver. Identified 10 concrete issues across 4 severity tiers.
+
+#### #358 — C1: FuzzMST Return Values
+- **Confidence:** 99%
+- **File:** `fuzzing/harness/FuzzMST.m`
+- **Issue:** Return values discarded → **Fix:** Assign and traverse properties
+
+#### #359 — C2: FuzzPDSDatabase State Isolation
+- **Confidence:** 99%
+- **File:** `fuzzing/harness/FuzzPDSDatabase.m`
+- **Issue:** DB state persists → **Fix:** SAVEPOINT/ROLLBACK wrapper
+
+#### #360 — C3: FuzzATProtoLexiconValidator Lexicon Loading
+- **Confidence:** 98%
+- **File:** `fuzzing/harness/FuzzATProtoLexiconValidator.m`
+- **Issue:** Lexicons never loaded → **Fix:** Load from cwd, use Required mode
+
+#### #361 — C4: FuzzDPoP Crypto Verification
+- **Confidence:** 95%
+- **File:** `fuzzing/harness/FuzzDPoP.m`
+- **Issue:** Verification bypassed → **Fix:** Platform guard + JWT parse
+
+#### #362 — H1: FuzzHttp1Parser Error Path
+- **Confidence:** 97%
+- **File:** `fuzzing/harness/FuzzHttp1Parser.m`
+- **Issue:** parseError never checked → **Fix:** Check error path + chunk feeding
+
+#### #363 — H2: FuzzJWT JWTVerifier
+- **Confidence:** 98%
+- **File:** `fuzzing/harness/FuzzJWT.m`
+- **Issue:** Verifier absent → **Fix:** Add JWTVerifier + base64URLDecode
+
+#### #364 — H3: FuzzMimeTypeValidator MIME Type
+- **Confidence:** 96%
+- **File:** `fuzzing/harness/FuzzMimeTypeValidator.m`
+- **Issue:** Type hardcoded → **Fix:** Use fuzz-derived type + sniff
+
+#### #365 — H4: FuzzCBORDecoder Offset Variant
+- **Confidence:** 97%
+- **File:** `fuzzing/harness/FuzzCBORDecoder.m`
+- **Issue:** Offset decode missing → **Fix:** Test offset-based variant
+
+#### #366 — H5: standalone_driver.cpp Recursive Walk
+- **Confidence:** 98%
+- **File:** `fuzzing/standalone_driver.cpp`
+- **Issue:** Non-recursive walk → **Fix:** Recursive + DT_UNKNOWN fallback
+
+#### #367 — L1-L3: Lower-Priority Improvements
+- **Confidence:** 92%
+- **Files:** `FuzzXrpcDispatcher.m`, `FuzzPDSDatabase.m`
+- **Description:** Touch more fields, parameterized queries, chunk feeding
+
+---
+
+### Web Research & Extended Strategy
+
+#### #369 — Phase 2: Web Research on Fuzzing Best Practices
+- **Confidence:** 92%
+- **File:** `.claude/plans/drifting-stirring-candy.md`
+- **Topics Researched:**
+  - Seed corpus generation strategies
+  - Custom mutators (libprotobuf-mutator)
+  - Differential fuzzing (vs. reference implementations)
+  - Property-based testing integration
+  - Coverage measurement (LLVM SanitizerCoverage)
+  - Regression test harnesses
+  - Sanitizer configs (ASan, UBSan, MSan, TSan)
+  - Crash triage and ClusterFuzz integration
+  - CI/CD integration workflows
+
+#### #370 — Extended Fuzzing Strategy & Roadmap
+- **Confidence:** 85%
+- **File:** `.claude/plans/drifting-stirring-candy.md`
+- **12 Improvement Categories Identified:**
+  1. Seed corpus enhancements (priority: ⭐⭐⭐⭐)
+  2. Custom mutators (priority: ⭐⭐⭐⭐⭐)
+  3. Differential fuzzing (priority: ⭐⭐⭐)
+  4. Property-based testing (priority: ⭐⭐⭐⭐)
+  5. Coverage instrumentation (priority: ⭐⭐⭐)
+  6. Regression test suite (priority: ⭐⭐⭐⭐)
+  7. Sanitizer optimization (priority: ⭐⭐)
+  8. Crash triage automation (priority: ⭐⭐⭐)
+  9. CI/CD integration (priority: ⭐⭐⭐⭐)
+  10. Documentation & examples (priority: ⭐⭐⭐)
+  11. Parallel corpus evolution (priority: ⭐⭐)
+  12. Grammar-aware fuzzing (priority: ⭐⭐⭐)
+
+**Implementation Roadmap:**
+| Phase | Task | Effort | Impact | Status |
+|-------|------|--------|--------|--------|
+| **Now** | Fill corpus with real examples | 2h | ⭐⭐⭐⭐ | Planned |
+| **Now** | Add CI regression tests | 3h | ⭐⭐⭐⭐ | Planned |
+| **Soon** | Custom mutators for JWT/HTTP | 1d | ⭐⭐⭐⭐⭐ | Planned |
+| **Soon** | Coverage measurement | 4h | ⭐⭐⭐ | Planned |
+| **Later** | Differential fuzzing | 2d | ⭐⭐⭐ | Planned |
+| **Later** | Property-based invariants | 1d | ⭐⭐⭐⭐ | Planned |
+| **Future** | OSS-Fuzz integration | 2d | ⭐⭐ | Planned |
+
+#### #371 — Key Reference Sources
+- **Confidence:** 88%
+- **Key Sources:**
+  - [LLVM 23 libFuzzer](https://llvm.org/docs/LibFuzzer.html)
+  - [SRLabs Fuzzing Guides](https://srlabs.de/blog/unlocking-secrets-effective-fuzzing-harness)
+  - [Fuchsia Fuzzing Workflows](https://fuchsia.dev/fuchsia-src/development/testing/fuzzing)
+  - [Google Fuzzing Repo](https://github.com/google/fuzzing)
+  - [Quarkslab Differential Fuzzing](https://blog.quarkslab.com/differential-fuzzing-for-cryptography.html)
+  - [libprotobuf-mutator](https://github.com/google/libprotobuf-mutator)
+  - [ClusterFuzz Triage](https://google.github.io/clusterfuzz/using-clusterfuzz/workflows/triaging-new-crashes/)
+
+---
+
+### Outcome Nodes
+
+#### #368 — All 9 Fuzzers Rebuilt Successfully
+- **Confidence:** 99%
+- **Commit:** 1bc479f
+- **Description:** All improvements compiled clean with no errors. Smoke tests passed on all fuzzers.
+
+#### #372 — Fuzzing Harness Review & Improvement Complete
+- **Confidence:** 94%
+- **Commit:** 1bc479f
+- **Status:** ✅ Phases 1-2 complete | 📋 Phase 3+ planned
+- **Description:** 
+  - ✅ COMPLETED: Phase 1 code review (10 issues)
+  - ✅ IMPLEMENTED: All critical + high-priority fixes
+  - ✅ BUILD SUCCESS: All 9 fuzzers rebuild
+  - ✅ SMOKE TESTS: 100% pass
+  - 📋 PLANNED: Extended strategy with 12 categories
+
+---
+
+## Connection Graph
+
+```
+#357 (Code Review)
+  ├─→ #358-367 (All fixes branch from review findings)
+  │     ├─→ #358 (C1: MST)
+  │     ├─→ #359 (C2: Database)
+  │     ├─→ #360 (C3: Lexicon)
+  │     ├─→ #361 (C4: DPoP)
+  │     ├─→ #362 (H1: HTTP)
+  │     ├─→ #363 (H2: JWT)
+  │     ├─→ #364 (H3: MIME)
+  │     ├─→ #365 (H4: CBOR)
+  │     ├─→ #366 (H5: Driver)
+  │     └─→ #367 (L1-L3: Minor)
+  │
+  └─→ #368 (Build Success)
+
+#369 (Web Research)
+  ├─→ #370 (Extended Strategy)
+  │     ├─→ #371 (Reference Sources)
+  │     └─→ 12 Improvement Categories (documented in plan)
+  │
+  └─→ #372 (Completion)
+```
+
+---
+
+## Key Documents
+
+### Plan File
+**Path:** `/Users/jack/.claude/plans/drifting-stirring-candy.md`  
+**Contents:**
+- Context & problem statement
+- 4 critical bugs detailed
+- 5 high-priority improvements detailed
+- 3 lower-priority improvements
+- 12 extended fuzzing strategies from web research
+- Implementation roadmap
+- Verification procedures
+
+### Narrative File
+**Path:** `/Users/jack/.claude/scratchpads/fuzzing-improvements-narrative.md`  
+**Contents:**
+- Executive summary (metrics)
+- Phase 1: Code review findings with impact analysis
+- Phase 2: Web research topics & synthesized roadmap
+- Build verification results
+- Deciduous tracking structure
+- Files modified with change summary
+- Next steps for Phases 3-5
+- Complete reference list
+
+### This Guide
+**Path:** `/Users/jack/.claude/scratchpads/deciduous-fuzzing-graph-guide.md` (you are here)  
+**Contents:**
+- Visual graph structure
+- Node-by-node details with confidence levels
+- Connection relationships
+- Implementation roadmap table
+- Document cross-references
+
+---
+
+## Using This Decision Graph
+
+### Navigating Deciduous Nodes
+
+```bash
+# View main goal
+deciduous show 356
+
+# View a specific fix
+deciduous show 359  # C2: Database isolation
+
+# View completion
+deciduous show 372
+
+# View extended strategy
+deciduous show 370
+```
+
+### Linked Documents
+
+All nodes are linked to one of two scratchpad files:
+- **Phase 1-2:** `fuzzing-improvements-narrative.md` (attached to goal #356)
+- **Plan Details:** `drifting-stirring-candy.md` (detailed improvements + roadmap)
+
+---
+
+## Implementation Status
+
+| Phase | Description | Status | Node IDs |
+|-------|-------------|--------|----------|
+| **Phase 1** | Code review & issue identification | ✅ Complete | #357, #358-367 |
+| **Phase 2** | Web research & extended strategy | ✅ Complete | #369-371 |
+| **Phase 3** | Seed corpus enrichment | 📋 Planned | — |
+| **Phase 4** | Custom mutator implementation | 📋 Planned | — |
+| **Phase 5** | CI/CD integration | 📋 Planned | — |
+
+---
+
+## Next Actions
+
+### Immediate (Next Session)
+
+1. **Create seed corpus** (2h)
+   - CBOR: major types, indefinite sequences
+   - JWT: valid/invalid/expired tokens
+   - HTTP: headers variants, chunked encoding
+   - MIME: real file magic numbers
+
+2. **Add CI regression test** (3h)
+   - GitHub Actions workflow
+   - Run each fuzzer for N minutes
+   - Collect coverage, store artifacts
+
+### Short-term (This Week)
+
+3. **Build custom mutators** (1d)
+   - libprotobuf-mutator for JWT
+   - Hand-written for HTTP
+   - Test improved coverage on seed inputs
+
+4. **Measure coverage** (4h)
+   - Rebuild with coverage flags
+   - Run corpus, generate reports
+   - Identify remaining gaps
+
+---
+
+**Decision Graph Version:** 1.0  
+**Last Updated:** 2026-04-25  
+**Status:** Ready for Phase 3
