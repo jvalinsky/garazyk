@@ -102,7 +102,7 @@ curl -sS http://127.0.0.1:2582/_metrics
 
 ---
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Failure Mode | Symptom | Mitigation |
 | --- | --- | --- |
@@ -111,7 +111,11 @@ curl -sS http://127.0.0.1:2582/_metrics
 | **Tombstoned DID** | Status 410 (Gone). | The identity has been permanently deleted from the PLC directory. |
 | **Cache Staleness** | Stale DID document. | The `DIDPLCResolver` cache might need a lower TTL or manual invalidation during updates. |
 
----
+## Next Steps
+
+1. Move to [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync).
+2. Review [PLC Failover](../11-reference/plc-failover) for production topology advice.
+3. Check [PLC Server Operations](../11-reference/plc-server-operations) for admin commands.
 
 ## Summary
 

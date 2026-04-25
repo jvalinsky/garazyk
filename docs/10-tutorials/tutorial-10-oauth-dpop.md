@@ -94,7 +94,7 @@ When the `/oauth/token` endpoint is called, the `OAuth2Handler` performs a serie
 
 ---
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Failure Mode | Symptom | Mitigation |
 | --- | --- | --- |
@@ -103,24 +103,11 @@ When the `/oauth/token` endpoint is called, the `OAuth2Handler` performs a serie
 | **Key Mismatch** | `Public key mismatch`. | The client is attempting to use a different key than the one bound to the access token. |
 | **Replay Attack** | `jti has been replayed`. | The client is re-using a `jti`. Each DPoP proof must have a unique identifier. |
 
----
+## Next Steps
 
-## Verification Commands
-
-### Inspect OAuth Server Metadata
-```bash
-curl -sS http://127.0.0.1:2583/.well-known/oauth-authorization-server | jq .
-```
-
-### Trace a Token Request (Manual Simulation)
-Since DPoP requires signing, manual simulation is difficult without a helper script. Use the `scripts/scenarios/08_oauth_sessions.py` to see a full handshake in action:
-
-```bash
-# Run the OAuth scenario test
-python3 scripts/scenarios/scenarios/08_oauth_sessions.py
-```
-
----
+1. Move to [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution).
+2. Review the [OAuth2 & DPoP](../06-authentication/oauth2-dpop) reference for protocol edge cases.
+3. Trace a real request in [OAuth DPoP Request Walkthrough](../06-authentication/oauth-dpop-request-walkthrough).
 
 ## Summary
 

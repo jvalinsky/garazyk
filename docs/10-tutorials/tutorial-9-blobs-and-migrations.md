@@ -106,7 +106,7 @@ Migrations are triggered automatically during the PDS bootstrap process. If you 
 
 ---
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Failure Mode | Symptom | Mitigation |
 | --- | --- | --- |
@@ -115,28 +115,11 @@ Migrations are triggered automatically during the PDS bootstrap process. If you 
 | **CID Mismatch** | `BlobStorage` rejects a read. | Potential bit rot or interrupted write. Re-upload or restore from backup. |
 | **Migration Gap** | Database version is higher than code version. | This happens if you roll back code but not the DB. Downgrades are NOT supported; restore a backup. |
 
----
+## Next Steps
 
-## Verification Commands
-
-### Check Current Schema Version
-```bash
-sqlite3 pds-data/service.sqlite "SELECT version FROM schema_version ORDER BY version DESC LIMIT 1;"
-```
-
-### Inspect Blob Metadata
-```bash
-# Use kaszlak to verify a blob's existence
-./build/bin/kaszlak admin blobs list --did did:plc:123
-```
-
-### Verify Migration Integrity
-```bash
-# Check deciduous for recent migration actions
-deciduous list actions
-```
-
----
+1. Move to [Tutorial 10: Deep-Dive OAuth2 & DPoP](./tutorial-10-oauth-dpop).
+2. Review [Blob Lifecycle](../07-repository-protocol/blob-lifecycle) for protocol-level details.
+3. Check [Service Databases](../05-database-layer/service-databases) for the full schema map.
 
 ## Summary
 

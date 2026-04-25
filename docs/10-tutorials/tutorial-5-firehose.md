@@ -133,9 +133,10 @@ That is the difference between "the socket opened" and "the firehose works."
 ## Next Steps
 
 1. Take the [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/) if you want the transport and framing internals behind this tutorial.
-2. Use [Testing Map](../11-reference/testing-map) to choose focused sync and integration suites.
-3. Continue to [Tutorial 6: Deployment](./tutorial-6-deployment).
-4. Revisit [Tutorial 3: Records](./tutorial-3-records) whenever firehose behavior depends on write semantics.
+2. Move to [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose) for production-grade features like backfill and backpressure.
+3. Use [Testing Map](../11-reference/testing-map) to choose focused sync and integration suites.
+4. Continue to [Tutorial 6: Deployment](./tutorial-6-deployment).
+5. Revisit [Tutorial 3: Records](./tutorial-3-records) whenever firehose behavior depends on write semantics.
 
 ## Summary
 

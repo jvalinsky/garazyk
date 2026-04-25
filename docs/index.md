@@ -48,7 +48,7 @@ Use [Tutorial 8: Endpoint Workflow](10-tutorials/tutorial-8-endpoint-workflow), 
 
 ### Work on Contributor Tooling
 
-Start with [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui), then [Tutorial 7: Objective-J UI](10-tutorials/tutorial-7-objective-j-ui).
+Start with [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui), then [Tutorial 7a: Objective-J for Contributors](10-tutorials/tutorial-7a-objective-j-intro) and [Tutorial 7b: Admin UI Architecture](10-tutorials/tutorial-7b-admin-ui).
 
 ### Prepare or Review a Deployment Change
 
