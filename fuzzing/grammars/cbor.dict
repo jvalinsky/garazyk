@@ -1,0 +1,81 @@
+# libFuzzer CBOR Grammar
+# Format: grammar for CBOR structure generation
+
+# Root start
+start = cbor_value
+
+# CBOR major types
+cbor_value = unsigned
+cbor_value = negative
+cbor_value = bytes
+cbor_value = text
+cbor_value = array
+cbor_value = map
+cbor_value = tagged
+cbor_value = simple
+
+# Major type 0: Unsigned integer (0x00-0x1B)
+unsigned = "\x00"
+unsigned = "\x01"
+unsigned = "\x0a"
+unsigned = "\x17"
+unsigned = "\x18\x09"
+unsigned = "\x19\x00\x09"
+unsigned = "\x1a\x00\x00\x00\x09"
+
+# Major type 1: Negative integer (0x20-0x3B)
+negative = "\x20"
+negative = "\x21"
+negative = "\x27"
+negative = "\x37"
+
+# Major type 2: Byte string (0x40-0x5B)
+bytes = "\x40"
+bytes = "\x41\x41"
+bytes = "\x42\x41\x42"
+bytes = "\x58\x09"
+bytes = "\x59\x00\x09"
+
+# Major type 3: Text string (0x60-0x7B)
+text = "\x60"
+text = "\x61\x41"
+text = "\x62\x41\x42"
+text = "\x78\x09"
+text = "\x79\x00\x09"
+
+# Major type 4: Array (0x80-0x9B)
+array = "\x80"
+array = "\x81"
+array = "\x82"
+array = "\x9f"
+
+# Major type 5: Map (0xA0-0xBB)
+map = "\xa0"
+map = "\xa1"
+map = "\xbf"
+
+# Major type 6: Tagged (0xC0-0xDB)
+tagged = "\xc0"
+tagged = "\xd8\x00"
+
+# Major type 7: Simple (0xE0-0xFB)
+simple = "\xe0"
+simple = "\xf4"
+simple = "\xf5"  # true
+simple = "\xf6"  # false
+simple = "\xf7"  # null
+simple = "\xf9\x3c\x00"  # 1.0 half
+simple = "\xfa\x3f\x80\x00\x00"  # 1.0 float
+simple = "\xfb\x3f\xf0\x00\x00\x00\x00\x00\x00"  # 1.0 double
+
+# Common CARfile magic
+magic = "\xd9\x82\x41\x43\x41\x52"  # 0x82434152
+
+# Examples
+example = "\x60"  # empty text
+example = "\x80"  # empty array
+example = "\xa0"  # empty map
+example = "\xf5"  # true
+example = "\xf4"  # false
+example = "\xf6"  # null
+example = "\xa1\x61\x41\x41"  # {"a":1}

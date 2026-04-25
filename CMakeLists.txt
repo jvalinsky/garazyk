@@ -917,6 +917,20 @@ if(BUILD_FUZZERS)
     set(FUZZER_DRIVER "fuzzing/standalone_driver.cpp")
   endif()
 
+  # Memory sanitizer for memory bug detection (when available)
+  if(BUILD_FUZZERS_USE_MSAN)
+    message(STATUS "Adding MemorySanitizer")
+    set(FUZZER_CFLAGS "${FUZZER_CFLAGS} -fsanitize=memory")
+    set(FUZZER_LDFLAGS "${FUZZER_LDFLAGS} -fsanitize=memory")
+  endif()
+
+  # Undefined behavior sanitizer for undefined behavior detection
+  if(BUILD_FUZZERS_USE_UBSAN)
+    message(STATUS "Adding UndefinedBehaviorSanitizer")
+    set(FUZZER_CFLAGS "${FUZZER_CFLAGS} -fsanitize=undefined")
+    set(FUZZER_LDFLAGS "${FUZZER_LDFLAGS} -fsanitize=undefined")
+  endif()
+
   # Coverage instrumentation
   if(FUZZER_COVERAGE)
     message(STATUS "Building fuzzers with coverage instrumentation")
@@ -1368,4 +1382,6 @@ message(STATUS "Options:")
 message(STATUS "  -DBUILD_FUZZERS=ON   - Build fuzzing targets")
 message(STATUS "  -DBUILD_TESTS=ON     - Build test targets")
 message(STATUS "  -DCMAKE_BUILD_TYPE=  - Debug|Release")
+message(STATUS "  -DBUILD_FUZZERS_USE_MSAN=ON  - Enable memory sanitizer")
+message(STATUS "  -DBUILD_FUZZERS_USE_UBSAN=ON  - Enable undefined behavior sanitizer")
 message(STATUS "===========================================")
