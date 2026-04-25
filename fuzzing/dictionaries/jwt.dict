@@ -1,0 +1,73 @@
+# JWT Dictionary - JWT tokens for JWT/JWT fuzzing
+# Format: libFuzzer dictionary syntax
+
+# JWT delimiters
+string="."
+string=""
+
+# Header keys (base64url encoded when in dict for libFuzzer)
+prefix="eyJhbGciOi"
+prefix="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+
+# Common header values
+prefix="eyJhbGciOiJIUzI1NiJ9"
+prefix="eyJhbGciOiJIUzM4NCJ9"
+prefix="eyJhbGciOiJFUzI1NiJ9"
+
+# Algorithm identifiers
+string="alg\":\"HS256"
+string="alg\":\"HS384"
+string="alg\":\"HS512"
+string="alg\":\"RS256"
+string="alg\":\"RS384"
+string="alg\":\"RS512"
+string="alg\":\"ES256"
+string="alg\":\"ES384"
+string="alg\":\"ES512"
+string="alg\":\"none"
+
+# Type identifier
+string="typ\":\"JWT"
+
+# Common claims
+string="iss\":\""
+string="sub\":\""
+string="aud\":\""
+string="exp\":0
+string="exp\":3600
+string="exp\":9999999999
+string="iat\":0
+string="nbf\":0
+string="jti\":\""
+
+# JWT structure samples (segment headers)
+prefix="eyJ"
+prefix="eyJ1"
+prefix="eyJ2"
+prefix="eyJ3"
+
+# Base64url characters
+string="
+string="
+string="-"
+
+# Example payloads
+# Minimal payload
+prefix="eyJzdWIiOiIxMjM0NTY3ODkwIn0"
+# Standard claims
+prefix="eyJzdWIiOiIxMjM0NTY3ODkwIiwiaWF0IjoxNTYwMDAwMDAwMH0"
+# With issuer
+prefix="eyJpc28iOiJodHRwczovL3Bkc2VydmVyLmNvbSJ9"
+
+# Empty/minimal
+string=""
+string="e30"
+string="e30."
+
+# DIDs for JWT subject
+prefix="did:plc:"
+prefix="did:web:"
+prefix="did:"
+
+# Handle format  
+suffix=".bsky.social"
