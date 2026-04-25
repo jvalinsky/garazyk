@@ -1,4 +1,5 @@
 #import "PDSSchemaManager.h"
+#import "Database/Schema.h"
 
 @implementation PDSSchemaManager
 
@@ -543,6 +544,17 @@
            @")";
 }
 
+- (NSString *)actorStoreAccountUsageTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS account_usage ("
+           @"    did TEXT PRIMARY KEY,"
+           @"    blob_bytes INTEGER NOT NULL DEFAULT 0,"
+           @"    blob_count INTEGER NOT NULL DEFAULT 0,"
+           @"    repo_bytes INTEGER NOT NULL DEFAULT 0,"
+           @"    record_count INTEGER NOT NULL DEFAULT 0,"
+           @"    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+           @")";
+}
+
 - (NSString *)actorStoreRotationKeysTableSchema {
     return @"CREATE TABLE IF NOT EXISTS rotation_keys ("
            @"    did TEXT PRIMARY KEY,"
@@ -583,6 +595,21 @@
     [sql appendString:[self actorStoreRotationKeysTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self actorStoreSigningKeysTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self actorStoreAccountUsageTableSchema]];
+    [sql appendString:@";\n\n"];
+    // Triggers to maintain account_usage from blobs, ipld_blocks, and records
+    [sql appendString:kPDSAccountUsageTriggerBlobInsertSQL];
+    [sql appendString:@";\n\n"];
+    [sql appendString:kPDSAccountUsageTriggerBlobDeleteSQL];
+    [sql appendString:@";\n\n"];
+    [sql appendString:kPDSAccountUsageTriggerBlockInsertSQL];
+    [sql appendString:@";\n\n"];
+    [sql appendString:kPDSAccountUsageTriggerBlockDeleteSQL];
+    [sql appendString:@";\n\n"];
+    [sql appendString:kPDSAccountUsageTriggerRecordInsertSQL];
+    [sql appendString:@";\n\n"];
+    [sql appendString:kPDSAccountUsageTriggerRecordDeleteSQL];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_records_collection_rkey ON records(collection, rkey);"];
     [sql appendString:@";\n"];

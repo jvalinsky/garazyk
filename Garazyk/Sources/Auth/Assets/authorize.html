@@ -39,6 +39,14 @@
                         <button class="btn btn-secondary" id="auth-cancel-btn">Cancel</button>
                         <button class="btn btn-primary" id="auth-signin-btn">Sign In</button>
                     </div>
+
+                    <div class="auth-divider"><span>or</span></div>
+
+                    <div id="auth-passkey-section">
+                        <button class="btn btn-secondary auth-passkey-btn" id="auth-passkey-btn">
+                            Sign in with Passkey
+                        </button>
+                    </div>
                 </div>
 
                 <div id="auth-step-consent" class="hidden">
@@ -194,6 +202,138 @@
                 window.location.href = url.href;
             } else {
                 window.history.back();
+            }
+        });
+
+        // --- Passkey (WebAuthn) sign-in ---
+        const passkeyBtn = document.getElementById('auth-passkey-btn');
+        const passkeySection = document.getElementById('auth-passkey-section');
+
+        // Hide passkey option if WebAuthn is not supported
+        if (!window.PublicKeyCredential) {
+            document.querySelector('.auth-divider').style.display = 'none';
+            passkeySection.style.display = 'none';
+        }
+
+        function base64urlDecode(str) {
+            // Pad with = to make length a multiple of 4
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) str += '=';
+            const binary = atob(str);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return bytes.buffer;
+        }
+
+        function base64urlEncode(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        passkeyBtn.addEventListener('click', async () => {
+            const handle = handleInput.value.trim();
+            const errorEl = document.getElementById('auth-error');
+
+            if (!handle) {
+                errorEl.textContent = 'Please enter your handle to sign in with a passkey.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            passkeyBtn.disabled = true;
+            passkeyBtn.textContent = 'Signing in…';
+
+            try {
+                // Step 1: Resolve handle → DID
+                const resolveResp = await fetch('/xrpc/com.atproto.identity.resolveHandle?handle=' + encodeURIComponent(handle));
+                if (!resolveResp.ok) {
+                    throw new Error('Could not resolve handle. Please check your handle.');
+                }
+                const resolveData = await resolveResp.json();
+                const did = resolveData.did;
+                if (!did) {
+                    throw new Error('Could not resolve handle to a DID.');
+                }
+
+                // Step 2: Request passkey challenge
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                const challengeResp = await fetch('/oauth/authorize/passkey/challenge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ did })
+                });
+                const challengeData = await challengeResp.json();
+                if (!challengeData.challenge || !challengeData.sessionId) {
+                    throw new Error(challengeData.error || 'Failed to get passkey challenge');
+                }
+
+                // Step 3: Authenticate with WebAuthn
+                const credential = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: base64urlDecode(challengeData.challenge),
+                        rpId: challengeData.rpId || window.location.hostname,
+                        userVerification: 'preferred',
+                        allowCredentials: [] // Discoverable credentials (passkeys)
+                    }
+                });
+
+                // Step 4: Submit assertion
+                const assertion = {
+                    id: credential.id,
+                    rawId: base64urlEncode(credential.rawId),
+                    response: {
+                        authenticatorData: base64urlEncode(credential.response.authenticatorData),
+                        clientDataJSON: base64urlEncode(credential.response.clientDataJSON),
+                        signature: base64urlEncode(credential.response.signature),
+                        userHandle: credential.response.userHandle
+                            ? base64urlEncode(credential.response.userHandle)
+                            : null
+                    },
+                    type: credential.type
+                };
+
+                const signinResp = await fetch('/oauth/authorize/passkey', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({
+                        sessionId: challengeData.sessionId,
+                        assertion: assertion,
+                        did: did
+                    })
+                });
+                const signinData = await signinResp.json();
+
+                if (signinData.ok) {
+                    // Success — transition to consent step
+                    document.getElementById('consent-handle').textContent = handle;
+                    document.querySelectorAll('input[name="session_token"]').forEach(el => {
+                        el.value = signinData.session_token || '';
+                    });
+                    document.getElementById('auth-step-signin').style.display = 'none';
+                    document.getElementById('auth-step-consent').style.display = 'block';
+                } else {
+                    throw new Error(signinData.error || 'Passkey authentication failed');
+                }
+            } catch (e) {
+                let msg = e.message || 'Passkey sign-in failed';
+                if (e.name === 'NotAllowedError') {
+                    msg = 'Passkey operation was cancelled or not allowed.';
+                } else if (e.name === 'SecurityError') {
+                    msg = 'Security error during passkey authentication.';
+                }
+                errorEl.textContent = msg;
+                errorEl.style.display = 'block';
+                passkeyBtn.disabled = false;
+                passkeyBtn.textContent = 'Sign in with Passkey';
             }
         });
     </script>

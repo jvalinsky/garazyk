@@ -357,6 +357,9 @@
     if ([partialName isEqualToString:@"users/detail"]) {
         return [self renderUsersDetailPartial:adminHandler headers:headers body:body params:params];
     }
+    if ([partialName isEqualToString:@"users/usage"]) {
+        return [self renderUsersUsagePartial:adminHandler headers:headers body:body params:params];
+    }
     if ([partialName isEqualToString:@"invites"]) {
         return [self renderInvitesPartial:adminHandler headers:headers body:body];
     }
@@ -574,6 +577,50 @@
         return @"<p class=\"text-destructive\">User not found</p>";
     }
     return [self renderPartialWithTemplate:@"partials/users-detail" context:userDetail];
+}
+
+- (nullable NSString *)renderUsersUsagePartial:(PDSAdminHandler *)adminHandler
+                                       headers:(NSDictionary *)headers
+                                          body:(nullable NSData *)body
+                                        params:(NSDictionary *)params {
+    NSString *did = params[@"did"];
+    if (did.length == 0) {
+        return @"<p class=\"text-destructive\">Missing DID</p>";
+    }
+
+    // Call the XRPC endpoint to get account usage
+    NSDictionary *usageResult = [adminHandler dispatchXrpcJSONMethod:@"com.atproto.admin.getAccountUsage"
+                                                          httpMethod:HttpMethodGET
+                                                             headers:headers
+                                                            jsonBody:@{@"did": did}];
+
+    if (!usageResult) {
+        return @"<p class=\"text-secondary\">Usage data unavailable</p>";
+    }
+
+    // Format byte values for display
+    unsigned long long blobBytes = [usageResult[@"blobBytes"] unsignedLongLongValue];
+    unsigned long long repoBytes = [usageResult[@"repoBytes"] unsignedLongLongValue];
+    NSString *blobBytesFormatted = [self formatByteCount:blobBytes];
+    NSString *repoBytesFormatted = [self formatByteCount:repoBytes];
+
+    NSMutableDictionary *context = [NSMutableDictionary dictionaryWithDictionary:usageResult];
+    context[@"blobBytesFormatted"] = blobBytesFormatted;
+    context[@"repoBytesFormatted"] = repoBytesFormatted;
+
+    return [self renderPartialWithTemplate:@"partials/users-usage" context:context];
+}
+
+- (NSString *)formatByteCount:(unsigned long long)bytes {
+    if (bytes == 0) return @"0 B";
+    const char *units[] = {"B", "KB", "MB", "GB", "TB"};
+    int unitIndex = 0;
+    double value = (double)bytes;
+    while (value >= 1024.0 && unitIndex < 4) {
+        value /= 1024.0;
+        unitIndex++;
+    }
+    return [NSString stringWithFormat:@"%.1f %s", value, units[unitIndex]];
 }
 
 - (nullable NSString *)renderInvitesPartial:(PDSAdminHandler *)adminHandler

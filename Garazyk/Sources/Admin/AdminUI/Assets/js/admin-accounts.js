@@ -100,10 +100,10 @@ function selectAccount(account) {
 function renderDetail(account) {
     const container = document.getElementById('admin-accounts-detail');
     if (!container) return;
-    
+
     const status = account.deactivated ? 'Disabled' : 'Active';
     const statusClass = account.deactivated ? 'admin-status-disabled' : 'admin-status-active';
-    
+
     let html = '<div class="admin-detail-section">';
     html += '<h4>' + AdminPanel.escapeHtml(account.handle || 'Unknown') + '</h4>';
     html += '<div class="admin-detail-row"><label>DID:</label><code>' + AdminPanel.escapeHtml(account.did) + '</code></div>';
@@ -111,23 +111,31 @@ function renderDetail(account) {
     html += '<div class="admin-detail-row"><label>Status:</label><span class="' + statusClass + '">' + status + '</span></div>';
     html += '<div class="admin-detail-row"><label>Created:</label><span>' + AdminPanel.escapeHtml(account.created_at || '-') + '</span></div>';
     html += '</div>';
-    
+
+    html += '<div class="admin-detail-section">';
+    html += '<h4>Storage Usage</h4>';
+    html += '<div id="admin-accounts-usage">Loading...</div>';
+    html += '</div>';
+
     html += '<div class="admin-detail-actions">';
-    
+
     if (account.deactivated) {
         html += '<button class="btn btn-default" data-action="enable" data-did="' + AdminPanel.escapeHtml(account.did) + '">Enable Account</button>';
     } else {
         html += '<button class="btn" data-action="disable" data-did="' + AdminPanel.escapeHtml(account.did) + '">Disable Account</button>';
     }
-    
+
     html += '<button class="btn" data-action="info" data-did="' + AdminPanel.escapeHtml(account.did) + '">Get Info...</button>';
     html += '</div>';
-    
+
     container.innerHTML = html;
-    
+
     container.querySelectorAll('[data-action]').forEach(btn => {
         btn.addEventListener('click', handleAction);
     });
+
+    // Load usage data
+    loadUsageData(account.did);
 }
 
 async function handleAction(event) {
@@ -157,6 +165,30 @@ async function handleAction(event) {
         if (resultEl) resultEl.innerHTML = '<div class="admin-error">' + AdminPanel.escapeHtml(err.message) + '</div>';
         btn.disabled = false;
         btn.textContent = action === 'disable' ? 'Disable Account' : 'Enable Account';
+    }
+}
+
+function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+async function loadUsageData(did) {
+    const container = document.getElementById('admin-accounts-usage');
+    if (!container) return;
+
+    try {
+        const usage = await AdminPanel.getAccountUsage(did);
+        let html = '<div class="admin-detail-row"><label>Blob Storage:</label><span>' + formatBytes(usage.blobBytes) + '</span></div>';
+        html += '<div class="admin-detail-row"><label>Blob Count:</label><span>' + AdminPanel.escapeHtml(String(usage.blobCount || 0)) + '</span></div>';
+        html += '<div class="admin-detail-row"><label>Repo Size:</label><span>' + formatBytes(usage.repoBytes) + '</span></div>';
+        html += '<div class="admin-detail-row"><label>Record Count:</label><span>' + AdminPanel.escapeHtml(String(usage.recordCount || 0)) + '</span></div>';
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = '<span class="admin-status-disabled">Failed to load usage data</span>';
     }
 }
 

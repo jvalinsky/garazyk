@@ -539,7 +539,8 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     if (!signatureData) return nil;
 
     NSMutableDictionary *header = [NSMutableDictionary dictionary];
-    header[@"alg"] = @"RS256";
+    PDSAppleKeyPair *keyPair = (PDSAppleKeyPair *)[self getKeyPairWithID:keyID error:nil];
+    header[@"alg"] = keyPair.algorithm ?: @"ES256K";
     header[@"typ"] = @"JWT";
     header[@"kid"] = keyID;
 
@@ -642,6 +643,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
                 NSDictionary *query = @{
                     (__bridge id)kSecClass: (__bridge id)kSecClassKey,
                     (__bridge id)kSecAttrApplicationTag: [keychainTag dataUsingEncoding:NSUTF8StringEncoding],
+                    (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate,
                     (__bridge id)kSecReturnRef: @YES
                 };
                 OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&privateKey);

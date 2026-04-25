@@ -25,6 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
  * - com.atproto.admin.disableAccountInvites: Disable invite code creation for an account
  * - com.atproto.admin.enableAccountInvites: Enable invite code creation for an account
  * - com.atproto.admin.getAccountInfo: Get detailed account information
+ * - com.atproto.admin.getAccountUsage: Get account storage usage
  * - com.atproto.admin.getAccountInfos: Get information for multiple accounts
  * - com.atproto.admin.getInviteCodes: List all invite codes with filtering
  * - com.atproto.admin.getSubjectStatus: Get moderation status for a subject
