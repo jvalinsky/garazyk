@@ -88,7 +88,7 @@ To test backpressure, you can use a script that connects and then "sleeps" witho
 
 ---
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Failure Mode | Symptom | Mitigation |
 | --- | --- | --- |
@@ -96,7 +96,11 @@ To test backpressure, you can use a script that connects and then "sleeps" witho
 | **Slow Consumer** | Connection closed with `ConsumerTooSlow`. | The client should use a faster parser or implement an internal buffer/queue to consume events faster. |
 | **Database Latency** | Backfill stalls or slows down PDS writes. | Ensure the `service_events` table has an index on the sequence column and consider moving events to a dedicated store. |
 
----
+## Next Steps
+
+1. Return to [Tutorial 6: Deployment](./tutorial-6-deployment) for production ops.
+2. Review the [Network Subguide](./network-from-scratch/) for transport-level internals.
+3. Check [Event Replay](../08-sync-firehose/event-replay) for cursor logic proofs.
 
 ## Summary
 

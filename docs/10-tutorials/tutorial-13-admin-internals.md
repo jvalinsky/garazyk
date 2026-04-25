@@ -111,7 +111,7 @@ curl -sS http://127.0.0.1:2583/xrpc/com.atproto.admin.queryAuditLog \
 
 ---
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Failure Mode | Symptom | Mitigation |
 | --- | --- | --- |
@@ -120,7 +120,11 @@ curl -sS http://127.0.0.1:2583/xrpc/com.atproto.admin.queryAuditLog \
 | **Audit Log Overflow** | Slow database queries on large logs. | Implement log rotation or pruning for the `admin_audit_log` table. |
 | **Metrics Latency** | `/_metrics` takes too long to respond. | Ensure metrics collection doesn't perform blocking database reads on every request. |
 
----
+## Next Steps
+
+1. Move to [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose).
+2. Review [Admin UI Documentation](../11-reference/admin-ui-documentation) for component maps.
+3. Check [Performance Monitoring](../11-reference/performance-monitoring) for deeper observability.
 
 ## Summary
 

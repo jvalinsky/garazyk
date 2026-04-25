@@ -16,6 +16,12 @@ Garazyk's web UI is built using Objective-J and the Cappuccino framework. While 
 
 **Estimated Time:** 30-40 minutes
 
+## Prerequisites
+
+- Read [Overview](../01-getting-started/overview) to understand the project's language choices.
+- Familiarity with Objective-C or JavaScript syntax.
+- `deciduous` CLI tool installed.
+
 ## Objective-J and Cappuccino Crash Course
 
 Objective-J looks like Objective-C, but the execution model is much closer to JavaScript running in the browser. In this repo you work across three layers at once:
@@ -124,10 +130,22 @@ When working with Objective-J in Garazyk:
 - Update ivars first, then call a refresh or reload method (like `reloadData`).
 - Guard for both `nil` and `undefined` when dealing with network data.
 
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| `[obj someMethod:] is not a function` | Message send to a raw JS object or `undefined` | Check if `obj` is a Cappuccino object; ensure it's not `nil`/`undefined` |
+| `CPInvalidArgumentException` | Calling a method that doesn't exist | Check selector name and colon count (e.g., `doThing` vs `doThing:`) |
+| UI doesn't update | Forgot to call `reloadData` or `setNeedsDisplay:YES` | Controllers must explicitly trigger view refreshes after state changes |
+
 ## Next Steps
 
 1. Move to [Tutorial 7b: The Admin UI Architecture](./tutorial-7b-admin-ui) to see how these concepts are applied to the PDS management interface.
 2. Read the official [Cappuccino Documentation](https://www.cappuccino.dev/learn/documentation/) for deep dives into specific classes.
+
+## Summary
+
+Objective-J provides the structure needed for a large-scale UI while preserving the flexibility of the browser runtime. By mastering the message-send syntax and the delegate/datasource pattern, you can extend the Garazyk UI with confidence.
 
 ## Related
 

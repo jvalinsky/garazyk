@@ -97,7 +97,7 @@ Target/action should dispatch a single feature flow (e.g., `handleLookup:`), cal
 3. Verify both the protocol surface and the `/ui` asset route.
 4. Exercise the rendered tabs in the browser.
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
@@ -105,9 +105,14 @@ Target/action should dispatch a single feature flow (e.g., `handleLookup:`), cal
 | 404 for `/ui` | Dist assets not staged or route not wired | Re-run build script; check `CappuccinoUIHandler` |
 | UI loads but empty | API call failing or empty seed data | Check backend logs; seed data via XRPC |
 
+## Next Steps
+
+1. Move to [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow).
+2. Review [Objective-J UI](../11-reference/admin-ui-documentation) for component patterns.
+
 ## Summary
 
-By following the "table-first with JSON fallback" pattern, you ensure the Garazyk UI remains both user-friendly for browsing and powerful for debugging.
+The Garazyk Admin UI architecture relies on programmatic view composition and strict payload normalization. This pattern ensures that the management interface remains stable and extensible as the PDS grows.
 
 ## Related
 

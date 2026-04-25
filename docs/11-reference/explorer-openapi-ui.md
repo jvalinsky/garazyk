@@ -61,7 +61,7 @@ The OpenAPI document is generated from the Explorer endpoint descriptor list, no
 - admin-oriented exploration,
 - and MST utilities.
 
-Use [Tutorial 7: Objective-J UI](../10-tutorials/tutorial-7-objective-j-ui) when changing the UI itself.
+Use [Tutorial 7a: Objective-J for Contributors](../10-tutorials/tutorial-7a-objective-j-intro) and [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui) when changing the UI itself.
 
 ## Route Ownership
 
@@ -110,5 +110,6 @@ For this docs pass, the current contributor truth is:
 ## Related Reading
 
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
-- [Tutorial 7: Objective-J UI](../10-tutorials/tutorial-7-objective-j-ui)
+- [Tutorial 7a: Objective-J Intro](../10-tutorials/tutorial-7a-objective-j-intro)
+- [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui)
 - [API Reference](./api-reference)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
