@@ -6,6 +6,14 @@ outline: deep
 
 # Part 3: WebSocket upgrade, codec, and firehose
 
+**Learning Objectives:**
+- Trace the RFC 6455 handshake in `WebSocketUpgradeHandler`.
+- Understand the handoff mechanism in `HttpServer` for upgraded connections.
+- Analyze the `WebSocketCodec` for frame parsing and fragmentation.
+- Master the `WebSocketHeartbeatPolicy` and dual-layer backpressure protections.
+
+**Estimated Time:** 45-55 minutes
+
 ## Why this exists
 
 The firehose is not a separate daemon in the normal runtime. It is a protocol

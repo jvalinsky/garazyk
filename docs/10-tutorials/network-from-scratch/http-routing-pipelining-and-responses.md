@@ -6,6 +6,14 @@ outline: deep
 
 # Part 2: routing, pipelining, and responses
 
+**Learning Objectives:**
+- Master the two routing mechanisms: `pathHandlers` and `HttpRouteTrie`.
+- Understand the role of `Http1PipelinePolicy` in managing concurrent requests.
+- Identify how `HttpServer` enforces global dispatch limits.
+- Analyze the `outputQueue` mechanism for ordered, streamed responses.
+
+**Estimated Time:** 30-40 minutes
+
 ## Why this exists
 
 Once `Http1Parser` has produced a `HttpRequest`, the transport problem changes.
