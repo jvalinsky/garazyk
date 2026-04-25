@@ -26,10 +26,12 @@ Long code and shell material belongs in appendices so the main narrative can sta
 5. [Tutorial 5: Firehose](./tutorial-5-firehose)
 6. [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/)
 7. [Tutorial 6: Deployment](./tutorial-6-deployment)
-8. [Tutorial 7: Objective-J UI](./tutorial-7-objective-j-ui)
-9. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow)
+8. [Tutorial 7a: Objective-J for Contributors](./tutorial-7a-objective-j-intro)
+9. [Tutorial 7b: Admin UI Architecture](./tutorial-7b-admin-ui)
+10. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow)
+11. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations)
 
-The first five tutorials plus the network subguide teach the production server from the inside out. Tutorial 6 then shifts to deployment. Tutorial 7 covers contributor tooling in the browser. Tutorial 8 ties together the end-to-end workflow for adding or changing a feature.
+The first five tutorials plus the network subguide teach the production server from the inside out. [Tutorial 6: Deployment](./tutorial-6-deployment) then shifts to production operations. Tutorials 7a and 7b cover contributor tooling in the browser. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow) ties together the end-to-end workflow for adding or changing a feature. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations) covers the durability layer.
 
 If you want the network internals immediately after the firehose walkthrough, take the advanced track next:
 
