@@ -89,6 +89,26 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
                                    statusCode:(nullable NSInteger *)statusCode
                                   contentType:(NSString * _Nullable * _Nullable)contentType;
 
+/**
+ * @brief Processes an admin API request and returns response metadata including custom headers.
+ *
+ * @param method The HTTP method.
+ * @param path The request path.
+ * @param headers HTTP headers.
+ * @param body Optional body.
+ * @param statusCode Output status code when a route is handled.
+ * @param contentType Output content type when a route is handled.
+ * @param outHeaders Output custom response headers (e.g., Set-Cookie) when a route is handled.
+ * @return Response body string, or nil if the path is not recognized.
+ */
+- (nullable NSString *)handleRequestWithMethod:(PDSHTTPMethod)method
+                                         path:(NSString *)path
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType
+                                 outHeaders:(NSDictionary<NSString *, NSString *> * _Nullable * _Nullable)outHeaders;
+
 #pragma mark - User Detail Data
 
 /// Get user detail data including invites created by them
