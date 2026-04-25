@@ -59,17 +59,24 @@ static NSString *PDSAdminPathWithQuery(HttpRequest *request) {
                handler:^(HttpRequest *request, HttpResponse *response) {
                  NSInteger statusCode = 200;
                  NSString *contentType = nil;
+                 NSDictionary<NSString *, NSString *> *customHeaders = nil;
                  NSString *result =
                      [adminHandler handleRequestWithMethod:PDSAdminMethodFromHttpMethod(request.method)
                                                      path:PDSAdminPathWithQuery(request)
                                                    headers:request.headers
                                                       body:request.body
                                                 statusCode:&statusCode
-                                               contentType:&contentType];
+                                               contentType:&contentType
+                                              outHeaders:&customHeaders];
                  if (result) {
                    response.statusCode = statusCode;
                    if (contentType.length > 0) {
                      [response setHeader:contentType forKey:@"Content-Type"];
+                   }
+                   if (customHeaders.count > 0) {
+                     for (NSString *key in customHeaders) {
+                       [response setHeader:customHeaders[key] forKey:key];
+                     }
                    }
                    [response setBodyString:result];
                  } else {
@@ -94,18 +101,25 @@ static NSString *PDSAdminPathWithQuery(HttpRequest *request) {
              handler:^(HttpRequest *request, HttpResponse *response) {
                NSInteger statusCode = 200;
                NSString *contentType = nil;
+               NSDictionary<NSString *, NSString *> *customHeaders = nil;
                NSString *result =
                    [adminHandler handleRequestWithMethod:PDSAdminMethodFromHttpMethod(request.method)
                                                     path:PDSAdminPathWithQuery(request)
                                                  headers:request.headers
                                                     body:request.body
                                               statusCode:&statusCode
-                                             contentType:&contentType];
+                                             contentType:&contentType
+                                            outHeaders:&customHeaders];
                if (result) {
                  response.statusCode = statusCode;
                  NSString *resolvedContentType =
                      contentType.length > 0 ? contentType : @"text/html; charset=utf-8";
                  [response setHeader:resolvedContentType forKey:@"Content-Type"];
+                 if (customHeaders.count > 0) {
+                   for (NSString *key in customHeaders) {
+                     [response setHeader:customHeaders[key] forKey:key];
+                   }
+                 }
                  [response setBodyString:result];
                } else {
                  response.statusCode = 404;

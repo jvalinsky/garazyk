@@ -26,6 +26,46 @@ typedef NS_ENUM(NSInteger, PDSHTTPMethod) {
     PDSHTTPMethodDELETE
 };
 
+static BOOL PDSAdminHandlerIsProductionEnvironment(NSDictionary *env) {
+    NSString *environment = [env[@"PDS_ENV"] lowercaseString];
+    if ([environment isEqualToString:@"production"]) return YES;
+    NSString *issuer = [env[@"PDS_ISSUER"] lowercaseString];
+    if ([issuer hasPrefix:@"https://"]) return YES;
+    return NO;
+}
+
+static NSString *PDSAdminTokenCookieString(NSString *token, NSTimeInterval maxAge) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSMutableString *cookie = [NSMutableString stringWithFormat:
+        @"admin_token=%@; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=%.0f",
+        token ?: @"", maxAge];
+    if (PDSAdminHandlerIsProductionEnvironment(env)) {
+        [cookie appendString:@"; Secure"];
+    }
+    return [cookie copy];
+}
+
+static NSString *PDSAdminTokenClearCookieString(void) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    NSMutableString *cookie = [NSMutableString stringWithFormat:
+        @"admin_token=; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=0"];
+    if (PDSAdminHandlerIsProductionEnvironment(env)) {
+        [cookie appendString:@"; Secure"];
+    }
+    return [cookie copy];
+}
+
+static NSTimeInterval PDSAdminHandlerResolvedTokenTTL(NSDictionary *env) {
+    NSString *ttlString = env[@"PDS_ADMIN_TOKEN_TTL_SECONDS"];
+    if (ttlString.length > 0) {
+        NSInteger parsed = [ttlString integerValue];
+        if (parsed >= 60 && parsed <= 86400) {
+            return (NSTimeInterval)parsed;
+        }
+    }
+    return 3600.0; // Default: 1 hour
+}
+
 static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
     switch (method) {
         case HttpMethodGET: return @"GET";
@@ -113,6 +153,22 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
                                          body:(nullable NSData *)body
                                    statusCode:(nullable NSInteger *)statusCode
                                   contentType:(NSString * _Nullable * _Nullable)contentType {
+    return [self handleRequestWithMethod:method
+                                    path:path
+                                 headers:headers
+                                    body:body
+                              statusCode:statusCode
+                             contentType:contentType
+                            outHeaders:nil];
+}
+
+- (nullable NSString *)handleRequestWithMethod:(PDSHTTPMethod)method
+                                         path:(NSString *)path
+                                      headers:(NSDictionary<NSString *, NSString *> *)headers
+                                         body:(nullable NSData *)body
+                                   statusCode:(nullable NSInteger *)statusCode
+                                  contentType:(NSString * _Nullable * _Nullable)contentType
+                                 outHeaders:(NSDictionary<NSString *, NSString *> * _Nullable * _Nullable)outHeaders {
     NSDictionary *packet = [self handleRequestPacketWithMethod:method
                                                           path:path
                                                        headers:headers
@@ -126,6 +182,10 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
     }
     if (contentType) {
         *contentType = packet[@"contentType"];
+    }
+    if (outHeaders) {
+        NSDictionary *customHeaders = packet[@"headers"];
+        *outHeaders = [customHeaders isKindOfClass:[NSDictionary class]] ? customHeaders : nil;
     }
     return packet[@"body"];
 }
@@ -329,10 +389,21 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
 
     if (success) {
         NSString *token = [PDSAdminAuth sharedAuth].adminToken;
-        return [self jsonResponseWithStatus:200 body:@{
+        NSDictionary *env = [[NSProcessInfo processInfo] environment];
+        NSTimeInterval tokenTTL = PDSAdminHandlerResolvedTokenTTL(env);
+        NSString *cookieString = PDSAdminTokenCookieString(token, tokenTTL);
+        NSDictionary<NSString *, NSString *> *responseHeaders = @{@"Set-Cookie": cookieString};
+        NSError *jsonError = nil;
+        NSDictionary *bodyDict = @{
             @"message": @"Login successful",
             @"token": token ?: @""
-        }];
+        };
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:bodyDict options:0 error:&jsonError];
+        NSString *bodyString = jsonData ? [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] : @"{}";
+        return [self packetWithStatus:200
+                         contentType:@"application/json"
+                             headers:responseHeaders
+                                body:bodyString];
     } else {
         return [self jsonResponseWithStatus:401 body:@{@"error": authError.localizedDescription ?: @"Invalid password"}];
     }
@@ -340,7 +411,12 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
 
 - (NSDictionary *)handleAdminLogout:(NSDictionary *)headers body:(NSData *)body {
     [[PDSAdminAuth sharedAuth] logout];
-    return [self jsonResponseWithStatus:200 body:@{@"message": @"Logged out"}];
+    NSString *cookieString = PDSAdminTokenClearCookieString();
+    NSDictionary<NSString *, NSString *> *responseHeaders = @{@"Set-Cookie": cookieString};
+    return [self packetWithStatus:200
+                     contentType:@"application/json"
+                         headers:responseHeaders
+                            body:@"{\"message\":\"Logged out\"}"];
 }
 
 - (NSDictionary *)handleAdminUsers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
@@ -1247,11 +1323,24 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
 - (NSDictionary *)packetWithStatus:(NSInteger)status
                        contentType:(NSString *)contentType
                               body:(NSString *)body {
-    return @{
-        @"status": @(status),
-        @"contentType": contentType ?: @"application/json",
-        @"body": body ?: @""
-    };
+    return [self packetWithStatus:status
+                     contentType:contentType
+                         headers:nil
+                            body:body];
+}
+
+- (NSDictionary *)packetWithStatus:(NSInteger)status
+                       contentType:(NSString *)contentType
+                           headers:(nullable NSDictionary<NSString *, NSString *> *)headers
+                              body:(NSString *)body {
+    NSMutableDictionary *packet = [NSMutableDictionary dictionary];
+    packet[@"status"] = @(status);
+    packet[@"contentType"] = contentType ?: @"application/json";
+    packet[@"body"] = body ?: @"";
+    if (headers.count > 0) {
+        packet[@"headers"] = [headers copy];
+    }
+    return [packet copy];
 }
 
 - (NSDictionary *)jsonResponseWithStatus:(NSInteger)status body:(NSDictionary *)body {
