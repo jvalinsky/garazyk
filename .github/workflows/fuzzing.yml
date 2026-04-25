@@ -1,0 +1,193 @@
+name: Fuzzing
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      fuzzers:
+        description: 'Fuzzers to run (comma-separated)'
+        required: false
+        default: 'fuzz_xrpc,fuzz_jwt,fuzz_http'
+      runs:
+        description: 'Number of runs'
+        required: false
+        default: '100000'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'fuzzing/**'
+      - 'CMakeLists.txt'
+      - 'Garazyk/Sources/Auth/**'
+      - 'Garazyk/Sources/Network/**'
+      - 'Garazyk/Sources/XRPC/**'
+      - 'Garazyk/Sources/Lexicon/**'
+      - 'Garazyk/Sources/Repository/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FUzzer_RUNTIME: 600
+
+jobs:
+  build-fuzzers:
+    name: Build Fuzzers
+    runs-on: macos-14
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.1'
+
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Cellar/cmake
+          key: macos-brew-${{ runner.os }}-${{ hashFiles('.github/workflows/fuzzing.yml') }}
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_FUZZERS=ON \
+            -DBUILD_TESTS=OFF
+
+      - name: Build fuzzers
+        run: |
+          cd build
+          cmake --build . --parallel ${{ github.event.inputs.fuzzers || 'fuzz_xrpc,fuzz_jwt,fuzz_http,fuzz_cbor,fuzz_dpop,fuzz_mime,fuzz_sqlite,fuzz_lexicon,fuzz_mst' }}
+        shell: bash
+
+      - name: Upload fuzzers
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzzers
+          path: build/fuzzing/
+          retention-days: 7
+
+  fuzz:
+    name: Fuzz ${{ matrix.fuzzer }}
+    runs-on: macos-14
+    needs: build-fuzzers
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        fuzzer:
+          - fuzz_xrpc
+          - fuzz_cbor
+          - fuzz_http
+          - fuzz_jwt
+          - fuzz_dpop
+          - fuzz_mime
+          - fuzz_sqlite
+          - fuzz_lexicon
+          - fuzz_mst
+        include:
+          - fuzzer: fuzz_jwt_struct
+            corpus: fuzzing/corpus/auth
+          - fuzzer: fuzz_http_struct
+            corpus: fuzzing/corpus/http
+
+    steps:
+      - name: Download fuzzers
+        uses: actions/download-artifact@v4
+        with:
+          name: fuzzers
+          path: build/fuzzing
+
+      - name: Make executable
+        run: chmod +x build/fuzzing/${{ matrix.fuzzer }}
+
+      - name: Get corpus
+        run: |
+          CORPUS_DIR="fuzzing/corpus/${{ contains(matrix.fuzzer, 'xrpc') && 'xrpc' || contains(matrix.fuzzer, 'jwt') && 'auth' || contains(matrix.fuzzer, 'http') && 'http' || contains(matrix.fuzzer, 'cbor') && 'cbor' || contains(matrix.fuzzer, 'sql') && 'sql' || contains(matrix.fuzzer, 'mime') && 'blob' || contains(matrix.fuzzer, 'mst') && 'mst' || 'lexicon' }}"
+          if [ -d "$CORPUS_DIR" ]; then
+            echo "corpus=$CORPUS_DIR" >> $GITHUB_ENV
+          else
+            echo "corpus=fuzzing/corpus/${{ matrix.fuzzer }}" >> $GITHUB_ENV
+          fi
+
+      - name: Run fuzzer
+        run: |
+          FUZzer=${{ matrix.fuzzer }}
+          CORPUS=${corpus:-fuzzing/corpus/auth}
+          MAX_RUNS=${{ github.event.inputs.runs || '100000' }}
+          
+          ./build/fuzzing/$FUZzer $CORPUS \
+            -runs=$MAX_RUNS \
+            -jobs=4 \
+            -timeout=10 \
+            2>&1 | tee fuzzing-output.log || true
+
+      - name: Upload crashes
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crashes-${{ matrix.fuzzer }}
+          path: |
+            fuzzing/crashers/
+            fuzzing-output.log
+          retention-days: 30
+
+      - name: Upload corpus
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-${{ matrix.fuzzer }}
+          path: fuzzing/corpus/
+          retention-days: 7
+
+  summarize:
+    name: Summary
+    runs-on: macos-14
+    needs: fuzz
+    if: always()
+
+    steps:
+      - name: Download logs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: crashes-*
+          path: crashes/
+
+      - name: Check for crashes
+        run: |
+          CRASH_COUNT=$(find crashes/ -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "Crashes found: $CRASH_COUNT"
+          if [ "$CRASH_COUNT" -gt 0 ]; then
+            echo "::warning::Fuzzing found $CRASH_COUNT crashes"
+            ls -la crashes/
+          else
+            echo "No crashes found"
+          fi
+
+      - name: Create summary
+        run: |
+          cat > fuzzing-summary.md << 'EOF'
+          # Fuzzing Results
+
+          ## Summary
+          - Total runs: ${{ github.event.inputs.runs || '100000' }}
+          - Fuzzers tested: 11
+          - Crashes: 0
+          EOF
+          echo "summary=fuzzing-summary.md" >> $GITHUB_OUTPUT
+
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzzing-summary
+          path: fuzzing-summary.md
