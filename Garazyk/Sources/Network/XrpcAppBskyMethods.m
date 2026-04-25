@@ -29,7 +29,13 @@
 #import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcToolsOzonePack.h"
 
+static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
+
 @implementation XrpcAppBskyMethods
+
++ (void)setRetainedLifecycleHandler:(RecordLifecycleHandler *)handler {
+    _retainedLifecycleHandler = handler;
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
@@ -110,12 +116,17 @@
   AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase
                                                                              emailProvider:emailProvider];
 
-  __attribute__((unused)) RecordLifecycleHandler *lifecycleHandler =
+  RecordLifecycleHandler *lifecycleHandler =
       [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
                                                    bookmarkService:bookmarkService
                                                       graphService:graphService
                                                        feedService:feedService
                                                           database:appViewDatabase];
+
+  // Store the lifecycle handler in the registry so it is retained for the
+  // process lifetime. NSNotificationCenter does not retain observers, so
+  // the handler must be kept alive to receive PDSRecordDidChangeNotification.
+  [XrpcAppBskyMethods setRetainedLifecycleHandler:lifecycleHandler];
 
   [XrpcAppBskyFeedPack registerWithDispatcher:dispatcher
                                 appViewDatabase:appViewDatabase
