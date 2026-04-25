@@ -158,4 +158,36 @@
   XCTAssertEqualObjects(json[@"error"], @"Invalid JSON");
 }
 
+- (void)testAdminLogoutSetsCookieToClearAdminToken {
+  RequestHandler postHandler =
+      [self.server handlerForRoute:@"/admin/logout"
+                            method:@"POST"
+                        parameters:nil];
+  XCTAssertNotNil(postHandler);
+
+  HttpRequest *request =
+      [self requestWithMethod:HttpMethodPOST
+                 methodString:@"POST"
+                         path:@"/admin/logout"
+                      headers:@{}
+                         body:[NSData data]];
+  HttpResponse *response = [HttpResponse response];
+  postHandler(request, response);
+
+  XCTAssertEqual(response.statusCode, HttpStatusOK);
+
+  NSString *setCookie = [response headerForKey:@"Set-Cookie"];
+  XCTAssertNotNil(setCookie, @"Logout should set Set-Cookie header");
+  XCTAssertTrue([setCookie containsString:@"admin_token="],
+                @"Set-Cookie should clear admin_token, got: %@", setCookie);
+  XCTAssertTrue([setCookie containsString:@"Max-Age=0"],
+                @"Set-Cookie should have Max-Age=0 to clear, got: %@", setCookie);
+  XCTAssertTrue([setCookie containsString:@"HttpOnly"],
+                @"Set-Cookie should be HttpOnly, got: %@", setCookie);
+  XCTAssertTrue([setCookie containsString:@"SameSite=Strict"],
+                @"Set-Cookie should be SameSite=Strict, got: %@", setCookie);
+  XCTAssertTrue([setCookie containsString:@"Path=/admin"],
+                @"Set-Cookie should be scoped to /admin, got: %@", setCookie);
+}
+
 @end
