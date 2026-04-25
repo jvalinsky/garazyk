@@ -85,6 +85,10 @@ static BOOL PDSConfigRunningUnderTests(void) {
 @property (nonatomic, copy, nullable) NSString *plcReplicaUpstreamURL;
 @property (nonatomic, copy, nullable) NSString *plcReplicaBindAddress;
 @property (nonatomic, copy, nullable) NSString *plcReplicaDataDir;
+@property (nonatomic, assign) unsigned long long softQuotaBlobBytes;
+@property (nonatomic, assign) NSUInteger softQuotaRecordCount;
+@property (nonatomic, assign) unsigned long long softQuotaRepoBytes;
+@property (nonatomic, assign) BOOL metricsPerAccountLabels;
 @end
 
 @implementation PDSConfiguration {
@@ -188,6 +192,11 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _rateLimitIpWindowSeconds = 60;
     _rateLimitBlobLimit = 50;
     _rateLimitBlobWindowSeconds = 3600;
+
+    _softQuotaBlobBytes = 0;
+    _softQuotaRecordCount = 0;
+    _softQuotaRepoBytes = 0;
+    _metricsPerAccountLabels = NO;
 
     _blobStorageType = @"disk"; // Default to disk storage
     _s3Bucket = nil;
@@ -867,6 +876,15 @@ static BOOL PDSConfigRunningUnderTests(void) {
       _cdnURL = [self resolveEnvOverrideForKey:@"PDS_CDN_URL"
                                       default:blobStorage[@"cdn_url"]];
   }
+
+  if ([self dictionary:config hasValueForKey:@"softQuotaBlobBytes"])
+    _softQuotaBlobBytes = [config[@"softQuotaBlobBytes"] unsignedLongLongValue];
+  if ([self dictionary:config hasValueForKey:@"softQuotaRecordCount"])
+    _softQuotaRecordCount = [config[@"softQuotaRecordCount"] unsignedIntegerValue];
+  if ([self dictionary:config hasValueForKey:@"softQuotaRepoBytes"])
+    _softQuotaRepoBytes = [config[@"softQuotaRepoBytes"] unsignedLongLongValue];
+  if ([self dictionary:config hasValueForKey:@"metricsPerAccountLabels"])
+    _metricsPerAccountLabels = [config[@"metricsPerAccountLabels"] boolValue];
 
   // Environment variable overrides
   NSString *envBlobStorageType = [self resolveEnvOverrideForKey:@"PDS_BLOB_STORAGE_TYPE" default:nil];

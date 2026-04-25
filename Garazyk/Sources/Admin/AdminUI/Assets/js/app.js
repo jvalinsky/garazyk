@@ -858,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.AdminUI = {
   showError: showErrorNotification,
   showSuccess: showSuccessNotification,
-  switchService,
+  switchService: switchToService,
   loadPartialPath,
   SheetDialog: SheetDialog,
   confirm: SheetDialog.confirm.bind(SheetDialog),

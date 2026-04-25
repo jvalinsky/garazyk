@@ -309,7 +309,13 @@ export const AdminPanel = {
     },
 
     escapeHtml,
-    
+
+    async getAccountUsage(did) {
+        const resp = await adminFetch(XRPC_BASE + '/com.atproto.admin.getAccountUsage?did=' + encodeURIComponent(did));
+        if (!resp.ok) throw new Error('Failed to get account usage');
+        return resp.json();
+    },
+
     getCurrentTab() {
         return currentTab;
     },
