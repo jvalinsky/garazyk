@@ -30,7 +30,7 @@ You will build a working mental model of the startup path that powers the first 
 
 ## Prerequisites
 
-- Complete [Setup](../01-getting-started/setup)
+- Complete [Setup](../01-getting-started/setup) (Ensure you are using **out-of-source builds** in the `build/` directory)
 - Read [Codebase Map](../01-getting-started/codebase-map)
 - Read [Request Lifecycle](../01-getting-started/request-lifecycle)
 - Be able to build `kaszlak`
@@ -115,6 +115,20 @@ After you understand the runtime path, jump to tests instead of rereading the im
 
 Those tests tell you which invariants the project already considers worth protecting.
 
+## Step 6: Track Your Progress with Deciduous
+
+Every significant action in this repository should be tracked in the `deciduous` graph. As you explore the codebase, practice using the tool:
+
+```bash
+deciduous add goal "Explore Garazyk boot path" -c 95
+# Note the ID returned by the previous command, e.g., 123
+deciduous add action "Traced describeServer from main.m to handler" -c 90
+# Link the action to the goal
+deciduous link <goal_id> <action_id> -r "exploratory task"
+```
+
+This keeps your investigation visible to the project and builds your own mental map of the changes you've made or discovered.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Where to look |
@@ -148,6 +162,9 @@ Once you understand that path, the rest of the server stops feeling opaque.
 ```bash
 xcodegen generate
 xcodebuild -scheme kaszlak build
-./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground
+./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground &
+PID=$!
+sleep 2
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
+kill $PID
 ```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
