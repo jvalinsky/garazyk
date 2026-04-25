@@ -162,8 +162,15 @@ If you understand those layers, account bugs become much easier to localize.
 ### Small verification sequence
 
 ```bash
+./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground &
+PID=$!
+sleep 2
 ./build/bin/kaszlak account list
+curl -sS -X POST http://127.0.0.1:2583/xrpc/com.atproto.server.createAccount \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"alice@example.com","handle":"alice.test","password":"password","inviteCode":"..."}'
 curl -sS -X POST http://127.0.0.1:2583/xrpc/com.atproto.server.createSession \
   -H 'Content-Type: application/json' \
   -d '{"identifier":"alice.test","password":"password"}'
+kill $PID
 ```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n

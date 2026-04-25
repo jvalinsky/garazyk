@@ -19,6 +19,19 @@ Treat the registry as the answer to these questions:
 
 That makes it more than a lookup table. It is part of the application boot sequence.
 
+## Registration Order
+
+The registration order is critical for determining how the `XrpcDispatcher` handles overlapping or priority-sensitive NSIDs. The current implementation in `XrpcMethodRegistry.m` follows this sequence:
+
+1. **XrpcServerMethods** (`com.atproto.server.*`)
+2. **XrpcIdentityMethods** (`com.atproto.identity.*`)
+3. **XrpcRepoMethods** (`com.atproto.repo.*`)
+4. **XrpcSyncMethods** (`com.atproto.sync.*`)
+5. **XrpcAppBskyMethods** (`app.bsky.*`)
+6. **XrpcAdminMethods** (`com.atproto.admin.*`)
+7. **XrpcLabelMethods** (`com.atproto.label.*`)
+8. **XrpcModerationMethods** (`com.atproto.moderation.*`)
+
 ## Why Registration Order Matters
 
 Endpoint behavior can look correct in unit tests and still disappear from the live runtime if registration changes. The registry matters because:

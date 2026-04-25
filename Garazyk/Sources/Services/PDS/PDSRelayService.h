@@ -7,7 +7,32 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/*!
+ * @protocol PDSRelayTransport
+ * @abstract Transport abstraction for relay HTTP requests.
+ *
+ * @discussion Allows injection of mock transports for testing.
+ * The default implementation uses NSURLSession.
+ */
+@protocol PDSRelayTransport <NSObject>
+
+/*!
+ * @method sendRequest:completionHandler:
+ * @abstract Sends an HTTP request and calls the handler with the response.
+ * @param request The URL request to send.
+ * @param handler Called with (data, response, error) on completion.
+ */
+- (void)sendRequest:(NSURLRequest *)request
+   completionHandler:(void (^)(NSData * _Nullable data,
+                               NSURLResponse * _Nullable response,
+                               NSError * _Nullable error))handler;
+
+@end
+
 @interface PDSRelayService : NSObject
+
+/*! Transport for sending relay notifications. Defaults to NSURLSession. */
+@property (nonatomic, strong) id<PDSRelayTransport> transport;
 
 /*!
  * Initializes the service.

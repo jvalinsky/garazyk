@@ -205,11 +205,11 @@
                                                   headers:@{}
                                                      body:nil];
 
-    XCTAssertEqual(response.statusCode, HttpStatusBadRequest);
+    XCTAssertEqual(response.statusCode, HttpStatusUnauthorized);
     NSDictionary *json = response.body.length > 0
         ? [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil]
         : nil;
-    XCTAssertEqualObjects(json[@"error"], @"InvalidRequest");
+    XCTAssertEqualObjects(json[@"error"], @"AuthRequired");
     XCTAssertNil(json[@"proxied"]);
 }
 

@@ -337,6 +337,19 @@ DID and handle resolution:
 }
 ```
 
+### XrpcModerationMethods
+
+Moderation and safety operations:
+
+```objc
+- (void)handleCreateReport:(HttpRequest *)request response:(HttpResponse *)response {
+    // 1. Extract auth
+    // 2. Parse subject and reason
+    // 3. Call adminController.createReport()
+    // 4. Return report status
+}
+```
+
 ## Error Handling in Domain Methods
 
 ### Validation Errors

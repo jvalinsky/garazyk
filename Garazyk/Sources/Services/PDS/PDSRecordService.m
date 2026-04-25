@@ -547,6 +547,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         }
         NSString *collection = write[@"collection"];
         NSString *rkey = write[@"rkey"];
+        NSString *swapRecord = write[@"swapRecord"];
         NSDictionary *record = write[@"value"];
         if (!record) {
             // Compatibility fallback for pre-lexicon field names.
@@ -728,6 +729,20 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                  existingRecord.cid.length > 0)
                     ? existingRecord.cid
                     : nil;
+
+            if (swapRecord && ![swapRecord isEqual:[NSNull null]]) {
+                if (![swapRecord isEqualToString:previousRecordCID ?: @""]) {
+                    if (error) {
+                        *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                                     code:11
+                                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithFormat:@"InvalidSwap: record %@ CID mismatch (expected %@, got %@)",
+                                                     uri, swapRecord, previousRecordCID ?: @"nil"]}];
+                    }
+                    return nil;
+                }
+            }
+
             NSError *cidError = nil;
             NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cidError];
             if (!cborData) {
@@ -793,6 +808,20 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                  existingRecord.cid.length > 0)
                     ? existingRecord.cid
                     : nil;
+
+            if (swapRecord && ![swapRecord isEqual:[NSNull null]]) {
+                if (![swapRecord isEqualToString:previousRecordCID ?: @""]) {
+                    if (error) {
+                        *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
+                                                     code:12
+                                                 userInfo:@{NSLocalizedDescriptionKey:
+                                                    [NSString stringWithFormat:@"InvalidSwap: record %@ CID mismatch for delete (expected %@, got %@)",
+                                                     uri, swapRecord, previousRecordCID ?: @"nil"]}];
+                    }
+                    return nil;
+                }
+            }
+
             [preparedOps addObject:@{
                 @"action": @"delete",
                 @"uri": uri,

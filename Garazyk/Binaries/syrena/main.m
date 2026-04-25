@@ -187,6 +187,8 @@ static BOOL parse_appview_options(NSArray<NSString *> *args,
 extern void NSDateFormatterLinkATProtoCategory(void);
 
 int main(int argc, const char * argv[]) {
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
     @autoreleasepool {
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX

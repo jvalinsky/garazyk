@@ -258,6 +258,7 @@ int main(int argc, char *argv[]) {
       @"PDSRecordServiceTests",
       @"PDSRecordTombstoneTests",
       @"PDSRepositoryServiceTests",
+      @"PDSRelayServiceTests",
       @"ActorServiceTests",
       @"FeedServiceTests",
       @"FeedSkeletonTests",

@@ -395,7 +395,15 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
       break;
     case WSSessionActionTypeClose: {
       WSCodecEvent *event = (WSCodecEvent *)action.data;
+      BOOL ackingOurClose = (self.state == WebSocketConnectionStateClosing);
       [self closeWithCode:event.closeCode reason:event.closeReason];
+      if (ackingOurClose && self.state != WebSocketConnectionStateClosed) {
+        self.state = WebSocketConnectionStateClosed;
+        if (self.connection) {
+          [self.connection cancel];
+        }
+        [self notifyCloseWithCode:event.closeCode reason:event.closeReason];
+      }
       break;
     }
     case WSSessionActionTypeSendPing:
@@ -449,6 +457,9 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                  dispatch_get_main_queue(), ^{
                    if (self.state != WebSocketConnectionStateClosed) {
                      self.state = WebSocketConnectionStateClosed;
+                     if (self.connection) {
+                       [self.connection cancel];
+                     }
                      [self notifyCloseWithCode:code reason:reason];
                    }
                  });

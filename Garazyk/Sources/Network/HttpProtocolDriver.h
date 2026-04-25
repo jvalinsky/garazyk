@@ -140,6 +140,8 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
  */
 - (NSUInteger)pendingRequestCount;
 
+- (void)responseDidFinishSending;
+
 @end
 
 NS_ASSUME_NONNULL_END

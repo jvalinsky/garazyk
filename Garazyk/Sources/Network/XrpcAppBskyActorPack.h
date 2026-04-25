@@ -37,8 +37,19 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController;
+                       jwtMinter:(JWTMinter *)jwtMinter
+                 adminController:(id<PDSAdminController>)adminController;
+
+/**
+ @brief Register only the PDS-level (non-AppView-dependent) actor methods.
+ 
+ Registered endpoints:
+ - app.bsky.actor.getPreferences / putPreferences
+ */
++ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                                     jwtMinter:(JWTMinter *)jwtMinter
+                               adminController:(id<PDSAdminController>)adminController;
 
 
 @end

@@ -1,4 +1,5 @@
 #import "Network/XrpcRepoMethods.h"
+#import "Admin/PDSAdminController.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
@@ -261,6 +262,16 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
+        NSError *takedownError = nil;
+        if ([adminController isAccountTakedownActive:did error:&takedownError]) {
+            response.statusCode = HttpStatusGone;
+            [response setJsonBody:@{
+                @"error": @"AccountTakedown",
+                @"message": @"Repository has been taken down by the host",
+            }];
+            return;
+        }
+
         NSUInteger limit = limitStr ? [limitStr integerValue] : 50;
         if (limit > 100) limit = 100;
 
@@ -321,6 +332,16 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
+        NSError *takedownError = nil;
+        if ([adminController isAccountTakedownActive:did error:&takedownError]) {
+            response.statusCode = HttpStatusGone;
+            [response setJsonBody:@{
+                @"error": @"AccountTakedown",
+                @"message": @"Repository has been taken down by the host",
+            }];
+            return;
+        }
+
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
         NSError *error = nil;
         NSDictionary *record = [recordService getRecord:uri forDid:did error:&error];
@@ -357,6 +378,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         NSString *rkey = body[@"rkey"];
         NSString *repo = body[@"repo"];
         NSString *swapCommit = body[@"swapCommit"];
+        NSString *swapRecord = body[@"swapRecord"];
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
@@ -424,6 +446,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         NSString *rkey = body[@"rkey"];
         NSString *repo = body[@"repo"];
         NSString *swapCommit = body[@"swapCommit"];
+        NSString *swapRecord = body[@"swapRecord"];
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;
@@ -440,7 +463,8 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         NSDictionary *write = @{
             @"action": @"delete",
             @"collection": collection,
-            @"rkey": rkey
+            @"rkey": rkey,
+            @"swapRecord": swapRecord ?: [NSNull null]
         };
 
         NSError *error = nil;
@@ -909,6 +933,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         NSDictionary *record = body[@"record"];
         NSString *repo = body[@"repo"];
         NSString *swapCommit = body[@"swapCommit"];
+        NSString *swapRecord = body[@"swapRecord"];
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
 
         if (repo && ![repo isEqualToString:did]) {
@@ -937,7 +962,8 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             @"action": @"update",
             @"collection": collection,
             @"rkey": rkey,
-            @"value": record
+            @"value": record,
+            @"swapRecord": swapRecord ?: [NSNull null]
         };
 
         NSError *error = nil;

@@ -115,7 +115,7 @@ typedef NS_ENUM(NSInteger, PDSValidationMode) {
 
 /*! Atomically applies a batch of writes (create/update/delete) in a single transaction.
     If any write fails, all preceding writes in the batch are rolled back.
-    @param writes Array of write operations, each a dictionary with keys: action, collection, rkey (required for update/delete), and value (for create/update). Legacy key 'record' is also accepted for compatibility.
+    @param writes Array of write operations, each a dictionary with keys: action, collection, rkey (required for update/delete), and value (for create/update). Optional key 'swapRecord' (CID string) is supported for update/delete. Legacy key 'record' is also accepted for compatibility.
     @param did The repository DID.
     @param actorDid The authenticated actor's DID (for authorization). Must equal did for self-modification.
     @param validate Whether to apply lexicon validation.

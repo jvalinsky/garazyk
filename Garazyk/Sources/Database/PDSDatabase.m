@@ -98,6 +98,9 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         return NO;
     }
 
+    sqlite3_busy_timeout(_db, 60000);
+
+
     // Mark database as open immediately so subsequent operations (including migrations)
     // can execute. This must be set before running migrations that use executeParameterizedUpdate.
     self.isOpen = YES;

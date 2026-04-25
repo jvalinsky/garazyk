@@ -178,20 +178,14 @@ def run() -> ScenarioResult:
     quiet = get_character("quiet")
     if luna_post:
         try:
-            bookmark = client.create_record(
-                quiet.did,
-                "app.bsky.feed.bookmark",
-                {
-                    "$type": "app.bsky.feed.bookmark",
-                    "subject": {"uri": luna_post["uri"], "cid": luna_post["cid"]},
-                    "createdAt": _now(),
-                },
-                quiet.access_jwt,
+            client.xrpc_post(
+                "app.bsky.bookmark.createBookmark",
+                {"uri": luna_post["uri"], "cid": luna_post["cid"]},
+                token=quiet.access_jwt,
             )
             result.step_passed("Quiet Observer bookmarks Luna's post")
         except XrpcError as exc:
-            # Bookmarks may not be implemented
-            result.step_skipped("Quiet Observer bookmarks Luna's post", str(exc))
+            result.step_failed("Quiet Observer bookmarks Luna's post", str(exc))
 
     # ── Rosa creates and then deletes a post ─────────────────────────
     rosa = get_character("rosa")
@@ -259,10 +253,7 @@ def run() -> ScenarioResult:
             like_count = len(likes.get("likes", []))
             result.step_passed("Likes on Luna's post", f"count={like_count}")
         except XrpcError as exc:
-            if exc.status == 404:
-                result.step_skipped("Likes on Luna's post", "AppView endpoint not available (no AppView)")
-            else:
-                result.step_failed("Likes on Luna's post", str(exc))
+            result.step_failed("Likes on Luna's post", str(exc))
 
     # ── Notifications ────────────────────────────────────────────────
     try:
@@ -270,7 +261,7 @@ def run() -> ScenarioResult:
         notif_count = len(notifs.get("notifications", []))
         result.step_passed("Luna's notifications", f"count={notif_count}")
     except XrpcError as exc:
-        result.step_skipped("Luna's notifications", str(exc))
+        result.step_failed("Luna's notifications", str(exc))
 
     result.finish()
     return result

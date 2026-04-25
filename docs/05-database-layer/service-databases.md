@@ -21,25 +21,25 @@ If the data belongs to the process rather than to one DID's repo, it usually bel
 
 ## Key Tables and Entities
 
-### Account & Auth
-*   `accounts`: Primary user account registry (DID, handle, email).
-*   `refresh_tokens`: Valid OAuth2/JWT refresh sessions.
+The service layer is backed by three distinct SQLite databases to isolate operational metadata from high-volume event logs.
+
+### 1. Main Service Database (`service.db`)
+*   `accounts`: Primary user account registry (DID, handle, email, password hashes, 2FA state).
+*   `oauth_refresh_tokens`: Valid OAuth2 refresh sessions (formerly `refresh_tokens`).
+*   `oauth_clients`, `oauth_authorization_codes`, `oauth_grants`: Full OAuth2/OpenID Connect provider state.
 *   `invite_codes`: PDS registration invite management.
+*   `admin_takedowns`, `admin_audit_log`, `reports`: Trust & Safety operational data.
+*   `labels`: Locally generated or cached assertions about actors/content.
+*   `passkeys`: WebAuthn credential metadata.
+*   `actor_preferences`, `actor_mutes`: Per-account service-side settings.
+*   `conversations`, `messages`, `groups`: Chat and social group metadata.
 
-### Trust & Safety
-*   `age_assurance_states`: Metadata and tokens for age verification flows.
-*   `chat_actor_metadata`: Mute/block/label state for chat participants.
-*   `chat_event_log`: Permanent audit trail of all safety-sensitive chat actions.
-*   `moderation_events`: Log of global moderation actions (takedowns, etc.).
+### 2. DID Cache Database (`did_cache.db`)
+*   `did_cache`: Local cache of resolved DID documents with expiration tracking.
 
-### AppView Indexing
-*   `appview_checkpoints`: Firehose sequence numbers for each upstream relay.
-*   `appview_repo_sync_state`: Indexing status per DID.
-*   `appview_relevance`: The set of DIDs being actively indexed in partial mode.
-
-### Identity & Sync
-*   `did_cache`: Local cache of resolved DID documents.
-*   `events`: The PDS sequencer event log for the firehose.
+### 3. Sequencer Database (`sequencer.db`)
+*   `events`: The canonical PDS sequencer event log for the firehose.
+*   `repo_sequence`: Tracking for repository-specific sequence numbers.
 
 ## Why The Synthetic Service Store Matters
 

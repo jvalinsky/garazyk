@@ -43,7 +43,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
         _isPaused = NO;
         _readScheduled = NO;
         _isClosed = NO;
-        _headerStartTime = [[NSDate date] timeIntervalSince1970];
+        _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
 
         NSString *queueName = [NSString stringWithFormat:@"com.pds.http.io-coordinator.%p", self];
         _coordinationQueue = dispatch_queue_create([queueName UTF8String], DISPATCH_QUEUE_SERIAL);
@@ -84,8 +84,16 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
         return;
     }
 
-    NSUInteger queueSize = self.outputQueueSizeProvider ? self.outputQueueSizeProvider() : 0;
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    if (now - self.headerStartTime > kHttpHeaderTimeout) {
+        if (self.errorHandler) {
+            self.errorHandler([NSError errorWithDomain:@"HttpConnectionIOCoordinator" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Read timeout"}]);
+        }
+        [self close];
+        return;
+    }
+
+    NSUInteger queueSize = self.outputQueueSizeProvider ? self.outputQueueSizeProvider() : 0;
     if (![self.driver shouldContinueReading:self.headerStartTime
                                outputQueueSize:queueSize
                                   headerTimeout:kHttpHeaderTimeout
@@ -115,6 +123,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
         }
 
         self.readScheduled = NO;
+        self.headerStartTime = [NSDate timeIntervalSinceReferenceDate];
 
         if (error) {
             if (self.errorHandler) {

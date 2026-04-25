@@ -266,7 +266,7 @@ function extractMethodIdsFromSourceSnippet(sourceSnippet, methodMap) {
   const methods = [];
   const unresolvedTyped = [];
 
-  const typedRegex = /\[dispatcher\s+(register[A-Za-z0-9]+)\s*:\s*\^\(/g;
+  const typedRegex = /\[dispatcher\s+(register[A-Za-z0-9]+)\s*:\s*(?:\^|[A-Za-z0-9_]+)/g;
   for (const match of sourceSnippet.matchAll(typedRegex)) {
     const registrationName = match[1];
     const methodId = methodMap.get(registrationName);

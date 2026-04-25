@@ -77,6 +77,69 @@ class XrpcClient:
 
         raise last_error  # type: ignore[misc]
 
+    def admin_login(self, password: str) -> str:
+        """POST /admin/login with the admin password and return the bearer
+        token used for com.atproto.admin.* and tools.ozone.* calls.
+
+        Raises XrpcError on failure.
+        """
+        url = f"{self.base_url}/admin/login"
+        try:
+            resp = self._session.post(
+                url,
+                json={"password": password},
+                headers={"Content-Type": "application/json"},
+                timeout=_REQUEST_TIMEOUT,
+            )
+        except requests.RequestException as exc:
+            raise XrpcError("/admin/login", 0, str(exc))
+
+        if resp.status_code != 200:
+            raise XrpcError("/admin/login", resp.status_code, _safe_json(resp))
+        token = resp.json().get("token", "")
+        if not token:
+            raise XrpcError("/admin/login", 200, {"error": "missing token in response"})
+        return token
+
+    def xrpc_get_binary(
+        self,
+        method: str,
+        params: Optional[dict[str, Any]] = None,
+        token: Optional[str] = None,
+    ) -> tuple[int, str, bytes]:
+        """Issue an XRPC query (GET) for endpoints that return binary data
+        (e.g. com.atproto.sync.getRepo returns application/vnd.ipld.car).
+
+        Returns (status_code, content_type, body_bytes). Raises XrpcError on
+        a non-2xx response with a JSON-decoded error body when possible.
+        """
+        url = f"{self.base_url}/xrpc/{method}"
+        headers = {}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        last_error = None
+        for attempt in range(1, _RETRY_ATTEMPTS + 1):
+            try:
+                resp = self._session.get(
+                    url, params=params, headers=headers, timeout=_REQUEST_TIMEOUT
+                )
+                if 200 <= resp.status_code < 300:
+                    return (
+                        resp.status_code,
+                        resp.headers.get("Content-Type", ""),
+                        resp.content,
+                    )
+                last_error = XrpcError(method, resp.status_code, _safe_json(resp))
+                if resp.status_code < 500:
+                    raise last_error
+            except requests.RequestException as exc:
+                last_error = XrpcError(method, 0, str(exc))
+            if attempt < _RETRY_ATTEMPTS:
+                time.sleep(_RETRY_BACKOFF * attempt)
+
+        raise last_error  # type: ignore[misc]
+
     def xrpc_post(
         self,
         method: str,

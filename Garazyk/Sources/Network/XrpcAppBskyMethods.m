@@ -44,23 +44,59 @@
                  appViewDbError.localizedDescription ?: @"unknown error");
   }
 
-  [XrpcAppBskyActorPack registerWithDispatcher:dispatcher
-                                 appViewDatabase:appViewDatabase
-                                       jwtMinter:jwtMinter
-                                 adminController:adminController];
+  [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher
+                                               appViewDatabase:appViewDatabase
+                                                     jwtMinter:jwtMinter
+                                               adminController:adminController];
 
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher
                                                      appViewDatabase:appViewDatabase
                                                            jwtMinter:jwtMinter
                                                      adminController:adminController];
 
+  // Bookmarks, chat, and Ozone are PDS-side concerns: bookmarks are private
+  // user state stored on the PDS, chat is bundled into the PDS in this
+  // codebase (vs. a separate service in upstream Bluesky), and Ozone admin/
+  // moderation queries operate on PDS-local report and account data.
+  // Register them unconditionally so a remote-AppView deployment still has
+  // these endpoints available.
+  BookmarkService *bookmarkService =
+      [[BookmarkService alloc] initWithDatabase:appViewDatabase];
+  ChatModerationService *chatModerationService =
+      [[ChatModerationService alloc] initWithDatabase:appViewDatabase];
+
+  [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher
+                                    bookmarkService:bookmarkService
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController];
+
+  [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
+                                 appViewDatabase:appViewDatabase
+                                      jwtMinter:jwtMinter
+                                adminController:adminController];
+  [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
+                                 appViewDatabase:appViewDatabase
+                                      jwtMinter:jwtMinter
+                                adminController:adminController];
+  [XrpcChatBskyActorPack registerWithDispatcher:dispatcher
+                          chatModerationService:chatModerationService];
+
+  [XrpcToolsOzonePack registerWithDispatcher:dispatcher
+                             appViewDatabase:appViewDatabase
+                                   jwtMinter:jwtMinter
+                             adminController:adminController];
+
   if (![PDSConfiguration sharedConfiguration].localAppViewEnabled) {
-    PDS_LOG_INFO(@"Local AppView disabled; skipping registration of app.bsky.* "
-                 @"feed/graph/notification handlers.");
+    PDS_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
     [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
-    // Chat endpoints require database access, skip when AppView is disabled
     return;
   }
+
+  PDS_LOG_INFO(@"Local AppView enabled; registering full suite of app.bsky.* handlers.");
+  [XrpcAppBskyActorPack registerWithDispatcher:dispatcher
+                                 appViewDatabase:appViewDatabase
+                                       jwtMinter:jwtMinter
+                                 adminController:adminController];
 
   NotificationService *notificationService =
       [[NotificationService alloc] initWithDatabase:appViewDatabase
@@ -68,13 +104,11 @@
                                                         initWithDatabase:appViewDatabase]];
   GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
   FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
-  BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];
   ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
   ContactService *contactService = [[ContactService alloc] initWithDatabase:appViewDatabase
                                                                 actorService:actorService];
   AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase
                                                                              emailProvider:emailProvider];
-  ChatModerationService *chatModerationService = [[ChatModerationService alloc] initWithDatabase:appViewDatabase];
 
   __attribute__((unused)) RecordLifecycleHandler *lifecycleHandler =
       [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
@@ -99,11 +133,6 @@
                                               jwtMinter:jwtMinter
                                         adminController:adminController];
 
-  [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher
-                                    bookmarkService:bookmarkService
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController];
-
   [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher];
   [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
   [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
@@ -114,19 +143,6 @@
                                     adminController:adminController];
   [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
-  [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
-                                appViewDatabase:appViewDatabase
-                                     jwtMinter:jwtMinter
-                               adminController:adminController];
-  [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
-                               appViewDatabase:appViewDatabase
-                                    jwtMinter:jwtMinter
-                              adminController:adminController];
-  [XrpcChatBskyActorPack registerWithDispatcher:dispatcher chatModerationService:chatModerationService];
-  [XrpcToolsOzonePack registerWithDispatcher:dispatcher
-                             appViewDatabase:appViewDatabase
-                                  jwtMinter:jwtMinter
-                            adminController:adminController];
 }
 
 @end

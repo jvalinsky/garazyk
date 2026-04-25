@@ -83,15 +83,20 @@
         return NO;
     }
 
-    // Check header timeout
-    if (now - headerStartTime > headerTimeout) {
-        return NO;
-    }
-
     // Check output queue backpressure (if queue is full, don't read)
     // High water mark is 10MB
     if (outputQueueSize > 10 * 1024 * 1024) {
         return NO;
+    }
+
+    // Check header parse timeout — if the first byte of the current
+    // request header was received too long ago, stop reading to prevent
+    // slowloris-style resource exhaustion.
+    if (headerStartTime > 0 && headerTimeout > 0 && now > 0) {
+        NSTimeInterval age = now - headerStartTime;
+        if (age > headerTimeout) {
+            return NO;
+        }
     }
 
     return YES;
@@ -99,6 +104,10 @@
 
 - (NSUInteger)pendingRequestCount {
     return [self.session pendingDispatchCount];
+}
+
+- (void)responseDidFinishSending {
+    [self.session responseDidFinishSending];
 }
 
 @end

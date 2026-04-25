@@ -60,6 +60,9 @@ def run() -> ScenarioResult:
         result.finish()
         return result
 
+    # Wait for relay to be ready
+    time.sleep(2)
+
     # ── Burst post creation ───────────────────────────────────────────
     POSTS_PER_USER = 10  # 5 users x 10 posts = 50 posts (scaled down from 200 for safety)
     total_posts = 0
@@ -231,9 +234,9 @@ def run() -> ScenarioResult:
         if appview_resp.status_code == 200:
             result.step_passed("AppView consistency check", "backfill status OK")
         else:
-            result.step_skipped("AppView consistency check", f"status={appview_resp.status_code}")
+            result.step_failed("AppView consistency check", f"status={appview_resp.status_code}")
     except Exception as exc:
-        result.step_skipped("AppView consistency check", str(exc))
+        result.step_failed("AppView consistency check", str(exc))
 
     # ── Verify timeline has content ───────────────────────────────────
     try:
@@ -241,7 +244,7 @@ def run() -> ScenarioResult:
         feed = timeline.get("feed", [])
         result.step_passed("Timeline has content after burst", f"items={len(feed)}")
     except XrpcError as exc:
-        result.step_skipped("Timeline has content after burst", str(exc))
+        result.step_failed("Timeline has content after burst", str(exc))
 
     # ── Relay health after load ──────────────────────────────────────
     try:

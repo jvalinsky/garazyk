@@ -10,11 +10,35 @@
 static const NSTimeInterval kRelayNotifyDebounceSeconds = 1.0;
 static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
 
+#pragma mark - NSURLSession Transport Adapter
+
+@interface PDSRelayURLSessionTransport : NSObject <PDSRelayTransport>
+@property (nonatomic, strong) NSURLSession *session;
+@end
+
+@implementation PDSRelayURLSessionTransport
+
+- (instancetype)init {
+  self = [super init];
+  if (self) {
+    _session = [NSURLSession
+        sessionWithConfiguration:[NSURLSessionConfiguration
+                                     ephemeralSessionConfiguration]];
+  }
+  return self;
+}
+
+- (void)sendRequest:(NSURLRequest *)request
+   completionHandler:(void (^)(NSData * _Nullable, NSURLResponse * _Nullable, NSError * _Nullable))handler {
+  [[self.session dataTaskWithRequest:request completionHandler:handler] resume];
+}
+
+@end
+
 @interface PDSRelayService ()
 
 @property(nonatomic, copy) NSArray<NSString *> *relays;
 @property(nonatomic, copy) NSString *hostname;
-@property(nonatomic, strong) NSURLSession *session;
 @property(nonatomic, strong) NSMutableSet<NSString *> *pendingDids;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t timer;
@@ -30,9 +54,7 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
   if (self) {
     _relays = [relays copy];
     _hostname = [hostname copy];
-    _session = [NSURLSession
-        sessionWithConfiguration:[NSURLSessionConfiguration
-                                     ephemeralSessionConfiguration]];
+    _transport = [[PDSRelayURLSessionTransport alloc] init];
     _pendingDids = [NSMutableSet set];
     _queue = dispatch_queue_create("com.atproto.pds.relay.service",
                                    DISPATCH_QUEUE_SERIAL);
@@ -152,23 +174,21 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
     return;
   }
 
-  NSURLSessionDataTask *task = [self.session
-      dataTaskWithRequest:request
-        completionHandler:^(NSData *data, NSURLResponse *response,
-                            NSError *error) {
-          NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-          if (error) {
-            PDS_LOG_ERROR(@"PDSRelayService: Failed to notify relay %@: %@",
-                          relayHost, error.localizedDescription);
-          } else if (httpResponse.statusCode >= 300) {
-            PDS_LOG_WARN(@"PDSRelayService: Relay %@ returned status %ld",
-                         relayHost, (long)httpResponse.statusCode);
-          } else {
-            PDS_LOG_INFO(@"PDSRelayService: Successfully notified relay %@",
-                          relayHost);
-          }
-        }];
-  [task resume];
+  [self.transport sendRequest:request
+           completionHandler:^(NSData *data, NSURLResponse *response,
+                               NSError *error) {
+             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+             if (error) {
+               PDS_LOG_ERROR(@"PDSRelayService: Failed to notify relay %@: %@",
+                             relayHost, error.localizedDescription);
+             } else if (httpResponse.statusCode >= 300) {
+               PDS_LOG_WARN(@"PDSRelayService: Relay %@ returned status %ld",
+                            relayHost, (long)httpResponse.statusCode);
+             } else {
+               PDS_LOG_INFO(@"PDSRelayService: Successfully notified relay %@",
+                            relayHost);
+             }
+           }];
 }
 
 @end

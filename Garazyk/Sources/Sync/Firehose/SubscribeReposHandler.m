@@ -22,6 +22,7 @@
 #import "Sync/WebSocket/WebSocketConnection.h"
 #import "Sync/WebSocket/WebSocketServer.h"
 #import "Metrics/PDSMetrics.h"
+#import "Sync/Relay/RelayMetrics.h"
 
 NSString *const SubscribeReposHandlerErrorDomain =
     @"com.atproto.pds.subscribeRepos";
@@ -45,6 +46,7 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property(nonatomic, strong) PDSDatabasePool *userDatabasePool;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t broadcastFanoutQueue;
 @property(nonatomic, assign) BOOL sequenceInitialized;
 @property(nonatomic, assign) BOOL stopping;
 @property(nonatomic, strong)
@@ -95,6 +97,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                         DISPATCH_QUEUE_SERIAL);
     dispatch_queue_set_specific(_eventQueue, kSubscribeReposEventQueueKey,
                                 kSubscribeReposEventQueueKey, NULL);
+    _broadcastFanoutQueue = dispatch_queue_create(
+        "com.atproto.pds.subscribeRepos.broadcast", DISPATCH_QUEUE_CONCURRENT);
     _sequenceInitialized = NO;
     _stopping = NO;
     _attachedConnections = [NSMutableSet set];
@@ -201,6 +205,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [_attachedConnections addObject:webSocketConnection];
   }
   [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
+  [self.relayMetrics recordDownstreamConnected];
 
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didAcceptConnection:)]) {
@@ -226,6 +231,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [_attachedConnections addObject:connection];
   }
   [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
+  [self.relayMetrics recordDownstreamConnected];
 
   if ([self.delegate respondsToSelector:@selector
                      (subscribeReposHandler:didAcceptConnection:)]) {
@@ -396,6 +402,27 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 #pragma mark - Event Broadcasting
 
+- (void)broadcastCommitEvent:(FirehoseCommitEvent *)event {
+  if (self.stopping || !event) {
+    return;
+  }
+  dispatch_async(self.eventQueue, ^{
+    @autoreleasepool {
+      [self ensureSequenceInitialized];
+      NSData *eventData = [self.session encodeCommitEvent:event];
+      if (eventData) {
+        if (self.serviceDatabases) {
+          [self.serviceDatabases persistEvent:self.session.sequenceNumber
+                                         type:@"commit"
+                                         data:eventData
+                                        error:nil];
+        }
+        [self broadcastEventData:eventData];
+      }
+    }
+  });
+}
+
 - (void)broadcastRepositoryCommit:(RepoCommit *)commit
                            forRepo:(NSString *)repoDid
                                ops:(NSArray<NSDictionary *> *)ops
@@ -486,32 +513,36 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   dispatch_async(self.eventQueue, ^{
-    [self ensureSequenceInitialized];
+    @autoreleasepool {
+      [self ensureSequenceInitialized];
 
-    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
-    event.did = did;
-    event.time = [SubscribeReposHandler rfc3339Timestamp];
-    event.handle = handle;
+      FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+      event.did = did;
+      event.time = [SubscribeReposHandler rfc3339Timestamp];
+      event.handle = handle;
 
-    NSData *eventData = [self.session encodeIdentityEvent:event];
+      NSData *eventData = [self.session encodeIdentityEvent:event];
 
-    if (!eventData) {
-      return;
+      if (!eventData) {
+        return;
+      }
+
+      if (self.serviceDatabases) {
+        NSError *persistError = nil;
+        if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
+                                            type:@"identity"
+                                            data:eventData
+                                           error:&persistError]) {
+          PDS_LOG_SYNC_ERROR(@"Failed to persist identity event: %@", persistError);
+        }
+      }
+
+      [self broadcastEventData:eventData];
+      [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
+      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
+      PDS_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
+                        (unsigned long)self.session.sequenceNumber);
     }
-
-    NSError *persistError = nil;
-    if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
-                                        type:@"identity"
-                                        data:eventData
-                                       error:&persistError]) {
-      PDS_LOG_SYNC_ERROR(@"Failed to persist identity event: %@", persistError);
-    }
-
-    [self broadcastEventData:eventData];
-    [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
-    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
-    PDS_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
-                      (unsigned long)self.session.sequenceNumber);
   });
 }
 
@@ -522,33 +553,37 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   dispatch_async(self.eventQueue, ^{
-    [self ensureSequenceInitialized];
+    @autoreleasepool {
+      [self ensureSequenceInitialized];
 
-    FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
-    event.did = did;
-    event.active = active;
-    event.status = status;
-    event.time = [SubscribeReposHandler rfc3339Timestamp];
+      FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+      event.did = did;
+      event.active = active;
+      event.status = status;
+      event.time = [SubscribeReposHandler rfc3339Timestamp];
 
-    NSData *eventData = [self.session encodeAccountEvent:event];
+      NSData *eventData = [self.session encodeAccountEvent:event];
 
-    if (!eventData) {
-      return;
+      if (!eventData) {
+        return;
+      }
+
+      if (self.serviceDatabases) {
+        NSError *persistError = nil;
+        if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
+                                            type:@"account"
+                                            data:eventData
+                                           error:&persistError]) {
+          PDS_LOG_SYNC_ERROR(@"Failed to persist account event: %@", persistError);
+        }
+      }
+
+      [self broadcastEventData:eventData];
+      [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
+      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
+      PDS_LOG_SYNC_INFO(@"Broadcast account status event for DID %@ (active=%d, status=%@), seq %lu",
+                        did, active, status ?: @"(null)", (unsigned long)self.session.sequenceNumber);
     }
-
-    NSError *persistError = nil;
-    if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
-                                        type:@"account"
-                                        data:eventData
-                                       error:&persistError]) {
-      PDS_LOG_SYNC_ERROR(@"Failed to persist account event: %@", persistError);
-    }
-
-    [self broadcastEventData:eventData];
-    [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
-    [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
-    PDS_LOG_SYNC_INFO(@"Broadcast account status event for DID %@ (active=%d, status=%@), seq %lu",
-                      did, active, status ?: @"(null)", (unsigned long)self.session.sequenceNumber);
   });
 }
 
@@ -562,41 +597,55 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   dispatch_async(self.eventQueue, ^{
     [self ensureSequenceInitialized];
-
     FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
     event.kind = kind;
     event.message = message;
 
     NSData *eventData = [self.session encodeInfoEvent:event];
 
-    if (!eventData) {
-      return;
+    if (eventData) {
+      // Persist info events for replay
+      if (self.serviceDatabases) {
+        NSError *persistError = nil;
+        if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
+                                            type:@"info"
+                                            data:eventData
+                                           error:&persistError]) {
+          PDS_LOG_SYNC_ERROR(@"Failed to persist info event: %@", persistError);
+        }
+      }
+      [self broadcastEventData:eventData];
+      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)self.session.sequenceNumber];
+      PDS_LOG_SYNC_DEBUG(@"Broadcast info event (%@), seq %lu",
+                          kind, (unsigned long)self.session.sequenceNumber);
     }
-
-    NSError *persistError = nil;
-    if (![self.serviceDatabases persistEvent:self.session.sequenceNumber
-                                        type:@"info"
-                                        data:eventData
-                                       error:&persistError]) {
-      PDS_LOG_SYNC_ERROR(@"Failed to persist info event: %@", persistError);
-    }
-
-    [self broadcastEventData:eventData];
-    PDS_LOG_SYNC_INFO(@"Broadcast info event (%@), seq %lu", kind,
-                      (unsigned long)self.session.sequenceNumber);
   });
 }
 
-#pragma mark - Private Methods
+- (NSUInteger)nextSequenceNumber {
+  [self ensureSequenceInitialized];
+  if (!self.session) return 0;
+  return [self.session nextSequenceNumber];
+}
 
 - (void)broadcastEventData:(NSData *)eventData {
+  NSArray<WebSocketConnection *> *snapshot;
   @synchronized(_attachedConnections) {
-    PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers", (unsigned long)_attachedConnections.count);
-    for (WebSocketConnection *connection in [_attachedConnections copy]) {
-      if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
+    snapshot = [_attachedConnections allObjects];
+  }
+  PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers",
+                     (unsigned long)snapshot.count);
+  if (snapshot.count == 0) {
+    return;
+  }
+  dispatch_queue_t fanout = self.broadcastFanoutQueue;
+  for (WebSocketConnection *connection in snapshot) {
+    dispatch_async(fanout, ^{
+      if (![self sendEventData:eventData
+            toConnectionWithBackpressureCheck:connection]) {
         PDS_LOG_SYNC_WARN(@"Dropping slow consumer during live broadcast");
       }
-    }
+    });
   }
 }
 
@@ -640,7 +689,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   dispatch_async(self.eventQueue, ^{
     PDS_LOG_SYNC_INFO(@"Async worker started: processing initial state for connection %@", connection.remoteAddress);
-    [self ensureSequenceInitialized];
 
     if (hasCursor && !cursorValid) {
       [self sendErrorFrameWithCode:kSubscribeReposErrorInvalidCursor
@@ -651,78 +699,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       return;
     }
 
-    // If no cursor is provided, replay existing repository state before starting live mode
-    if (!hasCursor && self.userDatabasePool != nil) {
-      PDS_LOG_SYNC_INFO(@"No cursor provided; replaying existing repository state before live updates.");
-      
-      NSError *error = nil;
-      NSArray<PDSDatabaseRepo *> *repos = [self.userDatabasePool getAllReposWithError:&error];
-      if (error) {
-        PDS_LOG_SYNC_ERROR(@"Failed to fetch repositories for initial replay: %@", error);
-      } else {
-        PDS_LOG_SYNC_DEBUG(@"Found %lu repos to replay", (unsigned long)repos.count);
-        for (PDSDatabaseRepo *repo in repos) {
-          PDS_LOG_SYNC_DEBUG(@"Replaying repository %@", repo.ownerDid);
-          
-          NSError *repoError = nil;
-          PDSActorStore *store = [self.userDatabasePool storeForDid:repo.ownerDid error:&repoError];
-          if (!store || repoError) {
-            PDS_LOG_SYNC_WARN(@"Could not get actor store for %@ - skipping: %@", repo.ownerDid, repoError);
-            continue;
-          }
-          
-          NSString *rev = [store getRepoRevisionForDid:repo.ownerDid error:&repoError];
-          if (!rev || rev.length == 0) {
-            PDS_LOG_SYNC_WARN(@"Could not get revision for %@ - skipping", repo.ownerDid);
-            continue;
-          }
-          
-          NSData *rootCidBytes = [store getRepoRootForDid:repo.ownerDid error:&repoError];
-          if (!rootCidBytes || rootCidBytes.length == 0) {
-            PDS_LOG_SYNC_WARN(@"Could not get root CID for %@ - skipping", repo.ownerDid);
-            continue;
-          }
-          
-          CID *commitCID = [CID cidFromBytes:rootCidBytes];
-          if (!commitCID) {
-            PDS_LOG_SYNC_WARN(@"Could not parse commit CID for %@ - skipping", repo.ownerDid);
-            continue;
-          }
-          
-          NSData *carData = [FirehoseCARBuilder buildCARForCommit:[RepoCommit createCommitWithDid:repo.ownerDid data:nil rev:rev prev:nil]
-                                                              ops:@[]
-                                                    blockProvider:^NSData * _Nullable(NSData * _Nonnull cidBytes) {
-                                                      return [store getBlockForCID:cidBytes forDid:repo.ownerDid error:nil];
-                                                    }
-                                              revBlockListProvider:nil];
-          
-          if (carData.length == 0) {
-            PDS_LOG_SYNC_WARN(@"Empty CAR data for %@ - skipping", repo.ownerDid);
-            continue;
-          }
-          
-          FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
-          event.repo = repo.ownerDid;
-          event.commit = commitCID;
-          event.rev = rev;
-          event.blocks = carData;
-          event.ops = @[];
-          event.blobs = @[];
-          event.time = [SubscribeReposHandler rfc3339Timestamp];
-          
-          NSError *encodeError = nil;
-          NSData *eventData = [self.session.eventFormatter encodeCommitEvent:event error:&encodeError];
-          if (!eventData) {
-            PDS_LOG_SYNC_ERROR(@"Failed to encode commit event for %@: %@", repo.ownerDid, encodeError);
-            continue;
-          }
-          
-          if (![self sendEventData:eventData toConnectionWithBackpressureCheck:connection]) {
-            PDS_LOG_SYNC_WARN(@"Failed to send initial commit event for %@ during replay (backpressure or closed)", repo.ownerDid);
-            return;
-          }
-        }
-      }
+    // Per ATProto spec, if no cursor is provided, the stream starts from the current head.
+    if (!hasCursor) {
+      PDS_LOG_SYNC_INFO(@"No cursor provided; starting stream from current head.");
     }
 
     if (hasCursor && parsedCursor > self.session.sequenceNumber) {
@@ -760,9 +739,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                           (unsigned long)replayCursor,
                           (unsigned long)self.session.sequenceNumber);
       } else {
-        NSUInteger backlog = self.session.sequenceNumber - replayCursor;
-        PDS_LOG_SYNC_INFO(@"Starting replay of %lu events for connection %@",
-                          (unsigned long)backlog, connection);
+        PDS_LOG_SYNC_INFO(@"Backfill requested (backlog: %lu). Replaying events from cursor %lu.",
+                          (unsigned long)(self.session.sequenceNumber - replayCursor),
+                          (unsigned long)replayCursor);
         [self replayEventsAfterCursor:replayCursor toConnection:connection];
       }
     }
@@ -771,69 +750,36 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor
                    toConnection:(WebSocketConnection *)connection {
-  PDS_LOG_SYNC_INFO(@"Replaying events after cursor %lu",
-                    (unsigned long)cursor);
-  [self ensureSequenceInitialized];
-
-  NSUInteger fetchCursor = cursor;
-  NSUInteger replayedCount = 0;
-  BOOL hasMore = YES;
-
-  while (hasMore) {
-    NSError *error = nil;
-    NSArray *events =
-        [self.serviceDatabases getEventsSince:fetchCursor
-                                        limit:kSubscribeReposReplayBatchSize
-                                        error:&error];
-    if (error || !events) {
-      PDS_LOG_SYNC_ERROR(@"Failed to fetch events for replay: %@", error);
-      break;
-    }
-
-    if (events.count == 0) {
-      hasMore = NO;
-      PDS_LOG_SYNC_INFO(@"No more events to replay for connection %@", connection);
-      break;
-    }
-
-    PDS_LOG_SYNC_INFO(@"Fetched batch of %lu events for replay (current seq: %lu)",
-                      (unsigned long)events.count, (unsigned long)fetchCursor);
-
-    for (NSDictionary *event in events) {
-      NSNumber *seq = event[@"seq"];
-      NSData *data = event[@"data"];
-
-      replayedCount++;
-      if (replayedCount > self.maxReplayEventsPerConnection) {
-        PDS_LOG_SYNC_WARN(@"Replay limit exceeded (%lu) during backfill for connection %@",
-                         (unsigned long)replayedCount, connection);
-        [self sendInfoEvent:kSubscribeReposInfoOutdatedCursor
-                    message:@"Replay window exceeded while backfilling"
-               toConnection:connection];
-        return;
-      }
-
-      if (![self sendEventData:data
-              toConnectionWithBackpressureCheck:connection]) {
-        PDS_LOG_SYNC_WARN(@"Failed to send event %lu during replay (backpressure or closed)",
-                         (unsigned long)[seq unsignedIntegerValue]);
-        return;
-      }
-      fetchCursor = [seq unsignedIntegerValue];
-    }
-    PDS_LOG_SYNC_INFO(@"Completed replay batch, next cursor: %lu", (unsigned long)fetchCursor);
-
-    if (events.count < kSubscribeReposReplayBatchSize) {
-      hasMore = NO;
-    }
-
-    if (fetchCursor >= self.session.sequenceNumber) {
-      hasMore = NO;
-    }
+  if (!self.serviceDatabases) {
+    PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases");
+    return;
   }
 
-  PDS_LOG_SYNC_INFO(@"Replay completed. Last cursor: %lu",
-                    (unsigned long)fetchCursor);
+  NSUInteger limit = self.maxReplayEventsPerConnection;
+  if (limit == 0) {
+    limit = 1000; // Default safety limit
+  }
+
+  NSError *error = nil;
+  NSArray<NSDictionary *> *events =
+      [self.serviceDatabases getEventsSince:(int64_t)cursor
+                                      limit:(NSInteger)limit
+                                      error:&error];
+  if (error) {
+    PDS_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
+    return;
+  }
+
+  PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu",
+                     (unsigned long)events.count, (unsigned long)cursor);
+
+  for (NSDictionary *eventDict in events) {
+    NSData *eventData = eventDict[@"data"];
+    if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
+      continue;
+    }
+    [connection sendMessage:eventData];
+  }
 }
 
 - (void)sendInfoEvent:(NSString *)kind
@@ -949,6 +895,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   if (removed) {
     [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
+    [self.relayMetrics recordDownstreamDisconnected];
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
       [self.delegate subscribeReposHandler:self didCloseConnection:connection];
     }
@@ -982,17 +929,29 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       return;
     }
 
-    NSError *dbError = nil;
-    int64_t maxSequence = [self.serviceDatabases getMaxEventSequence:&dbError];
-    if (dbError) {
-      PDS_LOG_SYNC_ERROR(@"Failed to get max event sequence: %@", dbError);
-      return;
+    NSUInteger startSeq = 0;
+    if (self.serviceDatabases) {
+        NSError *dbError = nil;
+        int64_t maxSequence = [self.serviceDatabases getMaxEventSequence:&dbError];
+        if (dbError) {
+          PDS_LOG_SYNC_ERROR(@"Failed to get max event sequence: %@", dbError);
+        }
+        startSeq = (NSUInteger)MAX((int64_t)0, maxSequence);
     }
 
-    self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:(NSUInteger)MAX((int64_t)0, maxSequence)];
+    self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:startSeq];
     self.sequenceInitialized = YES;
     PDS_LOG_SYNC_INFO(@"Initialized sequence number to %lu",
                       (unsigned long)self.session.sequenceNumber);
+  }
+}
+
+- (void)skipPersistence {
+  @synchronized(self) {
+    if (self.sequenceInitialized) return;
+    self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:0];
+    self.sequenceInitialized = YES;
+    PDS_LOG_SYNC_INFO(@"Firehose persistence disabled. Starting from sequence 0.");
   }
 }
 

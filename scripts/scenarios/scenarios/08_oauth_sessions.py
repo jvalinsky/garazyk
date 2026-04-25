@@ -83,7 +83,10 @@ def run() -> ScenarioResult:
     except Exception as exc:
         result.step_skipped("OAuth client registered", str(exc))
 
-    # ── Test authorization endpoint ──────────────────────────────────
+    # ── Test authorization endpoint enforces PAR (no direct params) ──
+    # Per ATProto OAuth spec, /oauth/authorize requires `request_uri` from a
+    # prior PAR push. A direct GET with client_id/redirect_uri must return
+    # 400 invalid_request.
     try:
         import requests
         auth_url = (
@@ -95,13 +98,22 @@ def run() -> ScenarioResult:
             f"&state=test-state-123"
         )
         auth_resp = requests.get(auth_url, allow_redirects=False, timeout=10)
-        # Should get a redirect or a login page
-        if auth_resp.status_code in (302, 303, 200):
-            result.step_passed("OAuth authorize endpoint", f"status={auth_resp.status_code}")
+        try:
+            body = auth_resp.json()
+        except ValueError:
+            body = {}
+        if auth_resp.status_code == 400 and body.get("error") == "invalid_request":
+            result.step_passed(
+                "OAuth authorize enforces PAR",
+                "direct params rejected with invalid_request",
+            )
         else:
-            result.step_skipped("OAuth authorize endpoint", f"status={auth_resp.status_code}")
+            result.step_failed(
+                "OAuth authorize enforces PAR",
+                f"status={auth_resp.status_code} body={body!r}",
+            )
     except Exception as exc:
-        result.step_skipped("OAuth authorize endpoint", str(exc))
+        result.step_failed("OAuth authorize enforces PAR", str(exc))
 
     # ── Test token endpoint ──────────────────────────────────────────
     try:
@@ -177,9 +189,11 @@ def run() -> ScenarioResult:
         result.step_failed("Luna refreshes session", str(exc))
 
     # ── Marcus creates and deletes a session ─────────────────────────
+    marcus_refresh_jwt = None
     try:
         session = client.create_session(marcus.handle, marcus.password)
         marcus.access_jwt = session["accessJwt"]
+        marcus_refresh_jwt = session.get("refreshJwt")
         result.step_passed("Marcus creates session")
     except XrpcError as exc:
         result.step_failed("Marcus creates session", str(exc))
@@ -189,19 +203,34 @@ def run() -> ScenarioResult:
         client.delete_session(marcus.access_jwt)
         result.step_passed("Marcus deletes session (logout)")
     except Exception as exc:
-        result.step_skipped("Marcus deletes session", str(exc))
+        result.step_failed("Marcus deletes session", str(exc))
 
-    # Verify deleted session is invalid
-    try:
-        assert_xrpc_raises(
-            "Get session with deleted token",
-            None,
-            client.get_session,
-            marcus.access_jwt,
+    # The access JWT is stateless and remains valid until expiry. Refresh
+    # tokens, however, are DB-backed and MUST be invalidated by deleteSession.
+    # Verify that refresh-after-delete fails.
+    if marcus_refresh_jwt:
+        try:
+            client.refresh_session(marcus_refresh_jwt)
+            result.step_failed(
+                "Refresh after deleteSession fails",
+                "refreshSession returned 200 for revoked token",
+            )
+        except XrpcError as exc:
+            if exc.status in (400, 401):
+                result.step_passed(
+                    "Refresh after deleteSession fails",
+                    f"status={exc.status}",
+                )
+            else:
+                result.step_failed(
+                    "Refresh after deleteSession fails",
+                    f"unexpected status={exc.status} body={exc.body!r}",
+                )
+    else:
+        result.step_skipped(
+            "Refresh after deleteSession fails",
+            "no refreshJwt returned by createSession",
         )
-        result.step_passed("Deleted session is invalid")
-    except AssertionError:
-        result.step_skipped("Deleted session check", "Session may still be valid after delete")
 
     # ── Invalid credentials ──────────────────────────────────────────
     try:
@@ -229,7 +258,7 @@ def run() -> ScenarioResult:
         )
         result.step_passed("Missing auth rejected")
     except AssertionError as exc:
-        result.step_skipped("Missing auth rejected", str(exc))
+        result.step_failed("Missing auth rejected", str(exc))
 
     result.finish()
     return result

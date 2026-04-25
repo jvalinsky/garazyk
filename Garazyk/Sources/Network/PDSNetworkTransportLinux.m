@@ -743,7 +743,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
             _port = ntohs(addr.sin_port);
         }
         
-        if (listen(_listenfd, 128) == -1) {
+        if (listen(_listenfd, 512) == -1) {
             [self failWithError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
             return;
         }

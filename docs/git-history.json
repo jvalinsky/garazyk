@@ -1,5 +1,37 @@
 [
   {
+    "hash": "699b31a19fba54188e962d360f3e22a90213af5a",
+    "short_hash": "699b31a",
+    "author": "Security Bot",
+    "date": "2026-04-24T17:52:28-04:00",
+    "message": "test: Fix remaining test failures across suites\n\n- HttpConnectionIOCoordinatorTests: Fix parser timeout by providing correct HTTP headers for protocol errors and fix async race condition in MockIOConnection.\n- PDSWebSocketTransportTests: Fix sync assertions against async methods and update MockNetworkConnection to queue receives correctly.\n- PDSWebSocketServerTests: Update port and handler assertions to correctly await asynchronous setup.\n- SubscribeReposHandlerTests: Provide valid CID string for blob array to fix NSInvalidArgumentException nil insertion.",
+    "files_changed": 4
+  },
+  {
+    "hash": "699b31a19fba54188e962d360f3e22a90213af5a",
+    "short_hash": "699b31a",
+    "author": "Security Bot",
+    "date": "2026-04-24T17:52:28-04:00",
+    "message": "test: Fix remaining test failures across suites\n\n- HttpConnectionIOCoordinatorTests: Fix parser timeout by providing correct HTTP headers for protocol errors and fix async race condition in MockIOConnection.\n- PDSWebSocketTransportTests: Fix sync assertions against async methods and update MockNetworkConnection to queue receives correctly.\n- PDSWebSocketServerTests: Update port and handler assertions to correctly await asynchronous setup.\n- SubscribeReposHandlerTests: Provide valid CID string for blob array to fix NSInvalidArgumentException nil insertion.",
+    "files_changed": 4
+  },
+  {
+    "hash": "cefeb01e42224fed1f1883720aa66c16e7cbc0a4",
+    "short_hash": "cefeb01",
+    "author": "Security Bot",
+    "date": "2026-04-23T21:56:55-04:00",
+    "message": "fix(appview): resolve CID links in DAG-CBOR record blocks\n\nAdd recursive CID link resolution in AppViewIngestEngine to follow IPLD\nreferences in firehose CAR blocks. Firehose blocks often contain CID links\n(CBOR tag 42) that reference other blocks containing the actual record data.\n\nChanges:\n- Add ResolveCIDLinksInObject() to recursively resolve CID references\n- Prefer decodeDataAsJSON() for better CID->$link wrapper handling\n- Use blockWithCID:() for direct lookup instead of looping\n- Check for actual record fields instead of just non-empty dicts\n- Add detailed debug logging for CID resolution tracking\n\nThis fixes the issue where graph records were appearing as empty dicts\nbecause their actual data was in linked blocks that weren't being\nfollowed.\n\nCo-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>",
+    "files_changed": 33
+  },
+  {
+    "hash": "544ca33696dc4eb804c0491b97de9cb236ef8eae",
+    "short_hash": "544ca33",
+    "author": "Security Bot",
+    "date": "2026-04-23T20:22:44-04:00",
+    "message": "fix(appview,sync): harden CAR parsing and implement persistent handle resolution\n\nSummary:\n- Refactored CARReader to use spec-compliant varint-based CID parsing.\n- Updated CID.m to support CIDv0 and robust CIDv1 binary decoding.\n- Updated AppView indexers to use provided CIDs and DAG-CBOR codec.\n- Added persistent 'handles' table to AppViewDatabase for fast handle-to-DID resolution.\n- Integrated handle discovery into firehose ingest and backfill worker.\n- Verified 100% pass rate (1648/1648 tests).",
+    "files_changed": 15
+  },
+  {
     "hash": "f5781aba3d5bb9f77ba923d4e32af757eec19c14",
     "short_hash": "f5781ab",
     "author": "Security Bot",

@@ -28,6 +28,16 @@ Keeping those roles separate makes the code much easier to reason about.
 
 Use the XRPC surface when you are working on protocol behavior, auth, record creation, repository operations, sync, or any client-facing ATProto contract.
 
+#### Important Protocol Endpoints
+
+The following endpoints implement core repository and record lifecycle operations:
+
+*   **com.atproto.repo.createRecord** (`POST`): Create a new record.
+*   **com.atproto.repo.putRecord** (`POST`): Upsert a record (create or update). Supports `swapRecord` and `swapCommit` for concurrency control.
+*   **com.atproto.repo.deleteRecord** (`POST`): Delete a record. Supports `swapRecord`.
+*   **com.atproto.repo.applyWrites** (`POST`): Atomic batch of creates, updates, and deletes.
+*   **com.atproto.repo.updateRecord** (`POST`): **Legacy compatibility endpoint**. Use `putRecord` for modern implementations.
+
 Typical method families include:
 
 - `com.atproto.server.*` for server identity, sessions, and account bootstrap

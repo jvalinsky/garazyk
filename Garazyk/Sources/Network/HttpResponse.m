@@ -206,7 +206,7 @@ NS_ASSUME_NONNULL_END
 
 - (void)prepareCommonHeadersForBodyLength:(NSUInteger)bodyLength {
     /*! Handle Connection header based on keepAlive setting */
-    if (!_headers[@"Connection"]) {
+    if (![self headerForKey:@"Connection"]) {
         if (self.keepAlive) {
             [self setHeader:@"keep-alive" forKey:@"Connection"];
         } else {

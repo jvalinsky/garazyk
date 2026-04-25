@@ -139,7 +139,7 @@ PDSApplication *app = ...;
 ```objc
 // In main.m or CLI dispatcher
 PDSApplication *app = [[PDSApplication alloc] 
-    initWithConfiguration:config error:&error];
+    initWithConfiguration:config];
 
 if (!app) {
     NSLog(@"Failed to initialize PDS: %@", error);
@@ -380,15 +380,15 @@ if (!app) {
 **Solution**: Use a single shared instance:
 ```objc
 // Bad: Multiple instances
-PDSApplication *app1 = [[PDSApplication alloc] initWithConfiguration:config error:nil];
-PDSApplication *app2 = [[PDSApplication alloc] initWithConfiguration:config error:nil];
+PDSApplication *app1 = [[PDSApplication alloc] initWithConfiguration:config];
+PDSApplication *app2 = [[PDSApplication alloc] initWithConfiguration:config];
 
 // Good: Single shared instance
 static PDSApplication *sharedApp = nil;
 + (instancetype)sharedApplication {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedApp = [[PDSApplication alloc] initWithConfiguration:nil error:nil];
+        sharedApp = [[PDSApplication alloc] initWithConfiguration:nil];
     });
     return sharedApp;
 }
@@ -418,7 +418,7 @@ if (!config.issuer) {
 }
 
 // Initialize with loaded config
-PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config error:&error];
+PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config];
 ```
 
 #### Pitfall 3: Services Not Initialized
@@ -430,7 +430,7 @@ PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config error
 **Solution**: Wait for initialization to complete:
 ```objc
 NSError *error = nil;
-PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config error:&error];
+PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config];
 
 if (!app) {
     NSLog(@"Application initialization failed: %@", error);
@@ -742,7 +742,7 @@ int main(int argc, const char *argv[]) {
         }
         
         // 2. Initialize application
-        PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config error:&error];
+        PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config];
         
         if (!app) {
             NSLog(@"Failed to initialize PDS: %@", error);

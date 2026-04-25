@@ -10,6 +10,14 @@
 
 - (void)setUp {
     [super setUp];
+#ifdef __APPLE__
+    // SecItemLinuxStore is a Linux compat shim; on macOS the real
+    // Security.framework SecItem* APIs are used instead.  The Linux
+    // store uses global dispatch_once state that cannot be reset
+    // between test runs, causing hangs on macOS.  Skip on Apple
+    // platforms.
+    XCTSkip(@"SecItemLinuxStore is a Linux-only compat shim");
+#endif
     NSString *tempDir = NSTemporaryDirectory();
     self.testDBPath = [tempDir stringByAppendingPathComponent:@"test_keychain.db"];
     [[NSFileManager defaultManager] removeItemAtPath:self.testDBPath error:nil];
