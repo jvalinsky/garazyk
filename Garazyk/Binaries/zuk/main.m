@@ -20,6 +20,7 @@
 #import "Sync/Relay/RelayDownstreamHandler.h"
 #import "Sync/Relay/RelayRepoStateManager.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -155,6 +156,8 @@ static BOOL parse_relay_options(NSArray<NSString *> *args,
 extern void NSDateFormatterLinkATProtoCategory(void);
 
 int main(int argc, const char * argv[]) {
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
     @autoreleasepool {
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
@@ -299,7 +302,10 @@ int main(int argc, const char * argv[]) {
         RelayEventBuffer *eventBuffer = [RelayEventBuffer bufferWithDefaultRetention];
 
         // Initialize SubscribeReposHandler for downstream WebSocket connections
-        SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] init];
+        // Persistence disabled in Relay for performance/stability in scenario tests
+        SubscribeReposHandler *subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:nil];
+        subscribeReposHandler.relayMetrics = metrics;
+
 
         // Initialize downstream handler (bridges upstream events to downstream)
         RelayDownstreamHandler *downstreamHandler = [[RelayDownstreamHandler alloc]

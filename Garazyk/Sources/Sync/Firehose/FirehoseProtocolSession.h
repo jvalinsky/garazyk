@@ -6,8 +6,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface FirehoseProtocolSession : NSObject
 
-@property(nonatomic, assign) NSUInteger sequenceNumber;
 @property(nonatomic, strong, readonly) EventFormatter *eventFormatter;
+@property(nonatomic, assign, readonly) NSUInteger sequenceNumber;
 
 - (instancetype)initWithSequenceNumber:(NSUInteger)sequenceNumber;
 
@@ -16,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event;
 - (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event;
 - (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event;
+
+- (NSUInteger)nextSequenceNumber;
 
 @end
 

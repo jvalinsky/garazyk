@@ -10,6 +10,7 @@ Services: PDS, AppView, Ozone
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -20,6 +21,11 @@ from lib.client import XrpcClient, XrpcError
 from lib.characters import get_character, PDS1
 from lib.assertions import assert_success, assert_contains, assert_xrpc_raises
 from lib.report import ScenarioResult, StepStatus
+
+# Admin password used by setup_local_network.sh when starting the PDS in
+# binary mode (see PDS_ADMIN_PASSWORD export there). Tests obtain the admin
+# bearer via POST /admin/login.
+_DEFAULT_ADMIN_PASSWORD = "test-admin-password"
 
 
 def _now() -> str:
@@ -62,6 +68,15 @@ def run() -> ScenarioResult:
         result.step_failed("Account creation", "Not all accounts created")
         result.finish()
         return result
+
+    # ── Obtain admin bearer via /admin/login ─────────────────────────
+    admin_password = os.environ.get("PDS_ADMIN_PASSWORD", _DEFAULT_ADMIN_PASSWORD)
+    admin_token = None
+    try:
+        admin_token = client.admin_login(admin_password)
+        result.step_passed("Admin login", "obtained admin bearer")
+    except XrpcError as exc:
+        result.step_failed("Admin login", str(exc))
 
     # ── Set up profiles ──────────────────────────────────────────────
     for name in char_names:
@@ -151,7 +166,7 @@ def run() -> ScenarioResult:
         except XrpcError as exc:
             result.step_failed("Luna reports harassment", str(exc))
     else:
-        result.step_skipped("Luna reports harassment", "No harassment post to report")
+        result.step_failed("Luna reports harassment", "No harassment post to report")
 
     # ── Luna also reports the spam ───────────────────────────────────
     if troll_spam:
@@ -171,28 +186,39 @@ def run() -> ScenarioResult:
             result.step_failed("Luna reports spam", str(exc))
 
     # ── Admin checks subject status ─────────────────────────────────
-    try:
-        status = client.get_subject_status(troll.did, admin.access_jwt)
-        result.step_passed("Admin checks Trollface status", f"status={status}")
-    except XrpcError as exc:
-        result.step_skipped("Admin checks Trollface status", str(exc))
+    if admin_token:
+        try:
+            status = client.get_subject_status(troll.did, admin_token)
+            result.step_passed("Admin checks Trollface status", f"status={status}")
+        except XrpcError as exc:
+            result.step_failed("Admin checks Trollface status", str(exc))
+    else:
+        result.step_failed("Admin checks Trollface status", "No admin token")
 
     # ── Mod reviews reports via Ozone ────────────────────────────────
-    try:
-        reports = client.xrpc_get(
-            "tools.ozone.moderation.queryReports",
-            {"did": troll.did},
-            token=mod.access_jwt,
-        )
-        report_list = reports.get("reports", [])
-        result.step_passed("Mod queries reports via Ozone", f"count={len(report_list)}")
-    except XrpcError as exc:
-        result.step_skipped("Mod queries reports via Ozone", str(exc))
+    # Upstream Ozone replaced queryReports with queryEvents filtered by the
+    # modEventReport type — use that.
+    if admin_token:
+        try:
+            events = client.xrpc_get(
+                "tools.ozone.moderation.queryEvents",
+                {
+                    "types": "tools.ozone.moderation.defs#modEventReport",
+                    "subject": troll.did,
+                },
+                token=admin_token,
+            )
+            event_list = events.get("events", [])
+            result.step_passed("Mod queries reports via Ozone", f"count={len(event_list)}")
+        except XrpcError as exc:
+            result.step_failed("Mod queries reports via Ozone", str(exc))
+    else:
+        result.step_failed("Mod queries reports via Ozone", "No admin token")
 
     # ── Mod applies takedown via Ozone ───────────────────────────────
-    if troll_harass:
+    if troll_harass and admin_token:
         try:
-            event = client.xrpc_post(
+            client.xrpc_post(
                 "tools.ozone.moderation.emitEvent",
                 {
                     "event": {
@@ -205,46 +231,65 @@ def run() -> ScenarioResult:
                     },
                     "createdBy": mod.did,
                 },
-                token=mod.access_jwt,
+                token=admin_token,
             )
             result.step_passed("Mod applies takedown via Ozone")
         except XrpcError as exc:
-            result.step_skipped("Mod applies takedown via Ozone", str(exc))
+            result.step_failed("Mod applies takedown via Ozone", str(exc))
 
     # ── Admin applies takedown on the account ───────────────────────
-    try:
-        update = client.update_subject_status(
-            subject={"$type": "com.atproto.admin.defs#repoRef", "did": troll.did},
-            takedown={"applied": True, "ref": "takedown-harassment-spam"},
-            token=admin.access_jwt,
-        )
-        result.step_passed("Admin applies takedown on Trollface")
-    except XrpcError as exc:
-        result.step_skipped("Admin applies takedown on Trollface", str(exc))
+    if admin_token:
+        try:
+            client.update_subject_status(
+                subject={"$type": "com.atproto.admin.defs#repoRef", "did": troll.did},
+                takedown={"applied": True, "ref": "takedown-harassment-spam"},
+                token=admin_token,
+            )
+            result.step_passed("Admin applies takedown on Trollface")
+        except XrpcError as exc:
+            result.step_failed("Admin applies takedown on Trollface", str(exc))
+    else:
+        result.step_failed("Admin applies takedown on Trollface", "No admin token")
 
     # ── Verify labels ────────────────────────────────────────────────
-    try:
-        labels = client.get_labels([troll_harass["uri"]] if troll_harass else [], token=luna.access_jwt)
-        result.step_passed("Labels query", f"labels={labels}")
-    except XrpcError as exc:
-        result.step_skipped("Labels query", str(exc))
+    if admin_token:
+        try:
+            labels = client.get_labels(
+                [troll_harass["uri"]] if troll_harass else [],
+                token=admin_token,
+            )
+            result.step_passed("Labels query", f"labels={labels}")
+        except XrpcError as exc:
+            result.step_failed("Labels query", str(exc))
+    else:
+        result.step_failed("Labels query", "No admin token")
 
     # ── Verify taken-down content is inaccessible ────────────────────
     if troll_harass:
         try:
-            assert_xrpc_raises(
-                "Get taken-down record",
-                None,
-                client.get_record,
+            client.get_record(
                 troll.did,
                 "app.bsky.feed.post",
                 troll_harass["uri"].split("/")[-1],
             )
-            result.step_passed("Taken-down content is inaccessible")
-        except AssertionError:
-            result.step_skipped("Taken-down content check", "Takedown may not be enforced yet")
+            result.step_failed(
+                "Taken-down content is inaccessible",
+                "getRecord returned 200 for taken-down account",
+            )
+        except XrpcError as exc:
+            if exc.status == 410 and isinstance(exc.body, dict) and \
+                    exc.body.get("error") == "AccountTakedown":
+                result.step_passed(
+                    "Taken-down content is inaccessible",
+                    "410 AccountTakedown",
+                )
+            else:
+                result.step_failed(
+                    "Taken-down content is inaccessible",
+                    f"unexpected error: status={exc.status} body={exc.body!r}",
+                )
     else:
-        result.step_skipped("Taken-down content check", "No harassment post to verify")
+        result.step_failed("Taken-down content check", "No harassment post to verify")
 
     # ── Admin posts community notice ──────────────────────────────────
     try:

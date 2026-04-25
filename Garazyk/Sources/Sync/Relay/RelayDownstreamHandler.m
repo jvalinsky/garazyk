@@ -54,163 +54,109 @@
     dispatch_async(self.handlerQueue, ^{
         // Extract sequence number and event type
         int64_t seq = 0;
-        NSString *eventType = @"unknown";
 
         if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
             FirehoseCommitEvent *commitEvent = (FirehoseCommitEvent *)event;
-            seq = commitEvent.seq;
-            eventType = @"commit";
-
-            // Store in buffer for backfill
-            [self.eventBuffer appendEvent:event seq:seq];
-
-            // Update repo state manager for XRPC queries
-            if (self.repoStateManager && commitEvent.repo) {
-                NSString *rootCidStr = commitEvent.commit.stringValue;
-                [self.repoStateManager handleCommitForRepo:commitEvent.repo
-                                                     root:rootCidStr
-                                                       rev:commitEvent.rev
-                                                       seq:seq];
+            
+            // Just broadcast. Re-sequencing happens in SubscribeReposHandler/Session.
+            if (self.subscribeReposHandler) {
+                [self.subscribeReposHandler broadcastCommitEvent:commitEvent];
+                seq = (int64_t)commitEvent.seq;
             }
 
-            // Broadcast to downstream subscribers
-            [self broadcastCommitEvent:commitEvent];
-
-            PDS_LOG_DEBUG(@"Relay: Received commit seq=%lld repo=%@", seq, commitEvent.repo);
+            [self.eventBuffer appendEvent:commitEvent seq:seq];
+            PDS_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
         }
         else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
             FirehoseIdentityEvent *identityEvent = (FirehoseIdentityEvent *)event;
-            seq = identityEvent.seq;
-            eventType = @"identity";
+            
+            if (self.subscribeReposHandler) {
+                [self.subscribeReposHandler broadcastIdentityChange:identityEvent.did handle:identityEvent.handle];
+                seq = (int64_t)identityEvent.seq;
+            }
 
-            // Store in buffer
-            [self.eventBuffer appendEvent:event seq:seq];
-
-            // Broadcast identity change
-            [self broadcastIdentityEvent:identityEvent];
-
-            PDS_LOG_DEBUG(@"Relay: Received identity seq=%lld did=%@", seq, identityEvent.did);
+            [self.eventBuffer appendEvent:identityEvent seq:seq];
+            PDS_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
         }
         else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
             FirehoseAccountEvent *accountEvent = (FirehoseAccountEvent *)event;
-            seq = accountEvent.seq;
-            eventType = @"account";
+            
+            if (self.subscribeReposHandler) {
+                [self.subscribeReposHandler broadcastAccountStatus:accountEvent.did active:accountEvent.active status:accountEvent.status];
+                seq = (int64_t)accountEvent.seq;
+            }
 
-            // Store in buffer
-            [self.eventBuffer appendEvent:event seq:seq];
-
-            // Broadcast account status change
-            [self broadcastAccountEvent:accountEvent];
-
-            PDS_LOG_DEBUG(@"Relay: Received account seq=%lld did=%@ active=%d",
-                          seq, accountEvent.did, accountEvent.active);
+            [self.eventBuffer appendEvent:accountEvent seq:seq];
+            PDS_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
         }
         else if ([event isKindOfClass:[FirehoseErrorEvent class]]) {
             FirehoseErrorEvent *errorEvent = (FirehoseErrorEvent *)event;
-            // Error events don't have sequence numbers
-            eventType = @"error";
-
             PDS_LOG_WARN(@"Relay: Received error from upstream %@: %@", url, errorEvent.message ?: @"unknown");
         }
         else if ([event isKindOfClass:[NSDictionary class]]) {
             // Raw dictionary event (legacy/fallback)
             NSDictionary *eventDict = (NSDictionary *)event;
             seq = [eventDict[@"seq"] longLongValue];
-            eventType = eventDict[@"kind"] ?: @"unknown";
-
-            [self.eventBuffer appendEvent:event seq:seq];
-        }
-
-        // Update sequence tracking
-        if (seq > self.currentSequence) {
-            self.currentSequence = seq;
-        }
-
-        // Update metrics
-        if (self.metrics) {
-            [self.metrics recordEventReceived];
+            [self.eventBuffer appendEvent:eventDict seq:seq];
+            
+            if (self.subscribeReposHandler) {
+                // If it's a dict, we just broadcast as raw data (legacy path)
+                NSData *data = [NSJSONSerialization dataWithJSONObject:eventDict options:0 error:nil];
+                if (data) {
+                    [self.subscribeReposHandler broadcastEventData:data];
+                }
+            }
         }
     });
 }
 
+
 - (void)upstreamManager:(RelayUpstreamManager *)manager
     didConnectToUpstream:(NSString *)url {
-    PDS_LOG_INFO(@"Relay: Connected to upstream %@", url);
-
-    if (self.metrics) {
-        [self.metrics recordUpstreamConnected];
-    }
+    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Connected to upstream %@", url);
 }
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
     didDisconnectFromUpstream:(NSString *)url
                         error:(nullable NSError *)error {
-    PDS_LOG_WARN(@"Relay: Disconnected from upstream %@: %@", url, error.localizedDescription ?: @"unknown");
-
-    if (self.metrics) {
-        [self.metrics recordUpstreamDisconnected];
-        if (error) {
-            [self.metrics recordReconnectionCount];
-        }
-    }
+    PDS_LOG_SYNC_WARN(@"RelayDownstreamHandler: Disconnected from upstream %@ (error: %@)", 
+                 url, error.localizedDescription ?: @"none");
 }
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
-       didReceiveCursor:(int64_t)cursor
-            fromUpstream:(NSString *)url {
-    // Update current sequence from cursor
-    dispatch_async(self.handlerQueue, ^{
-        if (cursor > self.currentSequence) {
-            self.currentSequence = cursor;
-        }
-
-        if (self.metrics) {
-            [self.metrics setCurrentSequence:cursor];
-        }
-
-        PDS_LOG_DEBUG(@"Relay: Received cursor %lld from %@", cursor, url);
-    });
+        didReceiveCursor:(int64_t)cursor
+             fromUpstream:(NSString *)url {
+    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received cursor %lld from upstream %@", cursor, url);
+    // We don't necessarily update our local sequence based on upstream cursor
 }
 
-#pragma mark - Event Broadcasting
+#pragma mark - Downstream Management
+
+- (NSUInteger)activeDownstreamCount {
+    if (self.subscribeReposHandler) {
+        return self.subscribeReposHandler.attachedConnections.count;
+    }
+    return 0;
+}
+
+#pragma mark - Internal Helpers (REPLACED BY SubscribeReposHandler re-sequencing)
 
 - (void)broadcastCommitEvent:(FirehoseCommitEvent *)commitEvent {
-    if (self.subscribeReposHandler) {
-        NSData *eventData = [self formatCommitEventForWire:commitEvent];
-        if (eventData) {
-            [self.subscribeReposHandler broadcastEventData:eventData];
-        }
-    }
+    // Deprecated - use subscribeReposHandler directly to ensure sequencing
 }
 
 - (void)broadcastIdentityEvent:(FirehoseIdentityEvent *)identityEvent {
-    if (self.subscribeReposHandler) {
-        NSData *eventData = [self formatIdentityEventForWire:identityEvent];
-        if (eventData) {
-            [self.subscribeReposHandler broadcastEventData:eventData];
-        }
-    }
+    // Deprecated
 }
 
 - (void)broadcastAccountEvent:(FirehoseAccountEvent *)accountEvent {
-    if (self.subscribeReposHandler) {
-        NSData *eventData = [self formatAccountEventForWire:accountEvent];
-        if (eventData) {
-            [self.subscribeReposHandler broadcastEventData:eventData];
-        }
-    }
+    // Deprecated
 }
 
 - (NSData *)formatCommitEventForWire:(FirehoseCommitEvent *)event {
     EventFormatter *formatter = [[EventFormatter alloc] init];
     NSError *error = nil;
     NSData *data = [formatter encodeCommitEvent:event error:&error];
-
-    if (error) {
-        PDS_LOG_WARN(@"Failed to format commit event: %@", error.localizedDescription);
-        return nil;
-    }
-
     return data;
 }
 
@@ -218,12 +164,6 @@
     EventFormatter *formatter = [[EventFormatter alloc] init];
     NSError *error = nil;
     NSData *data = [formatter encodeIdentityEvent:event error:&error];
-
-    if (error) {
-        PDS_LOG_WARN(@"Failed to format identity event: %@", error.localizedDescription);
-        return nil;
-    }
-
     return data;
 }
 
@@ -231,83 +171,7 @@
     EventFormatter *formatter = [[EventFormatter alloc] init];
     NSError *error = nil;
     NSData *data = [formatter encodeAccountEvent:event error:&error];
-
-    if (error) {
-        PDS_LOG_WARN(@"Failed to format account event: %@", error.localizedDescription);
-        return nil;
-    }
-
     return data;
-}
-
-#pragma mark - Downstream Management
-
-- (NSUInteger)activeDownstreamCount {
-    __block NSUInteger count = 0;
-    dispatch_sync(self.handlerQueue, ^{
-        count = self.downstreamConnections.count;
-    });
-    return count;
-}
-
-- (void)addDownstreamConnection:(id<PDSNetworkConnection>)connection {
-    dispatch_async(self.handlerQueue, ^{
-        [self.downstreamConnections addObject:connection];
-
-        if (self.metrics) {
-            [self.metrics recordDownstreamConnected];
-        }
-
-        PDS_LOG_INFO(@"Relay: New downstream connection (total: %lu)", (unsigned long)self.downstreamConnections.count);
-
-        // Send backfill from buffer if requested
-        // This would be handled by SubscribeReposHandler based on cursor parameter
-    });
-}
-
-- (void)removeDownstreamConnection:(id<PDSNetworkConnection>)connection {
-    dispatch_async(self.handlerQueue, ^{
-        [self.downstreamConnections removeObject:connection];
-
-        if (self.metrics) {
-            [self.metrics recordDownstreamDisconnected];
-        }
-
-        PDS_LOG_INFO(@"Relay: Downstream disconnected (total: %lu)", (unsigned long)self.downstreamConnections.count);
-    });
-}
-
-#pragma mark - Backfill Support
-
-- (void)sendBackfillToConnection:(id<PDSNetworkConnection>)connection
-                      fromCursor:(int64_t)cursor {
-    // Get events after cursor from buffer
-    NSArray *events = [self.eventBuffer eventsAfterCursor:cursor count:1000];
-
-    if (events.count == 0) {
-        PDS_LOG_DEBUG(@"Relay: No backfill events for cursor %lld", cursor);
-        return;
-    }
-
-    // Send events to connection
-    for (id event in events) {
-        NSData *data = nil;
-
-        if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
-            data = [self formatCommitEventForWire:(FirehoseCommitEvent *)event];
-        } else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
-            data = [self formatIdentityEventForWire:(FirehoseIdentityEvent *)event];
-        } else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
-            data = [self formatAccountEventForWire:(FirehoseAccountEvent *)event];
-        }
-
-        if (data) {
-            // Send over connection
-            // Connection write would go here
-        }
-    }
-
-    PDS_LOG_INFO(@"Relay: Sent %lu backfill events from cursor %lld", (unsigned long)events.count, cursor);
 }
 
 @end

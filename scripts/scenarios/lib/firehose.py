@@ -51,9 +51,10 @@ class FirehoseClient:
 
     async def subscribe(
         self,
-        callback: Callable[[FirehoseEvent], None],
+        callback: Optional[Callable[[FirehoseEvent], None]] = None,
         duration_s: float = 10.0,
         cursor: Optional[int] = None,
+        max_errors: int = 3,
     ) -> None:
         """Subscribe to the firehose and call callback for each event."""
         try:
@@ -69,17 +70,31 @@ class FirehoseClient:
             url += f"?cursor={cursor}"
 
         logger.info("Connecting to firehose: %s", url)
-        try:
-            async with websockets.connect(url) as ws:
-                deadline = asyncio.get_event_loop().time() + duration_s
-                async for message in ws:
-                    if asyncio.get_event_loop().time() > deadline:
-                        break
-                    event = _parse_message(message)
-                    if event:
-                        callback(event)
-        except Exception as exc:
-            logger.warning("Firehose connection ended: %s", exc)
+        error_count = 0
+        while error_count < max_errors:
+            try:
+                async with websockets.connect(url, open_timeout=5, ping_timeout=5) as ws:
+                    logger.info("Firehose connected")
+                    error_count = 0 # Reset on success
+                    firehose_connected = True
+                    deadline = asyncio.get_event_loop().time() + duration_s
+                    async for message in ws:
+                        logger.debug("Received firehose message: %d bytes", len(message))
+                        if asyncio.get_event_loop().time() > deadline:
+                            logger.info("Firehose collection duration reached")
+                            return # Normal exit
+                        event = _parse_message(message)
+                        if event and callback:
+                            callback(event)
+                    return # Socket closed normally
+            except Exception as exc:
+                error_count += 1
+                logger.warning("Firehose connection attempt %d failed: %s", error_count, exc)
+                if error_count >= max_errors:
+                    logger.error("Max firehose connection attempts reached")
+                    raise
+                await asyncio.sleep(1)
+
 
     def wait_for_event(
         self,
@@ -109,17 +124,14 @@ class FirehoseClient:
 def _parse_message(message: bytes) -> Optional[FirehoseEvent]:
     """Parse a firehose WebSocket message.
 
-    Message format: frame header (DAG-CBOR) with seq number and type.
-    This is a simplified parser — full implementation would use cbor2.
+    Message format: frame header (DAG-CBOR) with op and type, 
+    followed by the message body (DAG-CBOR).
     """
     try:
-        # Try to extract the frame header
-        # ATProto firehose messages are DAG-CBOR framed
-        # For scenario testing, we do a best-effort parse
         if len(message) < 2:
             return None
 
-        # Attempt JSON parse (some relay implementations may send JSON)
+        # Attempt JSON parse first (for compatibility)
         try:
             data = json.loads(message)
             return FirehoseEvent(
@@ -130,13 +142,40 @@ def _parse_message(message: bytes) -> Optional[FirehoseEvent]:
         except (json.JSONDecodeError, UnicodeDecodeError):
             pass
 
-        # For CBOR messages, we'll store the raw payload
-        # Real parsing would need cbor2 library
-        return FirehoseEvent(
-            seq=0,
-            type="cbor_frame",
-            payload=message,
-        )
+        # Use cbor2 for ATProto DAG-CBOR framing
+        try:
+            import cbor2
+            from io import BytesIO
+            
+            # ATProto DAG-CBOR uses tag 42 for CIDs. 
+            # We want to ignore tags for the purpose of finding 'seq'.
+            def tag_decoder(decoder, tag):
+                return decoder.decode()
+
+            decoder = cbor2.decoder.CBORDecoder(BytesIO(message), tag_hook=tag_decoder)
+            
+            header = decoder.decode()
+            # body might be missing in some frames (info/error)
+            try:
+                body = decoder.decode()
+            except EOFError:
+                body = {}
+
+            if isinstance(header, dict) and header.get("op") == 1:
+                t = header.get("t")
+                seq = 0
+                if isinstance(body, dict):
+                    seq = body.get("seq", 0)
+                return FirehoseEvent(seq=seq, type=t or "commit", payload=body)
+            
+            return FirehoseEvent(seq=0, type="cbor_frame", payload=message)
+        except ImportError:
+            # Fallback for when cbor2 is missing
+            return FirehoseEvent(seq=0, type="cbor_frame", payload=message)
+        except Exception as exc:
+            logger.debug("CBOR parse failed: %s", exc)
+            return FirehoseEvent(seq=0, type="cbor_frame", payload=message)
+
     except Exception as exc:
         logger.debug("Failed to parse firehose message: %s", exc)
         return None
