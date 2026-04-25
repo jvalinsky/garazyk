@@ -921,26 +921,76 @@ if(BUILD_FUZZERS)
   # Macro to add fuzzer targets
   macro(add_pds_fuzzer name source)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
-      add_executable(${name} ${source} ${FUZZER_SOURCES} ${FUZZER_DRIVER})
+      # Fuzzers link only against runtime libraries, no need to recompile sources
+      add_executable(${name} ${source} ${FUZZER_DRIVER})
       target_include_directories(${name} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
         ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
         ${SECP256K1_INCLUDE_DIRS})
-      target_link_libraries(${name} PRIVATE ${PLATFORM_LIBRARIES} ${SECP256K1_LIBRARIES})
+      target_link_libraries(${name} PRIVATE
+        ATProtoRuntime
+        ATProtoServices
+        ATProtoTransport
+        ATProtoXRPC
+        ATProtoSync
+        ATProtoStorage
+        ATProtoCore
+        ATProtoPLC
+        ATProtoAppViewServer
+        ${PLATFORM_LIBRARIES}
+        ${SECP256K1_LIBRARIES})
       target_compile_options(${name} PRIVATE ${FUZZER_CFLAGS})
       target_link_options(${name} PRIVATE ${FUZZER_LDFLAGS})
-      set_target_properties(${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing")
+      set_target_properties(${name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing"
+        LINK_FLAGS "-ObjC"
+      )
     endif()
   endmacro()
 
-  add_pds_fuzzer(fuzz_xrpc "fuzzing/fuzz_xrpc.mm")
-  add_pds_fuzzer(fuzz_cbor "fuzzing/fuzz_cbor.mm")
-  add_pds_fuzzer(fuzz_http "fuzzing/fuzz_http.mm")
-  add_pds_fuzzer(fuzz_auth "fuzzing/fuzz_auth.mm")
-  add_pds_fuzzer(fuzz_blob "fuzzing/fuzz_blob.mm")
-  add_pds_fuzzer(fuzz_sqlite "fuzzing/fuzz_sqlite.mm")
-  add_pds_fuzzer(fuzz_lexicon "fuzzing/fuzz_lexicon.mm")
-  add_pds_fuzzer(fuzz_mst "fuzzing/fuzz_mst.mm")
+  # Macro to add fuzzer targets with custom mutator
+  macro(add_pds_fuzzer_with_mutator name source mutator)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+      # Fuzzers link only against runtime libraries, no need to recompile sources
+      add_executable(${name} ${source} ${mutator} ${FUZZER_DRIVER})
+      target_include_directories(${name} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+        ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+        ${SECP256K1_INCLUDE_DIRS})
+      target_link_libraries(${name} PRIVATE
+        ATProtoRuntime
+        ATProtoServices
+        ATProtoTransport
+        ATProtoXRPC
+        ATProtoSync
+        ATProtoStorage
+        ATProtoCore
+        ATProtoPLC
+        ATProtoAppViewServer
+        ${PLATFORM_LIBRARIES}
+        ${SECP256K1_LIBRARIES})
+      target_compile_options(${name} PRIVATE ${FUZZER_CFLAGS})
+      target_link_options(${name} PRIVATE ${FUZZER_LDFLAGS})
+      set_target_properties(${name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/fuzzing"
+        LINK_FLAGS "-ObjC"
+      )
+    endif()
+  endmacro()
+
+  add_pds_fuzzer(fuzz_xrpc "fuzzing/harness/FuzzXrpcDispatcher.m")
+  add_pds_fuzzer(fuzz_cbor "fuzzing/harness/FuzzCBORDecoder.m")
+  add_pds_fuzzer(fuzz_http "fuzzing/harness/FuzzHttp1Parser.m")
+  add_pds_fuzzer(fuzz_jwt "fuzzing/harness/FuzzJWT.m")
+  add_pds_fuzzer(fuzz_dpop "fuzzing/harness/FuzzDPoP.m")
+  add_pds_fuzzer(fuzz_mime "fuzzing/harness/FuzzMimeTypeValidator.m")
+  add_pds_fuzzer(fuzz_sqlite "fuzzing/harness/FuzzPDSDatabase.m")
+  add_pds_fuzzer(fuzz_lexicon "fuzzing/harness/FuzzATProtoLexiconValidator.m")
+  add_pds_fuzzer(fuzz_mst "fuzzing/harness/FuzzMST.m")
+
+  # Structural mutator fuzzers (Phase 4)
+  add_pds_fuzzer_with_mutator(fuzz_jwt_struct "fuzzing/harness/FuzzJWT.m" "fuzzing/mutators/JWTMutator.mm")
+  add_pds_fuzzer_with_mutator(fuzz_http_struct "fuzzing/harness/FuzzHttp1Parser.m" "fuzzing/mutators/HTTPMutator.mm")
 
 endif()
 
@@ -1102,9 +1152,17 @@ install(TARGETS kaszlak
 )
 
 if(BUILD_FUZZERS)
-  install(TARGETS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth
-    RUNTIME DESTINATION bin
-  )
+  set(FUZZER_TARGETS_TO_INSTALL)
+  foreach(target fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst)
+    if(TARGET ${target})
+      list(APPEND FUZZER_TARGETS_TO_INSTALL ${target})
+    endif()
+  endforeach()
+  if(FUZZER_TARGETS_TO_INSTALL)
+    install(TARGETS ${FUZZER_TARGETS_TO_INSTALL}
+      RUNTIME DESTINATION bin
+    )
+  endif()
 endif()
 
 #=============================
@@ -1116,17 +1174,16 @@ file(WRITE "${CMAKE_BINARY_DIR}/run-fuzzers-limited.sh" "#!/bin/bash
 set -e
 cd \"${CMAKE_SOURCE_DIR}\"
 echo \"Running fuzzers with limited runs...\"
-mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo \"XRPC fuzzer completed\"
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -runs=5000 || echo \"CBOR fuzzer completed\"
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -runs=5000 || echo \"HTTP fuzzer completed\"
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo \"Auth fuzzer completed\"
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_blob /dev/null -max_len=65536 -jobs=8 -runs=1000 || echo \"Blob fuzzer completed\"
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=8 -runs=1000 || echo \"SQL fuzzer completed\"
-echo \"Running Lexicon fuzzer...\"
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_lexicon fuzzing/corpus_lexicon/ -max_len=65536 -jobs=8 -runs=1000 || echo \"Lexicon fuzzer completed\"
-echo \"Running MST fuzzer...\"
-${CMAKE_BINARY_DIR}/fuzzing/fuzz_mst fuzzing/corpus_mst/ -max_len=65536 -jobs=8 -runs=1000 || echo \"MST fuzzer completed\"
+mkdir -p fuzzing/crashers fuzzing/corpus/{xrpc,cbor,http,auth,blob,sql,lexicon,mst}
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_xrpc fuzzing/corpus/xrpc/ -max_len=65536 -jobs=8 -runs=5000 || echo \"XRPC fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_cbor fuzzing/corpus/cbor/ -max_len=65536 -jobs=8 -runs=5000 || echo \"CBOR fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_http fuzzing/corpus/http/ -max_len=65536 -jobs=8 -runs=5000 || echo \"HTTP fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_jwt fuzzing/corpus/auth/ -max_len=65536 -jobs=8 -runs=5000 || echo \"JWT fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_dpop fuzzing/corpus/auth/ -max_len=65536 -jobs=8 -runs=5000 || echo \"DPoP fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_mime fuzzing/corpus/blob/ -max_len=65536 -jobs=8 -runs=1000 || echo \"MIME fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus/sql/ -max_len=10000 -jobs=8 -runs=1000 || echo \"SQLite fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_lexicon fuzzing/corpus/lexicon/ -max_len=65536 -jobs=8 -runs=1000 || echo \"Lexicon fuzzer completed\"
+${CMAKE_BINARY_DIR}/fuzzing/fuzz_mst fuzzing/corpus/mst/ -max_len=65536 -jobs=8 -runs=1000 || echo \"MST fuzzer completed\"
 echo \"Fuzzing session complete.\"
 ")
 
@@ -1134,23 +1191,25 @@ file(WRITE "${CMAKE_BINARY_DIR}/run-fuzzers-extended.sh" "#!/bin/bash
 set -e
 cd \"${CMAKE_SOURCE_DIR}\"
 echo \"Running comprehensive fuzzing session...\"
-mkdir -p fuzzing/crashers fuzzing/corpus_xrpc fuzzing/corpus_cbor fuzzing/corpus_http fuzzing/corpus_sql fuzzing/corpus_lexicon fuzzing/corpus_mst
+mkdir -p fuzzing/crashers fuzzing/corpus/{xrpc,cbor,http,auth,blob,sql,lexicon,mst}
 echo \"Running XRPC fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_xrpc fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_xrpc fuzzing/corpus/xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
 echo \"Running CBOR fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_cbor fuzzing/corpus_cbor/ -max_len=65536 -jobs=8 -timeout=10 || true
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_cbor fuzzing/corpus/cbor/ -max_len=65536 -jobs=8 -timeout=10 || true
 echo \"Running HTTP fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_http fuzzing/corpus_http/ -max_len=65536 -jobs=8 -timeout=10 || true
-echo \"Running Auth fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_auth fuzzing/corpus_xrpc/ -max_len=65536 -jobs=8 -timeout=10 || true
-echo \"Running Blob fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_blob /dev/null -max_len=50000000 -jobs=4 -timeout=10 || true
-echo \"Running SQL fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus_sql/ -max_len=10000 -jobs=4 -timeout=10 || true
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_http fuzzing/corpus/http/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running JWT fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_jwt fuzzing/corpus/auth/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running DPoP fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_dpop fuzzing/corpus/auth/ -max_len=65536 -jobs=8 -timeout=10 || true
+echo \"Running MIME fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_mime fuzzing/corpus/blob/ -max_len=65536 -jobs=4 -timeout=10 || true
+echo \"Running SQLite fuzzer (30 seconds)...\"
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_sqlite fuzzing/corpus/sql/ -max_len=10000 -jobs=4 -timeout=10 || true
 echo \"Running Lexicon fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_lexicon fuzzing/corpus_lexicon/ -max_len=65536 -jobs=8 -timeout=10 || true
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_lexicon fuzzing/corpus/lexicon/ -max_len=65536 -jobs=8 -timeout=10 || true
 echo \"Running MST fuzzer (30 seconds)...\"
-timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_mst fuzzing/corpus_mst/ -max_len=65536 -jobs=8 -timeout=10 || true
+timeout 30 ${CMAKE_BINARY_DIR}/fuzzing/fuzz_mst fuzzing/corpus/mst/ -max_len=65536 -jobs=8 -timeout=10 || true
 echo \"Comprehensive fuzzing session complete.\"
 ls -la fuzzing/crashers/ 2>/dev/null || echo \"No crashes detected\"
 ")
@@ -1210,12 +1269,12 @@ file(COPY "${CMAKE_BINARY_DIR}/run-tests.sh" DESTINATION "${CMAKE_BINARY_DIR}/sc
 # Add custom targets for convenience
 add_custom_target(run-fuzzers-limited COMMAND "${CMAKE_BINARY_DIR}/scripts/run-fuzzers-limited.sh"
   COMMENT "Running fuzzers with limited runs"
-  DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite
+  DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst
 )
 
 add_custom_target(run-fuzzers-extended COMMAND "${CMAKE_BINARY_DIR}/scripts/run-fuzzers-extended.sh"
   COMMENT "Running comprehensive fuzzing session"
-  DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite
+  DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst
 )
 
 add_custom_target(clang-tidy COMMAND "${CMAKE_BINARY_DIR}/scripts/run-clang-tidy.sh"
@@ -1236,13 +1295,16 @@ add_custom_target(run-tests COMMAND "${CMAKE_BINARY_DIR}/scripts/run-tests.sh"
 )
 
 if(BUILD_FUZZERS)
-  # Alias targets matching old Makefile names
-  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_auth fuzz_blob fuzz_sqlite fuzz_lexicon fuzz_mst)
+  # Alias targets for convenience
+  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst)
   add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
   add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
   add_custom_target(fuzz-http DEPENDS fuzz_http)
-  add_custom_target(fuzz-auth DEPENDS fuzz_auth)
-  add_custom_target(fuzz-blob DEPENDS fuzz_blob)
+  add_custom_target(fuzz-jwt DEPENDS fuzz_jwt)
+  add_custom_target(fuzz-jwt-struct DEPENDS fuzz_jwt_struct)
+  add_custom_target(fuzz-http-struct DEPENDS fuzz_http_struct)
+  add_custom_target(fuzz-dpop DEPENDS fuzz_dpop)
+  add_custom_target(fuzz-mime DEPENDS fuzz_mime)
   add_custom_target(fuzz-sqlite DEPENDS fuzz_sqlite)
   add_custom_target(fuzz-lexicon DEPENDS fuzz_lexicon)
   add_custom_target(fuzz-mst DEPENDS fuzz_mst)
@@ -1261,11 +1323,16 @@ message(STATUS "  zuk               - Relay server")
 message(STATUS "  syrena          - Standalone AppView server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
-message(STATUS "  fuzz_cbor         - CBOR/CAR fuzzer")
+message(STATUS "  fuzz_cbor         - CBOR decoder fuzzer")
 message(STATUS "  fuzz_http         - HTTP parser fuzzer")
-message(STATUS "  fuzz_auth         - Authentication fuzzer")
-message(STATUS "  fuzz_blob         - Blob security fuzzer")
+message(STATUS "  fuzz_jwt          - JWT parsing fuzzer")
+  message(STATUS "  fuzz_jwt_struct   - JWT with structural mutator")
+  message(STATUS "  fuzz_http_struct - HTTP with structural mutator")
+  message(STATUS "  fuzz_dpop         - DPoP verification fuzzer")
+message(STATUS "  fuzz_mime         - MIME type validation fuzzer")
 message(STATUS "  fuzz_sqlite       - SQL injection fuzzer")
+message(STATUS "  fuzz_lexicon      - Lexicon validation fuzzer")
+message(STATUS "  fuzz_mst          - MST/CAR deserialization fuzzer")
 message(STATUS "")
 message(STATUS "Convenience Targets:")
 message(STATUS "  make run-fuzzers-limited   - Run fuzzers (limited)")
