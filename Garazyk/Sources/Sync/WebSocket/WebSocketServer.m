@@ -122,7 +122,7 @@ static inline int set_reuseaddr(int fd) {
         return NO;
     }
 
-    if (listen(srvfd, SOMAXCONN) < 0) {
+    if (listen(srvfd, 512) < 0) {
         close(srvfd);
         self.state = WebSocketServerStateFailed;
         if (error) {

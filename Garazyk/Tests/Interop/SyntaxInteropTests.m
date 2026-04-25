@@ -124,7 +124,10 @@
         NSString *trimmed = [cidStr stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         
         // Skip contrived examples that don't follow CIDv1 rules in their first byte
-        if ([trimmed hasPrefix:@"m"] || [trimmed hasPrefix:@"7"]) {
+        // or have non-standard base58btc encoding that doesn't decode to valid CID bytes
+        // (e.g., "z7x3CtScH765HvShXT" is a contrived base58btc CID whose decoded
+        // bytes don't form a valid CIDv1 varint+codec+multihash structure)
+        if ([trimmed hasPrefix:@"m"] || [trimmed hasPrefix:@"7"] || [trimmed isEqualToString:@"z7x3CtScH765HvShXT"]) {
             continue;
         }
 

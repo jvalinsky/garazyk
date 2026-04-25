@@ -221,22 +221,17 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   }];
 
   // com.atproto.sync.getHead
+  // Public per AT Proto sync spec: relays must be able to read repo heads
+  // without authentication. The DID comes from the query string, not auth.
   [dispatcher registerComAtprotoSyncGetHead:^(HttpRequest *request,
                                               HttpResponse *response) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                   jwtMinter:jwtMinter
-                                             adminController:adminController
-                                                     request:request
-                                                    response:response];
-    if (!did) {
-      if (response.statusCode == HttpStatusOK) {
-        response.statusCode = HttpStatusUnauthorized;
-        [response setJsonBody:@{
-          @"error" : @"AuthRequired",
-          @"message" : @"Valid authorization required"
-        }];
-      }
+    NSString *did = [request queryParamForKey:@"did"];
+    if (did.length == 0) {
+      response.statusCode = HttpStatusBadRequest;
+      [response setJsonBody:@{
+        @"error" : @"InvalidRequest",
+        @"message" : @"Missing required parameter: did"
+      }];
       return;
     }
 
