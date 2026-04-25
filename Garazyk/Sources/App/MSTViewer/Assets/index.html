@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MST Viewer - ATProto Repository Explorer</title>
     <!-- Shared Design System -->
-    <link rel="stylesheet" href="/mst-viewer/css/shared/system.css">
+    <link rel="stylesheet" href="/css/shared/system.css">
     <!-- MST Viewer Specific Styles -->
     <link rel="stylesheet" href="/mst-viewer/css/mst-viewer.css">
     <script src="/mst-viewer/js/d3.js"></script>
 </head>
 
 <body>
-    <header class="apple-header">
+    <header class="mst-header">
         <div class="apple-logo">🌳</div>
         <h1>Merkle Search Tree Viewer</h1>
     </header>
@@ -47,16 +47,16 @@
 
             <div class="export-controls">
                 <h3>Export</h3>
-                <button id="export-json" class="btn-export" title="Export as JSON">JSON</button>
-                <button id="export-dot" class="btn-export" title="Export as DOT">DOT</button>
-                <button id="export-svg" class="btn-export" title="Export as SVG (via DOT)">SVG</button>
+                <button id="export-json" class="btn btn-secondary" title="Export as JSON">JSON</button>
+                <button id="export-dot" class="btn btn-secondary" title="Export as DOT">DOT</button>
+                <button id="export-svg" class="btn btn-secondary" title="Export as SVG (via DOT)">SVG</button>
             </div>
 
             <div class="zoom-controls">
                 <h3>Zoom</h3>
-                <button id="zoom-in" class="btn-zoom" title="Zoom In">+</button>
-                <button id="zoom-out" class="btn-zoom" title="Zoom Out">−</button>
-                <button id="zoom-reset" class="btn-zoom" title="Reset Zoom">Reset</button>
+                <button id="zoom-in" class="btn btn-secondary" title="Zoom In">+</button>
+                <button id="zoom-out" class="btn btn-secondary" title="Zoom Out">−</button>
+                <button id="zoom-reset" class="btn btn-secondary" title="Reset Zoom">Reset</button>
             </div>
         </nav>
 
