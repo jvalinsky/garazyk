@@ -1,0 +1,54 @@
+# JSON Grammar for AFL-style fuzzing
+# Format: GVariant (see libfuzzer docs)
+#
+# Start symbols
+start = value
+
+# Values
+value = object | array | string | number | "true" | "false" | "null"
+
+# Object
+object = "{" "}"
+object = "{" pair ("," pair)* "}"
+
+pair = string ":" value
+
+# Array
+array = "[" " array"
+array = "[" value ("," value)* "]"
+
+# String (simple ASCII)
+string = "'" "'"
+string = "'" char+ "'"
+
+char = alnum | "_" | "-" | "." | "@"
+
+# Number (simple)
+number = "0"
+number = digit non-zero digit*
+number = "-" digit non-zero digit*
+number = digit+ "." digit+
+number = "-" digit+ "." digit+
+
+non-zero = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+digit = "0" | non-zero
+
+# Common ATProto values
+value = = "\"at://"
+value = = "\"did:plc:"
+value = = "\"did:web:"
+value = = "\"handle\":\""
+value = = "\"collection\":\""
+value = = "\"repo\":\""
+
+# Keywords
+keyword = "\"identifier\""
+keyword = "\"password\""
+keyword = "\"did\""
+keyword = "\"repo\""
+keyword = "\"collection\""
+keyword = "\"record\""
+keyword = "\"limit\""
+keyword = "\"cursor\""
+keyword = "\"actor\""
+keyword = "\"handle\""

@@ -1,0 +1,74 @@
+# libFuzzer HTTP/1.1 Grammar
+# Format: grammar for HTTP request generation
+
+# Root start
+start = http_request
+
+# HTTP request
+http_request = method SP path SP version CRLF headers CRLF body
+
+# Methods
+method = "GET"
+method = "POST"
+method = "PUT"
+method = "DELETE"
+method = "PATCH"
+method = "HEAD"
+method = "OPTIONS"
+
+SP = " "
+
+# Paths
+path = "/"
+path = "/xrpc"
+path = "/repo"
+path = "/identity"
+path = "/sync"
+path = "/api/v1"
+path = "/api/v1/actor"
+path = "/api/v1/feed"
+path = "/api/v1/graph"
+
+# Version
+version = "HTTP/1.1"
+version = "HTTP/1.0"
+
+# CRLF
+CRLF = "\r\n"
+
+# Headers
+headers = header CRLF
+headers = header CRLF headers
+headers = ""
+
+header = host_header
+header = content_length_header
+header = content_type_header
+header = accept_header
+header = auth_header
+
+host_header = "Host: example.com"
+host_header = "Host: localhost"
+host_header = "Host: pds.example.com"
+
+content_length_header = "Content-Length: 0"
+content_length_header = "Content-Length: 10"
+
+content_type_header = "Content-Type: application/json"
+content_type_header = "Content-Type: application/cbor"
+
+accept_header = "Accept: application/json"
+accept_header = "Accept: */*"
+
+auth_header = "Authorization: Bearer token"
+
+# Body (minimal)
+body = ""
+body = "{}"
+body = "{\"test\":true}"
+body = "{\"identifier\":\"test\",\"password\":\"test\"}"
+
+# Complete examples
+example = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
+example = "POST /xrpc HTTP/1.1\r\nHost: example.com\r\nContent-Type: application/json\r\nContent-Length: 18\r\n\r\n{\"identifier\":\"test\"}"
+example = "GET /repo/did:plc:abc/app.bsky.feed.post/abc HTTP/1.1\r\nHost: example.com\r\n\r\n"
