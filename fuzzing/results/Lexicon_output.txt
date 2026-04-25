@@ -1,0 +1,71 @@
+[2026-04-25 19:14:19.225] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons
+[2026-04-25 19:14:19.229] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind
+[2026-04-25 19:14:19.229] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/app
+[2026-04-25 19:14:19.229] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/app/bsky
+[2026-04-25 19:14:19.229] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/app/bsky/richtext
+[2026-04-25 19:14:19.229] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: app.bsky.richtext.facet
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 1 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/app/bsky/richtext
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/app/bsky
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/app
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/blue
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/blue/linkat
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: blue.linkat.board
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 1 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/blue/linkat
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/blue
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/whtwnd
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/whtwnd/blog
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.whtwnd.blog.entry
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.whtwnd.blog.defs
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.whtwnd.blog.notifyOfNewEntry
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.whtwnd.blog.getMentionsByEntry
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.whtwnd.blog.getEntryMetadataByName
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.whtwnd.blog.getAuthorPosts
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 6 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/whtwnd/blog
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/whtwnd
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/identity
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.identity.resolveHandle
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 1 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/identity
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/label
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.label.defs
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 1 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/label
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/server
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.server.createSession
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.server.deleteSession
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.server.describeServer
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.server.refreshSession
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 4 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/server
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/feed
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: app.bsky.feed.defs
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: app.bsky.feed.threadgate
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: app.bsky.feed.like
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: app.bsky.feed.repost
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: app.bsky.feed.post
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 5 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/feed
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/sync
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.sync.getBlob
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 1 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/sync
+[2026-04-25 19:14:19.230] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/repo
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.strongRef
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.createRecord
+[2026-04-25 19:14:19.230] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.deleteRecord
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.putRecord
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.uploadBlob
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.getRecord
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.applyWrites
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: com.atproto.repo.listRecords
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 8 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto/repo
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com/atproto
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/com
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/fyi
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/fyi/unravel
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:48] [LexiconRegistry] Loading lexicons from: /Users/jack/Software/garazyk/Lexicons/whitewind/fyi/unravel/frontpage
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: fyi.unravel.frontpage.comment
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: fyi.unravel.frontpage.vote
+[2026-04-25 19:14:19.231] [DEBUG] [ATProtoLexiconRegistry.m:115] [LexiconRegistry] Loaded lexicon: fyi.unravel.frontpage.post
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 3 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/fyi/unravel/frontpage
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/fyi/unravel
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind/fyi
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons/whitewind
+[2026-04-25 19:14:19.231] [INFO] [ATProtoLexiconRegistry.m:84] [LexiconRegistry] Loaded 0 lexicons (0 errors) from /Users/jack/Software/garazyk/Lexicons
