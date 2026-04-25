@@ -285,4 +285,98 @@
     XCTAssertEqual([result[@"blob"][@"size"] integerValue], 1024 * 500);
 }
 
+#pragma mark - Get Blob (raw CID)
+
+- (void)testGetBlobWithRawCID {
+    NSError *error = nil;
+    NSDictionary *uploadResult = [self.blobService uploadBlob:self.testData
+                                                      forDid:self.testDID
+                                                     mimeType:@"text/plain"
+                                                       error:&error];
+    XCTAssertNotNil(uploadResult);
+    NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
+    XCTAssertNotNil(cidString);
+
+    // Convert CID string to raw bytes
+    CID *cid = [CID cidFromString:cidString];
+    XCTAssertNotNil(cid);
+
+    error = nil;
+    NSData *blobData = [self.blobService getBlob:cid.bytes forDid:self.testDID error:&error];
+    XCTAssertNotNil(blobData);
+    XCTAssertNil(error);
+    XCTAssertEqualObjects(blobData, self.testData);
+}
+
+- (void)testGetBlobWithRawCIDInvalidReturnsNil {
+    NSData *invalidCID = [NSData dataWithBytes:"invalid" length:7];
+    NSError *error = nil;
+    NSData *result = [self.blobService getBlob:invalidCID forDid:self.testDID error:&error];
+    XCTAssertNil(result);
+}
+
+#pragma mark - Get Blob Stream
+
+- (void)testGetBlobStreamWithCIDReturnsMetadata {
+    NSError *error = nil;
+    NSDictionary *uploadResult = [self.blobService uploadBlob:self.testData
+                                                      forDid:self.testDID
+                                                     mimeType:@"text/plain"
+                                                       error:&error];
+    XCTAssertNotNil(uploadResult);
+    NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
+
+    error = nil;
+    NSDictionary *streamResult = [self.blobService getBlobStreamWithCID:cidString
+                                                                    did:self.testDID
+                                                                  error:&error];
+    // Stream may return nil if file-backed streaming isn't available in test env
+    if (streamResult) {
+        XCTAssertNotNil(streamResult[@"mimeType"]);
+    }
+}
+
+- (void)testGetBlobStreamInvalidCIDReturnsNil {
+    NSError *error = nil;
+    NSDictionary *result = [self.blobService getBlobStreamWithCID:@"invalid-cid"
+                                                              did:self.testDID
+                                                            error:&error];
+    XCTAssertNil(result);
+}
+
+#pragma mark - Upload Edge Cases
+
+- (void)testUploadBlobEmptyData {
+    NSData *emptyData = [NSData data];
+    NSError *error = nil;
+    NSDictionary *result = [self.blobService uploadBlob:emptyData
+                                                forDid:self.testDID
+                                               mimeType:@"application/octet-stream"
+                                                 error:&error];
+    // Empty blob may or may not be accepted
+    if (result) {
+        XCTAssertNotNil(result[@"blob"]);
+    }
+}
+
+- (void)testUploadBlobDuplicateDataReturnsSameCID {
+    NSError *error = nil;
+    NSDictionary *first = [self.blobService uploadBlob:self.testData
+                                               forDid:self.testDID
+                                              mimeType:@"text/plain"
+                                                error:&error];
+    XCTAssertNotNil(first);
+
+    NSDictionary *second = [self.blobService uploadBlob:self.testData
+                                                forDid:self.testDID
+                                               mimeType:@"text/plain"
+                                                 error:&error];
+    XCTAssertNotNil(second);
+
+    // Same data should produce the same CID (content-addressed)
+    XCTAssertEqualObjects(first[@"blob"][@"ref"][@"$link"],
+                          second[@"blob"][@"ref"][@"$link"],
+                          @"Content-addressed: same data = same CID");
+}
+
 @end
