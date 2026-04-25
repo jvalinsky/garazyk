@@ -92,4 +92,55 @@
     XCTAssertEqual(error.code, PDSPhoneVerificationProviderErrorUnsupportedProvider);
 }
 
+- (void)testProviderWithNameTrimsWhitespace {
+    // The custom provider name has whitespace in the existing test
+    // Let's test with leading/trailing whitespace explicitly
+    [PDSPhoneVerificationProviderFactory registerProviderClass:[PDSCustomPhoneVerificationProvider class]
+                                                       forName:@"trim-test"];
+    NSError *error = nil;
+    id<PDSPhoneVerificationProvider> provider = [PDSPhoneVerificationProviderFactory providerWithName:@" trim-test "
+                                                                                                  error:&error];
+    XCTAssertNotNil(provider);
+    XCTAssertNil(error);
+}
+
+- (void)testProviderWithNameEmptyStringReturnsError {
+    NSError *error = nil;
+    id<PDSPhoneVerificationProvider> provider = [PDSPhoneVerificationProviderFactory providerWithName:@""
+                                                                                                  error:&error];
+    XCTAssertNil(provider);
+    XCTAssertNotNil(error);
+}
+
+- (void)testMockProviderRequestVerificationSucceeds {
+    NSError *error = nil;
+    id<PDSPhoneVerificationProvider> provider = [PDSPhoneVerificationProviderFactory providerWithName:@"mock"
+                                                                                                  error:&error];
+    XCTAssertNotNil(provider);
+
+    error = nil;
+    BOOL result = [provider requestVerificationForPhoneNumber:@"+15551234567" error:&error];
+    XCTAssertTrue(result);
+    XCTAssertNil(error);
+}
+
+- (void)testResetCustomProvidersClearsAll {
+    [PDSPhoneVerificationProviderFactory registerProviderClass:[PDSCustomPhoneVerificationProvider class]
+                                                       forName:@"reset-test-1"];
+    [PDSPhoneVerificationProviderFactory registerProviderClass:[PDSCustomPhoneVerificationProvider class]
+                                                       forName:@"reset-test-2"];
+
+    [PDSPhoneVerificationProviderFactory resetCustomProviders];
+
+    NSError *error = nil;
+    id<PDSPhoneVerificationProvider> p1 = [PDSPhoneVerificationProviderFactory providerWithName:@"reset-test-1"
+                                                                                           error:&error];
+    XCTAssertNil(p1);
+
+    error = nil;
+    id<PDSPhoneVerificationProvider> p2 = [PDSPhoneVerificationProviderFactory providerWithName:@"reset-test-2"
+                                                                                           error:&error];
+    XCTAssertNil(p2);
+}
+
 @end
