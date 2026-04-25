@@ -246,6 +246,31 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordWebSocketBackpressureStateChange:(BOOL)isUnderBackpressure;
 
+#pragma mark - Account Quota Metrics
+
+/**
+ * @brief Increments the quota exceeded counter for the given kind.
+ *
+ * @param kind The quota kind (e.g., "blob_bytes", "record_count", "repo_bytes").
+ */
+- (void)incrementQuotaExceeded:(NSString *)kind;
+
+/**
+ * @brief Sets the per-account blob bytes gauge.
+ *
+ * @param did The account DID.
+ * @param bytes The blob bytes for this account.
+ */
+- (void)setAccountBlobBytes:(unsigned long long)bytes forDid:(NSString *)did;
+
+/**
+ * @brief Sets the per-account repo bytes gauge.
+ *
+ * @param did The account DID.
+ * @param bytes The repo bytes for this account.
+ */
+- (void)setAccountRepoBytes:(unsigned long long)bytes forDid:(NSString *)did;
+
 /**
  * @brief Current resident memory usage of the process in bytes.
  */

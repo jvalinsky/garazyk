@@ -408,6 +408,52 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     };
 }
 
+- (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error {
+    if (!self.databasePool) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Database pool unavailable"}];
+        }
+        return nil;
+    }
+
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
+    if (!store) {
+        return nil;
+    }
+
+    __block NSDictionary *result = nil;
+    [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+        PDSActorStore *actorStore = (PDSActorStore *)reader;
+        NSString *sql = @"SELECT blob_bytes, blob_count, repo_bytes, record_count FROM account_usage WHERE did = ?";
+        sqlite3_stmt *stmt = [actorStore prepareStatement:sql error:blockError];
+        if (!stmt) {
+            return;
+        }
+        sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            result = @{
+                @"blobBytes": @(sqlite3_column_int64(stmt, 0)),
+                @"blobCount": @(sqlite3_column_int(stmt, 1)),
+                @"repoBytes": @(sqlite3_column_int64(stmt, 2)),
+                @"recordCount": @(sqlite3_column_int(stmt, 3))
+            };
+        } else {
+            result = @{
+                @"blobBytes": @(0),
+                @"blobCount": @(0),
+                @"repoBytes": @(0),
+                @"recordCount": @(0)
+            };
+        }
+        [actorStore finalizeStatement:stmt];
+    } error:error];
+
+    return result;
+}
+
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error {
     return [_accountRepository listAccountsWithLimit:1000 cursor:nil error:error];
 }

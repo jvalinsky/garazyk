@@ -40,6 +40,7 @@
 #import "Network/XrpcLabelMethods.h"
 #import "Network/XrpcRepoMethods.h"
 #import "Network/XrpcModerationMethods.h"
+#import "Network/XrpcVendorMethods.h"
 #import "Network/XrpcLexiconResolver.h"
 #import "Network/XrpcProxyInterceptor.h"
 #import "Network/XrpcServerMethods.h"
@@ -558,6 +559,12 @@ static void registerMethodsWithDispatcherUsingServices(
                                       jwtMinter:jwtMinter
                                 adminController:adminController
                                serviceDatabases:serviceDatabases];
+
+  [XrpcVendorMethods registerWithDispatcher:dispatcher
+                          serviceDatabases:serviceDatabases
+                                 jwtMinter:jwtMinter
+                           adminController:adminController
+                         repositoryService:repositoryService];
 }
 
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
