@@ -301,6 +301,20 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     }
 
     if (token.length == 0) {
+        NSString *cookieHeader = headers[@"Cookie"] ?: headers[@"cookie"];
+        if ([cookieHeader isKindOfClass:[NSString class]]) {
+            NSArray *cookies = [cookieHeader componentsSeparatedByString:@";"];
+            for (NSString *cookie in cookies) {
+                NSString *trimmed = [cookie stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                if ([trimmed hasPrefix:@"admin_token="]) {
+                    token = [trimmed substringFromIndex:@"admin_token=".length];
+                    break;
+                }
+            }
+        }
+    }
+
+    if (token.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Missing authentication token"}];
         }
