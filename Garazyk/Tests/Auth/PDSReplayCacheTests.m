@@ -102,4 +102,63 @@
     [cache invalidate];
 }
 
+- (void)testConcurrentCheckAndAddRejectsDuplicateJTI {
+    // Two threads simultaneously validate the same JTI.
+    // Only one should succeed; the other should be rejected as a replay.
+    PDSReplayCache *cache = [[PDSReplayCache alloc] initWithDatabasePath:nil];
+    XCTAssertNotNil(cache);
+
+    NSDate *futureExpiry = [NSDate dateWithTimeIntervalSinceNow:3600];
+    NSString *sharedJTI = @"jti-concurrent-test";
+
+    __block BOOL result1 = NO;
+    __block BOOL result2 = NO;
+    __block XCTestExpectation *exp1 = [self expectationWithDescription:@"thread1"];
+    __block XCTestExpectation *exp2 = [self expectationWithDescription:@"thread2"];
+
+    dispatch_queue_t queue = dispatch_queue_create("concurrent-jti-test", DISPATCH_QUEUE_CONCURRENT);
+
+    dispatch_async(queue, ^{
+        result1 = [cache checkAndAddJTI:sharedJTI expiration:futureExpiry];
+        [exp1 fulfill];
+    });
+
+    dispatch_async(queue, ^{
+        result2 = [cache checkAndAddJTI:sharedJTI expiration:futureExpiry];
+        [exp2 fulfill];
+    });
+
+    [self waitForExpectationsWithTimeout:5.0 handler:nil];
+
+    // Exactly one should succeed and one should fail (replay detected)
+    // With BEGIN IMMEDIATE, the second thread will block until the first
+    // commits, then see the row and return NO.
+    XCTAssertNotEqual(result1, result2,
+        @"Exactly one concurrent checkAndAdd should succeed for the same JTI. "
+        @"Got result1=%d, result2=%d", result1, result2);
+
+    [cache invalidate];
+}
+
+- (void)testNilJTIReturnsNO {
+    PDSReplayCache *cache = [[PDSReplayCache alloc] initWithDatabasePath:nil];
+    XCTAssertNotNil(cache);
+
+    NSDate *futureExpiry = [NSDate dateWithTimeIntervalSinceNow:3600];
+    BOOL result = [cache checkAndAddJTI:nil expiration:futureExpiry];
+    XCTAssertFalse(result, @"nil JTI should return NO");
+
+    [cache invalidate];
+}
+
+- (void)testNilExpirationReturnsNO {
+    PDSReplayCache *cache = [[PDSReplayCache alloc] initWithDatabasePath:nil];
+    XCTAssertNotNil(cache);
+
+    BOOL result = [cache checkAndAddJTI:@"jti-nil-expiry" expiration:nil];
+    XCTAssertFalse(result, @"nil expiration should return NO");
+
+    [cache invalidate];
+}
+
 @end

@@ -69,10 +69,20 @@
 - (BOOL)checkAndAddJTI:(NSString *)jti expiration:(NSDate *)expiration {
     if (!jti || !expiration) return NO;
 
-    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSTimeInterval expiresAt = [expiration timeIntervalSince1970];
 
+    // Use BEGIN IMMEDIATE to acquire a RESERVED lock before any reads.
+    // This makes the check-and-insert atomic: two concurrent calls for the
+    // same JTI cannot both pass the SELECT and both INSERT.
+    if (sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK) {
+        PDS_LOG_AUTH_ERROR(@"Replay cache: failed to begin transaction: %s", sqlite3_errmsg(_db));
+        return NO;
+    }
+
     // Check if a non-expired entry exists
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    BOOL replayDetected = NO;
+
     const char *selectSQL = "SELECT expires_at FROM jti_cache WHERE jti = ?";
     sqlite3_stmt *selectStmt = NULL;
     if (sqlite3_prepare_v2(_db, selectSQL, -1, &selectStmt, NULL) == SQLITE_OK) {
@@ -81,24 +91,36 @@
             double existingExpiry = sqlite3_column_double(selectStmt, 0);
             if (existingExpiry >= now) {
                 // Non-expired entry exists — replay detected
-                sqlite3_finalize(selectStmt);
-                return NO;
+                replayDetected = YES;
             }
         }
     }
     sqlite3_finalize(selectStmt);
 
+    if (replayDetected) {
+        sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL);
+        return NO;
+    }
+
     // Insert or replace (new or expired entry)
     const char *insertSQL = "INSERT OR REPLACE INTO jti_cache (jti, expires_at) VALUES (?, ?)";
     sqlite3_stmt *insertStmt = NULL;
+    BOOL insertSucceeded = NO;
     if (sqlite3_prepare_v2(_db, insertSQL, -1, &insertStmt, NULL) == SQLITE_OK) {
         sqlite3_bind_text(insertStmt, 1, jti.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_double(insertStmt, 2, expiresAt);
-        sqlite3_step(insertStmt);
+        if (sqlite3_step(insertStmt) == SQLITE_DONE) {
+            insertSucceeded = YES;
+        }
     }
     sqlite3_finalize(insertStmt);
 
-    return YES;
+    if (sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
+        PDS_LOG_AUTH_ERROR(@"Replay cache: failed to commit transaction: %s", sqlite3_errmsg(_db));
+        return NO;
+    }
+
+    return insertSucceeded;
 }
 
 - (void)cleanup {
