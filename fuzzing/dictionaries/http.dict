@@ -1,0 +1,67 @@
+# HTTP Dictionary - HTTP tokens for HTTP/1.1 fuzzing
+# Format: libFuzzer dictionary syntax
+
+# HTTP Methods
+keyword="GET "
+keyword="POST "
+keyword="PUT "
+keyword="DELETE "
+keyword="PATCH "
+keyword="HEAD "
+keyword="OPTIONS "
+
+# Request line
+prefix="GET /"
+prefix="POST /"
+prefix="PUT /"
+prefix="DELETE /"
+
+# Headers
+keyword="Host: "
+keyword="Host: localhost"
+keyword="Content-Type: "
+keyword="Content-Type: application/json"
+keyword="Content-Type: application/cbor"
+keyword="Content-Length: "
+keyword="Accept: "
+keyword="Accept: application/json"
+keyword="Accept-Encoding: "
+keyword="Authorization: "
+keyword="Authorization: Bearer "
+keyword="Cookie: "
+keyword="User-Agent: "
+
+# HTTP versions
+prefix="HTTP/1.1"
+prefix="HTTP/1.0"
+prefix="HTTP/2"
+
+# Status lines
+prefix="200 OK"
+prefix="201 Created"
+prefix="204 No Content"
+prefix="301 Moved Permanently"
+prefix="400 Bad Request"
+prefix="401 Unauthorized"
+prefix="403 Forbidden"
+prefix="404 Not Found"
+prefix="500 Internal Server Error"
+
+# Common paths
+prefix="/xrpc/"
+prefix="/api/"
+prefix="/repo/"
+prefix="/identity/"
+prefix="/sync/"
+
+# Delimiters
+string="\r\n"
+string=" "
+string="/"
+string="?"
+
+# Empty/minimal
+string=""
+string="/"
+string="*"
+string="x"
