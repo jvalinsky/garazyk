@@ -18,6 +18,10 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
 </head>
 <body>
+  <!-- Skip Links for Accessibility -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <a href="#section-nav" class="skip-link">Skip to navigation</a>
+
   <!-- Header / Toolbar -->
   <header role="banner">
     <nav role="navigation" aria-label="Service navigation" class="toolbar toolbar-blur">
@@ -75,7 +79,7 @@
   <!-- Main layout -->
   <div class="app-layout">
     <!-- Sidebar -->
-    <aside role="complementary" aria-label="Section navigation" class="sidebar-blur">
+    <aside id="section-nav" role="complementary" aria-label="Section navigation" class="sidebar-blur">
       <div class="sidebar" id="sidebar">
         <!-- PDS Section -->
         <div class="sidebar-section" data-service="pds">
@@ -283,7 +287,7 @@
     </aside>
 
     <!-- Main content area with optional inspector pane -->
-    <main role="main" aria-label="Content area">
+    <main id="main-content" role="main" aria-label="Content area">
       <div class="content-area" id="content-area">
         <div class="content-pane" id="content-pane" hx-get="/admin/partials/overview" hx-trigger="load">
           <!-- Will be replaced by overview partial -->
