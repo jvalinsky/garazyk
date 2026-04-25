@@ -12,6 +12,7 @@
 @class XrpcDispatcher;
 @class JWTMinter;
 @class PDSServiceDatabases;
+@class RecordLifecycleHandler;
 @protocol PDSAdminController;
 @protocol PDSEmailProvider;
 
@@ -45,6 +46,15 @@ NS_ASSUME_NONNULL_BEGIN
                        jwtMinter:(JWTMinter *)jwtMinter
                  adminController:(id<PDSAdminController>)adminController
                    emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
+
+/**
+ @brief Store the RecordLifecycleHandler for the process lifetime.
+ 
+ NSNotificationCenter does not retain observers, so the handler must be
+ kept alive by a strong reference to receive PDSRecordDidChangeNotification.
+ This method is called internally during registration.
+ */
++ (void)setRetainedLifecycleHandler:(nullable RecordLifecycleHandler *)handler;
 
 @end
 
