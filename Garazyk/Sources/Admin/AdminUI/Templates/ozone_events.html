@@ -11,8 +11,8 @@
     <form class="form" hx-post="/admin/ozone/events/emit" hx-swap="outerHTML">
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Subject DID</label>
-          <input type="text" name="subjectDid" class="form-input" required placeholder="did:plc:..." />
+          <label class="form-label" for="event-subject">Subject DID</label>
+          <input type="text" id="event-subject" name="subjectDid" class="form-input" required placeholder="did:plc:..." />
         </div>
         <div class="form-group">
           <label class="form-label">Action</label>
@@ -26,8 +26,8 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Reason</label>
-          <input type="text" name="reason" class="form-input" placeholder="Reason for action" />
+          <label class="form-label" for="event-reason">Reason</label>
+          <input type="text" id="event-reason" name="reason" class="form-input" placeholder="Reason for action" />
         </div>
       </div>
       <div class="form-footer">
