@@ -28,6 +28,7 @@ By the end, you should be able to trace an endpoint change from routing to servi
 - Read [Codebase Map](../01-getting-started/codebase-map)
 - Read [Request Lifecycle](../01-getting-started/request-lifecycle)
 - Complete [Tutorial 3: Records](./tutorial-3-records) and [Tutorial 4: Authentication](./tutorial-4-auth)
+- Be comfortable with the **out-of-source build** workflow and **XcodeGen** (see [Setup](../01-getting-started/setup))
 - Be comfortable reading `PDSHttpServerBuilder` and `XrpcMethodRegistry`
 
 ## What You Will Build
@@ -40,11 +41,20 @@ You will build a repeatable contributor workflow rather than a single feature. T
 4. expose the result through tooling,
 5. update docs accurately.
 
-## Step 1: Choose the Correct Surface
+## Step 1: Choose the Correct Surface and Track the Goal
 
 Not every route belongs in XRPC.
 
 Use XRPC when the route is part of the AT Protocol or an application protocol surface. Use `/api/pds/*` or `/ui` when the route exists to help contributors or operators inspect the server.
+
+Before writing code, record your intent in the `deciduous` graph:
+
+```bash
+deciduous add goal "Implement com.atproto.admin.getRepoStats" -c 95
+# Note the ID of the goal, then add an action
+deciduous add action "Registering XRPC route and validator" -c 90
+# Link them: deciduous link <goal_id> <action_id>
+```
 
 Good first question:
 
@@ -62,6 +72,32 @@ Most endpoint work starts in one of two places:
 | Explorer, OpenAPI, or UI | `PDSHttpServerBuilder`, `ExploreHandler`, `CappuccinoUIHandler`, or UI controllers |
 
 If you start by editing a service before you know how the route is wired, you usually lose time. Registration is what tells you the real request shape and surrounding guard rails.
+
+## Step 2b: Enforce Guard Rails (Validation & Rate Limiting)
+
+Every new endpoint must protect the server from invalid input and resource exhaustion.
+
+### Use `PDSInputValidator`
+
+Never trust raw request data. Use the central validator to sanitize handles, DIDs, and record keys before passing them to services:
+
+```objectivec
+PDSInputValidator *validator = [PDSInputValidator sharedValidator];
+if (![validator isValidHandle:handle]) {
+    return [XrpcError invalidRequest:@"Invalid handle"];
+}
+```
+
+### Use `RateLimiter`
+
+All public endpoints should be rate-limited. Use the `RateLimiter` to check budgets by IP or DID:
+
+```objectivec
+RateLimitResult *result = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
+if (!result.allowed) {
+    return [XrpcError rateLimitExceeded:result];
+}
+```
 
 ## Step 3: Change the Domain Logic, Not Just the Route
 
@@ -148,7 +184,11 @@ That workflow keeps protocol changes, project-specific tools, and written docs a
 ```bash
 xcodegen generate
 xcodebuild -scheme AllTests build
+./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground &
+PID=$!
+sleep 2
 ./build/tests/AllTests -XCTest OAuth2Tests
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
+kill $PID
 ```
 \n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
