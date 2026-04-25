@@ -81,6 +81,17 @@ That means the contributor mental model should be:
 3. environment variables provide deployment-time overrides,
 4. nginx provides the public HTTPS boundary.
 
+## Step 4: Track Deployment Decisions
+
+Deployment is a series of critical decisions. Use `deciduous` to track your production setup:
+
+```bash
+deciduous add goal "Deploy production PDS" -c 100
+deciduous add action "Configured nginx reverse proxy with TLS" -c 95
+deciduous add action "Enabled PDS_TRUST_PROXY_HEADERS" -c 100
+deciduous sync
+```
+
 ## Production-Safe Settings That Matter Most
 
 These are the settings that contributors should reason about first when reading or changing deployment docs.
