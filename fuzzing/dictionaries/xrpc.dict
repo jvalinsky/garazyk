@@ -1,0 +1,60 @@
+# XRPC Dictionary - JSON tokens for XRPC/JSON fuzzing
+# Format: libFuzzer dictionary syntax
+
+# Top-level keys
+keyword="{\"identifier\""
+keyword="{\"password\""
+keyword="{\"did\""
+keyword="{\"repo\""
+keyword="{\"collection\""
+keyword="{\"record\""
+keyword="{\"limit\""
+keyword="{\"cursor\""
+keyword="{\"actor\""
+keyword="{\"handle\""
+keyword="{\"email\""
+
+# Nested keys
+keyword="{\"method\""
+keyword="{\"params\""
+keyword="{\"$data\""
+keyword="{\"encoding\""
+keyword="{\"lang\""
+
+# ATProto method prefixes
+prefix="com.atproto.server."
+prefix="com.atproto.identity."
+prefix="com.atproto.repo."
+prefix="com.atproto.sync."
+prefix="app.bsky.actor."
+prefix="app.bsky.feed."
+prefix="app.bsky.graph."
+prefix="app.bsky.notification."
+
+# Value types
+keyword="null"
+keyword="true"
+keyword="false"
+keyword="0"
+keyword="1"
+keyword="\"\""
+
+# Special values
+keyword="{\"$type\":\"app.bsky.feed.post\""
+keyword="{\"$type\":\"app.bsky.graph.follow\""
+keyword="{\"$type\":\"app.bsky.graph.block\""
+keyword="{\"$type\":\"app.bsky.actor.profile\""
+
+# DID format
+prefix="did:plc:"
+prefix="did:web:"
+
+# Handle format
+suffix=".bsky.social"
+suffix=".social"
+suffix=".com"
+
+# Empty/minimal
+string=""
+string="x"
+string="xx"
