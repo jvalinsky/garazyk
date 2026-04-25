@@ -11,14 +11,14 @@
     <form class="form" hx-post="/admin/ozone/verification/grant" hx-swap="outerHTML">
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Account DID</label>
-          <input type="text" name="did" class="form-input" required placeholder="did:plc:..." />
+          <label class="form-label" for="verify-did">Account DID</label>
+          <input type="text" name="did" id="verify-did" class="form-input" required placeholder="did:plc:..." />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Notes (optional)</label>
-          <input type="text" name="notes" class="form-input" placeholder="Reason for verification" />
+          <label class="form-label" for="verify-notes">Notes (optional)</label>
+          <input type="text" name="notes" id="verify-notes" class="form-input" placeholder="Reason for verification" />
         </div>
       </div>
       <div class="form-footer">
@@ -50,8 +50,8 @@
       <form class="form" hx-post="/admin/ozone/verification/revoke" hx-swap="outerHTML">
         <input type="hidden" name="did" id="revoke-did" />
         <div class="form-group">
-          <label class="form-label">Reason for revocation</label>
-          <input type="text" name="reason" class="form-input" placeholder="Reason for revoking verification" />
+          <label class="form-label" for="revoke-reason">Reason for revocation</label>
+          <input type="text" name="reason" id="revoke-reason" class="form-input" placeholder="Reason for revoking verification" />
         </div>
         <div class="form-footer">
           <button type="submit" class="btn btn-warning">Revoke Verification</button>
