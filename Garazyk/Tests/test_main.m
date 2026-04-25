@@ -348,7 +348,15 @@ int main(int argc, char *argv[]) {
       @"PDSWebSocketServerTests",
       @"HttpProtocolDriverTests",
       @"HttpResponseSenderTests",
-      @"HttpConnectionIOCoordinatorTests"
+      @"HttpConnectionIOCoordinatorTests",
+      @"XrpcAppBskyActorTests",
+      @"XrpcAppBskyFeedTests",
+      @"XrpcAppBskyGraphTests",
+      @"XrpcAppBskyNotificationTests",
+      @"XrpcAppBskyVideoTests",
+      @"XrpcAppBskyBookmarksTests",
+      @"XrpcAppBskyContactTests",
+      @"XrpcAppBskyDraftsTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
