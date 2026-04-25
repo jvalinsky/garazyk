@@ -85,8 +85,11 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
 - (nullable PDSAdminService *)adminService {
     if (!_adminService) {
         PDSController *controller = [PDSController sharedController];
-        if ([controller respondsToSelector:@selector(adminService)]) {
-            _adminService = [controller performSelector:@selector(adminService)];
+        if ([controller respondsToSelector:@selector(adminController)]) {
+            id adminController = [controller performSelector:@selector(adminController)];
+            if ([adminController respondsToSelector:@selector(adminService)]) {
+                _adminService = [adminController performSelector:@selector(adminService)];
+            }
         }
     }
     return _adminService;
