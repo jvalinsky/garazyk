@@ -6,6 +6,14 @@ outline: deep
 
 # Part 1: HTTP transport and parser
 
+**Learning Objectives:**
+- Understand the platform-specific transport abstractions for macOS and Linux.
+- Trace the lifecycle of an incremental HTTP/1.1 parse.
+- Identify the limits and timeouts enforced at the server layer.
+- Master the relationship between `HttpServer`, `HttpConnectionState`, and `Http1Parser`.
+
+**Estimated Time:** 40-50 minutes
+
 ## Why this exists
 
 Before routing, auth, or XRPC semantics can matter, the runtime needs a clean
