@@ -30,6 +30,9 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *rateLimitRejectionsByType;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *authFailuresByReason;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *oauthGrantsByType;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *quotaExceededByKind;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *accountBlobBytesByDid;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *accountRepoBytesByDid;
 @end
 
 @implementation PDSMetrics
@@ -68,6 +71,9 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
         _rateLimitRejectionsByType = [NSMutableDictionary dictionary];
         _authFailuresByReason = [NSMutableDictionary dictionary];
         _oauthGrantsByType = [NSMutableDictionary dictionary];
+        _quotaExceededByKind = [NSMutableDictionary dictionary];
+        _accountBlobBytesByDid = [NSMutableDictionary dictionary];
+        _accountRepoBytesByDid = [NSMutableDictionary dictionary];
         _websocketBackpressureWarningsTotal = 0;
         _websocketBackpressureCriticalTotal = 0;
         _websocketQueueOverflowClosuresTotal = 0;
@@ -214,6 +220,25 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
     });
 }
 
+- (void)incrementQuotaExceeded:(NSString *)kind {
+    dispatch_sync(_metricsQueue, ^{
+        NSString *key = kind.lowercaseString;
+        _quotaExceededByKind[key] = @(_quotaExceededByKind[key].integerValue + 1);
+    });
+}
+
+- (void)setAccountBlobBytes:(unsigned long long)bytes forDid:(NSString *)did {
+    dispatch_sync(_metricsQueue, ^{
+        _accountBlobBytesByDid[did] = @(bytes);
+    });
+}
+
+- (void)setAccountRepoBytes:(unsigned long long)bytes forDid:(NSString *)did {
+    dispatch_sync(_metricsQueue, ^{
+        _accountRepoBytesByDid[did] = @(bytes);
+    });
+}
+
 #pragma mark - WebSocket Backpressure Metrics
 
 - (void)recordWebSocketBackpressureWarning {
@@ -301,6 +326,9 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
     __block NSDictionary *rateLimitSnap;
     __block NSDictionary *authFailuresSnap;
     __block NSDictionary *oauthGrantsSnap;
+    __block NSDictionary *quotaExceededSnap;
+    __block NSDictionary *accountBlobBytesSnap;
+    __block NSDictionary *accountRepoBytesSnap;
     __block NSInteger authSessions;
     __block NSInteger websocketBackpressureWarnings;
     __block NSInteger websocketBackpressureCriticals;
@@ -324,6 +352,9 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
         rateLimitSnap = [_rateLimitRejectionsByType copy];
         authFailuresSnap = [_authFailuresByReason copy];
         oauthGrantsSnap = [_oauthGrantsByType copy];
+        quotaExceededSnap = [_quotaExceededByKind copy];
+        accountBlobBytesSnap = [_accountBlobBytesByDid copy];
+        accountRepoBytesSnap = [_accountRepoBytesByDid copy];
         authSessions = _activeAuthSessions;
         websocketBackpressureWarnings = self.websocketBackpressureWarningsTotal;
         websocketBackpressureCriticals = self.websocketBackpressureCriticalTotal;
@@ -449,6 +480,30 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
     [output appendString:@"\n# HELP pds_websocket_connections_under_backpressure Current WebSocket connections under backpressure\n"];
     [output appendString:@"# TYPE pds_websocket_connections_under_backpressure gauge\n"];
     [output appendFormat:@"pds_websocket_connections_under_backpressure %ld\n", (long)websocketConnectionsUnderBp];
+
+    if (quotaExceededSnap.count > 0) {
+        [output appendString:@"\n# HELP pds_account_quota_exceeded_total Total quota exceeded events by kind\n"];
+        [output appendString:@"# TYPE pds_account_quota_exceeded_total counter\n"];
+        for (NSString *kind in quotaExceededSnap) {
+            [output appendFormat:@"pds_account_quota_exceeded_total{kind=\"%@\"} %@\n", kind, quotaExceededSnap[kind]];
+        }
+    }
+
+    if (accountBlobBytesSnap.count > 0) {
+        [output appendString:@"\n# HELP pds_account_blob_bytes Blob storage bytes per account\n"];
+        [output appendString:@"# TYPE pds_account_blob_bytes gauge\n"];
+        for (NSString *did in accountBlobBytesSnap) {
+            [output appendFormat:@"pds_account_blob_bytes{did=\"%@\"} %@\n", did, accountBlobBytesSnap[did]];
+        }
+    }
+
+    if (accountRepoBytesSnap.count > 0) {
+        [output appendString:@"\n# HELP pds_account_repo_bytes Repo storage bytes per account\n"];
+        [output appendString:@"# TYPE pds_account_repo_bytes gauge\n"];
+        for (NSString *did in accountRepoBytesSnap) {
+            [output appendFormat:@"pds_account_repo_bytes{did=\"%@\"} %@\n", did, accountRepoBytesSnap[did]];
+        }
+    }
 
     if (histBucketsSnap.count > 0) {
         [output appendString:@"\n# HELP pds_http_request_duration_seconds HTTP request latency in seconds\n"];

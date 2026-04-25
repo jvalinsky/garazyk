@@ -264,7 +264,8 @@
       "Bash(cd /tmp/atproto-lexicons\n\necho \"=== app.bsky.ageassurance.begin ===\"\njq '{id, defs: {main: {type: .defs.main.type, input: .defs.main.input.schema, output: .defs.main.output.schema}}}' lexicons/app/bsky/ageassurance/begin.json\n\necho -e \"\\n=== app.bsky.ageassurance.getConfig ===\"\njq '{id, defs: {main: {type: .defs.main.type, output: .defs.main.output.schema}}}' lexicons/app/bsky/ageassurance/getConfig.json\n\necho -e \"\\n=== app.bsky.ageassurance.getState ===\"\njq '{id, defs: {main: {type: .defs.main.type, parameters: .defs.main.parameters, output: .defs.main.output.schema}}}' lexicons/app/bsky/ageassurance/getState.json)",
       "Bash(./build/tests/AllTests 2>&1 | grep -E \"Tests run:|Failures:\" | tail -3)",
       "Bash(./build/tests/AllTests 2>&1 | grep \"FAIL:\" | grep -i \"dpop\\|DPoP\\|oauth.*conform\\|oauth.*proof\" | head -20)",
-      "Bash(nm /Users/jack/Software/garazyk/build/libATProtoCore.a 2>/dev/null | grep -i \"NSDictionary\" | head -10)"
+      "Bash(nm /Users/jack/Software/garazyk/build/libATProtoCore.a 2>/dev/null | grep -i \"NSDictionary\" | head -10)",
+      "Bash(deciduous pulse 2)"
     ]
   }
 }

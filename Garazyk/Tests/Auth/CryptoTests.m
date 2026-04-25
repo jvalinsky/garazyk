@@ -81,4 +81,164 @@
     XCTAssertFalse([CryptoUtils constantTimeCompare:@"did:plc:abc123" to:@"did:plc:abc124"]);
 }
 
+#pragma mark - SHA-256 Edge Cases
+
+- (void)testSHA256NilInput {
+    NSData *result = [CryptoUtils sha256:nil];
+    XCTAssertNil(result);
+}
+
+- (void)testSHA256EmptyData {
+    NSData *empty = [NSData data];
+    NSData *hash = [CryptoUtils sha256:empty];
+    XCTAssertNotNil(hash);
+    XCTAssertEqual(hash.length, 32);
+    // SHA-256 of empty string: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    NSString *hex = [CryptoUtils hexStringFromData:hash];
+    XCTAssertEqualObjects(hex, @"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+}
+
+#pragma mark - HMAC Edge Cases
+
+- (void)testHMACSHA1NilKey {
+    NSData *data = [@"data" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *result = [CryptoUtils hmacSHA1WithKey:nil data:data];
+    XCTAssertNil(result);
+}
+
+- (void)testHMACSHA1NilData {
+    NSData *key = [@"key" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *result = [CryptoUtils hmacSHA1WithKey:key data:nil];
+    XCTAssertNil(result);
+}
+
+- (void)testHMACSHA256NilKey {
+    NSData *data = [@"data" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *result = [CryptoUtils hmacSHA256WithKey:nil data:data];
+    XCTAssertNil(result);
+}
+
+- (void)testHMACSHA256NilData {
+    NSData *key = [@"key" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *result = [CryptoUtils hmacSHA256WithKey:key data:nil];
+    XCTAssertNil(result);
+}
+
+#pragma mark - Random Bytes Edge Cases
+
+- (void)testRandomBytesZeroLength {
+    NSData *result = [CryptoUtils randomBytes:0];
+    XCTAssertNotNil(result);
+    XCTAssertEqual(result.length, 0);
+}
+
+#pragma mark - Hex String
+
+- (void)testHexStringFromDataEmpty {
+    NSData *empty = [NSData data];
+    NSString *hex = [CryptoUtils hexStringFromData:empty];
+    XCTAssertEqualObjects(hex, @"");
+}
+
+- (void)testHexStringFromDataKnownValue {
+    unsigned char bytes[] = {0x00, 0xFF, 0xAB, 0x01};
+    NSData *data = [NSData dataWithBytes:bytes length:4];
+    NSString *hex = [CryptoUtils hexStringFromData:data];
+    XCTAssertEqualObjects(hex, @"00ffab01");
+}
+
+#pragma mark - Base64URL
+
+- (void)testBase64URLEncodeDecodeRoundTrip {
+    for (NSUInteger len = 1; len < 64; len++) {
+        NSMutableData *data = [NSMutableData dataWithLength:len];
+        arc4random_buf(data.mutableBytes, len);
+        NSString *encoded = [CryptoUtils base64URLEncode:data];
+        NSData *decoded = [CryptoUtils base64URLDecode:encoded];
+        XCTAssertEqualObjects(decoded, data, @"Round-trip failed for %lu bytes", (unsigned long)len);
+    }
+}
+
+- (void)testBase64URLEncodeNoPadding {
+    NSData *data = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *encoded = [CryptoUtils base64URLEncode:data];
+    XCTAssertFalse([encoded containsString:@"="], @"Base64URL should not have padding");
+}
+
+#pragma mark - AES Encryption
+
+- (void)testEncryptDecryptRoundTrip {
+    NSData *key = [CryptoUtils randomBytes:32];
+    NSData *plaintext = [@"Hello, World! This is a test of AES-256-CBC encryption." dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *encrypted = [CryptoUtils encryptData:plaintext withKey:key];
+    XCTAssertNotNil(encrypted);
+    XCTAssertTrue(encrypted.length > plaintext.length, @"Ciphertext should be larger due to IV and padding");
+
+    NSData *decrypted = [CryptoUtils decryptData:encrypted withKey:key];
+    XCTAssertNotNil(decrypted);
+    XCTAssertEqualObjects(decrypted, plaintext);
+}
+
+- (void)testEncryptWithInvalidKeySize {
+    NSData *shortKey = [NSData dataWithBytes:"\x00\x01\x02" length:3];
+    NSData *plaintext = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *result = [CryptoUtils encryptData:plaintext withKey:shortKey];
+    XCTAssertNil(result, @"Encryption should fail with non-32-byte key");
+}
+
+- (void)testDecryptWithInvalidKeySize {
+    NSData *shortKey = [NSData dataWithBytes:"\x00\x01\x02" length:3];
+    NSData *fakeCipher = [NSData dataWithBytes:"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" length:16];
+    NSData *result = [CryptoUtils decryptData:fakeCipher withKey:shortKey];
+    XCTAssertNil(result, @"Decryption should fail with non-32-byte key");
+}
+
+- (void)testDecryptWithTooShortData {
+    NSData *key = [CryptoUtils randomBytes:32];
+    NSData *shortData = [NSData dataWithBytes:"\x00\x01\x02" length:3];
+    NSData *result = [CryptoUtils decryptData:shortData withKey:key];
+    XCTAssertNil(result, @"Decryption should fail with data shorter than IV");
+}
+
+- (void)testEncryptDecryptEmptyData {
+    NSData *key = [CryptoUtils randomBytes:32];
+    NSData *empty = [NSData data];
+    NSData *encrypted = [CryptoUtils encryptData:empty withKey:key];
+    XCTAssertNotNil(encrypted);
+    NSData *decrypted = [CryptoUtils decryptData:encrypted withKey:key];
+    XCTAssertNotNil(decrypted);
+    XCTAssertEqualObjects(decrypted, empty);
+}
+
+#pragma mark - PBKDF2 Key Derivation
+
+- (void)testDeriveKeyFromPassword {
+    NSData *salt = [CryptoUtils randomBytes:16];
+    NSData *key = [CryptoUtils deriveKeyFromPassword:@"testpassword" salt:salt];
+    XCTAssertNotNil(key);
+    XCTAssertEqual(key.length, 32);
+}
+
+- (void)testDeriveKeyDeterministic {
+    NSData *salt = [@"fixed-salt-1234" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *key1 = [CryptoUtils deriveKeyFromPassword:@"password" salt:salt];
+    NSData *key2 = [CryptoUtils deriveKeyFromPassword:@"password" salt:salt];
+    XCTAssertEqualObjects(key1, key2, @"Same password and salt should produce same key");
+}
+
+- (void)testDeriveKeyDifferentPasswords {
+    NSData *salt = [@"fixed-salt-1234" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *key1 = [CryptoUtils deriveKeyFromPassword:@"password1" salt:salt];
+    NSData *key2 = [CryptoUtils deriveKeyFromPassword:@"password2" salt:salt];
+    XCTAssertNotEqualObjects(key1, key2, @"Different passwords should produce different keys");
+}
+
+- (void)testDeriveKeyDifferentSalts {
+    NSData *salt1 = [@"salt-1" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *salt2 = [@"salt-2" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *key1 = [CryptoUtils deriveKeyFromPassword:@"password" salt:salt1];
+    NSData *key2 = [CryptoUtils deriveKeyFromPassword:@"password" salt:salt2];
+    XCTAssertNotEqualObjects(key1, key2, @"Different salts should produce different keys");
+}
+
 @end

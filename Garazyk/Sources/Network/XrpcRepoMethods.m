@@ -894,10 +894,15 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         BOOL handleIsCorrect = (handleFromDidDoc.length > 0 && [handleFromDidDoc isEqualToString:accountHandle]);
 
         NSMutableArray *collections = [NSMutableArray array];
+        NSMutableArray *collectionStats = [NSMutableArray array];
         if ([stats[@"collections"] isKindOfClass:[NSArray class]]) {
             for (NSDictionary *col in stats[@"collections"]) {
                 if ([col isKindOfClass:[NSDictionary class]] && [col[@"collection"] isKindOfClass:[NSString class]]) {
                     [collections addObject:col[@"collection"]];
+                    [collectionStats addObject:@{
+                        @"name": col[@"collection"],
+                        @"count": col[@"count"] ?: @(0)
+                    }];
                 }
             }
         }
@@ -908,6 +913,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             @"did": did,
             @"didDoc": didDocJson,
             @"collections": collections,
+            @"collectionStats": collectionStats,
             @"handleIsCorrect": @(handleIsCorrect)
         }];
     }];

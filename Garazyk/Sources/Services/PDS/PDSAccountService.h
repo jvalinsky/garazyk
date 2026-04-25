@@ -46,6 +46,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Gets account info by DID. */
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
 
+/*! Gets storage usage for an account by DID. Returns dict with blobBytes, blobCount, repoBytes, recordCount. */
+- (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error;
+
 /*! Gets all accounts. */
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error;
 
@@ -93,6 +96,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Generates a random did:plc identifier (for testing). */
 - (NSString *)generatePlcIdentifier;
+
+/*! Gets storage usage for an account by DID. Returns dict with blobBytes, blobCount, repoBytes, recordCount. */
+- (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error;
 
 @end
 

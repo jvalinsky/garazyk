@@ -10,6 +10,7 @@ NSString * const kPDSRepoTableName = @"repos";
 NSString * const kPDSRecordTableName = @"records";
 NSString * const kPDSBlockTableName = @"blocks";
 NSString * const kPDSBlobTableName = @"blobs";
+NSString * const kPDSAccountUsageTableName = @"account_usage";
 NSString * const kPDSInviteCodeTableName = @"invite_codes";
 
 NSString * const kPDSAdminTakedownTableName = @"admin_takedowns";
@@ -105,6 +106,83 @@ NSString * const kPDSBlobTableCreateSQL =
     @"created_at TEXT NOT NULL,"
     @"FOREIGN KEY (did) REFERENCES accounts(did)"
     @")";
+
+#pragma mark - Account Usage
+
+NSString * const kPDSAccountUsageTableCreateSQL =
+    @"CREATE TABLE IF NOT EXISTS account_usage ("
+    @"did TEXT PRIMARY KEY,"
+    @"blob_bytes INTEGER NOT NULL DEFAULT 0,"
+    @"blob_count INTEGER NOT NULL DEFAULT 0,"
+    @"repo_bytes INTEGER NOT NULL DEFAULT 0,"
+    @"record_count INTEGER NOT NULL DEFAULT 0,"
+    @"updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+    @")";
+
+NSString * const kPDSAccountUsageTriggerBlobInsertSQL =
+    @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_blob_insert "
+    @"AFTER INSERT ON blobs "
+    @"BEGIN "
+    @"INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+    @"VALUES (NEW.did, NEW.size, 1, 0, 0, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+    @"ON CONFLICT(did) DO UPDATE SET "
+    @"blob_bytes = blob_bytes + NEW.size, "
+    @"blob_count = blob_count + 1, "
+    @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'); "
+    @"END";
+
+NSString * const kPDSAccountUsageTriggerBlobDeleteSQL =
+    @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_blob_delete "
+    @"AFTER DELETE ON blobs "
+    @"BEGIN "
+    @"UPDATE account_usage SET "
+    @"blob_bytes = MAX(blob_bytes - OLD.size, 0), "
+    @"blob_count = MAX(blob_count - 1, 0), "
+    @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') "
+    @"WHERE did = OLD.did; "
+    @"END";
+
+NSString * const kPDSAccountUsageTriggerBlockInsertSQL =
+    @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_block_insert "
+    @"AFTER INSERT ON ipld_blocks "
+    @"BEGIN "
+    @"INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+    @"VALUES ((SELECT did FROM records LIMIT 1), 0, 0, NEW.size, 0, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+    @"ON CONFLICT(did) DO UPDATE SET "
+    @"repo_bytes = repo_bytes + NEW.size, "
+    @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'); "
+    @"END";
+
+NSString * const kPDSAccountUsageTriggerBlockDeleteSQL =
+    @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_block_delete "
+    @"AFTER DELETE ON ipld_blocks "
+    @"BEGIN "
+    @"UPDATE account_usage SET "
+    @"repo_bytes = MAX(repo_bytes - OLD.size, 0), "
+    @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') "
+    @"WHERE did = (SELECT did FROM records LIMIT 1); "
+    @"END";
+
+NSString * const kPDSAccountUsageTriggerRecordInsertSQL =
+    @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_record_insert "
+    @"AFTER INSERT ON records "
+    @"BEGIN "
+    @"INSERT INTO account_usage (did, blob_bytes, blob_count, repo_bytes, record_count, updated_at) "
+    @"VALUES (NEW.did, 0, 0, 0, 1, strftime('%Y-%m-%dT%H:%M:%fZ','now')) "
+    @"ON CONFLICT(did) DO UPDATE SET "
+    @"record_count = record_count + 1, "
+    @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'); "
+    @"END";
+
+NSString * const kPDSAccountUsageTriggerRecordDeleteSQL =
+    @"CREATE TRIGGER IF NOT EXISTS trg_account_usage_record_delete "
+    @"AFTER DELETE ON records "
+    @"BEGIN "
+    @"UPDATE account_usage SET "
+    @"record_count = MAX(record_count - 1, 0), "
+    @"updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') "
+    @"WHERE did = OLD.did; "
+    @"END";
 
 NSString * const kPDSIndexBlocksRepoDidSQL =
     @"CREATE INDEX IF NOT EXISTS idx_blocks_repo_did ON blocks(repo_did)";

@@ -39,6 +39,18 @@
               "description": "List of all the collections (NSIDs) for which this repo contains at least one record.",
               "items": { "type": "string", "format": "nsid" }
             },
+            "collectionStats": {
+              "type": "array",
+              "description": "Per-collection record counts. Each entry has a name and count.",
+              "items": {
+                "type": "object",
+                "required": ["name", "count"],
+                "properties": {
+                  "name": { "type": "string", "format": "nsid" },
+                  "count": { "type": "integer", "minimum": 0 }
+                }
+              }
+            },
             "handleIsCorrect": {
               "type": "boolean",
               "description": "Indicates if handle is currently valid (resolves bi-directionally)"

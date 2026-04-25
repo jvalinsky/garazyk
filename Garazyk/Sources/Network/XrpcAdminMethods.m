@@ -17,6 +17,8 @@
 #import "Database/PDSDatabase.h"
 #import "Admin/PDSAdminController.h"
 #import "Services/PDS/PDSRepositoryService.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Core/ATProtoValidator.h"
 #import "Identity/ATProtoHandleValidator.h"
@@ -525,6 +527,98 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:status];
+    }];
+
+    // Register com.atproto.admin.getAccountUsage
+    [dispatcher registerMethod:@"com.atproto.admin.getAccountUsage"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![XrpcAuthHelper authorizeAdminRequest:request
+                                           response:response
+                                   serviceDatabases:serviceDatabases
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController]) {
+            return;
+        }
+        if (request.method != HttpMethodGET) {
+            response.statusCode = HttpStatusMethodNotAllowed;
+            [response setHeader:@"GET" forKey:@"Allow"];
+            [response setJsonBody:@{@"error": @"MethodNotAllowed",
+                                    @"message": @"Expected GET"}];
+            return;
+        }
+
+        NSString *did = [request queryParamForKey:@"did"];
+        if (did.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest",
+                                    @"message": @"Missing did parameter"}];
+            return;
+        }
+
+        NSError *didError = nil;
+        if (![ATProtoValidator validateDID:did error:&didError]) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidDid",
+                                    @"message": didError.localizedDescription ?: @"Invalid DID"}];
+            return;
+        }
+
+        // Verify account exists
+        NSError *accountError = nil;
+        PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:&accountError];
+        if (!account) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"AccountNotFound",
+                                    @"message": accountError.localizedDescription ?: @"Account not found"}];
+            return;
+        }
+
+        // Query account_usage from actor store
+        PDSActorStore *store = [repositoryService.databasePool storeForDid:did error:nil];
+        NSDictionary *usage;
+        if (store) {
+            __block NSDictionary *usageResult = nil;
+            [store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+                PDSActorStore *actorStore = (PDSActorStore *)reader;
+                NSString *sql = @"SELECT blob_bytes, blob_count, repo_bytes, record_count "
+                                 @"FROM account_usage WHERE did = ?";
+                sqlite3_stmt *stmt = [actorStore prepareStatement:sql error:blockError];
+                if (!stmt) return;
+                sqlite3_bind_text(stmt, 1, [did UTF8String], -1, SQLITE_TRANSIENT);
+                if (sqlite3_step(stmt) == SQLITE_ROW) {
+                    usageResult = @{
+                        @"blobBytes": @(sqlite3_column_int64(stmt, 0)),
+                        @"blobCount": @(sqlite3_column_int(stmt, 1)),
+                        @"repoBytes": @(sqlite3_column_int64(stmt, 2)),
+                        @"recordCount": @(sqlite3_column_int(stmt, 3))
+                    };
+                }
+                [actorStore finalizeStatement:stmt];
+            } error:nil];
+            usage = usageResult ?: @{
+                @"did": did,
+                @"blobBytes": @(0),
+                @"blobCount": @(0),
+                @"repoBytes": @(0),
+                @"recordCount": @(0)
+            };
+            if (usageResult) {
+                NSMutableDictionary *mutable = [usage mutableCopy];
+                mutable[@"did"] = did;
+                usage = [mutable copy];
+            }
+        } else {
+            usage = @{
+                @"did": did,
+                @"blobBytes": @(0),
+                @"blobCount": @(0),
+                @"repoBytes": @(0),
+                @"recordCount": @(0)
+            };
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:usage];
     }];
 
     // Register com.atproto.admin.getAccountInfo

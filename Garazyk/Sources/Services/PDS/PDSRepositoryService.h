@@ -158,6 +158,26 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
                                                     error:(NSError **)error;
 
 /*!
+ @method filteredRepoContentsChunkProducer:since:collections:error:
+
+ @abstract Builds a pull-based CAR chunk producer for streaming filtered repository contents.
+
+ @discussion The returned CAR contains only records matching the specified collections.
+ Includes the commit block, MST proof nodes for matching keys, and the record blocks.
+ A consumer can verify the commit signature and reconstruct just the requested subtree.
+
+ @param did Decentralized identifier of repository owner.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
+ @param collections Array of collection NSIDs to include (e.g., ["app.bsky.feed.post"]).
+ @param error Error pointer for export preparation failures.
+ @return Chunk producer block or nil on failure.
+ */
+- (nullable PDSRepoChunkProducer)filteredRepoContentsChunkProducer:(NSString *)did
+                                                              since:(nullable NSString *)sinceRev
+                                                        collections:(NSArray<NSString *> *)collections
+                                                              error:(NSError **)error;
+
+/*!
  @method updateRepo:commit:error:
 
  @abstract Apply a commit to update the repository.

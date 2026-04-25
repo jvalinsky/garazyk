@@ -39,7 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     Endpoints handled:
     - GET /oauth/authorize - Authorization request display
-    - POST /oauth/authorize/signin - Sign-in credential validation
+    - POST /oauth/authorize/sign-in - Sign-in credential validation
+    - POST /oauth/authorize/passkey/challenge - Passkey sign-in challenge
+    - POST /oauth/authorize/passkey - Passkey sign-in assertion validation
     - POST /oauth/authorize/confirm - Authorization confirmation
     - POST /oauth/token - Token endpoint
     - POST /oauth/revoke - Token revocation
@@ -99,7 +101,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Registers the following routes:
     - GET /oauth/authorize
-    - POST /oauth/authorize/signin
+    - POST /oauth/authorize/sign-in
+    - POST /oauth/authorize/passkey/challenge
+    - POST /oauth/authorize/passkey
     - POST /oauth/authorize/confirm
     - POST /oauth/token
     - POST /oauth/revoke
@@ -144,6 +148,9 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Validates user credentials and advances the authorization flow.
  */
 - (void)handleAuthorizeSignIn:(HttpRequest *)request response:(HttpResponse *)response;
+
+- (void)handlePasskeyChallenge:(HttpRequest *)request response:(HttpResponse *)response;
+- (void)handlePasskeySignIn:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!
  @method handleAuthorizeConfirm:response:

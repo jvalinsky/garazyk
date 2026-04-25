@@ -242,6 +242,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)actorStoreBlobsTableSchema;
 
 /*!
+ @method actorStoreAccountUsageTableSchema
+ @abstract Schema for account_usage table (per-actor storage metrics).
+ @return CREATE TABLE SQL for account usage tracking.
+ */
+- (NSString *)actorStoreAccountUsageTableSchema;
+
+/*!
  @method actorStoreSchemaSQL
 
  @abstract Complete SQL for all actor store tables.

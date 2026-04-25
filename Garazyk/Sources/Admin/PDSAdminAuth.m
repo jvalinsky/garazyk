@@ -170,7 +170,10 @@ static NSArray<NSString *> *PDSAdminAuthAllowedAlgorithmsForMinter(JWTMinter *mi
     }
 
     if (minter.keyManager) {
-        [algorithms addObjectsFromArray:@[@"ES256", @"RS256"]];
+        // Key manager may use ES256, ES256K, or RS256 depending on the
+        // active key pair.  Include all three so that admin tokens signed
+        // with any of them pass the algorithm-allowlist check.
+        [algorithms addObjectsFromArray:@[@"ES256", @"RS256", @"ES256K"]];
     }
 
     if (algorithms.count == 0 && minter.publicKey) {

@@ -358,6 +358,216 @@
     }
 }
 
+- (nullable PDSRepoChunkProducer)filteredRepoContentsChunkProducer:(NSString *)did
+                                                              since:(nullable NSString *)sinceRev
+                                                        collections:(NSArray<NSString *> *)collections
+                                                              error:(NSError **)error {
+    if (collections.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                         code:14
+                                     userInfo:@{NSLocalizedDescriptionKey: @"At least one collection is required"}];
+        }
+        return nil;
+    }
+
+    (void)sinceRev;
+
+    PDSActorStore *store = [self.databasePool storeForDid:did error:error];
+    if (!store) return nil;
+
+    NSArray<PDSDatabaseRecord *> *allRecords = [self loadAllRecordsForStore:store did:did error:error];
+    if (!allRecords && error && *error) {
+        return nil;
+    }
+
+    MST *mst = [self mstFromRecords:allRecords ?: @[]];
+    CID *mstRootCID = mst.rootCID;
+    if (!mstRootCID) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                         code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute MST root"}];
+        }
+        return nil;
+    }
+
+    CID *storedCommitCID = nil;
+    NSData *storedCommitBlock = nil;
+    CID *storedDataCID = nil;
+    NSString *storedCommitRev = nil;
+    BOOL storedCommitIsSigned = NO;
+    [self loadStoredHeadCommitForDid:did
+                               store:store
+                           commitCID:&storedCommitCID
+                         commitBlock:&storedCommitBlock
+                             dataCID:&storedDataCID
+                                 rev:&storedCommitRev
+                            isSigned:&storedCommitIsSigned];
+
+    if (!storedCommitCID || !storedCommitBlock) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                         code:3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No commit found for repository"}];
+        }
+        return nil;
+    }
+
+    NSSet<NSString *> *collectionSet = [NSSet setWithArray:collections];
+    NSMutableArray<NSString *> *proofKeys = [NSMutableArray array];
+    NSMutableArray<NSString *> *filteredRecordCIDs = [NSMutableArray array];
+    NSMutableDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = [NSMutableDictionary dictionary];
+    NSMutableSet<NSString *> *seenRecordCIDs = [NSMutableSet set];
+
+    for (PDSDatabaseRecord *record in allRecords ?: @[]) {
+        if (![collectionSet containsObject:record.collection]) {
+            continue;
+        }
+
+        if (record.collection.length > 0 && record.rkey.length > 0) {
+            NSString *key = [NSString stringWithFormat:@"%@/%@", record.collection, record.rkey];
+            [proofKeys addObject:key];
+        }
+
+        if (record.cid.length == 0 || [seenRecordCIDs containsObject:record.cid]) {
+            continue;
+        }
+        [seenRecordCIDs addObject:record.cid];
+
+        CID *recordCID = [CID cidFromString:record.cid];
+        if (!recordCID) {
+            continue;
+        }
+
+        NSString *cidString = recordCID.stringValue;
+        if (cidString.length > 0) {
+            [filteredRecordCIDs addObject:cidString];
+            recordByCID[cidString] = record;
+        }
+    }
+
+    NSData *headerChunk = [CARWriter encodedHeaderWithRootCID:storedCommitCID error:error];
+    if (!headerChunk) {
+        return nil;
+    }
+
+    NSData *commitChunk = [CARWriter encodedBlock:[CARBlock blockWithCID:storedCommitCID data:storedCommitBlock]
+                                            error:error];
+    if (!commitChunk) {
+        return nil;
+    }
+
+    NSMutableSet<NSString *> *seenCIDs = [NSMutableSet set];
+    if (storedCommitCID.stringValue.length > 0) {
+        [seenCIDs addObject:storedCommitCID.stringValue];
+    }
+
+    NSMutableArray<NSData *> *mstChunks = [NSMutableArray array];
+    NSArray<CARBlock *> *mstBlocks = [self mstBlocksForExport:mst
+                                                includeAllMST:NO
+                                                    proofKeys:proofKeys
+                                                        error:error];
+    if (!mstBlocks) {
+        return nil;
+    }
+
+    for (CARBlock *block in mstBlocks) {
+        NSString *cidString = block.cid.stringValue ?: @"";
+        if (cidString.length == 0 || [seenCIDs containsObject:cidString]) {
+            continue;
+        }
+        NSData *encoded = [CARWriter encodedBlock:block error:error];
+        if (!encoded) {
+            return nil;
+        }
+        [seenCIDs addObject:cidString];
+        [mstChunks addObject:encoded];
+    }
+
+    NSMutableArray<NSString *> *remainingRecordCIDs = [NSMutableArray array];
+    for (NSString *cidString in filteredRecordCIDs) {
+        if (cidString.length == 0 || [seenCIDs containsObject:cidString]) {
+            continue;
+        }
+        [seenCIDs addObject:cidString];
+        [remainingRecordCIDs addObject:cidString];
+    }
+
+    NSArray<NSData *> *capturedMSTChunks = [mstChunks copy];
+    NSArray<NSString *> *capturedRecordCIDs = [remainingRecordCIDs copy];
+    NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
+    __weak typeof(self) weakSelf = self;
+    __block NSUInteger phase = 0; // 0=header, 1=commit, 2=MST, 3=records, 4=done
+    __block NSUInteger mstIndex = 0;
+    __block NSUInteger recordIndex = 0;
+
+    return ^NSData * _Nullable(NSError **producerError) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) {
+            if (producerError) {
+                *producerError = [NSError errorWithDomain:@"com.atproto.repo"
+                                                     code:10
+                                                 userInfo:@{NSLocalizedDescriptionKey: @"Repository service deallocated during stream"}];
+            }
+            return nil;
+        }
+
+        if (phase == 4) {
+            return nil;
+        }
+
+        if (phase == 0) {
+            phase = 1;
+            return headerChunk;
+        }
+
+        if (phase == 1) {
+            phase = 2;
+            return commitChunk;
+        }
+
+        if (phase == 2) {
+            if (mstIndex < capturedMSTChunks.count) {
+                NSData *chunk = capturedMSTChunks[mstIndex];
+                mstIndex++;
+                return chunk;
+            }
+            phase = 3;
+        }
+
+        if (phase == 3) {
+            while (recordIndex < capturedRecordCIDs.count) {
+                NSString *cidString = capturedRecordCIDs[recordIndex];
+                recordIndex++;
+
+                CID *cid = [CID cidFromString:cidString];
+                if (!cid) {
+                    continue;
+                }
+
+                NSData *data = nil;
+                PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
+                data = block.blockData;
+
+                if (!data) {
+                    PDSDatabaseRecord *record = capturedRecordByCID[cidString];
+                    data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+                }
+
+                if (!data) {
+                    continue;
+                }
+
+                return [CARWriter encodedBlock:[CARBlock blockWithCID:cid data:data] error:producerError];
+            }
+            phase = 4;
+        }
+
+        return nil;
+    };
+}
+
 - (nullable PDSRepoChunkProducer)repoContentsChunkProducer:(NSString *)did
                                                     since:(nullable NSString *)sinceRev
                                                     error:(NSError **)error {

@@ -33,6 +33,7 @@ extern NSString * const kPDSRepoTableName;
 extern NSString * const kPDSRecordTableName;
 extern NSString * const kPDSBlockTableName;
 extern NSString * const kPDSBlobTableName;
+extern NSString * const kPDSAccountUsageTableName;
 extern NSString * const kPDSInviteCodeTableName;
 extern NSString * const kPDSPasskeysTableName;
 extern NSString * const kPDSOAuthClientsTableName;
@@ -62,6 +63,17 @@ extern NSString * const kPDSRepoTableCreateSQL;
 extern NSString * const kPDSRecordTableCreateSQL;
 extern NSString * const kPDSBlockTableCreateSQL;
 extern NSString * const kPDSBlobTableCreateSQL;
+
+#pragma mark - Account Usage
+
+extern NSString * const kPDSAccountUsageTableCreateSQL;
+extern NSString * const kPDSAccountUsageTriggerBlobInsertSQL;
+extern NSString * const kPDSAccountUsageTriggerBlobDeleteSQL;
+extern NSString * const kPDSAccountUsageTriggerBlockInsertSQL;
+extern NSString * const kPDSAccountUsageTriggerBlockDeleteSQL;
+extern NSString * const kPDSAccountUsageTriggerRecordInsertSQL;
+extern NSString * const kPDSAccountUsageTriggerRecordDeleteSQL;
+
 extern NSString * const kPDSInviteCodeTableCreateSQL;
 extern NSString * const kPDSAdminTakedownTableCreateSQL;
 extern NSString * const kPDSAdminAuditLogTableCreateSQL;

@@ -2,6 +2,7 @@
 #import "Auth/OAuth2.h"
 #import "Auth/Session.h"
 #import "Auth/CryptoUtils.h"
+#import "Auth/WebAuthnVerifier.h"
 #import "Auth/PDSReplayCache.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/OAuthServerMetadata.h"
@@ -20,12 +21,17 @@
 
 @interface OAuth2Handler ()
 @property(nonatomic, strong) PDSDatabase *database;
+@property(nonatomic, copy) NSString *serverOrigin;
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request
                       response:(HttpResponse *)response;
 - (void)handleAuthorizeConfirm:(HttpRequest *)request
                       response:(HttpResponse *)response;
 - (void)handleAuthorizeSignIn:(HttpRequest *)request
+                     response:(HttpResponse *)response;
+- (void)handlePasskeyChallenge:(HttpRequest *)request
+                      response:(HttpResponse *)response;
+- (void)handlePasskeySignIn:(HttpRequest *)request
                      response:(HttpResponse *)response;
 - (void)handleTokenRequest:(HttpRequest *)request
                   response:(HttpResponse *)response;
@@ -38,6 +44,11 @@
 - (void)handleJWKS:(HttpRequest *)request response:(HttpResponse *)response;
 - (void)handlePARRequest:(HttpRequest *)request
                 response:(HttpResponse *)response;
+- (NSDictionary *)parseJSONBody:(NSData *)data;
+- (NSString *)createPendingConsentSessionForDid:(NSString *)did
+                                         handle:(NSString *)handle;
+- (void)cleanupExpiredPasskeyChallengesLocked;
+- (NSDictionary *)consumePasskeyChallengeForSessionId:(NSString *)sessionId;
 - (BOOL)validateDPoPForRequest:(HttpRequest *)request
                       response:(HttpResponse *)response
                  outThumbprint:(NSString **)outThumbprint;
@@ -76,12 +87,16 @@
 @end
 
 static NSMutableDictionary *sPendingConsents = nil;
+static NSMutableDictionary *sPasskeyChallenges = nil;
+static dispatch_queue_t sPasskeyChallengeQueue = nil;
 static const NSTimeInterval kPendingConsentTTLSeconds = 300.0;
+static const NSTimeInterval kPasskeyChallengeTTLSeconds = 300.0;
 static const NSUInteger kMaxPendingConsents = 1024;
 static const NSTimeInterval kClientValidationTimeoutSeconds = 10.0;
 static NSInteger const kClientValidationTimeoutCode = 504;
 static NSCache *sClientMetadataCache = nil;
 static dispatch_once_t sClientCacheOnceToken;
+static dispatch_once_t sPasskeyChallengeOnceToken;
 
 @interface OAuth2Handler ()
 - (void)setCorsHeaders:(HttpResponse *)response
@@ -107,6 +122,11 @@ static dispatch_once_t sClientCacheOnceToken;
     _database = database;
     if (!sPendingConsents)
       sPendingConsents = [NSMutableDictionary dictionary];
+    dispatch_once(&sPasskeyChallengeOnceToken, ^{
+      sPasskeyChallenges = [NSMutableDictionary dictionary];
+      sPasskeyChallengeQueue = dispatch_queue_create(
+          "com.atproto.oauth2.passkey.challenges", DISPATCH_QUEUE_SERIAL);
+    });
     self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
     self.oauthServer.jwtMinter = self.minter;
 
@@ -124,6 +144,7 @@ static dispatch_once_t sClientCacheOnceToken;
       issuer = [configuration canonicalIssuerWithPortHint:0];
     }
     self.oauthServer.issuer = issuer;
+    self.serverOrigin = issuer;
 
     self.oauthServer.authorizationEndpoint =
         [NSString stringWithFormat:@"%@/oauth/authorize", issuer];
@@ -1467,6 +1488,18 @@ static dispatch_once_t sClientCacheOnceToken;
                }];
 
   [httpServer addRoute:@"POST"
+                  path:@"/oauth/authorize/passkey/challenge"
+               handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handlePasskeyChallenge:request response:response];
+               }];
+
+  [httpServer addRoute:@"POST"
+                  path:@"/oauth/authorize/passkey"
+               handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handlePasskeySignIn:request response:response];
+               }];
+
+  [httpServer addRoute:@"POST"
                   path:@"/oauth/token"
                handler:^(HttpRequest *request, HttpResponse *response) {
                  [self setCorsHeaders:response forRequest:request];
@@ -2032,6 +2065,251 @@ static dispatch_once_t sClientCacheOnceToken;
                       }];
 }
 
+- (void)handlePasskeyChallenge:(HttpRequest *)request
+                      response:(HttpResponse *)response {
+  NSDictionary *body = [self parseJSONBody:request.body];
+  if (!body) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Invalid request body"
+    }];
+    return;
+  }
+
+  NSString *did = body[@"did"];
+  if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Missing did"
+    }];
+    return;
+  }
+
+  if (self.serverOrigin.length == 0) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Server origin not configured"
+    }];
+    return;
+  }
+
+  NSData *challenge = [CryptoUtils randomBytes:32];
+  if (!challenge) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Failed to generate passkey challenge"
+    }];
+    return;
+  }
+
+  NSString *sessionId = [[NSUUID UUID] UUIDString];
+  NSDate *expires = [NSDate dateWithTimeIntervalSinceNow:kPasskeyChallengeTTLSeconds];
+  dispatch_sync(sPasskeyChallengeQueue, ^{
+    [self cleanupExpiredPasskeyChallengesLocked];
+    sPasskeyChallenges[sessionId] = @{
+      @"challenge" : challenge,
+      @"did" : did,
+      @"expires" : expires
+    };
+  });
+
+  response.statusCode = 200;
+  [response setJsonBody:@{
+    @"challenge" : [CryptoUtils base64URLEncode:challenge],
+    @"sessionId" : sessionId,
+    @"rpId" : self.serverOrigin
+  }];
+}
+
+- (void)handlePasskeySignIn:(HttpRequest *)request
+                     response:(HttpResponse *)response {
+  NSDictionary *body = [self parseJSONBody:request.body];
+  if (!body) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Invalid request body"
+    }];
+    return;
+  }
+
+  NSString *sessionId = body[@"sessionId"];
+  NSDictionary *assertion = body[@"assertion"];
+  NSString *did = body[@"did"];
+
+  // CSRF validation
+  NSString *csrfHeader = [request headerForKey:@"X-CSRF-Token"];
+  NSString *cookieHeader = [request headerForKey:@"Cookie"];
+  NSString *csrfCookie = nil;
+  if (cookieHeader) {
+    for (NSString *cookie in [cookieHeader componentsSeparatedByString:@";"]) {
+      NSString *trimmed =
+          [cookie stringByTrimmingCharactersInSet:[NSCharacterSet
+                                                      whitespaceCharacterSet]];
+      if ([trimmed hasPrefix:@"csrf_token="]) {
+        csrfCookie = [trimmed substringFromIndex:@"csrf_token=".length];
+        break;
+      }
+    }
+  }
+  if (!csrfHeader || !csrfCookie || ![csrfHeader isEqualToString:csrfCookie]) {
+    response.statusCode = 403;
+    [response setJsonBody:@{@"ok" : @NO, @"error" : @"Invalid CSRF token"}];
+    return;
+  }
+
+  if (![sessionId isKindOfClass:[NSString class]] || sessionId.length == 0 ||
+      ![assertion isKindOfClass:[NSDictionary class]] ||
+      ![did isKindOfClass:[NSString class]] || did.length == 0) {
+    response.statusCode = 400;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Session ID, assertion, and did are required"
+    }];
+    return;
+  }
+
+  if (self.serverOrigin.length == 0) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Server origin not configured"
+    }];
+    return;
+  }
+
+  NSDictionary *challengeInfo = [self consumePasskeyChallengeForSessionId:sessionId];
+  if (!challengeInfo) {
+    response.statusCode = 403;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Invalid or expired passkey challenge"
+    }];
+    return;
+  }
+
+  NSString *challengeDid = challengeInfo[@"did"];
+  if (![CryptoUtils constantTimeCompare:did to:challengeDid]) {
+    response.statusCode = 403;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Passkey challenge does not match DID"
+    }];
+    return;
+  }
+
+  NSData *expectedChallenge = challengeInfo[@"challenge"];
+  if (![expectedChallenge isKindOfClass:[NSData class]]) {
+    response.statusCode = 403;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Invalid or expired passkey challenge"
+    }];
+    return;
+  }
+
+  PDSDatabaseAccount *account = [self.database getAccountByDid:did error:nil];
+  NSString *sessionHandle = account.handle ?: did;
+  if (sessionHandle.length == 0) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Failed to resolve account handle"
+    }];
+    return;
+  }
+
+  NSArray<NSDictionary *> *credentials =
+      [self.database getWebAuthnCredentialsForDid:did error:nil];
+  if (!credentials || credentials.count == 0) {
+    response.statusCode = 404;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"No WebAuthn credentials found for DID"
+    }];
+    return;
+  }
+
+  BOOL verified = NO;
+  NSError *verificationError = nil;
+  NSDictionary *matchedCredential = nil;
+  uint32_t newSignCount = 0;
+
+  for (NSDictionary *credential in credentials) {
+    NSData *publicKey = credential[@"publicKey"];
+    NSData *credentialId = credential[@"credentialId"];
+    if (![publicKey isKindOfClass:[NSData class]] ||
+        ![credentialId isKindOfClass:[NSData class]]) {
+      continue;
+    }
+
+    uint32_t storedSignCount = [credential[@"signCount"] unsignedIntValue];
+    uint32_t candidateSignCount = 0;
+    NSError *candidateError = nil;
+    BOOL candidateVerified =
+        [WebAuthnVerifier verifyAssertionResponse:assertion
+                                        challenge:expectedChallenge
+                                           origin:self.serverOrigin
+                                        publicKey:publicKey
+                                        signCount:storedSignCount
+                                     newSignCount:&candidateSignCount
+                                             error:&candidateError];
+    if (candidateVerified) {
+      verified = YES;
+      matchedCredential = credential;
+      newSignCount = candidateSignCount;
+      break;
+    }
+    if (candidateError) {
+      verificationError = candidateError;
+    }
+  }
+
+  if (!verified || !matchedCredential) {
+    response.statusCode = 401;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : verificationError.localizedDescription ?: @"Invalid passkey assertion"
+    }];
+    return;
+  }
+
+  NSError *updateError = nil;
+  if (![self.database updateWebAuthnCredentialSignCount:matchedCredential[@"credentialId"]
+                                                  forDid:did
+                                               signCount:newSignCount
+                                                   error:&updateError]) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : updateError.localizedDescription ?: @"Failed to update passkey sign count"
+    }];
+    return;
+  }
+
+  NSString *sessionToken = [self createPendingConsentSessionForDid:did
+                                                            handle:sessionHandle];
+  if (!sessionToken) {
+    response.statusCode = 500;
+    [response setJsonBody:@{
+      @"ok" : @NO,
+      @"error" : @"Failed to create session token"
+    }];
+    return;
+  }
+
+  response.statusCode = 200;
+  [response setJsonBody:@{
+    @"ok" : @YES,
+    @"did" : did,
+    @"session_token" : sessionToken
+  }];
+}
+
 - (void)handleAuthorizeSignIn:(HttpRequest *)request
                      response:(HttpResponse *)response {
   NSString *body = [[NSString alloc] initWithData:request.body
@@ -2088,17 +2366,15 @@ static dispatch_once_t sClientCacheOnceToken;
 
   if (result && result[@"did"]) {
     PDS_LOG_AUTH_INFO(@"Sign-in successful for handle: %@", handle);
-    NSString *sessionToken = [[NSUUID UUID] UUIDString];
-    @synchronized(sPendingConsents) {
-      [self cleanupExpiredPendingConsentsLocked];
-      [self enforcePendingConsentCapacityLocked];
-      sPendingConsents[sessionToken] = @{
-        @"did" : result[@"did"],
-        @"handle" : handle,
-        @"created" : [NSDate date],
-        @"expires" :
-            [NSDate dateWithTimeIntervalSinceNow:kPendingConsentTTLSeconds]
-      };
+    NSString *sessionToken = [self createPendingConsentSessionForDid:result[@"did"]
+                                                              handle:handle];
+    if (!sessionToken) {
+      response.statusCode = 500;
+      [response setJsonBody:@{
+        @"ok" : @NO,
+        @"error" : @"Failed to create session token"
+      }];
+      return;
     }
     response.statusCode = 200;
     [response setJsonBody:@{
@@ -2113,6 +2389,77 @@ static dispatch_once_t sClientCacheOnceToken;
     [response
         setJsonBody:@{@"ok" : @NO, @"error" : @"Invalid handle or password"}];
   }
+}
+
+- (NSDictionary *)parseJSONBody:(NSData *)data {
+  if (!data || data.length == 0) {
+    return nil;
+  }
+
+  id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+  if (!json || ![json isKindOfClass:[NSDictionary class]]) {
+    return nil;
+  }
+
+  return (NSDictionary *)json;
+}
+
+- (NSString *)createPendingConsentSessionForDid:(NSString *)did
+                                         handle:(NSString *)handle {
+  if (did.length == 0) {
+    return nil;
+  }
+
+  NSString *sessionToken = [[NSUUID UUID] UUIDString];
+  NSString *sessionHandle = handle.length > 0 ? handle : did;
+  @synchronized(sPendingConsents) {
+    [self cleanupExpiredPendingConsentsLocked];
+    [self enforcePendingConsentCapacityLocked];
+    sPendingConsents[sessionToken] = @{
+      @"did" : did,
+      @"handle" : sessionHandle,
+      @"created" : [NSDate date],
+      @"expires" :
+          [NSDate dateWithTimeIntervalSinceNow:kPendingConsentTTLSeconds]
+    };
+  }
+
+  return sessionToken;
+}
+
+- (void)cleanupExpiredPasskeyChallengesLocked {
+  if (!sPasskeyChallenges || sPasskeyChallenges.count == 0) {
+    return;
+  }
+
+  NSDate *now = [NSDate date];
+  NSMutableArray<NSString *> *expired = [NSMutableArray array];
+  [sPasskeyChallenges enumerateKeysAndObjectsUsingBlock:^(id key, id obj,
+                                                          BOOL *stop) {
+    NSDictionary *challenge = (NSDictionary *)obj;
+    NSDate *expires = challenge[@"expires"];
+    if (![expires isKindOfClass:[NSDate class]] ||
+        [expires compare:now] != NSOrderedDescending) {
+      [expired addObject:(NSString *)key];
+    }
+  }];
+  [sPasskeyChallenges removeObjectsForKeys:expired];
+}
+
+- (NSDictionary *)consumePasskeyChallengeForSessionId:(NSString *)sessionId {
+  if (sessionId.length == 0) {
+    return nil;
+  }
+
+  __block NSDictionary *challengeInfo = nil;
+  dispatch_sync(sPasskeyChallengeQueue, ^{
+    [self cleanupExpiredPasskeyChallengesLocked];
+    challengeInfo = sPasskeyChallenges[sessionId];
+    if (challengeInfo) {
+      [sPasskeyChallenges removeObjectForKey:sessionId];
+    }
+  });
+  return challengeInfo;
 }
 
 - (NSDictionary *)parseFormUrlEncodedString:(NSString *)input {
