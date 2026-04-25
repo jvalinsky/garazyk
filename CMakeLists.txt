@@ -1004,6 +1004,9 @@ if(BUILD_FUZZERS)
   add_pds_fuzzer_with_mutator(fuzz_cbor_struct "fuzzing/harness/FuzzCBORDecoder.m" "fuzzing/mutators/CBORMutator.mm")
   add_pds_fuzzer_with_mutator(fuzz_xrpc_struct "fuzzing/harness/FuzzXrpcDispatcher.m" "fuzzing/mutators/XrpcMutator.mm")
 
+  # Corpus minimizer target
+  add_pds_fuzzer(fuzz_minimizer "fuzzing/harness/FuzzMinimizer.m")
+
 endif()
 
 #=============================
@@ -1308,7 +1311,7 @@ add_custom_target(run-tests COMMAND "${CMAKE_BINARY_DIR}/scripts/run-tests.sh"
 
 if(BUILD_FUZZERS)
   # Alias targets for convenience
-  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_cbor_struct fuzz_xrpc_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst)
+  add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_cbor_struct fuzz_xrpc_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst fuzz_minimizer)
   add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
   add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
   add_custom_target(fuzz-http DEPENDS fuzz_http)
@@ -1322,6 +1325,7 @@ if(BUILD_FUZZERS)
   add_custom_target(fuzz-sqlite DEPENDS fuzz_sqlite)
   add_custom_target(fuzz-lexicon DEPENDS fuzz_lexicon)
   add_custom_target(fuzz-mst DEPENDS fuzz_mst)
+  add_custom_target(fuzz-minimizer DEPENDS fuzz_minimizer)
 endif()
 
 # Print build instructions
