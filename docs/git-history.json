@@ -1,11 +1,51 @@
 [
   {
-    "hash": "32b548100df87f0c09130fbd0f918570a292214a",
-    "short_hash": "32b5481",
+    "hash": "bdc4e7b7bfce02d3f450f1d8e68ccee8b43cd521",
+    "short_hash": "bdc4e7b",
     "author": "Security Bot",
-    "date": "2026-04-25T08:36:47-04:00",
-    "message": "test: expand PDSPhoneVerificationProviderTests with 4 edge case tests\n\nAdd coverage for whitespace trimming in provider name lookup, empty\nstring provider name, mock provider requestVerification, and\nresetCustomProviders clearing all registrations.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
+    "date": "2026-04-25T13:42:44-04:00",
+    "message": "admin: fix POST /admin/invites 500 error and add cookie auth support\n\nFix 1: Admin service availability (POST /admin/invites returning 500)\n- PDSAdminHandler.adminService property was trying to get 'adminService'\n  from PDSController, but PDSController only has 'adminController'\n- Fixed: route through adminController to get the adminService\n\nFix 2: Add cookie support for direct navigation to /admin routes\n- Extend PDSAdminAuth.authenticateHeaders to also check for token in\n  Cookie header (format: admin_token=<token>)\n- This enables future support for cookie-based auth for direct browser\n  navigation (requires server to set Set-Cookie on login)\n\nNote: Direct navigation to /admin/invites etc. still returns 401 because\nthe token is stored in sessionStorage (browser-side only), not in a cookie.\nThe /admin/ui SPA entry point works correctly because HTMX is configured\nto send Authorization header with all requests.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "1433a19a4806d238da42b64b2ac80825a6afdcbd",
+    "short_hash": "1433a19",
+    "author": "Security Bot",
+    "date": "2026-04-25T13:37:31-04:00",
+    "message": "admin: create Category C stub templates for missing partials\n\nCreate 5 stub templates with empty-state placeholders for partials that had\nno template or handler. These prevent blank content panes and provide a\nfoundation for future implementation.\n\nTemplates created:\n- reports.html: Wrapper that lazy-loads reports/list\n- reports_list.html: Empty state for report list\n- audit_log.html: Empty state for audit log entries\n- hosting_history.html: Empty state for hosting history\n- ozone_correlations.html: Empty state with \"Coming Soon\" alert\n\nEach uses the empty-state-strawberry styling to provide a consistent,\nnon-jarring user experience instead of blank panes.\n\nAdd if-cases in AdminPartialHandler.handlePartialNamed: to wire these partials\nto their respective templates.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "a2d86e4c1738a06af3607cef373b6c2eec581da1",
+    "short_hash": "a2d86e4",
+    "author": "Security Bot",
+    "date": "2026-04-25T13:37:22-04:00",
+    "message": "admin: create Category B shell templates for security partials\n\nCreate HTMX shell templates for security/sessions and security/app-passwords\nthat lazy-load their respective list sub-partials on page load. Add if-cases\nin AdminPartialHandler.handlePartialNamed: to wire them.\n\nTemplates:\n- security_sessions.html: Container with hx-get=\"/admin/partials/security/sessions/list\"\n- security_app_passwords.html: Container with hx-get=\"/admin/partials/security/app-passwords/list\"\n\nThese wrap existing list handlers (renderSecuritySessionsListPartial and\nrenderSecurityAppPasswordsListPartial) which were already wired at the /list\nendpoints.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "ff4c56162b938adc436f775f41cf3e65c2f5fcf5",
+    "short_hash": "ff4c561",
+    "author": "Security Bot",
+    "date": "2026-04-25T13:37:09-04:00",
+    "message": "admin: wire Category A partials — add 10 if-cases for existing templates\n\nAdd handler cases for 10 partials that had templates on disk but no if-case in\nhandlePartialNamed:. These partials previously returned nil, causing blank\ncontent panes in the admin UI.\n\nWired partials:\n- diagnostics/overview, diagnostics/sequencer, diagnostics/blobs, diagnostics/ratelimits\n- relay/events, relay/upstreams, relay/crawl\n- appview/index, appview/backfill, appview/metrics\n\nAll templates use renderPartialWithTemplate:context: which resolves template\npaths correctly via AdminUI/Templates/<name>.html.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 1
+  },
+  {
+    "hash": "b9d188e2d76fb559930f453778bb672169d17111",
+    "short_hash": "b9d188e",
+    "author": "Security Bot",
+    "date": "2026-04-25T13:37:04-04:00",
+    "message": "admin: fix users tab — use PDSController.getAllAccountsWithError instead of nil database stub\n\nReplace the self.database path in handleAdminUsers: with a direct call to\n[[PDSController sharedController] getAllAccountsWithError:]. The self.database\npath was a stub returning nil, causing the admin UI PDS tab to always show 0\naccounts. The working path routes through PDSAccountService → PDSLegacyAccountRepository\n→ PDSServiceDatabases, which correctly retrieves accounts from the actor store.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "9c62c6ef5ed3def13ad451abaee8a00c5726207e",
+    "short_hash": "9c62c6e",
+    "author": "Security Bot",
+    "date": "2026-04-25T13:14:25-04:00",
+    "message": "Fix admin UI login failures: JS ReferenceError, keychain signing crash, and 401 on partials\n\n- Fix JS ReferenceError: map switchService to switchToService in window.AdminUI export (app.js:861)\n- Fix Keychain private key lookup: add kSecAttrKeyClassPrivate filter to SecItemCopyMatching query (PDSAppleKeyManager.m:646)\n  - On macOS, both public and private keys are stored in Keychain with the same application tag\n  - Without the class filter, SecItemCopyMatching returns the public key (class=0) instead of private key\n  - This caused OSStatus -50 when signing, which made admin authentication fail with nil token\n- Fix hardcoded @\"RS256\" JWT header in signPayload:withKeyID: to use actual key algorithm (PDSAppleKeyManager.m:542)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 48
   },
   {
     "hash": "f000d36dd767861bb6d0dc6d9dbbdd422c83fdb5",
