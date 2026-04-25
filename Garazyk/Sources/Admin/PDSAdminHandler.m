@@ -263,7 +263,7 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
 
     PDSAdminAuth *auth = [PDSAdminAuth sharedAuth];
 
-    if (![routePath isEqualToString:@"/admin/login"] && ![routePath hasPrefix:@"/admin/assets/"] && ![routePath hasPrefix:@"/admin/css/"] && ![routePath hasPrefix:@"/admin/js/"] && ![auth isAuthenticatedWithRequest:headers]) {
+    if (![routePath isEqualToString:@"/admin/login"] && ![routePath isEqualToString:@"/admin/logout"] && ![routePath hasPrefix:@"/admin/assets/"] && ![routePath hasPrefix:@"/admin/css/"] && ![routePath hasPrefix:@"/admin/js/"] && ![auth isAuthenticatedWithRequest:headers]) {
         return [self jsonResponseWithStatus:401 body:@{@"error": @"Unauthorized"}];
     }
 
