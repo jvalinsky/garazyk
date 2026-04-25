@@ -897,6 +897,7 @@ set_target_properties(record_cache_tests PROPERTIES
 #=============================
 
 option(BUILD_FUZZERS "Build fuzzing targets" OFF)
+option(FUZZER_COVERAGE "Build fuzzers with coverage instrumentation" OFF)
 
 if(BUILD_FUZZERS)
   # Check if fuzzer sanitize is supported
@@ -914,6 +915,13 @@ if(BUILD_FUZZERS)
     set(FUZZER_CFLAGS -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined)
     set(FUZZER_LDFLAGS -fsanitize=address,undefined)
     set(FUZZER_DRIVER "fuzzing/standalone_driver.cpp")
+  endif()
+
+  # Coverage instrumentation
+  if(FUZZER_COVERAGE)
+    message(STATUS "Building fuzzers with coverage instrumentation")
+    set(FUZZER_CFLAGS "${FUZZER_CFLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    set(FUZZER_LDFLAGS "${FUZZER_LDFLAGS} -fprofile-instr-generate -fcoverage-mapping")
   endif()
 
   set(FUZZER_SOURCES ${ATPROTO_ALL_RUNTIME_SOURCES})
