@@ -341,13 +341,8 @@ static NSString *PDSMethodStringFromHttpMethod(HttpMethod method) {
 }
 
 - (NSDictionary *)handleAdminUsers:(NSDictionary *)headers body:(NSData *)body method:(PDSHTTPMethod)method {
-    PDSDatabase *db = self.database;
-    if (!db) {
-        return [self jsonResponseWithStatus:200 body:@{@"users": @[], @"total": @0}];
-    }
-
     NSError *error = nil;
-    NSArray<PDSDatabaseAccount *> *accounts = [db getAllAccountsWithError:&error];
+    NSArray<PDSDatabaseAccount *> *accounts = [[PDSController sharedController] getAllAccountsWithError:&error];
     if (!accounts) {
         return [self jsonResponseWithStatus:500 body:@{@"error": error.localizedDescription ?: @"Database error"}];
     }
