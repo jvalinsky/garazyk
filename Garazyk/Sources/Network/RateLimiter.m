@@ -554,6 +554,63 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     }
 }
 
+- (NSArray<NSDictionary *> *)getTopLimitedIdentifiers:(NSInteger)limit {
+    if (!_db) return @[];
+    if (limit <= 0) limit = 20;
+
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSTimeInterval windowStart = now - self.didWindowSeconds;
+
+    NSString *sql = @"SELECT identifier, type, SUM(request_count) as total_count, "
+                     @"MAX(window_start) as last_window "
+                     @"FROM rate_limits WHERE window_start > ? "
+                     @"GROUP BY identifier, type ORDER BY total_count DESC LIMIT ?";
+    sqlite3_stmt *stmt = NULL;
+    int result = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (result != SQLITE_OK) return @[];
+
+    sqlite3_bind_double(stmt, 1, windowStart);
+    sqlite3_bind_int64(stmt, 2, limit);
+
+    NSMutableArray *entries = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        NSDictionary *entry = @{
+            @"identifier": [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)],
+            @"type": [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)],
+            @"requestCount": @(sqlite3_column_int64(stmt, 2)),
+            @"windowStart": @(sqlite3_column_double(stmt, 3))
+        };
+        [entries addObject:entry];
+    }
+    sqlite3_finalize(stmt);
+    return [entries copy];
+}
+
+- (NSInteger)clearRateLimitForIdentifier:(NSString *)identifier type:(NSString *)type {
+    if (!_db || !identifier) return 0;
+
+    NSString *sql;
+    if ([type isEqualToString:@"blob"]) {
+        sql = @"DELETE FROM blob_rate_limits WHERE did = ?";
+    } else {
+        sql = @"DELETE FROM rate_limits WHERE identifier = ? AND type = ?";
+    }
+
+    sqlite3_stmt *stmt = NULL;
+    int result = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (result != SQLITE_OK) return 0;
+
+    sqlite3_bind_text(stmt, 1, identifier.UTF8String, -1, SQLITE_TRANSIENT);
+    if (![type isEqualToString:@"blob"]) {
+        sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
+    }
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    return (NSInteger)sqlite3_changes(_db);
+}
+
 @end
 
 NS_ASSUME_NONNULL_END

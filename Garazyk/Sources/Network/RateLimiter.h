@@ -228,6 +228,28 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
                                   forDid:(nullable NSString *)did
                                     ip:(nullable NSString *)ip;
 
+/**
+ * @brief Get top rate-limited identifiers by request count
+ *
+ * Queries the rate_limits table for identifiers with the highest request counts
+ * in the current window.
+ *
+ * @param limit Maximum number of results (default: 20)
+ * @return Array of dictionaries with keys: identifier, type, requestCount, windowStart
+ */
+- (NSArray<NSDictionary *> *)getTopLimitedIdentifiers:(NSInteger)limit;
+
+/**
+ * @brief Clear rate limit entries for a specific identifier
+ *
+ * Removes all rate limit entries for the given identifier from the database.
+ *
+ * @param identifier DID or IP address to clear
+ * @param type Rate limit type ("did", "ip", or "blob")
+ * @return Number of entries cleared
+ */
+- (NSInteger)clearRateLimitForIdentifier:(NSString *)identifier type:(NSString *)type;
+
 @end
 
 /**
