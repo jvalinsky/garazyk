@@ -79,6 +79,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)fetchSafelinkRules;
 - (NSDictionary *)addSafelinkRule:(NSDictionary *)rule;
 - (NSDictionary *)removeSafelinkRule:(NSString *)url pattern:(NSString *)pattern;
+- (NSDictionary *)listOzoneSettings;
+- (NSDictionary *)upsertOzoneSetting:(NSDictionary *)option;
+- (NSDictionary *)removeOzoneSettings:(NSArray<NSString *> *)keys;
+- (NSDictionary *)findRelatedAccounts:(NSString *)did;
+- (NSDictionary *)findSignatureCorrelation:(NSArray<NSString *> *)dids;
+- (NSDictionary *)searchAccountsBySignature:(NSDictionary *)patterns;
 
 // Ozone Team Operations
 - (NSDictionary *)fetchOzoneTeamMembers;
