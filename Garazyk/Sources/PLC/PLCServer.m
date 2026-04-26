@@ -348,10 +348,6 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 @property (nonatomic, strong) PLCAuditor *auditor;
 @property (nonatomic, strong) HttpServer *httpServer;
 @property (nonatomic, copy, nullable) NSString *adminSecret;
-
-- (void)serveStaticFile:(NSString *)path response:(HttpResponse *)resp;
-- (NSString *)assetsPath;
-- (BOOL)validateAdminToken:(NSString *)token;
 @end
 
 @implementation PLCServer
@@ -388,7 +384,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         resp.statusCode = HttpStatusOK;
         [resp setJsonBody:@{@"status": @"ok"}];
     }];
-    
+
     [self.httpServer addRoute:@"GET" path:@"/_list" handler:^(HttpRequest *req, HttpResponse *resp) {
         [[PLCMetrics sharedMetrics] recordRequest];
         NSError *error = nil;
@@ -402,7 +398,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             [resp setJsonBody:dids];
         }
     }];
-    
+
     [self.httpServer addRoute:@"GET" path:@"/_metrics" handler:^(HttpRequest *req, HttpResponse *resp) {
         [[PLCMetrics sharedMetrics] recordRequest];
         NSString *metrics = [[PLCMetrics sharedMetrics] renderMetrics];
@@ -417,34 +413,46 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [resp setBodyData:[NSData data]];
     }];
 
-    // Legacy static PLC UI (for backwards compatibility)
-    [self.httpServer addRoute:nil path:@"/static" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [weakSelf serveStaticFile:@"index.html" response:resp];
-    }];
-
     [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [weakSelf serveStaticFile:@"index.html" response:resp];
+        resp.statusCode = HttpStatusOK;
+        resp.contentType = @"text/plain; charset=utf-8";
+        [resp setBodyString:@"campagnola 1.0.0\n"];
     }];
 
-    [self.httpServer addRoute:@"GET" path:@"/index.html" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [weakSelf serveStaticFile:@"index.html" response:resp];
-    }];
+    NSArray<NSString *> *adminMethods = @[@"GET", @"POST", @"PUT", @"DELETE", @"PATCH", @"OPTIONS", @"HEAD"];
+    for (NSString *method in adminMethods) {
+        [self.httpServer addRoute:method path:@"/admin" handler:^(HttpRequest *req, HttpResponse *resp) {
+            NSString *base = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (base.length == 0) base = @"http://127.0.0.1:2590";
+            while ([base hasSuffix:@"/"]) {
+                base = [base substringToIndex:base.length - 1];
+            }
+            NSString *location = [NSString stringWithFormat:@"%@%@", base, req.path ?: @"/admin"];
+            if (req.queryString.length > 0) {
+                location = [location stringByAppendingFormat:@"?%@", req.queryString];
+            }
+            resp.statusCode = 307;
+            resp.contentType = @"text/plain; charset=utf-8";
+            [resp setHeader:location forKey:@"Location"];
+            [resp setBodyString:@"Redirecting to UI service\n"];
+        }];
 
-    [self.httpServer addRoute:@"GET" path:@"/css/*" handler:^(HttpRequest *req, HttpResponse *resp) {
-        NSString *subpath = req.path;
-        if ([subpath hasPrefix:@"/"]) {
-            subpath = [subpath substringFromIndex:1];
-        }
-        [weakSelf serveStaticFile:subpath response:resp];
-    }];
-
-    [self.httpServer addRoute:@"GET" path:@"/js/*" handler:^(HttpRequest *req, HttpResponse *resp) {
-        NSString *subpath = req.path;
-        if ([subpath hasPrefix:@"/"]) {
-            subpath = [subpath substringFromIndex:1];
-        }
-        [weakSelf serveStaticFile:subpath response:resp];
-    }];
+        [self.httpServer addRoute:method path:@"/admin/*" handler:^(HttpRequest *req, HttpResponse *resp) {
+            NSString *base = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (base.length == 0) base = @"http://127.0.0.1:2590";
+            while ([base hasSuffix:@"/"]) {
+                base = [base substringToIndex:base.length - 1];
+            }
+            NSString *location = [NSString stringWithFormat:@"%@%@", base, req.path ?: @"/admin"];
+            if (req.queryString.length > 0) {
+                location = [location stringByAppendingFormat:@"?%@", req.queryString];
+            }
+            resp.statusCode = 307;
+            resp.contentType = @"text/plain; charset=utf-8";
+            [resp setHeader:location forKey:@"Location"];
+            [resp setBodyString:@"Redirecting to UI service\n"];
+        }];
+    }
     
     [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf handleExport:req response:resp];
@@ -747,107 +755,6 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 
 - (void)stop {
     [self.httpServer stop];
-}
-
-#pragma mark - Static Files
-
-- (void)serveStaticFile:(NSString *)path response:(HttpResponse *)resp {
-    NSString *assets = [self assetsPath];
-    if (!assets) {
-        resp.statusCode = HttpStatusNotFound;
-        [resp setJsonBody:@{@"error": @"Assets not found"}];
-        return;
-    }
-
-    if (path.length == 0 || [path hasPrefix:@"/"] || [path containsString:@".."]) {
-        resp.statusCode = HttpStatusNotFound;
-        [resp setJsonBody:@{@"error": @"File not found"}];
-        return;
-    }
-
-    NSString *fullPath = [[assets stringByAppendingPathComponent:path] stringByStandardizingPath];
-    NSString *basePath = [assets stringByStandardizingPath];
-    if (![fullPath hasPrefix:[basePath stringByAppendingString:@"/"]]) {
-        resp.statusCode = HttpStatusNotFound;
-        [resp setJsonBody:@{@"error": @"File not found"}];
-        return;
-    }
-
-    if (![[NSFileManager defaultManager] fileExistsAtPath:fullPath]) {
-        resp.statusCode = HttpStatusNotFound;
-        [resp setJsonBody:@{@"error": @"File not found", @"path": path}];
-        return;
-    }
-    
-    NSData *data = [NSData dataWithContentsOfFile:fullPath];
-    if (!data) {
-        resp.statusCode = HttpStatusInternalServerError;
-        return;
-    }
-    
-    NSString *extension = [path pathExtension].lowercaseString;
-    NSString *contentType = @"text/plain";
-    if ([extension isEqualToString:@"html"]) contentType = @"text/html; charset=utf-8";
-    else if ([extension isEqualToString:@"css"]) contentType = @"text/css; charset=utf-8";
-    else if ([extension isEqualToString:@"js"]) contentType = @"application/javascript; charset=utf-8";
-    else if ([extension isEqualToString:@"json"]) contentType = @"application/json; charset=utf-8";
-    else if ([extension isEqualToString:@"woff2"]) contentType = @"font/woff2";
-    else if ([extension isEqualToString:@"woff"]) contentType = @"font/woff";
-    
-    // Explicitly set the header to ensure it overrides any defaults
-    [resp setHeader:contentType forKey:@"Content-Type"];
-    resp.contentType = contentType;
-    resp.statusCode = HttpStatusOK;
-    [resp setBody:data];
-    
-    // Debug logging
-    PDS_LOG_CORE_DEBUG(@"PLCServer serving %@ (Content-Type: %@)", path ?: @"", contentType ?: @"");
-}
-
-- (NSString *)assetsPath {
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSString *cwd = [fm currentDirectoryPath];
-    
-    NSArray *candidates = @[
-        [cwd stringByAppendingPathComponent:@"Garazyk/Sources/PLC/Assets"],
-        [cwd stringByAppendingPathComponent:@"Sources/PLC/Assets"],
-        [cwd stringByAppendingPathComponent:@"Assets"],
-        [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"Assets"],
-        @"/usr/share/atprotopds/assets/PLC",
-        @"/usr/local/share/atprotopds/assets/PLC"
-    ];
-    
-    for (NSString *path in candidates) {
-        BOOL isDir = NO;
-        if ([fm fileExistsAtPath:path isDirectory:&isDir] && isDir) {
-            return path;
-        }
-    }
-    
-    return nil;
-}
-
-- (BOOL)validateAuth:(HttpRequest *)req response:(HttpResponse *)resp {
-    if (!self.adminSecret || self.adminSecret.length == 0) {
-        resp.statusCode = HttpStatusServiceUnavailable;
-        [resp setJsonBody:@{@"error": @"Admin auth not configured"}];
-        return NO;
-    }
-
-    NSString *authHeader = req.headers[@"Authorization"] ?: req.headers[@"authorization"];
-    NSString *expected = [NSString stringWithFormat:@"Bearer %@", self.adminSecret];
-
-    if (![authHeader isEqualToString:expected]) {
-        resp.statusCode = HttpStatusUnauthorized;
-        [resp setJsonBody:@{@"error": @"Unauthorized"}];
-        return NO;
-    }
-    return YES;
-}
-
-- (BOOL)validateAdminToken:(NSString *)token {
-    if (!self.adminSecret || self.adminSecret.length == 0) return NO;
-    return [token isEqualToString:self.adminSecret];
 }
 
 @end
