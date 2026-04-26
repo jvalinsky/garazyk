@@ -1,5 +1,5 @@
 {
-  description = "Objective-C development environment - GNUstep on Linux, native Apple SDK on darwin";
+  description = "Garazyk PDS with fuzzing support - GNUstep on Linux, native Apple SDK on darwin";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -25,17 +25,22 @@
           pkg-config
           gnumake
           cmake
+          sqlite
         ];
 
         devTools = with pkgs; [
           clang-tools
           lldb
           bear
-          valgrind
         ];
 
         darwinFrameworks = pkgs.lib.optionals isDarwin (with pkgs; [
           xcbuild
+        ]);
+
+        linuxFuzzingDeps = pkgs.lib.optionals isLinux (with pkgs; [
+          llvmPackages_17.clang
+          llvmPackages_17.llvm
         ]);
 
         linuxShellHook = ''
@@ -51,7 +56,13 @@
 
         darwinShellHook = ''
           echo "Native Apple SDK development environment loaded"
-          echo "  Using system Foundation framework"
+          echo "  Note: macOS clang lacks libFuzzer - use Linux for full fuzzing"
+        '';
+
+        fuzzerShellHook = pkgs.lib.optionalString isLinux ''
+          export FUZZER_CFLAGS="-g -O1 -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined"
+          export FUZZER_LDFLAGS="-fsanitize=fuzzer,address,undefined"
+          echo "Fuzzing environment: -fsanitize=fuzzer available on Linux"
         '';
 
       in {
@@ -63,6 +74,18 @@
             echo "Objective-C development environment (${system})"
             echo "  clang --version: $(clang --version | head -1)"
             ${if isLinux then linuxShellHook else darwinShellHook}
+          '';
+        };
+
+        devShells.fuzzing = pkgs.mkShell {
+          buildInputs = gnustepPackages ++ darwinFrameworks ++ linuxFuzzingDeps;
+          nativeBuildInputs = buildTools ++ devTools;
+
+          shellHook = ''
+            echo "Fuzzer development environment (${system})"
+            echo "  clang --version: $(clang --version | head -1)"
+            ${if isLinux then linuxShellHook else darwinShellHook}
+            ${fuzzerShellHook}
           '';
         };
       }
