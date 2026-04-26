@@ -7,6 +7,10 @@
 #import "Auth/CryptoUtils.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import <arpa/inet.h>
+#import <netinet/in.h>
+#import <sys/socket.h>
+#import <CoreFoundation/CoreFoundation.h>
 
 @interface PLCServerTests : XCTestCase
 @property (nonatomic, strong) PLCMockStore *store;
@@ -56,7 +60,98 @@
 }
 
 - (void)tearDown {
+    [self.server stop];
     [super tearDown];
+}
+
+- (NSDictionary *)rawHTTPResponseWithMethod:(NSString *)method
+                                       path:(NSString *)path
+                                       port:(UInt16)port {
+    NSString *requestText = [NSString stringWithFormat:@"%@ %@ HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+                                                       method ?: @"GET",
+                                                       path ?: @"/"];
+    NSData *requestData = [requestText dataUsingEncoding:NSUTF8StringEncoding];
+
+    CFSocketRef socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL);
+    if (!socket) {
+        XCTFail(@"Failed to create socket");
+        return @{@"statusCode": @0, @"headers": @{}, @"body": @""};
+    }
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_len = sizeof(addr);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    NSData *addressData = [NSData dataWithBytes:&addr length:sizeof(addr)];
+    CFSocketError connectResult = CFSocketConnectToAddress(socket, (__bridge CFDataRef)addressData, 5.0);
+    if (connectResult != kCFSocketSuccess) {
+        CFRelease(socket);
+        XCTFail(@"Failed to connect to local HTTP server");
+        return @{@"statusCode": @0, @"headers": @{}, @"body": @""};
+    }
+
+    CFSocketNativeHandle nativeSocket = CFSocketGetNative(socket);
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    setsockopt(nativeSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+    ssize_t sent = send(nativeSocket, requestData.bytes, requestData.length, 0);
+    if (sent != (ssize_t)requestData.length) {
+        CFRelease(socket);
+        XCTFail(@"Failed to send request bytes");
+        return @{@"statusCode": @0, @"headers": @{}, @"body": @""};
+    }
+
+    NSMutableData *responseData = [NSMutableData data];
+    char buffer[4096];
+    ssize_t received = 0;
+    while ((received = recv(nativeSocket, buffer, sizeof(buffer), 0)) > 0) {
+        [responseData appendBytes:buffer length:(NSUInteger)received];
+    }
+    CFRelease(socket);
+
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] ?: @"";
+    NSRange headerEndRange = [responseString rangeOfString:@"\r\n\r\n"];
+    NSString *headerSection = headerEndRange.location != NSNotFound
+                                  ? [responseString substringToIndex:headerEndRange.location]
+                                  : responseString;
+    NSString *bodySection = headerEndRange.location != NSNotFound
+                                ? [responseString substringFromIndex:headerEndRange.location + 4]
+                                : @"";
+
+    NSArray<NSString *> *headerLines = [headerSection componentsSeparatedByString:@"\r\n"];
+    NSInteger statusCode = 0;
+    NSMutableDictionary<NSString *, NSString *> *headers = [NSMutableDictionary dictionary];
+    if (headerLines.count > 0) {
+        NSArray<NSString *> *statusParts = [headerLines[0] componentsSeparatedByString:@" "];
+        if (statusParts.count >= 2) {
+            statusCode = [statusParts[1] integerValue];
+        }
+    }
+
+    for (NSUInteger i = 1; i < headerLines.count; i++) {
+        NSString *line = headerLines[i];
+        NSRange separatorRange = [line rangeOfString:@":"];
+        if (separatorRange.location == NSNotFound) {
+            continue;
+        }
+        NSString *key = [[line substringToIndex:separatorRange.location] lowercaseString];
+        NSString *value = [[line substringFromIndex:separatorRange.location + 1]
+            stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if (key.length > 0) {
+            headers[key] = value ?: @"";
+        }
+    }
+
+    return @{
+        @"statusCode": @(statusCode),
+        @"headers": [headers copy],
+        @"body": bodySection ?: @""
+    };
 }
 
 - (void)testGetDID {
@@ -163,6 +258,59 @@
     [self.server handlePostDID:req response:resp];
     XCTAssertEqual(resp.statusCode, 400);
     XCTAssertNotEqualObjects(did, wrongDid);
+}
+
+- (void)testRootRouteReturnsPlainTextBanner {
+    NSError *startError = nil;
+    BOOL started = [self.server startWithError:&startError];
+    if (!started) {
+        NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
+        if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
+            XCTSkip(@"PLCServer cannot listen (EPERM) in this environment");
+            return;
+        }
+        XCTFail(@"Failed to start PLC server: %@", startError);
+        return;
+    }
+
+    NSDictionary *response = [self rawHTTPResponseWithMethod:@"GET"
+                                                        path:@"/"
+                                                        port:(UInt16)self.server.httpServer.port];
+    XCTAssertEqual([response[@"statusCode"] integerValue], 200);
+    XCTAssertTrue([response[@"headers"][@"content-type"] containsString:@"text/plain"]);
+    NSString *body = [response[@"body"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    XCTAssertEqualObjects(body, @"campagnola 1.0.0");
+}
+
+- (void)testAdminRouteRedirectsToUIService {
+    NSString *previousUIURL = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] copy];
+    setenv("PDS_UI_SERVER_URL", "http://ui.local:4599", 1);
+
+    @try {
+        NSError *startError = nil;
+        BOOL started = [self.server startWithError:&startError];
+        if (!started) {
+            NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
+            if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] && underlying.code == EPERM) {
+                XCTSkip(@"PLCServer cannot listen (EPERM) in this environment");
+                return;
+            }
+            XCTFail(@"Failed to start PLC server: %@", startError);
+            return;
+        }
+
+        NSDictionary *response = [self rawHTTPResponseWithMethod:@"GET"
+                                                            path:@"/admin/ui?foo=bar"
+                                                            port:(UInt16)self.server.httpServer.port];
+        XCTAssertEqual([response[@"statusCode"] integerValue], 307);
+        XCTAssertEqualObjects(response[@"headers"][@"location"], @"http://ui.local:4599/admin/ui?foo=bar");
+    } @finally {
+        if (previousUIURL.length > 0) {
+            setenv("PDS_UI_SERVER_URL", previousUIURL.UTF8String, 1);
+        } else {
+            unsetenv("PDS_UI_SERVER_URL");
+        }
+    }
 }
 
 @end

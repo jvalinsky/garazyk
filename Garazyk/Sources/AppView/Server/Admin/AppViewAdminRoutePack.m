@@ -74,24 +74,8 @@ static NSString *AppViewAdminExtractRepoDID(NSString *path, NSString *suffix) {
                      @"follows": @(follows)
                  };
 
-                 BOOL wantsHTML = [request.headers[@"Hx-Request"] isEqualToString:@"true"] ||
-                                  [request.headers[@"Accept"] containsString:@"text/html"];
-
                  response.statusCode = 200;
-                 if (wantsHTML) {
-                     [response setHeader:@"text/html" forKey:@"Content-Type"];
-                     NSString *html = [NSString stringWithFormat:
-                         @"<div class=\"grid-4 mb-lg\" hx-get=\"/admin/appview/index/stats\" hx-trigger=\"load, every 60s\" hx-swap=\"outerHTML\">"
-                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Indexed Repos</div><div class=\"stat-value\">%@</div></div>"
-                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Posts</div><div class=\"stat-value\">%ld</div></div>"
-                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Profiles</div><div class=\"stat-value\">%ld</div></div>"
-                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Follows</div><div class=\"stat-value\">%ld</div></div>"
-                         @"</div>",
-                         stats[@"indexed_repos"], (long)posts, (long)profiles, (long)follows];
-                     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
-                 } else {
-                     [response setJsonBody:stats];
-                 }
+                 [response setJsonBody:stats];
              }];
 
     // -----------------------------------------------------------------
@@ -131,32 +115,8 @@ static NSString *AppViewAdminExtractRepoDID(NSString *path, NSString *suffix) {
                      @"cursor": queueResult[@"cursor"] ?: [NSNull null]
                  };
 
-                 BOOL wantsHTML = [request.headers[@"Hx-Request"] isEqualToString:@"true"] ||
-                                  [request.headers[@"Accept"] containsString:@"text/html"];
-
                  response.statusCode = 200;
-                 if (wantsHTML) {
-                     [response setHeader:@"text/html" forKey:@"Content-Type"];
-                     NSMutableString *html = [NSMutableString stringWithString:@"<tbody hx-get=\"/admin/appview/index/repos\" hx-trigger=\"load, every 60s\" hx-swap=\"innerHTML\">"];
-                     for (NSDictionary *e in entries) {
-                         [html appendFormat:@"<tr><td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>%@</td><td>"
-                             @"<button class=\"btn btn-sm\" hx-post=\"/admin/backfill/repos/%@/retry\" hx-swap=\"none\">Retry</button>"
-                             @"</td></tr>",
-                             e[@"handle"] != [NSNull null] ? e[@"handle"] : @"-",
-                             e[@"did"],
-                             e[@"status"],
-                             e[@"record_count"],
-                             e[@"last_updated"] != [NSNull null] ? e[@"last_updated"] : @"-",
-                             e[@"did"]];
-                     }
-                     if (entries.count == 0) {
-                         [html appendString:@"<tr><td colspan=\"6\" class=\"text-center p-md\">No repositories found</td></tr>"];
-                     }
-                     [html appendString:@"</tbody>"];
-                     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
-                 } else {
-                     [response setJsonBody:result];
-                 }
+                 [response setJsonBody:result];
              }];
 
     // -----------------------------------------------------------------
@@ -195,29 +155,8 @@ static NSString *AppViewAdminExtractRepoDID(NSString *path, NSString *suffix) {
                      }
                  };
 
-                 BOOL wantsHTML = [request.headers[@"Hx-Request"] isEqualToString:@"true"] ||
-                                  [request.headers[@"Accept"] containsString:@"text/html"];
-
                  response.statusCode = 200;
-                 if (wantsHTML) {
-                     [response setHeader:@"text/html" forKey:@"Content-Type"];
-                     NSNumber *tpTotal = @0;
-                     for (NSNumber *tp in throughput.allValues) {
-                         tpTotal = @(tpTotal.integerValue + tp.integerValue);
-                     }
-                     NSString *html = [NSString stringWithFormat:
-                         @"<div class=\"grid-3 mb-lg\" hx-get=\"/admin/appview/metrics/stats\" hx-trigger=\"load, every 60s\" hx-swap=\"outerHTML\">"
-                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Queue Depth</div><div class=\"stat-value\" id=\"metrics-queue-depth\">%@</div></div>"
-                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Active Workers</div><div class=\"stat-value\" id=\"metrics-workers\">%@</div></div>"
-                         @"  <div class=\"stat-card\"><div class=\"stat-label\">Ingest/sec</div><div class=\"stat-value\" id=\"metrics-throughput\">%@</div></div>"
-                         @"</div>",
-                         status[@"queue_depth"] ?: @0,
-                         status[@"active_workers"] ?: @0,
-                         tpTotal];
-                     [response setBody:[html dataUsingEncoding:NSUTF8StringEncoding]];
-                 } else {
-                     [response setJsonBody:metrics];
-                 }
+                 [response setJsonBody:metrics];
              }];
 
     // -----------------------------------------------------------------

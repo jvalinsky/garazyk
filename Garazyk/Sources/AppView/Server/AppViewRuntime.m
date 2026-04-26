@@ -16,8 +16,6 @@
 #import "AppView/Server/Indexers/AppViewFeedIndexer.h"
 #import "AppView/Server/Indexers/AppViewGraphIndexer.h"
 #import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
-#import "AppView/Server/Admin/AppViewAdminRoutePack.h"
-#import "AppView/Server/AppViewIdentityHelper.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
@@ -55,6 +53,24 @@
 // ---------------------------------------------------------------------------
 
 static AppViewRuntime *_sharedRuntime = nil;
+
+static NSString *AppViewUIServiceBaseURL(void) {
+    NSString *configured = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"]
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return configured.length > 0 ? configured : @"http://127.0.0.1:2590";
+}
+
+static NSString *AppViewAdminRedirectLocation(NSString *path, NSString *query) {
+    NSString *base = AppViewUIServiceBaseURL();
+    while ([base hasSuffix:@"/"]) {
+        base = [base substringToIndex:base.length - 1];
+    }
+    NSString *location = [NSString stringWithFormat:@"%@%@", base, path.length > 0 ? path : @"/admin"];
+    if (query.length > 0) {
+        location = [location stringByAppendingFormat:@"?%@", query];
+    }
+    return location;
+}
 
 @implementation AppViewRuntime
 
@@ -158,17 +174,11 @@ static AppViewRuntime *_sharedRuntime = nil;
     // Build HTTP server for query API + admin
     _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
 
-    // Root serves info endpoint
+    // Root serves ASCII service banner
     [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
-        NSDictionary *info = @{
-            @"service": @"syrena",
-            @"version": @"1.0.0",
-            @"type": @"app.bsky.appview",
-        };
-        NSData *json = [NSJSONSerialization dataWithJSONObject:info options:0 error:nil];
-        [res setHeader:@"application/json" forKey:@"Content-Type"];
         res.statusCode = 200;
-        [res setBody:json];
+        res.contentType = @"text/plain; charset=utf-8";
+        [res setBodyString:@"syrena 1.0.0\n"];
     }];
 
     [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *res) {
@@ -206,18 +216,22 @@ static AppViewRuntime *_sharedRuntime = nil;
     [xrpcPack registerRoutesWithServer:_httpServer];
 
 
-    if (config.adminSecret.length > 0) {
-        PDS_LOG_INFO(@"[AppViewRuntime] Registering admin routes");
-        [AppViewIdentityHelper configureWithPlcURL:config.plcURL cacheTTLSeconds:300];
-        [AppViewAdminRoutePack registerWithServer:_httpServer
-                                    orchestrator:_orchestrator
-                                    relevanceSet:_relevanceSet
-                                    ingestEngine:_ingestEngine
-                                        database:_database
-                                    actorService:_actorService
-                                     adminSecret:config.adminSecret];
-    } else {
-        PDS_LOG_WARN(@"[AppViewRuntime] Admin secret not set, admin routes disabled");
+    NSArray<NSString *> *adminMethods = @[@"GET", @"POST", @"PUT", @"DELETE", @"PATCH", @"OPTIONS", @"HEAD"];
+    for (NSString *method in adminMethods) {
+        [_httpServer addRoute:method path:@"/admin" handler:^(HttpRequest *req, HttpResponse *res) {
+            NSString *location = AppViewAdminRedirectLocation(req.path, req.queryString);
+            res.statusCode = 307;
+            res.contentType = @"text/plain; charset=utf-8";
+            [res setHeader:location forKey:@"Location"];
+            [res setBodyString:@"Redirecting to UI service\n"];
+        }];
+        [_httpServer addRoute:method path:@"/admin/*" handler:^(HttpRequest *req, HttpResponse *res) {
+            NSString *location = AppViewAdminRedirectLocation(req.path, req.queryString);
+            res.statusCode = 307;
+            res.contentType = @"text/plain; charset=utf-8";
+            [res setHeader:location forKey:@"Location"];
+            [res setBodyString:@"Redirecting to UI service\n"];
+        }];
     }
 
     NSError *listenErr = nil;

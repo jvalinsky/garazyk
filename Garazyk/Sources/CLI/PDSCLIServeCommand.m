@@ -262,19 +262,6 @@
                  [response setBodyString:@"User-agent: *\nDisallow: /"];
                }];
 
-  [httpServer
-      addRoute:@"GET"
-          path:@"/account/"
-       handler:^(HttpRequest *request, HttpResponse *response) {
-         response.statusCode = 200;
-         response.contentType = @"text/html";
-         NSString *html =
-             @"<!DOCTYPE html><html><head><title>ATProto "
-             @"Account</title></head><body><h1>Account "
-             @"Management</h1><p>Account web UI coming soon.</p></body></html>";
-         [response setBodyString:html];
-       }];
-
   // Register Server DID Document (did:web support)
   [httpServer
       addRoute:@"GET"
@@ -355,7 +342,7 @@
   }
 
   printf("HTTP server started successfully on port %ld\n", (long)port);
-  printf("Web interface available at: http://%s:%ld/\n",
+  printf("Service endpoint available at: http://%s:%ld/\n",
          [displayHost UTF8String], (long)port);
 
   if (!foreground) {

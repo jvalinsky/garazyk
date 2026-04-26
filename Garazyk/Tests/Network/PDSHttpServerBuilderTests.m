@@ -257,7 +257,7 @@
     XCTAssertEqual(builder.port, 2583);
     XCTAssertTrue(builder.enableXrpc);
     XCTAssertTrue(builder.enableOAuth);
-    XCTAssertTrue(builder.enableExploreUI);
+    XCTAssertFalse(builder.enableExploreUI);
     XCTAssertTrue(builder.enableOAuthDemo);
     XCTAssertTrue(builder.enableMSTViewer);
     XCTAssertTrue(builder.enableNodeInfo);
@@ -481,62 +481,78 @@
     XCTAssertNil(error);
 }
 
-- (void)testAdminRoutesServeHtmxUi {
+- (void)testAdminRoutesRedirectToUIServerAndRootIsPlainText {
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir
                                                             serviceMaxSize:10
                                                           userDatabaseSize:10];
 
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
-    builder.controller = controller;
-    builder.port = 0;
+    NSString *previousUIURL = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] copy];
+    setenv("PDS_UI_SERVER_URL", "http://ui.local:4599", 1);
+    @try {
+        PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+        builder.controller = controller;
+        builder.port = 0;
 
-    builder.enableOAuth = NO;
-    builder.enableXrpc = NO;
-    builder.enableOAuthDemo = NO;
-    builder.enableMSTViewer = NO;
-    builder.enableNodeInfo = NO;
-    // Admin routes are enabled by default through PDSHttpAdminRoutePack registration
+        builder.enableOAuth = NO;
+        builder.enableXrpc = NO;
+        builder.enableOAuthDemo = NO;
+        builder.enableMSTViewer = NO;
+        builder.enableNodeInfo = NO;
+        // Admin routes are enabled by default through PDSHttpAdminRoutePack registration
 
-    NSError *buildError = nil;
-    self.testServer = [builder buildWithError:&buildError];
-    XCTAssertNotNil(self.testServer);
-    XCTAssertNil(buildError);
-    if (!self.testServer) {
-        [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
-        return;
-    }
-
-    NSError *startError = nil;
-    BOOL started = [self.testServer startWithError:&startError];
-    if (!started) {
-        NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
-        if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] &&
-            underlying.code == EPERM) {
+        NSError *buildError = nil;
+        self.testServer = [builder buildWithError:&buildError];
+        XCTAssertNotNil(self.testServer);
+        XCTAssertNil(buildError);
+        if (!self.testServer) {
             [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
-            XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
             return;
         }
+
+        NSError *startError = nil;
+        BOOL started = [self.testServer startWithError:&startError];
+        if (!started) {
+            NSError *underlying = startError.userInfo[NSUnderlyingErrorKey];
+            if ([underlying.domain isEqualToString:NSPOSIXErrorDomain] &&
+                underlying.code == EPERM) {
+                [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+                XCTSkip(@"HttpServer cannot listen (EPERM) in this environment");
+                return;
+            }
+            [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+            XCTFail(@"Failed to start HTTP server: %@", startError);
+            return;
+        }
+
+        UInt16 actualPort = self.testServer.port;
+
+        NSDictionary *rootResponse = [self rawHTTPResponseWithMethod:@"GET"
+                                                                path:@"/"
+                                                                port:actualPort];
+        XCTAssertEqual([rootResponse[@"statusCode"] integerValue], 200);
+        NSString *rootType = rootResponse[@"headers"][@"content-type"];
+        XCTAssertTrue([rootType containsString:@"text/plain"]);
+        NSString *rootBody = [rootResponse[@"body"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        XCTAssertEqualObjects(rootBody, @"kaszlak 1.0.0");
+
+        NSDictionary *redirectResponse = [self rawHTTPResponseWithMethod:@"GET"
+                                                                    path:@"/admin/ui?foo=bar"
+                                                                    port:actualPort];
+        XCTAssertEqual([redirectResponse[@"statusCode"] integerValue], 307);
+        NSString *location = redirectResponse[@"headers"][@"location"];
+        XCTAssertEqualObjects(location, @"http://ui.local:4599/admin/ui?foo=bar");
+
+        [self.testServer stop];
+        self.testServer = nil;
         [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
-        XCTFail(@"Failed to start HTTP server: %@", startError);
-        return;
+    } @finally {
+        if (previousUIURL.length > 0) {
+            setenv("PDS_UI_SERVER_URL", previousUIURL.UTF8String, 1);
+        } else {
+            unsetenv("PDS_UI_SERVER_URL");
+        }
     }
-
-    UInt16 actualPort = self.testServer.port;
-
-    NSString *adminURL = [NSString stringWithFormat:@"http://localhost:%d/admin/ui", actualPort];
-    [self verifyEndpointReturns200:adminURL
-                   withContentType:@"text/html"
-                       expectation:@"HTMX Admin UI root"];
-
-    NSString *rootURL = [NSString stringWithFormat:@"http://localhost:%d/", actualPort];
-    [self verifyEndpointReturns200:rootURL
-                   withContentType:@"text/html"
-                       expectation:@"Explore root portal"];
-
-    [self.testServer stop];
-    self.testServer = nil;
-    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
 }
 
 #pragma mark - Multiple Build Tests
@@ -884,6 +900,97 @@
 }
 
 #pragma mark - Helper Methods
+
+- (NSDictionary *)rawHTTPResponseWithMethod:(NSString *)method
+                                       path:(NSString *)path
+                                       port:(UInt16)port {
+    NSString *requestText = [NSString stringWithFormat:@"%@ %@ HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+                                                       method ?: @"GET",
+                                                       path ?: @"/"];
+    NSData *requestData = [requestText dataUsingEncoding:NSUTF8StringEncoding];
+
+    CFSocketRef socket = CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL);
+    if (!socket) {
+        XCTFail(@"Failed to create socket");
+        return @{@"statusCode": @0, @"headers": @{}, @"body": @""};
+    }
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_len = sizeof(addr);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    NSData *addressData = [NSData dataWithBytes:&addr length:sizeof(addr)];
+    CFSocketError connectResult = CFSocketConnectToAddress(socket, (__bridge CFDataRef)addressData, 5.0);
+    if (connectResult != kCFSocketSuccess) {
+        CFRelease(socket);
+        XCTFail(@"Failed to connect to local HTTP server");
+        return @{@"statusCode": @0, @"headers": @{}, @"body": @""};
+    }
+
+    CFSocketNativeHandle nativeSocket = CFSocketGetNative(socket);
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    setsockopt(nativeSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+    ssize_t sent = send(nativeSocket, requestData.bytes, requestData.length, 0);
+    if (sent != (ssize_t)requestData.length) {
+        CFRelease(socket);
+        XCTFail(@"Failed to send request bytes");
+        return @{@"statusCode": @0, @"headers": @{}, @"body": @""};
+    }
+
+    NSMutableData *responseData = [NSMutableData data];
+    char buffer[4096];
+    ssize_t received = 0;
+    while ((received = recv(nativeSocket, buffer, sizeof(buffer), 0)) > 0) {
+        [responseData appendBytes:buffer length:(NSUInteger)received];
+    }
+    CFRelease(socket);
+
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] ?: @"";
+    NSRange headerEndRange = [responseString rangeOfString:@"\r\n\r\n"];
+    NSString *headerSection = headerEndRange.location != NSNotFound
+                                  ? [responseString substringToIndex:headerEndRange.location]
+                                  : responseString;
+    NSString *bodySection = headerEndRange.location != NSNotFound
+                                ? [responseString substringFromIndex:headerEndRange.location + 4]
+                                : @"";
+
+    NSArray<NSString *> *headerLines = [headerSection componentsSeparatedByString:@"\r\n"];
+    NSInteger statusCode = 0;
+    NSMutableDictionary<NSString *, NSString *> *headers = [NSMutableDictionary dictionary];
+    if (headerLines.count > 0) {
+        NSArray<NSString *> *statusParts = [headerLines[0] componentsSeparatedByString:@" "];
+        if (statusParts.count >= 2) {
+            statusCode = [statusParts[1] integerValue];
+        }
+    }
+
+    for (NSUInteger i = 1; i < headerLines.count; i++) {
+        NSString *line = headerLines[i];
+        NSRange separatorRange = [line rangeOfString:@":"];
+        if (separatorRange.location == NSNotFound) {
+            continue;
+        }
+        NSString *key = [[line substringToIndex:separatorRange.location]
+            lowercaseString];
+        NSString *value = [[line substringFromIndex:separatorRange.location + 1]
+            stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if (key.length > 0) {
+            headers[key] = value ?: @"";
+        }
+    }
+
+    return @{
+        @"statusCode": @(statusCode),
+        @"headers": [headers copy],
+        @"body": bodySection ?: @""
+    };
+}
 
 /*!
  @method verifyEndpointReturns200:withContentType:expectation:

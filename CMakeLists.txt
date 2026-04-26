@@ -730,6 +730,60 @@ set_target_properties(syrena PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
+# Dedicated Admin UI server
+add_executable(garazyk-ui
+  Garazyk/Binaries/garazyk-ui/main.m
+  Garazyk/Sources/AdminUIServer/UIServiceConfig.m
+  Garazyk/Sources/AdminUIServer/UIAuthManager.m
+  Garazyk/Sources/AdminUIServer/UIBackendClient.m
+  Garazyk/Sources/AdminUIServer/UIServerRuntime.m
+)
+
+target_include_directories(garazyk-ui PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(garazyk-ui PRIVATE
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(garazyk-ui PRIVATE
+    -Wl,--whole-archive
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
+
+target_compile_definitions(garazyk-ui PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(garazyk-ui PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
 # Tutorial 1: Hello PDS Example
 add_executable(hello-pds
   examples/tutorial-1-hello-pds/src/main.m
@@ -1364,7 +1418,8 @@ message(STATUS "Build Targets:")
 message(STATUS "  kaszlak           - PDS CLI tool")
 message(STATUS "  campagnola        - PLC directory server")
 message(STATUS "  zuk               - Relay server")
-message(STATUS "  syrena          - Standalone AppView server")
+message(STATUS "  syrena            - Standalone AppView server")
+message(STATUS "  garazyk-ui        - Dedicated admin UI server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
 message(STATUS "  fuzz_cbor         - CBOR decoder fuzzer")
