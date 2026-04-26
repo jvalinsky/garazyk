@@ -41,6 +41,7 @@ SCENARIO_REGISTRY = [
     ("08", "scenarios.08_oauth_sessions", "OAuth2 & Sessions", False),
     ("09", "scenarios.09_firehose_streaming", "Firehose & Event Streaming", False),
     ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
+    ("11", "scenarios.11_lab_oauth_login", "Lab OAuth2 Login", False),
 ]
 
 
