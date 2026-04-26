@@ -85,6 +85,12 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Resolve DID to handle. Returns handle if known, nil otherwise. */
 - (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error;
 
+/*! Get suggested actors for the given actor. Returns follows-of-follows and popular actors. */
+- (nullable NSDictionary *)getSuggestionsForActor:(NSString *)actorDID
+                                            limit:(NSInteger)limit
+                                           cursor:(nullable NSString *)cursor
+                                            error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

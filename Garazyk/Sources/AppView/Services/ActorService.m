@@ -399,4 +399,105 @@
     return [self getTotalRecordsCountForCollection:@"app.bsky.graph.follow" error:error];
 }
 
+- (nullable NSDictionary *)getSuggestionsForActor:(NSString *)actorDID
+                                            limit:(NSInteger)limit
+                                           cursor:(nullable NSString *)cursor
+                                            error:(NSError **)error {
+    if (!actorDID || actorDID.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"ActorService" code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing actor DID"}];
+        }
+        return nil;
+    }
+
+    limit = MIN(limit > 0 ? limit : 30, 100);
+
+    // Get the actor's follows to exclude them from suggestions
+    NSMutableSet *followedDIDs = [NSMutableSet setWithObject:actorDID];
+    NSString *followsQuery = @"SELECT subject_did FROM bsky_graph_follows WHERE did = ?";
+    NSArray *followRows = [self.database executeParameterizedQuery:followsQuery
+                                                             params:@[actorDID]
+                                                              error:nil];
+    for (NSDictionary *row in followRows) {
+        NSString *subject = row[@"subject_did"];
+        if (subject) [followedDIDs addObject:subject];
+    }
+
+    // Get follows-of-follows (2nd degree connections) — these are the best suggestions
+    NSMutableSet *fofDIDs = [NSMutableSet set];
+    for (NSString *followedDID in followedDIDs) {
+        if ([followedDID isEqualToString:actorDID]) continue;
+        NSArray *theirFollows = [self.database executeParameterizedQuery:followsQuery
+                                                                   params:@[followedDID]
+                                                                    error:nil];
+        for (NSDictionary *row in theirFollows) {
+            NSString *subject = row[@"subject_did"];
+            if (subject && ![followedDIDs containsObject:subject]) {
+                [fofDIDs addObject:subject];
+            }
+        }
+    }
+
+    // If not enough follows-of-follows, supplement with popular actors
+    // (most-followed accounts on this PDS)
+    NSMutableArray *suggestionDIDs = [NSMutableArray array];
+    if (fofDIDs.count > 0) {
+        [suggestionDIDs addObjectsFromArray:[fofDIDs allObjects]];
+    }
+
+    // If still not enough, add popular actors
+    if (suggestionDIDs.count < (NSUInteger)limit) {
+        NSString *popularQuery = @"SELECT subject_did, COUNT(*) as cnt FROM bsky_graph_follows "
+                                 @"GROUP BY subject_did ORDER BY cnt DESC LIMIT ?";
+        NSArray *popularRows = [self.database executeParameterizedQuery:popularQuery
+                                                                  params:@((NSInteger)(limit * 2))
+                                                                   error:nil];
+        for (NSDictionary *row in popularRows) {
+            NSString *did = row[@"subject_did"];
+            if (did && ![followedDIDs containsObject:did] && ![suggestionDIDs containsObject:did]) {
+                [suggestionDIDs addObject:did];
+                if (suggestionDIDs.count >= (NSUInteger)limit) break;
+            }
+        }
+    }
+
+    // Apply cursor-based pagination
+    if (cursor) {
+        NSUInteger cursorIndex = [suggestionDIDs indexOfObject:cursor];
+        if (cursorIndex != NSNotFound) {
+            [suggestionDIDs removeObjectsInRange:NSMakeRange(0, cursorIndex + 1)];
+        }
+    }
+
+    // Limit results
+    if (suggestionDIDs.count > (NSUInteger)limit) {
+        suggestionDIDs = [[suggestionDIDs subarrayWithRange:NSMakeRange(0, limit)] mutableCopy];
+    }
+
+    // Get profiles for the suggestions
+    NSMutableArray *actors = [NSMutableArray arrayWithCapacity:suggestionDIDs.count];
+    for (NSString *did in suggestionDIDs) {
+        NSDictionary *profile = [self getProfileForActor:did error:nil];
+        if (profile) {
+            [actors addObject:profile];
+        }
+    }
+
+    NSString *nextCursor = nil;
+    if (suggestionDIDs.count > 0 && actors.count >= limit) {
+        nextCursor = suggestionDIDs.lastObject;
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"actors"] = actors;
+    if (nextCursor) {
+        result[@"cursor"] = nextCursor;
+    } else {
+        result[@"cursor"] = [NSNull null];
+    }
+
+    return [result copy];
+}
+
 @end
