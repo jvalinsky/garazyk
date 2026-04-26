@@ -165,8 +165,6 @@ NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
         PDS_LOG_CORE_DEBUG(@"Signing key check passed");
         return YES;
-        PDS_LOG_CORE_DEBUG(@"Signing key check passed");
-        return YES;
     } @catch (NSException *exception) {
         if (error) {
             *error = [NSError errorWithDomain:PDSReadinessErrorDomain
