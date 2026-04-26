@@ -545,6 +545,46 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
     }];
 
+    // Ozone: Verification
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-verification" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient listOzoneVerifications];
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneVerificationPartial:result]];
+    }];
+
+    // Ozone: Grant verification
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-grant-verification" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *did = request.jsonBody[@"did"];
+        NSString *displayName = request.jsonBody[@"displayName"] ?: @"";
+        if (!did || did.length == 0) {
+            response.statusCode = 400;
+            response.contentType = @"text/html; charset=utf-8";
+            [response setBodyString:@"<div class=\"alert alert-destructive\">DID required</div>"];
+            return;
+        }
+        NSDictionary *verification = @{@"did": did, @"displayName": displayName};
+        NSDictionary *result = [weakSelf.backendClient grantOzoneVerifications:@[verification]];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Verification granted.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
+    // Ozone: Revoke verification
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-revoke-verification" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSArray *dids = request.jsonBody[@"dids"] ?: @[];
+        NSDictionary *result = [weakSelf.backendClient revokeOzoneVerifications:dids];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Verification revoked.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
     // Ozone: Team members
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-team" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -1024,6 +1064,8 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"ozone-reports\" hx-get=\"/admin/partials/ozone-reports\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Scheduled Actions</h3>"
     "<div id=\"ozone-scheduled\" hx-get=\"/admin/partials/ozone-scheduled\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Verification</h3>"
+    "<div id=\"ozone-verification\" hx-get=\"/admin/partials/ozone-verification\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Team Members</h3>"
     "<div id=\"ozone-team\" hx-get=\"/admin/partials/ozone-team\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Sets</h3>"
@@ -1162,6 +1204,14 @@ static NSString *UIEscaped(NSString *value) {
     "async function cancelScheduledAction(subject){if(!confirm('Cancel this scheduled action?'))return;"
     "const resp=await fetch('/admin/actions/ozone-cancel-scheduled',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjects:[subject]})});"
     "htmx.ajax('GET','/admin/partials/ozone-scheduled','#ozone-scheduled');}"
+    "async function grantOzoneVerification(){const did=document.getElementById('grant-verification-did').value;"
+    "const displayName=document.getElementById('grant-verification-name').value;"
+    "if(!did){alert('DID required');return;}"
+    "const resp=await fetch('/admin/actions/ozone-grant-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did,displayName})});"
+    "document.getElementById('grant-verification-did').value='';document.getElementById('grant-verification-name').value='';htmx.ajax('GET','/admin/partials/ozone-verification','#ozone-verification');}"
+    "async function revokeOzoneVerification(did){if(!confirm('Revoke verification for this account?'))return;"
+    "const resp=await fetch('/admin/actions/ozone-revoke-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dids:[did]})});"
+    "htmx.ajax('GET','/admin/partials/ozone-verification','#ozone-verification');}"
     "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
     "if(!convoID){alert('Conversation ID required');return;}"
     "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
@@ -1980,6 +2030,30 @@ static NSString *UIEscaped(NSString *value) {
     if (cursor && cursor.length > 0) {
         [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/ozone-scheduled?cursor=%@\" hx-target=\"#ozone-scheduled\">Load More</button></div>", UIEscaped(cursor)];
     }
+    return html;
+}
+
+- (NSString *)renderOzoneVerificationPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"grantOzoneVerification();return false;\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"grant-verification-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Display Name:</label><input type=\"text\" id=\"grant-verification-name\" class=\"form-input\" placeholder=\"Account display name\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Grant Verification</button></form></div>"];
+
+    [html appendString:@"<table class=\"table\"><thead><tr><th>DID</th><th>Display Name</th><th>Issuer</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
+    NSArray<NSDictionary *> *verifications = [result[@"verifications"] isKindOfClass:[NSArray class]] ? result[@"verifications"] : @[];
+    for (NSDictionary *verification in verifications) {
+        NSString *did = UIEscaped(verification[@"did"] ?: @"");
+        NSString *displayName = UIEscaped(verification[@"displayName"] ?: @"");
+        NSString *issuer = UIEscaped(verification[@"issuer"] ?: @"");
+        NSString *createdAt = UIEscaped(verification[@"createdAt"] ?: @"");
+        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td class=\"text-xs\">%@</td><td class=\"text-xs\">%@</td><td>", did, displayName, issuer, createdAt];
+        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" onclick=\"revokeOzoneVerification('%@')\">Revoke</button>", UIEscaped(did)];
+        [html appendString:@"</td></tr>"];
+    }
+    if (verifications.count == 0) {
+        [html appendString:@"<tr><td colspan=\"5\" class=\"text-center text-secondary p-lg\">No verified accounts.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
     return html;
 }
 

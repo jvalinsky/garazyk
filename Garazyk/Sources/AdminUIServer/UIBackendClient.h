@@ -73,6 +73,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)fetchScheduledActionsWithStatuses:(nullable NSArray<NSString *> *)statuses cursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
 - (NSDictionary *)scheduleAction:(NSDictionary *)actionSpec;
 - (NSDictionary *)cancelScheduledActionsForSubjects:(NSArray<NSString *> *)subjects;
+- (NSDictionary *)listOzoneVerifications;
+- (NSDictionary *)grantOzoneVerifications:(NSArray<NSDictionary *> *)verifications;
+- (NSDictionary *)revokeOzoneVerifications:(NSArray<NSString *> *)dids;
 
 // Ozone Team Operations
 - (NSDictionary *)fetchOzoneTeamMembers;
