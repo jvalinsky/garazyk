@@ -2,6 +2,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Network/XrpcAppBskyGraphHelpers.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "AppView/Services/ActorService.h"
@@ -203,7 +204,7 @@
     }];
     
     // app.bsky.actor.getSuggestions - Get suggested accounts
-    // TODO: Implement using graph analysis (follows-of-follows, popular actors, etc.)
+    // app.bsky.actor.getSuggestions - Get suggested accounts
     [dispatcher registerMethod:@"app.bsky.actor.getSuggestions" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         if (!authHeader) {
@@ -220,13 +221,24 @@
             return;
         }
 
-        // TODO: Replace with actual suggestions from GraphService/FeedService
-        // Strategy: Query follows-of-follows, recent popular actors, etc.
+        NSInteger limit = 30;
+        if (!XrpcParseLimit(request.queryParams[@"limit"], &limit, 1, 100, response)) {
+            return;
+        }
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
+        NSError *error = nil;
+        NSDictionary *result = [actorService getSuggestionsForActor:actorDID
+                                                              limit:limit
+                                                             cursor:cursor
+                                                              error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to get suggestions"];
+            return;
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"actors": @[],
-            @"cursor": [NSNull null]
-        }];
+        [response setJsonBody:result ?: @{@"actors": @[], @"cursor": [NSNull null]}];
     }];
     
     PDS_LOG_INFO(@"Registered app.bsky.actor.* endpoints");
