@@ -419,41 +419,6 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [resp setBodyString:@"campagnola 1.0.0\n"];
     }];
 
-    NSArray<NSString *> *adminMethods = @[@"GET", @"POST", @"PUT", @"DELETE", @"PATCH", @"OPTIONS", @"HEAD"];
-    for (NSString *method in adminMethods) {
-        [self.httpServer addRoute:method path:@"/admin" handler:^(HttpRequest *req, HttpResponse *resp) {
-            NSString *base = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-            if (base.length == 0) base = @"http://127.0.0.1:2590";
-            while ([base hasSuffix:@"/"]) {
-                base = [base substringToIndex:base.length - 1];
-            }
-            NSString *location = [NSString stringWithFormat:@"%@%@", base, req.path ?: @"/admin"];
-            if (req.queryString.length > 0) {
-                location = [location stringByAppendingFormat:@"?%@", req.queryString];
-            }
-            resp.statusCode = 307;
-            resp.contentType = @"text/plain; charset=utf-8";
-            [resp setHeader:location forKey:@"Location"];
-            [resp setBodyString:@"Redirecting to UI service\n"];
-        }];
-
-        [self.httpServer addRoute:method path:@"/admin/*" handler:^(HttpRequest *req, HttpResponse *resp) {
-            NSString *base = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-            if (base.length == 0) base = @"http://127.0.0.1:2590";
-            while ([base hasSuffix:@"/"]) {
-                base = [base substringToIndex:base.length - 1];
-            }
-            NSString *location = [NSString stringWithFormat:@"%@%@", base, req.path ?: @"/admin"];
-            if (req.queryString.length > 0) {
-                location = [location stringByAppendingFormat:@"?%@", req.queryString];
-            }
-            resp.statusCode = 307;
-            resp.contentType = @"text/plain; charset=utf-8";
-            [resp setHeader:location forKey:@"Location"];
-            [resp setBodyString:@"Redirecting to UI service\n"];
-        }];
-    }
-    
     [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf handleExport:req response:resp];
     }];
