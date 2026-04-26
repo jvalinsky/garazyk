@@ -18,6 +18,31 @@ static NSString *UIEscaped(NSString *value) {
     return escaped;
 }
 
+/// Safely extract a string from a dictionary, treating NSNull and non-string values as nil.
+static NSString * _Nullable UIStringFromDict(NSDictionary *dict, NSString *key) {
+    id value = dict[key];
+    if ([value isKindOfClass:[NSString class]]) {
+        return value;
+    }
+    return nil;
+}
+
+/// Safely convert any value (including NSNull) to an NSString, returning fallback for non-strings.
+static NSString *UISafe(id value, NSString *fallback) {
+    if ([value isKindOfClass:[NSString class]]) {
+        return value;
+    }
+    return fallback ?: @"";
+}
+
+/// Safely get .length from a value that might be NSNull.
+static NSUInteger UISafeLength(id value) {
+    if ([value isKindOfClass:[NSString class]]) {
+        return [(NSString *)value length];
+    }
+    return 0;
+}
+
 @interface UIServerRuntime ()
 
 @property(nonatomic, strong) HttpServer *httpServer;
@@ -142,6 +167,15 @@ static NSString *UIEscaped(NSString *value) {
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOverviewPartial:overview]];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/connections" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) {
+            return;
+        }
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderConnectionsPartial]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/accounts" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -452,12 +486,18 @@ static NSString *UIEscaped(NSString *value) {
     [self.httpServer addRoute:@"GET" path:@"/lab" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
+        NSString *pdsOrigin = [weakSelf.configuration.pdsBaseURL absoluteString];
+        [response setHeader:[NSString stringWithFormat:@"default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' %@;", pdsOrigin]
+                      forKey:@"content-security-policy"];
         [response setBodyString:[weakSelf labShellHTML]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/lab/callback" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
+        NSString *pdsOrigin = [weakSelf.configuration.pdsBaseURL absoluteString];
+        [response setHeader:[NSString stringWithFormat:@"default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' %@;", pdsOrigin]
+                      forKey:@"content-security-policy"];
         [response setBodyString:[weakSelf labShellHTML]];
     }];
 
@@ -856,6 +896,28 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
     }];
 
+    // Connections: Update service URLs and tokens
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-connections" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *body = request.jsonBody;
+        if (![body isKindOfClass:[NSDictionary class]]) {
+            response.statusCode = 400;
+            response.contentType = @"text/html; charset=utf-8";
+            [response setBodyString:@"<div class=\"alert alert-destructive\">Invalid request body.</div>"];
+            return;
+        }
+        BOOL valid = [weakSelf.configuration updateWithDictionary:body];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        if (valid) {
+            [response setBodyString:@"<div class=\"alert alert-success\">Connections updated. Changes apply immediately but are not persisted across restarts.</div>"];
+        } else {
+            [response setBodyString:@"<div class=\"alert alert-destructive\">Some URLs were invalid and could not be applied. Other values were saved.</div>"];
+        }
+        // Re-render the form with updated values
+        [response setBodyString:[response.bodyString stringByAppendingString:[weakSelf renderConnectionsPartial]]];
+    }];
+
     // AppView: Rebuild backfill scope
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-rebuild-scope" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -1037,6 +1099,7 @@ static NSString *UIEscaped(NSString *value) {
     "<header class=\"admin-header\"><div class=\"admin-header-title\">Garazyk UI Service</div>"
     "<nav class=\"service-segments\" id=\"nav-tabs\">"
     "<button class=\"service-segment active\" data-tab=\"overview\" onclick=\"switchTab('overview')\">Overview</button>"
+    "<button class=\"service-segment\" data-tab=\"connections\" onclick=\"switchTab('connections')\">Connections</button>"
     "<button class=\"service-segment\" data-tab=\"pds\" onclick=\"switchTab('pds')\">PDS</button>"
     "<button class=\"service-segment\" data-tab=\"appview\" onclick=\"switchTab('appview')\">AppView</button>"
     "<button class=\"service-segment\" data-tab=\"relay\" onclick=\"switchTab('relay')\">Relay</button>"
@@ -1055,6 +1118,11 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"tab-overview\" class=\"tab-pane\">"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Status</h3>"
     "<div id=\"overview\" hx-get=\"/admin/partials/overview\" hx-trigger=\"load, every 20s\"></div></section></div>"
+    /* Connections tab */
+    "<div id=\"tab-connections\" class=\"tab-pane\" style=\"display:none\">"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Connections</h3>\""
+    "<p class=\"text-secondary text-sm mb-lg\">Configure URLs and admin tokens for each AT Protocol service. Changes apply immediately but are not persisted across restarts.</p>\""
+    "<div id=\"connections-form\" hx-get=\"/admin/partials/connections\" hx-trigger=\"load\"></div></section></div>"
     /* PDS tab */
     "<div id=\"tab-pds\" class=\"tab-pane\" style=\"display:none\">"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Accounts</h3>"
@@ -1332,6 +1400,23 @@ static NSString *UIEscaped(NSString *value) {
     "async function lockChatConvo(convoID){if(!confirm('Lock this conversation?'))return;"
     "const resp=await fetch('/admin/actions/lock-chat-convo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({convoID})});"
     "document.getElementById('chat-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/chat-convos','#chat-convos');}"
+    "async function saveConnections(){"
+    "const services=['pds','plc','relay','appview','chat'];"
+    "const body={};"
+    "services.forEach(s=>{body[s+'URL']=document.getElementById('conn-'+s+'-url').value;body[s+'Token']=document.getElementById('conn-'+s+'-token').value;});"
+    "const resp=await fetch('/admin/actions/update-connections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});"
+    "document.getElementById('connections-save-result').innerHTML=await resp.text();}"
+    "async function testConnection(service){"
+    "const url=document.getElementById('conn-'+service+'-url').value;"
+    "const token=document.getElementById('conn-'+service+'-token').value;"
+    "const resultEl=document.getElementById('conn-'+service+'-test-result');"
+    "resultEl.textContent='Testing...';"
+    "try{const headers={'Content-Type':'application/json'};"
+    "if(token)headers['Authorization']='Bearer '+token;"
+    "const resp=await fetch(url+'/xrpc/com.atproto.server.describeServer',{headers,signal:AbortSignal.timeout(5000)});"
+    "if(resp.ok){resultEl.innerHTML='<span class=\"badge badge-success\">Connected</span>';}"
+    "else{resultEl.innerHTML='<span class=\"badge badge-destructive\">HTTP '+resp.status+'</span>';}}"
+    "catch(e){resultEl.innerHTML='<span class=\"badge badge-destructive\">Failed</span>';}}"
     "</script>"
     "</body></html>";
 }
@@ -1356,6 +1441,43 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"<tr><td colspan=\"6\" class=\"text-center text-secondary p-lg\">No service data available.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+- (NSString *)renderConnectionsPartial {
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form\" onsubmit=\"saveConnections();return false;\">"];
+
+    // Service definitions: key, label, url property, token property
+    NSArray<NSDictionary *> *services = @[
+        @{@"key": @"pds", @"label": @"PDS", @"urlProp": @"pdsBaseURL", @"tokenProp": @"pdsAdminToken"},
+        @{@"key": @"plc", @"label": @"PLC", @"urlProp": @"plcBaseURL", @"tokenProp": @"plcAdminToken"},
+        @{@"key": @"relay", @"label": @"Relay", @"urlProp": @"relayBaseURL", @"tokenProp": @"relayAdminToken"},
+        @{@"key": @"appview", @"label": @"AppView", @"urlProp": @"appViewBaseURL", @"tokenProp": @"appViewAdminToken"},
+        @{@"key": @"chat", @"label": @"Chat", @"urlProp": @"chatBaseURL", @"tokenProp": @"chatAdminToken"},
+    ];
+
+    for (NSDictionary *svc in services) {
+        NSString *key = svc[@"key"];
+        NSString *label = svc[@"label"];
+        NSURL *url = [self.configuration valueForKey:svc[@"urlProp"]];
+        NSString *token = [self.configuration valueForKey:svc[@"tokenProp"]] ?: @"";
+        NSString *urlStr = url.absoluteString ?: @"";
+
+        [html appendFormat:@"<div class=\"mb-lg\" style=\"border:1px solid var(--separator-color);border-radius:var(--radius-md);padding:var(--space-lg);\">"
+         "<h4 style=\"margin:0 0 var(--space-md) 0;\">%@</h4>"
+         "<div class=\"form-group\"><label for=\"conn-%@-url\">URL</label>"
+         "<input type=\"text\" id=\"conn-%@-url\" class=\"form-input\" value=\"%@\" placeholder=\"http://127.0.0.1:2583\"/></div>"
+         "<div class=\"form-group\"><label for=\"conn-%@-token\">Admin Token</label>"
+         "<input type=\"password\" id=\"conn-%@-token\" class=\"form-input\" value=\"%@\" placeholder=\"Bearer token (optional)\"/>"
+         "<button type=\"button\" class=\"btn btn-secondary btn-sm\" style=\"margin-top:var(--space-xs)\" onclick=\"testConnection('%@')\">Test Connection</button>"
+         "<span id=\"conn-%@-test-result\" class=\"text-sm ml-sm\"></span></div></div>",
+         label, key, key, UIEscaped(urlStr), key, key, UIEscaped(token), key, key];
+    }
+
+    [html appendString:@"<div class=\"d-flex gap-sm\">"
+     "<button type=\"submit\" class=\"btn btn-primary\">Save Connections</button>"
+     "<span id=\"connections-save-result\" class=\"text-sm\"></span></div></form>"];
+
     return html;
 }
 
@@ -1527,7 +1649,7 @@ static NSString *UIEscaped(NSString *value) {
             [html appendString:@"<tr><td colspan=\"3\" class=\"text-center text-secondary p-lg\">No blobs found.</td></tr>"];
         }
         [html appendString:@"</tbody></table>"];
-        NSString *cursor = result[@"cursor"];
+        NSString *cursor = UIStringFromDict(result, @"cursor");
         if (cursor && cursor.length > 0) {
             [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/blobs?did=%@&cursor=%@\" hx-target=\"#blobs-content\">Load More</button></div>", UIEscaped(did ?: @""), UIEscaped(cursor)];
         }
@@ -1565,7 +1687,8 @@ static NSString *UIEscaped(NSString *value) {
     }
     [html appendString:@"</tbody></table>"];
     // Pagination
-    NSString *cursor = result[@"cursor"];
+    id cursorObj = result[@"cursor"];
+    NSString *cursor = [cursorObj isKindOfClass:[NSString class]] ? cursorObj : nil;
     if (cursor.length > 0) {
         [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/audit-log?cursor=%@\" hx-target=\"#audit-log-content\">Load more</button></div>", UIEscaped(cursor)];
     }
@@ -1588,7 +1711,7 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No reports found.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
-    NSString *cursor = result[@"cursor"];
+    NSString *cursor = UIStringFromDict(result, @"cursor");
     if (cursor.length > 0) {
         [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/pds-reports?cursor=%@\" hx-target=\"#pds-reports-content\">Load more</button></div>", UIEscaped(cursor)];
     }
@@ -1699,7 +1822,7 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No records found.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
-    NSString *cursor = result[@"cursor"];
+    NSString *cursor = UIStringFromDict(result, @"cursor");
     if (cursor.length > 0) {
         [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/list-records?cursor=%@\" hx-target=\"#records-list\">Load more</button></div>", UIEscaped(cursor)];
     }
@@ -1812,7 +1935,7 @@ static NSString *UIEscaped(NSString *value) {
             UIEscaped(s[@"did"] ?: @""), UIEscaped(s[@"reviewState"] ?: @""), UIEscaped(s[@"updatedAt"] ?: @"")];
     }
     [html appendString:@"</tbody></table>"];
-    NSString *cursor = result[@"cursor"];
+    NSString *cursor = UIStringFromDict(result, @"cursor");
     if (cursor.length > 0) {
         [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/ozone-statuses?cursor=%@\" hx-target=\"#ozone-statuses\">Load more</button></div>", UIEscaped(cursor)];
     }
@@ -1832,7 +1955,7 @@ static NSString *UIEscaped(NSString *value) {
             UIEscaped(e[@"event"] ?: @""), UIEscaped(subjectStr), UIEscaped(e[@"createdBy"] ?: @""), UIEscaped(e[@"createdAt"] ?: @"")];
     }
     [html appendString:@"</tbody></table>"];
-    NSString *cursor = result[@"cursor"];
+    NSString *cursor = UIStringFromDict(result, @"cursor");
     if (cursor.length > 0) {
         [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/ozone-events?cursor=%@\" hx-target=\"#ozone-events\">Load more</button></div>", UIEscaped(cursor)];
     }
@@ -1964,9 +2087,22 @@ static NSString *UIEscaped(NSString *value) {
     NSArray<NSDictionary *> *convos = [result[@"convos"] isKindOfClass:[NSArray class]] ? result[@"convos"] : @[];
     NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Conversation ID</th><th>Members</th><th>Last Message</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *convo in convos) {
-        NSString *convoID = convo[@"id"] ?: @"";
-        NSString *memberCount = [convo[@"memberCount"] description] ?: @"0";
-        NSString *lastMsg = convo[@"lastMessage"] ? ([convo[@"lastMessage"] isKindOfClass:[NSDictionary class]] ? convo[@"lastMessage"][@"text"] : convo[@"lastMessage"]) : @"(none)";
+        NSString *convoID = UISafe(convo[@"id"], @"");
+        // Count members from the members array if memberCount is absent
+        NSString *memberCount;
+        if (convo[@"memberCount"] && [convo[@"memberCount"] respondsToSelector:@selector(stringValue)]) {
+            memberCount = [convo[@"memberCount"] stringValue];
+        } else {
+            NSArray *members = [convo[@"members"] isKindOfClass:[NSArray class]] ? convo[@"members"] : nil;
+            memberCount = members ? [NSString stringWithFormat:@"%lu", (unsigned long)members.count] : @"0";
+        }
+        id lastMsgObj = convo[@"lastMessage"];
+        NSString *lastMsg = @"(none)";
+        if ([lastMsgObj isKindOfClass:[NSDictionary class]]) {
+            lastMsg = UISafe(((NSDictionary *)lastMsgObj)[@"text"], @"(none)");
+        } else if ([lastMsgObj isKindOfClass:[NSString class]]) {
+            lastMsg = lastMsgObj;
+        }
         if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
         [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-secondary btn-sm\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
             UIEscaped(convoID), UIEscaped(memberCount), UIEscaped(lastMsg), UIEscaped(convoID)];
@@ -1975,7 +2111,7 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No conversations found.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
-    NSString *cursor = result[@"cursor"];
+    NSString *cursor = UIStringFromDict(result, @"cursor");
     if (cursor.length > 0) {
         [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/chat-convos?cursor=%@\" hx-target=\"#chat-convos\">Load more</button></div>", UIEscaped(cursor)];
     }
@@ -1989,9 +2125,22 @@ static NSString *UIEscaped(NSString *value) {
     NSArray<NSDictionary *> *messages = [result[@"messages"] isKindOfClass:[NSArray class]] ? result[@"messages"] : @[];
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"chat-messages\">"];
     for (NSDictionary *msg in messages) {
-        NSString *sender = msg[@"sender"] ?: @"unknown";
-        NSString *text = msg[@"text"] ?: @"";
-        NSString *createdAt = msg[@"createdAt"] ?: @"";
+        // sender may be a dict with "did" key, or a bare string "senderDid"
+        NSString *sender;
+        id senderObj = msg[@"sender"];
+        if ([senderObj isKindOfClass:[NSDictionary class]]) {
+            sender = UISafe(((NSDictionary *)senderObj)[@"did"], @"unknown");
+        } else if ([senderObj isKindOfClass:[NSString class]]) {
+            sender = senderObj;
+        } else {
+            sender = UISafe(msg[@"senderDid"], @"unknown");
+        }
+        // Shorten DID display: show last segment after colon
+        if ([sender hasPrefix:@"did:plc:"] && sender.length > 20) {
+            sender = [NSString stringWithFormat:@"did:plc:…%@", [sender substringFromIndex:sender.length - 8]];
+        }
+        NSString *text = UISafe(msg[@"text"], @"");
+        NSString *createdAt = UISafe(msg[@"createdAt"], @"");
         [html appendFormat:@"<div class=\"message\"><div class=\"message-header\"><span class=\"message-sender\">%@</span><span class=\"message-time text-xs text-secondary\">%@</span></div><div class=\"message-body\">%@</div></div>",
             UIEscaped(sender), UIEscaped(createdAt), UIEscaped(text)];
     }
@@ -2065,7 +2214,7 @@ static NSString *UIEscaped(NSString *value) {
     NSString *status = result[@"status"] ?: @"unknown";
     NSString *statusBadge = [status isEqualToString:@"ok"] ? @"badge badge-success" :
                             [status isEqualToString:@"error"] ? @"badge badge-destructive" : @"badge badge-secondary";
-    NSString *checkedAt = result[@"checkedAt"] ?: result[@"lastChecked"] ?: @"";
+    NSString *checkedAt = UISafe(result[@"checkedAt"], UISafe(result[@"lastChecked"], @""));
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
     [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Status</span><span class=\"%@\">%@</span></div>", statusBadge, UIEscaped(status)];
     if (checkedAt.length > 0) {
@@ -2092,7 +2241,7 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No moderation reports found.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
-    NSString *cursor = result[@"cursor"];
+    NSString *cursor = UIStringFromDict(result, @"cursor");
     if (cursor) {
         [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/ozone-reports?cursor=%@\" hx-target=\"#ozone-reports\">Load More</button></div>", UIEscaped(cursor)];
     }
@@ -2163,7 +2312,7 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"<tr><td colspan=\"5\" class=\"text-center text-secondary p-lg\">No scheduled actions.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
-    NSString *cursor = result[@"cursor"];
+    NSString *cursor = UIStringFromDict(result, @"cursor");
     if (cursor && cursor.length > 0) {
         [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/ozone-scheduled?cursor=%@\" hx-target=\"#ozone-scheduled\">Load More</button></div>", UIEscaped(cursor)];
     }
