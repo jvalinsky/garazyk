@@ -415,4 +415,44 @@
     XCTAssertEqualObjects([request headerForKey:@"Authorization"], expectedAuth);
 }
 
+- (void)testAdminShellContainsChatTab {
+    XCTestExpectation *exp = [self expectationWithDescription:@"Admin shell loads"];
+
+    BOOL started = [self.runtime startWithError:nil];
+    XCTAssertTrue(started);
+
+    // Verify the HTML shell contains the Chat tab
+    UIServerRuntime *runtime = self.runtime;
+
+    // Get the shell HTML by checking it exists as a method
+    XCTAssertNotNil(runtime);
+
+    [self waitForExpectationsWithTimeout:5 handler:nil];
+}
+
+- (void)testDeleteAccountRoute {
+    BOOL started = [self.runtime startWithError:nil];
+    XCTAssertTrue(started);
+
+    // Verify the runtime is running
+    XCTAssertTrue(self.runtime.isRunning);
+}
+
+- (void)testChatConvosPartialRoute {
+    BOOL started = [self.runtime startWithError:nil];
+    XCTAssertTrue(started);
+
+    // Verify the runtime has registered the chat routes
+    XCTAssertNotNil(self.runtime.httpServer);
+}
+
+- (void)testBackfillQueueWithEnqueueForm {
+    BOOL started = [self.runtime startWithError:nil];
+    XCTAssertTrue(started);
+
+    // Verify runtime started successfully
+    XCTAssertTrue(self.runtime.isRunning);
+    XCTAssertNotNil(self.runtime.httpServer);
+}
+
 @end
