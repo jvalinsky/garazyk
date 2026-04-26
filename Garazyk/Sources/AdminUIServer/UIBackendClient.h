@@ -76,6 +76,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)listOzoneVerifications;
 - (NSDictionary *)grantOzoneVerifications:(NSArray<NSDictionary *> *)verifications;
 - (NSDictionary *)revokeOzoneVerifications:(NSArray<NSString *> *)dids;
+- (NSDictionary *)fetchSafelinkRules;
+- (NSDictionary *)addSafelinkRule:(NSDictionary *)rule;
+- (NSDictionary *)removeSafelinkRule:(NSString *)url pattern:(NSString *)pattern;
 
 // Ozone Team Operations
 - (NSDictionary *)fetchOzoneTeamMembers;
