@@ -89,6 +89,15 @@ NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 }
 
 + (BOOL)checkPLCDirectory:(PDSConfiguration *)config error:(NSError **)error {
+    // Skip check in mock/test mode - matches pattern in XrpcIdentityMethods.m and PDSAccountService.m
+    if ([config.plcURL isEqualToString:@"mock"] ||
+        config.plcURL.length == 0 ||
+        [config.plcURL hasPrefix:@"http://127.0.0.1"] ||
+        [config.plcURL hasPrefix:@"http://localhost"]) {
+        PDS_LOG_CORE_DEBUG(@"PLC directory check skipped (test/mock mode)");
+        return YES;
+    }
+
     // Attempt to resolve a well-known DID (bsky.app)
     NSString *testURL = [NSString stringWithFormat:@"%@/did:plc:z72i7hdynmk6r22z27h6tvur",
                         config.plcURL];
