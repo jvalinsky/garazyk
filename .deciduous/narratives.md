@@ -116,18 +116,20 @@
 ---
 
 ## Admin UI Remaining Features
-> Node #56 | Status: in_progress
+> Node #56 | Status: completed
 
-**Current state:** [How it works today]
+**Current state:** All admin UI features migrated to dedicated garazyk-ui server. Services keep only protocol + metrics + ASCII root.
 
 **Evolution:**
-1. [First approach] - [why]
-2. **PIVOT:** [what changed] - [why it changed]
-3. [Current approach] - [why this is better]
+1. Admin UI was embedded in PDS/PLC/Relay/AppView binaries with inline HTML and HTMX
+2. **PIVOT:** Split into dedicated garazyk-ui binary communicating via XRPC APIs
+3. Phase 4.1-4.4: Design system CSS, 18 UIBackendClient methods, 15 routes, tabbed admin shell
+4. Phase 4.5: Added missing XRPC endpoints (Relay requestCrawl, PLC /:did/log)
+5. Phase 4.6: Folded Explore into Data Explorer with /explore redirect, blob/create/delete record support
 
-**Evidence:** [PRs, commits, docs]
-**Connects to:** [Other narratives]
-**Status:** active
+**Evidence:** UIServerRuntime.m, UIBackendClient.m, UIServiceConfig.h/m, system.css, RelayAPIHandler.m, PLCServer.m
+**Connects to:** Admin UI Phases 1-4 Complete (Node #55), UI Split Goal (Node #400)
+**Status:** completed
 
 ---
 
@@ -453,4 +455,23 @@
 - SecItemPersistenceTests.m: macOS skip
 
 **Connects to:** Test Failure Remediation (Node #141), Portability Hardening (Node #226)
+**Status:** active
+
+---
+
+## UI Server Migration: Phases 5-8
+> Node #422 | Status: in_progress
+
+**Current state:** Phase 4 complete. Dedicated garazyk-ui server with design system, 18 XRPC client methods, 15 routes, tabbed admin shell, missing XRPC endpoints, and Data Explorer. Phases 5-8 remain.
+
+**Evolution:**
+1. Phases 1-3: Built dedicated UI server, removed service-side UI, enforced ASCII roots
+2. Phase 4: Design system CSS, UIBackendClient extensions, admin shell with tabs, missing XRPC endpoints, Explore folded into Data Explorer
+3. **NEXT:** Phase 5 — Ozone moderation panels + security panels (session mgmt, app passwords)
+4. Phase 6 — MSTViewer migration (server-side MST rendering or client-side JS)
+5. Phase 7 — Remove ExploreHandler, PDSHttpExploreRoutePack, and service-side admin HTML from all binaries
+6. Phase 8 — Integration tests for garazyk-ui routes, documentation update
+
+**Evidence:** UIServerRuntime.m (540+ lines), UIBackendClient.m (760+ lines), system.css (20KB)
+**Connects to:** Admin UI Remaining Features (Node #56), UI Split Goal (Node #400)
 **Status:** active

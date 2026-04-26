@@ -1,10 +1,18 @@
 [
   {
-    "hash": "71a491a79a2491ba247e9dcb446ded5922f03001",
-    "short_hash": "71a491a",
+    "hash": "5e932c9844a99896b18ae86954b8e01c47fd7653",
+    "short_hash": "5e932c9",
     "author": "Security Bot",
-    "date": "2026-04-26T02:12:42-04:00",
-    "message": "build(CMakeLists): integrate AdminUIServer sources in test build\n\n- Add AdminUIServer source files (UIServiceConfig, UIAuthManager, UIBackendClient, UIServerRuntime) to TEST_OBJC_SOURCES\n- Enables AllTests executable to compile and link with AdminUIServer classes\n- Adds explanatory comment about garazyk-ui transitive library dependencies\n\nFixes issue #11 from code review.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "date": "2026-04-26T02:38:01-04:00",
+    "message": "docs(deciduous): track Phase 5 UI migration completion",
+    "files_changed": 1
+  },
+  {
+    "hash": "b512ad3cf33aa37508b226d12e3df915018cf5a9",
+    "short_hash": "b512ad3",
+    "author": "Security Bot",
+    "date": "2026-04-26T02:36:47-04:00",
+    "message": "test: register AdminUIServer tests in test runner\n\nAdded UIAuthManagerTests, UIBackendClientTests, and UIServerRuntimeTests to AllTests suite discovery.",
     "files_changed": 1
   },
   {

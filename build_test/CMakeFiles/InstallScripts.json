@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/jack/Software/garazyk/build_test/cmake_install.cmake",
+		"/Users/jack/Software/garazyk/build_test/secp256k1/cmake_install.cmake",
+		"/Users/jack/Software/garazyk/build_test/secp256k1/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

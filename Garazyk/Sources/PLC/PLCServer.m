@@ -427,6 +427,10 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         [weakSelf handleGetLatestLog:req response:resp];
     }];
 
+    [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf handleGetLog:req response:resp includeNullified:NO includeMetadata:YES];
+    }];
+
     [self.httpServer addRoute:@"GET" path:@"/:did/data" handler:^(HttpRequest *req, HttpResponse *resp) {
         [weakSelf handleGetData:req response:resp];
     }];

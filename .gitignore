@@ -136,3 +136,6 @@ tooling/test-audit-validator/critical-findings.md
 tooling/test-audit-validator/batch*_fixes.txt
 tooling/test-audit-validator/batch*_remaining.txt
 tooling/test-audit-validator/.artifacts/
+
+# Deciduous database (local)
+.deciduous/

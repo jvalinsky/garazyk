@@ -11,13 +11,12 @@
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
 #import "Network/PDSHttpMetricsRoutePack.h"
-#import "Network/PDSHttpMSTViewerRoutePack.h"
 #import "Network/PDSHttpNodeInfoRoutePack.h"
-#import "Network/PDSHttpOAuthDemoRoutePack.h"
 #import "Network/PDSHttpOAuthRoutePack.h"
 #import "Network/PDSHttpRelayAPIRoutePack.h"
 #import "Network/PDSHttpWellKnownRoutePack.h"
 #import "Network/PDSHttpXrpcRoutePack.h"
+#import "Network/PDSHttpAdminRoutePack.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -37,8 +36,8 @@
     _port = 2583;
     _enableXrpc = YES;
     _enableOAuth = YES;
-    _enableOAuthDemo = YES;
-    _enableMSTViewer = YES;
+    _enableOAuthDemo = NO;
+    _enableMSTViewer = NO;
     _enableNodeInfo = YES;
   }
   return self;
@@ -136,17 +135,6 @@
                                     }];
   }
 
-  if (self.enableOAuthDemo) {
-    [PDSHttpOAuthDemoRoutePack registerRoutesWithServer:server
-                                          dataDirectory:self.dataDirectory
-                                             controller:self.controller];
-  }
-
-  if (self.enableMSTViewer) {
-    [PDSHttpMSTViewerRoutePack registerRoutesWithServer:server
-                                             controller:self.controller];
-  }
-
   if (self.enableNodeInfo) {
     [PDSHttpNodeInfoRoutePack registerRoutesWithServer:server
                                                 issuer:self.issuer
@@ -157,6 +145,8 @@
   }
 
   [PDSHttpRelayAPIRoutePack registerRoutesWithServer:server];
+
+  [PDSHttpAdminRoutePack registerAdminRoutesWithServer:server];
 
   [PDSHttpWellKnownRoutePack registerRoutesWithServer:server
                                       serviceDatabases:self.serviceDatabases

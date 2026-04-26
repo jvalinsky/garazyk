@@ -7,6 +7,8 @@
  - GET /api/relay/metrics - Current relay metrics
  - GET /api/relay/upstreams - List upstream connections
  - GET /api/relay/health - Health check
+ - GET /api/relay/capabilities - Server capabilities
+ - POST /api/relay/requestCrawl - Request crawl of a PDS hostname
 
  @copyright Copyright (c) 2026 Jack Valinsky
  */
