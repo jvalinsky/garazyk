@@ -85,9 +85,6 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Whether to register OAuth routes (default: YES). */
 @property (nonatomic, assign) BOOL enableOAuth;
 
-/*! Whether to register Explore UI routes (default: YES). */
-@property (nonatomic, assign) BOOL enableExploreUI;
-
 /*! Whether to register OAuth Demo routes (default: YES). */
 @property (nonatomic, assign) BOOL enableOAuthDemo;
 

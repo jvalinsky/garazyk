@@ -103,7 +103,6 @@
     
     // Disable features we don't need for this test
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
@@ -257,7 +256,6 @@
     XCTAssertEqual(builder.port, 2583);
     XCTAssertTrue(builder.enableXrpc);
     XCTAssertTrue(builder.enableOAuth);
-    XCTAssertFalse(builder.enableExploreUI);
     XCTAssertTrue(builder.enableOAuthDemo);
     XCTAssertTrue(builder.enableMSTViewer);
     XCTAssertTrue(builder.enableNodeInfo);
@@ -289,14 +287,12 @@
     
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     XCTAssertFalse(builder.enableXrpc);
     XCTAssertFalse(builder.enableOAuth);
-    XCTAssertFalse(builder.enableExploreUI);
     XCTAssertFalse(builder.enableOAuthDemo);
     XCTAssertFalse(builder.enableMSTViewer);
     XCTAssertFalse(builder.enableNodeInfo);
@@ -319,14 +315,13 @@
     // Disable features that require dependencies
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *error = nil;
     HttpServer *server = [builder buildWithError:&error];
-    
+
     XCTAssertNotNil(server);
     XCTAssertNil(error);
 }
@@ -334,15 +329,14 @@
 - (void)testBuildReturnsServerWithCorrectPort {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     builder.port = 9999;
-    
+
     // Disable features that require dependencies
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *error = nil;
     HttpServer *server = [builder buildWithError:&error];
     
@@ -365,20 +359,19 @@
 
 - (void)testConfigureServerWithValidServerSucceeds {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
-    
+
     // Disable features that require dependencies
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     HttpServer *server = [HttpServer serverWithPort:8080];
-    
+
     NSError *error = nil;
     BOOL result = [builder configureServer:server error:&error];
-    
+
     XCTAssertTrue(result);
     XCTAssertNil(error);
 }
@@ -392,14 +385,13 @@
     
     // Disable other features
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *error = nil;
     HttpServer *server = [builder buildWithError:&error];
-    
+
     // Should still succeed, but XRPC routes won't be registered
     XCTAssertNotNil(server);
     XCTAssertNil(error);
@@ -417,7 +409,6 @@
     builder.controller = controller;
     builder.subscribeReposHandler = subscribeReposHandler;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
@@ -442,7 +433,6 @@
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
@@ -468,14 +458,13 @@
     
     // Disable other features
     builder.enableXrpc = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *error = nil;
     HttpServer *server = [builder buildWithError:&error];
-    
+
     // Should still succeed, but OAuth routes won't be registered
     XCTAssertNotNil(server);
     XCTAssertNil(error);
@@ -559,18 +548,17 @@
 
 - (void)testBuilderCanBuildMultipleServers {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
-    
+
     // Disable features that require dependencies
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *error1 = nil;
     HttpServer *server1 = [builder buildWithError:&error1];
-    
+
     builder.port = 8081;
     NSError *error2 = nil;
     HttpServer *server2 = [builder buildWithError:&error2];
@@ -586,15 +574,14 @@
 - (void)testBuildWithZeroPortReturnsNonNullServer {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
     builder.port = 0;  // Usually means "pick an available port"
-    
+
     // Disable features that require dependencies
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *error = nil;
     HttpServer *server = [builder buildWithError:&error];
     
@@ -605,15 +592,14 @@
 
 - (void)testConfigureServerCanBeCalledMultipleTimesReturnsSuccess {
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
-    
+
     // Disable features that require dependencies
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     HttpServer *server = [HttpServer serverWithPort:8080];
     
     NSError *error1 = nil;
@@ -670,11 +656,10 @@
     builder.port = 0; // Use ephemeral port
     builder.enableOAuth = YES;
     builder.enableXrpc = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *buildError = nil;
     HttpServer *server = [builder buildWithError:&buildError];
     
@@ -745,10 +730,9 @@
     builder.enableNodeInfo = YES;
     builder.enableOAuth = NO;
     builder.enableXrpc = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
-    
+
     NSError *buildError = nil;
     HttpServer *server = [builder buildWithError:&buildError];
     
@@ -811,11 +795,10 @@
     builder.port = 0;
     builder.enableXrpc = YES;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = NO;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
-    
+
     NSError *buildError = nil;
     HttpServer *server = [builder buildWithError:&buildError];
     
@@ -860,7 +843,6 @@
     builder.port = 0;
     builder.enableXrpc = YES;
     builder.enableOAuth = NO;
-    builder.enableExploreUI = YES;
     builder.enableOAuthDemo = NO;
     builder.enableMSTViewer = NO;
     builder.enableNodeInfo = NO;
