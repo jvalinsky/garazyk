@@ -48,7 +48,9 @@
       "Bash(tail -100 test-output-*.log)",
       "Bash(deciduous show *)",
       "Bash(clang -c -fblocks -fobjc-arc -I/Users/jack/Software/garazyk/Garazyk/Sources -I/Users/jack/Software/garazyk/Garazyk/Tests -F /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -framework Foundation \"Garazyk/Tests/AdminUIServer/UIServerRuntimeTests.m\" -o /tmp/test3.o)",
-      "Bash(make -C build_test -j1)"
+      "Bash(make -C build_test -j1)",
+      "Bash(make -C build -j4)",
+      "Bash(make -C build AllTests -j4)"
     ]
   }
 }
