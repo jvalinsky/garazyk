@@ -7,11 +7,13 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcAuthHelper.h"
 #import "AppView/Services/AgeAssuranceService.h"
+#import "AppView/Services/SearchIndexService.h"
 
 @implementation XrpcAppBskyUnspeccedPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService {
+           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
+              searchIndexService:(nullable SearchIndexService *)searchIndexService {
 
 #pragma mark - Labeler
 
@@ -129,12 +131,24 @@
                            return;
                        }
 
-                       // TODO: Implement actor search indexing
-                       response.statusCode = 501;
-                       [response setJsonBody:@{
-                           @"error": @"NotImplemented",
-                           @"message": @"app.bsky.unspecced.searchActorsSkeleton is not yet implemented"
-                       }];
+                       if (searchIndexService) {
+                           NSString *limitParam = [request queryParamForKey:@"limit"];
+                           NSInteger limit = limitParam ? [limitParam integerValue] : 25;
+                           NSString *cursor = [request queryParamForKey:@"cursor"];
+
+                           NSDictionary *result = [searchIndexService searchActors:query
+                                                                             limit:limit
+                                                                            cursor:cursor
+                                                                             error:nil];
+                           response.statusCode = HttpStatusOK;
+                           [response setJsonBody:result ?: @{@"actors": @[], @"hitsTotal": @0}];
+                       } else {
+                           response.statusCode = 501;
+                           [response setJsonBody:@{
+                               @"error": @"NotImplemented",
+                               @"message": @"app.bsky.unspecced.searchActorsSkeleton is not yet implemented"
+                           }];
+                       }
                      }];
 
   [dispatcher registerMethod:@"app.bsky.unspecced.searchPostsSkeleton"
@@ -146,12 +160,24 @@
                            return;
                        }
 
-                       // TODO: Implement post search indexing
-                       response.statusCode = 501;
-                       [response setJsonBody:@{
-                           @"error": @"NotImplemented",
-                           @"message": @"app.bsky.unspecced.searchPostsSkeleton is not yet implemented"
-                       }];
+                       if (searchIndexService) {
+                           NSString *limitParam = [request queryParamForKey:@"limit"];
+                           NSInteger limit = limitParam ? [limitParam integerValue] : 25;
+                           NSString *cursor = [request queryParamForKey:@"cursor"];
+
+                           NSDictionary *result = [searchIndexService searchPosts:query
+                                                                            limit:limit
+                                                                           cursor:cursor
+                                                                            error:nil];
+                           response.statusCode = HttpStatusOK;
+                           [response setJsonBody:result ?: @{@"posts": @[], @"hitsTotal": @0}];
+                       } else {
+                           response.statusCode = 501;
+                           [response setJsonBody:@{
+                               @"error": @"NotImplemented",
+                               @"message": @"app.bsky.unspecced.searchPostsSkeleton is not yet implemented"
+                           }];
+                       }
                      }];
 
   [dispatcher registerMethod:@"app.bsky.unspecced.searchStarterPacksSkeleton"
@@ -163,12 +189,24 @@
                            return;
                        }
 
-                       // TODO: Implement starter pack search indexing
-                       response.statusCode = 501;
-                       [response setJsonBody:@{
-                           @"error": @"NotImplemented",
-                           @"message": @"app.bsky.unspecced.searchStarterPacksSkeleton is not yet implemented"
-                       }];
+                       if (searchIndexService) {
+                           NSString *limitParam = [request queryParamForKey:@"limit"];
+                           NSInteger limit = limitParam ? [limitParam integerValue] : 25;
+                           NSString *cursor = [request queryParamForKey:@"cursor"];
+
+                           NSDictionary *result = [searchIndexService searchStarterPacks:query
+                                                                                     limit:limit
+                                                                                    cursor:cursor
+                                                                                     error:nil];
+                           response.statusCode = HttpStatusOK;
+                           [response setJsonBody:result ?: @{@"starterPacks": @[], @"hitsTotal": @0}];
+                       } else {
+                           response.statusCode = 501;
+                           [response setJsonBody:@{
+                               @"error": @"NotImplemented",
+                               @"message": @"app.bsky.unspecced.searchStarterPacksSkeleton is not yet implemented"
+                           }];
+                       }
                      }];
 
 #pragma mark - Thread Endpoints
