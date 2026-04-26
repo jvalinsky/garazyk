@@ -176,7 +176,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
                                      userInfo:@{NSLocalizedDescriptionKey:
                                                     [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
         }
-        sqlite3_close(_db);
+        sqlite3_close_v2(_db);
         _db = NULL;
         return nil;
     }
@@ -201,7 +201,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 - (void)close {
     dispatch_sync(_queue, ^{
         if (self->_db) {
-            sqlite3_close(self->_db);
+            sqlite3_close_v2(self->_db);
             self->_db = NULL;
         }
     });

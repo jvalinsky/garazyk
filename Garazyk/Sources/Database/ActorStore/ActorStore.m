@@ -139,13 +139,13 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     sqlite3_busy_timeout(_db, 60000);
     
     if (![self configureDatabase:error]) {
-        sqlite3_close(_db);
+        sqlite3_close_v2(_db);
         _db = NULL;
         return NO;
     }
     
     if (![self createSchema:error]) {
-        sqlite3_close(_db);
+        sqlite3_close_v2(_db);
         _db = NULL;
         return NO;
     }
@@ -280,16 +280,14 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         }
     }
     [self.stmtCache removeAllObjects];
-    
-    // Finalize any other stray statements
-    sqlite3_stmt *strayStmt;
-    while ((strayStmt = sqlite3_next_stmt(self.db, NULL)) != NULL) {
-        sqlite3_finalize(strayStmt);
-    }
-    
+
     [self.blobCache removeAllObjects];
-    
-    sqlite3_close(self.db);
+
+    // Use sqlite3_close_v2 which safely handles virtual table
+    // internal statements (e.g., FTS5 content= sync tables).
+    // Manual stray statement finalization via sqlite3_next_stmt
+    // can corrupt virtual table internals and crash.
+    sqlite3_close_v2(self.db);
     self.db = NULL;
     self.open = NO;
 }
