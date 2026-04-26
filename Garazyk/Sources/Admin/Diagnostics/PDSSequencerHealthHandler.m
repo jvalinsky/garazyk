@@ -2,7 +2,6 @@
 #import "Analytics/PDSSequencerAnalyticsCollector.h"
 
 @interface PDSSequencerHealthHandler ()
-@property (nonatomic, strong) PDSSequencerAnalyticsCollector *analyticsCollector;
 @end
 
 @implementation PDSSequencerHealthHandler
@@ -37,20 +36,37 @@
 }
 
 - (NSString *)getSequencerStats {
-    // TODO: Wire in analytics collector
-    NSDictionary *snapshot = @{
-        @"currentSeq": @0,
-        @"eventsPerSecond": @0.0,
-        @"subscriberCount": @0,
-        @"backpressureWarnings": @0,
-        @"backpressureCritical": @0,
-        @"queueOverflows": @0,
-        @"eventTypes": @{},
-        @"healthStatus": @"unknown"
-    };
+    NSDictionary *snapshot = nil;
+    if (self.analyticsCollector) {
+        snapshot = [self.analyticsCollector currentSnapshot];
+    }
+
+    if (!snapshot) {
+        snapshot = @{
+            @"currentSeq": @0,
+            @"eventsPerSecond": @0.0,
+            @"subscriberCount": @0,
+            @"backpressureWarnings": @0,
+            @"backpressureCritical": @0,
+            @"queueOverflows": @0,
+            @"eventTypes": @{},
+            @"healthStatus": @"unknown"
+        };
+    }
+
+    // Map collector keys to API response format
+    NSMutableDictionary *response = [NSMutableDictionary dictionary];
+    response[@"currentSeq"] = snapshot[@"seq_number"] ?: snapshot[@"currentSeq"] ?: @0;
+    response[@"eventsPerSecond"] = snapshot[@"events_per_second"] ?: snapshot[@"eventsPerSecond"] ?: @0.0;
+    response[@"subscriberCount"] = snapshot[@"subscriber_count"] ?: snapshot[@"subscriberCount"] ?: @0;
+    response[@"backpressureWarnings"] = snapshot[@"backpressure_warnings"] ?: snapshot[@"backpressureWarnings"] ?: @0;
+    response[@"backpressureCritical"] = snapshot[@"backpressure_critical"] ?: snapshot[@"backpressureCritical"] ?: @0;
+    response[@"queueOverflows"] = snapshot[@"queue_overflows"] ?: snapshot[@"queueOverflows"] ?: @0;
+    response[@"eventTypes"] = snapshot[@"event_type_distribution"] ?: snapshot[@"eventTypes"] ?: @{};
+    response[@"healthStatus"] = snapshot[@"healthStatus"] ?: @"unknown";
 
     NSError *error = nil;
-    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:snapshot options:0 error:&error];
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:[response copy] options:0 error:&error];
     if (!jsonData) {
         return @"{\"error\": \"Failed to serialize response\"}";
     }
@@ -70,9 +86,15 @@
         }
     }
 
-    // TODO: Wire in analytics collector to retrieve historical data
+    // Wire in analytics collector to retrieve historical data
+    NSInteger days = MAX(1, hours / 24);
+    NSArray *historicalData = nil;
+    if (self.analyticsCollector) {
+        historicalData = [self.analyticsCollector hourlyDataForPastDays:days];
+    }
+
     NSDictionary *response = @{
-        @"dataPoints": @[],
+        @"dataPoints": historicalData ?: @[],
         @"hours": @(hours),
         @"startTime": [NSNumber numberWithLongLong:((long long)[[NSDate date] timeIntervalSince1970] - (hours * 3600))]
     };
