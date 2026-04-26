@@ -379,7 +379,9 @@ int main(int argc, char *argv[]) {
       @"ATProtoBase32Tests",
       @"UIAuthManagerTests",
       @"UIBackendClientTests",
-      @"UIServerRuntimeTests"
+      @"UIServerRuntimeTests",
+      @"UILabAuthTests",
+      @"UILabIntegrationTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
