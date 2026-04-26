@@ -326,6 +326,15 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[weakSelf renderRelayUpstreamsPartial:result]];
     }];
 
+    // Relay: Health check
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-health" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchRelayHealth];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderRelayHealthPartial:result]];
+    }];
+
     // Relay: Request crawl action
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/request-crawl" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -446,6 +455,15 @@ static NSString *UIEscaped(NSString *value) {
         NSDictionary *result = [weakSelf.backendClient fetchSubjectStatusForDID:did];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneSubjectPartial:result]];
+    }];
+
+    // Ozone: Moderation reports
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-reports" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSDictionary *result = [weakSelf.backendClient fetchModerationReportsWithCursor:cursor limit:50];
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneModerationReportsPartial:result]];
     }];
 
     // Ozone: Team members
@@ -866,6 +884,8 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"tab-relay\" class=\"tab-pane\" style=\"display:none\">"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Relay Metrics</h3>"
     "<div id=\"relay-metrics\" hx-get=\"/admin/partials/relay-metrics\" hx-trigger=\"load, every 30s\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Health</h3>"
+    "<div id=\"relay-health\" hx-get=\"/admin/partials/relay-health\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Upstreams</h3>"
     "<div id=\"relay-upstreams\" hx-get=\"/admin/partials/relay-upstreams\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Request Crawl</h3>"
@@ -915,6 +935,8 @@ static NSString *UIEscaped(NSString *value) {
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
     "<div id=\"ozone-subject-result\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Reports</h3>"
+    "<div id=\"ozone-reports\" hx-get=\"/admin/partials/ozone-reports\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Team Members</h3>"
     "<div id=\"ozone-team\" hx-get=\"/admin/partials/ozone-team\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Sets</h3>"
@@ -1748,6 +1770,49 @@ static NSString *UIEscaped(NSString *value) {
             UIEscaped(key), UIEscaped([value description])];
     }];
     [html appendString:@"</div>"];
+    return html;
+}
+
+#pragma mark - Phase 1 Render Methods
+
+- (NSString *)renderRelayHealthPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSString *status = result[@"status"] ?: @"unknown";
+    NSString *statusBadge = [status isEqualToString:@"ok"] ? @"badge badge-success" :
+                            [status isEqualToString:@"error"] ? @"badge badge-destructive" : @"badge badge-secondary";
+    NSString *checkedAt = result[@"checkedAt"] ?: result[@"lastChecked"] ?: @"";
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Status</span><span class=\"%@\">%@</span></div>", statusBadge, UIEscaped(status)];
+    if (checkedAt.length > 0) {
+        [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Last Checked</span><span>%@</span></div>", UIEscaped(checkedAt)];
+    }
+    [html appendString:@"</div>"];
+    return html;
+}
+
+- (NSString *)renderOzoneModerationReportsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Subject</th><th>Reason</th><th>Reported By</th><th>Resolved At</th></tr></thead><tbody>"];
+    NSArray<NSDictionary *> *reports = [result[@"reports"] isKindOfClass:[NSArray class]] ? result[@"reports"] : @[];
+    for (NSDictionary *report in reports) {
+        NSString *subject = UIEscaped(report[@"subject"] ?: @"");
+        NSString *reason = UIEscaped(report[@"reason"] ?: @"");
+        NSString *reportedBy = UIEscaped(report[@"reportedBy"] ?: @"");
+        NSString *resolvedAt = UIEscaped(report[@"resolvedAt"] ?: @"pending");
+        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td class=\"text-mono text-xs\">%@</td><td>%@</td></tr>", subject, reason, reportedBy, resolvedAt];
+    }
+    if (reports.count == 0) {
+        [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No moderation reports found.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    NSString *cursor = result[@"cursor"];
+    if (cursor) {
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/ozone-reports?cursor=%@\" hx-target=\"#ozone-reports\">Load More</button></div>", UIEscaped(cursor)];
+    }
     return html;
 }
 
