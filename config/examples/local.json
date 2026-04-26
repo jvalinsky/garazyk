@@ -10,7 +10,7 @@
   "session": {
     "access_token_ttl_seconds": 1800,
     "refresh_token_ttl_seconds": 2592000,
-    "invite_code_required": true
+    "invite_code_required": false
   },
   "server": {
     "data_dir": ".",
@@ -44,7 +44,9 @@
       "https://witchsky.app",
       "https://bsky.app",
       "https://pds.garazyk.xyz",
-      "https://pdsls.dev"
+      "https://pdsls.dev",
+      "http://localhost:2590",
+      "http://127.0.0.1:2590"
     ],
     "allowed_methods": [
       "GET",
