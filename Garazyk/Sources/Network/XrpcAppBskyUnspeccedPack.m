@@ -123,15 +123,18 @@
   [dispatcher registerMethod:@"app.bsky.unspecced.searchActorsSkeleton"
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        NSString *query = [request queryParamForKey:@"q"];
-                       NSString *limitStr = [request queryParamForKey:@"limit"];
 
                        if (!query || query.length == 0) {
                            [XrpcErrorHelper setValidationError:response message:@"q parameter is required"];
                            return;
                        }
 
-                       response.statusCode = HttpStatusOK;
-                       [response setJsonBody:@{@"actors" : @[], @"cursor" : @""}];
+                       // TODO: Implement actor search indexing
+                       response.statusCode = 501;
+                       [response setJsonBody:@{
+                           @"error": @"NotImplemented",
+                           @"message": @"app.bsky.unspecced.searchActorsSkeleton is not yet implemented"
+                       }];
                      }];
 
   [dispatcher registerMethod:@"app.bsky.unspecced.searchPostsSkeleton"
@@ -143,8 +146,12 @@
                            return;
                        }
 
-                       response.statusCode = HttpStatusOK;
-                       [response setJsonBody:@{@"posts" : @[], @"cursor" : @""}];
+                       // TODO: Implement post search indexing
+                       response.statusCode = 501;
+                       [response setJsonBody:@{
+                           @"error": @"NotImplemented",
+                           @"message": @"app.bsky.unspecced.searchPostsSkeleton is not yet implemented"
+                       }];
                      }];
 
   [dispatcher registerMethod:@"app.bsky.unspecced.searchStarterPacksSkeleton"
@@ -156,8 +163,12 @@
                            return;
                        }
 
-                       response.statusCode = HttpStatusOK;
-                       [response setJsonBody:@{@"starterPacks" : @[], @"cursor" : @""}];
+                       // TODO: Implement starter pack search indexing
+                       response.statusCode = 501;
+                       [response setJsonBody:@{
+                           @"error": @"NotImplemented",
+                           @"message": @"app.bsky.unspecced.searchStarterPacksSkeleton is not yet implemented"
+                       }];
                      }];
 
 #pragma mark - Thread Endpoints
@@ -171,10 +182,11 @@
                            return;
                        }
 
-                       response.statusCode = HttpStatusOK;
+                       // TODO: Implement thread V2 view
+                       response.statusCode = 501;
                        [response setJsonBody:@{
-                           @"thread": @{},
-                           @"threadgate": [NSNull null]
+                           @"error": @"NotImplemented",
+                           @"message": @"app.bsky.unspecced.getPostThreadV2 is not yet implemented"
                        }];
                      }];
 
@@ -187,10 +199,11 @@
                            return;
                        }
 
-                       response.statusCode = HttpStatusOK;
+                       // TODO: Implement thread other V2 view
+                       response.statusCode = 501;
                        [response setJsonBody:@{
-                           @"thread": @{},
-                           @"threadgate": [NSNull null]
+                           @"error": @"NotImplemented",
+                           @"message": @"app.bsky.unspecced.getPostThreadOtherV2 is not yet implemented"
                        }];
                      }];
 
