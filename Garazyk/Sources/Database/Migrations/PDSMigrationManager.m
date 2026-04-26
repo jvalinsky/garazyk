@@ -217,6 +217,57 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V6 Drafts Schema Migration (Actor Store)
+
+@interface V6DraftsSchema : NSObject <PDSMigration>
+@end
+
+@implementation V6DraftsSchema
+
+- (NSInteger)version {
+    return 6;
+}
+
+- (NSString *)name {
+    return @"drafts_schema";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    NSArray *schemas = @[
+        @"CREATE TABLE IF NOT EXISTS drafts ("
+        @"id TEXT PRIMARY KEY, "
+        @"did TEXT NOT NULL, "
+        @"content TEXT NOT NULL, "
+        @"created_at INTEGER NOT NULL, "
+        @"updated_at INTEGER NOT NULL"
+        @")",
+        @"CREATE INDEX IF NOT EXISTS idx_drafts_did ON drafts(did)"
+    ];
+
+    for (NSString *sql in schemas) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V6 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    sqlite3_exec(db, "DROP TABLE IF EXISTS drafts", NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
 #pragma mark - V1 Initial Schema Migration
 
 @interface V1InitialSchema : NSObject <PDSMigration>
@@ -1214,6 +1265,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V3DiagnosticsSchema alloc] init]];
     [manager registerMigration:[[V4OzoneScheduledActionsSchema alloc] init]];
     [manager registerMigration:[[V5HostingEventsSchema alloc] init]];
+    [manager registerMigration:[[V6DraftsSchema alloc] init]];
     return manager;
 }
 
