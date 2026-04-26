@@ -8,6 +8,7 @@
 
 #import "PDSApplication.h"
 #import "PDSConfiguration.h"
+#import "PDSReadinessCheck.h"
 #import "PDSController.h"
 #import "Admin/PDSAdminController.h"
 #import "Services/PDS/PDSAccountService.h"
@@ -31,6 +32,7 @@
 #import "Network/RateLimiter.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.h"
+#import "Admin/Diagnostics/PDSSequencerHealthHandler.h"
 #import "Core/PDSServiceContainer.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/PDSLogger.h"
@@ -574,15 +576,13 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 - (BOOL)startWithError:(NSError **)error {
     PDS_LOG_CORE_INFO(@"Starting PDSApplication...");
 
-    // TODO (Sprint 4 Phase 2): Integrate PDSReadinessCheck before accepting traffic
-    // Uncomment when PDSReadinessCheck is fully integrated:
-    //
-    // NSError *readinessError = nil;
-    // if (![PDSReadinessCheck performReadinessChecksWithConfig:_configuration error:&readinessError]) {
-    //     PDS_LOG_CORE_ERROR(@"Server failed readiness checks: %@", readinessError);
-    //     if (error) *error = readinessError;
-    //     return NO;
-    // }
+    // Perform startup readiness checks before accepting traffic
+    NSError *readinessError = nil;
+    if (![PDSReadinessCheck performReadinessChecksWithConfig:_configuration error:&readinessError]) {
+        PDS_LOG_CORE_ERROR(@"Server failed readiness checks: %@", readinessError);
+        if (error) *error = readinessError;
+        return NO;
+    }
 
     // Initialize XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
@@ -624,6 +624,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
     // Start analytics collection for diagnostics dashboard
     [_analyticsCollector startCollecting];
+    [PDSSequencerHealthHandler sharedHandler].analyticsCollector = _analyticsCollector;
     PDS_LOG_CORE_INFO(@"Sequencer analytics collector started");
 
     PDS_LOG_CORE_INFO(@"PDSApplication started successfully");
