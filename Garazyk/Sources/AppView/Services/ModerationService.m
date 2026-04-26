@@ -636,9 +636,9 @@
         @"INSERT INTO moderation_safelinks (url, pattern, action, reason, comment, created_by, created_at, updated_at) "
         @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)"];
 
-    BOOL success = [self.database executeSQL:sql
-                                 parameters:@[url, pattern, action, reason, comment, adminDid, @(now), @(now)]
-                                      error:error];
+    BOOL success = [self.database executeParameterizedUpdate:sql
+                                                       params:@[url, pattern, action, reason, comment, adminDid, @(now), @(now)]
+                                                        error:error];
 
     if (success) {
         return [NSString stringWithFormat:@"%@:%@", url, pattern];
@@ -672,7 +672,7 @@
         [params addObject:parts[1]];
     }
 
-    return [self.database executeSQL:sql parameters:params error:error];
+    return [self.database executeParameterizedUpdate:sql params:params error:error];
 }
 
 - (BOOL)deleteSafelink:(NSString *)safelinkId
@@ -686,7 +686,7 @@
     NSArray *parts = [safelinkId componentsSeparatedByString:@":"];
     if (parts.count == 2) {
         NSString *sql = @"DELETE FROM moderation_safelinks WHERE url = ? AND pattern = ?";
-        return [self.database executeSQL:sql parameters:@[parts[0], parts[1]] error:error];
+        return [self.database executeParameterizedUpdate:sql params:@[parts[0], parts[1]] error:error];
     }
 
     if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Invalid safelink ID format"}];
@@ -701,13 +701,13 @@
     if (parts.count != 2) return nil;
 
     NSString *sql = @"SELECT * FROM moderation_safelinks WHERE url = ? AND pattern = ?";
-    NSArray<NSDictionary *> *results = [self.database querySQL:sql parameters:@[parts[0], parts[1]] error:error];
+    NSArray<NSDictionary *> *results = [self.database executeParameterizedQuery:sql params:@[parts[0], parts[1]] error:error];
     return results.firstObject;
 }
 
 - (nullable NSArray<NSDictionary *> *)listSafelinks:(NSError **)error {
     NSString *sql = @"SELECT * FROM moderation_safelinks ORDER BY created_at DESC";
-    return [self.database querySQL:sql parameters:@[] error:error];
+    return [self.database executeParameterizedQuery:sql params:@[] error:error];
 }
 
 #pragma mark - Signatures
