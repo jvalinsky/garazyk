@@ -899,6 +899,102 @@
     return response ?: @{};
 }
 
+- (NSDictionary *)listOzoneSettings {
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.setting.listOptions"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:@{} bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"list_settings_failed", @"message": error.localizedDescription ?: @"Failed to fetch settings"};
+    }
+    return response ?: @{@"options": @[]};
+}
+
+- (NSDictionary *)upsertOzoneSetting:(NSDictionary *)option {
+    if (!option) {
+        return @{@"error": @"invalid_params", @"message": @"Option specification required"};
+    }
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.setting.upsertOption"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:option bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"upsert_setting_failed", @"message": error.localizedDescription ?: @"Failed to upsert setting"};
+    }
+    return response ?: @{};
+}
+
+- (NSDictionary *)removeOzoneSettings:(NSArray<NSString *> *)keys {
+    if (!keys || keys.count == 0) {
+        return @{@"error": @"invalid_params", @"message": @"Setting keys required"};
+    }
+    NSDictionary *body = @{@"keys": keys};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.setting.removeOptions"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"remove_settings_failed", @"message": error.localizedDescription ?: @"Failed to remove settings"};
+    }
+    return response ?: @{};
+}
+
+- (NSDictionary *)findRelatedAccounts:(NSString *)did {
+    if (!did || did.length == 0) {
+        return @{@"error": @"invalid_params", @"message": @"DID required"};
+    }
+    NSDictionary *body = @{@"did": did};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.signature.findRelatedAccounts"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"find_related_failed", @"message": error.localizedDescription ?: @"Failed to find related accounts"};
+    }
+    return response ?: @{@"related": @[]};
+}
+
+- (NSDictionary *)findSignatureCorrelation:(NSArray<NSString *> *)dids {
+    if (!dids || dids.count == 0) {
+        return @{@"error": @"invalid_params", @"message": @"DIDs required"};
+    }
+    NSDictionary *body = @{@"dids": dids};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.signature.findCorrelation"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"find_correlation_failed", @"message": error.localizedDescription ?: @"Failed to find correlation"};
+    }
+    return response ?: @{@"correlations": @[]};
+}
+
+- (NSDictionary *)searchAccountsBySignature:(NSDictionary *)patterns {
+    if (!patterns) {
+        return @{@"error": @"invalid_params", @"message": @"Search patterns required"};
+    }
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.signature.searchAccounts"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:patterns bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"search_accounts_failed", @"message": error.localizedDescription ?: @"Failed to search accounts"};
+    }
+    return response ?: @{@"accounts": @[]};
+}
+
 #pragma mark - Ozone Team Operations
 
 - (NSDictionary *)fetchOzoneTeamMembers {

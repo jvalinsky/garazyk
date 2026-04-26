@@ -618,6 +618,51 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
     }];
 
+    // Ozone: Settings
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-settings" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient listOzoneSettings];
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneSettingsPartial:result]];
+    }];
+
+    // Ozone: Upsert setting
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/upsert-ozone-setting" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *option = request.jsonBody ?: @{};
+        NSDictionary *result = [weakSelf.backendClient upsertOzoneSetting:option];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Setting updated.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
+    // Ozone: Signatures
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-signatures" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneSignaturesPartial:nil]];
+    }];
+
+    // Ozone: Find related accounts
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-find-related" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *did = request.jsonBody[@"did"] ?: @"";
+        NSDictionary *result = [weakSelf.backendClient findRelatedAccounts:did];
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneSignatureResultsPartial:result]];
+    }];
+
+    // Ozone: Find correlation
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-find-correlation" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSArray *dids = request.jsonBody[@"dids"] ?: @[];
+        NSDictionary *result = [weakSelf.backendClient findSignatureCorrelation:dids];
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneSignatureResultsPartial:result]];
+    }];
+
     // Ozone: Team members
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-team" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -1101,6 +1146,10 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"ozone-verification\" hx-get=\"/admin/partials/ozone-verification\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Safelinks</h3>"
     "<div id=\"ozone-safelinks\" hx-get=\"/admin/partials/ozone-safelinks\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Settings</h3>"
+    "<div id=\"ozone-settings\" hx-get=\"/admin/partials/ozone-settings\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Signatures</h3>"
+    "<div id=\"ozone-signatures\" hx-get=\"/admin/partials/ozone-signatures\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Team Members</h3>"
     "<div id=\"ozone-team\" hx-get=\"/admin/partials/ozone-team\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Sets</h3>"
@@ -1258,6 +1307,10 @@ static NSString *UIEscaped(NSString *value) {
     "async function removeSafelinkRule(url,pattern){if(!confirm('Remove this safelink rule?'))return;"
     "const resp=await fetch('/admin/actions/remove-safelink-rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,pattern})});"
     "htmx.ajax('GET','/admin/partials/ozone-safelinks','#ozone-safelinks');}"
+    "async function findOzoneRelatedAccounts(){const did=document.getElementById('ozone-find-did').value;"
+    "if(!did){alert('DID required');return;}"
+    "const resp=await fetch('/admin/actions/ozone-find-related',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did})});"
+    "document.getElementById('ozone-signature-results').innerHTML=await resp.text();}"
     "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
     "if(!convoID){alert('Conversation ID required');return;}"
     "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
@@ -2124,6 +2177,44 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"<tr><td colspan=\"5\" class=\"text-center text-secondary p-lg\">No safelink rules.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+#pragma mark - Phase 6 Render Methods
+
+- (NSString *)renderOzoneSettingsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>"];
+    NSArray<NSDictionary *> *options = [result[@"options"] isKindOfClass:[NSArray class]] ? result[@"options"] : @[]];
+    for (NSDictionary *option in options) {
+        NSString *key = UIEscaped(option[@"key"] ?: @"");
+        NSString *value = UIEscaped(option[@"value"] ?: @"");
+        [html appendFormat:@"<tr><td class=\"text-mono\">%@</td><td>%@</td></tr>", key, value];
+    }
+    if (options.count == 0) {
+        [html appendString:@"<tr><td colspan=\"2\" class=\"text-center text-secondary p-lg\">No settings configured.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+- (NSString *)renderOzoneSignaturesPartial:(NSDictionary *)result {
+    return @"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"findOzoneRelatedAccounts();return false;\"><div class=\"form-group\"><label>DID:</label><input type=\"text\" id=\"ozone-find-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Find Related Accounts</button></form></div><div id=\"ozone-signature-results\"></div>";
+}
+
+- (NSString *)renderOzoneSignatureResultsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
+    NSArray *related = [result[@"related"] isKindOfClass:[NSArray class]] ? result[@"related"] : @[]];
+    [html appendString:@"<div class=\"detail-row\"><span class=\"detail-label\">Related Accounts</span></div><ul>"];
+    for (NSString *did in related) {
+        [html appendFormat:@"<li class=\"text-mono text-xs\">%@</li>", UIEscaped(did)];
+    }
+    [html appendString:@"</ul></div>"];
     return html;
 }
 
