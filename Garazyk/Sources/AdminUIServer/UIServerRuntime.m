@@ -171,6 +171,60 @@ static NSString *UIEscaped(NSString *value) {
             : @"<p style=\"color:#166534\">Invites disabled for account.</p>";
         [response setBodyString:message];
     }];
+
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchAppViewMetrics];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderAppViewMetricsPartial:result]];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-ingest" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchIngestHealth];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderIngestHealthPartial:result]];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-queue" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *status = [request queryParamForKey:@"status"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSDictionary *result = [weakSelf.backendClient fetchBackfillQueueWithStatus:status limit:25 cursor:cursor];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderBackfillQueuePartial:result]];
+    }];
+
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-retry-repo" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *did = request.jsonBody[@"did"] ?: [request queryParamForKey:@"did"];
+        NSDictionary *result = [weakSelf.backendClient retryBackfillForDID:did ?: @""];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? result[@"message"] : @"Retry enqueued.";
+        [response setBodyString:[NSString stringWithFormat:@"<p>%@</p>", UIEscaped(msg)]];
+    }];
+
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-cancel-repo" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *did = request.jsonBody[@"did"] ?: [request queryParamForKey:@"did"];
+        NSDictionary *result = [weakSelf.backendClient cancelBackfillForDID:did ?: @""];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? result[@"message"] : @"Cancel requested.";
+        [response setBodyString:[NSString stringWithFormat:@"<p>%@</p>", UIEscaped(msg)]];
+    }];
+
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchRelayMetrics];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderRelayMetricsPartial:result]];
+    }];
 }
 
 - (BOOL)ensureAuthorized:(HttpRequest *)request response:(HttpResponse *)response {
@@ -221,7 +275,15 @@ static NSString *UIEscaped(NSString *value) {
     "<section class=\"panel\"><h3 style=\"margin-top:0\">Invite Codes</h3>"
     "<div id=\"invites\" hx-get=\"/admin/partials/invites\" hx-trigger=\"load\"></div>"
     "<div class=\"row\" style=\"margin-top:10px\"><input id=\"disable-account\" type=\"text\" placeholder=\"DID to disable invites\"/>"
-    "<button onclick=\"disableInvites()\">Disable Invites</button></div><div id=\"invite-action-result\"></div></section></main>"
+    "<button onclick=\"disableInvites()\">Disable Invites</button></div><div id=\"invite-action-result\"></div></section>"
+    "<section class=\"panel\"><h3 style=\"margin-top:0\">AppView</h3>"
+    "<div id=\"appview-metrics\" hx-get=\"/admin/partials/appview-metrics\" hx-trigger=\"load, every 30s\"></div>"
+    "<div id=\"appview-ingest\" hx-get=\"/admin/partials/appview-ingest\" hx-trigger=\"load, every 30s\" style=\"margin-top:16px\"></div>"
+    "<div style=\"margin-top:16px\"><h4 style=\"margin-bottom:8px;margin-top:0\">Backfill Queue</h4>"
+    "<div id=\"appview-queue\" hx-get=\"/admin/partials/appview-queue\" hx-trigger=\"load, every 10s\"></div></div></section>"
+    "<section class=\"panel\"><h3 style=\"margin-top:0\">Relay</h3>"
+    "<div id=\"relay-metrics\" hx-get=\"/admin/partials/relay-metrics\" hx-trigger=\"load, every 30s\"></div></section>"
+    "</main>"
     "<script>async function disableInvites(){const account=document.getElementById('disable-account').value;"
     "const resp=await fetch('/admin/actions/disable-invites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account})});"
     "document.getElementById('invite-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/invites','#invites');}</script>"
@@ -287,6 +349,82 @@ static NSString *UIEscaped(NSString *value) {
         if (codes.count == 0) {
             [html appendString:@"<tr><td colspan=\"3\">No invite codes found.</td></tr>"];
         }
+    }
+    [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+- (NSString *)renderAppViewMetricsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div style=\"color:#ef4444\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>"];
+    NSDictionary *backfill = result[@"backfill"] ?: @{};
+    NSDictionary *ingest = result[@"ingest"] ?: @{};
+    NSDictionary *index = result[@"index"] ?: @{};
+    
+    [html appendFormat:@"<tr><td>Queue Depth</td><td>%@</td></tr>", UIEscaped([backfill[@"queue_depth"] stringValue] ?: @"0")];
+    [html appendFormat:@"<tr><td>Active Workers</td><td>%@</td></tr>", UIEscaped([backfill[@"active_workers"] stringValue] ?: @"0")];
+    [html appendFormat:@"<tr><td>Relays</td><td>%@</td></tr>", UIEscaped([ingest[@"relays"] stringValue] ?: @"0")];
+    [html appendFormat:@"<tr><td>Index Records</td><td>%@</td></tr>", UIEscaped([index[@"total_records"] stringValue] ?: @"0")];
+    [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+- (NSString *)renderIngestHealthPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div style=\"color:#ef4444\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<table><thead><tr><th>Relay</th><th>Lag</th><th>Throughput</th></tr></thead><tbody>"];
+    NSArray<NSDictionary *> *relays = [result[@"relays"] isKindOfClass:[NSArray class]] ? result[@"relays"] : @[];
+    for (NSDictionary *relay in relays) {
+        NSString *url = UIEscaped(relay[@"url"] ?: @"");
+        NSString *lag = UIEscaped([relay[@"lag"] stringValue] ?: @"0");
+        NSString *tps = UIEscaped([relay[@"throughput"] stringValue] ?: @"0");
+        [html appendFormat:@"<tr><td>%@</td><td>%@</td><td>%@</td></tr>", url, lag, tps];
+    }
+    if (relays.count == 0) {
+        [html appendString:@"<tr><td colspan=\"3\">No relay ingest data.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+- (NSString *)renderBackfillQueuePartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div style=\"color:#ef4444\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<table id=\"queue-table\"><thead><tr><th>DID</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
+    NSArray<NSDictionary *> *entries = [result[@"entries"] isKindOfClass:[NSArray class]] ? result[@"entries"] : @[];
+    for (NSDictionary *entry in entries) {
+        NSString *did = UIEscaped(entry[@"did"] ?: @"");
+        NSString *status = UIEscaped(entry[@"status"] ?: @"");
+        [html appendFormat:@"<tr><td>%@</td><td>%@</td><td>", did, status];
+        [html appendFormat:@"<button onclick=\"fetch('/admin/actions/appview-retry-repo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did:'%@'})}).then(()=>htmx.ajax('GET','/admin/partials/appview-queue','#appview-queue'))\">Retry</button> ", did];
+        [html appendFormat:@"<button onclick=\"fetch('/admin/actions/appview-cancel-repo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did:'%@'})}).then(()=>htmx.ajax('GET','/admin/partials/appview-queue','#appview-queue'))\">Cancel</button>", did];
+        [html appendString:@"</td></tr>"];
+    }
+    if (entries.count == 0) {
+        [html appendString:@"<tr><td colspan=\"3\">Queue is empty.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+- (NSString *)renderRelayMetricsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div style=\"color:#ef4444\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>"];
+    
+    NSDictionary *metrics = result[@"metrics"] ?: result;
+    for (NSString *key in metrics) {
+        if (![metrics[key] isKindOfClass:[NSString class]] && ![metrics[key] isKindOfClass:[NSNumber class]]) continue;
+        NSString *val = [metrics[key] description];
+        [html appendFormat:@"<tr><td>%@</td><td>%@</td></tr>", UIEscaped(key), UIEscaped(val)];
+    }
+    if (metrics.count == 0) {
+        [html appendString:@"<tr><td colspan=\"2\">No metrics found.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
     return html;
