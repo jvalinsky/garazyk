@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)createSessionToken;
 - (void)invalidateSessionToken:(NSString *)token;
 - (BOOL)isAuthorizedRequest:(HttpRequest *)request;
+- (NSString *)extractTokenFromRequest:(HttpRequest *)request;
 
 @end
 
