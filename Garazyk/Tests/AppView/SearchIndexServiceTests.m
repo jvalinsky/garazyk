@@ -24,9 +24,9 @@
                      [NSString stringWithFormat:@"search_test_%@.db", [[NSUUID UUID] UUIDString]]];
     NSURL *dbURL = [NSURL fileURLWithPath:self.tempPath];
     self.database = [PDSDatabase databaseAtURL:dbURL];
-    
+
     NSError *openError = nil;
-    XCTAssertTrue([self.database openWithError:&openError], 
+    XCTAssertTrue([self.database openWithError:&openError],
         @"Database should open: %@", openError);
 
     // Create FTS5 tables directly (mimicking V7 migration)
@@ -68,30 +68,22 @@
 }
 
 - (void)tearDown {
-    NSLog(@"SearchIndexServiceTests tearDown starting...");
     self.service = nil;
-    NSLog(@"Service nilled, about to close database...");
     [self.database close];
-    NSLog(@"Database closed, about to nil it...");
     self.database = nil;
-    NSLog(@"Database nilled, about to remove temp file...");
     [[NSFileManager defaultManager] removeItemAtPath:self.tempPath error:nil];
-    NSLog(@"SearchIndexServiceTests tearDown complete");
     [super tearDown];
 }
 
 #pragma mark - Helper: Seed and Rebuild
 
 - (void)seedActorWithDID:(NSString *)did handle:(NSString *)handle displayName:(NSString *)displayName description:(NSString *)desc {
-    // Use Unix timestamp (double) for SQLite - same as database schema expects
     double now = [[NSDate date] timeIntervalSince1970];
-    
-    // Insert into accounts table (created by PDSDatabase.createSchema:)
+
     [self.database executeParameterizedUpdate:
      @"INSERT OR IGNORE INTO accounts (did, handle, email, password_hash, password_salt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
      params:@[did, handle, [NSString stringWithFormat:@"%@@test.com", handle], @"hash", @"salt", @(now), @(now)] error:nil];
 
-    // Insert profile record into records table
     NSMutableDictionary *profile = [NSMutableDictionary dictionary];
     if (displayName) profile[@"displayName"] = displayName;
     if (desc) profile[@"description"] = desc;
@@ -111,10 +103,8 @@
 }
 
 - (void)seedPostWithDID:(NSString *)did rkey:(NSString *)rkey text:(NSString *)text {
-    // Use Unix timestamp (double) for SQLite
     double now = [[NSDate date] timeIntervalSince1970];
-    
-    // Ensure account exists
+
     [self.database executeParameterizedUpdate:
      @"INSERT OR IGNORE INTO accounts (did, handle, email, password_hash, password_salt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
      params:@[did, [NSString stringWithFormat:@"%@.bsky.social", rkey], [NSString stringWithFormat:@"%@@test.com", rkey], @"hash", @"salt", @(now), @(now)] error:nil];
@@ -134,6 +124,38 @@
      ] error:nil];
 }
 
+#pragma mark - Search with Empty Index
+
+- (void)testSearchActorsWithEmptyIndexReturnsEmpty {
+    NSError *error = nil;
+    NSDictionary *result = [self.service searchActors:@"alice" limit:10 cursor:nil error:&error];
+
+    XCTAssertNotNil(result, @"Should return result even with empty index");
+    XCTAssertNil(error);
+    XCTAssertNotNil(result[@"actors"]);
+    XCTAssertEqual([result[@"actors"] count], 0);
+}
+
+- (void)testSearchPostsWithEmptyIndexReturnsEmpty {
+    NSError *error = nil;
+    NSDictionary *result = [self.service searchPosts:@"hello" limit:10 cursor:nil error:&error];
+
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertNotNil(result[@"posts"]);
+    XCTAssertEqual([result[@"posts"] count], 0);
+}
+
+- (void)testSearchStarterPacksWithEmptyIndexReturnsEmpty {
+    NSError *error = nil;
+    NSDictionary *result = [self.service searchStarterPacks:@"starter" limit:10 cursor:nil error:&error];
+
+    XCTAssertNotNil(result);
+    XCTAssertNil(error);
+    XCTAssertNotNil(result[@"starterPacks"]);
+    XCTAssertEqual([result[@"starterPacks"] count], 0);
+}
+
 #pragma mark - Rebuild Index
 
 - (void)testRebuildIndexPopulatesContentTables {
@@ -151,12 +173,9 @@
     NSDictionary *actorsResult = [self.service searchActors:@"Alice" limit:10 cursor:nil error:nil];
     XCTAssertNotNil(actorsResult);
     XCTAssertTrue([actorsResult[@"actors"] count] > 0, @"Should find Alice");
-    NSLog(@"Actors search passed, result: %@", actorsResult);
 
     // Verify search posts works
-    NSLog(@"About to search posts...");
     NSDictionary *postsResult = [self.service searchPosts:@"Hello" limit:10 cursor:nil error:nil];
-    NSLog(@"Posts search returned: %@", postsResult);
     XCTAssertNotNil(postsResult);
     XCTAssertTrue([postsResult[@"posts"] count] > 0, @"Should find the post");
 }
