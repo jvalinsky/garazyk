@@ -663,6 +663,15 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[weakSelf renderOzoneSignatureResultsPartial:result]];
     }];
 
+    // Ozone: Hosting history
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-hosting" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *did = [request queryParamForKey:@"did"];
+        NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchHostingHistoryForDID:did] : @{@"entries": @[]};
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneHostingPartial:result did:did]];
+    }];
+
     // Ozone: Team members
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-team" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -1150,6 +1159,8 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"ozone-settings\" hx-get=\"/admin/partials/ozone-settings\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Signatures</h3>"
     "<div id=\"ozone-signatures\" hx-get=\"/admin/partials/ozone-signatures\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Hosting History</h3>"
+    "<div id=\"ozone-hosting\" hx-get=\"/admin/partials/ozone-hosting\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Team Members</h3>"
     "<div id=\"ozone-team\" hx-get=\"/admin/partials/ozone-team\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Sets</h3>"
@@ -1311,6 +1322,9 @@ static NSString *UIEscaped(NSString *value) {
     "if(!did){alert('DID required');return;}"
     "const resp=await fetch('/admin/actions/ozone-find-related',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did})});"
     "document.getElementById('ozone-signature-results').innerHTML=await resp.text();}"
+    "function loadHostingHistory(){const did=document.getElementById('hosting-did-input').value;"
+    "if(!did){alert('DID required');return;}"
+    "htmx.ajax('GET','/admin/partials/ozone-hosting?did='+encodeURIComponent(did),'#ozone-hosting');}"
     "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
     "if(!convoID){alert('Conversation ID required');return;}"
     "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
@@ -2215,6 +2229,32 @@ static NSString *UIEscaped(NSString *value) {
         [html appendFormat:@"<li class=\"text-mono text-xs\">%@</li>", UIEscaped(did)];
     }
     [html appendString:@"</ul></div>"];
+    return html;
+}
+
+- (NSString *)renderOzoneHostingPartial:(NSDictionary *)result did:(nullable NSString *)did {
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"d-flex gap-sm\" onsubmit=\"loadHostingHistory();return false;\"><input type=\"text\" id=\"hosting-did-input\" class=\"form-input flex-1\" placeholder=\"did:plc:...\" value=\""];
+    if (did && did.length > 0) {
+        [html appendFormat:@"%@", UIEscaped(did)];
+    }
+    [html appendString:@"\"/><button type=\"submit\" class=\"btn btn-primary btn-sm\">Load History</button></form></div>"];
+
+    if (result[@"error"]) {
+        [html appendFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    } else {
+        [html appendString:@"<table class=\"table\"><thead><tr><th>PDS</th><th>Status</th><th>Created At</th></tr></thead><tbody>"];
+        NSArray<NSDictionary *> *entries = [result[@"entries"] isKindOfClass:[NSArray class]] ? result[@"entries"] : @[]];
+        for (NSDictionary *entry in entries) {
+            NSString *pds = UIEscaped(entry[@"pds"] ?: @"");
+            NSString *status = UIEscaped(entry[@"status"] ?: @"");
+            NSString *createdAt = UIEscaped(entry[@"createdAt"] ?: @"");
+            [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td class=\"text-xs\">%@</td></tr>", pds, status, createdAt];
+        }
+        if (entries.count == 0) {
+            [html appendString:@"<tr><td colspan=\"3\" class=\"text-center text-secondary p-lg\">No hosting history.</td></tr>"];
+        }
+        [html appendString:@"</tbody></table>"];
+    }
     return html;
 }
 
