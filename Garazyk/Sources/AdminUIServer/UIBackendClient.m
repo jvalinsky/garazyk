@@ -995,6 +995,23 @@
     return response ?: @{@"accounts": @[]};
 }
 
+- (NSDictionary *)fetchHostingHistoryForDID:(NSString *)did {
+    if (!did || did.length == 0) {
+        return @{@"error": @"invalid_params", @"message": @"DID required"};
+    }
+    NSDictionary *body = @{@"did": did};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.hosting.getAccountHistory"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"hosting_history_failed", @"message": error.localizedDescription ?: @"Failed to fetch hosting history"};
+    }
+    return response ?: @{@"entries": @[]};
+}
+
 #pragma mark - Ozone Team Operations
 
 - (NSDictionary *)fetchOzoneTeamMembers {
