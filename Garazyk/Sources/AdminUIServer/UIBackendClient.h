@@ -31,6 +31,10 @@ NS_ASSUME_NONNULL_BEGIN
 // PLC Admin Operations
 - (NSDictionary *)lookupDID:(NSString *)did;
 - (NSDictionary *)fetchPLCLogForDID:(NSString *)did;
+- (NSDictionary *)fetchPLCHealth;
+- (NSDictionary *)fetchPLCMetrics;
+- (NSDictionary *)fetchPLCList;
+- (NSDictionary *)fetchPLCExportWithAfter:(nullable NSString *)after count:(NSUInteger)count;
 
 // PDS Admin Operations (extended)
 - (NSDictionary *)fetchAccountInfoForDID:(NSString *)did;

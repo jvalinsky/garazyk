@@ -367,6 +367,52 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[weakSelf renderPLCLogPartial:result]];
     }];
 
+    // PLC: Health check
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-health" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchPLCHealth];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderPLCHealthPartial:result]];
+    }];
+
+    // PLC: Metrics
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchPLCMetrics];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderPLCMetricsPartial:result]];
+    }];
+
+    // PLC: List DIDs
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-list" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSDictionary *result = [weakSelf.backendClient fetchPLCList];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderPLCListPartial:result cursor:cursor]];
+    }];
+
+    // PLC: Export action
+    [self.httpServer addRoute:@"GET" path:@"/admin/actions/plc-export" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *after = [request queryParamForKey:@"after"];
+        NSString *countStr = [request queryParamForKey:@"count"] ?: @"1000";
+        NSUInteger count = [countStr integerValue] ?: 1000;
+        NSDictionary *result = [weakSelf.backendClient fetchPLCExportWithAfter:after count:count];
+        if (result[@"error"]) {
+            response.statusCode = 400;
+            response.contentType = @"text/html; charset=utf-8";
+            [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])]];
+        } else {
+            response.statusCode = 200;
+            response.contentType = @"text/plain; charset=utf-8";
+            [response setBodyString:result[@"text"] ?: @""];
+        }
+    }];
+
     // Explorer: Describe repo
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/describe-repo" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -894,6 +940,12 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"crawl-result\"></div></section></div>"
     /* PLC tab */
     "<div id=\"tab-plc\" class=\"tab-pane\" style=\"display:none\">"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Health</h3>"
+    "<div id=\"plc-health\" hx-get=\"/admin/partials/plc-health\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Metrics</h3>"
+    "<div id=\"plc-metrics\" hx-get=\"/admin/partials/plc-metrics\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">All DIDs</h3>"
+    "<div id=\"plc-list\" hx-get=\"/admin/partials/plc-list\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">DID Lookup</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/plc-did\" hx-target=\"#plc-did-result\">"
     "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
@@ -1812,6 +1864,47 @@ static NSString *UIEscaped(NSString *value) {
     NSString *cursor = result[@"cursor"];
     if (cursor) {
         [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/ozone-reports?cursor=%@\" hx-target=\"#ozone-reports\">Load More</button></div>", UIEscaped(cursor)];
+    }
+    return html;
+}
+
+#pragma mark - Phase 2 Render Methods
+
+- (NSString *)renderPLCHealthPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSString *status = result[@"status"] ?: @"unknown";
+    NSString *statusBadge = [status isEqualToString:@"ok"] ? @"badge badge-success" : @"badge badge-destructive";
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Status</span><span class=\"%@\">%@</span></div>", statusBadge, UIEscaped(status)];
+    [html appendString:@"</div>"];
+    return html;
+}
+
+- (NSString *)renderPLCMetricsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSString *metricsText = result[@"text"] ?: @"";
+    return [NSString stringWithFormat:@"<pre class=\"code-block\">%@</pre>", UIEscaped(metricsText)];
+}
+
+- (NSString *)renderPLCListPartial:(NSDictionary *)result cursor:(nullable NSString *)cursor {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSArray<NSString *> *dids = [result[@"dids"] isKindOfClass:[NSArray class]] ? result[@"dids"] : @[];
+    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>DID</th></tr></thead><tbody>"];
+    for (NSString *did in dids) {
+        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td></tr>", UIEscaped(did)];
+    }
+    if (dids.count == 0) {
+        [html appendString:@"<tr><td class=\"text-center text-secondary p-lg\">No DIDs found.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    if (cursor && cursor.length > 0) {
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/plc-list?cursor=%@\" hx-target=\"#plc-list\">Load More</button></div>", UIEscaped(cursor)];
     }
     return html;
 }

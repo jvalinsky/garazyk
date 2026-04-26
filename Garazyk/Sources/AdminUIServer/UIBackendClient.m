@@ -299,6 +299,64 @@
     return response;
 }
 
+- (NSDictionary *)fetchPLCHealth {
+    NSURL *url = [self URLByAppendingPath:@"/_health" queryItems:nil baseURL:self.configuration.plcBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"plc_health_failed", @"message": error.localizedDescription ?: @"PLC health check failed"};
+    }
+    return response ?: @{@"status": @"ok"};
+}
+
+- (NSDictionary *)fetchPLCMetrics {
+    NSURL *url = [self URLByAppendingPath:@"/_metrics" queryItems:nil baseURL:self.configuration.plcBaseURL];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    [request setHTTPMethod:@"GET"];
+    if (self.configuration.plcAdminToken) {
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", self.configuration.plcAdminToken] forHTTPHeaderField:@"Authorization"];
+    }
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSData *data = [self performStringRequestWithURL:url method:@"GET" bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300 || !data) {
+        return @{@"error": @"plc_metrics_failed", @"message": error.localizedDescription ?: @"PLC metrics fetch failed", @"text": @""};
+    }
+    NSString *metricsText = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    return @{@"text": metricsText ?: @""};
+}
+
+- (NSDictionary *)fetchPLCList {
+    NSURL *url = [self URLByAppendingPath:@"/_list" queryItems:nil baseURL:self.configuration.plcBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"plc_list_failed", @"message": error.localizedDescription ?: @"PLC list fetch failed"};
+    }
+    return response ?: @{@"dids": @[]};
+}
+
+- (NSDictionary *)fetchPLCExportWithAfter:(nullable NSString *)after count:(NSUInteger)count {
+    NSMutableDictionary *queryItems = [NSMutableDictionary dictionary];
+    if (after && after.length > 0) {
+        queryItems[@"after"] = after;
+    }
+    if (count > 0) {
+        queryItems[@"count"] = [NSString stringWithFormat:@"%lu", (unsigned long)count];
+    }
+    NSURL *url = [self URLByAppendingPath:@"/export" queryItems:queryItems baseURL:self.configuration.plcBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSData *data = [self performStringRequestWithURL:url method:@"GET" bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300 || !data) {
+        return @{@"error": @"plc_export_failed", @"message": error.localizedDescription ?: @"PLC export fetch failed", @"text": @""};
+    }
+    NSString *exportText = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    return @{@"text": exportText ?: @""};
+}
+
 - (NSDictionary *)fetchAccountInfoForDID:(NSString *)did {
     if (did.length == 0) return @{@"error": @"invalid_did", @"message": @"DID required"};
     NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.admin.getAccountInfo"
@@ -1022,6 +1080,12 @@
         return nil;
     }
     return data;
+}
+
+#pragma mark - Private Helper Methods
+
+- (NSData *)performStringRequestWithURL:(NSURL *)url method:(NSString *)method bearerToken:(nullable NSString *)token statusCode:(NSInteger *)statusCode error:(NSError **)error {
+    return [self performRequestWithURL:url method:method body:nil contentType:nil bearerToken:token statusCode:statusCode error:error];
 }
 
 @end
