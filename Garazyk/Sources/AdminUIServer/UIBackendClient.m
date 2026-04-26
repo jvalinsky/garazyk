@@ -852,6 +852,53 @@
     return response ?: @{};
 }
 
+- (NSDictionary *)fetchSafelinkRules {
+    NSDictionary *body = @{@"limit": @50};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.safelink.queryRules"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"fetch_safelinks_failed", @"message": error.localizedDescription ?: @"Failed to fetch safelink rules"};
+    }
+    return response ?: @{@"rules": @[]};
+}
+
+- (NSDictionary *)addSafelinkRule:(NSDictionary *)rule {
+    if (!rule) {
+        return @{@"error": @"invalid_params", @"message": @"Rule specification required"};
+    }
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.safelink.addRule"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:rule bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"add_safelink_failed", @"message": error.localizedDescription ?: @"Failed to add safelink rule"};
+    }
+    return response ?: @{};
+}
+
+- (NSDictionary *)removeSafelinkRule:(NSString *)url pattern:(NSString *)pattern {
+    if (!url || url.length == 0 || !pattern || pattern.length == 0) {
+        return @{@"error": @"invalid_params", @"message": @"URL and pattern required"};
+    }
+    NSDictionary *body = @{@"url": url, @"pattern": pattern};
+    NSURL *requestUrl = [self URLByAppendingPath:@"/xrpc/tools.ozone.safelink.removeRule"
+                                     queryItems:nil
+                                        baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:requestUrl method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"remove_safelink_failed", @"message": error.localizedDescription ?: @"Failed to remove safelink rule"};
+    }
+    return response ?: @{};
+}
+
 #pragma mark - Ozone Team Operations
 
 - (NSDictionary *)fetchOzoneTeamMembers {
