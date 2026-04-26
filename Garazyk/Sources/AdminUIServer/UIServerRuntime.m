@@ -1538,6 +1538,18 @@ static NSString *UIEscaped(NSString *value) {
     return html;
 }
 
+- (NSString *)renderServerStatsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Repos:</span> <span class=\"detail-value text-mono\">%@</span></div>", UIEscaped(result[@"repos"] ?: @"0")];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Records:</span> <span class=\"detail-value text-mono\">%@</span></div>", UIEscaped(result[@"records"] ?: @"0")];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Blobs:</span> <span class=\"detail-value text-mono\">%@</span></div>", UIEscaped(result[@"blobs"] ?: @"0")];
+    [html appendString:@"</div>"];
+    return html;
+}
+
 - (NSString *)renderAuditLogPartial:(NSDictionary *)result {
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
@@ -1956,8 +1968,8 @@ static NSString *UIEscaped(NSString *value) {
     NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Conversation ID</th><th>Members</th><th>Last Message</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *convo in convos) {
         NSString *convoID = convo[@"id"] ?: @"";
-        NSString *memberCount = [[convo[@"memberCount"] description] ?: @"0"];
-        NSString *lastMsg = convo[@"lastMessage"] ? [[convo[@"lastMessage"] isKindOfClass:[NSDictionary class]] ? convo[@"lastMessage"][@"text"] : convo[@"lastMessage"]] : @"(none)";
+        NSString *memberCount = [convo[@"memberCount"] description] ?: @"0";
+        NSString *lastMsg = convo[@"lastMessage"] ? ([convo[@"lastMessage"] isKindOfClass:[NSDictionary class]] ? convo[@"lastMessage"][@"text"] : convo[@"lastMessage"]) : @"(none)";
         if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
         [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-sm btn-secondary\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
             UIEscaped(convoID), UIEscaped(memberCount), UIEscaped(lastMsg), UIEscaped(convoID)];
@@ -2192,7 +2204,7 @@ static NSString *UIEscaped(NSString *value) {
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"addSafelinkRule();return false;\"><div class=\"form-group\"><label>URL:</label><input type=\"text\" id=\"add-safelink-url\" class=\"form-input\" placeholder=\"https://example.com\"/></div><div class=\"form-group\"><label>Pattern Type:</label><select id=\"add-safelink-pattern\" class=\"form-input\"><option value=\"domain\">Domain</option><option value=\"url\">URL</option></select></div><div class=\"form-group\"><label>Action:</label><select id=\"add-safelink-action\" class=\"form-input\"><option value=\"block\">Block</option><option value=\"warn\">Warn</option><option value=\"whitelist\">Whitelist</option></select></div><div class=\"form-group\"><label>Reason:</label><select id=\"add-safelink-reason\" class=\"form-input\"><option value=\"csam\">CSAM</option><option value=\"spam\">Spam</option><option value=\"phishing\">Phishing</option><option value=\"none\">None</option></select></div><div class=\"form-group\"><label>Comment (optional):</label><input type=\"text\" id=\"add-safelink-comment\" class=\"form-input\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Rule</button></form></div>"];
 
     [html appendString:@"<table class=\"table\"><thead><tr><th>URL</th><th>Pattern</th><th>Action</th><th>Reason</th><th>Actions</th></tr></thead><tbody>"];
-    NSArray<NSDictionary *> *rules = [result[@"rules"] isKindOfClass:[NSArray class]] ? result[@"rules"] : @[]];
+    NSArray<NSDictionary *> *rules = [result[@"rules"] isKindOfClass:[NSArray class]] ? result[@"rules"] : @[];
     for (NSDictionary *rule in rules) {
         NSString *url = UIEscaped(rule[@"url"] ?: @"");
         NSString *pattern = UIEscaped(rule[@"pattern"] ?: @"domain");
@@ -2216,7 +2228,7 @@ static NSString *UIEscaped(NSString *value) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>"];
-    NSArray<NSDictionary *> *options = [result[@"options"] isKindOfClass:[NSArray class]] ? result[@"options"] : @[]];
+    NSArray<NSDictionary *> *options = [result[@"options"] isKindOfClass:[NSArray class]] ? result[@"options"] : @[];
     for (NSDictionary *option in options) {
         NSString *key = UIEscaped(option[@"key"] ?: @"");
         NSString *value = UIEscaped(option[@"value"] ?: @"");
@@ -2238,7 +2250,7 @@ static NSString *UIEscaped(NSString *value) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
-    NSArray *related = [result[@"related"] isKindOfClass:[NSArray class]] ? result[@"related"] : @[]];
+    NSArray *related = [result[@"related"] isKindOfClass:[NSArray class]] ? result[@"related"] : @[];
     [html appendString:@"<div class=\"detail-row\"><span class=\"detail-label\">Related Accounts</span></div><ul>"];
     for (NSString *did in related) {
         [html appendFormat:@"<li class=\"text-mono text-xs\">%@</li>", UIEscaped(did)];
@@ -2258,7 +2270,7 @@ static NSString *UIEscaped(NSString *value) {
         [html appendFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     } else {
         [html appendString:@"<table class=\"table\"><thead><tr><th>PDS</th><th>Status</th><th>Created At</th></tr></thead><tbody>"];
-        NSArray<NSDictionary *> *entries = [result[@"entries"] isKindOfClass:[NSArray class]] ? result[@"entries"] : @[]];
+        NSArray<NSDictionary *> *entries = [result[@"entries"] isKindOfClass:[NSArray class]] ? result[@"entries"] : @[];
         for (NSDictionary *entry in entries) {
             NSString *pds = UIEscaped(entry[@"pds"] ?: @"");
             NSString *status = UIEscaped(entry[@"status"] ?: @"");

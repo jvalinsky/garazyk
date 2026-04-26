@@ -1365,8 +1365,127 @@
 
 #pragma mark - Private Helper Methods
 
+- (NSURL *)URLByAppendingPath:(NSString *)path queryItems:(id)queryItems baseURL:(NSURL *)baseURL {
+    NSURL *url = [baseURL URLByAppendingPathComponent:path];
+
+    if (!queryItems) return url;
+
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+
+    if ([queryItems isKindOfClass:[NSDictionary class]]) {
+        NSMutableArray<NSURLQueryItem *> *items = [NSMutableArray array];
+        NSDictionary *dict = (NSDictionary *)queryItems;
+        for (NSString *key in dict) {
+            id value = dict[key];
+            NSString *valueStr = [value isKindOfClass:[NSString class]] ? value : [value description];
+            [items addObject:[NSURLQueryItem queryItemWithName:key value:valueStr]];
+        }
+        components.queryItems = items;
+    } else if ([queryItems isKindOfClass:[NSArray class]]) {
+        components.queryItems = (NSArray<NSURLQueryItem *> *)queryItems;
+    }
+
+    return components.URL ?: url;
+}
+
+- (NSDictionary *)performJSONRequestWithURL:(NSURL *)url method:(NSString *)method body:(nullable NSDictionary *)body bearerToken:(nullable NSString *)token statusCode:(NSInteger *)statusCode error:(NSError **)error {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = method;
+    request.timeoutInterval = 30.0;
+
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+
+    if (token && token.length > 0) {
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+    }
+
+    if (body) {
+        NSData *bodyData = [NSJSONSerialization dataWithJSONObject:body options:0 error:error];
+        if (!bodyData) {
+            return @{@"error": @"json_encoding_failed"};
+        }
+        request.HTTPBody = bodyData;
+    }
+
+    NSHTTPURLResponse *response = nil;
+    NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:error];
+
+    if (statusCode) {
+        *statusCode = response.statusCode;
+    }
+
+    if (*error) {
+        return @{@"error": @"request_failed", @"message": (*error).localizedDescription};
+    }
+
+    if (!data || data.length == 0) {
+        return @{};
+    }
+
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingFragmentsAllowed error:error];
+    return json ?: @{};
+}
+
 - (NSData *)performStringRequestWithURL:(NSURL *)url method:(NSString *)method bearerToken:(nullable NSString *)token statusCode:(NSInteger *)statusCode error:(NSError **)error {
     return [self performRequestWithURL:url method:method body:nil contentType:nil bearerToken:token statusCode:statusCode error:error];
+}
+
+- (NSData *)performRequestWithURL:(NSURL *)url method:(NSString *)method body:(nullable NSData *)body contentType:(nullable NSString *)contentType bearerToken:(nullable NSString *)token statusCode:(NSInteger *)statusCode error:(NSError **)error {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = method;
+    request.timeoutInterval = 30.0;
+
+    if (contentType) {
+        [request setValue:contentType forHTTPHeaderField:@"Content-Type"];
+    }
+
+    if (token && token.length > 0) {
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+    }
+
+    if (body) {
+        request.HTTPBody = body;
+    }
+
+    NSHTTPURLResponse *response = nil;
+    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:error];
+
+    if (statusCode) {
+        *statusCode = response.statusCode;
+    }
+
+    return responseData;
+}
+
+- (NSDictionary *)probeServiceNamed:(NSString *)name baseURL:(NSURL *)baseURL xrpcPath:(nullable NSString *)xrpcPath bearerToken:(nullable NSString *)token {
+    if (!baseURL) {
+        return @{@"name": name, @"status": @"unconfigured"};
+    }
+
+    NSURL *probeURL = xrpcPath ? [baseURL URLByAppendingPathComponent:xrpcPath] : baseURL;
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:probeURL];
+    request.HTTPMethod = @"GET";
+    request.timeoutInterval = 5.0;
+
+    if (token && token.length > 0) {
+        [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+    }
+
+    NSError *error = nil;
+    NSHTTPURLResponse *response = nil;
+    [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+
+    if (error || !response) {
+        return @{@"name": name, @"status": @"error", @"statusCode": @0};
+    }
+
+    NSInteger statusCode = response.statusCode;
+    if (statusCode >= 200 && statusCode < 300) {
+        return @{@"name": name, @"status": @"ok", @"statusCode": @(statusCode)};
+    } else {
+        return @{@"name": name, @"status": @"error", @"statusCode": @(statusCode)};
+    }
 }
 
 @end
