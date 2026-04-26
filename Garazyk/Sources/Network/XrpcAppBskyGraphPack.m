@@ -602,15 +602,22 @@
     }];
 
     // app.bsky.graph.searchStarterPacks - Search starter packs
-    // TODO: Implement search using indexed starter pack data
     [dispatcher registerMethod:@"app.bsky.graph.searchStarterPacks" handler:^(HttpRequest *request, HttpResponse *response) {
-        // TODO: Implement full-text search across indexed starter packs
-        // Query: term, limit, cursor
+        NSString *q = [request queryParamForKey:@"q"] ?: @"";
+
+        NSInteger limit = 10;
+        if (!XrpcParseLimit(request.queryParams[@"limit"], &limit, 1, 100, response)) {
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *result = [graphService searchStarterPacks:q limit:limit cursor:nil error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to search starter packs"];
+            return;
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{
-            @"starterPacks": @[],
-            @"cursor": [NSNull null]
-        }];
+        [response setJsonBody:result ?: @{@"starterPacks": @[]}];
     }];
 
     // app.bsky.graph.getStarterPack - Get a starter pack
@@ -620,8 +627,15 @@
             [XrpcErrorHelper setValidationError:response message:@"Missing uri parameter"];
             return;
         }
+
+        NSError *error = nil;
+        NSDictionary *starterPack = [graphService getStarterPack:uri error:&error];
+        if (!starterPack) {
+            [XrpcErrorHelper setNotFoundError:response message:@"Starter pack not found"];
+            return;
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"uri": uri}];
+        [response setJsonBody:starterPack];
     }];
 
     // app.bsky.graph.getActorStarterPacks - Get actor's starter packs
@@ -631,16 +645,48 @@
             [XrpcErrorHelper setValidationError:response message:@"Missing actor parameter"];
             return;
         }
+
+        NSInteger limit = 50;
+        if (!XrpcParseLimit(request.queryParams[@"limit"], &limit, 1, 100, response)) {
+            return;
+        }
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        // Resolve handle to DID if needed
+        NSString *actorDID = actor;
+        if (![actor hasPrefix:@"did:"]) {
+            NSString *resolved = [actorService resolveHandleToDID:actor error:nil];
+            if (resolved) {
+                actorDID = resolved;
+            }
+        }
+
+        NSError *error = nil;
+        NSDictionary *result = [graphService getStarterPacksForActor:actorDID limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load actor starter packs"];
+            return;
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"starterPacks": @[]}];
+        [response setJsonBody:result ?: @{@"starterPacks": @[]}];
     }];
 
     // app.bsky.graph.getStarterPacks - Get multiple starter packs
     [dispatcher registerAppBskyGraphGetStarterPacks:^(HttpRequest *request, HttpResponse *response) {
         id urisParam = request.queryParams[@"uris"];
         NSArray *uris = [urisParam isKindOfClass:[NSArray class]] ? urisParam : (urisParam ? @[urisParam] : @[]);
+
+        NSMutableArray *starterPacks = [NSMutableArray arrayWithCapacity:uris.count];
+        for (NSString *uri in uris) {
+            if (![uri isKindOfClass:[NSString class]]) continue;
+            NSDictionary *pack = [graphService getStarterPack:uri error:nil];
+            if (pack) {
+                [starterPacks addObject:pack];
+            }
+        }
+
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"starterPacks": @[]}];
+        [response setJsonBody:@{@"starterPacks": starterPacks}];
     }];
 
     // app.bsky.graph.getStarterPacksWithMembership - List starter packs and viewer membership

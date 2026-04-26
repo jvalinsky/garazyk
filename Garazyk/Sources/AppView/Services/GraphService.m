@@ -517,6 +517,37 @@
     return [result copy];
 }
 
+- (nullable NSDictionary *)searchStarterPacks:(NSString *)searchQuery
+                                        limit:(NSInteger)limit
+                                       cursor:(nullable NSString *)cursor
+                                        error:(NSError **)error {
+    limit = MIN(MAX(limit, 1), 100);
+
+    NSString *sql = @"SELECT did, rkey, cid, name, created_at FROM starter_packs WHERE name LIKE ? ORDER BY created_at DESC LIMIT ?";
+    NSString *likeQuery = [NSString stringWithFormat:@"%%%@%%", searchQuery];
+    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[likeQuery, @(limit)] error:error];
+    if (!rows) return nil;
+
+    NSMutableArray *starterPacks = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSString *did = row[@"did"];
+        NSString *rkey = row[@"rkey"];
+        NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.starterpack/%@", did, rkey];
+        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:did error:nil];
+        if (record) {
+            [starterPacks addObject:@{
+                @"uri": uri,
+                @"cid": row[@"cid"],
+                @"record": record,
+                @"creator": [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did},
+                @"indexedAt": row[@"created_at"] ?: @""
+            }];
+        }
+    }
+
+    return @{@"starterPacks": starterPacks};
+}
+
 - (BOOL)indexStarterPack:(NSDictionary *)record
                      did:(NSString *)did
                     rkey:(NSString *)rkey
