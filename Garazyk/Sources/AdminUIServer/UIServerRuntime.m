@@ -99,6 +99,7 @@ static NSString *UIEscaped(NSString *value) {
             return;
         }
         NSString *token = [weakSelf.authManager createSessionToken];
+        // Omit Secure flag to allow HTTP localhost deployment; in production with TLS this should be added
         NSString *cookie = [NSString stringWithFormat:@"ui_admin_token=%@; Path=/; Max-Age=28800; HttpOnly; SameSite=Strict", token];
         [response setHeader:cookie forKey:@"Set-Cookie"];
         response.statusCode = 200;
@@ -106,7 +107,7 @@ static NSString *UIEscaped(NSString *value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/logout" handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *token = [weakSelf tokenFromRequest:request];
+        NSString *token = [weakSelf.authManager extractTokenFromRequest:request];
         [weakSelf.authManager invalidateSessionToken:token];
         [response setHeader:@"ui_admin_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict" forKey:@"Set-Cookie"];
         response.statusCode = 200;
@@ -183,21 +184,6 @@ static NSString *UIEscaped(NSString *value) {
     return NO;
 }
 
-- (NSString *)tokenFromRequest:(HttpRequest *)request {
-    NSString *cookieHeader = [request headerForKey:@"Cookie"];
-    for (NSString *cookie in [cookieHeader componentsSeparatedByString:@";"]) {
-        NSString *trimmed = [cookie stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if ([trimmed hasPrefix:@"ui_admin_token="]) {
-            return [trimmed substringFromIndex:@"ui_admin_token=".length];
-        }
-    }
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    if ([authHeader.lowercaseString hasPrefix:@"bearer "]) {
-        return [[authHeader substringFromIndex:7] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    }
-    return nil;
-}
-
 - (NSString *)loginPageHTML {
     return @"<!doctype html><html><head><meta charset=\"utf-8\"><title>Garazyk UI Login</title>"
     "<style>body{font-family:system-ui;background:#0f172a;color:#e2e8f0;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}"
@@ -217,7 +203,7 @@ static NSString *UIEscaped(NSString *value) {
 
 - (NSString *)adminShellHTML {
     return @"<!doctype html><html><head><meta charset=\"utf-8\"><title>Garazyk UI Service</title>"
-    "<script src=\"https://unpkg.com/htmx.org@1.9.12\"></script>"
+    "<script src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-qKZVAvbtYRYoPh8Brc0l+qUjTj8SZ0FTaWGLfcqM1nPl6RNQBPBGzPPmKM9YoqWQ\" crossorigin=\"anonymous\"></script>"
     "<style>body{font-family:system-ui;margin:0;background:#f8fafc;color:#0f172a}"
     "header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#0f172a;color:#e2e8f0}"
     "main{padding:20px;display:grid;gap:16px}.panel{background:white;border:1px solid #cbd5e1;border-radius:8px;padding:14px}"
