@@ -20,6 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy, nullable) NSString *appViewAdminToken;
 @property(nonatomic, copy, nullable) NSString *chatAdminToken;
 
+/*! Directory containing static assets (CSS, JS, images). Defaults to Assets/ next to the binary. */
+@property(nonatomic, copy, nullable) NSString *assetsDirectory;
+
 + (instancetype)configurationFromEnvironment;
 
 @end

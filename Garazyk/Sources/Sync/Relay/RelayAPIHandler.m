@@ -60,8 +60,12 @@
         [self handleCapabilitiesRequest:request response:response];
     }
     else if ([path isEqualToString:@"/api/relay/health"] ||
-             [path isEqualToString:@"/api/relay/health/"]) {
+             [path isEqualToString:@"//api/relay/health/"]) {
         [self handleHealthRequest:request response:response];
+    }
+    else if ([path isEqualToString:@"/api/relay/requestCrawl"] ||
+             [path isEqualToString:@"/api/relay/requestCrawl/"]) {
+        [self handleRequestCrawl:request response:response];
     }
     else if ([path isEqualToString:@"/api/relay/upstreams/reconnect-all"] ||
              [path isEqualToString:@"/api/relay/upstreams/reconnect-all/"]) {
@@ -393,6 +397,50 @@
 
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
     [response setHeader:@"application/json" forKey:@"Content-Type"];
+}
+
+- (void)handleRequestCrawl:(HttpRequest *)request response:(HttpResponse *)response {
+    if (request.method != HttpMethodPOST) {
+        response.statusCode = HttpStatusMethodNotAllowed;
+        response.jsonBody = @{@"error": @"MethodNotAllowed", @"message": @"Only POST is allowed for this endpoint"};
+        [self setCORS:response];
+        return;
+    }
+
+    NSDictionary *body = request.jsonBody;
+    NSString *hostname = body[@"hostname"];
+    if (!hostname || ![hostname isKindOfClass:[NSString class]] || hostname.length == 0) {
+        response.statusCode = HttpStatusBadRequest;
+        response.jsonBody = @{@"error": @"BadRequest", @"message": @"hostname is required in request body"};
+        [self setCORS:response];
+        return;
+    }
+
+    if (!self.upstreamManager) {
+        response.statusCode = HttpStatusServiceUnavailable;
+        response.jsonBody = @{@"error": @"ServiceUnavailable", @"message": @"Relay not configured"};
+        [self setCORS:response];
+        return;
+    }
+
+    // Construct a websocket URL from the hostname and attempt to add/connect
+    NSString *wsURL = [hostname hasPrefix:@"ws"] ? hostname :
+                      [NSString stringWithFormat:@"wss://%@/xrpc/com.atproto.sync.subscribeRepos", hostname];
+
+    // Check if already an upstream
+    if ([[self.upstreamManager allUpstreams] containsObject:wsURL]) {
+        // Already known — just reconnect
+        [self.upstreamManager connectToUpstream:wsURL];
+        response.statusCode = HttpStatusOK;
+        response.jsonBody = @{@"success": @YES, @"hostname": hostname, @"action": @"reconnecting"};
+    } else {
+        // New upstream — add and connect
+        [self.upstreamManager addUpstream:wsURL];
+        response.statusCode = HttpStatusOK;
+        response.jsonBody = @{@"success": @YES, @"hostname": hostname, @"action": @"crawling"};
+    }
+    [self setCORS:response];
+    PDS_LOG_SYNC_INFO(@"Relay: Crawl requested for hostname %@", hostname);
 }
 
 @end

@@ -60,6 +60,18 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     config.appViewAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_APPVIEW_TOKEN");
     config.chatAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_CHAT_TOKEN");
 
+    // Assets directory: env override, or auto-detect next to binary
+    NSString *assetsDir = UIEnvOptionalString(env, @"GARAZYK_UI_ASSETS_DIR");
+    if (!assetsDir) {
+        // Default: look for Assets/ next to the running binary
+        NSString *binaryPath = [[NSBundle mainBundle] executablePath] ?: [[NSProcessInfo processInfo] arguments][0];
+        if (binaryPath) {
+            NSString *binaryDir = [binaryPath stringByDeletingLastPathComponent];
+            assetsDir = [binaryDir stringByAppendingPathComponent:@"Assets"];
+        }
+    }
+    config.assetsDirectory = assetsDir;
+
     return config;
 }
 
