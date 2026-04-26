@@ -236,11 +236,12 @@
 
 - (void)testGetPostThreadV2 {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadV2"
-                                             queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
-                                             queryParams:@{@"uri": @"at://did:plc:test/app.bsky.feed.post/abc123"}
+                                             queryString:@"anchor=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
+                                             queryParams:@{@"anchor": @"at://did:plc:test/app.bsky.feed.post/abc123"}
                                                  headers:@{}];
-    // Thread V2 is not yet implemented — returns 501
-    XCTAssertEqual(response.statusCode, 501);
+    // V2 thread returns 404 for non-existent post (delegates to FeedService)
+    XCTAssertTrue(response.statusCode == 200 || response.statusCode == 404,
+                  @"Expected 200 or 404, got %ld", (long)response.statusCode);
 }
 
 - (void)testGetPostThreadOtherV2RequiresUri {
@@ -253,11 +254,12 @@
 
 - (void)testGetPostThreadOtherV2 {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.unspecced.getPostThreadOtherV2"
-                                             queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
-                                             queryParams:@{@"uri": @"at://did:plc:test/app.bsky.feed.post/abc123"}
+                                             queryString:@"anchor=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
+                                             queryParams:@{@"anchor": @"at://did:plc:test/app.bsky.feed.post/abc123"}
                                                  headers:@{}];
-    // Thread V2 is not yet implemented — returns 501
-    XCTAssertEqual(response.statusCode, 501);
+    // V2 other thread returns empty thread (no hidden replies)
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"thread"]);
 }
 
 #pragma mark - Age Assurance Tests
