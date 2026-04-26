@@ -57,7 +57,6 @@ static NSString *PDSBuildAdminRedirectLocation(NSString *path,
     _port = 2583;
     _enableXrpc = YES;
     _enableOAuth = YES;
-    _enableExploreUI = NO;
     _enableOAuthDemo = YES;
     _enableMSTViewer = YES;
     _enableNodeInfo = YES;
