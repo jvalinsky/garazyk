@@ -187,6 +187,8 @@ int main(int argc, char *argv[]) {
       @"PDSPLCIntegrationTests",
       @"PDSAdminServiceTests",
       @"PDSAdminControllerTests",
+      @"PDSAdminHandlerTests",
+      @"AdminPartialHandlerTests",
       @"PDSAdminAuthTests",
       @"PDSAuthzManagerTests",
       @"AdminMiddlewareTests",
@@ -366,7 +368,12 @@ int main(int argc, char *argv[]) {
       @"XrpcAppBskyBookmarksTests",
       @"XrpcAppBskyContactTests",
       @"XrpcAppBskyDraftsTests",
-      @"XrpcAppBskyUnspeccedTests"
+      @"XrpcAppBskyUnspeccedTests",
+      @"CIDTests",
+      @"TIDTests",
+      @"CBORSerializationTests",
+      @"ATProtoValidatorTests",
+      @"ATProtoBase32Tests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
