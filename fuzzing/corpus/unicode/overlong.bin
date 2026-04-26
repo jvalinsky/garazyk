@@ -1,0 +1,32 @@
+# Unicode Test Corpus - Overlong sequences
+# These should be rejected by proper UTF-8 validators
+
+# Overlong encoding of NUL (should be 2-byte, but encoded in 2 bytes)
+overlong_nul_2byte = C0 80
+overlong_nul_3byte = E0 80 80
+overlong_nul_4byte = F0 80 80 80
+
+# Other overlong sequences
+overlong_A_2bytes = C0 81
+overlong_ exclamation = C0 81
+overlong_at = C0 81
+
+# Incomplete sequences
+incomplete_2byte_1 = C0
+incomplete_2byte_2 = C1
+incomplete_3byte_1 = E0
+incomplete_3byte_2 = E0 80
+incomplete_4byte_1 = F0
+incomplete_4byte_2 = F0 80
+incomplete_4byte_3 = F0 80 80
+
+# Surrogates (invalid in UTF-8)
+surrogate_high = ED A0 80
+surrogate_low = ED BF BF
+surrogate_pair = ED A0 80 ED BF BF
+
+# Noncharacters
+nonchar_UFFFF = EF BF BF
+nonchar_UFFFE = EF BF BE
+nonchar_10FFFF = F4 8F BF BF
+nonchar_10FFFE = F4 8F BF BE

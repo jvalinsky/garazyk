@@ -1024,6 +1024,11 @@ if(BUILD_FUZZERS)
   # Multi-path JSON fuzzer
   add_pds_fuzzer(fuzz_multi_json "fuzzing/harness/FuzzMultiJSON.m")
 
+  # New gap fuzzers
+  add_pds_fuzzer(fuzz_blob "fuzzing/harness/FuzzBlob.m")
+  add_pds_fuzzer(fuzz_firehose "fuzzing/harness/FuzzFirehose.m")
+  add_pds_fuzzer(fuzz_oauth "fuzzing/harness/FuzzOAuth.m")
+
 endif()
 
 #=============================
@@ -1328,7 +1333,7 @@ add_custom_target(run-tests COMMAND "${CMAKE_BINARY_DIR}/scripts/run-tests.sh"
 
 if(BUILD_FUZZERS)
   # Alias targets for convenience
-add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_cbor_struct fuzz_xrpc_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst fuzz_minimizer fuzz_multi_json)
+add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_jwt_struct fuzz_http_struct fuzz_cbor_struct fuzz_xrpc_struct fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst fuzz_minimizer fuzz_multi_json fuzz_blob fuzz_firehose fuzz_oauth)
   add_custom_target(fuzz-xrpc DEPENDS fuzz_xrpc)
   add_custom_target(fuzz-cbor DEPENDS fuzz_cbor)
   add_custom_target(fuzz-http DEPENDS fuzz_http)
@@ -1344,6 +1349,9 @@ add_custom_target(fuzz-all ALL DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fu
   add_custom_target(fuzz-mst DEPENDS fuzz_mst)
   add_custom_target(fuzz-minimizer DEPENDS fuzz_minimizer)
   add_custom_target(fuzz-multi-json DEPENDS fuzz_multi_json)
+  add_custom_target(fuzz-blob DEPENDS fuzz_blob)
+  add_custom_target(fuzz-firehose DEPENDS fuzz_firehose)
+  add_custom_target(fuzz-oauth DEPENDS fuzz_oauth)
 endif()
 
 # Print build instructions
