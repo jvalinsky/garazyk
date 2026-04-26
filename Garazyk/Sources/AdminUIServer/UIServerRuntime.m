@@ -608,6 +608,39 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
     }];
 
+    // Chat: Get conversations
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-convos" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSDictionary *result = [weakSelf.backendClient fetchChatConvosWithLimit:25 cursor:cursor];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderChatConvosPartial:result]];
+    }];
+
+    // Chat: Get messages for conversation
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-messages" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *convoID = [request queryParamForKey:@"convoID"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSDictionary *result = [weakSelf.backendClient fetchChatMessagesForConvoID:convoID limit:50 cursor:cursor];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderChatMessagesPartial:result]];
+    }];
+
+    // Chat: Lock conversation
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/lock-chat-convo" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *convoID = request.jsonBody[@"convoID"] ?: @"";
+        NSDictionary *result = [weakSelf.backendClient lockChatConvo:convoID];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Conversation locked.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
     // AppView: Rebuild backfill scope
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-rebuild-scope" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -790,6 +823,7 @@ static NSString *UIEscaped(NSString *value) {
     "<button class=\"service-segment\" data-tab=\"ozone\" onclick=\"switchTab('ozone')\">Ozone</button>"
     "<button class=\"service-segment\" data-tab=\"security\" onclick=\"switchTab('security')\">Security</button>"
     "<button class=\"service-segment\" data-tab=\"mst\" onclick=\"switchTab('mst')\">MST</button>"
+    "<button class=\"service-segment\" data-tab=\"chat\" onclick=\"switchTab('chat')\">Chat</button>"
     "</nav>"
     "<div class=\"admin-header-right\">"
     "<form method=\"post\" action=\"/admin/logout\" onsubmit=\"fetch('/admin/logout',{method:'POST'}).then(()=>location='/admin/login');return false;\">"
@@ -920,6 +954,15 @@ static NSString *UIEscaped(NSString *value) {
     "<select id=\"mst-export-format\" class=\"flex-none\"><option value=\"json\">JSON</option><option value=\"dot\">DOT</option><option value=\"svg\">SVG</option></select>"
     "<button class=\"btn btn-primary btn-sm\" onclick=\"exportMST()\">Export</button></div>"
     "<div id=\"mst-export-result\"></div></section></div>"
+    /* Chat tab */
+    "<div id=\"tab-chat\" class=\"tab-pane\" style=\"display:none\">"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Conversations</h3>"
+    "<div id=\"chat-convos\" hx-get=\"/admin/partials/chat-convos\" hx-trigger=\"load, every 20s\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Messages</h3>"
+    "<div class=\"action-row\"><input id=\"chat-convo-id\" type=\"text\" placeholder=\"Conversation ID\" class=\"flex-1\"/>"
+    "<button class=\"btn btn-primary btn-sm\" onclick=\"loadChatMessages()\">Load Messages</button></div>"
+    "<div id=\"chat-messages\" hx-trigger=\"load\"></div>"
+    "<div id=\"chat-action-result\"></div></section></div>"
     "</main>"
     "<footer class=\"admin-footer\"><span class=\"version-info\"></span>"
     "<span id=\"footer-status\"></span></footer>"
@@ -1001,6 +1044,12 @@ static NSString *UIEscaped(NSString *value) {
     "if(!reportID||!action){alert('Report ID and action required');return;}"
     "const resp=await fetch('/admin/actions/resolve-pds-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reportID,action})});"
     "document.getElementById('pds-reports-result').innerHTML=await resp.text();}"
+    "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
+    "if(!convoID){alert('Conversation ID required');return;}"
+    "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
+    "async function lockChatConvo(convoID){if(!confirm('Lock this conversation?'))return;"
+    "const resp=await fetch('/admin/actions/lock-chat-convo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({convoID})});"
+    "document.getElementById('chat-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/chat-convos','#chat-convos');}"
     "</script>"
     "</body></html>";
 }
@@ -1598,6 +1647,53 @@ static NSString *UIEscaped(NSString *value) {
             UIEscaped(name), UIEscaped(p[@"createdAt"] ?: @""), UIEscaped(did), UIEscaped(name)];
     }
     [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+#pragma mark - Chat Render Methods
+
+- (NSString *)renderChatConvosPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSArray<NSDictionary *> *convos = [result[@"convos"] isKindOfClass:[NSArray class]] ? result[@"convos"] : @[];
+    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Conversation ID</th><th>Members</th><th>Last Message</th><th>Actions</th></tr></thead><tbody>"];
+    for (NSDictionary *convo in convos) {
+        NSString *convoID = convo[@"id"] ?: @"";
+        NSString *memberCount = [[convo[@"memberCount"] description] ?: @"0"];
+        NSString *lastMsg = convo[@"lastMessage"] ? [[convo[@"lastMessage"] isKindOfClass:[NSDictionary class]] ? convo[@"lastMessage"][@"text"] : convo[@"lastMessage"]] : @"(none)";
+        if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
+        [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-sm btn-secondary\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
+            UIEscaped(convoID), UIEscaped(memberCount), UIEscaped(lastMsg), UIEscaped(convoID)];
+    }
+    if (convos.count == 0) {
+        [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No conversations found.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    NSString *cursor = result[@"cursor"];
+    if (cursor.length > 0) {
+        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/chat-convos?cursor=%@\" hx-target=\"#chat-convos\">Load more</button></div>", UIEscaped(cursor)];
+    }
+    return html;
+}
+
+- (NSString *)renderChatMessagesPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSArray<NSDictionary *> *messages = [result[@"messages"] isKindOfClass:[NSArray class]] ? result[@"messages"] : @[];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"chat-messages\">"];
+    for (NSDictionary *msg in messages) {
+        NSString *sender = msg[@"sender"] ?: @"unknown";
+        NSString *text = msg[@"text"] ?: @"";
+        NSString *createdAt = msg[@"createdAt"] ?: @"";
+        [html appendFormat:@"<div class=\"message\"><div class=\"message-header\"><span class=\"message-sender\">%@</span><span class=\"message-time text-xs text-secondary\">%@</span></div><div class=\"message-body\">%@</div></div>",
+            UIEscaped(sender), UIEscaped(createdAt), UIEscaped(text)];
+    }
+    if (messages.count == 0) {
+        [html appendString:@"<div class=\"text-center text-secondary p-lg\">No messages found.</div>"];
+    }
+    [html appendString:@"</div>"];
     return html;
 }
 

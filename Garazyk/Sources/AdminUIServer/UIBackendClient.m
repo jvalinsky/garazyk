@@ -524,6 +524,35 @@
     return response;
 }
 
+- (NSDictionary *)fetchChatMessagesForConvoID:(NSString *)convoID limit:(NSUInteger)limit cursor:(NSString *)cursor {
+    if (!convoID.length) return @{@"error": @"convo_id_required"};
+    NSMutableDictionary *params = [NSMutableDictionary dictionary];
+    params[@"convoId"] = convoID;
+    params[@"limit"] = [@(limit ?: 50) stringValue];
+    if (cursor.length > 0) params[@"cursor"] = cursor;
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/chat.bsky.convo.getMessages" queryItems:params baseURL:self.configuration.chatBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.chatAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300 || !response) {
+        return @{@"error": @"chat_messages_failed", @"message": error.localizedDescription ?: @"Chat messages fetch failed"};
+    }
+    return response;
+}
+
+- (NSDictionary *)lockChatConvo:(NSString *)convoID {
+    if (!convoID.length) return @{@"error": @"convo_id_required"};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/chat.bsky.convo.muteConvo" queryItems:@{} baseURL:self.configuration.chatBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *body = @{@"convoId": convoID};
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.chatAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300 || !response) {
+        return @{@"error": @"lock_convo_failed", @"message": error.localizedDescription ?: @"Lock conversation failed"};
+    }
+    return response;
+}
+
 - (NSDictionary *)fetchBlobListWithLimit:(NSUInteger)limit cursor:(NSString *)cursor {
     // Currently no global blob list endpoint in ATProto admin lexicons.
     // Returning stub for UI consistency.

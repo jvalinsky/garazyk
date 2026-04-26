@@ -51,6 +51,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Chat Operations
 - (NSDictionary *)fetchChatConvosWithLimit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
+- (NSDictionary *)fetchChatMessagesForConvoID:(NSString *)convoID limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
+- (NSDictionary *)lockChatConvo:(NSString *)convoID;
 
 // Repo/Record Operations (Data Explorer) - extended
 - (NSDictionary *)fetchBlobListWithLimit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
