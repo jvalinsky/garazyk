@@ -235,6 +235,57 @@
     return [result copy];
 }
 
+- (nullable NSDictionary *)getListFeed:(NSString *)listURI
+                                 limit:(NSInteger)limit
+                                cursor:(nullable NSString *)cursor
+                                 error:(NSError **)error {
+    if (!listURI || listURI.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"FeedService" code:400 userInfo:@{NSLocalizedDescriptionKey: @"Missing list URI"}];
+        }
+        return nil;
+    }
+
+    limit = MIN(limit > 0 ? limit : 30, 100);
+
+    // Look up list members from the bsky_graph_listitems table
+    NSString *memberQuery = @"SELECT subject_did FROM bsky_graph_listitems WHERE list_uri = ?";
+    NSArray *memberRows = [self.database executeParameterizedQuery:memberQuery params:@[listURI] error:error];
+    if (!memberRows) {
+        return @{@"feed": @[], @"cursor": [NSNull null]};
+    }
+
+    NSMutableArray *memberDIDs = [NSMutableArray arrayWithCapacity:memberRows.count];
+    for (NSDictionary *row in memberRows) {
+        NSString *did = row[@"subject_did"];
+        if (did && did.length > 0) {
+            [memberDIDs addObject:did];
+        }
+    }
+
+    if (memberDIDs.count == 0) {
+        return @{@"feed": @[], @"cursor": [NSNull null]};
+    }
+
+    // Get posts from list members
+    NSArray *posts = [self getPostsFromAuthors:memberDIDs limit:limit cursor:cursor error:error];
+    NSMutableArray *feedItems = [NSMutableArray array];
+    if (posts) {
+        for (NSDictionary *post in posts) {
+            NSDictionary *feedItem = [self formatFeedItem:post];
+            if (feedItem) {
+                [feedItems addObject:feedItem];
+            }
+        }
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"feed"] = feedItems;
+    result[@"cursor"] = [NSNull null];
+
+    return [result copy];
+}
+
 - (nullable NSArray<NSString *> *)getFollowedDIDsForActor:(NSString *)actorDID error:(NSError **)error {
     NSMutableArray *followedDIDs = [NSMutableArray array];
 
