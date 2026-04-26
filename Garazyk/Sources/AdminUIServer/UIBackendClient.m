@@ -611,10 +611,28 @@
     return response;
 }
 
-- (NSDictionary *)fetchBlobListWithLimit:(NSUInteger)limit cursor:(NSString *)cursor {
-    // Currently no global blob list endpoint in ATProto admin lexicons.
-    // Returning stub for UI consistency.
-    return @{@"blobs": @[], @"total": @0, @"storage_bytes": @0};
+- (NSDictionary *)fetchBlobsForDID:(NSString *)did limit:(NSUInteger)limit cursor:(nullable NSString *)cursor {
+    if (!did || did.length == 0) {
+        return @{@"error": @"invalid_params", @"message": @"DID required"};
+    }
+    NSMutableDictionary *queryItems = [NSMutableDictionary dictionary];
+    queryItems[@"did"] = did;
+    if (limit > 0) {
+        queryItems[@"limit"] = [NSString stringWithFormat:@"%lu", (unsigned long)limit];
+    }
+    if (cursor && cursor.length > 0) {
+        queryItems[@"cursor"] = cursor;
+    }
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.sync.listBlobs"
+                              queryItems:queryItems
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"blob_list_failed", @"message": error.localizedDescription ?: @"Failed to fetch blobs"};
+    }
+    return response ?: @{@"blobs": @[]};
 }
 
 - (NSDictionary *)fetchBlobForDID:(NSString *)did cid:(NSString *)cid {
