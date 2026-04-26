@@ -134,7 +134,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #if defined(__linux__) || defined(__GNUstep__)
     dispatch_sync(self.cacheQueue, ^{
         if (!_db) return;
-        
+
         // Finalize all cached statements
         for (NSValue *stmtValue in [self.statementCache allValues]) {
             sqlite3_stmt *stmt = [stmtValue pointerValue];
@@ -144,14 +144,12 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         [self.statementCacheOrder removeAllObjects];
         self.statementCache = nil;
         self.statementCacheOrder = nil;
-        
-        // Finalize any other stray statements
-        sqlite3_stmt *strayStmt;
-        while ((strayStmt = sqlite3_next_stmt(_db, NULL)) != NULL) {
-            sqlite3_finalize(strayStmt);
-        }
-        
-        sqlite3_close(_db);
+
+        // Use sqlite3_close_v2 which safely handles virtual table
+        // internal statements (e.g., FTS5 content= sync tables).
+        // Manual stray statement finalization via sqlite3_next_stmt
+        // can corrupt virtual table internals and crash.
+        sqlite3_close_v2(_db);
         _db = NULL;
     });
 #else
@@ -164,14 +162,12 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         [self.statementCache removeAllObjects];
         [self.statementCacheOrder removeAllObjects];
     }
-    
-    // Finalize any other stray statements
-    sqlite3_stmt *strayStmt;
-    while ((strayStmt = sqlite3_next_stmt(_db, NULL)) != NULL) {
-        sqlite3_finalize(strayStmt);
-    }
-    
-    sqlite3_close(_db);
+
+    // Use sqlite3_close_v2 which safely handles virtual table
+    // internal statements (e.g., FTS5 content= sync tables).
+    // Manual stray statement finalization via sqlite3_next_stmt
+    // can corrupt virtual table internals and crash.
+    sqlite3_close_v2(_db);
     _db = NULL;
 #endif
     self.isOpen = NO;
