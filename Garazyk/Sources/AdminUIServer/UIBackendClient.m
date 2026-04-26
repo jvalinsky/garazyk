@@ -805,6 +805,53 @@
     return response ?: @{};
 }
 
+- (NSDictionary *)listOzoneVerifications {
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.verification.listVerifications"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"list_verifications_failed", @"message": error.localizedDescription ?: @"Failed to fetch verifications"};
+    }
+    return response ?: @{};
+}
+
+- (NSDictionary *)grantOzoneVerifications:(NSArray<NSDictionary *> *)verifications {
+    if (!verifications || verifications.count == 0) {
+        return @{@"error": @"invalid_params", @"message": @"Verification records required"};
+    }
+    NSDictionary *body = @{@"verifications": verifications};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.verification.grantVerifications"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"grant_verifications_failed", @"message": error.localizedDescription ?: @"Failed to grant verifications"};
+    }
+    return response ?: @{};
+}
+
+- (NSDictionary *)revokeOzoneVerifications:(NSArray<NSString *> *)dids {
+    if (!dids || dids.count == 0) {
+        return @{@"error": @"invalid_params", @"message": @"DIDs required"};
+    }
+    NSDictionary *body = @{@"dids": dids};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.verification.revokeVerifications"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"revoke_verifications_failed", @"message": error.localizedDescription ?: @"Failed to revoke verifications"};
+    }
+    return response ?: @{};
+}
+
 #pragma mark - Ozone Team Operations
 
 - (NSDictionary *)fetchOzoneTeamMembers {
