@@ -75,5 +75,52 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     return config;
 }
 
+- (BOOL)updateWithDictionary:(NSDictionary<NSString *, NSString *> *)updates {
+    if (!updates) return NO;
+
+    BOOL allValid = YES;
+
+    // Update URLs — validate each one before applying
+    NSDictionary<NSString *, NSString *> *urlMappings = @{
+        @"pdsURL": @"pdsBaseURL",
+        @"plcURL": @"plcBaseURL",
+        @"relayURL": @"relayBaseURL",
+        @"appViewURL": @"appViewBaseURL",
+        @"chatURL": @"chatBaseURL"
+    };
+
+    for (NSString *key in urlMappings) {
+        NSString *value = updates[key];
+        if (value.length > 0) {
+            NSURL *url = [NSURL URLWithString:value];
+            if (url.scheme.length > 0 && url.host.length > 0) {
+                NSString *propName = urlMappings[key];
+                [self setValue:url forKey:propName];
+            } else {
+                allValid = NO;
+            }
+        }
+    }
+
+    // Update tokens (no validation needed — empty string clears, nil leaves unchanged)
+    if (updates[@"pdsToken"] != nil) {
+        self.pdsAdminToken = updates[@"pdsToken"].length > 0 ? updates[@"pdsToken"] : nil;
+    }
+    if (updates[@"plcToken"] != nil) {
+        self.plcAdminToken = updates[@"plcToken"].length > 0 ? updates[@"plcToken"] : nil;
+    }
+    if (updates[@"relayToken"] != nil) {
+        self.relayAdminToken = updates[@"relayToken"].length > 0 ? updates[@"relayToken"] : nil;
+    }
+    if (updates[@"appviewToken"] != nil) {
+        self.appViewAdminToken = updates[@"appviewToken"].length > 0 ? updates[@"appviewToken"] : nil;
+    }
+    if (updates[@"chatToken"] != nil) {
+        self.chatAdminToken = updates[@"chatToken"].length > 0 ? updates[@"chatToken"] : nil;
+    }
+
+    return allValid;
+}
+
 @end
 

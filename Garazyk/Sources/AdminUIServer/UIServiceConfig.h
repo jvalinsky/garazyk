@@ -25,6 +25,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)configurationFromEnvironment;
 
+/*! Update service URLs and tokens from the given dictionary. Keys: pdsURL, plcURL, relayURL, appViewURL, chatURL, pdsToken, plcToken, relayToken, appViewToken, chatToken. Returns YES if all URLs were valid. */
+- (BOOL)updateWithDictionary:(NSDictionary<NSString *, NSString *> *)updates;
+
 @end
 
 NS_ASSUME_NONNULL_END
