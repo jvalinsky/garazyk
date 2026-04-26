@@ -585,6 +585,39 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
     }];
 
+    // Ozone: Safelinks
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-safelinks" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchSafelinkRules];
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneSafelinksPartial:result]];
+    }];
+
+    // Ozone: Add safelink rule
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/add-safelink-rule" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *rule = request.jsonBody ?: @{};
+        NSDictionary *result = [weakSelf.backendClient addSafelinkRule:rule];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Safelink rule added.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
+    // Ozone: Remove safelink rule
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/remove-safelink-rule" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *url = request.jsonBody[@"url"] ?: @"";
+        NSString *pattern = request.jsonBody[@"pattern"] ?: @"";
+        NSDictionary *result = [weakSelf.backendClient removeSafelinkRule:url pattern:pattern];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Safelink rule removed.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
     // Ozone: Team members
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-team" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -1066,6 +1099,8 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"ozone-scheduled\" hx-get=\"/admin/partials/ozone-scheduled\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Verification</h3>"
     "<div id=\"ozone-verification\" hx-get=\"/admin/partials/ozone-verification\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Safelinks</h3>"
+    "<div id=\"ozone-safelinks\" hx-get=\"/admin/partials/ozone-safelinks\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Team Members</h3>"
     "<div id=\"ozone-team\" hx-get=\"/admin/partials/ozone-team\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Sets</h3>"
@@ -1212,6 +1247,17 @@ static NSString *UIEscaped(NSString *value) {
     "async function revokeOzoneVerification(did){if(!confirm('Revoke verification for this account?'))return;"
     "const resp=await fetch('/admin/actions/ozone-revoke-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dids:[did]})});"
     "htmx.ajax('GET','/admin/partials/ozone-verification','#ozone-verification');}"
+    "async function addSafelinkRule(){const url=document.getElementById('add-safelink-url').value;"
+    "const pattern=document.getElementById('add-safelink-pattern').value;"
+    "const action=document.getElementById('add-safelink-action').value;"
+    "const reason=document.getElementById('add-safelink-reason').value;"
+    "const comment=document.getElementById('add-safelink-comment').value;"
+    "if(!url){alert('URL required');return;}"
+    "const resp=await fetch('/admin/actions/add-safelink-rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,pattern,action,reason,comment})});"
+    "document.getElementById('add-safelink-url').value='';document.getElementById('add-safelink-comment').value='';htmx.ajax('GET','/admin/partials/ozone-safelinks','#ozone-safelinks');}"
+    "async function removeSafelinkRule(url,pattern){if(!confirm('Remove this safelink rule?'))return;"
+    "const resp=await fetch('/admin/actions/remove-safelink-rule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,pattern})});"
+    "htmx.ajax('GET','/admin/partials/ozone-safelinks','#ozone-safelinks');}"
     "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
     "if(!convoID){alert('Conversation ID required');return;}"
     "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
@@ -2052,6 +2098,30 @@ static NSString *UIEscaped(NSString *value) {
     }
     if (verifications.count == 0) {
         [html appendString:@"<tr><td colspan=\"5\" class=\"text-center text-secondary p-lg\">No verified accounts.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    return html;
+}
+
+- (NSString *)renderOzoneSafelinksPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"addSafelinkRule();return false;\"><div class=\"form-group\"><label>URL:</label><input type=\"text\" id=\"add-safelink-url\" class=\"form-input\" placeholder=\"https://example.com\"/></div><div class=\"form-group\"><label>Pattern Type:</label><select id=\"add-safelink-pattern\" class=\"form-input\"><option value=\"domain\">Domain</option><option value=\"url\">URL</option></select></div><div class=\"form-group\"><label>Action:</label><select id=\"add-safelink-action\" class=\"form-input\"><option value=\"block\">Block</option><option value=\"warn\">Warn</option><option value=\"whitelist\">Whitelist</option></select></div><div class=\"form-group\"><label>Reason:</label><select id=\"add-safelink-reason\" class=\"form-input\"><option value=\"csam\">CSAM</option><option value=\"spam\">Spam</option><option value=\"phishing\">Phishing</option><option value=\"none\">None</option></select></div><div class=\"form-group\"><label>Comment (optional):</label><input type=\"text\" id=\"add-safelink-comment\" class=\"form-input\"/></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Add Rule</button></form></div>"];
+
+    [html appendString:@"<table class=\"table\"><thead><tr><th>URL</th><th>Pattern</th><th>Action</th><th>Reason</th><th>Actions</th></tr></thead><tbody>"];
+    NSArray<NSDictionary *> *rules = [result[@"rules"] isKindOfClass:[NSArray class]] ? result[@"rules"] : @[]];
+    for (NSDictionary *rule in rules) {
+        NSString *url = UIEscaped(rule[@"url"] ?: @"");
+        NSString *pattern = UIEscaped(rule[@"pattern"] ?: @"domain");
+        NSString *action = UIEscaped(rule[@"action"] ?: @"block");
+        NSString *reason = UIEscaped(rule[@"reason"] ?: @"none");
+        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td>%@</td><td>%@</td><td>", url, pattern, action, reason];
+        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" onclick=\"removeSafelinkRule('%@','%@')\">Remove</button>", UIEscaped(url), UIEscaped(pattern)];
+        [html appendString:@"</td></tr>"];
+    }
+    if (rules.count == 0) {
+        [html appendString:@"<tr><td colspan=\"5\" class=\"text-center text-secondary p-lg\">No safelink rules.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
     return html;
