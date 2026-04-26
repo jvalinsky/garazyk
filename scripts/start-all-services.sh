@@ -377,8 +377,7 @@ startup_plc() {
 
     "$PLC_BINARY" serve \
         --port "$PLC_PORT" \
-        > >(tee -a "$PLC_LOG") \
-        2>&1 &
+        >> "$PLC_LOG" 2>&1 &
 
     PLC_PID=$!
     echo "$PLC_PID" > "$PLC_PID_FILE"
@@ -424,8 +423,7 @@ startup_pds() {
         --data-dir "$PDS_DATA_DIR" \
         --log-level "$PDS_LOG_LEVEL" \
         --foreground \
-        > >(tee -a "$PDS_LOG") \
-        2>&1 &
+        >> "$PDS_LOG" 2>&1 &
 
     PDS_PID=$!
     echo "$PDS_PID" > "$PDS_PID_FILE"
