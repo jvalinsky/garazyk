@@ -331,11 +331,18 @@
     NSURL *url = [self URLByAppendingPath:@"/_list" queryItems:nil baseURL:self.configuration.plcBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
+    id response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"plc_list_failed", @"message": error.localizedDescription ?: @"PLC list fetch failed"};
     }
-    return response ?: @{@"dids": @[]};
+    // PLC /_list returns a bare JSON array of DID strings; wrap it in a dict
+    if ([response isKindOfClass:[NSArray class]]) {
+        return @{@"dids": response};
+    }
+    if ([response isKindOfClass:[NSDictionary class]]) {
+        return response;
+    }
+    return @{@"dids": @[]};
 }
 
 - (NSDictionary *)fetchPLCExportWithAfter:(nullable NSString *)after count:(NSUInteger)count {
@@ -1375,23 +1382,78 @@
         request.HTTPBody = bodyData;
     }
 
-    NSHTTPURLResponse *response = nil;
-    NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:error];
+    __block NSHTTPURLResponse *httpResponse = nil;
+    __block NSData *responseData = nil;
+    __block NSError *requestError = nil;
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    if (statusCode) {
-        *statusCode = response.statusCode;
+    NSURLSession *session = [NSURLSession sharedSession];
+    [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+        responseData = data;
+        httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
+        requestError = err;
+        dispatch_semaphore_signal(sem);
+    }] resume];
+
+    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(35.0 * NSEC_PER_SEC)));
+
+    if (statusCode && httpResponse) {
+        *statusCode = httpResponse.statusCode;
+    } else if (statusCode) {
+        *statusCode = 0;
     }
 
-    if (*error) {
-        return @{@"error": @"request_failed", @"message": (*error).localizedDescription};
+    if (error) {
+        *error = requestError;
     }
 
-    if (!data || data.length == 0) {
+    if (requestError) {
+        return @{@"error": @"request_failed", @"message": requestError.localizedDescription ?: @"Request failed"};
+    }
+
+    if (!responseData || responseData.length == 0) {
         return @{};
     }
 
-    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingFragmentsAllowed error:error];
-    return json ?: @{};
+    id json = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingFragmentsAllowed error:nil];
+    // Strip NSNull values from JSON so render methods never encounter them.
+    // NSJSONSerialization converts JSON null -> [NSNull null], which crashes
+    // when NSString methods like -length or -stringByReplacingOccurrencesOfString:
+    // are called on it. Replacing with nil makes the ?: @"" fallbacks work.
+    static id (^UIStripNull)(id) = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        UIStripNull = ^id(id obj) {
+            if ([obj isKindOfClass:[NSDictionary class]]) {
+                NSMutableDictionary *out = [NSMutableDictionary dictionary];
+                [(NSDictionary *)obj enumerateKeysAndObjectsUsingBlock:^(id key, id val, BOOL *stop) {
+                    id stripped = UIStripNull(val);
+                    if (stripped) out[key] = stripped;
+                }];
+                return out;
+            } else if ([obj isKindOfClass:[NSArray class]]) {
+                NSMutableArray *out = [NSMutableArray array];
+                for (id item in (NSArray *)obj) {
+                    id stripped = UIStripNull(item);
+                    if (stripped) [out addObject:stripped];
+                }
+                return out;
+            } else if ([obj isKindOfClass:[NSNull class]]) {
+                return (id)nil;
+            }
+            return obj;
+        };
+    });
+    id stripped = UIStripNull(json);
+    // Ensure we always return an NSDictionary — callers expect dict subscripting.
+    // If the server returned a bare JSON array, wrap it as {"items": [...]}.
+    if ([stripped isKindOfClass:[NSArray class]]) {
+        return @{@"items": stripped};
+    }
+    if ([stripped isKindOfClass:[NSDictionary class]]) {
+        return stripped;
+    }
+    return @{};
 }
 
 - (NSData *)performStringRequestWithURL:(NSURL *)url method:(NSString *)method bearerToken:(nullable NSString *)token statusCode:(NSInteger *)statusCode error:(NSError **)error {
@@ -1415,11 +1477,29 @@
         request.HTTPBody = body;
     }
 
-    NSHTTPURLResponse *response = nil;
-    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:error];
+    __block NSHTTPURLResponse *httpResponse = nil;
+    __block NSData *responseData = nil;
+    __block NSError *requestError = nil;
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    if (statusCode) {
-        *statusCode = response.statusCode;
+    NSURLSession *session = [NSURLSession sharedSession];
+    [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+        responseData = data;
+        httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
+        requestError = err;
+        dispatch_semaphore_signal(sem);
+    }] resume];
+
+    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(35.0 * NSEC_PER_SEC)));
+
+    if (statusCode && httpResponse) {
+        *statusCode = httpResponse.statusCode;
+    } else if (statusCode) {
+        *statusCode = 0;
+    }
+
+    if (error) {
+        *error = requestError;
     }
 
     return responseData;
@@ -1427,11 +1507,25 @@
 
 - (NSDictionary *)probeServiceNamed:(NSString *)name baseURL:(NSURL *)baseURL xrpcPath:(nullable NSString *)xrpcPath bearerToken:(nullable NSString *)token {
     if (!baseURL) {
-        return @{@"name": name, @"status": @"unconfigured"};
+        return @{@"name": name, @"connected": @NO, @"version": @"unknown", @"rootStatus": @0, @"xrpcStatus": @0, @"detail": @"Not configured"};
     }
 
-    NSURL *probeURL = xrpcPath ? [baseURL URLByAppendingPathComponent:xrpcPath] : baseURL;
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:probeURL];
+    // Probe 1: root URL
+    NSInteger rootStatus = [self probeURL:baseURL withToken:token];
+
+    // Probe 2: XRPC endpoint
+    NSInteger xrpcStatus = 0;
+    if (xrpcPath) {
+        NSURL *xrpcURL = [baseURL URLByAppendingPathComponent:xrpcPath];
+        xrpcStatus = [self probeURL:xrpcURL withToken:token];
+    }
+
+    BOOL connected = (rootStatus >= 200 && rootStatus < 300) || (xrpcStatus >= 200 && xrpcStatus < 300);
+    return @{@"name": name, @"connected": @(connected), @"version": @"unknown", @"rootStatus": @(rootStatus), @"xrpcStatus": @(xrpcStatus), @"detail": @""};
+}
+
+- (NSInteger)probeURL:(NSURL *)url withToken:(nullable NSString *)token {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
     request.timeoutInterval = 5.0;
 
@@ -1439,20 +1533,20 @@
         [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
     }
 
-    NSError *error = nil;
-    NSHTTPURLResponse *response = nil;
-    [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+    __block NSInteger statusCode = 0;
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    if (error || !response) {
-        return @{@"name": name, @"status": @"error", @"statusCode": @0};
-    }
+    NSURLSession *session = [NSURLSession sharedSession];
+    [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (!error && [response isKindOfClass:[NSHTTPURLResponse class]]) {
+            statusCode = ((NSHTTPURLResponse *)response).statusCode;
+        }
+        (void)data;
+        dispatch_semaphore_signal(sem);
+    }] resume];
 
-    NSInteger statusCode = response.statusCode;
-    if (statusCode >= 200 && statusCode < 300) {
-        return @{@"name": name, @"status": @"ok", @"statusCode": @(statusCode)};
-    } else {
-        return @{@"name": name, @"status": @"error", @"statusCode": @(statusCode)};
-    }
+    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(6.0 * NSEC_PER_SEC)));
+    return statusCode;
 }
 
 @end
