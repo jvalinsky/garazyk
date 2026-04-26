@@ -357,6 +357,10 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpXrpcRoute
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/RelayXrpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpServerBuilder\\.m$")
+# UI route packs migrated to garazyk-ui — exclude from service binaries
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpMSTViewerRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpOAuthDemoRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpExploreRoutePack\\.m$")
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/Xrpc*.m"
@@ -393,6 +397,13 @@ file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/PDSConfiguration\\.m$")
+# UI handlers migrated to garazyk-ui — exclude from service binaries
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/MSTViewer/.*")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/OAuthDemo/.*")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Explore/ExploreHandler\\.m$")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpMSTViewerRoutePack\\.m$")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpOAuthDemoRoutePack\\.m$")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpExploreRoutePack\\.m$")
 
 # Handle platform-specific network transport implementations.
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")
@@ -771,6 +782,14 @@ set_target_properties(garazyk-ui PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
+# Copy UI server assets to build output
+add_custom_command(TARGET garazyk-ui POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/Assets"
+    "${CMAKE_BINARY_DIR}/bin/Assets"
+  COMMENT "Copying UI server assets to build output"
+)
+
 # Tutorial 1: Hello PDS Example
 add_executable(hello-pds
   examples/tutorial-1-hello-pds/src/main.m
@@ -1104,6 +1123,10 @@ if(BUILD_TESTS)
   # Exclude top-level Integration tests only, except our new PLC integration test
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/comprehensive_tests.m")
+  # Exclude tests for UI handlers migrated to garazyk-ui
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/App/ExploreHandlerTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/App/MSTViewerHandlerTests.m")
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/OAuthDemo/OAuthDemoHandlerConfigurationTests.m")
   # Exclude standalone test files with their own main() - they have separate executable targets
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/ConnectionPoolTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/RecordCacheTests.m")
