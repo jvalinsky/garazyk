@@ -11,6 +11,7 @@
 #import "AppView/Services/ChatModerationService.h"
 #import "AppView/Services/DraftService.h"
 #import "AppView/Services/RecordLifecycleHandler.h"
+#import "AppView/Services/SearchIndexService.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
@@ -157,7 +158,13 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                      appViewDatabase:appViewDatabase
                                           jwtMinter:jwtMinter
                                     adminController:adminController];
-  [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
+  // Create and populate search index service
+  SearchIndexService *searchIndexService = [[SearchIndexService alloc] initWithDatabase:appViewDatabase];
+  [searchIndexService populateIndexIfEmptyWithError:nil];
+
+  [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher
+                               ageAssuranceService:ageAssuranceService
+                                  searchIndexService:searchIndexService];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
 }
 

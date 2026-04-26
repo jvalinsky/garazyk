@@ -47,9 +47,7 @@
     @"app.bsky.feed.getLikes",
     @"app.bsky.feed.getRepostedBy",
     @"app.bsky.graph.verification.createVerification",
-    @"app.bsky.graph.verification.deleteVerification",
-    @"app.bsky.unspecced.getAgeAssuranceState",
-    @"app.bsky.unspecced.initAgeAssurance"
+    @"app.bsky.graph.verification.deleteVerification"
   ];
 
   for (NSString *methodId in methodIds) {

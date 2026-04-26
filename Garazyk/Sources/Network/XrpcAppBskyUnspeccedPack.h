@@ -9,13 +9,15 @@
 
 @class XrpcDispatcher;
 @class AgeAssuranceService;
+@class SearchIndexService;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcAppBskyUnspeccedPack : NSObject
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService;
+           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
+              searchIndexService:(nullable SearchIndexService *)searchIndexService;
 
 @end
 

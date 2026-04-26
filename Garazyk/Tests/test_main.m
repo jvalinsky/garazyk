@@ -365,7 +365,8 @@ int main(int argc, char *argv[]) {
       @"XrpcAppBskyVideoTests",
       @"XrpcAppBskyBookmarksTests",
       @"XrpcAppBskyContactTests",
-      @"XrpcAppBskyDraftsTests"
+      @"XrpcAppBskyDraftsTests",
+      @"XrpcAppBskyUnspeccedTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

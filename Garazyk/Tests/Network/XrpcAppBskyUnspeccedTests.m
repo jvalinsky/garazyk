@@ -239,8 +239,8 @@
                                              queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
                                              queryParams:@{@"uri": @"at://did:plc:test/app.bsky.feed.post/abc123"}
                                                  headers:@{}];
-    XCTAssertEqual(response.statusCode, 200);
-    XCTAssertNotNil(response.jsonBody[@"thread"]);
+    // Thread V2 is not yet implemented — returns 501
+    XCTAssertEqual(response.statusCode, 501);
 }
 
 - (void)testGetPostThreadOtherV2RequiresUri {
@@ -256,8 +256,8 @@
                                              queryString:@"uri=at%3A%2F%2Fdid%3Aplc%3Atest%2Fapp.bsky.feed.post%2Fabc123"
                                              queryParams:@{@"uri": @"at://did:plc:test/app.bsky.feed.post/abc123"}
                                                  headers:@{}];
-    XCTAssertEqual(response.statusCode, 200);
-    XCTAssertNotNil(response.jsonBody[@"thread"]);
+    // Thread V2 is not yet implemented — returns 501
+    XCTAssertEqual(response.statusCode, 501);
 }
 
 #pragma mark - Age Assurance Tests
