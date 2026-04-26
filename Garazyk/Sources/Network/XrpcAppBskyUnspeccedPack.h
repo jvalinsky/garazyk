@@ -10,6 +10,7 @@
 @class XrpcDispatcher;
 @class AgeAssuranceService;
 @class SearchIndexService;
+@class FeedService;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -17,7 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
            ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-              searchIndexService:(nullable SearchIndexService *)searchIndexService;
+              searchIndexService:(nullable SearchIndexService *)searchIndexService
+                    feedService:(nullable FeedService *)feedService;
 
 @end
 

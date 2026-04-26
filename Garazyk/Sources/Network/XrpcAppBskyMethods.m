@@ -164,7 +164,8 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
   [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher
                                ageAssuranceService:ageAssuranceService
-                                  searchIndexService:searchIndexService];
+                                  searchIndexService:searchIndexService
+                                        feedService:feedService];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
 }
 
