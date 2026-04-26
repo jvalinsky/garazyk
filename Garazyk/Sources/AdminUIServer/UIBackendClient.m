@@ -749,6 +749,62 @@
     return response ?: @{};
 }
 
+- (NSDictionary *)fetchScheduledActionsWithStatuses:(nullable NSArray<NSString *> *)statuses cursor:(nullable NSString *)cursor limit:(NSUInteger)limit {
+    NSMutableDictionary *body = [NSMutableDictionary dictionary];
+    if (statuses && statuses.count > 0) {
+        body[@"statuses"] = statuses;
+    }
+    if (cursor && cursor.length > 0) {
+        body[@"cursor"] = cursor;
+    }
+    if (limit > 0) {
+        body[@"limit"] = @(limit);
+    }
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.moderation.listScheduledActions"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"scheduled_actions_failed", @"message": error.localizedDescription ?: @"Failed to fetch scheduled actions"};
+    }
+    return response ?: @{};
+}
+
+- (NSDictionary *)scheduleAction:(NSDictionary *)actionSpec {
+    if (!actionSpec) {
+        return @{@"error": @"invalid_params", @"message": @"Action specification required"};
+    }
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.moderation.scheduleAction"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:actionSpec bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"schedule_action_failed", @"message": error.localizedDescription ?: @"Failed to schedule action"};
+    }
+    return response ?: @{};
+}
+
+- (NSDictionary *)cancelScheduledActionsForSubjects:(NSArray<NSString *> *)subjects {
+    if (!subjects || subjects.count == 0) {
+        return @{@"error": @"invalid_params", @"message": @"Subject DIDs required"};
+    }
+    NSDictionary *body = @{@"subjects": subjects};
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.moderation.cancelScheduledActions"
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"cancel_scheduled_actions_failed", @"message": error.localizedDescription ?: @"Failed to cancel scheduled actions"};
+    }
+    return response ?: @{};
+}
+
 #pragma mark - Ozone Team Operations
 
 - (NSDictionary *)fetchOzoneTeamMembers {
