@@ -1062,14 +1062,14 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"tab-pds\" class=\"tab-pane\" style=\"display:none\">"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Accounts</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/accounts\" hx-target=\"#accounts\">"
-    "<input type=\"text\" name=\"q\" placeholder=\"Search email or DID\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"q\" placeholder=\"Search email or DID\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Search</button></form></div>"
     "<div id=\"accounts\" hx-get=\"/admin/partials/accounts\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Invite Codes</h3>"
     "<div id=\"invites\" hx-get=\"/admin/partials/invites\" hx-trigger=\"load\"></div>"
-    "<div class=\"action-row\"><input id=\"disable-account\" type=\"text\" placeholder=\"DID to disable invites\" class=\"flex-1\"/>"
+    "<div class=\"action-row\"><input id=\"disable-account\" type=\"text\" placeholder=\"DID to disable invites\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-destructive btn-sm\" onclick=\"disableInvites()\">Disable Invites</button></div>"
-    "<div class=\"action-row mt-sm\"><input id=\"enable-account\" type=\"text\" placeholder=\"DID to enable invites\" class=\"flex-1\"/>"
+    "<div class=\"action-row mt-sm\"><input id=\"enable-account\" type=\"text\" placeholder=\"DID to enable invites\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-primary btn-sm\" onclick=\"enableInvites()\">Enable Invites</button></div>"
     "<div id=\"invite-action-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Server Stats</h3>"
@@ -1096,7 +1096,7 @@ static NSString *UIEscaped(NSString *value) {
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Upstreams</h3>"
     "<div id=\"relay-upstreams\" hx-get=\"/admin/partials/relay-upstreams\" hx-trigger=\"load, every 30s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Request Crawl</h3>"
-    "<div class=\"action-row\"><input id=\"crawl-hostname\" type=\"text\" placeholder=\"Hostname to crawl\" class=\"flex-1\"/>"
+    "<div class=\"action-row\"><input id=\"crawl-hostname\" type=\"text\" placeholder=\"Hostname to crawl\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-primary btn-sm\" onclick=\"requestCrawl()\">Request Crawl</button></div>"
     "<div id=\"crawl-result\"></div></section></div>"
     /* PLC tab */
@@ -1109,32 +1109,32 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"plc-list\" hx-get=\"/admin/partials/plc-list\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">DID Lookup</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/plc-did\" hx-target=\"#plc-did-result\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
     "<div id=\"plc-did-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">DID Log</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/plc-log\" hx-target=\"#plc-log-result\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">View Log</button></form></div>"
     "<div id=\"plc-log-result\"></div></section></div>"
     /* Explorer tab */
     "<div id=\"tab-explorer\" class=\"tab-pane\" style=\"display:none\">"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Repo Explorer</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/describe-repo\" hx-target=\"#repo-detail\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:... or handle\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:... or handle\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Describe</button></form></div>"
     "<div id=\"repo-detail\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">List Records</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/list-records\" hx-target=\"#records-list\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
-    "<input type=\"text\" name=\"collection\" placeholder=\"Collection (optional)\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
+    "<input type=\"text\" name=\"collection\" placeholder=\"Collection (optional)\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">List</button></form></div>"
     "<div id=\"records-list\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Get Record</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/get-record\" hx-target=\"#record-detail\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
-    "<input type=\"text\" name=\"collection\" placeholder=\"Collection\" class=\"flex-1\"/>"
-    "<input type=\"text\" name=\"rkey\" placeholder=\"Record key\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
+    "<input type=\"text\" name=\"collection\" placeholder=\"Collection\" class=\"form-input flex-1\"/>"
+    "<input type=\"text\" name=\"rkey\" placeholder=\"Record key\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Get</button></form></div>"
     "<div id=\"record-detail\"></div></section></div>"
     /* Ozone tab */
@@ -1145,7 +1145,7 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"ozone-events\" hx-get=\"/admin/partials/ozone-events\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Subject Status</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/ozone-subject\" hx-target=\"#ozone-subject-result\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
     "<div id=\"ozone-subject-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Reports</h3>"
@@ -1174,12 +1174,12 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"tab-security\" class=\"tab-pane\" style=\"display:none\">"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Active Sessions</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/sessions\" hx-target=\"#sessions-result\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
     "<div id=\"sessions-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">App Passwords</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/app-passwords\" hx-target=\"#app-passwords-result\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">Lookup</button></form></div>"
     "<div id=\"app-passwords-result\"></div></section></div>"
     /* MST Viewer tab */
@@ -1188,17 +1188,17 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"mst-accounts\" hx-get=\"/admin/partials/mst-accounts\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">MST Tree</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/mst-tree\" hx-target=\"#mst-tree-result\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">View Tree</button></form></div>"
     "<div id=\"mst-tree-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">MST Statistics</h3>"
     "<div class=\"search-row\"><form class=\"d-flex gap-sm flex-1\" hx-get=\"/admin/partials/mst-stats\" hx-target=\"#mst-stats-result\">"
-    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
+    "<input type=\"text\" name=\"did\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
     "<button type=\"submit\" class=\"btn btn-primary btn-sm\">View Stats</button></form></div>"
     "<div id=\"mst-stats-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Export MST</h3>"
-    "<div class=\"action-row\"><input id=\"mst-export-did\" type=\"text\" placeholder=\"did:plc:...\" class=\"flex-1\"/>"
-    "<select id=\"mst-export-format\" class=\"flex-none\"><option value=\"json\">JSON</option><option value=\"dot\">DOT</option><option value=\"svg\">SVG</option></select>"
+    "<div class=\"action-row\"><input id=\"mst-export-did\" type=\"text\" placeholder=\"did:plc:...\" class=\"form-input flex-1\"/>"
+    "<select id=\"mst-export-format\" class=\"form-input flex-none\"><option value=\"json\">JSON</option><option value=\"dot\">DOT</option><option value=\"svg\">SVG</option></select>"
     "<button class=\"btn btn-primary btn-sm\" onclick=\"exportMST()\">Export</button></div>"
     "<div id=\"mst-export-result\"></div></section></div>"
     /* Chat tab */
@@ -1206,7 +1206,7 @@ static NSString *UIEscaped(NSString *value) {
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Conversations</h3>"
     "<div id=\"chat-convos\" hx-get=\"/admin/partials/chat-convos\" hx-trigger=\"load, every 20s\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Messages</h3>"
-    "<div class=\"action-row\"><input id=\"chat-convo-id\" type=\"text\" placeholder=\"Conversation ID\" class=\"flex-1\"/>"
+    "<div class=\"action-row\"><input id=\"chat-convo-id\" type=\"text\" placeholder=\"Conversation ID\" class=\"form-input flex-1\"/>"
     "<button class=\"btn btn-primary btn-sm\" onclick=\"loadChatMessages()\">Load Messages</button></div>"
     "<div id=\"chat-messages\" hx-trigger=\"load\"></div>"
     "<div id=\"chat-action-result\"></div></section></div>"
@@ -1453,7 +1453,7 @@ static NSString *UIEscaped(NSString *value) {
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"appview-result\"></div><div class=\"mb-lg\"><button class=\"btn btn-sm btn-secondary\" onclick=\"rebuildAppViewScope()\">Rebuild Relevance Set</button></div><form class=\"form mb-lg\" onsubmit=\"enqueueBackfillDIDs();return false;\"><div class=\"form-group\"><label>Enqueue DIDs (one per line):</label><textarea id=\"enqueue-dids-input\" class=\"form-input\" placeholder=\"did:plc:...\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Enqueue</button></form><table class=\"table\" id=\"queue-table\"><thead><tr><th>DID</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"appview-result\"></div><div class=\"mb-lg\"><button class=\"btn btn-secondary btn-sm\" onclick=\"rebuildAppViewScope()\">Rebuild Relevance Set</button></div><form class=\"form mb-lg\" onsubmit=\"enqueueBackfillDIDs();return false;\"><div class=\"form-group\"><label>Enqueue DIDs (one per line):</label><textarea id=\"enqueue-dids-input\" class=\"form-input\" placeholder=\"did:plc:...\"></textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Enqueue</button></form><table class=\"table\" id=\"queue-table\"><thead><tr><th>DID</th><th>Status</th><th>Actions</th></tr></thead><tbody>"];
     NSArray<NSDictionary *> *entries = [result[@"entries"] isKindOfClass:[NSArray class]] ? result[@"entries"] : @[];
     for (NSDictionary *entry in entries) {
         NSString *did = UIEscaped(entry[@"did"] ?: @"");
@@ -1462,7 +1462,7 @@ static NSString *UIEscaped(NSString *value) {
                                 [status isEqualToString:@"failed"] ? @"badge badge-destructive" : @"badge badge-secondary";
         [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td><span class=\"%@\">%@</span></td><td>", did, statusBadge, status];
         [html appendFormat:@"<button class=\"btn btn-sm btn-primary\" onclick=\"fetch('/admin/actions/appview-retry-repo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did:'%@'})}).then(()=>htmx.ajax('GET','/admin/partials/appview-queue','#appview-queue'))\">Retry</button> ", did];
-        [html appendFormat:@"<button class=\"btn btn-sm btn-secondary\" onclick=\"fetch('/admin/actions/appview-cancel-repo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did:'%@'})}).then(()=>htmx.ajax('GET','/admin/partials/appview-queue','#appview-queue'))\">Cancel</button>", did];
+        [html appendFormat:@"<button class=\"btn btn-secondary btn-sm\" onclick=\"fetch('/admin/actions/appview-cancel-repo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({did:'%@'})}).then(()=>htmx.ajax('GET','/admin/partials/appview-queue','#appview-queue'))\">Cancel</button>", did];
         [html appendString:@"</td></tr>"];
     }
     if (entries.count == 0) {
@@ -1532,7 +1532,7 @@ static NSString *UIEscaped(NSString *value) {
         [html appendString:@"</tbody></table>"];
         NSString *cursor = result[@"cursor"];
         if (cursor && cursor.length > 0) {
-            [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/blobs?did=%@&cursor=%@\" hx-target=\"#blobs-content\">Load More</button></div>", UIEscaped(did ?: @""), UIEscaped(cursor)];
+            [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/blobs?did=%@&cursor=%@\" hx-target=\"#blobs-content\">Load More</button></div>", UIEscaped(did ?: @""), UIEscaped(cursor)];
         }
     }
     return html;
@@ -1570,7 +1570,7 @@ static NSString *UIEscaped(NSString *value) {
     // Pagination
     NSString *cursor = result[@"cursor"];
     if (cursor.length > 0) {
-        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/audit-log?cursor=%@\" hx-target=\"#audit-log-content\">Load more</button></div>", UIEscaped(cursor)];
+        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/audit-log?cursor=%@\" hx-target=\"#audit-log-content\">Load more</button></div>", UIEscaped(cursor)];
     }
     return html;
 }
@@ -1585,7 +1585,7 @@ static NSString *UIEscaped(NSString *value) {
         NSString *reportID = UIEscaped(report[@"id"] ?: @"");
         NSString *createdAt = UIEscaped(report[@"createdAt"] ?: @"");
         NSString *status = UIEscaped(report[@"status"] ?: @"unknown");
-        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td class=\"text-xs\">%@</td><td>%@</td><td><select id=\"report-action\" onchange=\"if(this.value)resolvePDSReport('%@')\"><option value=\"\">Resolve as...</option><option value=\"escalate\">Escalate</option><option value=\"mute\">Mute</option><option value=\"markResolved\">Mark Resolved</option></select></td></tr>", reportID, createdAt, status, UIEscaped(reportID)];
+        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td class=\"text-xs\">%@</td><td>%@</td><td><select class=\"form-input\" onchange=\"if(this.value)resolvePDSReport('%@')\"><option value=\"\">Resolve as...</option><option value=\"escalate\">Escalate</option><option value=\"mute\">Mute</option><option value=\"markResolved\">Mark Resolved</option></select></td></tr>", reportID, createdAt, status, UIEscaped(reportID)];
     }
     if (reports.count == 0) {
         [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No reports found.</td></tr>"];
@@ -1593,7 +1593,7 @@ static NSString *UIEscaped(NSString *value) {
     [html appendString:@"</tbody></table>"];
     NSString *cursor = result[@"cursor"];
     if (cursor.length > 0) {
-        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/pds-reports?cursor=%@\" hx-target=\"#pds-reports-content\">Load more</button></div>", UIEscaped(cursor)];
+        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/pds-reports?cursor=%@\" hx-target=\"#pds-reports-content\">Load more</button></div>", UIEscaped(cursor)];
     }
     return html;
 }
@@ -1704,7 +1704,7 @@ static NSString *UIEscaped(NSString *value) {
     [html appendString:@"</tbody></table>"];
     NSString *cursor = result[@"cursor"];
     if (cursor.length > 0) {
-        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/list-records?cursor=%@\" hx-target=\"#records-list\">Load more</button></div>", UIEscaped(cursor)];
+        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/list-records?cursor=%@\" hx-target=\"#records-list\">Load more</button></div>", UIEscaped(cursor)];
     }
     return html;
 }
@@ -1971,7 +1971,7 @@ static NSString *UIEscaped(NSString *value) {
         NSString *memberCount = [convo[@"memberCount"] description] ?: @"0";
         NSString *lastMsg = convo[@"lastMessage"] ? ([convo[@"lastMessage"] isKindOfClass:[NSDictionary class]] ? convo[@"lastMessage"][@"text"] : convo[@"lastMessage"]) : @"(none)";
         if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
-        [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-sm btn-secondary\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
+        [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-secondary btn-sm\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
             UIEscaped(convoID), UIEscaped(memberCount), UIEscaped(lastMsg), UIEscaped(convoID)];
     }
     if (convos.count == 0) {
@@ -1980,7 +1980,7 @@ static NSString *UIEscaped(NSString *value) {
     [html appendString:@"</tbody></table>"];
     NSString *cursor = result[@"cursor"];
     if (cursor.length > 0) {
-        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/chat-convos?cursor=%@\" hx-target=\"#chat-convos\">Load more</button></div>", UIEscaped(cursor)];
+        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/chat-convos?cursor=%@\" hx-target=\"#chat-convos\">Load more</button></div>", UIEscaped(cursor)];
     }
     return html;
 }
@@ -2097,7 +2097,7 @@ static NSString *UIEscaped(NSString *value) {
     [html appendString:@"</tbody></table>"];
     NSString *cursor = result[@"cursor"];
     if (cursor) {
-        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/ozone-reports?cursor=%@\" hx-target=\"#ozone-reports\">Load More</button></div>", UIEscaped(cursor)];
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/ozone-reports?cursor=%@\" hx-target=\"#ozone-reports\">Load More</button></div>", UIEscaped(cursor)];
     }
     return html;
 }
@@ -2138,7 +2138,7 @@ static NSString *UIEscaped(NSString *value) {
     }
     [html appendString:@"</tbody></table>"];
     if (cursor && cursor.length > 0) {
-        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/plc-list?cursor=%@\" hx-target=\"#plc-list\">Load More</button></div>", UIEscaped(cursor)];
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/plc-list?cursor=%@\" hx-target=\"#plc-list\">Load More</button></div>", UIEscaped(cursor)];
     }
     return html;
 }
@@ -2168,7 +2168,7 @@ static NSString *UIEscaped(NSString *value) {
     [html appendString:@"</tbody></table>"];
     NSString *cursor = result[@"cursor"];
     if (cursor && cursor.length > 0) {
-        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/ozone-scheduled?cursor=%@\" hx-target=\"#ozone-scheduled\">Load More</button></div>", UIEscaped(cursor)];
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/ozone-scheduled?cursor=%@\" hx-target=\"#ozone-scheduled\">Load More</button></div>", UIEscaped(cursor)];
     }
     return html;
 }
