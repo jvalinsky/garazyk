@@ -360,7 +360,6 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpServerBui
 # UI route packs migrated to garazyk-ui — exclude from service binaries
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpMSTViewerRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpOAuthDemoRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpExploreRoutePack\\.m$")
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/Xrpc*.m"
@@ -400,10 +399,8 @@ list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/PDSConfiguration\\.m$"
 # UI handlers migrated to garazyk-ui — exclude from service binaries
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/MSTViewer/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/OAuthDemo/.*")
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Explore/ExploreHandler\\.m$")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpMSTViewerRoutePack\\.m$")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpOAuthDemoRoutePack\\.m$")
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpExploreRoutePack\\.m$")
 
 # Handle platform-specific network transport implementations.
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")
@@ -1124,7 +1121,6 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/comprehensive_tests.m")
   # Exclude tests for UI handlers migrated to garazyk-ui
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/App/ExploreHandlerTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/App/MSTViewerHandlerTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/OAuthDemo/OAuthDemoHandlerConfigurationTests.m")
   # Exclude standalone test files with their own main() - they have separate executable targets
