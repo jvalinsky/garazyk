@@ -71,18 +71,41 @@
         return @"{\"error\": \"Missing identifier or type\"}";
     }
 
-    // Query current rate limit status
-    // TODO: Use RateLimiter API to get current status
-    NSDictionary *response = @{
-        @"identifier": identifier,
-        @"type": type,
-        @"currentCount": @0,
-        @"limit": @5000,
-        @"remaining": @5000,
-        @"windowStart": [NSDate date].description,
-        @"windowEnd": [[NSDate dateWithTimeIntervalSinceNow:3600] description],
-        @"status": @"ok"
-    };
+    // Query current rate limit status using RateLimiter API
+    RateLimitResult *rateLimitResult = nil;
+    if ([type isEqualToString:@"did"]) {
+        rateLimitResult = [self.rateLimiter checkRateLimitForDid:identifier];
+    } else if ([type isEqualToString:@"ip"]) {
+        rateLimitResult = [self.rateLimiter checkRateLimitForIP:identifier];
+    } else if ([type isEqualToString:@"blob"]) {
+        rateLimitResult = [self.rateLimiter checkBlobUploadRateLimitForDid:identifier];
+    }
+
+    NSDictionary *response;
+    if (rateLimitResult) {
+        NSString *statusStr = rateLimitResult.allowed ? @"ok" : @"limited";
+        response = @{
+            @"identifier": identifier,
+            @"type": type,
+            @"currentCount": @(rateLimitResult.limit - rateLimitResult.remaining),
+            @"limit": @(rateLimitResult.limit),
+            @"remaining": @(rateLimitResult.remaining),
+            @"windowStart": [NSDate date].description,
+            @"windowEnd": [[NSDate dateWithTimeIntervalSinceNow:rateLimitResult.resetSeconds] description],
+            @"status": statusStr
+        };
+    } else {
+        response = @{
+            @"identifier": identifier,
+            @"type": type,
+            @"currentCount": @0,
+            @"limit": @0,
+            @"remaining": @0,
+            @"windowStart": [NSDate date].description,
+            @"windowEnd": [[NSDate dateWithTimeIntervalSinceNow:3600] description],
+            @"status": @"unknown"
+        };
+    }
 
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:response options:0 error:&error];
     if (!jsonData) {
@@ -105,9 +128,10 @@
         }
     }
 
-    // TODO: Query rate_limits table for top users
+    // Query top rate-limited identifiers from RateLimiter
+    NSArray *topUsers = [self.rateLimiter getTopLimitedIdentifiers:limit];
     NSDictionary *response = @{
-        @"users": @[],
+        @"users": topUsers,
         @"limit": @(limit),
         @"timestamp": [NSNumber numberWithLongLong:(long long)[[NSDate date] timeIntervalSince1970]]
     };
@@ -145,12 +169,13 @@
         return @"{\"error\": \"Missing identifier, type, or reason\"}";
     }
 
-    // TODO: Delete from rate_limits table and insert into rate_limit_history
+    // Clear rate limit entries from RateLimiter
+    NSInteger clearedCount = [self.rateLimiter clearRateLimitForIdentifier:identifier type:type];
     NSDictionary *response = @{
         @"success": @YES,
         @"identifier": identifier,
         @"type": type,
-        @"clearedCount": @0,
+        @"clearedCount": @(clearedCount),
         @"historyId": @0
     };
 

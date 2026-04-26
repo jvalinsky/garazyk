@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 
+@class PDSSequencerAnalyticsCollector;
+
 NS_ASSUME_NONNULL_BEGIN
 
 /**
@@ -63,6 +65,13 @@ NS_ASSUME_NONNULL_BEGIN
                                          body:(nullable NSData *)body
                                    statusCode:(nullable NSInteger *)statusCode
                                   contentType:(NSString * _Nullable * _Nullable)contentType;
+
+/**
+ * @brief Set the analytics collector for real data.
+ *
+ * If not set, the handler returns zero-value stubs.
+ */
+@property (nonatomic, strong, nullable) PDSSequencerAnalyticsCollector *analyticsCollector;
 
 @end
 
