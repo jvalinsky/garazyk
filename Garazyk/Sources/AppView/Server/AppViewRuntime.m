@@ -54,24 +54,6 @@
 
 static AppViewRuntime *_sharedRuntime = nil;
 
-static NSString *AppViewUIServiceBaseURL(void) {
-    NSString *configured = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"]
-        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return configured.length > 0 ? configured : @"http://127.0.0.1:2590";
-}
-
-static NSString *AppViewAdminRedirectLocation(NSString *path, NSString *query) {
-    NSString *base = AppViewUIServiceBaseURL();
-    while ([base hasSuffix:@"/"]) {
-        base = [base substringToIndex:base.length - 1];
-    }
-    NSString *location = [NSString stringWithFormat:@"%@%@", base, path.length > 0 ? path : @"/admin"];
-    if (query.length > 0) {
-        location = [location stringByAppendingFormat:@"?%@", query];
-    }
-    return location;
-}
-
 @implementation AppViewRuntime
 
 + (instancetype)sharedRuntime {
@@ -215,24 +197,6 @@ static NSString *AppViewAdminRedirectLocation(NSString *path, NSString *query) {
                                                                       jwtMinter:jwtMinter];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
-
-    NSArray<NSString *> *adminMethods = @[@"GET", @"POST", @"PUT", @"DELETE", @"PATCH", @"OPTIONS", @"HEAD"];
-    for (NSString *method in adminMethods) {
-        [_httpServer addRoute:method path:@"/admin" handler:^(HttpRequest *req, HttpResponse *res) {
-            NSString *location = AppViewAdminRedirectLocation(req.path, req.queryString);
-            res.statusCode = 307;
-            res.contentType = @"text/plain; charset=utf-8";
-            [res setHeader:location forKey:@"Location"];
-            [res setBodyString:@"Redirecting to UI service\n"];
-        }];
-        [_httpServer addRoute:method path:@"/admin/*" handler:^(HttpRequest *req, HttpResponse *res) {
-            NSString *location = AppViewAdminRedirectLocation(req.path, req.queryString);
-            res.statusCode = 307;
-            res.contentType = @"text/plain; charset=utf-8";
-            [res setHeader:location forKey:@"Location"];
-            [res setBodyString:@"Redirecting to UI service\n"];
-        }];
-    }
 
     NSError *listenErr = nil;
     if (![_httpServer startWithError:&listenErr]) {

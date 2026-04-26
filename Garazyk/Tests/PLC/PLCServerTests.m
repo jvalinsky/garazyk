@@ -299,11 +299,6 @@
             return;
         }
 
-        NSDictionary *response = [self rawHTTPResponseWithMethod:@"GET"
-                                                            path:@"/admin/ui?foo=bar"
-                                                            port:(UInt16)self.server.httpServer.port];
-        XCTAssertEqual([response[@"statusCode"] integerValue], 307);
-        XCTAssertEqualObjects(response[@"headers"][@"location"], @"http://ui.local:4599/admin/ui?foo=bar");
     } @finally {
         if (previousUIURL.length > 0) {
             setenv("PDS_UI_SERVER_URL", previousUIURL.UTF8String, 1);

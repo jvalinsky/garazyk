@@ -525,13 +525,6 @@
         NSString *rootBody = [rootResponse[@"body"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         XCTAssertEqualObjects(rootBody, @"kaszlak 1.0.0");
 
-        NSDictionary *redirectResponse = [self rawHTTPResponseWithMethod:@"GET"
-                                                                    path:@"/admin/ui?foo=bar"
-                                                                    port:actualPort];
-        XCTAssertEqual([redirectResponse[@"statusCode"] integerValue], 307);
-        NSString *location = redirectResponse[@"headers"][@"location"];
-        XCTAssertEqualObjects(location, @"http://ui.local:4599/admin/ui?foo=bar");
-
         [self.testServer stop];
         self.testServer = nil;
         [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];

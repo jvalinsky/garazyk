@@ -33,24 +33,6 @@
 
 static const char *executable_name = "zuk";
 
-static NSString *RelayUIServiceBaseURL(void) {
-    NSString *configured = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"]
-        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return configured.length > 0 ? configured : @"http://127.0.0.1:2590";
-}
-
-static NSString *RelayAdminRedirectLocation(NSString *path, NSString *queryString) {
-    NSString *base = RelayUIServiceBaseURL();
-    while ([base hasSuffix:@"/"]) {
-        base = [base substringToIndex:base.length - 1];
-    }
-    NSString *location = [NSString stringWithFormat:@"%@%@", base, path.length > 0 ? path : @"/admin"];
-    if (queryString.length > 0) {
-        location = [location stringByAppendingFormat:@"?%@", queryString];
-    }
-    return location;
-}
-
 void print_usage(void) {
     printf("Usage: %s <command> [options]\n\n", executable_name);
     printf("Zuk - AT Protocol Relay Server\n\n");
@@ -383,27 +365,6 @@ int main(int argc, const char * argv[]) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
-        NSArray<NSString *> *adminMethods = @[@"GET", @"POST", @"PUT", @"DELETE", @"PATCH", @"OPTIONS", @"HEAD"];
-        for (NSString *method in adminMethods) {
-            [server addRoute:method
-                        path:@"/admin"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-                         NSString *location = RelayAdminRedirectLocation(request.path, request.queryString);
-                         response.statusCode = 307;
-                         response.contentType = @"text/plain; charset=utf-8";
-                         [response setHeader:location forKey:@"Location"];
-                         [response setBodyString:@"Redirecting to UI service\n"];
-                     }];
-            [server addRoute:method
-                        path:@"/admin/*"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-                         NSString *location = RelayAdminRedirectLocation(request.path, request.queryString);
-                         response.statusCode = 307;
-                         response.contentType = @"text/plain; charset=utf-8";
-                         [response setHeader:location forKey:@"Location"];
-                         [response setBodyString:@"Redirecting to UI service\n"];
-                     }];
-        }
 
         // OPTIONS preflight for WebSocket upgrade (CORS)
         [server addRoute:@"OPTIONS"
