@@ -268,6 +268,94 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V7 Search FTS5 Schema Migration (Service DB)
+
+@interface V7SearchFTS5Schema : NSObject <PDSMigration>
+@end
+
+@implementation V7SearchFTS5Schema
+
+- (NSInteger)version {
+    return 7;
+}
+
+- (NSString *)name {
+    return @"search_fts5_schema";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    NSArray *schemas = @[
+        // Content tables (source of truth for FTS rebuild)
+        @"CREATE TABLE IF NOT EXISTS search_actors("
+        @"rowid INTEGER PRIMARY KEY, "
+        @"did TEXT NOT NULL, "
+        @"display_name TEXT, "
+        @"handle TEXT, "
+        @"description TEXT"
+        @")",
+
+        @"CREATE TABLE IF NOT EXISTS search_posts("
+        @"rowid INTEGER PRIMARY KEY, "
+        @"uri TEXT NOT NULL, "
+        @"did TEXT NOT NULL, "
+        @"text TEXT"
+        @")",
+
+        @"CREATE TABLE IF NOT EXISTS search_starter_packs("
+        @"rowid INTEGER PRIMARY KEY, "
+        @"uri TEXT NOT NULL, "
+        @"did TEXT NOT NULL, "
+        @"name TEXT"
+        @")",
+
+        // FTS5 virtual tables
+        @"CREATE VIRTUAL TABLE IF NOT EXISTS fts_actors "
+        @"USING fts5(did, display_name, handle, description, "
+        @"content=search_actors, content_rowid=rowid)",
+
+        @"CREATE VIRTUAL TABLE IF NOT EXISTS fts_posts "
+        @"USING fts5(uri, did, text, "
+        @"content=search_posts, content_rowid=rowid)",
+
+        @"CREATE VIRTUAL TABLE IF NOT EXISTS fts_starter_packs "
+        @"USING fts5(uri, did, name, "
+        @"content=search_starter_packs, content_rowid=rowid)",
+
+        // Indexes on content tables
+        @"CREATE INDEX IF NOT EXISTS idx_search_actors_did ON search_actors(did)",
+        @"CREATE INDEX IF NOT EXISTS idx_search_posts_uri ON search_posts(uri)",
+        @"CREATE INDEX IF NOT EXISTS idx_search_starter_packs_uri ON search_starter_packs(uri)"
+    ];
+
+    for (NSString *sql in schemas) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V7 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    sqlite3_exec(db, "DROP TABLE IF EXISTS fts_starter_packs", NULL, NULL, NULL);
+    sqlite3_exec(db, "DROP TABLE IF EXISTS fts_posts", NULL, NULL, NULL);
+    sqlite3_exec(db, "DROP TABLE IF EXISTS fts_actors", NULL, NULL, NULL);
+    sqlite3_exec(db, "DROP TABLE IF EXISTS search_starter_packs", NULL, NULL, NULL);
+    sqlite3_exec(db, "DROP TABLE IF EXISTS search_posts", NULL, NULL, NULL);
+    sqlite3_exec(db, "DROP TABLE IF EXISTS search_actors", NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
 #pragma mark - V1 Initial Schema Migration
 
 @interface V1InitialSchema : NSObject <PDSMigration>
@@ -1266,6 +1354,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V4OzoneScheduledActionsSchema alloc] init]];
     [manager registerMigration:[[V5HostingEventsSchema alloc] init]];
     [manager registerMigration:[[V6DraftsSchema alloc] init]];
+    [manager registerMigration:[[V7SearchFTS5Schema alloc] init]];
     return manager;
 }
 
