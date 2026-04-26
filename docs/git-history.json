@@ -1,10 +1,18 @@
 [
   {
-    "hash": "bdc4e7b7bfce02d3f450f1d8e68ccee8b43cd521",
-    "short_hash": "bdc4e7b",
+    "hash": "71a491a79a2491ba247e9dcb446ded5922f03001",
+    "short_hash": "71a491a",
     "author": "Security Bot",
-    "date": "2026-04-25T13:42:44-04:00",
-    "message": "admin: fix POST /admin/invites 500 error and add cookie auth support\n\nFix 1: Admin service availability (POST /admin/invites returning 500)\n- PDSAdminHandler.adminService property was trying to get 'adminService'\n  from PDSController, but PDSController only has 'adminController'\n- Fixed: route through adminController to get the adminService\n\nFix 2: Add cookie support for direct navigation to /admin routes\n- Extend PDSAdminAuth.authenticateHeaders to also check for token in\n  Cookie header (format: admin_token=<token>)\n- This enables future support for cookie-based auth for direct browser\n  navigation (requires server to set Set-Cookie on login)\n\nNote: Direct navigation to /admin/invites etc. still returns 401 because\nthe token is stored in sessionStorage (browser-side only), not in a cookie.\nThe /admin/ui SPA entry point works correctly because HTMX is configured\nto send Authorization header with all requests.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "date": "2026-04-26T02:12:42-04:00",
+    "message": "build(CMakeLists): integrate AdminUIServer sources in test build\n\n- Add AdminUIServer source files (UIServiceConfig, UIAuthManager, UIBackendClient, UIServerRuntime) to TEST_OBJC_SOURCES\n- Enables AllTests executable to compile and link with AdminUIServer classes\n- Adds explanatory comment about garazyk-ui transitive library dependencies\n\nFixes issue #11 from code review.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "1bc479f59aac8ff5c0907977fd6020070da16fa6",
+    "short_hash": "1bc479f",
+    "author": "Security Bot",
+    "date": "2026-04-25T17:25:05-04:00",
+    "message": "fix(auth): make DPoP replay cache check-and-insert atomic\n\nThe checkAndAddJTI: method performed a SELECT then INSERT without\na transaction, creating a TOCTOU race where concurrent requests\ncould both observe a JTI as unused and both succeed.\n\nFix: wrap the check-and-insert in BEGIN IMMEDIATE TRANSACTION /\nCOMMIT so the second thread blocks until the first commits, then\nsees the row and returns NO (replay detected).\n\nAdd 3 new tests: concurrent duplicate JTI rejection, nil JTI\nhandling, nil expiration handling.\n\nFixes MEDIUM finding from 2026-04-25 production readiness re-audit.\n\n👾 Generated with [Letta Code](https://letta.com)\n\nCo-Authored-By: Letta Code <noreply@letta.com>",
     "files_changed": 2
   },
   {
