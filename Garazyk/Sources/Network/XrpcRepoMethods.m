@@ -887,11 +887,23 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
 
         // Resolve full DID document (required by lexicon).
         DIDDocument *doc = [[DIDResolver sharedResolver] resolveDIDSync:did error:nil];
-        NSDictionary *didDocJson = doc.jsonDictionary ?: @{};
+        NSDictionary *didDocJson = nil;
+
+        if (doc) {
+            didDocJson = doc.jsonDictionary ?: @{};
+        } else {
+            // Fallback: construct a minimal DID document for local accounts
+            // when PLC resolution is unavailable (e.g. PDS_PLC_URL=skip)
+            NSString *accountHandle = localAccount.handle.length > 0 ? [localAccount.handle lowercaseString] : @"handle.invalid";
+            didDocJson = @{
+                @"id": did,
+                @"alsoKnownAs": accountHandle.length > 0 ? @[[NSString stringWithFormat:@"at://%@", accountHandle]] : @[]
+            };
+        }
 
         NSString *handleFromDidDoc = normalizedAtHandleFromAlsoKnownAs(doc.alsoKnownAs);
         NSString *accountHandle = localAccount.handle.length > 0 ? [localAccount.handle lowercaseString] : @"handle.invalid";
-        BOOL handleIsCorrect = (handleFromDidDoc.length > 0 && [handleFromDidDoc isEqualToString:accountHandle]);
+        BOOL handleIsCorrect = (handleFromDidDoc.length > 0 && [handleFromDidDoc isEqualToString:accountHandle]) || (doc == nil && localAccount.handle.length > 0);
 
         NSMutableArray *collections = [NSMutableArray array];
         NSMutableArray *collectionStats = [NSMutableArray array];
