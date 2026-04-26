@@ -620,7 +620,30 @@
 - (nullable NSString *)createSafelink:(NSDictionary *)safelink
                              createdBy:(NSString *)adminDid
                                  error:(NSError **)error {
-    return [[NSUUID UUID] UUIDString];
+    NSString *url = safelink[@"url"] ?: @"";
+    NSString *pattern = safelink[@"pattern"] ?: @"domain";
+    NSString *action = safelink[@"action"] ?: @"block";
+    NSString *reason = safelink[@"reason"] ?: @"none";
+    NSString *comment = safelink[@"comment"] ?: @"";
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+
+    if (url.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"URL required"}];
+        return nil;
+    }
+
+    NSString *sql = [NSString stringWithFormat:
+        @"INSERT INTO moderation_safelinks (url, pattern, action, reason, comment, created_by, created_at, updated_at) "
+        @"VALUES (?, ?, ?, ?, ?, ?, ?, ?)"];
+
+    BOOL success = [self.database executeSQL:sql
+                                 parameters:@[url, pattern, action, reason, comment, adminDid, @(now), @(now)]
+                                      error:error];
+
+    if (success) {
+        return [NSString stringWithFormat:@"%@:%@", url, pattern];
+    }
+    return nil;
 }
 
 - (BOOL)updateSafelink:(NSString *)safelinkId
@@ -628,22 +651,63 @@
              newAction:(nullable NSString *)action
            updatedBy:(NSString *)adminDid
                 error:(NSError **)error {
-    return YES;
+    if (!safelinkId || safelinkId.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Safelink ID required"}];
+        return NO;
+    }
+
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    NSMutableString *sql = [NSMutableString stringWithString:@"UPDATE moderation_safelinks SET updated_at = ?"];
+    NSMutableArray *params = [NSMutableArray arrayWithObject:@(now)];
+
+    if (action && action.length > 0) {
+        [sql appendString:@", action = ?"];
+        [params addObject:action];
+    }
+
+    NSArray *parts = [safelinkId componentsSeparatedByString:@":"];
+    if (parts.count == 2) {
+        [sql appendFormat:@" WHERE url = ? AND pattern = ?"];
+        [params addObject:parts[0]];
+        [params addObject:parts[1]];
+    }
+
+    return [self.database executeSQL:sql parameters:params error:error];
 }
 
 - (BOOL)deleteSafelink:(NSString *)safelinkId
              deletedBy:(NSString *)adminDid
                  error:(NSError **)error {
-    return YES;
+    if (!safelinkId || safelinkId.length == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Safelink ID required"}];
+        return NO;
+    }
+
+    NSArray *parts = [safelinkId componentsSeparatedByString:@":"];
+    if (parts.count == 2) {
+        NSString *sql = @"DELETE FROM moderation_safelinks WHERE url = ? AND pattern = ?";
+        return [self.database executeSQL:sql parameters:@[parts[0], parts[1]] error:error];
+    }
+
+    if (error) *error = [NSError errorWithDomain:@"ModerationService" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Invalid safelink ID format"}];
+    return NO;
 }
 
 - (nullable NSDictionary *)getSafelink:(NSString *)safelinkId
                                    error:(NSError **)error {
-    return nil;
+    if (!safelinkId || safelinkId.length == 0) return nil;
+
+    NSArray *parts = [safelinkId componentsSeparatedByString:@":"];
+    if (parts.count != 2) return nil;
+
+    NSString *sql = @"SELECT * FROM moderation_safelinks WHERE url = ? AND pattern = ?";
+    NSArray<NSDictionary *> *results = [self.database querySQL:sql parameters:@[parts[0], parts[1]] error:error];
+    return results.firstObject;
 }
 
 - (nullable NSArray<NSDictionary *> *)listSafelinks:(NSError **)error {
-    return @[];
+    NSString *sql = @"SELECT * FROM moderation_safelinks ORDER BY created_at DESC";
+    return [self.database querySQL:sql parameters:@[] error:error];
 }
 
 #pragma mark - Signatures

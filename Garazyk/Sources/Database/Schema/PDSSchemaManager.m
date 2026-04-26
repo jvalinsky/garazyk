@@ -276,6 +276,21 @@
            @")";
 }
 
+- (NSString *)ozoneSafelinksTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_safelinks ("
+           @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+           @"    url TEXT NOT NULL,"
+           @"    pattern TEXT NOT NULL,"
+           @"    action TEXT NOT NULL,"
+           @"    reason TEXT NOT NULL,"
+           @"    comment TEXT,"
+           @"    created_by TEXT NOT NULL,"
+           @"    created_at REAL NOT NULL,"
+           @"    updated_at REAL NOT NULL,"
+           @"    UNIQUE(url, pattern)"
+           @")";
+}
+
 #pragma mark - BSky AppView Schemas
 
 - (NSString *)bskyAgeAssuranceTableSchema {
@@ -414,6 +429,8 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self ozoneScheduledActionsTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneSafelinksTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self bskyAgeAssuranceTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self bskyChatEventLogTableSchema]];
@@ -463,6 +480,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_events_created ON moderation_events(created_at);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_safelinks_url_pattern ON moderation_safelinks(url, pattern);"];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_age_assurance_did ON age_assurance_states(did);"];
     [sql appendString:@";\n"];
