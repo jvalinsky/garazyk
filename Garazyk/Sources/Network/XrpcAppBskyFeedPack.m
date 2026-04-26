@@ -539,6 +539,9 @@
 
     // app.bsky.feed.sendInteractions - Log feed interactions
     [dispatcher registerMethod:@"app.bsky.feed.sendInteractions" handler:^(HttpRequest *request, HttpResponse *response) {
+        // Accept the interaction but don't process it yet.
+        // This is a fire-and-forget endpoint — returning 200 is acceptable
+        // per the lexicon spec (response body is empty).
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
@@ -551,8 +554,21 @@
             return;
         }
 
+        NSInteger limit = 50;
+        if (!XrpcParseLimit(request.queryParams[@"limit"], &limit, 1, 100, response)) {
+            return;
+        }
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
+        NSError *error = nil;
+        NSDictionary *result = [feedService getListFeed:list limit:limit cursor:cursor error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load list feed"];
+            return;
+        }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"feed": @[]}];
+        [response setJsonBody:result ?: @{@"feed": @[], @"cursor": [NSNull null]}];
     }];
 
     PDS_LOG_INFO(@"Registered app.bsky.feed.* endpoints");

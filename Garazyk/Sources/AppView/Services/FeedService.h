@@ -62,6 +62,12 @@ NS_ASSUME_NONNULL_BEGIN
                                   cursor:(nullable NSString *)cursor
                                     error:(NSError **)error;
 
+/*! Get feed from a list's members with pagination. */
+- (nullable NSDictionary *)getListFeed:(NSString *)listURI
+                                 limit:(NSInteger)limit
+                                cursor:(nullable NSString *)cursor
+                                 error:(NSError **)error;
+
 /*! Get multiple posts by URI. */
 - (nullable NSDictionary *)getPosts:(NSArray<NSString *> *)uris error:(NSError **)error;
 
