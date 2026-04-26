@@ -286,11 +286,12 @@ static NSString *UIEscaped(NSString *value) {
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/blobs" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *did = [request queryParamForKey:@"did"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSDictionary *result = [weakSelf.backendClient fetchBlobListWithLimit:25 cursor:cursor];
+        NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchBlobsForDID:did limit:25 cursor:cursor] : @{@"blobs": @[]};
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf renderBlobsPartial:result]];
+        [response setBodyString:[weakSelf renderBlobsPartial:result did:did]];
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/enable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -1325,6 +1326,9 @@ static NSString *UIEscaped(NSString *value) {
     "function loadHostingHistory(){const did=document.getElementById('hosting-did-input').value;"
     "if(!did){alert('DID required');return;}"
     "htmx.ajax('GET','/admin/partials/ozone-hosting?did='+encodeURIComponent(did),'#ozone-hosting');}"
+    "function loadBlobs(){const did=document.getElementById('blob-did-input').value;"
+    "if(!did){alert('DID required');return;}"
+    "htmx.ajax('GET','/admin/partials/blobs?did='+encodeURIComponent(did),'#blobs-content');}"
     "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
     "if(!convoID){alert('Conversation ID required');return;}"
     "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
@@ -1504,22 +1508,33 @@ static NSString *UIEscaped(NSString *value) {
     return html;
 }
 
-- (NSString *)renderBlobsPartial:(NSDictionary *)result {
+- (NSString *)renderBlobsPartial:(NSDictionary *)result did:(nullable NSString *)did {
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"d-flex gap-sm\" onsubmit=\"loadBlobs();return false;\"><input type=\"text\" id=\"blob-did-input\" class=\"form-input flex-1\" placeholder=\"did:plc:...\" value=\""];
+    if (did && did.length > 0) {
+        [html appendFormat:@"%@", UIEscaped(did)];
+    }
+    [html appendString:@"\"/><button type=\"submit\" class=\"btn btn-primary btn-sm\">Load Blobs</button></form></div>"];
+
     if (result[@"error"]) {
-        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+        [html appendFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    } else {
+        [html appendString:@"<table class=\"table\"><thead><tr><th>CID</th><th>Size</th><th>Type</th></tr></thead><tbody>"];
+        NSArray<NSDictionary *> *blobs = [result[@"blobs"] isKindOfClass:[NSArray class]] ? result[@"blobs"] : @[];
+        for (NSDictionary *blob in blobs) {
+            NSString *cid = UIEscaped(blob[@"cid"] ?: @"");
+            NSString *size = UIEscaped([blob[@"size"] stringValue] ?: @"0");
+            NSString *type = UIEscaped(blob[@"mimeType"] ?: @"");
+            [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td>%@</td></tr>", cid, size, type];
+        }
+        if (blobs.count == 0) {
+            [html appendString:@"<tr><td colspan=\"3\" class=\"text-center text-secondary p-lg\">No blobs found.</td></tr>"];
+        }
+        [html appendString:@"</tbody></table>"];
+        NSString *cursor = result[@"cursor"];
+        if (cursor && cursor.length > 0) {
+            [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/blobs?did=%@&cursor=%@\" hx-target=\"#blobs-content\">Load More</button></div>", UIEscaped(did ?: @""), UIEscaped(cursor)];
+        }
     }
-    NSArray<NSDictionary *> *blobs = [result[@"blobs"] isKindOfClass:[NSArray class]] ? result[@"blobs"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>CID</th><th>Size</th><th>Type</th></tr></thead><tbody>"];
-    for (NSDictionary *blob in blobs) {
-        NSString *cid = UIEscaped(blob[@"cid"] ?: @"");
-        NSString *size = UIEscaped([blob[@"size"] stringValue] ?: @"0");
-        NSString *type = UIEscaped(blob[@"mimeType"] ?: @"");
-        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td>%@</td></tr>", cid, size, type];
-    }
-    if (blobs.count == 0) {
-        [html appendString:@"<tr><td colspan=\"3\" class=\"text-center text-secondary p-lg\">No blobs found.</td></tr>"];
-    }
-    [html appendString:@"</tbody></table>"];
     return html;
 }
 
