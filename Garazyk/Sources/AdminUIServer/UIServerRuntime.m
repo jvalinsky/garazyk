@@ -448,34 +448,6 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[weakSelf renderGetRecordPartial:result]];
     }];
 
-    // Explorer: Create record
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/create-record" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
-        NSString *did = request.jsonBody[@"did"] ?: @"";
-        NSString *collection = request.jsonBody[@"collection"] ?: @"";
-        NSDictionary *record = request.jsonBody[@"record"];
-        NSString *rkey = request.jsonBody[@"rkey"];
-        NSDictionary *result = [weakSelf.backendClient createRecordForDID:did collection:collection record:record ?: @{} rkey:rkey];
-        response.statusCode = result[@"error"] ? 400 : 200;
-        response.contentType = @"text/html; charset=utf-8";
-        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Record created.";
-        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
-    }];
-
-    // Explorer: Delete record
-    [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-record" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
-        NSString *did = request.jsonBody[@"did"] ?: @"";
-        NSString *collection = request.jsonBody[@"collection"] ?: @"";
-        NSString *rkey = request.jsonBody[@"rkey"] ?: @"";
-        NSDictionary *result = [weakSelf.backendClient deleteRecordForDID:did collection:collection rkey:rkey];
-        response.statusCode = result[@"error"] ? 400 : 200;
-        response.contentType = @"text/html; charset=utf-8";
-        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Record deleted.";
-        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
-        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
-    }];
 
     // Ozone: Moderation statuses
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-statuses" handler:^(HttpRequest *request, HttpResponse *response) {

@@ -65,17 +65,6 @@
   transform: scale(0.98);
 }
 
-/* Legacy compatibility alias */
-.btn-danger {
-  background: var(--color-destructive);
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #ff3b30;
-  box-shadow: var(--shadow-md);
-}
-
 .btn-success {
   background: var(--color-success);
   color: white;
@@ -83,17 +72,6 @@
 
 .btn-success:hover:not(:disabled) {
   background: #30b854;
-  box-shadow: var(--shadow-md);
-}
-
-/* Compatibility alias for legacy markup now mapped to primary action */
-.btn-default {
-  background: var(--color-accent);
-  color: white;
-}
-
-.btn-default:hover:not(:disabled) {
-  background: #0066cc;
   box-shadow: var(--shadow-md);
 }
 
@@ -137,8 +115,7 @@
 .btn-primary:not(.btn),
 .btn-secondary:not(.btn),
 .btn-destructive:not(.btn),
-.btn-success:not(.btn),
-.btn-default:not(.btn) {
+.btn-success:not(.btn) {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);

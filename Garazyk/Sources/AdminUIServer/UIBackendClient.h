@@ -58,11 +58,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)fetchChatMessagesForConvoID:(NSString *)convoID limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 - (NSDictionary *)lockChatConvo:(NSString *)convoID;
 
-// Repo/Record Operations (Data Explorer) - extended
+// Repo/Record Operations (Data Explorer) - read-only
 - (NSDictionary *)fetchBlobsForDID:(NSString *)did limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 - (NSDictionary *)fetchBlobForDID:(NSString *)did cid:(NSString *)cid;
-- (NSDictionary *)createRecordForDID:(NSString *)did collection:(NSString *)collection record:(NSDictionary *)record rkey:(nullable NSString *)rkey;
-- (NSDictionary *)deleteRecordForDID:(NSString *)did collection:(NSString *)collection rkey:(NSString *)rkey;
 
 // Ozone Moderation Operations
 - (NSDictionary *)fetchOzoneStatusesWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;

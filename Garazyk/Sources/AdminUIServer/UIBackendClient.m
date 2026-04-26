@@ -651,39 +651,6 @@
     return response;
 }
 
-- (NSDictionary *)createRecordForDID:(NSString *)did collection:(NSString *)collection record:(NSDictionary *)record rkey:(NSString *)rkey {
-    if (did.length == 0 || collection.length == 0 || !record) {
-        return @{@"error": @"invalid_params", @"message": @"DID, collection, and record required"};
-    }
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.repo.createRecord" queryItems:nil baseURL:self.configuration.pdsBaseURL];
-    NSMutableDictionary *body = [NSMutableDictionary dictionary];
-    body[@"repo"] = did;
-    body[@"collection"] = collection;
-    body[@"record"] = record;
-    if (rkey.length > 0) body[@"rkey"] = rkey;
-    NSInteger status = 0;
-    NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
-    if (status < 200 || status >= 300) {
-        return @{@"error": @"create_record_failed", @"message": error.localizedDescription ?: @"Create record failed"};
-    }
-    return response ?: @{};
-}
-
-- (NSDictionary *)deleteRecordForDID:(NSString *)did collection:(NSString *)collection rkey:(NSString *)rkey {
-    if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
-        return @{@"error": @"invalid_params", @"message": @"DID, collection, and rkey required"};
-    }
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.repo.deleteRecord" queryItems:nil baseURL:self.configuration.pdsBaseURL];
-    NSDictionary *body = @{@"repo": did, @"collection": collection, @"rkey": rkey};
-    NSInteger status = 0;
-    NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
-    if (status < 200 || status >= 300) {
-        return @{@"error": @"delete_record_failed", @"message": error.localizedDescription ?: @"Delete record failed"};
-    }
-    return response ?: @{};
-}
 
 #pragma mark - Ozone Moderation Operations
 
