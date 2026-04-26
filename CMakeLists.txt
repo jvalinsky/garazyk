@@ -745,35 +745,22 @@ target_include_directories(garazyk-ui PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-if(APPLE)
-  target_link_libraries(garazyk-ui PRIVATE
-    ATProtoAppViewServer
-    ATProtoRuntime
-    ATProtoStorage
-    ATProtoServices
-    ATProtoSync
-    ATProtoTransport
-    ATProtoCore
-    ${PLATFORM_LIBRARIES}
-    ${SECP256K1_LIBRARIES}
-    ${READLINE_LIBRARY}
-  )
-else()
-  target_link_libraries(garazyk-ui PRIVATE
-    -Wl,--whole-archive
-    ATProtoAppViewServer
-    ATProtoRuntime
-    ATProtoStorage
-    ATProtoServices
-    ATProtoSync
-    ATProtoTransport
-    ATProtoCore
-    -Wl,--no-whole-archive
-    ${PLATFORM_LIBRARIES}
-    ${SECP256K1_LIBRARIES}
-    ${READLINE_LIBRARY}
-  )
-endif()
+# garazyk-ui is a thin HTTP server that calls XRPC endpoints on backends.
+# It needs HttpServer (in ATProtoTransport) and logging (in ATProtoCore).
+# However, ATProtoTransport depends on components in the other libs, so we link
+# them all to satisfy transitive symbol dependencies.
+target_link_libraries(garazyk-ui PRIVATE
+  ATProtoAppViewServer
+  ATProtoRuntime
+  ATProtoStorage
+  ATProtoServices
+  ATProtoSync
+  ATProtoTransport
+  ATProtoCore
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+  ${READLINE_LIBRARY}
+)
 
 target_compile_definitions(garazyk-ui PRIVATE
   SQLITE_THREADSAFE=2
@@ -1103,7 +1090,15 @@ if(BUILD_TESTS)
   file(GLOB_RECURSE TEST_OBJC_SOURCES "Garazyk/Tests/**/*.m")
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/test_main.m")
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/Database/PDSDatabaseLRUTests.m")
-  
+
+  # AdminUIServer sources (needed for tests)
+  list(APPEND TEST_OBJC_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServiceConfig.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIAuthManager.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIBackendClient.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServerRuntime.m"
+  )
+
   # Exclude problematic tests (preserved from original)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/PDSNewArchitectureTests.m")
   # Exclude top-level Integration tests only, except our new PLC integration test
