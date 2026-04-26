@@ -8,12 +8,42 @@
 #import "Network/XrpcAuthHelper.h"
 #import "AppView/Services/AgeAssuranceService.h"
 #import "AppView/Services/SearchIndexService.h"
+#import "AppView/Services/FeedService.h"
+
+// Helper: flatten nested thread tree into V2 flat list format
+static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArray *outArray) {
+    if (!tree) return;
+
+    NSDictionary *post = tree[@"post"];
+    if (post) {
+        NSMutableDictionary *item = [NSMutableDictionary dictionary];
+        item[@"uri"] = post[@"uri"] ?: @"";
+        item[@"depth"] = @(depth);
+        item[@"value"] = @{@"$type": @"app.bsky.unspecced.defs#threadItemPost",
+                           @"uri": post[@"uri"] ?: @"",
+                           @"cid": post[@"cid"] ?: @"",
+                           @"author": post[@"author"] ?: @{},
+                           @"record": post[@"record"] ?: @{},
+                           @"replyCount": post[@"replyCount"] ?: @(0),
+                           @"repostCount": post[@"repostCount"] ?: @(0),
+                           @"likeCount": post[@"likeCount"] ?: @(0)};
+        [outArray addObject:[item copy]];
+    }
+
+    NSArray *replies = tree[@"replies"];
+    if ([replies isKindOfClass:[NSArray class]]) {
+        for (NSDictionary *reply in replies) {
+            flattenThreadTree(reply, depth + 1, outArray);
+        }
+    }
+}
 
 @implementation XrpcAppBskyUnspeccedPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
            ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-              searchIndexService:(nullable SearchIndexService *)searchIndexService {
+              searchIndexService:(nullable SearchIndexService *)searchIndexService
+                    feedService:(nullable FeedService *)feedService {
 
 #pragma mark - Labeler
 
@@ -213,36 +243,59 @@
 
   [dispatcher registerMethod:@"app.bsky.unspecced.getPostThreadV2"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-                       NSString *uri = [request queryParamForKey:@"uri"];
+                       NSString *anchor = [request queryParamForKey:@"anchor"];
 
-                       if (!uri || uri.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"uri parameter is required"];
+                       if (!anchor || anchor.length == 0) {
+                           [XrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
                            return;
                        }
 
-                       // TODO: Implement thread V2 view
-                       response.statusCode = 501;
-                       [response setJsonBody:@{
-                           @"error": @"NotImplemented",
-                           @"message": @"app.bsky.unspecced.getPostThreadV2 is not yet implemented"
-                       }];
+                       if (feedService) {
+                           NSInteger below = 6;
+                           NSString *belowParam = [request queryParamForKey:@"below"];
+                           if (belowParam) {
+                               NSInteger parsed = [belowParam integerValue];
+                               if (parsed >= 0 && parsed <= 20) below = parsed;
+                           }
+
+                           NSError *error = nil;
+                           NSDictionary *threadTree = [feedService getPostThread:anchor depth:below error:&error];
+                           if (error) {
+                               [XrpcErrorHelper setNotFoundError:response message:error.localizedDescription];
+                               return;
+                           }
+
+                           // Flatten the nested thread tree into V2 flat list format
+                           NSMutableArray *flatThread = [NSMutableArray array];
+                           flattenThreadTree(threadTree, 0, flatThread);
+
+                           response.statusCode = HttpStatusOK;
+                           [response setJsonBody:@{
+                               @"thread": flatThread,
+                               @"hasOtherReplies": @NO
+                           }];
+                       } else {
+                           response.statusCode = 501;
+                           [response setJsonBody:@{
+                               @"error": @"NotImplemented",
+                               @"message": @"app.bsky.unspecced.getPostThreadV2 is not yet implemented"
+                           }];
+                       }
                      }];
 
   [dispatcher registerMethod:@"app.bsky.unspecced.getPostThreadOtherV2"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-                       NSString *uri = [request queryParamForKey:@"uri"];
+                       NSString *anchor = [request queryParamForKey:@"anchor"];
 
-                       if (!uri || uri.length == 0) {
-                           [XrpcErrorHelper setValidationError:response message:@"uri parameter is required"];
+                       if (!anchor || anchor.length == 0) {
+                           [XrpcErrorHelper setValidationError:response message:@"anchor parameter is required"];
                            return;
                        }
 
-                       // TODO: Implement thread other V2 view
-                       response.statusCode = 501;
-                       [response setJsonBody:@{
-                           @"error": @"NotImplemented",
-                           @"message": @"app.bsky.unspecced.getPostThreadOtherV2 is not yet implemented"
-                       }];
+                       // getPostThreadOtherV2 returns additional replies hidden by threadgate.
+                       // For now, return empty thread (no hidden replies).
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{@"thread": @[]}];
                      }];
 
 #pragma mark - Age Assurance (Compliance)
