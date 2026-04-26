@@ -512,6 +512,39 @@ static NSString *UIEscaped(NSString *value) {
         [response setBodyString:[weakSelf renderOzoneModerationReportsPartial:result]];
     }];
 
+    // Ozone: Scheduled actions
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-scheduled" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        NSDictionary *result = [weakSelf.backendClient fetchScheduledActionsWithStatuses:nil cursor:cursor limit:50];
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderOzoneScheduledPartial:result]];
+    }];
+
+    // Ozone: Schedule action
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-schedule-action" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *actionSpec = request.jsonBody;
+        NSDictionary *result = [weakSelf.backendClient scheduleAction:actionSpec ?: @{}];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Action scheduled.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
+    // Ozone: Cancel scheduled actions
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-cancel-scheduled" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSArray *subjects = request.jsonBody[@"subjects"] ?: @[];
+        NSDictionary *result = [weakSelf.backendClient cancelScheduledActionsForSubjects:subjects];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Scheduled actions cancelled.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
     // Ozone: Team members
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-team" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -989,6 +1022,8 @@ static NSString *UIEscaped(NSString *value) {
     "<div id=\"ozone-subject-result\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Moderation Reports</h3>"
     "<div id=\"ozone-reports\" hx-get=\"/admin/partials/ozone-reports\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Scheduled Actions</h3>"
+    "<div id=\"ozone-scheduled\" hx-get=\"/admin/partials/ozone-scheduled\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Team Members</h3>"
     "<div id=\"ozone-team\" hx-get=\"/admin/partials/ozone-team\" hx-trigger=\"load\"></div></section>"
     "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Sets</h3>"
@@ -1118,6 +1153,15 @@ static NSString *UIEscaped(NSString *value) {
     "if(!reportID||!action){alert('Report ID and action required');return;}"
     "const resp=await fetch('/admin/actions/resolve-pds-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reportID,action})});"
     "document.getElementById('pds-reports-result').innerHTML=await resp.text();}"
+    "async function scheduleOzoneAction(){const did=document.getElementById('schedule-subject-did').value;"
+    "const actionType=document.getElementById('schedule-action-type').value;"
+    "if(!did){alert('Subject DID required');return;}"
+    "const actionSpec={subject:did,action:actionType};"
+    "const resp=await fetch('/admin/actions/ozone-schedule-action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(actionSpec)});"
+    "document.getElementById('schedule-subject-did').value='';htmx.ajax('GET','/admin/partials/ozone-scheduled','#ozone-scheduled');}"
+    "async function cancelScheduledAction(subject){if(!confirm('Cancel this scheduled action?'))return;"
+    "const resp=await fetch('/admin/actions/ozone-cancel-scheduled',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subjects:[subject]})});"
+    "htmx.ajax('GET','/admin/partials/ozone-scheduled','#ozone-scheduled');}"
     "function loadChatMessages(){const convoID=document.getElementById('chat-convo-id').value;"
     "if(!convoID){alert('Conversation ID required');return;}"
     "htmx.ajax('GET','/admin/partials/chat-messages?convoID='+encodeURIComponent(convoID),'#chat-messages');}"
@@ -1905,6 +1949,36 @@ static NSString *UIEscaped(NSString *value) {
     [html appendString:@"</tbody></table>"];
     if (cursor && cursor.length > 0) {
         [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/plc-list?cursor=%@\" hx-target=\"#plc-list\">Load More</button></div>", UIEscaped(cursor)];
+    }
+    return html;
+}
+
+#pragma mark - Phase 3 Render Methods
+
+- (NSString *)renderOzoneScheduledPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"mb-lg\"><form class=\"form\" onsubmit=\"scheduleOzoneAction();return false;\"><div class=\"form-group\"><label>Subject DID(s):</label><input type=\"text\" id=\"schedule-subject-did\" class=\"form-input\" placeholder=\"did:plc:...\"/></div><div class=\"form-group\"><label>Action Type:</label><select id=\"schedule-action-type\" class=\"form-input\"><option value=\"takedown\">Takedown</option></select></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Schedule Action</button></form></div>"];
+
+    [html appendString:@"<table class=\"table\"><thead><tr><th>Subject</th><th>Action</th><th>Status</th><th>Execute At</th><th>Actions</th></tr></thead><tbody>"];
+    NSArray<NSDictionary *> *actions = [result[@"actions"] isKindOfClass:[NSArray class]] ? result[@"actions"] : @[];
+    for (NSDictionary *action in actions) {
+        NSString *subject = UIEscaped(action[@"subject"] ?: @"");
+        NSString *actionType = UIEscaped(action[@"action"] ?: @"");
+        NSString *status = UIEscaped(action[@"status"] ?: @"pending");
+        NSString *executeAt = UIEscaped(action[@"executeAt"] ?: @"");
+        [html appendFormat:@"<tr><td class=\"text-mono text-xs\">%@</td><td>%@</td><td><span class=\"badge\">%@</span></td><td>%@</td><td>", subject, actionType, status, executeAt];
+        [html appendFormat:@"<button class=\"btn btn-sm btn-destructive\" onclick=\"cancelScheduledAction('%@')\">Cancel</button>", UIEscaped(subject)];
+        [html appendString:@"</td></tr>"];
+    }
+    if (actions.count == 0) {
+        [html appendString:@"<tr><td colspan=\"5\" class=\"text-center text-secondary p-lg\">No scheduled actions.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+    NSString *cursor = result[@"cursor"];
+    if (cursor && cursor.length > 0) {
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-sm btn-secondary\" hx-get=\"/admin/partials/ozone-scheduled?cursor=%@\" hx-target=\"#ozone-scheduled\">Load More</button></div>", UIEscaped(cursor)];
     }
     return html;
 }

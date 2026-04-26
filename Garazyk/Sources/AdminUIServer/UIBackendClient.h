@@ -70,6 +70,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)emitModerationEvent:(NSDictionary *)event;
 - (NSDictionary *)fetchSubjectStatusForDID:(NSString *)did;
 - (NSDictionary *)fetchModerationReportsWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+- (NSDictionary *)fetchScheduledActionsWithStatuses:(nullable NSArray<NSString *> *)statuses cursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+- (NSDictionary *)scheduleAction:(NSDictionary *)actionSpec;
+- (NSDictionary *)cancelScheduledActionsForSubjects:(NSArray<NSString *> *)subjects;
 
 // Ozone Team Operations
 - (NSDictionary *)fetchOzoneTeamMembers;
