@@ -85,6 +85,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)findRelatedAccounts:(NSString *)did;
 - (NSDictionary *)findSignatureCorrelation:(NSArray<NSString *> *)dids;
 - (NSDictionary *)searchAccountsBySignature:(NSDictionary *)patterns;
+- (NSDictionary *)fetchHostingHistoryForDID:(NSString *)did;
 
 // Ozone Team Operations
 - (NSDictionary *)fetchOzoneTeamMembers;
