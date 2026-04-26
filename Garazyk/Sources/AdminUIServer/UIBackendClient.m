@@ -18,28 +18,43 @@
 }
 
 - (NSDictionary *)fetchServiceOverview {
-    NSMutableArray<NSDictionary *> *services = [NSMutableArray array];
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_queue_t queue = dispatch_queue_create("com.garazyk.service.probes", DISPATCH_QUEUE_CONCURRENT);
 
-    [services addObject:[self probeServiceNamed:@"pds"
-                                        baseURL:self.configuration.pdsBaseURL
-                                      xrpcPath:@"/xrpc/com.atproto.server.describeServer"
-                                  bearerToken:self.configuration.pdsAdminToken]];
-    [services addObject:[self probeServiceNamed:@"plc"
-                                        baseURL:self.configuration.plcBaseURL
-                                      xrpcPath:nil
-                                  bearerToken:self.configuration.plcAdminToken]];
-    [services addObject:[self probeServiceNamed:@"relay"
-                                        baseURL:self.configuration.relayBaseURL
-                                      xrpcPath:@"/xrpc/com.atproto.sync.listRepos?limit=1"
-                                  bearerToken:self.configuration.relayAdminToken]];
-    [services addObject:[self probeServiceNamed:@"appview"
-                                        baseURL:self.configuration.appViewBaseURL
-                                      xrpcPath:@"/xrpc/app.bsky.feed.getTimeline?limit=1"
-                                  bearerToken:self.configuration.appViewAdminToken]];
-    [services addObject:[self probeServiceNamed:@"chat"
-                                        baseURL:self.configuration.chatBaseURL
-                                      xrpcPath:@"/xrpc/chat.bsky.convo.listConvos?limit=1"
-                                  bearerToken:self.configuration.chatAdminToken]];
+    NSMutableArray<NSDictionary *> *services = [NSMutableArray array];
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(1);
+
+    // Define probe specifications: name, baseURL, xrpcPath, token
+    NSArray<NSDictionary *> *probeSpecs = @[
+        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL, @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken},
+        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL, @"xrpcPath": [NSNull null], @"token": self.configuration.plcAdminToken},
+        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL, @"xrpcPath": @"/xrpc/com.atproto.sync.listRepos?limit=1", @"token": self.configuration.relayAdminToken},
+        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL, @"xrpcPath": @"/xrpc/app.bsky.feed.getTimeline?limit=1", @"token": self.configuration.appViewAdminToken},
+        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/xrpc/chat.bsky.convo.listConvos?limit=1", @"token": self.configuration.chatAdminToken}
+    ];
+
+    for (NSDictionary *spec in probeSpecs) {
+        dispatch_group_enter(group);
+        dispatch_async(queue, ^{
+            NSString *name = spec[@"name"];
+            NSURL *baseURL = spec[@"baseURL"];
+            id xrpcPath = spec[@"xrpcPath"];
+            NSString *token = spec[@"token"];
+
+            NSDictionary *result = [self probeServiceNamed:name
+                                                   baseURL:baseURL
+                                                 xrpcPath:[xrpcPath isKindOfClass:[NSNull class]] ? nil : xrpcPath
+                                             bearerToken:token];
+
+            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            [services addObject:result];
+            dispatch_semaphore_signal(semaphore);
+
+            dispatch_group_leave(group);
+        });
+    }
+
+    dispatch_group_wait(group, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(50.0 * NSEC_PER_SEC)));
 
     NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
     NSString *generatedAt = [formatter stringFromDate:[NSDate date]];
@@ -50,7 +65,7 @@
     NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.admin.searchAccounts"
                               queryItems:@{
                                 @"limit": @"25",
-                                @"email": query.length > 0 ? query : @""
+                                @"q": query.length > 0 ? query : @""
                               }
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
@@ -204,23 +219,29 @@
 
 - (NSURL *)URLByPathWithQuery:(NSString *)pathWithQuery baseURL:(NSURL *)baseURL {
     NSString *path = pathWithQuery ?: @"";
-    NSString *query = nil;
+    NSString *queryString = nil;
     NSRange queryRange = [path rangeOfString:@"?"];
     if (queryRange.location != NSNotFound) {
-        query = [path substringFromIndex:queryRange.location + 1];
+        queryString = [path substringFromIndex:queryRange.location + 1];
         path = [path substringToIndex:queryRange.location];
     }
 
-    NSURLComponents *components = [NSURLComponents componentsWithURL:baseURL resolvingAgainstBaseURL:NO];
-    NSString *basePath = components.path ?: @"";
-    if (basePath.length == 0 || [basePath isEqualToString:@"/"]) {
-        components.path = path;
-    } else {
-        NSString *joined = [basePath stringByAppendingPathComponent:[path stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]]];
-        components.path = [joined hasPrefix:@"/"] ? joined : [@"/" stringByAppendingString:joined];
+    NSMutableDictionary<NSString *, NSString *> *queryItems = [NSMutableDictionary dictionary];
+    if (queryString.length > 0) {
+        NSArray<NSString *> *pairs = [queryString componentsSeparatedByString:@"&"];
+        for (NSString *pair in pairs) {
+            NSRange eqRange = [pair rangeOfString:@"="];
+            if (eqRange.location != NSNotFound) {
+                NSString *key = [pair substringToIndex:eqRange.location];
+                NSString *value = [pair substringFromIndex:eqRange.location + 1];
+                queryItems[key] = [value stringByRemovingPercentEncoding] ?: value;
+            } else {
+                queryItems[pair] = @"";
+            }
+        }
     }
-    components.percentEncodedQuery = query;
-    return components.URL;
+
+    return [self URLByAppendingPath:path queryItems:queryItems baseURL:baseURL];
 }
 
 - (NSDictionary *)performJSONRequestWithURL:(NSURL *)url
