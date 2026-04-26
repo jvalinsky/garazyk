@@ -23,26 +23,6 @@
 #import "Network/HttpServer.h"
 #import <Foundation/Foundation.h>
 
-static NSString *PDSUIServiceBaseURL(void) {
-  NSString *configured = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"]
-      stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-  return configured.length > 0 ? configured : @"http://127.0.0.1:2590";
-}
-
-static NSString *PDSBuildAdminRedirectLocation(NSString *path,
-                                               NSString *queryString) {
-  NSString *base = PDSUIServiceBaseURL();
-  while (base.length > 0 && [base hasSuffix:@"/"]) {
-    base = [base substringToIndex:base.length - 1];
-  }
-  NSString *normalizedPath = path.length > 0 ? path : @"/admin";
-  NSString *location = [NSString stringWithFormat:@"%@%@", base, normalizedPath];
-  if (queryString.length > 0) {
-    location = [location stringByAppendingFormat:@"?%@", queryString];
-  }
-  return location;
-}
-
 @interface PDSHttpServerBuilder ()
 @property(nonatomic, strong, nullable) PDSConfiguration *configuration;
 @end
@@ -198,31 +178,6 @@ static NSString *PDSBuildAdminRedirectLocation(NSString *path,
              response.contentType = @"text/plain; charset=utf-8";
              [response setBodyString:@"kaszlak 1.0.0\n"];
            }];
-
-  NSArray<NSString *> *adminMethods = @[
-    @"GET", @"POST", @"PUT", @"DELETE", @"PATCH", @"OPTIONS", @"HEAD"
-  ];
-  for (NSString *method in adminMethods) {
-    [server addRoute:method
-                path:@"/admin"
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               NSString *location = PDSBuildAdminRedirectLocation(request.path, request.queryString);
-               response.statusCode = 307;
-               response.contentType = @"text/plain; charset=utf-8";
-               [response setHeader:location forKey:@"Location"];
-               [response setBodyString:@"Redirecting to UI service\n"];
-             }];
-
-    [server addRoute:method
-                path:@"/admin/*"
-             handler:^(HttpRequest *request, HttpResponse *response) {
-               NSString *location = PDSBuildAdminRedirectLocation(request.path, request.queryString);
-               response.statusCode = 307;
-               response.contentType = @"text/plain; charset=utf-8";
-               [response setHeader:location forKey:@"Location"];
-               [response setBodyString:@"Redirecting to UI service\n"];
-             }];
-  }
 
   // Suppress browser console noise for favicon probes when no icon asset is
   // shipped with the current runtime bundle.
