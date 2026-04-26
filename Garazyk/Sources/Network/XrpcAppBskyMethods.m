@@ -9,6 +9,7 @@
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/AgeAssuranceService.h"
 #import "AppView/Services/ChatModerationService.h"
+#import "AppView/Services/DraftService.h"
 #import "AppView/Services/RecordLifecycleHandler.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -144,7 +145,11 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                               jwtMinter:jwtMinter
                                         adminController:adminController];
 
-  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher];
+  DraftService *draftService = [[DraftService alloc] initWithDatabase:appViewDatabase];
+  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher
+                                    draftService:draftService
+                                       jwtMinter:jwtMinter
+                                 adminController:adminController];
   [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
   [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
   [XrpcAppBskyVideoPack registerWithDispatcher:dispatcher
