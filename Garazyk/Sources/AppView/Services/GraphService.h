@@ -103,6 +103,12 @@ NS_ASSUME_NONNULL_BEGIN
                                             cursor:(nullable NSString *)cursor
                                              error:(NSError **)error;
 
+/*! Search starter packs by name. */
+- (nullable NSDictionary *)searchStarterPacks:(NSString *)query
+                                        limit:(NSInteger)limit
+                                       cursor:(nullable NSString *)cursor
+                                        error:(NSError **)error;
+
 /*! Index a starter pack record. */
 - (BOOL)indexStarterPack:(NSDictionary *)record
                      did:(NSString *)did
