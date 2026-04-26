@@ -69,3 +69,164 @@ Consolidated audit workflows are located in `.agents/skills/`.
 - `scripts/stub_find.sh .` - Scan for TODO/FIXME markers.
 - `scripts/wipe_and_rebuild.sh` - Clean rebuild from scratch.
 - `scripts/backup_pds.sh` - SQLite-safe production backup.
+
+
+## Decision Graph Workflow
+
+**THIS IS MANDATORY. Log decisions IN REAL-TIME, not retroactively.**
+
+### Available Slash Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/decision` | Manage decision graph - add nodes, link edges, sync |
+| `/recover` | Recover context from decision graph on session start |
+| `/work` | Start a work transaction - creates goal node before implementation |
+| `/document` | Generate comprehensive documentation for a file or directory |
+| `/build-test` | Build the project and run the test suite |
+| `/serve-ui` | Start the decision graph web viewer |
+| `/sync-graph` | Export decision graph to GitHub Pages |
+| `/decision-graph` | Build a decision graph from commit history |
+| `/sync` | Multi-user sync - pull events, rebuild, push |
+
+### Available Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `/pulse` | Map current design as decisions (Now mode) |
+| `/narratives` | Understand how the system evolved (History mode) |
+| `/archaeology` | Transform narratives into queryable graph |
+
+### The Node Flow Rule - CRITICAL
+
+The canonical flow through the decision graph is:
+
+```
+goal -> options -> decision -> actions -> outcomes
+```
+
+- **Goals** lead to **options** (possible approaches to explore)
+- **Options** lead to a **decision** (choosing which option to pursue)
+- **Decisions** lead to **actions** (implementing the chosen approach)
+- **Actions** lead to **outcomes** (results of the implementation)
+- **Observations** attach anywhere relevant
+- Goals do NOT lead directly to decisions -- there must be options first
+- Options do NOT come after decisions -- options come BEFORE decisions
+
+### The Core Rule
+
+```
+BEFORE you do something -> Log what you're ABOUT to do
+AFTER it succeeds/fails -> Log the outcome
+CONNECT immediately -> Link every node to its parent
+AUDIT regularly -> Check for missing connections
+```
+
+### Behavioral Triggers - MUST LOG WHEN:
+
+| Trigger | Log Type | Example |
+|---------|----------|---------|
+| User asks for a new feature | `goal` **with -p** | "Add dark mode" |
+| Exploring possible approaches | `option` | "Use Redux for state" |
+| Choosing between approaches | `decision` | "Choose state management" |
+| About to write/edit code | `action` | "Implementing Redux store" |
+| Something worked or failed | `outcome` | "Redux integration successful" |
+| Notice something interesting | `observation` | "Existing code uses hooks" |
+
+### Document Attachments
+
+Attach files (images, PDFs, diagrams, specs, screenshots) to decision graph nodes for rich context.
+
+```bash
+# Attach a file to a node
+deciduous doc attach <node_id> <file_path>
+deciduous doc attach <node_id> <file_path> -d "Architecture diagram"
+deciduous doc attach <node_id> <file_path> --ai-describe
+
+# List documents
+deciduous doc list              # All documents
+deciduous doc list <node_id>    # Documents for a specific node
+
+# Manage documents
+deciduous doc show <doc_id>     # Show document details
+deciduous doc open <doc_id>     # Open in default application
+deciduous doc detach <doc_id>   # Soft-delete (recoverable)
+```
+
+### CRITICAL: Capture VERBATIM User Prompts
+
+**Prompts must be the EXACT user message, not a summary.**
+
+```bash
+# Use --prompt-stdin for multi-line prompts
+deciduous add goal "Add auth" -c 90 --prompt-stdin << 'EOF'
+The full verbatim user request goes here...
+EOF
+
+# Or use the prompt command to update existing nodes
+deciduous prompt 42 << 'EOF'
+The full verbatim user message goes here...
+EOF
+```
+
+### CRITICAL: Maintain Connections
+
+| When you create... | IMMEDIATELY link to... |
+|-------------------|------------------------|
+| `outcome` | The action that produced it |
+| `action` | The decision that spawned it |
+| `decision` | The option(s) it chose between |
+| `option` | Its parent goal |
+| `observation` | Related goal/action |
+| `revisit` | The decision/outcome being reconsidered |
+
+**Root `goal` nodes are the ONLY valid orphans.**
+
+### Quick Commands
+
+```bash
+deciduous add goal "Title" -c 90 -p "User's original request"
+deciduous add action "Title" -c 85
+deciduous link FROM TO -r "reason"
+deciduous serve   # View live graph
+deciduous sync    # Export for static hosting
+```
+
+### Node Types
+
+| Type | Purpose |
+|------|---------|
+| `goal` | High-level objectives |
+| `option` | Approaches considered (come from goals) |
+| `decision` | Choosing an option (come from options) |
+| `action` | What was implemented (come from decisions) |
+| `outcome` | What happened (come from actions) |
+| `observation` | Technical insights (attach anywhere) |
+| `revisit` | Reconsidering a decision |
+
+### Multi-User Sync
+
+Sync decisions with teammates via event logs:
+
+```bash
+# Check sync status
+deciduous events status
+
+# Apply teammate events (after git pull)
+deciduous events rebuild
+
+# Compact old events periodically
+deciduous events checkpoint --clear-events
+```
+
+Events auto-emit on add/link/status commands. Git merges event files automatically.
+
+### Session Start Checklist
+
+```bash
+deciduous check-update    # Update needed? Run 'deciduous update' if yes
+deciduous nodes           # What decisions exist?
+deciduous edges           # How are they connected?
+deciduous doc list        # Any attached documents to review?
+git status                # Current state
+```
