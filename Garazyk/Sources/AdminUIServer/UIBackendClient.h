@@ -24,6 +24,78 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Relay Admin Operations
 - (NSDictionary *)fetchRelayMetrics;
+- (NSDictionary *)fetchRelayUpstreams;
+- (NSDictionary *)fetchRelayHealth;
+- (NSDictionary *)requestCrawlForHostname:(NSString *)hostname;
+
+// PLC Admin Operations
+- (NSDictionary *)lookupDID:(NSString *)did;
+- (NSDictionary *)fetchPLCLogForDID:(NSString *)did;
+
+// PDS Admin Operations (extended)
+- (NSDictionary *)fetchAccountInfoForDID:(NSString *)did;
+- (NSDictionary *)updateAccountHandle:(NSString *)handle forDID:(NSString *)did;
+- (NSDictionary *)deleteAccount:(NSString *)did;
+- (NSDictionary *)bulkTakedownAccounts:(NSArray<NSString *> *)dids;
+- (NSDictionary *)bulkDeleteAccounts:(NSArray<NSString *> *)dids;
+- (NSDictionary *)enableInvitesForAccount:(NSString *)account;
+- (NSDictionary *)fetchServerStats;
+- (NSDictionary *)fetchAuditLogWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+- (NSDictionary *)fetchReportsWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+- (NSDictionary *)resolveReport:(NSString *)reportID action:(NSString *)action;
+
+// Repo/Record Operations (Data Explorer)
+- (NSDictionary *)describeRepo:(NSString *)did;
+- (NSDictionary *)listRecordsForDID:(NSString *)did collection:(nullable NSString *)collection limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
+- (NSDictionary *)getRecordForDID:(NSString *)did collection:(NSString *)collection rkey:(NSString *)rkey;
+
+// Chat Operations
+- (NSDictionary *)fetchChatConvosWithLimit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
+
+// Repo/Record Operations (Data Explorer) - extended
+- (NSDictionary *)fetchBlobListWithLimit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
+- (NSDictionary *)fetchBlobForDID:(NSString *)did cid:(NSString *)cid;
+- (NSDictionary *)createRecordForDID:(NSString *)did collection:(NSString *)collection record:(NSDictionary *)record rkey:(nullable NSString *)rkey;
+- (NSDictionary *)deleteRecordForDID:(NSString *)did collection:(NSString *)collection rkey:(NSString *)rkey;
+
+// Ozone Moderation Operations
+- (NSDictionary *)fetchOzoneStatusesWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+- (NSDictionary *)fetchOzoneEventsWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+- (NSDictionary *)emitModerationEvent:(NSDictionary *)event;
+- (NSDictionary *)fetchSubjectStatusForDID:(NSString *)did;
+- (NSDictionary *)fetchModerationReportsWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+
+// Ozone Team Operations
+- (NSDictionary *)fetchOzoneTeamMembers;
+- (NSDictionary *)addOzoneTeamMember:(NSDictionary *)member;
+- (NSDictionary *)removeOzoneTeamMember:(NSString *)did;
+
+// Ozone Set Operations
+- (NSDictionary *)fetchOzoneSetsWithCursor:(nullable NSString *)cursor limit:(NSUInteger)limit;
+- (NSDictionary *)upsertOzoneSet:(NSDictionary *)setSpec;
+- (NSDictionary *)deleteOzoneSet:(NSString *)name;
+
+// Ozone Template Operations
+- (NSDictionary *)fetchOzoneTemplates;
+- (NSDictionary *)createOzoneTemplate:(NSDictionary *)template;
+- (NSDictionary *)deleteOzoneTemplate:(NSString *)name;
+
+// Ozone Configuration
+- (NSDictionary *)fetchOzoneConfig;
+- (NSDictionary *)updateOzoneConfig:(NSDictionary *)config;
+
+// Security Operations
+- (NSDictionary *)fetchActiveSessionsForDID:(NSString *)did;
+- (NSDictionary *)revokeSessionForDID:(NSString *)did sessionID:(NSString *)sessionID;
+- (NSDictionary *)fetchAppPasswordsForDID:(NSString *)did;
+- (NSDictionary *)createAppPasswordForDID:(NSString *)did name:(NSString *)passwordName;
+- (NSDictionary *)deleteAppPasswordForDID:(NSString *)did passwordName:(NSString *)passwordName;
+
+// MST Viewer Operations
+- (NSDictionary *)fetchMSTAccounts;
+- (NSDictionary *)fetchMSTTreeForDID:(NSString *)did;
+- (NSDictionary *)fetchMSTStatsForDID:(NSString *)did;
+- (NSData *)fetchMSTExportForDID:(NSString *)did format:(NSString *)format;
 
 @end
 
