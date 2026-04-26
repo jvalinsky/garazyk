@@ -276,6 +276,7 @@ int main(int argc, char *argv[]) {
       @"FeedSkeletonTests",
       @"NotificationServiceTests",
       @"RecordLifecycleHandlerTests",
+      @"AppViewServiceTests",
       @"PDSCLIAccountCommandTests",
       @"PDSCLIRepoCommandTests",
       @"PDSCLIInviteCommandTests",
@@ -362,8 +363,10 @@ int main(int argc, char *argv[]) {
       @"HttpConnectionIOCoordinatorTests",
       @"XrpcAppBskyActorTests",
       @"XrpcAppBskyFeedTests",
+      @"XrpcAppBskyFeedPackTests",
       @"XrpcAppBskyGraphTests",
       @"XrpcAppBskyNotificationTests",
+      @"XrpcAppBskyNotificationPackTests",
       @"XrpcAppBskyVideoTests",
       @"XrpcAppBskyBookmarksTests",
       @"XrpcAppBskyContactTests",
@@ -373,7 +376,10 @@ int main(int argc, char *argv[]) {
       @"TIDTests",
       @"CBORSerializationTests",
       @"ATProtoValidatorTests",
-      @"ATProtoBase32Tests"
+      @"ATProtoBase32Tests",
+      @"UIAuthManagerTests",
+      @"UIBackendClientTests",
+      @"UIServerRuntimeTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
