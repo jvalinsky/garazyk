@@ -174,8 +174,6 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - BSky AppView Schemas
 
 - (NSString *)bskyAgeAssuranceTableSchema;
-- (NSString *)bskyChatEventLogTableSchema;
-- (NSString *)bskyChatActorMetadataTableSchema;
 - (NSString *)bskyFeedThreadgateTableSchema;
 - (NSString *)bskyFeedPostgateTableSchema;
 - (NSString *)bskyFeedGeneratorTableSchema;

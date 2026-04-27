@@ -29,10 +29,6 @@ NSString * const kPDSActorPreferencesTableName = @"actor_preferences";
 NSString * const kPDSActorMutesTableName = @"actor_mutes";
 NSString * const kPDSBookmarkTableName = @"bookmarks";
 NSString * const kPDSStarterPackTableName = @"starter_packs";
-NSString * const kPDSConversationsTableName = @"conversations";
-NSString * const kPDSConversationMembersTableName = @"conversation_members";
-NSString * const kPDSMessagesTableName = @"messages";
-NSString * const kPDSMessageReactionsTableName = @"message_reactions";
 NSString * const kPDSGroupsTableName = @"groups";
 NSString * const kPDSGroupMembersTableName = @"group_members";
 NSString * const kPDSGroupInviteLinksTableName = @"group_invite_links";
@@ -439,62 +435,6 @@ NSString * const kPDSIndexBookmarksDidSQL =
 
 NSString * const kPDSIndexStarterPacksDidSQL =
     @"CREATE INDEX IF NOT EXISTS idx_starter_packs_did ON starter_packs(did)";
-
-#pragma mark - Chat
-
-NSString * const kPDSConversationsTableCreateSQL =
-    @"CREATE TABLE IF NOT EXISTS conversations ("
-    @"id TEXT PRIMARY KEY,"
-    @"locked INTEGER NOT NULL DEFAULT 0,"
-    @"created_at TEXT NOT NULL,"
-    @"updated_at TEXT NOT NULL"
-    @")";
-
-NSString * const kPDSConversationMembersTableCreateSQL =
-    @"CREATE TABLE IF NOT EXISTS conversation_members ("
-    @"convo_id TEXT NOT NULL,"
-    @"member_did TEXT NOT NULL,"
-    @"status TEXT NOT NULL DEFAULT 'pending',"
-    @"muted INTEGER NOT NULL DEFAULT 0,"
-    @"last_read_id TEXT,"
-    @"joined_at TEXT NOT NULL,"
-    @"PRIMARY KEY (convo_id, member_did),"
-    @"FOREIGN KEY (convo_id) REFERENCES conversations(id)"
-    @")";
-
-NSString * const kPDSMessagesTableCreateSQL =
-    @"CREATE TABLE IF NOT EXISTS messages ("
-    @"id TEXT PRIMARY KEY,"
-    @"convo_id TEXT NOT NULL,"
-    @"sender_did TEXT NOT NULL,"
-    @"text TEXT,"
-    @"embed_json TEXT,"
-    @"created_at TEXT NOT NULL,"
-    @"deleted_for_json TEXT,"
-    @"FOREIGN KEY (convo_id) REFERENCES conversations(id)"
-    @")";
-
-NSString * const kPDSMessageReactionsTableCreateSQL =
-    @"CREATE TABLE IF NOT EXISTS message_reactions ("
-    @"message_id TEXT NOT NULL,"
-    @"actor_did TEXT NOT NULL,"
-    @"emoji TEXT NOT NULL,"
-    @"created_at TEXT NOT NULL,"
-    @"PRIMARY KEY (message_id, actor_did, emoji),"
-    @"FOREIGN KEY (message_id) REFERENCES messages(id)"
-    @")";
-
-NSString * const kPDSIndexConversationMembersConvoSQL =
-    @"CREATE INDEX IF NOT EXISTS idx_conv_members_convo ON conversation_members(convo_id)";
-
-NSString * const kPDSIndexConversationMembersActorSQL =
-    @"CREATE INDEX IF NOT EXISTS idx_conv_members_actor ON conversation_members(member_did)";
-
-NSString * const kPDSIndexMessagesConvoSQL =
-    @"CREATE INDEX IF NOT EXISTS idx_messages_convo ON messages(convo_id)";
-
-NSString * const kPDSIndexMessagesCreatedSQL =
-    @"CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)";
 
 #pragma mark - Groups
 

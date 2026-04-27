@@ -308,27 +308,6 @@
            @")";
 }
 
-- (NSString *)bskyChatEventLogTableSchema {
-    return @"CREATE TABLE IF NOT EXISTS chat_event_log ("
-           @"    id TEXT PRIMARY KEY,"
-           @"    convo_id TEXT NOT NULL,"
-           @"    actor_did TEXT NOT NULL,"
-           @"    event_type TEXT NOT NULL,"
-           @"    event_data TEXT,"
-           @"    created_at INTEGER"
-           @")";
-}
-
-- (NSString *)bskyChatActorMetadataTableSchema {
-    return @"CREATE TABLE IF NOT EXISTS chat_actor_metadata ("
-           @"    did TEXT PRIMARY KEY,"
-           @"    muted INTEGER DEFAULT 0,"
-           @"    blocked INTEGER DEFAULT 0,"
-           @"    labels TEXT,"
-           @"    updated_at INTEGER"
-           @")";
-}
-
 - (NSString *)bskyFeedThreadgateTableSchema {
     return @"CREATE TABLE IF NOT EXISTS bsky_feed_threadgates ("
            @"    uri TEXT PRIMARY KEY,"
@@ -433,10 +412,6 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self bskyAgeAssuranceTableSchema]];
     [sql appendString:@";\n\n"];
-    [sql appendString:[self bskyChatEventLogTableSchema]];
-    [sql appendString:@";\n\n"];
-    [sql appendString:[self bskyChatActorMetadataTableSchema]];
-    [sql appendString:@";\n\n"];
     [sql appendString:[self bskyFeedThreadgateTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self bskyFeedPostgateTableSchema]];
@@ -485,10 +460,6 @@
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_age_assurance_did ON age_assurance_states(did);"];
     [sql appendString:@";\n"];
-    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_chat_event_log_convo ON chat_event_log(convo_id);"];
-    [sql appendString:@";\n"];
-    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_chat_event_log_actor ON chat_event_log(actor_did);"];
-    [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_feed_threadgates_post ON bsky_feed_threadgates(post_uri);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_feed_postgates_post ON bsky_feed_postgates(post_uri);"];
