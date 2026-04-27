@@ -3,6 +3,14 @@
  * Brand hue: warm strawberry red (~15°) at low chroma for tinted neutrals
  */
 :root {
+  --font-size-base: 14px;
+  --toolbar-height: 52px;
+  --status-bar-height: 44px;
+
+  /* Brand Motif Colors */
+  --color-strawberry: oklch(65% 0.22 25);
+  --color-strawberry-leaf: oklch(50% 0.15 150);
+
   /* Light mode semantic colors - OKLCH */
   --color-bg-primary: oklch(96% 0.003 200);
   --color-bg-secondary: oklch(99% 0.003 200);
@@ -31,6 +39,7 @@
   /* System font stack */
   --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
                  "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Bricolage Grotesque", var(--font-system);
 
   /* Font sizes - 5-step scale with ~1.25 ratio for clear hierarchy */
   --font-size-xs: 11px;
@@ -89,6 +98,13 @@
     --color-text-primary: oklch(96% 0.003 200);
     --color-text-secondary: oklch(70% 0.005 200);
     --color-text-tertiary: oklch(55% 0.004 200);
+
+    /* Dark mode - higher lightness for visibility on dark */
+    --color-accent: oklch(65% 0.15 255);
+    --color-destructive: oklch(65% 0.20 25);
+    --color-success: oklch(68% 0.16 145);
+    --color-warning: oklch(80% 0.15 70);
+    --color-info: oklch(70% 0.13 210);
 
     /* Dark mode - slightly more visible brand tint on secondary bg */
     --color-bg-secondary-tinted: oklch(22% 0.008 15);

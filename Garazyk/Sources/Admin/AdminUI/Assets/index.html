@@ -7,6 +7,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <title>AT Protocol Admin UI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
 
   <!-- Shared Design System (all tokens, layout, components, utilities) -->
   <link rel="stylesheet" href="css/shared/system.css">
@@ -31,8 +36,8 @@
         </button>
         <!-- Strawberry icon - Polish motif (truskawka) -->
         <svg class="strawberry-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 4c-1.5 2-3 4-3 7s2.5 6 3 6 3-3 3-6-1.5-5-3-7z" fill="#e63946"/>
-          <path d="M10.5 6c.5-1 1.5-1 1.5-1s1 0 1.5 1" stroke="#2d6a4f" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <path d="M12 4c-1.5 2-3 4-3 7s2.5 6 3 6 3-3 3-6-1.5-5-3-7z" fill="var(--color-strawberry)"/>
+          <path d="M10.5 6c.5-1 1.5-1 1.5-1s1 0 1.5 1" stroke="var(--color-strawberry-leaf)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
         </svg>
       </div>
 
@@ -317,7 +322,7 @@
       <span>Last sync: <span id="last-sync">--:--:--</span></span>
     </div>
     <div class="status-bar-item text-secondary">
-      <small><span class="version-info">1.0.0</span></small>
+      <span class="version-info" style="font-size: 11px;">1.0.0</span>
     </div>
   </footer>
 
