@@ -226,6 +226,14 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! @abstract Whether the local AppView implementation is enabled. Defaults to YES. */
 @property (nonatomic, readonly) BOOL localAppViewEnabled;
 
+#pragma mark - Chat Service
+
+/*! @abstract URL of the remote Chat service for proxying chat.bsky.* requests. */
+@property (nonatomic, readonly, nullable) NSString *chatServiceURL;
+
+/*! @abstract DID of the remote Chat service for service-to-service auth. */
+@property (nonatomic, readonly, nullable) NSString *chatServiceDID;
+
 #pragma mark - Ozone
 
 /*! @abstract URL of the remote Ozone moderation service for proxying tools.ozone.* requests. */

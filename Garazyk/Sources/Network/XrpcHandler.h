@@ -85,6 +85,12 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Upstream Ozone moderation service DID for service-to-service auth. */
 @property (nonatomic, copy, nullable) NSString *ozoneDID;
 
+/*! Upstream Chat service URL for proxying chat.bsky.* methods. */
+@property (nonatomic, copy, nullable) NSURL *chatURL;
+
+/*! Upstream Chat service DID for service-to-service auth. */
+@property (nonatomic, copy, nullable) NSString *chatDID;
+
 /*!
  @method sharedDispatcher
  

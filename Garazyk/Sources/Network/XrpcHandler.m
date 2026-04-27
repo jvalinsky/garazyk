@@ -182,6 +182,16 @@
             return;
         }
 
+        // Fallback to proxying for chat.bsky.* methods if an upstream Chat service is configured
+        if (self.chatURL && [methodId hasPrefix:@"chat.bsky."]) {
+            PDS_LOG_INFO(@"Proxying XRPC method '%@' to Chat %@", methodId, self.chatURL);
+            XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.chatURL
+                                                                     upstreamDID:self.chatDID
+                                                                          minter:self.jwtMinter];
+            [proxy handleRequest:request response:response];
+            return;
+        }
+
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
             @"error": @"MethodNotFound",
