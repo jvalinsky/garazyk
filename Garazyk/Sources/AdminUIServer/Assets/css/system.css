@@ -408,12 +408,94 @@ pre code { background: none; padding: 0; color: inherit; }
 }
 .terminal-content { color: #f5f5f7; white-space: pre-wrap; word-break: break-all; }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .service-segments { flex-wrap: wrap; }
-  .admin-content { padding: var(--space-md); }
-  .metric-row { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+/* Cluster Dashboard Styles */
+.cluster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
 }
+
+.service-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.service-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--separator-color-secondary);
+  padding-bottom: var(--space-sm);
+}
+
+.service-name {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.service-url {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+
+.service-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px transparent;
+}
+
+/* Status variants using OKLCH manipulation */
+.status-online .status-dot {
+  background: var(--color-success);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--color-success) 40%, transparent);
+}
+
+.status-offline .status-dot {
+  background: var(--color-text-tertiary);
+}
+
+.status-error .status-dot {
+  background: var(--color-destructive);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--color-destructive) 40%, transparent);
+}
+
+.status-online {
+  border-left: 4px solid var(--color-success);
+}
+
+.status-offline {
+  border-left: 4px solid var(--color-text-tertiary);
+}
+
+.status-error {
+  border-left: 4px solid var(--color-destructive);
+}
+
 
 /* === utilities.css (selected) === */
 .d-flex { display: flex !important; }
