@@ -335,6 +335,8 @@ file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
   "Garazyk/Sources/Admin/*.c"
   "Garazyk/Sources/AppView/*.m"
   "Garazyk/Sources/AppView/*.c"
+  "Garazyk/Sources/Chat/*.m"
+  "Garazyk/Sources/Chat/*.c"
   "Garazyk/Sources/Media/*.m"
   "Garazyk/Sources/Media/*.c"
   "Garazyk/Sources/Federation/*.m"
@@ -775,6 +777,39 @@ target_compile_definitions(garazyk-ui PRIVATE
 )
 
 set_target_properties(garazyk-ui PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
+# Standalone Chat Service (syrena-chat)
+add_executable(syrena-chat
+  Garazyk/Binaries/syrena-chat/main.m
+)
+
+target_include_directories(syrena-chat PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(syrena-chat PRIVATE
+  ATProtoRuntime
+  ATProtoServices
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoSync
+  ATProtoStorage
+  ATProtoCore
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+  ${READLINE_LIBRARY}
+)
+
+target_compile_definitions(syrena-chat PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(syrena-chat PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   LINK_FLAGS "-ObjC"
 )

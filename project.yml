@@ -168,6 +168,44 @@ targets:
               -DBUILD_FUZZERS=OFF
             cmake --build . --target garazyk-ui --parallel $(sysctl -n hw.ncpu)
 
+  # Dedicated Chat Service
+  syrena-chat:
+    type: tool
+    platform: macOS
+    sources: []
+    settings:
+      base:
+        PRODUCT_NAME: syrena-chat
+        INFOPLIST_FILE: Garazyk/Resources/Info.plist
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        EXECUTABLE_PATH: "$(PROJECT_DIR)/build/bin/syrena-chat"
+    prebuildScripts:
+        - name: "Build syrena-chat with CMake"
+          basedOnDependencyAnalysis: false
+          script: |
+            #!/bin/bash
+            set -e
+            mkdir -p "${PROJECT_DIR}/build"
+            cd "${PROJECT_DIR}/build"
+            XCODE_CLANG="$(xcrun -find clang)"
+            XCODE_CLANGXX="$(xcrun -find clang++)"
+            if [ -f CMakeCache.txt ] && grep -q "/\\.swiftly/bin/cc" CMakeCache.txt; then
+              rm -f CMakeCache.txt
+              rm -rf CMakeFiles
+            fi
+            # Configure and build
+            cmake .. \
+              -DCMAKE_BUILD_TYPE=${CONFIGURATION} \
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
+              -DCMAKE_C_COMPILER="${XCODE_CLANG}" \
+              -DCMAKE_CXX_COMPILER="${XCODE_CLANGXX}" \
+              -DCMAKE_OBJC_COMPILER="${XCODE_CLANG}" \
+              -DCMAKE_OBJCXX_COMPILER="${XCODE_CLANGXX}" \
+              -DBUILD_SECP256K1=ON \
+              -DBUILD_TESTS=OFF \
+              -DBUILD_FUZZERS=OFF
+            cmake --build . --target syrena-chat --parallel $(sysctl -n hw.ncpu)
+
   # Test Runner - wrapper around CMake build
   AllTests:
     type: tool
