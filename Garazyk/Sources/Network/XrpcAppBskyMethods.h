@@ -33,15 +33,19 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcAppBskyMethods : NSObject
 
 /**
- @brief Register all app.bsky.* endpoint handlers with the dispatcher.
- 
- @param dispatcher The XRPC dispatcher to register handlers with
- @param serviceDatabases Service-level database access (for appView database)
- @param jwtMinter JWT token minter for optional authentication
- @param adminController Admin operations controller for takedown checks
- @param emailProvider Pluggable email delivery system
+ @brief Register only the PDS-level app.bsky.* methods.
+ */
++ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                             serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                    jwtMinter:(nullable JWTMinter *)jwtMinter
+                              adminController:(nullable id<PDSAdminController>)adminController
+                                emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
+
+/**
+ @brief Register all app.bsky.* endpoint handlers.
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                        jwtMinter:(JWTMinter *)jwtMinter
                  adminController:(id<PDSAdminController>)adminController
