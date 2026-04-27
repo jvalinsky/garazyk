@@ -10,7 +10,6 @@
 #import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcChatBskyGroupPack.h"
 #import "Debug/PDSLogger.h"
-#import <sqlite3.h>
 
 @interface ChatRuntime ()
 @property (nonatomic, strong, readwrite) ChatConfiguration *configuration;
@@ -64,10 +63,7 @@
     
     // Initialize Schema
     NSString *schemaSQL = [[ChatSchemaManager sharedManager] chatSchemaSQL];
-    char *errMsg = NULL;
-    if (sqlite3_exec(self.db.sqliteHandle, schemaSQL.UTF8String, NULL, NULL, &errMsg) != SQLITE_OK) {
-        if (error) *error = [NSError errorWithDomain:@"ChatRuntime" code:500 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg]}];
-        sqlite3_free(errMsg);
+    if (![self.db executeRawSQL:schemaSQL error:error]) {
         return NO;
     }
     
@@ -93,7 +89,7 @@
                                         jwtMinter:nil
                                   adminController:nil];
 
-    self.httpServer = [[HttpServer alloc] initWithPort:self.configuration.httpPort];
+    self.httpServer = [HttpServer serverWithPort:self.configuration.httpPort];
     
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;

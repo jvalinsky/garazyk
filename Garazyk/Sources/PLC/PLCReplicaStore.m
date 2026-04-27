@@ -1,4 +1,5 @@
 #import "PLCReplicaStore.h"
+#import "PLCPersistentStoreInternal.h"
 
 NSString * const PLCReplicaStoreErrorDomain = @"com.atproto.pds.plc.replicastore";
 

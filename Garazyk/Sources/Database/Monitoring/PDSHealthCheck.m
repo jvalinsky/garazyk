@@ -2,6 +2,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
 
