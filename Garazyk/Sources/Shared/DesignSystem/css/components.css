@@ -29,7 +29,7 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #0066cc;
+  background: color-mix(in oklch, var(--color-accent) 85%, black);
   box-shadow: var(--shadow-md);
 }
 
@@ -57,7 +57,7 @@
 }
 
 .btn-destructive:hover:not(:disabled) {
-  background: #ff3b30;
+  background: color-mix(in oklch, var(--color-destructive) 85%, black);
   box-shadow: var(--shadow-md);
 }
 
@@ -82,7 +82,7 @@
 }
 
 .btn-success:hover:not(:disabled) {
-  background: #30b854;
+  background: color-mix(in oklch, var(--color-success) 85%, black);
   box-shadow: var(--shadow-md);
 }
 
@@ -93,7 +93,7 @@
 }
 
 .btn-default:hover:not(:disabled) {
-  background: #0066cc;
+  background: color-mix(in oklch, var(--color-accent) 85%, black);
   box-shadow: var(--shadow-md);
 }
 
@@ -203,8 +203,12 @@
   background: var(--color-bg-tertiary);
 }
 
+.table tbody tr:nth-child(even) {
+  background: color-mix(in oklch, var(--color-bg-tertiary) 40%, transparent);
+}
+
 .table tbody tr.selected {
-  background: rgba(0, 113, 227, 0.1);
+  background: color-mix(in oklch, var(--color-accent) 15%, transparent);
 }
 
 .table tbody tr:last-child td {
@@ -499,22 +503,22 @@
 }
 
 .badge-primary {
-  background: rgba(0, 113, 227, 0.1);
+  background: color-mix(in oklch, var(--color-accent) 12%, transparent);
   color: var(--color-accent);
 }
 
 .badge-success {
-  background: rgba(52, 199, 89, 0.1);
+  background: color-mix(in oklch, var(--color-success) 12%, transparent);
   color: var(--color-success);
 }
 
 .badge-warning {
-  background: rgba(255, 149, 0, 0.1);
+  background: color-mix(in oklch, var(--color-warning) 12%, transparent);
   color: var(--color-warning);
 }
 
 .badge-destructive {
-  background: rgba(255, 69, 58, 0.1);
+  background: color-mix(in oklch, var(--color-destructive) 12%, transparent);
   color: var(--color-destructive);
 }
 
@@ -524,7 +528,7 @@
 }
 
 .badge-danger {
-  background: rgba(255, 69, 58, 0.12);
+  background: color-mix(in oklch, var(--color-destructive) 15%, transparent);
   color: var(--color-destructive);
 }
 
@@ -540,31 +544,31 @@
 }
 
 .alert-info {
-  background: rgba(48, 176, 192, 0.08);
+  background: color-mix(in oklch, var(--color-info) 8%, transparent);
   border-color: var(--color-info);
   color: var(--color-info);
 }
 
 .alert-success {
-  background: rgba(52, 199, 89, 0.08);
+  background: color-mix(in oklch, var(--color-success) 8%, transparent);
   border-color: var(--color-success);
   color: var(--color-success);
 }
 
 .alert-warning {
-  background: rgba(255, 149, 0, 0.08);
+  background: color-mix(in oklch, var(--color-warning) 8%, transparent);
   border-color: var(--color-warning);
   color: var(--color-warning);
 }
 
 .alert-destructive {
-  background: rgba(255, 69, 58, 0.08);
+  background: color-mix(in oklch, var(--color-destructive) 8%, transparent);
   border-color: var(--color-destructive);
   color: var(--color-destructive);
 }
 
 .alert-danger {
-  background: rgba(255, 69, 58, 0.08);
+  background: color-mix(in oklch, var(--color-destructive) 8%, transparent);
   border-color: var(--color-destructive);
   color: var(--color-destructive);
 }
@@ -727,6 +731,12 @@ sheet-dialog::backdrop {
   border-bottom-color: var(--color-accent);
 }
 
+.tab:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -4px;
+  border-radius: var(--radius-sm);
+}
+
 /* Progress */
 .progress {
   width: 100%;
@@ -846,7 +856,7 @@ code {
   border-radius: var(--radius-sm);
   font-family: "Monaco", "Menlo", "Courier New", monospace;
   font-size: 0.9em;
-  color: var(--color-destructive);
+  color: var(--color-text-primary);
 }
 
 pre {
