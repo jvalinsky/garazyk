@@ -15,6 +15,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "App/PDSConfiguration.h"

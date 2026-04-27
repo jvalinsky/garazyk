@@ -11,7 +11,6 @@
  */
 
 #import <Foundation/Foundation.h>
-#import <sqlite3.h>
 #import "Auth/PDSActorKeyManagerProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -159,9 +158,6 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 /*! Whether the database is currently open. */
 @property (nonatomic, assign, readonly, getter=isOpen) BOOL open;
 
-/*! Raw SQLite handle (internal use). */
-@property (nonatomic, assign, readonly) sqlite3 *db;
-
 /*! Key manager for cryptographic operations. */
 @property (nonatomic, strong) id<PDSActorKeyManager> keyManager;
 
@@ -182,6 +178,12 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
                     dbPath:(NSString *)dbPath
                       error:(NSError **)error;
 
+/*! Designated initializer. Creates a store for a DID at the given path without opening. */
+- (instancetype)initWithDid:(NSString *)did dbPath:(NSString *)dbPath NS_DESIGNATED_INITIALIZER;
+
+/*! Unavailable — use initWithDid:dbPath: or storeWithDid:dbPath:error:. */
+- (instancetype)init NS_UNAVAILABLE;
+
 /*! Opens the database. */
 - (BOOL)openWithError:(NSError **)error;
 
@@ -201,11 +203,6 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 
 /*! Imports an existing signing key (raw private bytes). */
 - (BOOL)importSigningKey:(NSData *)privateKey error:(NSError **)error;
-
-// Internal methods for ServiceDatabases
-- (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
-- (void)finalizeStatement:(sqlite3_stmt *)stmt;
-- (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt;
 
 /*! Exports the raw private key bytes to be used in migration operations */
 - (nullable NSData *)exportSigningKeyWithError:(NSError **)error;

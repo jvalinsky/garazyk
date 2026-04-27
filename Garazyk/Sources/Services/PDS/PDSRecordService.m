@@ -1,6 +1,7 @@
 #import "PDSRecordService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"

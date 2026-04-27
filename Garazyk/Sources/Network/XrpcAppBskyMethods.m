@@ -1,4 +1,5 @@
 #import "Network/XrpcAppBskyMethods.h"
+#import "Network/XrpcHandler.h"
 
 #import "App/PDSConfiguration.h"
 #import "AppView/Services/ActorService.h"
@@ -109,7 +110,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
   PDSDatabase *appViewDatabase =
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
 
-  if (![PDSConfiguration sharedConfiguration].localAppViewEnabled) {
+  if ([PDSConfiguration sharedConfiguration].appViewURL.length > 0) {
     PDS_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
     [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
     return;

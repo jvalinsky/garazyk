@@ -1,4 +1,5 @@
 #import "PLCPersistentStore.h"
+#import "PLCPersistentStoreInternal.h"
 #import "PLCMockStore.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
@@ -67,15 +68,6 @@ static NSString * const kSelectExportOperationsSQL =
 
 static NSString * const kSelectAllDIDsSQL =
     @"SELECT DISTINCT did FROM plc_operations ORDER BY did ASC;";
-
-@interface PLCPersistentStore ()
-
-@property (nonatomic, copy, readwrite) NSString *dbPath;
-@property (nonatomic, assign, readwrite) sqlite3 *db;
-@property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSValue *> *stmtCache;
-
-@end
 
 @implementation PLCPersistentStore {
     dispatch_queue_t _transactionQueue;
