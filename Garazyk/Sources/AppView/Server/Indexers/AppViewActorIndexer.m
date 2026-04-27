@@ -6,7 +6,7 @@
 
 #import "AppView/Server/Indexers/AppViewActorIndexer.h"
 #import "AppView/Server/AppViewDatabase.h"
-#import "AppView/Server/AppViewIdentityHelper.h"
+#import "AppView/AppViewIdentityHelper.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Debug/PDSLogger.h"
 #import "Database/PDSDatabase.h"

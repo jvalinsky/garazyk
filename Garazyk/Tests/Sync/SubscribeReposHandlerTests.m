@@ -9,6 +9,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Network/HttpRequest.h"
 #import <sqlite3.h>
 

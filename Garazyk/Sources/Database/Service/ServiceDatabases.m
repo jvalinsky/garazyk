@@ -3,6 +3,7 @@
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/ActorStore/PDSActorStore+Account.h"
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/Migrations/PDSMigrationManager.h"

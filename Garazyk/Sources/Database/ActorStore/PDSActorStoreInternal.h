@@ -5,6 +5,7 @@
  */
 
 #import "ActorStore.h"
+#import <sqlite3.h>
 #import "Compat/PDSTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -15,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, copy, readwrite) NSString *did;
 @property (nonatomic, copy, readwrite) NSString *dbPath;
-@property (nonatomic, assign, readwrite) sqlite3 *db;
+@property (nonatomic, assign, readwrite, nullable) sqlite3 *db;
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMapTable<NSString *, NSValue *> *stmtCache;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *blobCache;

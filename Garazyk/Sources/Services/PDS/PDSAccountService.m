@@ -2,6 +2,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "App/PDSConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/JWT.h"
