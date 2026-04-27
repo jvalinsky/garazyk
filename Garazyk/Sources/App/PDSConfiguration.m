@@ -177,6 +177,9 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _ozoneURL = nil;
     _ozoneDID = nil;
 
+    _chatServiceURL = nil;
+    _chatServiceDID = nil;
+
     _resendAPIKeySource = @"env";
     _resendAPIKeyEnvVar = @"RESEND_API_KEY";
     _resendKeychainService = @"com.atproto.pds";
@@ -845,6 +848,17 @@ static BOOL PDSConfigRunningUnderTests(void) {
       [self resolveEnvOverrideForKey:@"PDS_OZONE_DID" default:nil];
   if (envOzoneDID.length > 0) {
     _ozoneDID = envOzoneDID;
+  }
+
+  // Chat service configuration
+  NSString *envChatURL = [self resolveEnvOverrideForKey:@"PDS_CHAT_URL" default:nil];
+  if (envChatURL.length > 0) {
+    _chatServiceURL = envChatURL;
+  }
+
+  NSString *envChatDID = [self resolveEnvOverrideForKey:@"PDS_CHAT_DID" default:nil];
+  if (envChatDID.length > 0) {
+    _chatServiceDID = envChatDID;
   }
 
   // Blob storage configuration

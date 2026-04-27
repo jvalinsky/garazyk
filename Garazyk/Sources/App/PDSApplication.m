@@ -599,6 +599,13 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     builder.subscribeReposHandler = _subscribeReposHandler;
     builder.issuer = [_configuration canonicalIssuerWithPortHint:self.httpPort];
     
+    // Configure standalone chat proxy if enabled
+    if (_configuration.chatServiceURL.length > 0) {
+        _xrpcDispatcher.chatURL = [NSURL URLWithString:_configuration.chatServiceURL];
+        _xrpcDispatcher.chatDID = _configuration.chatServiceDID;
+        PDS_LOG_CORE_INFO(@"Configured Chat proxy to %@", _configuration.chatServiceURL);
+    }
+    
     NSError *buildError = nil;
     _httpServer = [builder buildWithError:&buildError];
     if (!_httpServer) {
