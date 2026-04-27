@@ -29,9 +29,9 @@
 </div>
 
 <!-- Bulk Actions Bar -->
-<div id="bulk-actions-bar" class="card mb-lg" style="display: none;">
-  <div class="card-body" style="display: flex; align-items: center; gap: 16px;">
-    <span id="selected-count">0 selected</span>
+<div id="bulk-actions-bar" class="card mb-lg hidden">
+  <div class="card-body h-stack items-center gap-md">
+    <span id="selected-count" class="text-sm font-medium">0 selected</span>
     <div class="btn-group">
       <button
         type="button"
@@ -92,17 +92,19 @@ function updateBulkActions() {
   const bar = document.getElementById('bulk-actions-bar');
   const count = document.getElementById('selected-count');
   if (checked.length > 0) {
-    bar.style.display = 'block';
+    bar.classList.remove('hidden');
     count.textContent = checked.length + ' selected';
   } else {
-    bar.style.display = 'none';
+    bar.classList.add('hidden');
   }
 }
 
 function clearSelection() {
   document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
-  document.getElementById('select-all-users').checked = false;
-  document.getElementById('bulk-actions-bar').style.display = 'none';
+  const selectAll = document.getElementById('select-all-users');
+  if (selectAll) selectAll.checked = false;
+  const bar = document.getElementById('bulk-actions-bar');
+  if (bar) bar.classList.add('hidden');
 }
 
 // Listen for checkbox changes
