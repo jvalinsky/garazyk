@@ -62,7 +62,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
                                  serverDid, nsid];
 
   BOOL proxied = NO;
-  if ([nsid hasPrefix:@"app.bsky."] && !configuration.localAppViewEnabled) {
+  if ([nsid hasPrefix:@"app.bsky."] && configuration.appViewURL.length > 0) {
     proxied = YES;
   }
 

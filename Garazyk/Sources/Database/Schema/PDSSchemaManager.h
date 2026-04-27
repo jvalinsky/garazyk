@@ -174,8 +174,9 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - BSky AppView Schemas
 
 - (NSString *)bskyAgeAssuranceTableSchema;
-- (NSString *)serviceSchemaSQL;
 
+/*!
+ @method serviceSchemaSQL
  @abstract Complete SQL for all service database tables.
 
  @discussion Returns concatenated CREATE TABLE statements for all service

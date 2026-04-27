@@ -4,7 +4,7 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "AppView/Server/AppViewIdentityHelper.h"
+#import "AppView/AppViewIdentityHelper.h"
 #import "PLC/DIDPLCResolver.h"
 
 static NSCache<NSString *, NSString *> *s_handleCache = nil;

@@ -1,6 +1,6 @@
 #import "AppView/Services/ActorService.h"
 #import "AppView/Server/AppViewDatabase.h"
-#import "AppView/Server/AppViewIdentityHelper.h"
+#import "AppView/AppViewIdentityHelper.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"

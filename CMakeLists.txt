@@ -360,8 +360,6 @@ list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/RelayXrpcRoutePa
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpServerBuilder\\.m$")
 # UI route packs migrated to garazyk-ui — exclude from service binaries
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpMSTViewerRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpOAuthDemoRoutePack\\.m$")
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/Xrpc*.m"
@@ -398,11 +396,6 @@ file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/PDSConfiguration\\.m$")
-# UI handlers migrated to garazyk-ui — exclude from service binaries
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/MSTViewer/.*")
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/OAuthDemo/.*")
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpMSTViewerRoutePack\\.m$")
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpOAuthDemoRoutePack\\.m$")
 
 # Handle platform-specific network transport implementations.
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")
@@ -1142,7 +1135,7 @@ if(BUILD_TESTS)
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/test_main.m")
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/Database/PDSDatabaseLRUTests.m")
 
-  # AdminUIServer sources (needed for tests)
+  # garazyk-ui sources (needed for tests)
   list(APPEND TEST_OBJC_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServiceConfig.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIAuthManager.m"
@@ -1155,7 +1148,6 @@ if(BUILD_TESTS)
   # Exclude top-level Integration tests only, except our new PLC integration test
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/PDSIntegrationTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX "Garazyk/Tests/Integration/comprehensive_tests.m")
-  # Exclude tests for UI handlers migrated to garazyk-ui
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/App/MSTViewerHandlerTests.m")
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/OAuthDemo/OAuthDemoHandlerConfigurationTests.m")
   # Exclude standalone test files with their own main() - they have separate executable targets
@@ -1164,6 +1156,10 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/MigrationTests.m")
   # Exclude duplicate SecurityHardeningTests - keep only the Security/ one
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SecurityHardeningTests.m")
+  # Exclude stale admin handler tests (references removed PDSAdminHandler/AdminPartialHandler)
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Admin/PDSAdminHandlerTests.m")
+  # Exclude stale admin route pack test (references removed PDSHttpAdminRoutePack)
+  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpAdminRoutePackTests.m")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   # Phase 1: Enabled Core Logic & Crypto Tests

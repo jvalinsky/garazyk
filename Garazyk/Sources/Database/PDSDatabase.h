@@ -38,6 +38,12 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 @property (nonatomic, readonly) BOOL isOpen;
 
 /*!
+ @method init
+ @abstract Designated initializer.
+ */
+- (instancetype)init NS_DESIGNATED_INITIALIZER;
+
+/*!
  @method databaseAtURL:
  
  @abstract Creates a database instance at the specified file path.
