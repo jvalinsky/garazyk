@@ -288,7 +288,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     // Manual stray statement finalization via sqlite3_next_stmt
     // can corrupt virtual table internals and crash.
     sqlite3_close_v2(self.db);
-    self.db = NULL;
+    self.db = nil;
     self.open = NO;
 }
 
@@ -313,12 +313,11 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                     error:(NSError **)error {
+    __block NSError *localError = nil;
     void (^workBlock)(void) = ^{
         if (!self.open) {
-            if (error) {
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+            localError = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
                                              message:@"Database is closed"];
-            }
             return;
         }
         
@@ -339,9 +338,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         }
         
         if (result != SQLITE_OK) {
-            if (error) {
-                *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
-            }
+            localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
             sqlite3_free(errMsg);
             return;
         }
@@ -367,9 +364,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
                 result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
             }
             if (result != SQLITE_OK) {
-                if (error) {
-                    *error = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
-                }
+                localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
                 sqlite3_free(errMsg);
                 if (useSavepoint) {
                     sqlite3_exec(self.db, "ROLLBACK TO sp_transact", NULL, NULL, NULL);
@@ -384,36 +379,41 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
             } else {
                 sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
             }
-            if (error) {
-                *error = blockError;
-            }
+            localError = blockError;
         }
 
         [self.stmtCache removeAllObjects];
     };
 
     [self safeExecuteSync:workBlock];
+
+    if (error && localError) {
+        *error = localError;
+    }
 }
 
 - (void)readWithBlock:(void (^)(id<PDSActorStoreReader> reader, NSError **error))block 
                 error:(NSError **)error {
+    __block NSError *localError = nil;
     void (^workBlock)(void) = ^{
         if (!self.open) {
-            if (error) {
-                *error = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+            localError = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
                                            message:@"Database is closed"];
-            }
             return;
         }
         
         NSError *blockError = nil;
         block(self, &blockError);
-        if (blockError && error) {
-            *error = blockError;
+        if (blockError) {
+            localError = blockError;
         }
     };
 
     [self safeExecuteSync:workBlock];
+
+    if (error && localError) {
+        *error = localError;
+    }
 }
 
 #pragma mark - Statement Management

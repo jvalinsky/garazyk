@@ -13,6 +13,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
+#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Admin/PDSAdminController.h"

@@ -11,7 +11,6 @@
 
 #import <Foundation/Foundation.h>
 #import "Compat/PDSTypes.h"
-#import <sqlite3.h>
 #import "PLCStore.h"
 #import "PLCOperation.h"
 
@@ -50,14 +49,11 @@ typedef NS_ENUM(NSInteger, PLCPersistentStoreError) {
 /*! Whether the database is currently open. */
 @property (nonatomic, assign, readonly, getter=isOpen) BOOL open;
 
-/*! Raw SQLite handle (internal use). */
-@property (nonatomic, assign, readonly) sqlite3 *db;
-
 /*! Creates a persistent store at the given path. */
 + (nullable instancetype)storeWithPath:(NSString *)dbPath error:(NSError **)error;
 
 /*! Initializes a store without opening. Call openWithError: to open. */
-- (instancetype)initWithPath:(NSString *)dbPath;
+- (instancetype)initWithPath:(NSString *)dbPath NS_DESIGNATED_INITIALIZER;
 
 /*! Opens the database. */
 - (BOOL)openWithError:(NSError **)error;
@@ -70,12 +66,6 @@ typedef NS_ENUM(NSInteger, PLCPersistentStoreError) {
 
 /*! Deletes all operations for a DID (for tombstoning). */
 - (BOOL)deleteOperationsForDid:(NSString *)did error:(NSError **)error;
-
-/*! Transaction queue for thread-safe operations (internal). */
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t transactionQueue;
-
-/*! Prepare a statement (internal). */
-- (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
 
 @end
 
