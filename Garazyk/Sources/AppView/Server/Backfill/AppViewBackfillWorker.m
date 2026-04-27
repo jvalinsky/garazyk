@@ -351,7 +351,8 @@ CARReader *reader = [CARReader readFromData:carData error:error];
                 [records addObject:@{
                     @"record": mutableRecord.count > 0 ? [mutableRecord copy] : record,
                     @"cid": valueCID.stringValue,
-                    @"collection": collection
+                    @"collection": collection,
+                    @"rkey": rkey ?: @""
                 }];
             }
         }
@@ -362,8 +363,10 @@ CARReader *reader = [CARReader readFromData:carData error:error];
         NSDictionary *record = item[@"record"];
         NSString *cid = item[@"cid"];
         NSString *collection = item[@"collection"];
+        NSString *rkey = item[@"rkey"];
         
         NSLog(@"[DEBUG] Calling indexers for collection=%@", collection);
+        BOOL wasIndexed = NO;
         for (id<AppViewIndexer> indexer in _indexers) {
             if ([indexer canIndexCollection:collection]) {
                 NSError *indexErr = nil;
@@ -372,6 +375,7 @@ CARReader *reader = [CARReader readFromData:carData error:error];
                                     collection:collection
                                            cid:cid
                                          error:&indexErr];
+                wasIndexed = YES;
                 if (!ok && indexErr) {
                     PDS_LOG_DEBUG(@"[AppView BackfillWorker] Dead-letter %@ for %@: %@",
                                   collection, did, indexErr.localizedDescription);
@@ -380,13 +384,39 @@ CARReader *reader = [CARReader readFromData:carData error:error];
                     [_database recordDeadLetterEvent:collection
                                                 seq:0
                                                 did:did
-                                                rev:lastRev
-                                                cid:cid
-                                          rawRecord:raw
-                                    validationError:indexErr.localizedDescription ?: @"unknown"
-                                              error:nil];
+                                                 rev:lastRev
+                                                 cid:cid
+                                           rawRecord:raw
+                                     validationError:indexErr.localizedDescription ?: @"unknown"
+                                               error:nil];
                 }
                 break;
+            }
+        }
+        
+        if (!wasIndexed) {
+            NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey ?: @""];
+            NSString *handle = nil;
+            NSError *saveErr = nil;
+            NSString *jsonValue = nil;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
+            if (jsonData) {
+                jsonValue = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            }
+            BOOL ok = [_database saveRecordWithURI:uri
+                                            did:did
+                                      collection:collection
+                                            rkey:rkey ?: @""
+                                             cid:cid ?: @""
+                                          handle:handle
+                                           value:jsonValue
+                                      subjectDid:nil
+                                           error:&saveErr];
+            if (!ok) {
+                PDS_LOG_DEBUG(@"[AppView BackfillWorker] Fallback save failed for %@: %@",
+                            uri, saveErr.localizedDescription);
+            } else {
+                PDS_LOG_DEBUG(@"[AppView BackfillWorker] Fallback indexed %@", uri);
             }
         }
     }
