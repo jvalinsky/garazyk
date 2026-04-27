@@ -16,7 +16,6 @@
 #import "Network/PDSHttpRelayAPIRoutePack.h"
 #import "Network/PDSHttpWellKnownRoutePack.h"
 #import "Network/PDSHttpXrpcRoutePack.h"
-#import "Network/PDSHttpAdminRoutePack.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -145,8 +144,6 @@
   }
 
   [PDSHttpRelayAPIRoutePack registerRoutesWithServer:server];
-
-  [PDSHttpAdminRoutePack registerAdminRoutesWithServer:server];
 
   [PDSHttpWellKnownRoutePack registerRoutesWithServer:server
                                       serviceDatabases:self.serviceDatabases

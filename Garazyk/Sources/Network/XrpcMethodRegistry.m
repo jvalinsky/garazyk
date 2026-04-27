@@ -486,15 +486,9 @@ static void registerMethodsWithDispatcherUsingServices(
     id<PDSEmailProvider> emailProvider,
     SubscribeReposHandler *subscribeReposHandler) {
 
-  [XrpcProxyInterceptor installOnDispatcher:dispatcher
-                              configuration:config
-                                  jwtMinter:jwtMinter
-                            adminController:adminController
-                           serviceDatabases:serviceDatabases
-                           userDatabasePool:userDatabasePool];
-
   [XrpcLexiconResolver registerResolveLexiconMethodOnDispatcher:dispatcher
                                                    configuration:config];
+
 
   // Register domain modules in order
   [XrpcServerMethods registerWithDispatcher:dispatcher
@@ -536,13 +530,14 @@ static void registerMethodsWithDispatcherUsingServices(
                               relayService:relayService
                             configuration:config];
 
-  [XrpcAppBskyMethods registerWithDispatcher:dispatcher
-                            serviceDatabases:serviceDatabases
-                                   jwtMinter:jwtMinter
-                             adminController:adminController
-                               emailProvider:emailProvider];
+  [XrpcAppBskyMethods registerPDSLevelMethodsWithDispatcher:dispatcher
+                                            serviceDatabases:serviceDatabases
+                                                   jwtMinter:jwtMinter
+                                             adminController:adminController
+                                               emailProvider:emailProvider];
 
   [XrpcAdminMethods registerWithDispatcher:dispatcher
+
                           serviceDatabases:serviceDatabases
                                  jwtMinter:jwtMinter
                            adminController:adminController
