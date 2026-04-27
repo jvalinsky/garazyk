@@ -105,6 +105,18 @@
   overflow: auto;
   max-height: 400px;
   border: 1px solid #333;
+  position: relative;
+}
+
+.terminal-window::before {
+  content: "┌" "─".repeat(20) "┐";
+  position: absolute;
+  top: 2px;
+  left: var(--space-md);
+  color: #444;
+  pointer-events: none;
+  font-size: 8px;
+  display: none; /* Only show in specific contexts if needed */
 }
 
 .terminal-header {
@@ -202,7 +214,7 @@
   transform: translateX(-50%);
   width: 40px;
   height: 40px;
-  background: #e63946;
+  background: var(--color-strawberry);
   border-radius: 50% 50% 45% 45%;
 }
 
@@ -216,7 +228,7 @@
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-bottom: 12px solid #2d6a4f;
+  border-bottom: 12px solid var(--color-strawberry-leaf);
 }
 
 /* Version info with Polish reference */
@@ -266,6 +278,9 @@
 .version-info::after {
   content: " — Bajtek Edition";
   font-style: italic;
+  font-weight: 600;
+  color: var(--color-strawberry);
+  text-shadow: 0 0 8px color-mix(in oklch, var(--color-strawberry) 30%, transparent);
 }
 
 .empty-state-title {
