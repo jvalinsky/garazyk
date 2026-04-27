@@ -8,6 +8,14 @@
 
 @implementation XrpcProxyHandler
 
+- (instancetype)initWithMinter:(JWTMinter *)minter {
+    self = [super init];
+    if (self) {
+        _minter = minter;
+    }
+    return self;
+}
+
 - (instancetype)initWithProxyURL:(NSURL *)proxyURL 
                      upstreamDID:(NSString *)upstreamDID 
                           minter:(JWTMinter *)minter {
@@ -21,6 +29,21 @@
 }
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
+    [self handleRequest:request response:response baseURL:self.proxyURL upstreamDID:self.upstreamDID];
+}
+
+- (void)handleRequest:(HttpRequest *)request 
+             response:(HttpResponse *)response 
+              baseURL:(NSURL *)baseURL 
+          upstreamDID:(NSString *)upstreamDID {
+    
+    if (!baseURL || !upstreamDID) {
+        PDS_LOG_ERROR(@"Proxy request failed: No target baseURL or upstreamDID provided");
+        response.statusCode = HttpStatusInternalServerError;
+        [response setJsonBody:@{@"error": @"InternalError", @"message": @"Proxy target not configured"}];
+        return;
+    }
+
     // 1. Extract User DID from the incoming request.
     // We need this for the 'sub' claim in the service-to-service token.
     NSString *authHeader = [request headerForKey:@"Authorization"];
@@ -45,7 +68,7 @@
     NSDictionary *payload = @{
         @"iss": self.minter.issuer ?: [[PDSConfiguration sharedConfiguration] canonicalIssuer],
         @"sub": userDid,
-        @"aud": self.upstreamDID,
+        @"aud": upstreamDID,
         @"iat": @((NSInteger)now),
         @"exp": @((NSInteger)(now + 300)), // 5 minute validity
         @"lxm": request.pathParameters[@"method"] ?: @""
@@ -61,17 +84,29 @@
     }
 
     // 3. Forward the request
-    NSURLComponents *components = [NSURLComponents componentsWithURL:self.proxyURL resolvingAgainstBaseURL:NO];
-    components.path = request.path;
+    NSURLComponents *components = [NSURLComponents componentsWithURL:baseURL resolvingAgainstBaseURL:NO];
+    
+    // Ensure we append the method path correctly
+    NSString *methodId = request.pathParameters[@"method"] ?: request.path;
+    if ([methodId hasPrefix:@"/xrpc/"]) {
+        methodId = [methodId substringFromIndex:6];
+    }
+    
+    NSString *methodPath = [NSString stringWithFormat:@"/xrpc/%@", methodId];
+    components.path = [components.path stringByAppendingPathComponent:methodPath];
     components.query = request.queryString;
     
     NSMutableURLRequest *proxyRequest = [NSMutableURLRequest requestWithURL:components.URL];
     proxyRequest.HTTPMethod = request.methodString;
     proxyRequest.HTTPBody = request.body;
     
-    // Copy headers except Authorization (which we replace) and Host
+    // Copy headers except Authorization (which we replace), Host, and Atproto-Proxy
     [request.headers enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop) {
-        if (![key isEqualToString:@"Authorization"] && ![key isEqualToString:@"Host"] && ![key isEqualToString:@"DPoP"]) {
+        NSString *lowerKey = [key lowercaseString];
+        if (![lowerKey isEqualToString:@"authorization"] && 
+            ![lowerKey isEqualToString:@"host"] && 
+            ![lowerKey isEqualToString:@"dpop"] &&
+            ![lowerKey isEqualToString:@"atproto-proxy"]) {
             [proxyRequest setValue:obj forHTTPHeaderField:key];
         }
     }];
@@ -89,9 +124,9 @@
             return;
         }
         if (error) {
-            PDS_LOG_ERROR(@"Proxy request failed: %@", error);
+            PDS_LOG_ERROR(@"Proxy request failed to upstream %@: %@", baseURL, error);
             response.statusCode = HttpStatusServiceUnavailable;
-            [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to contact AppView"}];
+            [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to contact upstream service"}];
         } else if ([urlResponse isKindOfClass:[NSHTTPURLResponse class]]) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)urlResponse;
             response.statusCode = (HttpStatusCode)httpResponse.statusCode;
