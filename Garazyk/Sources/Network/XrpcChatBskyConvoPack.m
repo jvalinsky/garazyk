@@ -10,6 +10,7 @@
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
 #import "Admin/PDSAdminAuth.h"
+#import "Chat/Server/ChatAuthManager.h"
 
 @implementation XrpcChatBskyConvoPack
 
@@ -17,19 +18,44 @@
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                     jwtMinter:(JWTMinter *)jwtMinter
               adminController:(id<PDSAdminController>)adminController {
+    [self registerWithDispatcher:dispatcher appViewDatabase:appViewDatabase authManager:nil jwtMinter:jwtMinter adminController:adminController];
+}
+
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                   authManager:(ChatAuthManager *)authManager {
+    [self registerWithDispatcher:dispatcher appViewDatabase:appViewDatabase authManager:authManager jwtMinter:nil adminController:nil];
+}
+
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                   authManager:(nullable ChatAuthManager *)authManager
+                     jwtMinter:(nullable JWTMinter *)jwtMinter
+               adminController:(nullable id<PDSAdminController>)adminController {
 
     ChatService *chatService = [[ChatService alloc] initWithDatabase:appViewDatabase];
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
+    
+    // Helper to get actor DID
+    NSString *(^getActorDid)(HttpRequest *, HttpResponse *) = ^NSString *(HttpRequest *req, HttpResponse *resp) {
+        if (authManager) {
+            return [authManager authenticateRequest:req response:resp];
+        } else {
+            NSString *authHeader = [req headerForKey:@"Authorization"];
+            return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                   jwtMinter:jwtMinter
+                                             adminController:adminController
+                                                     request:req
+                                                    response:resp];
+        }
+    };
+
     // chat.bsky.convo.getConvoForMembers - Get or create conversation for members
     [dispatcher registerMethod:@"chat.bsky.convo.getConvoForMembers"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
+
 
         NSDictionary *body = request.jsonBody;
         NSArray *memberDids = body[@"members"];
@@ -57,15 +83,11 @@
     // chat.bsky.convo.acceptConvo - Accept pending conversation
     [dispatcher registerMethod:@"chat.bsky.convo.acceptConvo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
         if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
@@ -87,15 +109,11 @@
     // chat.bsky.convo.leaveConvo - Leave a conversation
     [dispatcher registerMethod:@"chat.bsky.convo.leaveConvo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
         if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
@@ -116,15 +134,11 @@
     // chat.bsky.convo.listConvoRequests - List pending conversation requests
     [dispatcher registerMethod:@"chat.bsky.convo.listConvoRequests"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSError *error = nil;
+
         NSArray *requests = [chatService listConversationRequestsForActor:actorDID error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
@@ -162,15 +176,11 @@
     // chat.bsky.convo.addReaction - Add emoji reaction to message
     [dispatcher registerMethod:@"chat.bsky.convo.addReaction"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *messageId = body[@"messageId"];
         NSString *emoji = body[@"emoji"];
 
@@ -197,15 +207,11 @@
     // chat.bsky.convo.removeReaction - Remove emoji reaction from message
     [dispatcher registerMethod:@"chat.bsky.convo.removeReaction"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *messageId = body[@"messageId"];
         NSString *emoji = body[@"emoji"];
 
@@ -232,15 +238,11 @@
     // chat.bsky.convo.updateRead - Update read state for a message
     [dispatcher registerMethod:@"chat.bsky.convo.updateRead"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
         NSString *messageId = body[@"messageId"];
 
@@ -267,15 +269,11 @@
     // chat.bsky.convo.updateAllRead - Mark all messages as read
     [dispatcher registerMethod:@"chat.bsky.convo.updateAllRead"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
 
         if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
@@ -309,15 +307,11 @@
     // chat.bsky.convo.muteConvo - Mute conversation notifications
     [dispatcher registerMethod:@"chat.bsky.convo.muteConvo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
 
         if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
@@ -339,15 +333,11 @@
     // chat.bsky.convo.unmuteConvo - Unmute conversation notifications
     [dispatcher registerMethod:@"chat.bsky.convo.unmuteConvo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
 
         if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
@@ -369,15 +359,11 @@
     // chat.bsky.convo.deleteMessageForSelf - Delete message locally (not for others)
     [dispatcher registerMethod:@"chat.bsky.convo.deleteMessageForSelf"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *messageId = body[@"messageId"];
 
         if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
@@ -399,15 +385,11 @@
     // chat.bsky.convo.lockConvo - Lock conversation (prevent messages)
     [dispatcher registerMethod:@"chat.bsky.convo.lockConvo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
 
         if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
@@ -429,15 +411,11 @@
     // chat.bsky.convo.unlockConvo - Unlock conversation
     [dispatcher registerMethod:@"chat.bsky.convo.unlockConvo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
 
         if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
@@ -459,15 +437,11 @@
     // chat.bsky.convo.sendMessageBatch - Send multiple messages
     [dispatcher registerMethod:@"chat.bsky.convo.sendMessageBatch"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
         NSArray *messages = body[@"messages"];
 
@@ -502,15 +476,11 @@
     // chat.bsky.convo.listConvos - List conversations
     [dispatcher registerMethod:@"chat.bsky.convo.listConvos"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSString *limitStr = [request queryParamForKey:@"limit"];
+
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSInteger limit = limitStr ? [limitStr integerValue] : 50;
 
@@ -536,15 +506,11 @@
     // chat.bsky.convo.getMessages - Get messages for a conversation
     [dispatcher registerMethod:@"chat.bsky.convo.getMessages"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSString *convoId = [request queryParamForKey:@"convoId"];
+
         NSString *limitStr = [request queryParamForKey:@"limit"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
@@ -568,15 +534,11 @@
     // chat.bsky.convo.sendMessage - Send a single message
     [dispatcher registerMethod:@"chat.bsky.convo.sendMessage"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
+
         NSString *convoId = body[@"convoId"];
         NSDictionary *message = body[@"message"];
 
@@ -602,15 +564,11 @@
     // chat.bsky.convo.getConvo - Get conversation details
     [dispatcher registerMethod:@"chat.bsky.convo.getConvo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSString *convoId = [request queryParamForKey:@"convoId"];
+
         if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
@@ -634,15 +592,11 @@
     // chat.bsky.convo.getLog - Get conversation event log
     [dispatcher registerMethod:@"chat.bsky.convo.getLog"
                        handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = getActorDid(request, response);
         if (!actorDID) return;
 
         NSString *cursor = [request queryParamForKey:@"cursor"];
+
         NSString *limitStr = [request queryParamForKey:@"limit"];
         NSInteger limit = limitStr ? [limitStr integerValue] : 50;
 
