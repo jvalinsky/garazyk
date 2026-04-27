@@ -334,7 +334,6 @@ file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
   "Garazyk/Sources/Admin/*.m"
   "Garazyk/Sources/Admin/*.c"
   "Garazyk/Sources/AppView/*.m"
-
   "Garazyk/Sources/AppView/*.c"
   "Garazyk/Sources/Chat/*.m"
   "Garazyk/Sources/Chat/*.c"
@@ -383,8 +382,287 @@ file(GLOB_RECURSE ATPROTO_SYNC_SOURCES
   "Garazyk/Sources/Sync/WebSocket/*.c"
 )
 
-# AppView server source library
+file(GLOB_RECURSE ATPROTO_PLC_SOURCES
+  "Garazyk/Sources/PLC/*.m"
+  "Garazyk/Sources/PLC/*.c"
+)
 
+file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
+  "Garazyk/Sources/App/*.m"
+  "Garazyk/Sources/App/*.c"
+  "Garazyk/Sources/CLI/*.m"
+  "Garazyk/Sources/CLI/*.c"
+  "Garazyk/Sources/Auth/PDS/*.m"
+  "Garazyk/Sources/Auth/PDS/*.c"
+  "Garazyk/Sources/Network/PDSHttpServerBuilder.m"
+)
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/PDSConfiguration\\.m$")
+# UI handlers migrated to garazyk-ui — exclude from service binaries
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/MSTViewer/.*")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/OAuthDemo/.*")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpMSTViewerRoutePack\\.m$")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpOAuthDemoRoutePack\\.m$")
+
+# Handle platform-specific network transport implementations.
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")
+list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/PDSNetworkTransportLinux.m")
+if(APPLE)
+  list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/PDSNetworkTransportMac.m")
+  if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
+    # OpenSSL-based manager is unavailable on this macOS host.
+    list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")
+  endif()
+  # PDSOpenSSLES256KeyManager is only for GNUstep/Linux
+  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLES256KeyManager\\.m$")
+endif()
+
+if(NOT APPLE)
+  # PDSAppleKeyManager.m uses Security.framework (macOS/iOS only)
+  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSAppleKeyManager\\.m$")
+
+  # PDSOpenSSLES256KeyManager is required by AuthCryptoJWK (Core) on GNUstep.
+  # Keep it in Core to satisfy static-link ordering for Linux binaries.
+  list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLES256KeyManager\\.m$")
+  list(APPEND ATPROTO_CORE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Auth/PDSOpenSSLES256KeyManager.m")
+
+  # PDSCLIHealthCommand now has cross-platform guards and is included on Linux.
+
+  # SSLPinningManager.m uses SecTrust (not yet ported).
+  list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/SSLPinningManager\\.m$")
+
+  # WebSocketServer.m uses Network.framework.
+  list(FILTER ATPROTO_SYNC_SOURCES EXCLUDE REGEX ".*/Sync/WebSocketServer\\.m$")
+
+  # Compat shim implementations are already captured by the GLOB_RECURSE on
+  # Garazyk/Sources/Compat/*.m above — no explicit additions needed here.
+endif()
+
+pds_filter_common_sources(ATPROTO_CORE_SOURCES)
+pds_filter_common_sources(ATPROTO_STORAGE_SOURCES)
+pds_filter_common_sources(ATPROTO_SERVICES_SOURCES)
+pds_filter_common_sources(ATPROTO_TRANSPORT_SOURCES)
+pds_filter_common_sources(ATPROTO_XRPC_SOURCES)
+pds_filter_common_sources(ATPROTO_SYNC_SOURCES)
+pds_filter_common_sources(ATPROTO_PLC_SOURCES)
+pds_filter_common_sources(ATPROTO_RUNTIME_SOURCES)
+
+set(ATPROTO_ALL_RUNTIME_SOURCES
+  ${ATPROTO_CORE_SOURCES}
+  ${ATPROTO_STORAGE_SOURCES}
+  ${ATPROTO_SERVICES_SOURCES}
+  ${ATPROTO_TRANSPORT_SOURCES}
+  ${ATPROTO_XRPC_SOURCES}
+  ${ATPROTO_SYNC_SOURCES}
+  ${ATPROTO_PLC_SOURCES}
+  ${ATPROTO_RUNTIME_SOURCES}
+)
+list(REMOVE_DUPLICATES ATPROTO_ALL_RUNTIME_SOURCES)
+
+add_library(ATProtoCore STATIC ${ATPROTO_CORE_SOURCES})
+add_library(ATProtoStorage STATIC ${ATPROTO_STORAGE_SOURCES})
+add_library(ATProtoServices STATIC ${ATPROTO_SERVICES_SOURCES})
+add_library(ATProtoTransport STATIC ${ATPROTO_TRANSPORT_SOURCES})
+add_library(ATProtoXRPC STATIC ${ATPROTO_XRPC_SOURCES})
+add_library(ATProtoSync STATIC ${ATPROTO_SYNC_SOURCES})
+add_library(ATProtoPLC STATIC ${ATPROTO_PLC_SOURCES})
+add_library(ATProtoRuntime STATIC ${ATPROTO_RUNTIME_SOURCES})
+
+set(PDS_MODULE_TARGETS
+  ATProtoCore
+  ATProtoStorage
+  ATProtoServices
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoSync
+  ATProtoPLC
+  ATProtoRuntime
+)
+
+foreach(target ${PDS_MODULE_TARGETS})
+  target_include_directories(${target} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+    ${SECP256K1_INCLUDE_DIRS}
+  )
+  target_compile_definitions(${target} PUBLIC
+    SQLITE_THREADSAFE=2
+  )
+endforeach()
+
+target_link_libraries(ATProtoStorage PUBLIC ATProtoCore)
+target_link_libraries(ATProtoServices PUBLIC ATProtoStorage ATProtoCore ${SECP256K1_LIBRARIES})
+target_link_libraries(ATProtoTransport PUBLIC ATProtoCore)
+target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
+target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore)
+target_link_libraries(ATProtoPLC PUBLIC ATProtoTransport ATProtoCore)
+target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore)
+
+#=============================
+# Main Executables
+#=============================
+
+
+# CLI Tool (kaszlak - PDS binary)
+add_executable(kaszlak
+  Garazyk/Sources/CLI/main.m
+)
+
+target_include_directories(kaszlak PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(kaszlak PRIVATE
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoPLC
+    ATProtoCore
+    # GNU ld resolves static archives in a single pass; keep a second pass for
+    # cyclic refs between runtime/transport/plc objects.
+    ATProtoRuntime
+    ATProtoPLC
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(kaszlak PRIVATE
+    -Wl,--whole-archive
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoPLC
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
+
+target_compile_definitions(kaszlak PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+# Without -ObjC, category methods are not linked from static libraries
+set_target_properties(kaszlak PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
+# PLC Server (campagnola - PLC directory binary)
+add_executable(campagnola
+  Garazyk/Binaries/campagnola/main.m
+)
+
+target_include_directories(campagnola PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(campagnola PRIVATE
+    ATProtoAppViewServer
+    ATProtoPLC
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(campagnola PRIVATE
+    -Wl,--whole-archive
+    ATProtoAppViewServer
+    ATProtoPLC
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
+
+target_compile_definitions(campagnola PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+# Without -ObjC, category methods are not linked from static libraries
+set_target_properties(campagnola PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
+# Relay Server (zuk - AT Protocol relay)
+add_executable(zuk
+  Garazyk/Binaries/zuk/main.m
+)
+
+target_include_directories(zuk PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(zuk PRIVATE
+    ATProtoAppViewServer
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoStorage
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(zuk PRIVATE
+    -Wl,--whole-archive
+    ATProtoAppViewServer
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoStorage
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
+
+target_compile_definitions(zuk PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+# Without -ObjC, category methods are not linked from static libraries
+set_target_properties(zuk PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
+# AppView server source library
 file(GLOB_RECURSE ATPROTO_APPVIEW_SERVER_SOURCES
   "Garazyk/Sources/AppView/Server/*.m"
   "Garazyk/Sources/AppView/Server/*.c"
@@ -864,7 +1142,7 @@ if(BUILD_TESTS)
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/test_main.m")
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/Database/PDSDatabaseLRUTests.m")
 
-  # garazyk-ui sources (needed for tests)
+  # AdminUIServer sources (needed for tests)
   list(APPEND TEST_OBJC_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIServiceConfig.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/AdminUIServer/UIAuthManager.m"
