@@ -172,7 +172,6 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
     _appViewURL = nil;
     _appViewDID = nil;
-    _localAppViewEnabled = YES;
 
     _ozoneURL = nil;
     _ozoneDID = nil;
@@ -803,11 +802,6 @@ static BOOL PDSConfigRunningUnderTests(void) {
                                          default:appview[@"url"]];
     _appViewDID = [self resolveEnvOverrideForKey:@"PDS_APPVIEW_DID"
                                          default:appview[@"did"]];
-    if (appview[@"local_enabled"] != nil) {
-      _localAppViewEnabled =
-          [self boolFromEnv:@"PDS_LOCAL_APPVIEW"
-                    default:[appview[@"local_enabled"] boolValue]];
-    }
   }
 
   // Environment variables override everything for AppView as well
@@ -821,11 +815,6 @@ static BOOL PDSConfigRunningUnderTests(void) {
       [self resolveEnvOverrideForKey:@"PDS_APPVIEW_DID" default:nil];
   if (envAppViewDID.length > 0) {
     _appViewDID = envAppViewDID;
-  }
-
-  if ([self envVarExists:@"PDS_LOCAL_APPVIEW"]) {
-    _localAppViewEnabled =
-        [self boolFromEnv:@"PDS_LOCAL_APPVIEW" default:_localAppViewEnabled];
   }
 
   // Ozone moderation service configuration

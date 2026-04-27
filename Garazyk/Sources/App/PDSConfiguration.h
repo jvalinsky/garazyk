@@ -223,9 +223,6 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! @abstract DID of the remote AppView for service-to-service auth. */
 @property (nonatomic, readonly, nullable) NSString *appViewDID;
 
-/*! @abstract Whether the local AppView implementation is enabled. Defaults to YES. */
-@property (nonatomic, readonly) BOOL localAppViewEnabled;
-
 #pragma mark - Chat Service
 
 /*! @abstract URL of the remote Chat service for proxying chat.bsky.* requests. */

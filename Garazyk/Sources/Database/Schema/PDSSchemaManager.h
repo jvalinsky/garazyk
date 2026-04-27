@@ -174,15 +174,7 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - BSky AppView Schemas
 
 - (NSString *)bskyAgeAssuranceTableSchema;
-- (NSString *)bskyFeedThreadgateTableSchema;
-- (NSString *)bskyFeedPostgateTableSchema;
-- (NSString *)bskyFeedGeneratorTableSchema;
-- (NSString *)bskyLabelerServiceTableSchema;
-- (NSString *)bskyGraphListTableSchema;
-- (NSString *)bskyGraphListitemTableSchema;
-
-/*!
- @method serviceSchemaSQL
+- (NSString *)serviceSchemaSQL;
 
  @abstract Complete SQL for all service database tables.
 
