@@ -16,12 +16,14 @@
 #import "AppView/Server/Indexers/AppViewFeedIndexer.h"
 #import "AppView/Server/Indexers/AppViewGraphIndexer.h"
 #import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
+#import "AppView/Server/Indexers/AppViewBookmarkIndexer.h"
+#import "AppView/Server/Indexers/AppViewGroupIndexer.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
+#import "AppView/Services/BookmarkService.h"
 #import "AppView/Services/AgeAssuranceService.h"
-#import "AppView/Services/ChatModerationService.h"
 #import "Network/AppViewXRpcRoutePack.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
@@ -43,8 +45,8 @@
 @property (nonatomic, strong) ActorService *actorService;
 @property (nonatomic, strong) GraphService *graphService;
 @property (nonatomic, strong) NotificationService *notificationService;
+@property (nonatomic, strong) BookmarkService *bookmarkService;
 @property (nonatomic, strong) AgeAssuranceService *ageAssuranceService;
-@property (nonatomic, strong) ChatModerationService *chatModerationService;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
 @end
@@ -136,7 +138,10 @@ static AppViewRuntime *_sharedRuntime = nil;
     AppViewGraphIndexer *graphIdx   = [[AppViewGraphIndexer alloc] initWithDatabase:_database
                                                                        relevanceSet:_relevanceSet];
     AppViewNotificationIndexer *notifIdx = [[AppViewNotificationIndexer alloc] initWithDatabase:_database];
-    _indexers = @[actorIdx, feedIdx, graphIdx, notifIdx];
+    AppViewBookmarkIndexer *bookmarkIdx = [[AppViewBookmarkIndexer alloc] initWithDatabase:_database
+                                                                  bookmarkService:_bookmarkService];
+    AppViewGroupIndexer *groupIdx = [[AppViewGroupIndexer alloc] initWithDatabase:_database];
+    _indexers = @[actorIdx, feedIdx, graphIdx, notifIdx, bookmarkIdx, groupIdx];
 
     // Build ingest engine
     _ingestEngine = [[AppViewIngestEngine alloc]
@@ -177,7 +182,7 @@ static AppViewRuntime *_sharedRuntime = nil;
                                                             actorService:_actorService];
     _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database
                                                            emailProvider:nil];
-    _chatModerationService = [[ChatModerationService alloc] initWithDatabase:_database];
+    _bookmarkService = [[BookmarkService alloc] initWithDatabase:_database];
 
     // Initialize JWTMinter for token verification (using shared master secret)
     JWTMinter *jwtMinter = nil;
@@ -186,15 +191,15 @@ static AppViewRuntime *_sharedRuntime = nil;
         jwtMinter.issuer = @"http://localhost:2583"; // The PDS issuer we expect tokens from
     }
 
-    // Register XRPC routes
+// Register XRPC routes
     AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
                                                                     actorService:_actorService
                                                                     graphService:_graphService
                                                               notificationService:_notificationService
                                                               ageAssuranceService:_ageAssuranceService
-                                                             chatModerationService:_chatModerationService
-                                                                       database:_database
-                                                                      jwtMinter:jwtMinter];
+                                                                     chatModerationService:nil
+                                                                               database:_database
+                                                                              jwtMinter:jwtMinter];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
 
