@@ -292,9 +292,9 @@
       "node_type": "goal",
       "title": "Review Objective-C systems and portability practices",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:43:48.579061-04:00",
-      "updated_at": "2026-04-20T15:43:48.579061-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":93,\"prompt\":\"can you review what kinds of systems we are trying to build in each files, ex: we have a custom http and websocket server implementations with middleware and routing, think about best practices for writing such code abstractly then think about more concretely wrt. objective c (portable objc for both native macos and gnustep, shiming non-existent apis in gnustep that native macos frameworks are ok with documentation). remember to track all choices w/ deciduous\"}"
     },
     {
@@ -303,9 +303,9 @@
       "node_type": "observation",
       "title": "HTTP stack blends protocol/session/routing concerns across HttpServer and route packs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:44:32.418129-04:00",
-      "updated_at": "2026-04-20T15:44:32.418129-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":84,\"files\":[\"Garazyk/Sources/Network/HttpServer.m\",\"Garazyk/Sources/Network/PDSHttpServerBuilder.m\",\"Garazyk/Sources/Network/HttpProtocolSession.m\"]}"
     },
     {
@@ -314,9 +314,9 @@
       "node_type": "observation",
       "title": "WebSocket has both upgrade-integrated and standalone server paths",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:44:32.453858-04:00",
-      "updated_at": "2026-04-20T15:44:32.453858-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":82,\"files\":[\"Garazyk/Sources/Sync/Firehose/SubscribeReposHandler.m\",\"Garazyk/Sources/Sync/WebSocket/WebSocketServer.m\"]}"
     },
     {
@@ -325,9 +325,9 @@
       "node_type": "observation",
       "title": "Portability strategy mixes transport abstraction with API shims/stubs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:44:32.489197-04:00",
-      "updated_at": "2026-04-20T15:44:32.489197-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":86,\"files\":[\"Garazyk/Sources/Network/PDSNetworkTransport.h\",\"Garazyk/Sources/Compat/GNUstepCFNetworkCompat.h\",\"Garazyk/Sources/Compat/PlatformShims/Stubs/LinuxStubs.m\"]}"
     },
     {
@@ -336,9 +336,9 @@
       "node_type": "decision",
       "title": "Prefer protocol-core isolation with thin platform adapters",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:44:32.526522-04:00",
-      "updated_at": "2026-04-20T15:44:32.526522-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":88}"
     },
     {
@@ -347,9 +347,9 @@
       "node_type": "decision",
       "title": "Document shim contracts as capabilities, not full API parity",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:44:32.561844-04:00",
-      "updated_at": "2026-04-20T15:44:32.561844-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -358,9 +358,9 @@
       "node_type": "action",
       "title": "Produced subsystem-level architecture and best-practices review",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:44:45.390369-04:00",
-      "updated_at": "2026-04-20T15:44:45.390369-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":91,\"files\":[\"Garazyk/Sources/Network/HttpServer.m\",\"Garazyk/Sources/Sync/WebSocket/WebSocketServer.m\",\"Garazyk/Sources/Network/PDSNetworkTransport.h\",\"Garazyk/Sources/Compat/Foundation/Foundation.h\"]}"
     },
     {
@@ -369,9 +369,9 @@
       "node_type": "outcome",
       "title": "Review identifies layered refactor path and portability contract standards",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:44:45.425032-04:00",
-      "updated_at": "2026-04-20T15:44:45.425032-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":89}"
     },
     {
@@ -380,9 +380,9 @@
       "node_type": "action",
       "title": "Prepare keep/refactor/split matrix for top network and portability files",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:47:11.163387-04:00",
-      "updated_at": "2026-04-20T15:47:14.366905-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":92,\"prompt\":\"yes\"}"
     },
     {
@@ -391,9 +391,9 @@
       "node_type": "decision",
       "title": "Prioritize splitting monolithic endpoint registration and transport runtimes before parser/router rewrites",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:47:53.197373-04:00",
-      "updated_at": "2026-04-20T15:47:53.197373-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -402,9 +402,9 @@
       "node_type": "decision",
       "title": "Keep Sans-I/O protocol cores and strengthen capability-based shim documentation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:47:53.233319-04:00",
-      "updated_at": "2026-04-20T15:47:53.233319-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":92}"
     },
     {
@@ -413,9 +413,9 @@
       "node_type": "outcome",
       "title": "Generated top-file keep/refactor/split matrix balancing architecture and portability",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:47:53.269807-04:00",
-      "updated_at": "2026-04-20T15:47:53.269807-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -424,9 +424,9 @@
       "node_type": "action",
       "title": "Begin Sans-I/O hardening implementation across HTTP/WS/transport",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:53:31.776190-04:00",
-      "updated_at": "2026-04-20T15:53:31.776190-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":92}"
     },
     {
@@ -435,9 +435,9 @@
       "node_type": "observation",
       "title": "Existing characterization suites cover HTTP connection, websocket state, and linux transport behavior",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T15:53:31.814561-04:00",
-      "updated_at": "2026-04-20T15:53:31.814561-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":88,\"files\":[\"Garazyk/Tests/Network/HttpConnectionCharacterizationTests.m\",\"Garazyk/Tests/Sync/WebSocketStateCharacterizationTests.m\",\"Garazyk/Tests/Network/PDSNetworkTransportLinuxTests.m\"]}"
     },
     {
@@ -446,9 +446,9 @@
       "node_type": "action",
       "title": "Implemented Sans-I/O hardening across HTTP, WebSocket, and transport compatibility",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T16:12:10.053428-04:00",
-      "updated_at": "2026-04-20T16:12:10.053428-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9148a77a\",\"confidence\":92}"
     },
     {
@@ -457,9 +457,9 @@
       "node_type": "action",
       "title": "Adjusted characterization tests for refactored websocket/http boundaries",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T16:12:10.090921-04:00",
-      "updated_at": "2026-04-20T16:12:10.090921-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"bbb33ca5\",\"confidence\":88}"
     },
     {
@@ -468,9 +468,9 @@
       "node_type": "outcome",
       "title": "Plan phases implemented with successful AllTests and kaszlak builds",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-20T16:12:10.128112-04:00",
-      "updated_at": "2026-04-20T16:12:10.128112-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":87}"
     },
     {
@@ -1238,9 +1238,9 @@
       "node_type": "action",
       "title": "Implement PLC recovery window for rotation key changes",
       "description": null,
-      "status": "in_progress",
+      "status": "completed",
       "created_at": "2026-04-22T16:04:35.181920-04:00",
-      "updated_at": "2026-04-23T19:31:41.483063-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Store pending rotation key changes with timestamp. Allow previous key to revert within 72-hour window. After window expires, change becomes permanent.\"}"
     },
     {
@@ -1293,9 +1293,9 @@
       "node_type": "outcome",
       "title": "Spec compliance review completed with prioritized remediation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:05:14.190423-04:00",
-      "updated_at": "2026-04-22T16:05:14.190423-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Full review at docs/review-2026-04-22/ with 12 documents. 2 critical, 4 high, 4 medium, 2 low findings. Remediation plan covers 5 phases with dependency graph.\"}"
     },
     {
@@ -1304,9 +1304,9 @@
       "node_type": "observation",
       "title": "MST has 0 entries because root CID is commit object, not data MST",
       "description": "The CAR rootCID points to a commit record (with rev, data fields). The 'data' field contains the CID of the actual data MST. Need to decode commit, extract data CID, then load that MST.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T16:44:56.192828-04:00",
-      "updated_at": "2026-04-22T16:44:56.192828-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1436,9 +1436,9 @@
       "node_type": "observation",
       "title": "MST entry was feed.post, not actor.profile - different timing",
       "description": "Demo created profile and posts at different times. The firehose event for Alice might have been before the profile was committed. The forced backfill got 1 MST entry (feed.post) but not actor.profile. Need to verify profile creation timing or check if MST has multiple entries.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:17:07.405044-04:00",
-      "updated_at": "2026-04-22T17:17:07.405044-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1458,9 +1458,9 @@
       "node_type": "observation",
       "title": "Actor indexer now saves block and record to records table",
       "description": "Fixed AppViewActorIndexer to save block and record with proper CID, matching how ActorService reads records.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T17:19:54.222744-04:00",
-      "updated_at": "2026-04-22T17:19:54.222744-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -1733,9 +1733,9 @@
       "node_type": "observation",
       "title": "8 custom lexicon schemas for PDS-specific XRPC methods (not in official atproto repo)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T20:22:58.801626-04:00",
-      "updated_at": "2026-04-22T20:22:58.801626-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"These 8 methods have handlers but no official lexicon in bluesky-social/atproto. We created schemas matching our handler implementations: tools.ozone.moderation.getSubjectStatus, tools.ozone.moderation.cancelScheduledAction, tools.ozone.server.updateConfig, com.atproto.admin.getServerStats, com.atproto.admin.queryAuditLog, com.atproto.admin.repairRepo, com.atproto.admin.runBlobAudit, com.atproto.admin.getBlobAuditStatus\"}"
     },
     {
@@ -1821,9 +1821,9 @@
       "node_type": "observation",
       "title": "SubscribeReposHandler 'cannot commit - no transaction is active' is log noise, not a test failure cause",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-22T21:58:35.569209-04:00",
-      "updated_at": "2026-04-22T21:58:35.569209-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"The transaction errors in SubscribeReposHandler are logged as ERROR but don't cause test failures. The actual SubscribeReposHandlerTests failure is testReplayWithPrunedEventsHandlesGap which expects events to be pruned but they aren't (events.count=2 instead of 0). This is a separate WAL/pruning issue, not a transaction lifecycle bug.\"}"
     },
     {
@@ -2019,9 +2019,9 @@
       "node_type": "action",
       "title": "Create NSDictionary+CID category for safe CID extraction from CBOR-decoded dicts",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T10:01:38.128002-04:00",
-      "updated_at": "2026-04-23T10:01:38.128002-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"CBOR-decoded dictionaries contain CID objects (tag 42) not strings. Each call site had verbose type-checking. Created category with cidStringForKey: and cidObjectForKey: methods. Updated 4 call sites: AppViewIngestEngine, FirehoseCARBuilder, PDSRecordService, RecordLifecycleHandler. Gotcha: cmake GLOB_RECURSE only picks up new .m files at configure time — must re-run cmake -B build after adding files.\"}"
     },
     {
@@ -2041,9 +2041,9 @@
       "node_type": "observation",
       "title": "cmake GLOB_RECURSE only picks up new .m files at configure time, not build time",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-23T10:02:16.006841-04:00",
-      "updated_at": "2026-04-23T10:02:16.006841-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Adding NSDictionary+CID.m to Garazyk/Sources/Core/ did not automatically get compiled into libATProtoCore.a. The GLOB_RECURSE in CMakeLists.txt is evaluated at cmake configure time. Must re-run cmake -B build after adding new .m files, otherwise category symbols are missing from the static library and cause unrecognized selector crash at runtime (especially on __NSFrozenDictionaryM).\"}"
     },
     {
@@ -2646,9 +2646,9 @@
       "node_type": "observation",
       "title": "Audit findings: 12 prioritized issues",
       "description": "5 P0 (security/crash), 4 P1 (portability), 2 P2 (DoS/maintainability). 4 patterns fix multiple issues simultaneously.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-24T09:24:47.805365-04:00",
-      "updated_at": "2026-04-24T09:24:47.805365-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -2701,9 +2701,9 @@
       "node_type": "goal",
       "title": "Fix Skipped Scenario Tests (100% Pass Rate)",
       "description": "Link to scratchpad: .opencode/plans/fix_scenario_tests.md",
-      "status": "in_progress",
+      "status": "completed",
       "created_at": "2026-04-24T20:46:47.166346-04:00",
-      "updated_at": "2026-04-24T20:46:54.512748-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -2767,9 +2767,9 @@
       "node_type": "action",
       "title": "Refactor Relay replay logic to use throttled async loop",
       "description": null,
-      "status": "in_progress",
+      "status": "completed",
       "created_at": "2026-04-24T20:46:47.445830-04:00",
-      "updated_at": "2026-04-24T20:53:39.027483-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -2778,9 +2778,9 @@
       "node_type": "action",
       "title": "Increase PDS network listener backlog",
       "description": null,
-      "status": "in_progress",
+      "status": "completed",
       "created_at": "2026-04-24T20:46:47.493431-04:00",
-      "updated_at": "2026-04-24T20:53:39.036083-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -2789,9 +2789,9 @@
       "node_type": "action",
       "title": "Implement strict scenario assertions and firehose retry loop",
       "description": null,
-      "status": "in_progress",
+      "status": "completed",
       "created_at": "2026-04-24T20:46:47.541172-04:00",
-      "updated_at": "2026-04-24T20:53:39.043539-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -2800,9 +2800,9 @@
       "node_type": "outcome",
       "title": "Scenario test suite achieves 100% pass rate with 0 skips",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-24T20:46:47.589601-04:00",
-      "updated_at": "2026-04-24T20:46:47.589601-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -3196,9 +3196,9 @@
       "node_type": "goal",
       "title": "Deep documentation review and revision session",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T07:46:44.414272-04:00",
-      "updated_at": "2026-04-25T07:46:44.414272-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Perform a deep docs review and revise session, spawn multiple code review and doc review subagents and track the work with deciduous nodes linked to scratchpad docs to hold temp useful info when reviewing code or making a plan to revise a doc.\"}"
     },
     {
@@ -3207,9 +3207,9 @@
       "node_type": "action",
       "title": "Execute documentation audit via subagents",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T07:46:50.025912-04:00",
-      "updated_at": "2026-04-25T07:46:50.025912-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"docs/scratchpad_doc_review_session.md\"]}"
     },
     {
@@ -3218,9 +3218,9 @@
       "node_type": "observation",
       "title": "Registered project-level skills in .opencode/skills/",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T07:54:52.537769-04:00",
-      "updated_at": "2026-04-25T07:54:52.537769-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
     },
     {
@@ -3229,9 +3229,9 @@
       "node_type": "decision",
       "title": "Documentation and Implementation Alignment Plan",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T07:57:22.128435-04:00",
-      "updated_at": "2026-04-25T07:57:22.128435-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3240,9 +3240,9 @@
       "node_type": "option",
       "title": "Fix documentation only",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T07:57:22.165918-04:00",
-      "updated_at": "2026-04-25T07:57:22.165918-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -3251,9 +3251,9 @@
       "node_type": "option",
       "title": "Align both documentation and implementation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T07:57:22.202565-04:00",
-      "updated_at": "2026-04-25T07:57:22.202565-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3262,9 +3262,9 @@
       "node_type": "outcome",
       "title": "Completed documentation review and implementation alignment",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:01:57.495110-04:00",
-      "updated_at": "2026-04-25T08:01:57.495110-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"699b31a1\",\"confidence\":100}"
     },
     {
@@ -3273,9 +3273,9 @@
       "node_type": "goal",
       "title": "Expand and standardize tutorial track",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:08:11.548672-04:00",
-      "updated_at": "2026-04-25T08:08:11.548672-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3284,9 +3284,9 @@
       "node_type": "action",
       "title": "Analyze tutorial gaps and codebase coverage",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:08:15.469633-04:00",
-      "updated_at": "2026-04-25T08:08:15.469633-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3295,9 +3295,9 @@
       "node_type": "action",
       "title": "Develop 4-phase expansion plan (Blobs, OAuth2, PLC, Federation)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:08:15.553290-04:00",
-      "updated_at": "2026-04-25T08:08:15.553290-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3306,9 +3306,9 @@
       "node_type": "action",
       "title": "Draft Tutorial 9: Blobs and Migrations outline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:08:15.629122-04:00",
-      "updated_at": "2026-04-25T08:08:15.629122-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3317,9 +3317,9 @@
       "node_type": "action",
       "title": "Implemented Tutorial 10: OAuth2 & DPoP",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:11:03.550540-04:00",
-      "updated_at": "2026-04-25T08:11:03.550540-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3328,9 +3328,9 @@
       "node_type": "action",
       "title": "Implemented Tutorial 11: PLC Failover and Resolution",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:11:03.586435-04:00",
-      "updated_at": "2026-04-25T08:11:03.586435-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3339,9 +3339,9 @@
       "node_type": "action",
       "title": "Implemented Tutorial 12: Federation & Sync",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:11:03.623182-04:00",
-      "updated_at": "2026-04-25T08:11:03.623182-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3350,9 +3350,9 @@
       "node_type": "action",
       "title": "Implemented Tutorial 13: Admin UI Internals",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:15:24.629656-04:00",
-      "updated_at": "2026-04-25T08:15:24.629656-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3361,9 +3361,9 @@
       "node_type": "action",
       "title": "Implemented Tutorial 14: Advanced Firehose",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:15:24.666298-04:00",
-      "updated_at": "2026-04-25T08:15:24.666298-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3372,9 +3372,9 @@
       "node_type": "action",
       "title": "Standardized Network Subguide with metadata",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:15:24.702268-04:00",
-      "updated_at": "2026-04-25T08:15:24.702268-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3383,9 +3383,9 @@
       "node_type": "action",
       "title": "Standardized all new tutorials with required sections (Troubleshooting, Next Steps)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:20:12.436270-04:00",
-      "updated_at": "2026-04-25T08:20:12.436270-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3394,9 +3394,9 @@
       "node_type": "action",
       "title": "Fixed broken internal links across the documentation suite",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:20:12.472521-04:00",
-      "updated_at": "2026-04-25T08:20:12.472521-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
     },
     {
@@ -3427,9 +3427,9 @@
       "node_type": "outcome",
       "title": "Drafted Tutorial 15 outline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T08:31:26.671367-04:00",
-      "updated_at": "2026-04-25T08:31:26.671367-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f000d36d\",\"confidence\":100}"
     },
     {
@@ -3636,9 +3636,9 @@
       "node_type": "goal",
       "title": "Fix admin UI login failures: switchService ReferenceError, 401 on partials, and keychain signing crash",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:13:41.634011-04:00",
-      "updated_at": "2026-04-25T13:13:41.634011-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Uncaught ReferenceError: switchService is not defined at app.js:861:3\\nFailed to load resource: 401 from /admin/partials/overview\\nOSStatus error -50: algid:sign:RSA:message-PKCS1v15:SHA256: algorithm not supported by the key\\n\\ninvestigate and fix use deciduous to track choices\"}"
     },
     {
@@ -3647,9 +3647,9 @@
       "node_type": "action",
       "title": "Fix JS ReferenceError: map switchService to switchToService in window.AdminUI export",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:13:46.077564-04:00",
-      "updated_at": "2026-04-25T13:13:46.077564-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Garazyk/Sources/Admin/AdminUI/Assets/js/app.js\"]}"
     },
     {
@@ -3658,9 +3658,9 @@
       "node_type": "action",
       "title": "Fix Keychain lookup: add kSecAttrKeyClassPrivate filter to SecItemCopyMatching query",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:13:56.372641-04:00",
-      "updated_at": "2026-04-25T13:13:56.372641-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Garazyk/Sources/Auth/PDSAppleKeyManager.m\"]}"
     },
     {
@@ -3669,9 +3669,9 @@
       "node_type": "action",
       "title": "Fix hardcoded RS256 JWT header: use actual key algorithm",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:14:06.640106-04:00",
-      "updated_at": "2026-04-25T13:14:06.640106-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Garazyk/Sources/Auth/PDSAppleKeyManager.m\"]}"
     },
     {
@@ -3680,9 +3680,9 @@
       "node_type": "outcome",
       "title": "Fixed JS ReferenceError: switchService mapped to switchToService",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:14:28.620804-04:00",
-      "updated_at": "2026-04-25T13:14:28.620804-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9c62c6ef\",\"confidence\":95}"
     },
     {
@@ -3691,9 +3691,9 @@
       "node_type": "outcome",
       "title": "Fixed Keychain private key lookup: added kSecAttrKeyClassPrivate filter",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:14:28.684635-04:00",
-      "updated_at": "2026-04-25T13:14:28.684635-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9c62c6ef\",\"confidence\":95}"
     },
     {
@@ -3702,9 +3702,9 @@
       "node_type": "outcome",
       "title": "Fixed hardcoded RS256 header: now uses actual key algorithm",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:14:28.751811-04:00",
-      "updated_at": "2026-04-25T13:14:28.751811-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9c62c6ef\",\"confidence\":95}"
     },
     {
@@ -3713,9 +3713,9 @@
       "node_type": "goal",
       "title": "fix admin ui login failures: js refererror, keychain public key lookup, hardcoded rs256 header",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:36:56.880175-04:00",
-      "updated_at": "2026-04-25T13:36:56.880175-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"fix admin ui login failures: js refererror, keychain public key lookup, hardcoded rs256 header\"}"
     },
     {
@@ -3724,9 +3724,9 @@
       "node_type": "action",
       "title": "Fix admin users tab by using PDSController.getAllAccountsWithError instead of nil database stub",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:04.278512-04:00",
-      "updated_at": "2026-04-25T13:37:04.278512-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Garazyk/Sources/Admin/PDSAdminHandler.m\"]}"
     },
     {
@@ -3735,9 +3735,9 @@
       "node_type": "action",
       "title": "Wire Category A partials — add 10 if-cases for existing templates",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:09.489086-04:00",
-      "updated_at": "2026-04-25T13:37:09.489086-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Garazyk/Sources/Admin/AdminPartialHandler.m\"]}"
     },
     {
@@ -3746,9 +3746,9 @@
       "node_type": "action",
       "title": "Create Category B shell templates and wire handlers for security/sessions and security/app-passwords",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:22.168832-04:00",
-      "updated_at": "2026-04-25T13:37:22.168832-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Garazyk/Sources/Admin/AdminUI/Templates/security_sessions.html\",\"Garazyk/Sources/Admin/AdminUI/Templates/security_app_passwords.html\",\"Garazyk/Sources/Admin/AdminPartialHandler.m\"]}"
     },
     {
@@ -3757,9 +3757,9 @@
       "node_type": "action",
       "title": "Create Category C stub templates with empty-state placeholders and wire handlers",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:31.162563-04:00",
-      "updated_at": "2026-04-25T13:37:31.162563-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Garazyk/Sources/Admin/AdminUI/Templates/reports.html\",\"Garazyk/Sources/Admin/AdminUI/Templates/reports_list.html\",\"Garazyk/Sources/Admin/AdminUI/Templates/audit_log.html\",\"Garazyk/Sources/Admin/AdminUI/Templates/hosting_history.html\",\"Garazyk/Sources/Admin/AdminUI/Templates/ozone_correlations.html\",\"Garazyk/Sources/Admin/AdminPartialHandler.m\"]}"
     },
     {
@@ -3768,9 +3768,9 @@
       "node_type": "outcome",
       "title": "Fixed admin users tab by routing through PDSController.getAllAccountsWithError",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:40.509029-04:00",
-      "updated_at": "2026-04-25T13:37:40.509029-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"b9d188e2\",\"confidence\":95}"
     },
     {
@@ -3779,9 +3779,9 @@
       "node_type": "outcome",
       "title": "Wired 10 Category A partials with existing templates",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:40.543614-04:00",
-      "updated_at": "2026-04-25T13:37:40.543614-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ff4c5616\",\"confidence\":95}"
     },
     {
@@ -3790,9 +3790,9 @@
       "node_type": "outcome",
       "title": "Created Category B shell templates for security/sessions and security/app-passwords",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:40.577514-04:00",
-      "updated_at": "2026-04-25T13:37:40.577514-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a2d86e4c\",\"confidence\":95}"
     },
     {
@@ -3801,9 +3801,9 @@
       "node_type": "outcome",
       "title": "Created Category C stub templates for reports, audit-log, hosting-history, ozone/correlations",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T13:37:40.611284-04:00",
-      "updated_at": "2026-04-25T13:37:40.611284-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1433a19a\",\"confidence\":95}"
     },
     {
@@ -3911,9 +3911,9 @@
       "node_type": "goal",
       "title": "Comprehensive Fuzzing Harness Review & Improvement",
       "description": "Review 9 fuzzer harnesses for correctness and coverage gaps. Fix critical bugs, implement high-priority improvements, and design extended fuzzing strategy per web research.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:22.900999-04:00",
-      "updated_at": "2026-04-25T19:02:22.900999-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3922,9 +3922,9 @@
       "node_type": "action",
       "title": "Phase 1: Thorough Code Review",
       "description": "Reviewed all 9 harnesses + standalone_driver.cpp. Identified 10 concrete issues: 4 critical (MST discarded results, DB state persistence, lexicon loading, DPoP crypto bypass), 5 high-priority (HTTP error path, JWT verifier missing, MIME type hardcoded, CBOR offset variant, non-recursive walk), 3 lower-priority (touch fields, parameterized queries, chunk feeding).",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:26.799563-04:00",
-      "updated_at": "2026-04-25T19:02:26.799563-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"files\":[\"fuzzing/harness/*.m\",\"fuzzing/standalone_driver.cpp\"]}"
     },
     {
@@ -3933,9 +3933,9 @@
       "node_type": "action",
       "title": "C1: FuzzMST - Return Values Assigned & Traversed",
       "description": "Fixed dead code where CARReader and MST results were discarded. Now assign to variables and call .blocks, .rootCID, .root, .allEntries to ensure parser state is traversed and lazy evaluation is triggered.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:29.990890-04:00",
-      "updated_at": "2026-04-25T19:02:29.990890-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":99,\"files\":[\"fuzzing/harness/FuzzMST.m\"]}"
     },
     {
@@ -3944,9 +3944,9 @@
       "node_type": "action",
       "title": "C2: FuzzPDSDatabase - State Isolation via SAVEPOINT",
       "description": "Fixed persistent DB state that survived across iterations. Now wrap each SQL execution in SAVEPOINT fuzz / ROLLBACK TO SAVEPOINT fuzz, isolating each fuzzer input. Added explicit null checks for gFuzzDatabase.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:32.606432-04:00",
-      "updated_at": "2026-04-25T19:02:32.606432-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":99,\"files\":[\"fuzzing/harness/FuzzPDSDatabase.m\"]}"
     },
     {
@@ -3955,9 +3955,9 @@
       "node_type": "action",
       "title": "C3: FuzzATProtoLexiconValidator - Lexicon Loading Fix",
       "description": "Fixed lexicon path: NSBundle mainBundle returns nil in CLI binary. Now loads from cwd-relative Lexicons/ directory. Switched to ATProtoValidationModeRequired (was Optimistic) and added multi-collection testing.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:35.407210-04:00",
-      "updated_at": "2026-04-25T19:02:35.407210-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98,\"files\":[\"fuzzing/harness/FuzzATProtoLexiconValidator.m\"]}"
     },
     {
@@ -3966,9 +3966,9 @@
       "node_type": "action",
       "title": "C4: FuzzDPoP - Crypto Verification + JWT Parsing",
       "description": "Added platform guard (#if __APPLE__). Now also parses DPoP proof as JWT (proof is just a JWT). Added verifyDPoP with different method/uri variations. Exercises JWT header/payload extraction path within DPoP verifier.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:38.302136-04:00",
-      "updated_at": "2026-04-25T19:02:38.302136-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"files\":[\"fuzzing/harness/FuzzDPoP.m\"]}"
     },
     {
@@ -3977,9 +3977,9 @@
       "node_type": "action",
       "title": "H1: FuzzHttp1Parser - Error Path + Chunk Feeding",
       "description": "Added [parser parseError] method call to exercise error-path state machine. Added chunk feeding test: split input in half, feed separately via two feedData: calls, tests incremental parsing. Checks parser.state machine progression.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:41.434837-04:00",
-      "updated_at": "2026-04-25T19:02:41.434837-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":97,\"files\":[\"fuzzing/harness/FuzzHttp1Parser.m\"]}"
     },
     {
@@ -3988,9 +3988,9 @@
       "node_type": "action",
       "title": "H2: FuzzJWT - JWTVerifier + Base64URLDecode",
       "description": "Added JWTVerifier claims validation with expectedIssuer, expectedAudience, allowedAlgorithms. Reads all payload fields (iss, sub, aud, exp, iat, nbf, jti, did). Added base64URLDecode calls. Tests security-critical verification path and encoding utilities.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:44.448437-04:00",
-      "updated_at": "2026-04-25T19:02:44.448437-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98,\"files\":[\"fuzzing/harness/FuzzJWT.m\"]}"
     },
     {
@@ -3999,9 +3999,9 @@
       "node_type": "action",
       "title": "H3: FuzzMimeTypeValidator - Fuzz-Driven MIME Type",
       "description": "Fixed hardcoded forMimeType (@image/jpeg) — now uses fuzz-derived mimeType. Added isSupportedMimeType and sniffMimeTypeFromData calls. Tests multiple MIME types (png, gif, webp, mp4, pdf, etc.) against magic numbers.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:49.097652-04:00",
-      "updated_at": "2026-04-25T19:02:49.097652-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":96,\"files\":[\"fuzzing/harness/FuzzMimeTypeValidator.m\"]}"
     },
     {
@@ -4010,9 +4010,9 @@
       "node_type": "action",
       "title": "H4: FuzzCBORDecoder - Offset-Based Decode",
       "description": "Added [CBORDecoder decode:input offset:&offset] call alongside simple decode. Tests streaming/multi-value decoding path with different offset boundary conditions. Touches type and all value accessors (simpleValue, floatValue, etc.).",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:51.699656-04:00",
-      "updated_at": "2026-04-25T19:02:51.699656-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":97,\"files\":[\"fuzzing/harness/FuzzCBORDecoder.m\"]}"
     },
     {
@@ -4021,9 +4021,9 @@
       "node_type": "action",
       "title": "H5: standalone_driver.cpp - Recursive Walk + DT_UNKNOWN Fallback",
       "description": "Changed non-recursive corpus walk to recursive directory traversal. Added DT_UNKNOWN handling: falls back to stat() when dirent.d_type is unknown (Linux filesystems). Now processes corpus subdirectories. Filters dot dirs to skip . and ..",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:54.588068-04:00",
-      "updated_at": "2026-04-25T19:02:54.588068-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98,\"files\":[\"fuzzing/standalone_driver.cpp\"]}"
     },
     {
@@ -4032,9 +4032,9 @@
       "node_type": "action",
       "title": "L1-L3: Lower-Priority Improvements",
       "description": "L1: FuzzXrpcDispatcher - Now touches all parsed fields (method, queryString, headers, body, version, correlationID). L2: FuzzPDSDatabase - Added executeParameterizedQuery test (security-critical binding path). L3: FuzzHttp1Parser - Chunk feeding test already in H1.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:02:58.451751-04:00",
-      "updated_at": "2026-04-25T19:02:58.451751-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":92,\"files\":[\"fuzzing/harness/FuzzXrpcDispatcher.m\",\"fuzzing/harness/FuzzPDSDatabase.m\"]}"
     },
     {
@@ -4043,9 +4043,9 @@
       "node_type": "outcome",
       "title": "All 9 Fuzzers Rebuilt Successfully",
       "description": "All improvements compiled clean with no errors. Smoke tests passed: fuzz_jwt, fuzz_sqlite (savepoint isolation verified), fuzz_mime, fuzz_http. No regressions. Build command: cmake --build build-fuzz --target fuzz-all",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:03:03.477006-04:00",
-      "updated_at": "2026-04-25T19:03:03.477006-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1bc479f5\",\"confidence\":99}"
     },
     {
@@ -4054,9 +4054,9 @@
       "node_type": "action",
       "title": "Phase 2: Web Research on Fuzzing Best Practices",
       "description": "Conducted web search on libFuzzer best practices (2024-2025). Found guidance on: seed corpus generation, custom mutators, differential fuzzing, property-based testing, coverage measurement, regression tests, sanitizer configs, crash triage, CI/CD integration, grammar-aware fuzzing. Synthesized 12 improvement categories with implementation roadmap.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:03:09.125928-04:00",
-      "updated_at": "2026-04-25T19:03:09.125928-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":92,\"files\":[\".claude/plans/drifting-stirring-candy.md\"]}"
     },
     {
@@ -4065,9 +4065,9 @@
       "node_type": "action",
       "title": "Extended Fuzzing Strategy & Roadmap",
       "description": "From web research: 12 improvement categories identified. Priorities: (1) Seed corpus generation (2h, ⭐⭐⭐⭐), (2) CI/CD regression tests (3h, ⭐⭐⭐⭐), (3) Custom mutators for JWT/HTTP (1d, ⭐⭐⭐⭐⭐), (4) Coverage measurement (4h), (5) Differential fuzzing (2d), (6) Property-based testing (1d), (7) OSS-Fuzz integration (2d). See detailed roadmap in /Users/jack/.claude/plans/drifting-stirring-candy.md",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:03:18.781821-04:00",
-      "updated_at": "2026-04-25T19:03:18.781821-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\".claude/plans/drifting-stirring-candy.md\"]}"
     },
     {
@@ -4076,9 +4076,9 @@
       "node_type": "action",
       "title": "Key Reference Sources",
       "description": "libFuzzer best practices from: LLVM 23 docs, SRLabs fuzzing guides, Fuchsia fuzzing workflows, Google fuzzing repo, Quarkslab differential fuzzing blog, ClusterFuzz triage docs, Testing Handbook. Custom mutators: libprotobuf-mutator, structure-aware fuzzing. Property testing: Nikos Baxevanis integration patterns.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:03:24.098402-04:00",
-      "updated_at": "2026-04-25T19:03:24.098402-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":88}"
     },
     {
@@ -4087,9 +4087,9 @@
       "node_type": "outcome",
       "title": "Fuzzing Harness Review & Improvement Complete",
       "description": "COMPLETED: Phase 1 code review (10 issues identified across 9 harnesses). IMPLEMENTED: All 4 critical bugs fixed + all 5 high-priority improvements + 3 lower-priority enhancements. All 9 fuzzers rebuild successfully. Smoke tests pass. PLANNED: Extended fuzzing strategy with 12 improvement categories, prioritized roadmap for next phases (seed corpus, custom mutators, differential fuzzing, etc.). See /Users/jack/.claude/plans/drifting-stirring-candy.md for full details.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:03:31.991689-04:00",
-      "updated_at": "2026-04-25T19:03:31.991689-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1bc479f5\",\"confidence\":94}"
     },
     {
@@ -4098,9 +4098,9 @@
       "node_type": "action",
       "title": "Phase 3: Seed Corpus Creation — 102 diverse test inputs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:17:03.313497-04:00",
-      "updated_at": "2026-04-25T19:17:30.831156-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":96,\"prompt\":\"## Phase 3: Seed Corpus Enrichment\\n\\n**Objective:** Create comprehensive, diverse seed corpus to maximize code coverage during fuzzing.\\n\\n**Deliverable:** 102 seed files across 8 categories:\\n- **auth** (9): JWT variants (RS256/ES256/HS512/EdDSA), expired tokens, missing claims, DPoP proofs\\n- **blob** (13): MIME formats (PNG, JPEG, GIF, WebP, BMP, TIFF, ZIP, gzip, PDF, SVG, MP4, empty, large)\\n- **cbor** (27): All 8 CBOR types, indefinite sequences, nested structures, floats, large integers\\n- **http** (15): All HTTP methods, HTTP/1.0/1.1, chunked, multipart, headers, pipelined requests\\n- **lexicon** (6): Record, procedure, query, subscription types with unions/refs/blobs\\n- **mst** (6): Maps, nested structures, multi-entry variants, mixed types\\n- **sql** (17): DDL/DML, transactions, JOINs, aggregates, pagination, parameterized queries\\n- **xrpc** (9): Procedures with methods, JSON payloads, query params, auth headers\\n\\n**Coverage Strategy:**\\n- Edge cases (expired tokens, empty files, large inputs)\\n- Boundary conditions (deep nesting, large integers, various encodings)\\n- Format variations (multiple algorithms, HTTP methods, MIME types)\\n- Security paths (auth headers, parameterized queries, signature verification)\\n\"}"
     },
     {
@@ -4109,9 +4109,9 @@
       "node_type": "action",
       "title": "Phase 3: Execute comprehensive fuzzing with 70K iterations",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:17:05.652583-04:00",
-      "updated_at": "2026-04-25T19:17:36.390090-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":97,\"prompt\":\"## Phase 3: Comprehensive Fuzzing Session\\n\\n**Objective:** Stress-test all 9 fuzzers with new seed corpus to verify correctness and measure coverage.\\n\\n**Execution:**\\n- Mode: Concurrent (all 9 fuzzers running in parallel)\\n- Total iterations: ~70,000 (10K XRPC, 10K CBOR, 10K HTTP, 10K JWT, 10K DPoP, 5K MIME, 5K SQLite, 10K Lexicon, 10K MST)\\n- Parameters: -max_len=65536 (10000 for SQL), default sanitizers enabled\\n\\n**Results:**\\n- ✅ All 9 fuzzers passed (exit code 0)\\n- ✅ 0 crashes detected\\n- ✅ 0 sanitizer violations (ASan, UBSan)\\n- ✅ 0 hangs/timeouts\\n- ✅ State isolation verified (SAVEPOINT mechanism validated in SQLite)\\n- ✅ No memory leaks reported\\n- ✅ Lexicon fuzzer successfully loaded real ATProto lexicons\\n\\n**Performance:**\\n- Execution time: <2 seconds (concurrent)\\n- Throughput: ~35K iterations/second\\n- No degradation with expanded corpus\\n\"}"
     },
     {
@@ -4120,9 +4120,9 @@
       "node_type": "outcome",
       "title": "Phase 3 Complete: 0 crashes, 0 sanitizer violations, all tests passed",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:17:07.533114-04:00",
-      "updated_at": "2026-04-25T19:17:44.388438-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":98,\"prompt\":\"## Phase 3 Outcome: ✅ Complete\\n\\n**All Safety & Stability Checks Passed:**\\n- Crashes: 0\\n- Sanitizer violations: 0\\n- Hangs/timeouts: 0\\n- Memory leaks: 0\\n- State persistence issues: 0\\n\\n**Deliverables:**\\n- 102 seed corpus files (408 KB) across 8 directories\\n- All 9 fuzzer harnesses stress-tested with 70K iterations\\n- Decision graph updated with Phase 3 tracking nodes\\n- Documentation updated with Phase 3 results\\n\\n**Quality Metrics:**\\n- Build status: ✅ All 9 fuzzers clean\\n- Smoke tests: ✅ 100% pass rate\\n- Fuzzing session: ✅ 0 crashes over 70K runs\\n- Coverage: ✅ Multiple code paths exercised per fuzzer\\n\\n**Ready for:** Phase 4 (Custom Mutators for JWT/HTTP)\\n\"}"
     },
     {
@@ -4142,9 +4142,9 @@
       "node_type": "decision",
       "title": "Store drafts in service DB (not actor store) to avoid threading databasePool through XRPC packs",
       "description": "Drafts could go in actor store (per-user DB) or service DB. Service DB chosen because XRPC packs only have appViewDatabase access; threading databasePool would require changes to XrpcAppBskyMethods, XrpcMethodRegistry, and the server builder. Service DB with did column provides same scoping.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:49:03.951919-04:00",
-      "updated_at": "2026-04-25T19:49:03.951919-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -4153,9 +4153,9 @@
       "node_type": "decision",
       "title": "Actor suggestions: follows-of-follows + popular actors fallback",
       "description": "getSuggestions uses 2nd-degree connections (follows-of-follows) as primary suggestions, supplemented by most-followed actors on the PDS via bsky_graph_follows table. This avoids needing external recommendation services and works for self-hosted single-operator PDS.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:49:16.059554-04:00",
-      "updated_at": "2026-04-25T19:49:16.059554-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -4164,9 +4164,9 @@
       "node_type": "decision",
       "title": "V6 migration for drafts table in service DB, not actor store",
       "description": "V6DraftsSchema creates drafts table in service database migration manager. Table schema: id TEXT PK, did TEXT NOT NULL, content TEXT NOT NULL, created_at/updated_at INTEGER. Index on did column for per-actor scoping.",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T19:49:22.939102-04:00",
-      "updated_at": "2026-04-25T19:49:22.939102-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -4318,9 +4318,9 @@
       "node_type": "goal",
       "title": "Phase 2: Search, Discovery & Admin Diagnostics",
       "description": "Wire admin diagnostics to real APIs, replace placeholder 200 OK with 501, and implement remaining stubbed endpoints (FTS5 search, thread V2, blob scan, discovery wiring, retry crawls)",
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T20:59:48.710105-04:00",
-      "updated_at": "2026-04-25T20:59:48.710105-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\"}"
     },
     {
@@ -4384,9 +4384,9 @@
       "node_type": "outcome",
       "title": "Quality gates passed - AllTests BUILD SUCCEEDED, kaszlak BUILD SUCCEEDED",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-25T21:43:01.714465-04:00",
-      "updated_at": "2026-04-25T21:43:01.714465-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -4637,9 +4637,9 @@
       "node_type": "goal",
       "title": "Phase 5: Ozone and security panels (UI-only)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-26T03:23:10.353843-04:00",
-      "updated_at": "2026-04-26T03:23:10.353843-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -4681,9 +4681,9 @@
       "node_type": "decision",
       "title": "Ozone panel: moderation events, label subscriptions, subject status",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-26T03:24:15.539928-04:00",
-      "updated_at": "2026-04-26T03:24:15.539928-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -4692,9 +4692,9 @@
       "node_type": "decision",
       "title": "Security panel: session management, app passwords, account protection",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-26T03:24:15.574131-04:00",
-      "updated_at": "2026-04-26T03:24:15.574131-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -4703,9 +4703,9 @@
       "node_type": "action",
       "title": "Add Ozone UIBackendClient methods: fetchModerationEvents, getSubjectStatus, queryLabelSubscriptions",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-26T03:24:15.607667-04:00",
-      "updated_at": "2026-04-26T03:24:15.607667-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -4714,9 +4714,9 @@
       "node_type": "action",
       "title": "Add Security UIBackendClient methods: listSessions, revokeSession, listAppPasswords, createAppPassword, deleteAppPassword",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-26T03:24:15.640931-04:00",
-      "updated_at": "2026-04-26T03:24:15.640931-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -4725,9 +4725,9 @@
       "node_type": "action",
       "title": "Add Ozone and Security tab partials and routes to UIServerRuntime",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-04-26T03:24:15.674713-04:00",
-      "updated_at": "2026-04-26T03:24:15.674713-04:00",
+      "updated_at": "2026-04-27 01:09:29",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -4795,6 +4795,985 @@
       "created_at": "2026-04-26T03:25:13.158740-04:00",
       "updated_at": "2026-04-26T03:25:13.158740-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
+    },
+    {
+      "id": 437,
+      "change_id": "19412701-0368-425f-a2a4-7a2e98f7a691",
+      "node_type": "goal",
+      "title": "Restore lost Admin UI features (Phase A: PDS Bulk Actions & Blobs)",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:00:21.447193-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"The user wants to restore features missing from the Web UI after the refactor. Phase A focuses on PDS Bulk Actions (Takedown, Delete) and Blob Management.\"}"
+    },
+    {
+      "id": 438,
+      "change_id": "5da8a81d-fafe-4b95-82b8-bb06f3532f05",
+      "node_type": "option",
+      "title": "Implement Phase A using existing string-concatenation pattern in UIServerRuntime",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:00:25.982866-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 439,
+      "change_id": "e751ebb5-92ee-427c-96e2-74360591cc2a",
+      "node_type": "decision",
+      "title": "Proceed with string-concatenation pattern for Phase A",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:00:49.722953-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 440,
+      "change_id": "8066fb2a-e301-4aed-87bc-374cc41927c0",
+      "node_type": "action",
+      "title": "Implement PDS bulk actions in UIBackendClient",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:00:59.439411-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 441,
+      "change_id": "50c98aa0-b0d6-4a6f-b5b2-87dc3cfafbdf",
+      "node_type": "action",
+      "title": "Implement blob list fetching in UIBackendClient",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:00:59.485356-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 442,
+      "change_id": "59e24654-b83d-465f-ade0-c7d6dd1cefca",
+      "node_type": "action",
+      "title": "Add bulk actions UI to accounts partial",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:00:59.529550-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 443,
+      "change_id": "8e68d6c4-c5e1-4e9a-ac82-2ec7c26de92a",
+      "node_type": "action",
+      "title": "Add blobs management panel to PDS tab",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:00:59.573663-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 444,
+      "change_id": "ba4571ca-c624-4c11-a190-e955902c655c",
+      "node_type": "goal",
+      "title": "Admin UI Gap Closure & Migration Cleanup",
+      "description": "Wire up 10 existing backend methods with no UI route (Phase A), add Chat tab (Phase B), PDS bulk takedown (Phase C), cleanup explore pack (Phase D), and integration tests (Phase E)",
+      "status": "completed",
+      "created_at": "2026-04-26T10:12:21.417508-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 445,
+      "change_id": "26dada33-b90c-46d9-a0b3-3600805bd0d4",
+      "node_type": "action",
+      "title": "Discovered Phase C (bulk takedown) is already fully implemented - checkboxes, buttons, backend routes all wired",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:12:52.966576-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"files\":[\"UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 446,
+      "change_id": "37c7d8c9-8ea3-451d-ba94-5ab86575b5c5",
+      "node_type": "action",
+      "title": "Analyzed UIServerRuntime pattern: POST actions call backend + return HTML alert, GET partials render tables/forms with inline JavaScript handlers",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:14:10.210422-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 447,
+      "change_id": "0ed7dba0-e6e7-4116-8ed3-a2901b0d883c",
+      "node_type": "action",
+      "title": "Implemented Phase A: Added 10 POST action routes (delete-account, pds-reports, resolve-report, appview-rebuild-scope, appview-enqueue-dids, create-app-password, add-ozone-team-member, upsert-ozone-set, create-ozone-template, update-ozone-config) + 8 JavaScript handlers + updated 6 partial render methods + created renderPDSReportsPartial",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:16:42.343997-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 448,
+      "change_id": "32ce6762-0c55-4d3e-a292-712891139ff1",
+      "node_type": "outcome",
+      "title": "Phase A implemented and committed: 10 POST action routes, 8 JavaScript handlers, 6 updated partials, 1 new partial renderer. UIServerRuntime.m compiles successfully.",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:18:22.409660-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"f55e8c73\",\"confidence\":95}"
+    },
+    {
+      "id": 449,
+      "change_id": "874098ed-cbe1-44dd-a9e3-a8cfbcc9beee",
+      "node_type": "outcome",
+      "title": "Admin UI Gap Closure Complete: All 5 phases implemented and tested:\n- Phase A: 10 POST action routes + 8 JavaScript handlers + 6 updated partials + 1 new render method\n- Phase B: Chat administration tab with new backend methods\n- Phase C: Bulk takedown confirmed fully implemented\n- Phase D: Cleanup - removed 22 deprecated files and dead code\n- Phase E: Added integration tests for new features\n\nTotal commits: 4 major feature commits + cleanup. UIServerRuntime.m compiles without errors.",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:23:47.191662-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"996cc335\",\"confidence\":95}"
+    },
+    {
+      "id": 450,
+      "change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "node_type": "goal",
+      "title": "Complete 8-phase Admin UI feature implementation",
+      "description": "Wire up missing backend methods and implement new XRPC endpoints in the UI. Phases: 1-Relay/Ozone reports, 2-PLC expanded, 3-Scheduled actions, 4-Verification, 5-Safelinks+DB, 6-Settings/Signatures, 7-Hosting history, 8-Blob enumeration",
+      "status": "completed",
+      "created_at": "2026-04-26T10:32:35.796308-04:00",
+      "updated_at": "2026-04-26T20:07:48.656289-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 451,
+      "change_id": "025d4435-a9d5-4f79-8132-f9200cada892",
+      "node_type": "action",
+      "title": "Implement Phase 1: Relay Health & Ozone Reports",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:37:52.050794-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 452,
+      "change_id": "025acf82-3df0-41df-a9ae-309ee4dc1ef9",
+      "node_type": "action",
+      "title": "Implement Phase 2: PLC Expanded Features",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:40:22.308800-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIBackendClient.h\",\"Garazyk/Sources/AdminUIServer/UIBackendClient.m\",\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 453,
+      "change_id": "18d6f195-033f-4470-9f13-ccaf0bcc020b",
+      "node_type": "action",
+      "title": "Implement Phase 3: Ozone Scheduled Actions",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:41:49.367676-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIBackendClient.h\",\"Garazyk/Sources/AdminUIServer/UIBackendClient.m\",\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 454,
+      "change_id": "c8196c0f-3928-459c-b067-820ad9296c33",
+      "node_type": "action",
+      "title": "Implement Phase 4: Ozone Verification",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:42:57.550727-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIBackendClient.h\",\"Garazyk/Sources/AdminUIServer/UIBackendClient.m\",\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 455,
+      "change_id": "5613afb6-47b9-4483-9a48-7390a0f4bff3",
+      "node_type": "action",
+      "title": "Implement Phase 5a: Ozone Safelinks UI",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:44:21.743585-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIBackendClient.h\",\"Garazyk/Sources/AdminUIServer/UIBackendClient.m\",\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 456,
+      "change_id": "78b63685-aacc-4bff-896e-62045315da36",
+      "node_type": "action",
+      "title": "Implement Phase 6: Ozone Settings & Signatures",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T10:45:35.980710-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIBackendClient.h\",\"Garazyk/Sources/AdminUIServer/UIBackendClient.m\",\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 457,
+      "change_id": "2c530f8a-b198-41b4-9f22-27b2bf25e8ad",
+      "node_type": "action",
+      "title": "Implement Phase 7: Ozone Hosting History",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T12:35:15.332743-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIBackendClient.h\",\"Garazyk/Sources/AdminUIServer/UIBackendClient.m\",\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 458,
+      "change_id": "1dd5a9cc-abf1-4df7-96ff-c886021ee324",
+      "node_type": "action",
+      "title": "Implement Phase 8: Blob Enumeration Per-DID",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T12:36:29.513558-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/AdminUIServer/UIBackendClient.h\",\"Garazyk/Sources/AdminUIServer/UIBackendClient.m\",\"Garazyk/Sources/AdminUIServer/UIServerRuntime.m\"]}"
+    },
+    {
+      "id": 459,
+      "change_id": "b442f992-09ad-4f37-9361-3b4e364484c2",
+      "node_type": "action",
+      "title": "Implement Phase 5b: Ozone Safelinks Persistence",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T12:42:37.791527-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"Garazyk/Sources/Database/Schema/PDSSchemaManager.h\",\"Garazyk/Sources/Database/Schema/PDSSchemaManager.m\",\"Garazyk/Sources/AppView/Services/ModerationService.m\"]}"
+    },
+    {
+      "id": 460,
+      "change_id": "d1241f7e-6553-4bd0-9d66-319b1f4727b7",
+      "node_type": "action",
+      "title": "Phase 4.7: NSNull safety hardening — recursive UIStripNull in UIBackendClient, UISafe/UIStringFromDict/UISafeLength helpers in UIServerRuntime, cursor pagination fixes across 8 render methods",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T18:19:03.214076-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 461,
+      "change_id": "8ba88d80-8bda-4029-b868-4d95097fdd97",
+      "node_type": "action",
+      "title": "Phase 4.8: NSURLSession migration — migrate UIBackendClient from deprecated NSURLConnection to NSURLSession with semaphore-based sync wrapper, refactor probeServiceNamed: to test root + XRPC separately",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T18:19:38.742860-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 462,
+      "change_id": "7f38a622-ad3c-4713-b7ff-051bcdefedb6",
+      "node_type": "action",
+      "title": "Phase 4.9: Connections tab — runtime service URL/token configuration, UIServiceConfig.updateWithDictionary:, Test Connection per service, Save Connections action",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T18:19:45.983410-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 463,
+      "change_id": "2ac0979d-54f4-4be9-add2-effe06723064",
+      "node_type": "action",
+      "title": "Phase 4.10: PLC list array wrapping — fetchPLCList wraps bare JSON array as {dids: [...]}, performJSONRequestWithURL: wraps bare arrays as {items: [...]}",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T18:20:13.639941-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 464,
+      "change_id": "ab7d0832-a16b-48a1-8656-1f360779eae2",
+      "node_type": "action",
+      "title": "Fix chat rendering: count members from members array, use senderDid for message sender, DID shortening for display",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T18:20:20.722607-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 465,
+      "change_id": "24b4e8ec-2885-46ce-bc68-f403660b4c47",
+      "node_type": "action",
+      "title": "Add seed_chat.py and seed_network.py scripts for chat seeding and full-stack orchestration",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T18:20:30.947804-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 466,
+      "change_id": "ff957884-f32d-46ed-95c5-458dbb9c9bb4",
+      "node_type": "action",
+      "title": "Fix XrpcRepoMethods DID document fallback for local accounts when PLC is unavailable",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T19:58:30.339135-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 467,
+      "change_id": "597fc909-b883-414a-93d0-01bce0037f80",
+      "node_type": "action",
+      "title": "Add localhost:2590 CORS origins and disable invite_code_required in local.json",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:01:49.720622-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 468,
+      "change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "node_type": "outcome",
+      "title": "Phase 4.7-4.10 complete: UI server is crash-proof (NSNull safety), uses NSURLSession, has Connections tab for runtime config, handles bare JSON arrays, chat renders correctly. Seed scripts enable full-stack testing. PDS instability under UI polling is a known issue.",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:04:17.582723-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 469,
+      "change_id": "46514591-fbb3-4759-a89e-b676a0551d2b",
+      "node_type": "goal",
+      "title": "Fix Admin UI/UX issues and implement Polish polish",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:10:39.300442-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"The UI respects the AppKit direction but executes at 60% fidelity. It reads as 'web app styled like macOS' rather than 'native macOS experience ported to web.' The strawberry motif is implemented but barely visible. To match the stated design goals, you need stronger visual differentiation, more prominent Polish references, and refined interactive details that make it feel special and intentional rather than generic.\"}"
+    },
+    {
+      "id": 470,
+      "change_id": "0e0af079-026c-4c48-b51c-0dcdb7aafe2e",
+      "node_type": "action",
+      "title": "Implement Phase 1 Foundation",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:10:43.396705-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 471,
+      "change_id": "2d8cb296-cb95-43bb-bb49-ac7ce5d3db7e",
+      "node_type": "outcome",
+      "title": "Phase 2 Layout & Navigation complete: Transitions added, magic numbers removed, sidebar refined",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:11:23.730624-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 472,
+      "change_id": "ed8d991c-2647-4e48-ba56-fef27c90a217",
+      "node_type": "outcome",
+      "title": "Phase 3 Component Polish complete: Tokens applied to buttons/badges, zebra striping added, typography refined",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:11:39.706163-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 473,
+      "change_id": "0260e468-a985-4f39-b9e4-74a16ef0b210",
+      "node_type": "outcome",
+      "title": "Phase 4 Polish Motif complete: Truskawka tokens applied, Bajtek Edition enhanced, ANSI terminal borders added",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:11:54.900071-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 474,
+      "change_id": "a83b6a75-e923-498f-a18c-540de0b4ac54",
+      "node_type": "outcome",
+      "title": "Admin UI Polish complete: Foundation, Layout, Components, Motif, and Templates fully refined and verified.",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:12:31.028331-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 475,
+      "change_id": "7a16677a-099e-4bd9-8ce6-0ff41e644ed3",
+      "node_type": "goal",
+      "title": "Analyze Bluesky chat architecture",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:14:48.226350-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Analyze the Bluesky chat implementation in the atproto and indigo repositories. I need to know:\\n1. Is chat a separate service with its own host/server?\\n2. Is it integrated into the AppView (bsky.social) or is it a standalone ATProto service?\\n3. Where are the lexicons defined (e.g., chat.bsky.*) and what do they suggest about the service boundary?\\n\\nCheck:\\n- Lexicons in atproto/lexicons/chat\\n- Service implementation in indigo/api/chat and indigo/cmd/chat\\n- Documentation in the repos.\"}"
+    },
+    {
+      "id": 476,
+      "change_id": "c15f0142-9ec7-4b3d-8668-561349f459fb",
+      "node_type": "action",
+      "title": "Explore atproto and indigo repositories",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:17:55.427990-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 477,
+      "change_id": "46d860b3-823e-470e-a667-a2ab8380786e",
+      "node_type": "outcome",
+      "title": "Chat architecture analysis complete: Standalone Go service proxied by PDS",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:18:01.185460-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
+    },
+    {
+      "id": 478,
+      "change_id": "1ee208cc-f641-44f6-9304-c7d36a1677ca",
+      "node_type": "observation",
+      "title": "Chat uses chat.bsky.* namespace and is proxied by PDS",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:18:12.928004-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
+    },
+    {
+      "id": 479,
+      "change_id": "a60ea098-7694-4d59-9d2f-aff47347827e",
+      "node_type": "observation",
+      "title": "Indigo repo contains generated Go API handlers for chat",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:18:13.267287-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
+    },
+    {
+      "id": 480,
+      "change_id": "3cf60306-eb01-4f3c-afef-a58243a6af9e",
+      "node_type": "goal",
+      "title": "Split Chat Service into standalone 'syrena-chat' microservice",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:20:11.418843-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"The chat implementation currently resides within the PDS process. To align with ATProto best practices and improve scalability, we need to extract it into a dedicated 'syrena-chat' service that handles the chat.bsky.* namespace.\"}"
+    },
+    {
+      "id": 481,
+      "change_id": "81e50b2b-8cb0-4227-9734-e9ea4f2c0ed7",
+      "node_type": "option",
+      "title": "Option: Shared vs Isolated Database",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:20:16.113983-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 482,
+      "change_id": "a24cc73e-ee34-4a39-8908-c2a61ddeaa4b",
+      "node_type": "option",
+      "title": "Option: Auth Validation Strategy",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:20:16.115205-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 483,
+      "change_id": "f1c94921-12e3-4b88-a0bc-5a9fa2642813",
+      "node_type": "option",
+      "title": "Option: Communication for Notifications",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:20:16.124501-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 484,
+      "change_id": "14e60af0-1bd1-48b8-8016-2d232e4cb00a",
+      "node_type": "decision",
+      "title": "Decision: Isolated chat.db",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:20:26.946679-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 485,
+      "change_id": "b31e6bb4-4d4b-4ca4-b5c0-f5e1ff546447",
+      "node_type": "decision",
+      "title": "Decision: Independent Auth Validation",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:20:26.951569-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 486,
+      "change_id": "ab55fdaa-ead7-4c6a-9e61-c311b69dfbaf",
+      "node_type": "decision",
+      "title": "Decision: Internal Webhook for Notifications",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:20:27.001192-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 487,
+      "change_id": "0647cb1c-6e6f-40c8-ae42-58d2824bae6f",
+      "node_type": "action",
+      "title": "Implement Phase 1: Infrastructure & Scaffolding",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:22:30.612368-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 488,
+      "change_id": "eb0d3d88-c509-43ec-a9d9-421c6a8b5431",
+      "node_type": "outcome",
+      "title": "Successfully split Chat Service into standalone 'syrena-chat' service with pipethrough proxying",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:25:38.790667-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 489,
+      "change_id": "9b6aa4f2-a10b-4c95-bbba-ebc6ebfda8d9",
+      "node_type": "observation",
+      "title": "Observation: 'Local AppView' mode in PDS deviates from ATProto architecture",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:51:44.127080-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 490,
+      "change_id": "78cd505b-5801-4ba7-b827-c44fae285ced",
+      "node_type": "observation",
+      "title": "Observation: Competitive review confirms PDS boundary should exclude global app.bsky logic",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:57:16.941009-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 491,
+      "change_id": "ec37975a-5848-4256-881f-ff944c4c2708",
+      "node_type": "observation",
+      "title": "Observation: millipds review confirms wildcard proxying as the standard for non-PDS namespaces",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T20:57:43.487719-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 492,
+      "change_id": "3249ac4a-072d-4abc-822b-aa954cb50e5e",
+      "node_type": "goal",
+      "title": "Investigate service discovery and proxying logic across implementations",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:00:29.133698-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Investigate how each implementation handles service discovery and proxying. Specifically: 1. Handling of the 'atproto-proxy' header. 2. How service DIDs are resolved to endpoints (DID resolution logic). 3. Catch-all vs. specific method proxying. Compare Garazyk, Reference PDS, Tranquil, Pegasus, Perlsky, and millipds.\"}"
+    },
+    {
+      "id": 493,
+      "change_id": "4776a102-4f78-4670-a6b6-2a52496afeac",
+      "node_type": "goal",
+      "title": "Investigate authentication and security models",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:00:31.002073-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Investigate the authentication and security models.\\nSpecifically:\\n1. JWT validation (local vs. remote keys).\\n2. DPoP support and nonce management.\\n3. Cross-service authentication (PDS-to-AppView/Chat JWT minting).\\n4. Support for Passkeys/WebAuthn.\\n\\nCompare:\\n- Garazyk: Garazyk/Sources/Auth/, Garazyk/Sources/Network/XrpcAuthHelper.m\\n- Tranquil: /tmp/atproto-review/tranquil-pds/crates/tranquil-auth/\\n- Pegasus: /tmp/atproto-review/pegasus/pegasus/lib/auth.ml\\n- Perlsky: /tmp/atproto-review/perlsky/lib/ATProto/PDS/Auth/\\n- millipds: /tmp/atproto-review/millipds/src/millipds/auth_bearer.py\\n\\nReport on: Security gaps in Garazyk vs. the \\\"superset\\\" features of Tranquil.\"}"
+    },
+    {
+      "id": 494,
+      "change_id": "5d9fe466-8a63-42d6-90e4-b4c8c1aa50cf",
+      "node_type": "goal",
+      "title": "Investigate and compare storage/repo management across Garazyk, Tranquil, Pegasus, Perlsky, and millipds",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:00:31.341218-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Investigate the storage and repository management implementation.\\nSpecifically:\\n1. Database engine (SQLite vs. Postgres).\\n2. MST (Merkle Search Tree) implementation and performance.\\n3. Blob storage (Local, S3, etc.).\\n4. Multi-tenant vs. Single-tenant data isolation.\\n\\nCompare:\\n- Garazyk: Garazyk/Sources/Database/, Garazyk/Sources/Repo/\\n- Tranquil: /tmp/atproto-review/tranquil-pds/crates/tranquil-store/\\n- Pegasus: /tmp/atproto-review/pegasus/mist/\\n- Perlsky: /tmp/atproto-review/perlsky/lib/ATProto/PDS/Repo/\\n- millipds: /tmp/atproto-review/millipds/src/millipds/atproto_repo.py\\n\\nReport on: Data sovereignty and scaling advantages of each.\"}"
+    },
+    {
+      "id": 495,
+      "change_id": "989eaba3-6704-4aba-a5b4-f1a15f93aa56",
+      "node_type": "option",
+      "title": "Deep-dive into proxying logic across multiple codebases",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:00:33.422355-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"492\"}"
+    },
+    {
+      "id": 496,
+      "change_id": "a1db0e99-e25b-4b6b-8c2a-2ff54b50b4ab",
+      "node_type": "decision",
+      "title": "Perform cross-implementation proxying audit",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:00:33.427286-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Deep-dive into proxying logic across multiple codebases\"}"
+    },
+    {
+      "id": 497,
+      "change_id": "1667075e-3cf8-41ab-a804-91cdf43e3d2a",
+      "node_type": "action",
+      "title": "Read Garazyk proxying source files",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:00:33.498475-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Perform cross-implementation proxying audit\"}"
+    },
+    {
+      "id": 498,
+      "change_id": "6f7c9bbe-4190-45d3-ab72-f5d5cd3cb4ed",
+      "node_type": "action",
+      "title": "Read external implementation proxying source files",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:00:33.512126-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Perform cross-implementation proxying audit\"}"
+    },
+    {
+      "id": 499,
+      "change_id": "ed93d51b-ff19-42fb-835b-26f12efd32c5",
+      "node_type": "outcome",
+      "title": "Completed investigation of proxying logic across implementations. Identified gap in Garazyk's static routing vs standard dynamic header-driven routing.",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:02:35.086883-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"497\"}"
+    },
+    {
+      "id": 500,
+      "change_id": "ff20fff3-be19-4547-bfab-5ec8da653d4c",
+      "node_type": "outcome",
+      "title": "Reported comparison findings and improvement roadmap for Garazyk proxying logic.",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-04-26T21:02:38.368859-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"498\"}"
+    },
+    {
+      "id": 501,
+      "change_id": "d1ec380d-f0d2-416b-9b71-1faa7f3121fb",
+      "node_type": "goal",
+      "title": "Align Garazyk PDS with modular ATProto architecture standards",
+      "description": null,
+      "status": "in_progress",
+      "created_at": "2026-04-26T21:03:49.733341-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Our PDS currently bundles too much AppView/Chat logic and lacks standard proxying support (atproto-proxy header, dynamic DID resolution). We need to refactor the dispatcher to enforce a clear service boundary, implement a catch-all proxy for external namespaces, and enable dynamic service discovery.\"}"
+    },
+    {
+      "id": 502,
+      "change_id": "92f30648-716e-4d67-9624-c539ed30c1c8",
+      "node_type": "action",
+      "title": "Refactor XrpcDispatcher to support atproto-proxy and protected methods",
+      "description": null,
+      "status": "in_progress",
+      "created_at": "2026-04-26T21:03:49.838480-04:00",
+      "updated_at": "2026-04-27 01:09:29",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 503,
+      "change_id": "2102a775-b192-4e77-8db4-c78d165b2503",
+      "node_type": "goal",
+      "title": "Audit offline fallback/local AppView logic in Tranquil, Pegasus, and Perlsky",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:12:39.834423-04:00",
+      "updated_at": "2026-04-26T21:12:39.834423-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Check Tranquil-PDS, Pegasus, and Perlsky to see if they maintain any 'offline fallback' or 'local only' AppView logic inside the PDS binary once they've moved to a modular proxy model. Do they keep the code for app.bsky.* methods as a backup, or is it strictly removed from the PDS? Report on: Why they chose to keep or delete local social logic.\"}"
+    },
+    {
+      "id": 504,
+      "change_id": "b42823c1-d959-45d0-917f-3af626b02ac8",
+      "node_type": "goal",
+      "title": "Investigate data architecture of Tranquil-PDS and Pegasus",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:12:40.017911-04:00",
+      "updated_at": "2026-04-26T21:12:40.017911-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100,\"prompt\":\"Investigate the data architecture of Tranquil-PDS and Pegasus. Specifically: 1. Does the PDS remain single-tenant (per-user storage) while the AppView/Chat services are multi-tenant? 2. Look for architectural reasons (RFCs/comments) for this split. 3. How do they handle the performance vs. portability tradeoff?\"}"
+    },
+    {
+      "id": 505,
+      "change_id": "6a099c77-bcc8-4efc-810c-7b3962d7d740",
+      "node_type": "goal",
+      "title": "Investigate Admin UI architecture in pegasus and tranquil-pds",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:12:40.169085-04:00",
+      "updated_at": "2026-04-26T21:12:40.169085-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Check if pegasus or tranquil-pds implement their Admin UI as a separate service that communicates with the PDS via XRPC/API, rather than direct database access. \\n1. Where is the Admin UI hosted?\\n2. Does it use the same port/process as the PDS?\\n3. What authentication does it use to talk to the core services?\\n\\nCheck:\\n- /tmp/atproto-review/pegasus/frontend/\\n- /tmp/atproto-review/tranquil-pds/frontend/\\n\\nReport on: How to architect a 'Cluster Manager' UI.\"}"
+    },
+    {
+      "id": 506,
+      "change_id": "a1ffb99a-6bd8-497a-8a68-feb3ab966ed0",
+      "node_type": "goal",
+      "title": "Analyze AppView proxying behavior for missing atproto-proxy header",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:12:40.582378-04:00",
+      "updated_at": "2026-04-26T21:12:40.582378-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Determine how millipds, perlsky, and the reference PDS handle app.bsky.* requests when the 'atproto-proxy' header is MISSING. Check if they proxy to a hardcoded 'default' AppView, reject the request, and how the default upstream is configured. Report on the safest default behavior for a modular PDS.\"}"
+    },
+    {
+      "id": 507,
+      "change_id": "28928c27-4e58-4986-a18a-9377c6ad3d16",
+      "node_type": "decision",
+      "title": "Decision: Adopt Hybrid Storage Model (Single-tenant PDS, Multi-tenant AppView)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:23:45.282756-04:00",
+      "updated_at": "2026-04-26T21:23:45.282756-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 508,
+      "change_id": "63e3982a-b7bd-444d-8e8f-a4a776b1140d",
+      "node_type": "decision",
+      "title": "Decision: Use Standard XRPC with Admin Tokens for Cluster Management",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:23:45.378740-04:00",
+      "updated_at": "2026-04-26T21:23:45.378740-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 509,
+      "change_id": "f88fe157-31b8-4fe5-ae10-9a46ecb81907",
+      "node_type": "decision",
+      "title": "Decision: Strictly Separate AppView Logic from PDS Core",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:23:45.659510-04:00",
+      "updated_at": "2026-04-26T21:23:45.659510-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 510,
+      "change_id": "70dd6f1f-fc6a-4d3a-8ccd-d98aca57b03b",
+      "node_type": "outcome",
+      "title": "PDS Core Refactored: Implemented protected methods boundary and dynamic proxying, removed legacy local AppView and Admin UI logic.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:35:15.450097-04:00",
+      "updated_at": "2026-04-26T21:35:15.450097-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 511,
+      "change_id": "e85d6939-ef7e-47f1-92f3-ddd056ea616a",
+      "node_type": "outcome",
+      "title": "Modular Architecture Complete: syrena-appview and syrena-chat are standalone services; garazyk-ui is a unified cluster manager dashboard.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-26T21:40:33.175695-04:00",
+      "updated_at": "2026-04-26T21:40:33.175695-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":100}"
+    },
+    {
+      "id": 512,
+      "change_id": "54c37b45-9adb-4433-bae3-2e2f9765a75b",
+      "node_type": "goal",
+      "title": "Deslop Documentation",
+      "description": "Rewrite project documentation to remove AI writing patterns, improve clarity, and ensure it sounds like a specific human wrote it.",
+      "status": "pending",
+      "created_at": "2026-04-27T12:34:34.090178-04:00",
+      "updated_at": "2026-04-27T12:34:34.090178-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"use deslop skill on docs make a plan for how to rewrite and track the rewriting of docs w/ deciduous\"}"
+    },
+    {
+      "id": 513,
+      "change_id": "1fedb72e-20d7-483b-8a2a-0853b9acc7c6",
+      "node_type": "option",
+      "title": "Rewrite incrementally by domain/directory",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:34:34.099469-04:00",
+      "updated_at": "2026-04-27T12:34:34.099469-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 514,
+      "change_id": "58599ab3-7496-4dff-b1af-f59ef791af84",
+      "node_type": "decision",
+      "title": "Rewrite incrementally by domain",
+      "description": "Ensures high-quality focus and easier reviewability per section.",
+      "status": "pending",
+      "created_at": "2026-04-27T12:34:34.323074-04:00",
+      "updated_at": "2026-04-27T12:34:34.323074-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 515,
+      "change_id": "e38268c4-9a61-4dd3-9e0e-80a4e7fe0551",
+      "node_type": "action",
+      "title": "Deslop Core Project Docs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:34:47.617580-04:00",
+      "updated_at": "2026-04-27T12:34:47.617580-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"docs/PROJECT_SUMMARY.md\",\"SERVICES_SETUP_SUMMARY.md\",\"ADMINUI_DEPLOYMENT_GUIDE.md\",\"AGENTS.md\"]}"
+    },
+    {
+      "id": 516,
+      "change_id": "383fae5b-9a6c-4b30-964e-6c746e6fb705",
+      "node_type": "outcome",
+      "title": "Core project documentation deslopped",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:35:18.852127-04:00",
+      "updated_at": "2026-04-27T12:35:18.852127-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 517,
+      "change_id": "f7d40d93-e557-4884-af79-90374a1f410b",
+      "node_type": "action",
+      "title": "Deslop Tooling and Validator Docs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:35:35.157961-04:00",
+      "updated_at": "2026-04-27T12:35:35.157961-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"tooling/test-audit-validator/README.md\",\"tooling/test-audit-validator/docs/*.md\"]}"
+    },
+    {
+      "id": 518,
+      "change_id": "a7d9a9c1-a966-4596-a74a-630da6caddff",
+      "node_type": "outcome",
+      "title": "Tooling and validator documentation deslopped",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:36:14.448109-04:00",
+      "updated_at": "2026-04-27T12:36:14.448109-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 519,
+      "change_id": "6ab4a8a1-10e1-47c1-9465-1f2b08c0b85c",
+      "node_type": "action",
+      "title": "Deslop Implementation Summary",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:36:30.627914-04:00",
+      "updated_at": "2026-04-27T12:36:30.627914-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\".claude/IMPLEMENTATION_SUMMARY.md\"]}"
+    },
+    {
+      "id": 520,
+      "change_id": "0ae4498e-e579-48b6-acf2-90ea1933b379",
+      "node_type": "outcome",
+      "title": "Implementation summary deslopped",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:36:45.378690-04:00",
+      "updated_at": "2026-04-27T12:36:45.378690-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 521,
+      "change_id": "b7dc0103-f005-43b2-83c4-dbc2ba30b03a",
+      "node_type": "action",
+      "title": "Deslop Guides",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:36:57.479858-04:00",
+      "updated_at": "2026-04-27T12:36:57.479858-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"docs/guides/SERVICE_ORCHESTRATION_GUIDE.md\",\"docs/guides/SETUP_GUIDE.md\"]}"
+    },
+    {
+      "id": 522,
+      "change_id": "55f1bd12-ce8a-4e0a-a836-72d125150a9a",
+      "node_type": "outcome",
+      "title": "Guides deslopped",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:37:21.526536-04:00",
+      "updated_at": "2026-04-27T12:37:21.526536-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 523,
+      "change_id": "a8f4c8a9-acc2-44d1-a6e2-9d3683fa8c3c",
+      "node_type": "action",
+      "title": "Deslop Key Tutorials",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:37:42.890815-04:00",
+      "updated_at": "2026-04-27T12:37:42.890815-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"docs/10-tutorials/tutorial-1-hello-pds.md\",\"docs/10-tutorials/tutorial-6-deployment.md\"]}"
+    },
+    {
+      "id": 524,
+      "change_id": "5a85ca82-e5ec-4966-9465-5de662e9a1fe",
+      "node_type": "action",
+      "title": "Deslop Maintenance and Migration Docs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:38:10.028350-04:00",
+      "updated_at": "2026-04-27T12:38:10.028350-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"docs/MAINTENANCE.md\",\"docs/MIGRATION_GUIDE.md\"]}"
+    },
+    {
+      "id": 525,
+      "change_id": "1b7e7c0a-f3a6-4f3a-a267-76850ba48290",
+      "node_type": "outcome",
+      "title": "Full documentation suite deslopped",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-04-27T12:38:42.660144-04:00",
+      "updated_at": "2026-04-27T12:38:42.660144-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -9406,6 +10385,699 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-04-26T03:25:13.173328-04:00"
+    },
+    {
+      "id": 420,
+      "from_node_id": 437,
+      "to_node_id": 438,
+      "from_change_id": "19412701-0368-425f-a2a4-7a2e98f7a691",
+      "to_change_id": "5da8a81d-fafe-4b95-82b8-bb06f3532f05",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Primary implementation approach",
+      "created_at": "2026-04-26T10:00:25.991092-04:00"
+    },
+    {
+      "id": 421,
+      "from_node_id": 438,
+      "to_node_id": 439,
+      "from_change_id": "5da8a81d-fafe-4b95-82b8-bb06f3532f05",
+      "to_change_id": "e751ebb5-92ee-427c-96e2-74360591cc2a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Matches existing project architecture",
+      "created_at": "2026-04-26T10:00:49.732242-04:00"
+    },
+    {
+      "id": 422,
+      "from_node_id": 439,
+      "to_node_id": 440,
+      "from_change_id": "e751ebb5-92ee-427c-96e2-74360591cc2a",
+      "to_change_id": "8066fb2a-e301-4aed-87bc-374cc41927c0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Part of Phase A restoration",
+      "created_at": "2026-04-26T10:00:59.447677-04:00"
+    },
+    {
+      "id": 423,
+      "from_node_id": 439,
+      "to_node_id": 441,
+      "from_change_id": "e751ebb5-92ee-427c-96e2-74360591cc2a",
+      "to_change_id": "50c98aa0-b0d6-4a6f-b5b2-87dc3cfafbdf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Part of Phase A restoration",
+      "created_at": "2026-04-26T10:00:59.493746-04:00"
+    },
+    {
+      "id": 424,
+      "from_node_id": 439,
+      "to_node_id": 442,
+      "from_change_id": "e751ebb5-92ee-427c-96e2-74360591cc2a",
+      "to_change_id": "59e24654-b83d-465f-ade0-c7d6dd1cefca",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Part of Phase A restoration",
+      "created_at": "2026-04-26T10:00:59.537423-04:00"
+    },
+    {
+      "id": 425,
+      "from_node_id": 439,
+      "to_node_id": 443,
+      "from_change_id": "e751ebb5-92ee-427c-96e2-74360591cc2a",
+      "to_change_id": "8e68d6c4-c5e1-4e9a-ac82-2ec7c26de92a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Part of Phase A restoration",
+      "created_at": "2026-04-26T10:00:59.581878-04:00"
+    },
+    {
+      "id": 426,
+      "from_node_id": 450,
+      "to_node_id": 451,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "025d4435-a9d5-4f79-8132-f9200cada892",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 1 implementation complete",
+      "created_at": "2026-04-26T10:37:54.404893-04:00"
+    },
+    {
+      "id": 427,
+      "from_node_id": 450,
+      "to_node_id": 452,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "025acf82-3df0-41df-a9ae-309ee4dc1ef9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 2 implementation complete",
+      "created_at": "2026-04-26T10:40:24.668531-04:00"
+    },
+    {
+      "id": 428,
+      "from_node_id": 450,
+      "to_node_id": 453,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "18d6f195-033f-4470-9f13-ccaf0bcc020b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 3 implementation complete",
+      "created_at": "2026-04-26T10:41:49.376322-04:00"
+    },
+    {
+      "id": 429,
+      "from_node_id": 450,
+      "to_node_id": 454,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "c8196c0f-3928-459c-b067-820ad9296c33",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 4 implementation complete",
+      "created_at": "2026-04-26T10:42:57.560041-04:00"
+    },
+    {
+      "id": 430,
+      "from_node_id": 450,
+      "to_node_id": 455,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "5613afb6-47b9-4483-9a48-7390a0f4bff3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 5a implementation complete",
+      "created_at": "2026-04-26T10:44:21.752120-04:00"
+    },
+    {
+      "id": 431,
+      "from_node_id": 450,
+      "to_node_id": 456,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "78b63685-aacc-4bff-896e-62045315da36",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 6 implementation complete",
+      "created_at": "2026-04-26T10:45:35.989475-04:00"
+    },
+    {
+      "id": 432,
+      "from_node_id": 450,
+      "to_node_id": 457,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "2c530f8a-b198-41b4-9f22-27b2bf25e8ad",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 7 implementation complete",
+      "created_at": "2026-04-26T12:35:15.341781-04:00"
+    },
+    {
+      "id": 433,
+      "from_node_id": 450,
+      "to_node_id": 458,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "1dd5a9cc-abf1-4df7-96ff-c886021ee324",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 8 implementation complete - all phases finished!",
+      "created_at": "2026-04-26T12:36:29.522158-04:00"
+    },
+    {
+      "id": 434,
+      "from_node_id": 450,
+      "to_node_id": 459,
+      "from_change_id": "15ac6a69-93e0-4738-99ca-c98fdc708c06",
+      "to_change_id": "b442f992-09ad-4f37-9361-3b4e364484c2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 5b database persistence complete!",
+      "created_at": "2026-04-26T12:42:37.801651-04:00"
+    },
+    {
+      "id": 435,
+      "from_node_id": 460,
+      "to_node_id": 468,
+      "from_change_id": "d1241f7e-6553-4bd0-9d66-319b1f4727b7",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "NSNull safety enables crash-proof rendering",
+      "created_at": "2026-04-26T20:04:56.631149-04:00"
+    },
+    {
+      "id": 436,
+      "from_node_id": 461,
+      "to_node_id": 468,
+      "from_change_id": "8ba88d80-8bda-4029-b868-4d95097fdd97",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "NSURLSession migration removes deprecated API",
+      "created_at": "2026-04-26T20:04:56.643514-04:00"
+    },
+    {
+      "id": 437,
+      "from_node_id": 462,
+      "to_node_id": 468,
+      "from_change_id": "7f38a622-ad3c-4713-b7ff-051bcdefedb6",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Connections tab enables runtime token config",
+      "created_at": "2026-04-26T20:04:56.654530-04:00"
+    },
+    {
+      "id": 438,
+      "from_node_id": 463,
+      "to_node_id": 468,
+      "from_change_id": "2ac0979d-54f4-4be9-add2-effe06723064",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Array wrapping prevents dict subscript crashes",
+      "created_at": "2026-04-26T20:04:56.664133-04:00"
+    },
+    {
+      "id": 439,
+      "from_node_id": 464,
+      "to_node_id": 468,
+      "from_change_id": "ab7d0832-a16b-48a1-8656-1f360779eae2",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chat render fixes show correct member counts and sender DIDs",
+      "created_at": "2026-04-26T20:04:56.672582-04:00"
+    },
+    {
+      "id": 440,
+      "from_node_id": 465,
+      "to_node_id": 468,
+      "from_change_id": "24b4e8ec-2885-46ce-bc68-f403660b4c47",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Seed scripts enable full-stack integration testing",
+      "created_at": "2026-04-26T20:04:56.680774-04:00"
+    },
+    {
+      "id": 441,
+      "from_node_id": 466,
+      "to_node_id": 468,
+      "from_change_id": "ff957884-f32d-46ed-95c5-458dbb9c9bb4",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "DID fallback allows local accounts when PLC is down",
+      "created_at": "2026-04-26T20:04:56.688321-04:00"
+    },
+    {
+      "id": 442,
+      "from_node_id": 467,
+      "to_node_id": 468,
+      "from_change_id": "597fc909-b883-414a-93d0-01bce0037f80",
+      "to_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "CORS and invite config enable local development",
+      "created_at": "2026-04-26T20:04:56.695385-04:00"
+    },
+    {
+      "id": 443,
+      "from_node_id": 468,
+      "to_node_id": 422,
+      "from_change_id": "235733ba-232d-469e-b920-324eaccf42f2",
+      "to_change_id": "1d1e8f2c-543d-4ffe-a34c-907935d41980",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 4 hardening complete, Phase 5 next",
+      "created_at": "2026-04-26T20:06:16.487703-04:00"
+    },
+    {
+      "id": 444,
+      "from_node_id": 421,
+      "to_node_id": 460,
+      "from_change_id": "aeaa0a9c-e199-45f7-a2b3-b3c289d84b7c",
+      "to_change_id": "d1241f7e-6553-4bd0-9d66-319b1f4727b7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 4 complete led to hardening",
+      "created_at": "2026-04-26T20:06:16.500232-04:00"
+    },
+    {
+      "id": 445,
+      "from_node_id": 400,
+      "to_node_id": 460,
+      "from_change_id": "acc6dcbe-cb91-4e7f-9c22-f21b9f1d4f9d",
+      "to_change_id": "d1241f7e-6553-4bd0-9d66-319b1f4727b7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UI split includes hardening",
+      "created_at": "2026-04-26T20:06:16.511161-04:00"
+    },
+    {
+      "id": 446,
+      "from_node_id": 400,
+      "to_node_id": 461,
+      "from_change_id": "acc6dcbe-cb91-4e7f-9c22-f21b9f1d4f9d",
+      "to_change_id": "8ba88d80-8bda-4029-b868-4d95097fdd97",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UI split includes modern networking",
+      "created_at": "2026-04-26T20:06:16.520924-04:00"
+    },
+    {
+      "id": 447,
+      "from_node_id": 400,
+      "to_node_id": 462,
+      "from_change_id": "acc6dcbe-cb91-4e7f-9c22-f21b9f1d4f9d",
+      "to_change_id": "7f38a622-ad3c-4713-b7ff-051bcdefedb6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UI split includes runtime config",
+      "created_at": "2026-04-26T20:06:16.529567-04:00"
+    },
+    {
+      "id": 448,
+      "from_node_id": 475,
+      "to_node_id": 476,
+      "from_change_id": "7a16677a-099e-4bd9-8ce6-0ff41e644ed3",
+      "to_change_id": "c15f0142-9ec7-4b3d-8668-561349f459fb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "started investigation",
+      "created_at": "2026-04-26T20:18:01.169212-04:00"
+    },
+    {
+      "id": 449,
+      "from_node_id": 476,
+      "to_node_id": 478,
+      "from_change_id": "c15f0142-9ec7-4b3d-8668-561349f459fb",
+      "to_change_id": "1ee208cc-f641-44f6-9304-c7d36a1677ca",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "found service boundary",
+      "created_at": "2026-04-26T20:18:12.974354-04:00"
+    },
+    {
+      "id": 450,
+      "from_node_id": 478,
+      "to_node_id": 477,
+      "from_change_id": "1ee208cc-f641-44f6-9304-c7d36a1677ca",
+      "to_change_id": "46d860b3-823e-470e-a667-a2ab8380786e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "conclusion",
+      "created_at": "2026-04-26T20:18:13.049312-04:00"
+    },
+    {
+      "id": 451,
+      "from_node_id": 479,
+      "to_node_id": 477,
+      "from_change_id": "a60ea098-7694-4d59-9d2f-aff47347827e",
+      "to_change_id": "46d860b3-823e-470e-a667-a2ab8380786e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "conclusion",
+      "created_at": "2026-04-26T20:18:13.324359-04:00"
+    },
+    {
+      "id": 452,
+      "from_node_id": 480,
+      "to_node_id": 483,
+      "from_change_id": "3cf60306-eb01-4f3c-afef-a58243a6af9e",
+      "to_change_id": "f1c94921-12e3-4b88-a0bc-5a9fa2642813",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architectural choice for inter-service events",
+      "created_at": "2026-04-26T20:20:19.651361-04:00"
+    },
+    {
+      "id": 453,
+      "from_node_id": 480,
+      "to_node_id": 481,
+      "from_change_id": "3cf60306-eb01-4f3c-afef-a58243a6af9e",
+      "to_change_id": "81e50b2b-8cb0-4227-9734-e9ea4f2c0ed7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architectural choice for data isolation",
+      "created_at": "2026-04-26T20:20:23.418321-04:00"
+    },
+    {
+      "id": 454,
+      "from_node_id": 480,
+      "to_node_id": 482,
+      "from_change_id": "3cf60306-eb01-4f3c-afef-a58243a6af9e",
+      "to_change_id": "a24cc73e-ee34-4a39-8908-c2a61ddeaa4b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architectural choice for security model",
+      "created_at": "2026-04-26T20:20:23.441866-04:00"
+    },
+    {
+      "id": 455,
+      "from_node_id": 481,
+      "to_node_id": 484,
+      "from_change_id": "81e50b2b-8cb0-4227-9734-e9ea4f2c0ed7",
+      "to_change_id": "14e60af0-1bd1-48b8-8016-2d232e4cb00a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen for better data sovereignty and isolation",
+      "created_at": "2026-04-26T20:20:30.084459-04:00"
+    },
+    {
+      "id": 456,
+      "from_node_id": 482,
+      "to_node_id": 485,
+      "from_change_id": "a24cc73e-ee34-4a39-8908-c2a61ddeaa4b",
+      "to_change_id": "b31e6bb4-4d4b-4ca4-b5c0-f5e1ff546447",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen for ATProto compliance and service independence",
+      "created_at": "2026-04-26T20:20:30.093296-04:00"
+    },
+    {
+      "id": 457,
+      "from_node_id": 483,
+      "to_node_id": 486,
+      "from_change_id": "f1c94921-12e3-4b88-a0bc-5a9fa2642813",
+      "to_change_id": "ab55fdaa-ead7-4c6a-9e61-c311b69dfbaf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen for simplicity and reliable cross-service signaling",
+      "created_at": "2026-04-26T20:20:30.156967-04:00"
+    },
+    {
+      "id": 458,
+      "from_node_id": 484,
+      "to_node_id": 487,
+      "from_change_id": "14e60af0-1bd1-48b8-8016-2d232e4cb00a",
+      "to_change_id": "0647cb1c-6e6f-40c8-ae42-58d2824bae6f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of the isolated database and standalone runtime",
+      "created_at": "2026-04-26T20:22:30.660390-04:00"
+    },
+    {
+      "id": 459,
+      "from_node_id": 487,
+      "to_node_id": 488,
+      "from_change_id": "0647cb1c-6e6f-40c8-ae42-58d2824bae6f",
+      "to_change_id": "eb0d3d88-c509-43ec-a9d9-421c6a8b5431",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Final implementation result",
+      "created_at": "2026-04-26T20:25:38.838520-04:00"
+    },
+    {
+      "id": 460,
+      "from_node_id": 480,
+      "to_node_id": 489,
+      "from_change_id": "3cf60306-eb01-4f3c-afef-a58243a6af9e",
+      "to_change_id": "9b6aa4f2-a10b-4c95-bbba-ebc6ebfda8d9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Contextual observation during service split",
+      "created_at": "2026-04-26T20:51:50.948679-04:00"
+    },
+    {
+      "id": 461,
+      "from_node_id": 480,
+      "to_node_id": 491,
+      "from_change_id": "3cf60306-eb01-4f3c-afef-a58243a6af9e",
+      "to_change_id": "ec37975a-5848-4256-881f-ff944c4c2708",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Comprehensive competitive landscape complete",
+      "created_at": "2026-04-26T20:57:47.887380-04:00"
+    },
+    {
+      "id": 462,
+      "from_node_id": 494,
+      "to_node_id": 495,
+      "from_change_id": "5d9fe466-8a63-42d6-90e4-b4c8c1aa50cf",
+      "to_change_id": "989eaba3-6704-4aba-a5b4-f1a15f93aa56",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Investigation results",
+      "created_at": "2026-04-26T21:02:24.871717-04:00"
+    },
+    {
+      "id": 463,
+      "from_node_id": 492,
+      "to_node_id": 493,
+      "from_change_id": "3249ac4a-072d-4abc-822b-aa954cb50e5e",
+      "to_change_id": "4776a102-4f78-4670-a6b6-2a52496afeac",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Plan for modular architectural alignment",
+      "created_at": "2026-04-26T21:03:50.619748-04:00"
+    },
+    {
+      "id": 464,
+      "from_node_id": 501,
+      "to_node_id": 503,
+      "from_change_id": "d1ec380d-f0d2-416b-9b71-1faa7f3121fb",
+      "to_change_id": "2102a775-b192-4e77-8db4-c78d165b2503",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Fundamental storage strategy",
+      "created_at": "2026-04-26T21:23:45.690500-04:00"
+    },
+    {
+      "id": 465,
+      "from_node_id": 501,
+      "to_node_id": 504,
+      "from_change_id": "d1ec380d-f0d2-416b-9b71-1faa7f3121fb",
+      "to_change_id": "b42823c1-d959-45d0-917f-3af626b02ac8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Inter-service communication strategy",
+      "created_at": "2026-04-26T21:23:45.786301-04:00"
+    },
+    {
+      "id": 466,
+      "from_node_id": 501,
+      "to_node_id": 505,
+      "from_change_id": "d1ec380d-f0d2-416b-9b71-1faa7f3121fb",
+      "to_change_id": "6a099c77-bcc8-4efc-810c-7b3962d7d740",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architectural boundary strategy",
+      "created_at": "2026-04-26T21:23:45.843948-04:00"
+    },
+    {
+      "id": 467,
+      "from_node_id": 502,
+      "to_node_id": 506,
+      "from_change_id": "92f30648-716e-4d67-9624-c539ed30c1c8",
+      "to_change_id": "a1ffb99a-6bd8-497a-8a68-feb3ab966ed0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Final refactor outcome",
+      "created_at": "2026-04-26T21:35:15.511327-04:00"
+    },
+    {
+      "id": 468,
+      "from_node_id": 505,
+      "to_node_id": 507,
+      "from_change_id": "6a099c77-bcc8-4efc-810c-7b3962d7d740",
+      "to_change_id": "28928c27-4e58-4986-a18a-9377c6ad3d16",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Final architectural outcome",
+      "created_at": "2026-04-26T21:40:33.145474-04:00"
+    },
+    {
+      "id": 469,
+      "from_node_id": 1,
+      "to_node_id": 2,
+      "from_change_id": "ef39a64d-7890-44d0-9caf-1175683781b7",
+      "to_change_id": "5c72c9cc-66de-4c1d-a74e-d67a2fb73201",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Single pass strategy",
+      "created_at": "2026-04-27T12:34:34.082069-04:00"
+    },
+    {
+      "id": 470,
+      "from_node_id": 1,
+      "to_node_id": 3,
+      "from_change_id": "ef39a64d-7890-44d0-9caf-1175683781b7",
+      "to_change_id": "431c0ffb-63dd-4a53-8ef6-6e6bb54a70c5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Incremental strategy",
+      "created_at": "2026-04-27T12:34:34.201760-04:00"
+    },
+    {
+      "id": 471,
+      "from_node_id": 3,
+      "to_node_id": 4,
+      "from_change_id": "431c0ffb-63dd-4a53-8ef6-6e6bb54a70c5",
+      "to_change_id": "c6b33f7d-38a7-477b-a7c6-df7e68a1c2ef",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen incremental strategy",
+      "created_at": "2026-04-27T12:34:34.332305-04:00"
+    },
+    {
+      "id": 472,
+      "from_node_id": 514,
+      "to_node_id": 515,
+      "from_change_id": "58599ab3-7496-4dff-b1af-f59ef791af84",
+      "to_change_id": "e38268c4-9a61-4dd3-9e0e-80a4e7fe0551",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing first batch",
+      "created_at": "2026-04-27T12:34:50.482798-04:00"
+    },
+    {
+      "id": 473,
+      "from_node_id": 515,
+      "to_node_id": 516,
+      "from_change_id": "e38268c4-9a61-4dd3-9e0e-80a4e7fe0551",
+      "to_change_id": "383fae5b-9a6c-4b30-964e-6c746e6fb705",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed Batch 1",
+      "created_at": "2026-04-27T12:35:22.154828-04:00"
+    },
+    {
+      "id": 474,
+      "from_node_id": 514,
+      "to_node_id": 517,
+      "from_change_id": "58599ab3-7496-4dff-b1af-f59ef791af84",
+      "to_change_id": "f7d40d93-e557-4884-af79-90374a1f410b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing second batch",
+      "created_at": "2026-04-27T12:35:35.871499-04:00"
+    },
+    {
+      "id": 475,
+      "from_node_id": 517,
+      "to_node_id": 518,
+      "from_change_id": "f7d40d93-e557-4884-af79-90374a1f410b",
+      "to_change_id": "a7d9a9c1-a966-4596-a74a-630da6caddff",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed Batch 2",
+      "created_at": "2026-04-27T12:36:17.425075-04:00"
+    },
+    {
+      "id": 476,
+      "from_node_id": 514,
+      "to_node_id": 519,
+      "from_change_id": "58599ab3-7496-4dff-b1af-f59ef791af84",
+      "to_change_id": "6ab4a8a1-10e1-47c1-9465-1f2b08c0b85c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing third batch",
+      "created_at": "2026-04-27T12:36:34.340748-04:00"
+    },
+    {
+      "id": 477,
+      "from_node_id": 519,
+      "to_node_id": 520,
+      "from_change_id": "6ab4a8a1-10e1-47c1-9465-1f2b08c0b85c",
+      "to_change_id": "0ae4498e-e579-48b6-acf2-90ea1933b379",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed Batch 3",
+      "created_at": "2026-04-27T12:36:48.408826-04:00"
+    },
+    {
+      "id": 478,
+      "from_node_id": 514,
+      "to_node_id": 521,
+      "from_change_id": "58599ab3-7496-4dff-b1af-f59ef791af84",
+      "to_change_id": "b7dc0103-f005-43b2-83c4-dbc2ba30b03a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing fourth batch",
+      "created_at": "2026-04-27T12:37:00.304311-04:00"
+    },
+    {
+      "id": 479,
+      "from_node_id": 521,
+      "to_node_id": 522,
+      "from_change_id": "b7dc0103-f005-43b2-83c4-dbc2ba30b03a",
+      "to_change_id": "55f1bd12-ce8a-4e0a-a836-72d125150a9a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed Batch 4",
+      "created_at": "2026-04-27T12:37:24.444752-04:00"
+    },
+    {
+      "id": 480,
+      "from_node_id": 514,
+      "to_node_id": 523,
+      "from_change_id": "58599ab3-7496-4dff-b1af-f59ef791af84",
+      "to_change_id": "a8f4c8a9-acc2-44d1-a6e2-9d3683fa8c3c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing fifth batch",
+      "created_at": "2026-04-27T12:37:45.967707-04:00"
+    },
+    {
+      "id": 481,
+      "from_node_id": 514,
+      "to_node_id": 524,
+      "from_change_id": "58599ab3-7496-4dff-b1af-f59ef791af84",
+      "to_change_id": "5a85ca82-e5ec-4966-9465-5de662e9a1fe",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing sixth batch",
+      "created_at": "2026-04-27T12:38:18.222241-04:00"
+    },
+    {
+      "id": 482,
+      "from_node_id": 524,
+      "to_node_id": 525,
+      "from_change_id": "5a85ca82-e5ec-4966-9465-5de662e9a1fe",
+      "to_change_id": "1b7e7c0a-f3a6-4f3a-a267-76850ba48290",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed all batches",
+      "created_at": "2026-04-27T12:38:42.694967-04:00"
     }
   ],
   "documents": [

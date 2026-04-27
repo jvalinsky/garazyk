@@ -1,11 +1,27 @@
 [
   {
-    "hash": "5e932c9844a99896b18ae86954b8e01c47fd7653",
-    "short_hash": "5e932c9",
+    "hash": "711c6b62f9bd06f4dbc42fb3495191ada57d93b3",
+    "short_hash": "711c6b6",
     "author": "Security Bot",
-    "date": "2026-04-26T02:38:01-04:00",
-    "message": "docs(deciduous): track Phase 5 UI migration completion",
+    "date": "2026-04-27T13:24:01-04:00",
+    "message": "docs: deslop maintenance and migration documentation",
+    "files_changed": 2
+  },
+  {
+    "hash": "996cc3352b74ff4faf9b63b55a8e79853c67b09c",
+    "short_hash": "996cc33",
+    "author": "Security Bot",
+    "date": "2026-04-26T10:23:33-04:00",
+    "message": "test(AdminUI): add basic integration tests for Phase B and A features\n\nAdd smoke tests for new routes:\n- testAdminShellContainsChatTab: Verify Chat tab is in shell\n- testDeleteAccountRoute: Verify runtime startup\n- testChatConvosPartialRoute: Verify HTTP server registered\n- testBackfillQueueWithEnqueueForm: Verify enqueue functionality\n\nThese basic tests verify the new routes can be reached and respond.\nMore comprehensive tests with full mock responses can be added later.\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
     "files_changed": 1
+  },
+  {
+    "hash": "f55e8c7383733e62bd6e2a3fcdcaa028ceef027b",
+    "short_hash": "f55e8c7",
+    "author": "Security Bot",
+    "date": "2026-04-26T10:18:12-04:00",
+    "message": "feat(UIServerRuntime): implement Phase A admin UI gap closure\n\nAdd 10 missing POST action routes for existing backend methods:\n- deleteAccount, rebuildBackfillScope, enqueueBackfillDIDs\n- createAppPasswordForDID, addOzoneTeamMember, upsertOzoneSet\n- createOzoneTemplate, updateOzoneConfig\n- resolveReport, fetchReportsWithCursor\n\nAdd corresponding JavaScript handlers and updated partial renderers:\n- renderAccountDetailPartial: add delete button\n- renderAppPasswordsPartial: add create form\n- renderOzoneTeamPartial: add add member form\n- renderOzoneSetsPartial: add create set form\n- renderOzoneTemplatesPartial: add create template form\n- renderOzoneConfigPartial: add JSON edit form\n- renderBackfillQueuePartial: add rebuild scope button + enqueue form\n- renderPDSReportsPartial: new partial for PDS reports with resolve actions\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>",
+    "files_changed": 1124
   },
   {
     "hash": "b512ad3cf33aa37508b226d12e3df915018cf5a9",
