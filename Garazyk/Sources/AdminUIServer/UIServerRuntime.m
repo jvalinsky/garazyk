@@ -2151,7 +2151,100 @@ static NSUInteger UISafeLength(id value) {
     return html;
 }
 
-#pragma mark - MST Viewer Render Methods
+#pragma mark - Render Methods
+
+- (NSString *)renderConnectionsPartial {
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form\" hx-post=\"/admin/actions/update-connections\" hx-target=\"#connections-form\">"];
+    
+    NSDictionary *fields = @{
+        @"pdsURL": UISafe([self.configuration.pdsBaseURL absoluteString], @""),
+        @"pdsToken": UISafe(self.configuration.pdsAdminToken, @""),
+        @"appViewURL": UISafe([self.configuration.appViewBaseURL absoluteString], @""),
+        @"appViewToken": UISafe(self.configuration.appViewAdminToken, @""),
+        @"relayURL": UISafe([self.configuration.relayBaseURL absoluteString], @""),
+        @"relayToken": UISafe(self.configuration.relayAdminToken, @""),
+        @"plcURL": UISafe([self.configuration.plcBaseURL absoluteString], @""),
+        @"plcToken": UISafe(self.configuration.plcAdminToken, @""),
+        @"chatURL": UISafe([self.configuration.chatBaseURL absoluteString], @""),
+        @"chatToken": UISafe(self.configuration.chatAdminToken, @"")
+    };
+    
+    [html appendString:@"<div class=\"grid-2\">"];
+    
+    NSArray *order = @[@"pds", @"appView", @"relay", @"plc", @"chat"];
+    for (NSString *key in order) {
+        NSString *urlKey = [key stringByAppendingString:@"URL"];
+        NSString *tokenKey = [key stringByAppendingString:@"Token"];
+        
+        [html appendFormat:@"<div class=\"card\">"];
+        [html appendFormat:@"<div class=\"card-title mb-md\">%@ Service</div>", [key uppercaseString]];
+        
+        [html appendFormat:@"<div class=\"form-group\">"];
+        [html appendFormat:@"<label class=\"form-label\">Base URL</label>"];
+        [html appendFormat:@"<input type=\"text\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", urlKey, UIEscaped(fields[urlKey])];
+        [html appendString:@"</div>"];
+        
+        [html appendFormat:@"<div class=\"form-group\">"];
+        [html appendFormat:@"<label class=\"form-label\">Admin Token</label>"];
+        [html appendFormat:@"<input type=\"password\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", tokenKey, UIEscaped(fields[tokenKey])];
+        [html appendString:@"</div>"];
+        
+        [html appendString:@"</div>"];
+    }
+    
+    [html appendString:@"</div>"];
+    [html appendString:@"<div class=\"mt-lg d-flex justify-end\">"];
+    [html appendString:@"<button type=\"submit\" class=\"btn btn-primary\">Save Cluster Configuration</button>"];
+    [html appendString:@"</div></form>"];
+    
+    return html;
+}
+
+- (NSString *)renderOverviewPartial:(NSDictionary *)result {
+    NSArray *services = [result[@"services"] isKindOfClass:[NSArray class]] ? result[@"services"] : @[];
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"cluster-grid\">"];
+    
+    for (NSDictionary *svc in services) {
+        NSString *name = UISafe(svc[@"name"], @"unknown");
+        NSString *status = UISafe(svc[@"status"], @"unknown");
+        NSString *url = UISafe(svc[@"url"], @"-");
+        
+        NSString *statusClass = @"status-unknown";
+        if ([status isEqualToString:@"online"]) statusClass = @"status-online";
+        else if ([status isEqualToString:@"offline"]) statusClass = @"status-offline";
+        else if ([status isEqualToString:@"error"]) statusClass = @"status-error";
+        
+        [html appendFormat:@"<div class=\"service-card %@\">", statusClass];
+        [html appendFormat:@"<div class=\"service-header\">"];
+        [html appendFormat:@"<span class=\"service-name\">%@</span>", [name uppercaseString]];
+        [html appendFormat:@"<span class=\"status-dot\"></span>"];
+        [html appendString:@"</div>"];
+        
+        [html appendFormat:@"<div class=\"service-url\">%@</div>", UIEscaped(url)];
+        
+        if (svc[@"version"]) {
+            [html appendFormat:@"<div class=\"service-meta\">Version: %@</div>", UIEscaped(svc[@"version"])];
+        }
+        
+        if (svc[@"latency_ms"]) {
+            [html appendFormat:@"<div class=\"service-meta\">Latency: %@ms</div>", svc[@"latency_ms"]];
+        }
+        
+        if (svc[@"error"]) {
+            [html appendFormat:@"<div class=\"text-xs text-destructive mt-xs\">%@</div>", UIEscaped(svc[@"error"])];
+        }
+        
+        [html appendString:@"</div>"];
+    }
+    
+    [html appendString:@"</div>"];
+    
+    if (result[@"generatedAt"]) {
+        [html appendFormat:@"<div class=\"text-xs text-secondary mt-lg\">Last updated: %@</div>", UIEscaped(result[@"generatedAt"])];
+    }
+    
+    return html;
+}
 
 - (NSString *)renderMSTAccountsPartial:(NSDictionary *)result {
     if (result[@"error"]) {

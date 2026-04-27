@@ -1505,23 +1505,48 @@
     return responseData;
 }
 
-- (NSDictionary *)probeServiceNamed:(NSString *)name baseURL:(NSURL *)baseURL xrpcPath:(nullable NSString *)xrpcPath bearerToken:(nullable NSString *)token {
+- (NSDictionary *)probeServiceNamed:(NSString *)name
+                           baseURL:(NSURL *)baseURL
+                         xrpcPath:(nullable NSString *)xrpcPath
+                     bearerToken:(nullable NSString *)token {
     if (!baseURL) {
-        return @{@"name": name, @"connected": @NO, @"version": @"unknown", @"rootStatus": @0, @"xrpcStatus": @0, @"detail": @"Not configured"};
+        return @{@"name": name, @"status": @"offline", @"url": @"(not configured)"};
     }
 
-    // Probe 1: root URL
-    NSInteger rootStatus = [self probeURL:baseURL withToken:token];
+    NSTimeInterval start = [[NSDate date] timeIntervalSince1970];
+    NSInteger status = 0;
+    NSError *error = nil;
+    
+    // Default to /xrpc/_health if no path provided
+    NSString *probePath = xrpcPath ?: @"/xrpc/_health";
+    NSURL *probeURL = [NSURL URLWithString:probePath relativeToURL:baseURL];
+    
+    NSData *data = [self performRequestWithURL:probeURL method:@"GET" body:nil contentType:nil bearerToken:token statusCode:&status error:&error];
+    NSTimeInterval latency = ([[NSDate date] timeIntervalSince1970] - start) * 1000.0;
 
-    // Probe 2: XRPC endpoint
-    NSInteger xrpcStatus = 0;
-    if (xrpcPath) {
-        NSURL *xrpcURL = [baseURL URLByAppendingPathComponent:xrpcPath];
-        xrpcStatus = [self probeURL:xrpcURL withToken:token];
+    if (status >= 200 && status < 300) {
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithDictionary:@{
+            @"name": name,
+            @"status": @"online",
+            @"url": [baseURL absoluteString],
+            @"latency_ms": [NSString stringWithFormat:@"%.0f", latency]
+        }];
+        
+        if (data) {
+            id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if ([json isKindOfClass:[NSDictionary class]] && json[@"version"]) {
+                result[@"version"] = [json[@"version"] description];
+            }
+        }
+        return [result copy];
+    } else {
+        return @{
+            @"name": name,
+            @"status": status == 0 ? @"offline" : @"error",
+            @"url": [baseURL absoluteString],
+            @"error": error.localizedDescription ?: [NSString stringWithFormat:@"HTTP %ld", (long)status]
+        };
     }
-
-    BOOL connected = (rootStatus >= 200 && rootStatus < 300) || (xrpcStatus >= 200 && xrpcStatus < 300);
-    return @{@"name": name, @"connected": @(connected), @"version": @"unknown", @"rootStatus": @(rootStatus), @"xrpcStatus": @(xrpcStatus), @"detail": @""};
 }
 
 - (NSInteger)probeURL:(NSURL *)url withToken:(nullable NSString *)token {
