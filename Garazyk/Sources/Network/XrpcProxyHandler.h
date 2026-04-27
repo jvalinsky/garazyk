@@ -23,9 +23,16 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, strong) JWTMinter *minter;
 
 /*!
+ @method initWithMinter:
+ 
+ @abstract Initializes a new proxy handler with just a minter.
+ */
+- (instancetype)initWithMinter:(JWTMinter *)minter;
+
+/*!
  @method initWithProxyURL:upstreamDID:minter:
  
- @abstract Initializes a new proxy handler.
+ @abstract Initializes a new proxy handler with a fixed target.
  */
 - (instancetype)initWithProxyURL:(NSURL *)proxyURL 
                      upstreamDID:(NSString *)upstreamDID 
@@ -34,9 +41,19 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method handleRequest:response:
  
- @abstract Forwards the request to the upstream service and populates the response.
+ @abstract Forwards the request to the fixed target.
  */
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
+
+/*!
+ @method handleRequest:response:baseURL:upstreamDID:
+ 
+ @abstract Forwards the request to a dynamic target.
+ */
+- (void)handleRequest:(HttpRequest *)request 
+             response:(HttpResponse *)response 
+              baseURL:(NSURL *)baseURL 
+          upstreamDID:(NSString *)upstreamDID;
 
 @end
 
