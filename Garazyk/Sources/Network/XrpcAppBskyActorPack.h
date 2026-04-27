@@ -28,30 +28,30 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcAppBskyActorPack : NSObject
 
 /**
- @brief Register all app.bsky.actor.* endpoint handlers.
-  
- @param dispatcher The XRPC dispatcher to register handlers with
- @param appViewDatabase AppView database for profile/preferences storage
- @param jwtMinter JWT token minter for authentication
- @param adminController Admin controller for takedown checks
- */
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                       jwtMinter:(JWTMinter *)jwtMinter
-                 adminController:(id<PDSAdminController>)adminController;
-
-/**
- @brief Register only the PDS-level (non-AppView-dependent) actor methods.
- 
- Registered endpoints:
- - app.bsky.actor.getPreferences / putPreferences
+ @brief Register only the PDS-level (non-AppView-dependent) actor methods (preferences).
  */
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                                     jwtMinter:(JWTMinter *)jwtMinter
-                               adminController:(id<PDSAdminController>)adminController;
+                                     jwtMinter:(nullable JWTMinter *)jwtMinter
+                               adminController:(nullable id<PDSAdminController>)adminController;
 
+/**
+ @brief Register the AppView-level actor methods (profiles, search, etc).
+ */
++ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                              appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                                    jwtMinter:(nullable JWTMinter *)jwtMinter
+                              adminController:(nullable id<PDSAdminController>)adminController;
+
+/**
+ @brief Legacy convenience method that registers all app.bsky.actor.* endpoint handlers.
+ */
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                     jwtMinter:(nullable JWTMinter *)jwtMinter
+               adminController:(nullable id<PDSAdminController>)adminController;
 
 @end
+
 
 NS_ASSUME_NONNULL_END

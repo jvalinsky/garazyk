@@ -82,9 +82,17 @@
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                       jwtMinter:(JWTMinter *)jwtMinter
-                 adminController:(id<PDSAdminController>)adminController {
+               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                     jwtMinter:(nullable JWTMinter *)jwtMinter
+               adminController:(nullable id<PDSAdminController>)adminController {
+    [self registerPDSLevelMethodsWithDispatcher:dispatcher appViewDatabase:appViewDatabase jwtMinter:jwtMinter adminController:adminController];
+    [self registerAppViewMethodsWithDispatcher:dispatcher appViewDatabase:appViewDatabase jwtMinter:jwtMinter adminController:adminController];
+}
+
++ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                              appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                                    jwtMinter:(nullable JWTMinter *)jwtMinter
+                              adminController:(nullable id<PDSAdminController>)adminController {
     
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
     

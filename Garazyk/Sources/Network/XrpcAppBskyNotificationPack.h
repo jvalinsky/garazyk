@@ -20,16 +20,31 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface XrpcAppBskyNotificationPack : NSObject
 
+/**
+ @brief Register only the PDS-level notification methods (push registration).
+ */
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                              appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                                    jwtMinter:(JWTMinter *)jwtMinter
-                              adminController:(id<PDSAdminController>)adminController;
+                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                                     jwtMinter:(nullable JWTMinter *)jwtMinter
+                               adminController:(nullable id<PDSAdminController>)adminController;
 
+/**
+ @brief Register the AppView-level notification methods (list notifications, unread count).
+ */
++ (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                              appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                                    jwtMinter:(nullable JWTMinter *)jwtMinter
+                              adminController:(nullable id<PDSAdminController>)adminController;
+
+/**
+ @brief Legacy convenience method that registers all app.bsky.notification.* endpoint handlers.
+ */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController;
+               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                     jwtMinter:(nullable JWTMinter *)jwtMinter
+               adminController:(nullable id<PDSAdminController>)adminController;
 
 @end
+
 
 NS_ASSUME_NONNULL_END

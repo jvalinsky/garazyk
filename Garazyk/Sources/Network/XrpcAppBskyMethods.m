@@ -39,11 +39,11 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
     _retainedLifecycleHandler = handler;
 }
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                       jwtMinter:(JWTMinter *)jwtMinter
-                 adminController:(id<PDSAdminController>)adminController
-                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
++ (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
+                               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                      jwtMinter:(nullable JWTMinter *)jwtMinter
+                                adminController:(nullable id<PDSAdminController>)adminController
+                                  emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
   NSError *appViewDbError = nil;
   PDSDatabase *appViewDatabase =
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
@@ -54,20 +54,15 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
   [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher
                                                appViewDatabase:appViewDatabase
-                                                     jwtMinter:jwtMinter
-                                               adminController:adminController];
+                                                      jwtMinter:jwtMinter
+                                                adminController:adminController];
 
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher
-                                                     appViewDatabase:appViewDatabase
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController];
+                                                      appViewDatabase:appViewDatabase
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController];
 
-  // Bookmarks, chat, and Ozone are PDS-side concerns: bookmarks are private
-  // user state stored on the PDS, chat is bundled into the PDS in this
-  // codebase (vs. a separate service in upstream Bluesky), and Ozone admin/
-  // moderation queries operate on PDS-local report and account data.
-  // Register them unconditionally so a remote-AppView deployment still has
-  // these endpoints available.
+  // Bookmarks, chat, and Ozone are PDS-side concerns
   BookmarkService *bookmarkService =
       [[BookmarkService alloc] initWithDatabase:appViewDatabase];
   ChatModerationService *chatModerationService =
@@ -78,21 +73,41 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                           jwtMinter:jwtMinter
                                     adminController:adminController];
 
-  [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
-                                 appViewDatabase:appViewDatabase
-                                      jwtMinter:jwtMinter
-                                adminController:adminController];
-  [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
-                                 appViewDatabase:appViewDatabase
-                                      jwtMinter:jwtMinter
-                                adminController:adminController];
-  [XrpcChatBskyActorPack registerWithDispatcher:dispatcher
-                          chatModerationService:chatModerationService];
+  // Only register local chat handlers if a remote chat service is not configured
+  if (!dispatcher.chatURL) {
+      [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
+                                     appViewDatabase:appViewDatabase
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController];
+      [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
+                                     appViewDatabase:appViewDatabase
+                                          jwtMinter:jwtMinter
+                                    adminController:adminController];
+      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher
+                              chatModerationService:chatModerationService];
+  }
 
   [XrpcToolsOzonePack registerWithDispatcher:dispatcher
                              appViewDatabase:appViewDatabase
                                    jwtMinter:jwtMinter
                              adminController:adminController];
+}
+
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                       jwtMinter:(nullable JWTMinter *)jwtMinter
+                 adminController:(nullable id<PDSAdminController>)adminController
+                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
+
+  [self registerPDSLevelMethodsWithDispatcher:dispatcher
+                              serviceDatabases:serviceDatabases
+                                     jwtMinter:jwtMinter
+                               adminController:adminController
+                                 emailProvider:emailProvider];
+
+  NSError *appViewDbError = nil;
+  PDSDatabase *appViewDatabase =
+      [serviceDatabases serviceDatabaseWithError:&appViewDbError];
 
   if (![PDSConfiguration sharedConfiguration].localAppViewEnabled) {
     PDS_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
@@ -101,10 +116,11 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
   }
 
   PDS_LOG_INFO(@"Local AppView enabled; registering full suite of app.bsky.* handlers.");
-  [XrpcAppBskyActorPack registerWithDispatcher:dispatcher
-                                 appViewDatabase:appViewDatabase
-                                       jwtMinter:jwtMinter
-                                 adminController:adminController];
+  
+  [XrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher
+                                                appViewDatabase:appViewDatabase
+                                                      jwtMinter:jwtMinter
+                                                adminController:adminController];
 
   NotificationService *notificationService =
       [[NotificationService alloc] initWithDatabase:appViewDatabase
@@ -117,6 +133,8 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                                                 actorService:actorService];
   AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase
                                                                              emailProvider:emailProvider];
+  
+  BookmarkService *bookmarkService = [[BookmarkService alloc] initWithDatabase:appViewDatabase];
 
   RecordLifecycleHandler *lifecycleHandler =
       [[RecordLifecycleHandler alloc] initWithNotificationService:notificationService
@@ -125,9 +143,6 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                                        feedService:feedService
                                                           database:appViewDatabase];
 
-  // Store the lifecycle handler in the registry so it is retained for the
-  // process lifetime. NSNotificationCenter does not retain observers, so
-  // the handler must be kept alive to receive PDSRecordDidChangeNotification.
   [XrpcAppBskyMethods setRetainedLifecycleHandler:lifecycleHandler];
 
   [XrpcAppBskyFeedPack registerWithDispatcher:dispatcher
@@ -141,10 +156,10 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                       jwtMinter:jwtMinter
                                 adminController:adminController];
 
-  [XrpcAppBskyNotificationPack registerWithDispatcher:dispatcher
-                                         appViewDatabase:appViewDatabase
-                                              jwtMinter:jwtMinter
-                                        adminController:adminController];
+  [XrpcAppBskyNotificationPack registerAppViewMethodsWithDispatcher:dispatcher
+                                                        appViewDatabase:appViewDatabase
+                                                              jwtMinter:jwtMinter
+                                                        adminController:adminController];
 
   DraftService *draftService = [[DraftService alloc] initWithDatabase:appViewDatabase];
   [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher
@@ -163,10 +178,11 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
   [searchIndexService populateIndexIfEmptyWithError:nil];
 
   [XrpcAppBskyUnspeccedPack registerWithDispatcher:dispatcher
-                               ageAssuranceService:ageAssuranceService
-                                  searchIndexService:searchIndexService
-                                        feedService:feedService];
+                                ageAssuranceService:ageAssuranceService
+                                   searchIndexService:searchIndexService
+                                         feedService:feedService];
   [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
 }
+
 
 @end
