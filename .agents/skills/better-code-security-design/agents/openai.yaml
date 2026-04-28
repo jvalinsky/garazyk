@@ -1,0 +1,4 @@
+interface:
+  display_name: "Better Code Security Design"
+  short_description: "Design safer source-to-sink flows"
+  default_prompt: "Use $better-code-security-design to harden this design against source-to-sink vulnerabilities."

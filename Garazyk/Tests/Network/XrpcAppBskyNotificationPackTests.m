@@ -1,6 +1,9 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "AppView/Services/NotificationService.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/PDSBlock.h"
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "Network/XrpcAppBskyNotificationPack.h"
 
 #ifndef XCTAssertIsInstance
@@ -25,19 +28,75 @@
 }
 
 - (NSDictionary *)createdPostWithText:(NSString *)text {
+    NSDictionary *record = @{
+        @"$type" : @"app.bsky.feed.post",
+        @"text" : text,
+        @"createdAt" : [self iso8601String]
+    };
     NSError *error = nil;
     NSDictionary *created = [self.application.legacyController createRecordForDid:self.userDid
                                                                        collection:@"app.bsky.feed.post"
-                                                                           record:@{
-                                                                               @"$type" : @"app.bsky.feed.post",
-                                                                               @"text" : text,
-                                                                               @"createdAt" : [self iso8601String]
-                                                                           }
+                                                                           record:record
                                                                    validationMode:PDSValidationModeOff
                                                                             error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(created);
+
+    // Seed the record into the service DB so NotificationService can hydrate the record field
+    [self seedRecordInServiceDB:created record:record forDid:self.userDid collection:@"app.bsky.feed.post"];
+
     return created;
+}
+
+- (void)seedRecordInServiceDB:(NSDictionary *)createdRecord
+                        record:(NSDictionary *)record
+                       forDid:(NSString *)did
+                   collection:(NSString *)collection {
+    NSError *dbError = nil;
+    PDSDatabase *database = [self.application.serviceDatabases serviceDatabaseWithError:&dbError];
+    XCTAssertNil(dbError);
+    XCTAssertNotNil(database);
+
+    NSString *uri = createdRecord[@"uri"];
+    NSString *cidStr = createdRecord[@"cid"];
+    XCTAssertNotNil(uri);
+    XCTAssertNotNil(cidStr);
+
+    // Parse URI to extract rkey: at://did/collection/rkey
+    NSArray *components = [uri componentsSeparatedByString:@"/"];
+    NSString *rkey = components.count >= 5 ? components[4] : @"";
+
+    // CBOR-encode the record for the blocks table
+    NSError *cborError = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cborError];
+    XCTAssertNil(cborError);
+    XCTAssertNotNil(cborData);
+
+    // Compute CID from CBOR data (same as PDSController does)
+    NSData *digest = [CID sha256Digest:cborData];
+    CID *cid = [CID cidWithDigest:digest codec:0x71]; // dag-cbor codec
+
+    // Insert into records table
+    NSString *valueJSON = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:record options:0 error:nil] encoding:NSUTF8StringEncoding];
+    NSString *insertSQL = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value) VALUES (?, ?, ?, ?, ?, ?)";
+    BOOL insertOK = [database executeParameterizedUpdate:insertSQL
+                                                  params:@[uri, did, collection, rkey, cid.stringValue ?: cidStr, valueJSON ?: @""]
+                                                   error:&dbError];
+    XCTAssertTrue(insertOK);
+    XCTAssertNil(dbError);
+
+    // Insert into blocks table for getRecordBodyFromCID: lookups
+    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+    block.cid = cid.bytes;
+    block.repoDid = did;
+    block.blockData = cborData;
+    block.contentType = @"application/cbor";
+    block.size = (NSInteger)cborData.length;
+    block.createdAt = [NSDate date];
+
+    BOOL blockOK = [database saveBlock:block error:&dbError];
+    XCTAssertTrue(blockOK);
+    XCTAssertNil(dbError);
 }
 
 - (void)seedNotificationForActor:(NSString *)actorDID
@@ -66,35 +125,39 @@
     return rows ?: @[];
 }
 
-- (void)testGetPreferencesReturnsDefaultPriorityFalse {
+- (void)testGetPreferencesReturnsDefaultPreferences {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.getPreferences"
                                              queryString:@""
                                               queryParams:@{}
                                                   headers:@{@"authorization" : authHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertEqualObjects(response.jsonBody[@"priority"], @NO);
+    NSDictionary *preferences = response.jsonBody[@"preferences"];
+    XCTAssertTrue([preferences isKindOfClass:[NSDictionary class]]);
+    NSDictionary *follow = preferences[@"follow"];
+    XCTAssertTrue([follow isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqualObjects(follow[@"list"], @YES);
+    XCTAssertEqualObjects(follow[@"push"], @NO);
 }
 
-- (void)testPutNotificationPreferencesAndPutPreferencesRoundTrip {
+- (void)testPutPreferencesV2RoundTripThroughGetPreferences {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
-    HttpResponse *firstResponse = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putNotificationPreferences"
-                                                          body:@{@"priority" : @YES}
-                                                       headers:@{@"authorization" : authHeader}];
-    XCTAssertEqual(firstResponse.statusCode, 200);
-
-    HttpResponse *secondResponse = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferences"
-                                                           body:@{@"priority" : @NO}
+    HttpResponse *updateResponse = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
+                                                           body:@{@"follow" : @{@"include" : @"all", @"list" : @NO, @"push" : @YES}}
                                                         headers:@{@"authorization" : authHeader}];
-    XCTAssertEqual(secondResponse.statusCode, 200);
+    XCTAssertEqual(updateResponse.statusCode, 200);
 
     HttpResponse *getResponse = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.getPreferences"
                                                  queryString:@""
                                                   queryParams:@{}
                                                       headers:@{@"authorization" : authHeader}];
     XCTAssertEqual(getResponse.statusCode, 200);
-    XCTAssertEqualObjects(getResponse.jsonBody[@"priority"], @NO);
+    NSDictionary *preferences = getResponse.jsonBody[@"preferences"];
+    NSDictionary *follow = preferences[@"follow"];
+    XCTAssertTrue([follow isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqualObjects(follow[@"list"], @NO);
+    XCTAssertEqualObjects(follow[@"push"], @YES);
 }
 
 - (void)testPutPreferencesV2RequiresAuth {

@@ -61,11 +61,11 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
     return [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                   methodString:@"GET"
                                           path:path
-                                   queryString:nil
-                                    queryParams:nil
+                                   queryString:@""
+                                    queryParams:@{}
                                         version:@"HTTP/1.1"
                                         headers:headers
-                                           body:nil
+                                           body:[NSData data]
                                    remoteAddress:@"127.0.0.1"];
 }
 
@@ -137,23 +137,8 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab route is registered and bypasses the admin auth boundary.
  */
 - (void)testLabRouteDoesNotRequireAdminAuth {
-    NSError *error = nil;
-    BOOL started = [self.runtime startWithError:&error];
-
-    XCTAssertTrue(started);
-    XCTAssertNil(error);
-    XCTAssertTrue(self.runtime.isRunning);
-
-    UILabRouteHandler handler = [self labRouteHandler];
-    XCTAssertNotNil((id)handler);
-    if (!handler) {
-        return;
-    }
-
     HttpRequest *request = [self requestWithPath:@"/lab" headers:nil];
-    HttpResponse *response = [HttpResponse response];
-
-    handler(request, response);
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertEqualObjects(response.contentType, @"text/html; charset=utf-8");

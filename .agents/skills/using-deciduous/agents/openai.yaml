@@ -1,0 +1,4 @@
+interface:
+  display_name: "Using Deciduous"
+  short_description: "Track decisions in deciduous"
+  default_prompt: "Use $using-deciduous to record this work in the deciduous decision graph."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deslop"
+  short_description: "Remove AI writing patterns from prose"
+  default_prompt: "Use $deslop to revise this prose so it sounds natural and specific."

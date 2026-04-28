@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto Coverage Audit"
+  short_description: "Audit ATProto XRPC coverage gaps"
+  default_prompt: "Use $atproto-coverage-audit to audit XRPC endpoint coverage and schema synchronization."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto Scenario Testing"
+  short_description: "Run local ATProto scenario tests"
+  default_prompt: "Use $atproto-scenario-testing to run local ATProto scenario simulations."

@@ -191,6 +191,68 @@
     XCTAssertNotNil(fetched2, @"Record2 should exist after transaction");
 }
 
+- (void)testNestedTransactionRollbackPreservesOuterTransaction {
+    __autoreleasing NSError *error = nil;
+
+    PDSDatabaseRecord *outerRecord = [[PDSDatabaseRecord alloc] init];
+    outerRecord.uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/outer-savepoint", self.testDID];
+    outerRecord.did = self.testDID;
+    outerRecord.collection = @"app.bsky.feed.post";
+    outerRecord.rkey = @"outer-savepoint";
+    outerRecord.cid = @"bafyreitOUTERSAVEPOINT";
+    outerRecord.createdAt = [NSDate date];
+
+    PDSDatabaseRecord *innerRecord = [[PDSDatabaseRecord alloc] init];
+    innerRecord.uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/inner-savepoint", self.testDID];
+    innerRecord.did = self.testDID;
+    innerRecord.collection = @"app.bsky.feed.post";
+    innerRecord.rkey = @"inner-savepoint";
+    innerRecord.cid = @"bafyreitINNERSAVEPOINT";
+    innerRecord.createdAt = [NSDate date];
+
+    [self.store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        XCTAssertTrue([transactor putRecord:outerRecord forDid:self.testDID error:innerError]);
+
+        __autoreleasing NSError *nestedError = nil;
+        [self.store transactWithBlock:^(id<PDSActorStoreTransactor> nestedTransactor, NSError **nestedInnerError) {
+            XCTAssertTrue([nestedTransactor putRecord:innerRecord forDid:self.testDID error:nestedInnerError]);
+            if (nestedInnerError) {
+                *nestedInnerError = [NSError errorWithDomain:@"ActorStoreTests"
+                                                        code:1
+                                                    userInfo:@{NSLocalizedDescriptionKey: @"Rollback nested savepoint"}];
+            }
+        } error:&nestedError];
+        XCTAssertNotNil(nestedError);
+    } error:&error];
+    XCTAssertNil(error, @"Outer transaction should commit after nested rollback: %@", error);
+
+    PDSDatabaseRecord *fetchedOuter = [self.store getRecord:outerRecord.uri forDid:self.testDID error:nil];
+    PDSDatabaseRecord *fetchedInner = [self.store getRecord:innerRecord.uri forDid:self.testDID error:nil];
+    XCTAssertNotNil(fetchedOuter, @"Outer record should survive nested rollback");
+    XCTAssertNil(fetchedInner, @"Inner record should roll back with savepoint");
+}
+
+- (void)testTransactionRollsBackWhenStatementFails {
+    __autoreleasing NSError *error = nil;
+
+    PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
+    record.uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/duplicate-create", self.testDID];
+    record.did = self.testDID;
+    record.collection = @"app.bsky.feed.post";
+    record.rkey = @"duplicate-create";
+    record.cid = @"bafyreitDUPLICATECREATE";
+    record.createdAt = [NSDate date];
+
+    [self.store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        XCTAssertTrue([transactor createRecord:record forDid:self.testDID error:innerError]);
+        XCTAssertFalse([transactor createRecord:record forDid:self.testDID error:innerError]);
+    } error:&error];
+    XCTAssertNotNil(error, @"Duplicate insert should surface an error");
+
+    PDSDatabaseRecord *fetched = [self.store getRecord:record.uri forDid:self.testDID error:nil];
+    XCTAssertNil(fetched, @"Failed transaction should roll back the first insert");
+}
+
 - (void)testSigningKeyGeneration {
     __autoreleasing NSError *error = nil;
 

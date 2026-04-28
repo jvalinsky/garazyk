@@ -1,15 +1,18 @@
 #import <XCTest/XCTest.h>
 #import "Sync/WebSocket/PDSWebSocketServer.h"
 #import "Sync/WebSocket/PDSWebSocketTransport.h"
+#import "Network/PDSNetworkTransport.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 
 @class MockWebSocketTransport;
+@class MockNetworkListener;
 
 @interface PDSWebSocketServerTests : XCTestCase
 @property (nonatomic, strong) PDSWebSocketServer *server;
+@property (nonatomic, strong) MockNetworkListener *listener;
 @end
 
 @interface MockWebSocketTransport : NSObject <PDSWebSocketTransport>
@@ -29,16 +32,78 @@
 }
 @end
 
+@interface MockWebSocketServerNetworkConnection : NSObject <PDSNetworkConnection>
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkConnectionState state, NSError *error);
+@end
+
+@implementation MockWebSocketServerNetworkConnection
+- (NSString *)remoteAddress { return @"127.0.0.1"; }
+- (void)cancel {}
+- (void)startWithQueue:(dispatch_queue_t)queue {
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+    }
+}
+- (void)sendData:(NSData *)data completion:(void (^)(NSError * _Nullable))completion {
+    if (completion) completion(nil);
+}
+- (void)receiveWithMinimumLength:(NSUInteger)minLength
+                  maximumLength:(NSUInteger)maxLength
+                     completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
+    if (completion) completion(nil, YES, nil);
+}
+@end
+
+@interface MockNetworkListener : NSObject <PDSNetworkListener>
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkListenerState state, NSError *error);
+@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id<PDSNetworkConnection> connection);
+@property (nonatomic, assign) NSUInteger port;
+@property (nonatomic, assign) BOOL cancelled;
+@end
+
+@implementation MockNetworkListener
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _port = 49152;
+    }
+    return self;
+}
+- (void)startWithQueue:(dispatch_queue_t)queue {
+    dispatch_async(queue, ^{
+        if (self.stateChangedHandler) {
+            self.stateChangedHandler(PDSNetworkListenerStateReady, nil);
+        }
+    });
+}
+- (void)cancel {
+    self.cancelled = YES;
+    if (self.stateChangedHandler) {
+        self.stateChangedHandler(PDSNetworkListenerStateCancelled, nil);
+    }
+}
+- (void)simulateConnection {
+    if (self.newConnectionHandler) {
+        self.newConnectionHandler([[MockWebSocketServerNetworkConnection alloc] init]);
+    }
+}
+@end
+
 @implementation PDSWebSocketServerTests
 
 - (void)setUp {
     [super setUp];
-    self.server = [[PDSWebSocketServer alloc] initWithPort:0];
+    self.listener = [[MockNetworkListener alloc] init];
+    __weak typeof(self) weakSelf = self;
+    self.server = [[PDSWebSocketServer alloc] initWithPort:0 listenerFactory:^id<PDSNetworkListener> _Nullable(NSUInteger port) {
+        return weakSelf.listener;
+    }];
 }
 
 - (void)tearDown {
     [self.server stop];
     self.server = nil;
+    self.listener = nil;
     [super tearDown];
 }
 
@@ -62,9 +127,13 @@
     XCTAssertTrue(success1);
 
     [self.server stop];
+    XCTAssertTrue(self.listener.cancelled);
 
     NSError *error2 = nil;
-    PDSWebSocketServer *server2 = [[PDSWebSocketServer alloc] initWithPort:self.server.port];
+    MockNetworkListener *listener2 = [[MockNetworkListener alloc] init];
+    PDSWebSocketServer *server2 = [[PDSWebSocketServer alloc] initWithPort:self.server.port listenerFactory:^id<PDSNetworkListener> _Nullable(NSUInteger port) {
+        return listener2;
+    }];
     BOOL success2 = [server2 startWithError:&error2];
 
     if (success2) {
@@ -84,18 +153,7 @@
     BOOL success = [self.server startWithError:&error];
     XCTAssertTrue(success);
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        int sock = socket(AF_INET, SOCK_STREAM, 0);
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons((uint16_t)self.server.port);
-        inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
-
-        if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == 0) {
-            close(sock);
-        }
-    });
+    [self.listener simulateConnection];
 
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }

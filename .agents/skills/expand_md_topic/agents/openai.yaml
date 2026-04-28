@@ -1,0 +1,4 @@
+interface:
+  display_name: "Expand Topic Markdown"
+  short_description: "Expand Markdown outlines into docs"
+  default_prompt: "Use $Expand Topic Markdown to expand this Markdown outline into a complete discussion."

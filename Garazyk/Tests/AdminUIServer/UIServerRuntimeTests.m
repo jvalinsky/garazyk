@@ -107,6 +107,21 @@
     return HttpMethodGET;
 }
 
+- (NSString *)loginAndReturnSessionToken {
+    HttpRequest *loginRequest = [self createRequestWithMethod:@"POST"
+                                                         path:@"/admin/login"
+                                                  sessionToken:nil
+                                                     jsonBody:@{@"password": @"test-admin-password"}];
+    HttpResponse *loginResponse = [self.runtime dispatchRequestForTesting:loginRequest];
+    XCTAssertEqual(loginResponse.statusCode, 200);
+
+    NSString *setCookie = [loginResponse headerForKey:@"Set-Cookie"];
+    XCTAssertTrue(setCookie.length > 0);
+    NSString *tokenCookie = [[setCookie componentsSeparatedByString:@";"] firstObject];
+    XCTAssertTrue([tokenCookie hasPrefix:@"ui_admin_token="]);
+    return [tokenCookie stringByReplacingOccurrencesOfString:@"ui_admin_token=" withString:@""];
+}
+
 #pragma mark - Test: Initialization and Startup
 
 /*!
@@ -126,12 +141,14 @@
  @abstract Verify that the runtime starts successfully and sets the running flag.
  */
 - (void)testRuntimeStartsSuccessfully {
-    NSError *error = nil;
-    BOOL started = [self.runtime startWithError:&error];
+    HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                    path:@"/"
+                                             sessionToken:nil
+                                                jsonBody:nil];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    XCTAssertTrue(started);
-    XCTAssertNil(error);
-    XCTAssertTrue(self.runtime.isRunning);
+    XCTAssertEqual(response.statusCode, 302);
+    XCTAssertEqualObjects([response headerForKey:@"Location"], @"/admin");
 }
 
 #pragma mark - Test: GET /admin without auth redirects to /admin/login
@@ -142,20 +159,14 @@
  @abstract Verify that GET /admin without authentication can be created as a request.
  */
 - (void)testGetAdminWithoutAuthRedirectsToLogin {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
-    // Create request without session token
     HttpRequest *request = [self createRequestWithMethod:@"GET"
                                                     path:@"/admin"
                                              sessionToken:nil
                                                 jsonBody:nil];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify request was properly formed
-    XCTAssertNotNil(request);
-    XCTAssertEqualObjects(request.path, @"/admin");
-    XCTAssertEqual(request.method, HttpMethodGET);
+    XCTAssertEqual(response.statusCode, 302);
+    XCTAssertEqualObjects([response headerForKey:@"Location"], @"/admin/login");
 }
 
 #pragma mark - Test: POST /admin/login with correct password
@@ -166,21 +177,15 @@
  @abstract Verify that POST /admin/login with correct password returns 200 and creates session.
  */
 - (void)testPostAdminLoginWithCorrectPassword {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
     HttpRequest *request = [self createRequestWithMethod:@"POST"
                                                     path:@"/admin/login"
                                              sessionToken:nil
                                                 jsonBody:@{@"password": @"test-admin-password"}];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    HttpResponse *response = [HttpResponse response];
-
-    // The response object is available for manual testing;
-    // In a real integration test, the HTTP server would be queried
-    XCTAssertNotNil(request);
-    XCTAssertNotNil(response);
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"ok"], @YES);
+    XCTAssertTrue([[response headerForKey:@"Set-Cookie"] hasPrefix:@"ui_admin_token="]);
 }
 
 /*!
@@ -189,19 +194,15 @@
  @abstract Verify that POST /admin/login with wrong password can be created as a request.
  */
 - (void)testPostAdminLoginWithWrongPassword {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
     HttpRequest *request = [self createRequestWithMethod:@"POST"
                                                     path:@"/admin/login"
                                              sessionToken:nil
                                                 jsonBody:@{@"password": @"wrong-password"}];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify request was properly formed
-    XCTAssertNotNil(request);
-    XCTAssertEqualObjects(request.path, @"/admin/login");
-    XCTAssertEqual(request.method, HttpMethodPOST);
+    XCTAssertEqual(response.statusCode, 401);
+    XCTAssertEqualObjects(response.jsonBody[@"ok"], @NO);
+    XCTAssertEqualObjects(response.jsonBody[@"error"], @"invalid_credentials");
 }
 
 #pragma mark - Test: GET /admin with valid session cookie
@@ -212,23 +213,15 @@
  @abstract Verify that GET /admin with a valid session cookie can be created and handled.
  */
 - (void)testGetAdminWithValidSessionCookie {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
-    // Create request with a hypothetical session token
-    NSString *token = @"test-token-123";
-
-    // Create request with session token
+    NSString *token = [self loginAndReturnSessionToken];
     HttpRequest *request = [self createRequestWithMethod:@"GET"
                                                     path:@"/admin"
                                              sessionToken:token
                                                 jsonBody:nil];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify request was properly formed
-    XCTAssertNotNil(request);
-    XCTAssertEqualObjects(request.path, @"/admin");
-    XCTAssertEqualObjects(request.methodString, @"GET");
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue([response.bodyString containsString:@"Garazyk UI Service"]);
 }
 
 /*!
@@ -237,19 +230,14 @@
  @abstract Verify that GET /admin with an invalid session cookie can be created and processed.
  */
 - (void)testGetAdminWithInvalidSessionCookie {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
-    // Create request with invalid session token
     HttpRequest *request = [self createRequestWithMethod:@"GET"
                                                     path:@"/admin"
                                              sessionToken:@"invalid-token-xyz"
                                                 jsonBody:nil];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify request was properly formed
-    XCTAssertNotNil(request);
-    XCTAssertEqualObjects(request.path, @"/admin");
+    XCTAssertEqual(response.statusCode, 302);
+    XCTAssertEqualObjects([response headerForKey:@"Location"], @"/admin/login");
 }
 
 #pragma mark - Test: POST /admin/logout clears session
@@ -260,28 +248,23 @@
  @abstract Verify that POST /admin/logout can be called.
  */
 - (void)testPostAdminLogoutClearsSession {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *logoutRequest = [self createRequestWithMethod:@"POST"
+                                                          path:@"/admin/logout"
+                                                   sessionToken:token
+                                                      jsonBody:nil];
+    HttpResponse *logoutResponse = [self.runtime dispatchRequestForTesting:logoutRequest];
 
-    // Create a logout request
-    NSString *token = @"test-token-456";
+    XCTAssertEqual(logoutResponse.statusCode, 200);
+    XCTAssertEqualObjects(logoutResponse.jsonBody[@"ok"], @YES);
+    XCTAssertTrue([[logoutResponse headerForKey:@"Set-Cookie"] containsString:@"Max-Age=0"]);
 
-    NSDictionary *headers = @{@"Cookie": [NSString stringWithFormat:@"ui_admin_token=%@", token]};
-    HttpRequest *logoutRequest = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
-                                                        methodString:@"POST"
-                                                                path:@"/admin/logout"
-                                                         queryString:@""
-                                                          queryParams:@{}
-                                                              version:@"HTTP/1.1"
-                                                              headers:headers
-                                                                 body:[NSData data]
-                                                         remoteAddress:@"127.0.0.1"];
-
-    // Verify logout request was properly formed
-    XCTAssertNotNil(logoutRequest);
-    XCTAssertEqualObjects(logoutRequest.path, @"/admin/logout");
-    XCTAssertEqual(logoutRequest.method, HttpMethodPOST);
+    HttpRequest *adminRequest = [self createRequestWithMethod:@"GET"
+                                                         path:@"/admin"
+                                                  sessionToken:token
+                                                     jsonBody:nil];
+    HttpResponse *adminResponse = [self.runtime dispatchRequestForTesting:adminRequest];
+    XCTAssertEqual(adminResponse.statusCode, 302);
 }
 
 #pragma mark - Test: Authentication Flow
@@ -292,34 +275,28 @@
  @abstract Verify the complete authentication flow: create login request, verify structure.
  */
 - (void)testCompleteAuthenticationFlow {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
-    // Step 1: Create a login request
     HttpRequest *loginRequest = [self createRequestWithMethod:@"POST"
                                                         path:@"/admin/login"
                                                  sessionToken:nil
                                                     jsonBody:@{@"password": @"test-admin-password"}];
-    XCTAssertNotNil(loginRequest);
-    XCTAssertEqual(loginRequest.method, HttpMethodPOST);
+    HttpResponse *loginResponse = [self.runtime dispatchRequestForTesting:loginRequest];
+    XCTAssertEqual(loginResponse.statusCode, 200);
+    NSString *setCookie = [loginResponse headerForKey:@"Set-Cookie"];
+    NSString *token = [[setCookie componentsSeparatedByString:@";"].firstObject stringByReplacingOccurrencesOfString:@"ui_admin_token=" withString:@""];
 
-    // Step 2: Create a request using a token (simulating successful login)
-    NSString *token = @"test-token-789";
     HttpRequest *adminRequest = [self createRequestWithMethod:@"GET"
                                                          path:@"/admin"
                                                   sessionToken:token
                                                      jsonBody:nil];
-    XCTAssertNotNil(adminRequest);
-    XCTAssertEqualObjects(adminRequest.path, @"/admin");
+    HttpResponse *adminResponse = [self.runtime dispatchRequestForTesting:adminRequest];
+    XCTAssertEqual(adminResponse.statusCode, 200);
 
-    // Step 3: Create a logout request
     HttpRequest *logoutRequest = [self createRequestWithMethod:@"POST"
                                                          path:@"/admin/logout"
                                                   sessionToken:token
                                                      jsonBody:nil];
-    XCTAssertNotNil(logoutRequest);
-    XCTAssertEqualObjects(logoutRequest.path, @"/admin/logout");
+    HttpResponse *logoutResponse = [self.runtime dispatchRequestForTesting:logoutRequest];
+    XCTAssertEqual(logoutResponse.statusCode, 200);
 }
 
 #pragma mark - Test: Multiple Sessions
@@ -330,58 +307,22 @@
  @abstract Verify that multiple session requests can be created and handled.
  */
 - (void)testMultipleConcurrentSessions {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
-    // Create multiple session tokens
-    NSString *token1 = @"session-token-1";
-    NSString *token2 = @"session-token-2";
-    NSString *token3 = @"session-token-3";
+    NSString *token1 = [self loginAndReturnSessionToken];
+    NSString *token2 = [self loginAndReturnSessionToken];
+    NSString *token3 = [self loginAndReturnSessionToken];
 
     XCTAssertNotEqualObjects(token1, token2);
     XCTAssertNotEqualObjects(token2, token3);
 
-    // Create requests for each token
-    NSDictionary *headers1 = @{@"Cookie": [NSString stringWithFormat:@"ui_admin_token=%@", token1]};
-    NSDictionary *headers2 = @{@"Cookie": [NSString stringWithFormat:@"ui_admin_token=%@", token2]};
-    NSDictionary *headers3 = @{@"Cookie": [NSString stringWithFormat:@"ui_admin_token=%@", token3]};
-
-    HttpRequest *request1 = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                   methodString:@"GET"
-                                                           path:@"/admin"
-                                                    queryString:@""
-                                                     queryParams:@{}
-                                                         version:@"HTTP/1.1"
-                                                         headers:headers1
-                                                            body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpRequest *request2 = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                   methodString:@"GET"
-                                                           path:@"/admin"
-                                                    queryString:@""
-                                                     queryParams:@{}
-                                                         version:@"HTTP/1.1"
-                                                         headers:headers2
-                                                            body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-    HttpRequest *request3 = [[HttpRequest alloc] initWithMethod:HttpMethodGET
-                                                   methodString:@"GET"
-                                                           path:@"/admin"
-                                                    queryString:@""
-                                                     queryParams:@{}
-                                                         version:@"HTTP/1.1"
-                                                         headers:headers3
-                                                            body:[NSData data]
-                                                    remoteAddress:@"127.0.0.1"];
-
-    // Verify all requests were properly formed
-    XCTAssertNotNil(request1);
-    XCTAssertNotNil(request2);
-    XCTAssertNotNil(request3);
-    XCTAssertEqual(request1.method, HttpMethodGET);
-    XCTAssertEqual(request2.method, HttpMethodGET);
-    XCTAssertEqual(request3.method, HttpMethodGET);
+    NSArray<NSString *> *tokens = @[token1, token2, token3];
+    for (NSString *token in tokens) {
+        HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                        path:@"/admin"
+                                                 sessionToken:token
+                                                    jsonBody:nil];
+        HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+        XCTAssertEqual(response.statusCode, 200);
+    }
 }
 
 #pragma mark - Test: Bearer Token vs Cookie
@@ -392,11 +333,7 @@
  @abstract Verify that Bearer token authorization headers can be created.
  */
 - (void)testBearerTokenAuthorization {
-    NSError *startError = nil;
-    [self.runtime startWithError:&startError];
-    XCTAssertTrue(self.runtime.isRunning);
-
-    NSString *token = @"bearer-token-xyz";
+    NSString *token = [self loginAndReturnSessionToken];
 
     NSDictionary *headers = @{@"Authorization": [NSString stringWithFormat:@"Bearer %@", token]};
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodGET
@@ -408,50 +345,69 @@
                                                         headers:headers
                                                            body:[NSData data]
                                                    remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify request was properly formed with Bearer token
-    XCTAssertNotNil(request);
-    NSString *expectedAuth = [NSString stringWithFormat:@"Bearer %@", token];
-    XCTAssertEqualObjects([request headerForKey:@"Authorization"], expectedAuth);
+    XCTAssertEqual(response.statusCode, 200);
 }
 
 - (void)testAdminShellContainsChatTab {
-    XCTestExpectation *exp = [self expectationWithDescription:@"Admin shell loads"];
+    HttpRequest *loginRequest = [self createRequestWithMethod:@"POST"
+                                                         path:@"/admin/login"
+                                                  sessionToken:nil
+                                                     jsonBody:@{@"password": @"test-admin-password"}];
+    HttpResponse *loginResponse = [self.runtime dispatchRequestForTesting:loginRequest];
+    XCTAssertEqual(loginResponse.statusCode, 200);
 
-    BOOL started = [self.runtime startWithError:nil];
-    XCTAssertTrue(started);
+    NSString *setCookie = [loginResponse headerForKey:@"Set-Cookie"];
+    NSArray<NSString *> *cookieParts = [setCookie componentsSeparatedByString:@";"];
+    NSString *token = cookieParts.firstObject;
+    XCTAssertTrue(token.length > 0);
 
-    // Verify the HTML shell contains the Chat tab
-    UIServerRuntime *runtime = self.runtime;
-
-    // Get the shell HTML by checking it exists as a method
-    XCTAssertNotNil(runtime);
-
-    [self waitForExpectationsWithTimeout:5 handler:nil];
+    HttpRequest *adminRequest = [self createRequestWithMethod:@"GET"
+                                                         path:@"/admin"
+                                                  sessionToken:[token stringByReplacingOccurrencesOfString:@"ui_admin_token=" withString:@""]
+                                                     jsonBody:nil];
+    HttpResponse *adminResponse = [self.runtime dispatchRequestForTesting:adminRequest];
+    XCTAssertEqual(adminResponse.statusCode, 200);
+    XCTAssertTrue([adminResponse.bodyString containsString:@"data-tab=\"chat\""]);
+    XCTAssertTrue([adminResponse.bodyString containsString:@"Chat"]);
 }
 
 - (void)testDeleteAccountRoute {
-    BOOL started = [self.runtime startWithError:nil];
-    XCTAssertTrue(started);
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"POST"
+                                                    path:@"/admin/actions/delete-account"
+                                             sessionToken:token
+                                                jsonBody:@{@"did": @"did:example:alice"}];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify the runtime is running
-    XCTAssertTrue(self.runtime.isRunning);
+    XCTAssertNotEqual(response.statusCode, 404);
+    XCTAssertTrue([response.bodyString containsString:@"alert"]);
 }
 
 - (void)testChatConvosPartialRoute {
-    BOOL started = [self.runtime startWithError:nil];
-    XCTAssertTrue(started);
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                    path:@"/admin/partials/chat-convos"
+                                             sessionToken:token
+                                                jsonBody:nil];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify the runtime started successfully with chat routes registered
-    XCTAssertTrue(self.runtime.isRunning);
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertTrue(response.bodyString.length > 0);
+    XCTAssertNotEqual([response.bodyString rangeOfString:@"Not Found"].location, 0);
 }
 
 - (void)testBackfillQueueWithEnqueueForm {
-    BOOL started = [self.runtime startWithError:nil];
-    XCTAssertTrue(started);
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"POST"
+                                                    path:@"/admin/actions/appview-enqueue-dids"
+                                             sessionToken:token
+                                                jsonBody:@{@"dids": @[@"did:example:alice"]}];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
 
-    // Verify runtime started successfully with backfill routes registered
-    XCTAssertTrue(self.runtime.isRunning);
+    XCTAssertNotEqual(response.statusCode, 404);
+    XCTAssertTrue([response.bodyString containsString:@"alert"]);
 }
 
 @end

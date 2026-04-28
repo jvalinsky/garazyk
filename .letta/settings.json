@@ -265,7 +265,15 @@
       "Bash(./build/tests/AllTests 2>&1 | grep -E \"Tests run:|Failures:\" | tail -3)",
       "Bash(./build/tests/AllTests 2>&1 | grep \"FAIL:\" | grep -i \"dpop\\|DPoP\\|oauth.*conform\\|oauth.*proof\" | head -20)",
       "Bash(nm /Users/jack/Software/garazyk/build/libATProtoCore.a 2>/dev/null | grep -i \"NSDictionary\" | head -10)",
-      "Bash(deciduous pulse 2)"
+      "Bash(deciduous pulse 2)",
+      "Bash(deciduous add --type action --title \"Remove getLikes/getRepostedBy from proxy-only list\" --status completed --prompt \"XrpcAppBskyProxyMethodPack.registerProxyOnlyMethodsWithDispatcher: was called AFTER XrpcAppBskyFeedPack registrations, overriding the local getLikes and getRepostedBy handlers with proxy-only 501 responses. Removed both from the proxy-only method list since they now have local implementations in XrpcAppBskyFeedPack.m (lines 194-221). File: XrpcAppBskyProxyMethodPack.m\" 2)",
+      "Bash(deciduous add --help 2)",
+      "Bash(deciduous show 555 2)",
+      "Bash(deciduous show 563 2)",
+      "Bash(deciduous status 563 completed)",
+      "Bash(/Users/jack/Software/garazyk/build/tests/AllTests -XCTest XrpcChatBskyConvoTests,PDSHttpServerBuilderTests 2)",
+      "Bash(deciduous --help 2)",
+      "Bash(deciduous add decision \"Phase B: Extend OAuthProviderStorage for sessions (not SessionStore)\" -d \"Add session CRUD methods to OAuthProviderStorage protocol. Implement in PDSAuthStorage with in-memory + SQLite backends. OAuth2Server migrates from raw activeSessions dict to storage protocol. Single storage abstraction for the OAuthProviderServer migration path.\" -c 88 2)"
     ]
   }
 }

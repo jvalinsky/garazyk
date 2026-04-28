@@ -1,0 +1,4 @@
+interface:
+  display_name: "Professional Bash Scripting"
+  short_description: "Write maintainable secure bash"
+  default_prompt: "Use $professional-bash-scripting to write or review this production bash script."

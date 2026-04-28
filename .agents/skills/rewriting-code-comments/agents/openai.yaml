@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rewrite Code Comments"
+  short_description: "Clean Objective-C code comments"
+  default_prompt: "Use $rewriting-code-comments to convert these comments into precise Objective-C documentation."

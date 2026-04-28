@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web UI Audit"
+  short_description: "Audit frontend accessibility and security"
+  default_prompt: "Use $web-ui-audit to review this frontend for accessibility, code pattern, and security issues."

@@ -27,7 +27,10 @@
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertNotNil(response.jsonBody[@"priority"]);
+    NSDictionary *preferences = response.jsonBody[@"preferences"];
+    XCTAssertTrue([preferences isKindOfClass:[NSDictionary class]]);
+    XCTAssertNotNil(preferences[@"chat"]);
+    XCTAssertNotNil(preferences[@"follow"]);
 }
 
 #pragma mark - putPreferences Tests
