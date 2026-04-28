@@ -322,8 +322,13 @@ int main(int argc, const char * argv[]) {
         }
         printf("\nAdmin endpoints (requires APPVIEW_ADMIN_SECRET):\n");
         printf("  GET  /admin/backfill/status\n");
+        printf("  GET  /admin/backfill/queue\n");
         printf("  POST /admin/backfill/repos\n");
+        printf("  POST /admin/backfill/repos/:did/retry\n");
+        printf("  POST /admin/backfill/repos/:did/cancel\n");
         printf("  POST /admin/backfill/scope/rebuild\n");
+        printf("  GET  /admin/ingest/health\n");
+        printf("  GET  /admin/appview/metrics/stats\n");
         printf("\nPress Ctrl+C to stop.\n");
 
         // Keep runtime alive for signal handlers

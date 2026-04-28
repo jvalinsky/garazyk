@@ -35,6 +35,7 @@ static void print_usage(void) {
     printf("  GARAZYK_UI_APPVIEW_URL      AppView base URL\n");
     printf("  GARAZYK_UI_CHAT_URL         Chat base URL\n");
     printf("  GARAZYK_UI_PDS_TOKEN        Optional bearer token for PDS admin XRPC\n");
+    printf("  GARAZYK_UI_PDS_PASSWORD     PDS admin password (auto-obtains JWT on startup)\n");
 }
 
 static void print_version(void) {
