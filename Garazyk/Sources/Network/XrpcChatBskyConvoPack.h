@@ -17,8 +17,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+               serviceDatabase:(nullable id<PDSQueryDatabase>)serviceDatabase
                       jwtMinter:(nullable JWTMinter *)jwtMinter
-                adminController:(nullable id<PDSAdminController>)adminController;
+                adminController:(nullable id<PDSAdminController>)adminController
+                   adminSecret:(nullable NSString *)adminSecret;
 
 @end
 

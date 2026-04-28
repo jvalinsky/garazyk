@@ -15,14 +15,17 @@
 #import "Chat/Server/Services/ChatService.h"
 #import "Chat/Server/Config/ChatSchemaManager.h"
 #import "Database/PDSDatabase.h"
+#import "Core/DID.h"
 #import "Debug/PDSLogger.h"
 
 @implementation XrpcChatBskyConvoPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+               serviceDatabase:(nullable id<PDSQueryDatabase>)serviceDatabase
                       jwtMinter:(nullable JWTMinter *)jwtMinter
-                adminController:(nullable id<PDSAdminController>)adminController {
+                adminController:(nullable id<PDSAdminController>)adminController
+                   adminSecret:(nullable NSString *)adminSecret {
 
     // Ensure chat schema tables exist
     PDSDatabase *db = (PDSDatabase *)appViewDatabase;
@@ -504,6 +507,254 @@
         [response setJsonBody:@{}];
     }];
 
+    // chat.bsky.convo.listConvos
+    [dispatcher registerMethod:@"chat.bsky.convo.listConvos"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+
+        NSInteger limit = 50;
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        if (limitStr) limit = [limitStr integerValue];
+        if (limit < 1) limit = 1;
+        if (limit > 100) limit = 100;
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSError *error = nil;
+        NSArray *convos = nil;
+
+        if (actorDID) {
+            convos = [chatService listConversationsForActor:actorDID
+                                                      limit:limit
+                                                     cursor:cursor
+                                                      error:&error];
+        } else {
+            // Admin fallback: validate admin secret explicitly
+            NSString *token = authHeader;
+            if ([authHeader hasPrefix:@"Bearer "]) {
+                token = [authHeader substringFromIndex:@"Bearer ".length];
+            }
+            if (adminSecret && adminSecret.length > 0 && [token isEqualToString:adminSecret]) {
+                convos = [chatService listAllConversationsWithLimit:limit
+                                                             cursor:cursor
+                                                              error:&error];
+            } else {
+                [XrpcErrorHelper setAuthenticationError:response message:@"Invalid admin secret"];
+                return;
+            }
+        }
+
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to list conversations"];
+            return;
+        }
+
+        // Reshape to lexicon convoView format
+        NSMutableArray *convoViews = [NSMutableArray array];
+        NSDictionary *handleMap = [self resolveHandlesForDids:[[self collectDidsFromConversations:convos] allObjects]
+                                             serviceDatabase:serviceDatabase];
+        for (NSDictionary *convo in (convos ?: @[])) {
+            [convoViews addObject:[self convoViewFromInternalDict:convo handleMap:handleMap]];
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"convos"] = convoViews;
+        // Cursor: use last convo id if we got limit+1 results
+        if (convos.count > (NSUInteger)limit) {
+            NSDictionary *lastConvo = convos[convos.count - 2];
+            result[@"cursor"] = lastConvo[@"id"] ?: @"";
+            // Remove the extra entry
+            [convoViews removeLastObject];
+        }
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // chat.bsky.convo.getConvo
+    [dispatcher registerMethod:@"chat.bsky.convo.getConvo"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSString *convoId = [request queryParamForKey:@"convoId"];
+        if (!convoId || convoId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:&error];
+        if (!convo) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"Conversation not found"}];
+            return;
+        }
+        response.statusCode = HttpStatusOK;
+        // Collect DIDs from this single convo for handle resolution
+        NSMutableSet *convoDids = [NSMutableSet set];
+        for (NSDictionary *member in (convo[@"members"] ?: @[])) {
+            NSString *did = member[@"did"];
+            if (did) [convoDids addObject:did];
+        }
+        NSDictionary *handleMap = [self resolveHandlesForDids:[convoDids allObjects] serviceDatabase:serviceDatabase];
+        [response setJsonBody:@{@"convo": [self convoViewFromInternalDict:convo handleMap:handleMap]}];
+    }];
+
+    // chat.bsky.convo.getMessages
+    [dispatcher registerMethod:@"chat.bsky.convo.getMessages"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSString *convoId = [request queryParamForKey:@"convoId"];
+        if (!convoId || convoId.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
+            return;
+        }
+
+        NSInteger limit = 50;
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        if (limitStr) limit = [limitStr integerValue];
+        if (limit < 1) limit = 1;
+        if (limit > 100) limit = 100;
+
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+
+        NSError *error = nil;
+        NSArray *messages = [chatService getMessagesForConversation:convoId
+                                                             limit:limit
+                                                            cursor:cursor
+                                                             error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to get messages"];
+            return;
+        }
+
+        // Reshape to lexicon messageView format
+        NSMutableArray *messageViews = [NSMutableArray array];
+        NSString *nextCursor = nil;
+
+        // Collect unique sender DIDs for handle resolution
+        NSMutableSet *senderDids = [NSMutableSet set];
+        for (NSDictionary *msg in (messages ?: @[])) {
+            NSString *did = msg[@"senderDid"];
+            if (did) [senderDids addObject:did];
+        }
+        NSDictionary *handleMap = [self resolveHandlesForDids:[senderDids allObjects]
+                                             serviceDatabase:serviceDatabase];
+
+        for (NSUInteger i = 0; i < (messages ?: @[]).count; i++) {
+            NSDictionary *msg = messages[i];
+            if (i >= (NSUInteger)limit) {
+                nextCursor = msg[@"id"];
+                break;
+            }
+            NSMutableDictionary *view = [NSMutableDictionary dictionary];
+            view[@"id"] = msg[@"id"] ?: @"";
+            view[@"rev"] = msg[@"id"] ?: @"";
+            view[@"text"] = msg[@"text"] ?: @"";
+            NSString *senderDid = msg[@"senderDid"] ?: @"";
+            NSMutableDictionary *sender = [NSMutableDictionary dictionary];
+            sender[@"did"] = senderDid;
+            NSString *handle = handleMap[senderDid];
+            if (handle) sender[@"handle"] = handle;
+            view[@"sender"] = sender;
+            view[@"sentAt"] = msg[@"createdAt"] ?: @"";
+            [messageViews addObject:view];
+        }
+
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"messages"] = messageViews;
+        if (nextCursor) result[@"cursor"] = nextCursor;
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:result];
+    }];
+
+    // chat.bsky.convo.sendMessage
+    [dispatcher registerMethod:@"chat.bsky.convo.sendMessage"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *convoId = body[@"convoId"];
+        NSDictionary *message = body[@"message"];
+        if (!convoId || !message) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
+            return;
+        }
+
+        NSString *text = message[@"text"];
+        NSString *embedJson = nil;
+        if (message[@"embed"]) {
+            NSData *embedData = [NSJSONSerialization dataWithJSONObject:message[@"embed"] options:0 error:nil];
+            if (embedData) embedJson = [[NSString alloc] initWithData:embedData encoding:NSUTF8StringEncoding];
+        }
+
+        NSError *error = nil;
+        NSDictionary *sentMessage = [chatService sendMessage:convoId
+                                                    senderDid:actorDID
+                                                         text:text
+                                                    embedJson:embedJson
+                                                        error:&error];
+        if (!sentMessage) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message"];
+            return;
+        }
+
+        // Reshape to lexicon messageView format
+        NSMutableDictionary *view = [NSMutableDictionary dictionary];
+        view[@"id"] = sentMessage[@"id"] ?: @"";
+        view[@"rev"] = sentMessage[@"id"] ?: @"";
+        view[@"text"] = sentMessage[@"text"] ?: @"";
+        NSString *senderDid = sentMessage[@"senderDid"] ?: @"";
+        NSMutableDictionary *sender = [NSMutableDictionary dictionary];
+        sender[@"did"] = senderDid;
+        NSDictionary *handleMap = [self resolveHandlesForDids:@[senderDid] serviceDatabase:serviceDatabase];
+        NSString *handle = handleMap[senderDid];
+        if (handle) sender[@"handle"] = handle;
+        view[@"sender"] = sender;
+        view[@"sentAt"] = sentMessage[@"createdAt"] ?: @"";
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:view];
+    }];
+
     // chat.bsky.convo.getLog
     [dispatcher registerMethod:@"chat.bsky.convo.getLog"
                        handler:^(HttpRequest *request, HttpResponse *response) {
@@ -529,6 +780,111 @@
     }];
 
     PDS_LOG_INFO(@"Registered chat.bsky.convo.* endpoints");
+}
+
+#pragma mark - Lexicon Shape Helpers
+
++ (NSDictionary *)convoViewFromInternalDict:(NSDictionary *)convo
+                             handleMap:(NSDictionary<NSString *, NSString *> *)handleMap {
+    // Reshape internal ChatService dict to chat.bsky.convo.defs#convoView
+    // Internal: { id, createdAt, updatedAt, members: [{ did, status, muted, lastReadId, joinedAt }], memberList }
+    // Lexicon:  { id, rev, members: [{ did, handle }], muted, unreadCount, status }
+    NSMutableArray *memberViews = [NSMutableArray array];
+    BOOL currentUserMuted = NO;
+    NSString *currentUserStatus = @"accepted";
+
+    for (NSDictionary *member in (convo[@"members"] ?: @[])) {
+        NSString *did = member[@"did"] ?: @"";
+        NSMutableDictionary *memberView = [NSMutableDictionary dictionary];
+        memberView[@"did"] = did;
+        NSString *handle = handleMap[did];
+        if (handle) memberView[@"handle"] = handle;
+        [memberViews addObject:memberView];
+        // Use first member's mute/status as the current user's (simplified)
+        if (!currentUserMuted && [member[@"muted"] boolValue]) {
+            currentUserMuted = YES;
+        }
+        if (member[@"status"] && ![member[@"status"] isEqualToString:@"accepted"]) {
+            currentUserStatus = member[@"status"];
+        }
+    }
+
+    NSMutableDictionary *view = [NSMutableDictionary dictionary];
+    view[@"id"] = convo[@"id"] ?: @"";
+    view[@"rev"] = convo[@"updatedAt"] ?: @"";
+    view[@"members"] = memberViews;
+    view[@"muted"] = @(currentUserMuted);
+    view[@"unreadCount"] = @(0);
+    view[@"status"] = currentUserStatus;
+    return view;
+}
+
+/// Resolve handles for a set of DIDs: accounts table first, DID resolver fallback.
++ (NSDictionary<NSString *, NSString *> *)resolveHandlesForDids:(NSArray<NSString *> *)dids
+                                               serviceDatabase:(nullable id<PDSQueryDatabase>)serviceDatabase {
+    if (dids.count == 0) return @{};
+
+    NSMutableDictionary<NSString *, NSString *> *handleMap = [NSMutableDictionary dictionary];
+    NSMutableSet<NSString *> *unresolvedDids = [NSMutableSet setWithArray:dids];
+
+    // 1. Try accounts table for local accounts
+    if (serviceDatabase) {
+        NSMutableString *placeholders = [NSMutableString string];
+        NSMutableArray *params = [NSMutableArray array];
+        for (NSUInteger i = 0; i < unresolvedDids.count; i++) {
+            if (i > 0) [placeholders appendString:@", "];
+            [placeholders appendString:@"?"];
+        }
+        [params addObjectsFromArray:[unresolvedDids allObjects]];
+
+        NSString *query = [NSString stringWithFormat:@"SELECT did, handle FROM accounts WHERE did IN (%@)", placeholders];
+        NSError *error = nil;
+        NSArray *rows = [(PDSDatabase *)serviceDatabase executeParameterizedQuery:query params:params error:&error];
+        if (!error) {
+            for (NSDictionary *row in (rows ?: @[])) {
+                NSString *did = row[@"did"];
+                NSString *handle = row[@"handle"];
+                if (did && handle) {
+                    handleMap[did] = handle;
+                    [unresolvedDids removeObject:did];
+                }
+            }
+        }
+    }
+
+    // 2. Fallback: resolve remaining DIDs via DID resolver
+    if (unresolvedDids.count > 0) {
+        DIDResolver *resolver = [DIDResolver sharedResolver];
+        for (NSString *did in unresolvedDids) {
+            NSError *error = nil;
+            DIDDocument *doc = [resolver resolveDIDSync:did error:&error];
+            if (doc && doc.alsoKnownAs.count > 0) {
+                for (id entry in doc.alsoKnownAs) {
+                    if ([entry isKindOfClass:[NSString class]]) {
+                        NSString *entryStr = (NSString *)entry;
+                        if ([entryStr hasPrefix:@"at://"]) {
+                            handleMap[did] = [entryStr substringFromIndex:5];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return [handleMap copy];
+}
+
+/// Collect all unique DIDs from an array of conversation dicts.
++ (NSSet<NSString *> *)collectDidsFromConversations:(NSArray<NSDictionary *> *)convos {
+    NSMutableSet *dids = [NSMutableSet set];
+    for (NSDictionary *convo in convos) {
+        for (NSDictionary *member in (convo[@"members"] ?: @[])) {
+            NSString *did = member[@"did"];
+            if (did) [dids addObject:did];
+        }
+    }
+    return dids;
 }
 
 @end
