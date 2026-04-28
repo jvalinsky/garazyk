@@ -25,6 +25,7 @@
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
+#import "Media/PDSVideoWorker.h"
 #import "Network/HttpServer.h"
 #import "Network/PDSHttpServerBuilder.h"
 #import "Network/XrpcHandler.h"
@@ -423,6 +424,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     NSURL *blobURL = [NSURL fileURLWithPath:blobDir];
     PDSDiskBlobProvider *blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
+    [PDSVideoWorker sharedWorker].blobProvider = blobProvider;
     BlobStorage *blobStorage = [[BlobStorage alloc] initWithDatabasePool:_userDatabasePool provider:blobProvider];
     
     id<PDSBlobRepository> blobRepo = [PDSRepositoryFactory blobRepositoryWithDatabasePool:_userDatabasePool];
@@ -629,6 +631,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _running = YES;
     [_relayService start];
 
+    // Start video processing worker
+    [PDSVideoWorker sharedWorker].serviceDatabases = _serviceDatabases;
+    [[PDSVideoWorker sharedWorker] start];
+    PDS_LOG_CORE_INFO(@"Video processing worker started");
+
     // Start analytics collection for diagnostics dashboard
     [_analyticsCollector startCollecting];
     [PDSSequencerHealthHandler sharedHandler].analyticsCollector = _analyticsCollector;
@@ -641,6 +648,9 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 - (void)stop {
     PDS_LOG_CORE_INFO(@"Stopping PDSApplication...");
     
+    // Stop video processing worker
+    [[PDSVideoWorker sharedWorker] stop];
+
     // Stop servers
     [_httpServer stop];
     _httpServer = nil;
