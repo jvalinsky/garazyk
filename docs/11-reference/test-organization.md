@@ -20,6 +20,7 @@ At a high level:
 | `Tests/Auth`, `Tests/Identity`, `Tests/PLC` | session logic, OAuth, DID and handle flows |
 | `Tests/Repository`, `Tests/Core` | MST, CAR, CID, CBOR, repository invariants |
 | `Tests/Database`, `Tests/Services`, `Tests/App` | persistence, service composition, application wiring |
+| `Tests/Media` | video transcoding, thumbnail generation, worker lifecycle |
 | `Tests/Sync`, `Tests/Integration`, `Tests/Federation` | firehose, multi-component behavior, end-to-end seams |
 | `Tests/CLI`, `Tests/Admin`, `Tests/Email` | operator workflows and supporting infrastructure |
 | `Tests/Security`, `Tests/CharacterizationTests` | hardening and behavior-locking coverage |
