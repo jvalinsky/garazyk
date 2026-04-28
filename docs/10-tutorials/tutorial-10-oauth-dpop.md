@@ -6,7 +6,7 @@ title: "Tutorial 10: Deep-Dive OAuth2 & DPoP"
 
 ## Overview
 
-Garazyk implements the ATProto OAuth specification, which extends standard OAuth 2.0 with strict requirements for client identity and Proof-of-Possession (DPoP). This tutorial moves beyond the basic mental model of "authentication" and into the implementation-level details of how the PDS acts as an Authorization Server.
+Garazyk implements the ATProto OAuth specification, which extends standard OAuth 2.0 with strict requirements for client identity and Proof-of-Possession (DPoP). This tutorial details how the PDS acts as an Authorization Server.
 
 **Learning Objectives:**
 - Trace the OAuth2 handshake from authorization to token issuance.

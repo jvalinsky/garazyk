@@ -28,9 +28,9 @@ flowchart TD
 
 ## Why This Matters
 
-The repo is large enough that full-suite-first is a poor default. It is slower, noisier, and less informative than running the tests that protect the seam you just touched.
+Running the full suite first is a poor default. It is slower, noisier, and less informative than running tests that protect the specific code you changed.
 
-The right question is not "what can I run?" It is "what should fail if I broke this change?"
+Ask "what should fail if I broke this change?" instead of "what can I run?"
 
 ## Walkthrough: Mapping A Change To Tests
 
@@ -42,11 +42,11 @@ Use these defaults:
 - database pool or migration change: database tests first
 - UI or Explorer tooling change: targeted docs or UI checks plus manual smoke verification
 
-That pattern matches the repo structure under `Garazyk/Tests/` closely enough that directory names are usually your first map.
+This pattern matches the `Garazyk/Tests/` directory structure, making directory names your first map.
 
 ## The Registration Footgun
 
-This repo has one important test-runner rule that still catches contributors: a new test class must be added to `testClasses` in `Garazyk/Tests/test_main.m`.
+A new test class must be added to `testClasses` in `Garazyk/Tests/test_main.m`.
 
 If you forget that step, a test can compile and still never run. Any test-selection workflow should include checking registration when a new class appears to be "passing" too quietly.
 

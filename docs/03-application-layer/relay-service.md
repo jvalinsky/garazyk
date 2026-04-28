@@ -6,9 +6,7 @@ title: Relay Service
 
 ## Overview
 
-`PDSRelayService` is an outbound hinting service. Its job is not to aggregate global repo events or provide a massive firehose — that is the role of the **[Zuk Relay Server](./relay-server)**. Instead, this service simply notifies configured relays to crawl this PDS when local records change.
-
-That narrow contract is the key to understanding the implementation.
+`PDSRelayService` is an outbound hinting service. It notifies configured relays to crawl this PDS when local records change. It does not aggregate global repo events or provide a firehose — that is the role of the **[Zuk Relay Server](./relay-server)**.
 
 ## How It Is Triggered
 

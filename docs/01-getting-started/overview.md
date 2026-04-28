@@ -6,20 +6,20 @@ title: Getting Started with PDS
 
 ## What Garazyk Is
 
-Garazyk is an Objective-C Personal Data Server for the AT Protocol. It serves ATProto endpoints, stores per-account repositories, exposes a firehose stream, and ships contributor tooling such as Explorer and the browser UI.
+Garazyk is an Objective-C Personal Data Server for the AT Protocol. It serves ATProto endpoints, stores per-account repositories, exposes a firehose stream, and provides contributor tools like the Explorer and browser UI.
 
-This guide is organized for contributors, not just operators. The summary pages explain what each subsystem is for, and the companion deep dives show one real path through the codebase.
+This guide helps contributors and operators understand the subsystems and navigate the codebase.
 
-## Why This Implementation Looks The Way It Does
+## Goals
 
-The codebase optimizes for a few explicit goals:
+The codebase focuses on:
 
-- a small runtime with direct control over transport, routing, and persistence
-- cross-platform support across macOS and GNUstep
-- repository-grounded implementation of ATProto concepts such as DIDs, repos, sync, and auth
-- contributor-visible boundaries between request handling, services, and storage
+- Direct control over transport, routing, and persistence in a small runtime.
+- Cross-platform support for macOS and GNUstep.
+- ATProto concepts like DIDs, repos, sync, and auth grounded in the repository.
+- Clear boundaries between request handling, services, and storage.
 
-Those boundaries are the main thing to learn first. Once they are clear, the rest of the codebase becomes much easier to navigate.
+Learn these boundaries first to make the rest of the codebase easier to read.
 
 ## Architecture At A Glance
 
@@ -47,7 +47,7 @@ Use the site in this order:
 
 1. learn the request path and the codebase map
 2. understand the service and storage boundaries
-3. use the deep dives when you need one concrete runtime flow
+3. use the detailed guides when you need one concrete runtime flow
 4. use tutorials when you want a contributor walkthrough
 
 The docs are intentionally split this way so the top-level pages stay readable without hiding the implementation detail you need later.

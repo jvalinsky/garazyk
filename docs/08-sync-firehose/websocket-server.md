@@ -8,15 +8,13 @@ outline: deep
 
 ## Overview
 
-Garazyk's firehose does **not** primarily run through a standalone listener in
-the normal server path. The production path is:
+The firehose production path routes through the main server:
 
 ```text
 HttpServer -> WebSocketUpgradeHandler -> WebSocketConnection -> SubscribeReposHandler
 ```
 
-That means the firehose begins life as an ordinary HTTP request on the main port
-and only becomes a WebSocket after the upgrade succeeds.
+The firehose begins as an HTTP request on the main port and becomes a WebSocket after upgrade.
 
 ## Current production path
 
@@ -47,8 +45,7 @@ The repository still contains `Garazyk/Sources/Sync/WebSocketServer.{h,m}`.
 That class owns a separate listener based on Network.framework and still exists
 for compatibility and older test seams.
 
-That is **not** the primary production architecture anymore. The current
-`SubscribeReposHandler` header marks the standalone listener path as deprecated.
+This legacy path is deprecated in favor of the current `SubscribeReposHandler`.
 
 Use the legacy class only when:
 
@@ -58,7 +55,7 @@ Use the legacy class only when:
 
 ## What this layer owns
 
-Treat the WebSocket layer as the answer to these questions:
+The WebSocket layer answers these questions:
 
 - did the upgrade request satisfy RFC 6455 handshake requirements,
 - how are frames encoded and decoded on the socket,
@@ -66,8 +63,7 @@ Treat the WebSocket layer as the answer to these questions:
 - when is a connection considered too slow or dead,
 - and how does an upgraded socket become a firehose subscriber.
 
-These are transport and framing concerns. They are not the same as event replay
-or commit sequencing semantics.
+These are transport and framing concerns, distinct from event replay or commit sequencing.
 
 ## Main runtime seams
 

@@ -6,7 +6,7 @@ title: Reconnection Strategy and State Recovery
 
 ## Overview
 
-Network connections are inherently unreliable. The firehose implements robust reconnection strategies to ensure subscribers can recover from:
+The firehose implements reconnection strategies so subscribers recover from:
 - Network interruptions
 - Server restarts
 - Client crashes

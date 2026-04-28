@@ -6,29 +6,29 @@ title: XRPC Dispatch
 
 ## Overview
 
-XRPC dispatch is the protocol adapter between transport and application behavior. Once a request reaches the `/xrpc/*` route family, this layer is responsible for resolving the NSID, applying shared request handling rules, and invoking the registered domain method.
+XRPC dispatch adapts transport requests to application logic. After a request matches the `/xrpc/*` route, this layer resolves the NSID, applies handling rules, and invokes the domain method.
 
-## What Dispatch Owns
+## Responsibilities
 
-This layer is where the runtime answers:
+This layer determines:
 
-- which NSID the request path maps to
-- whether that NSID is registered at all
-- how shared auth, validation, and protocol errors are applied
-- how the handler result becomes an HTTP response
+- The NSID mapped to the request path.
+- Whether the NSID is registered.
+- How auth, validation, and protocol errors apply.
+- How the handler result translates to an HTTP response.
 
-That makes it the seam between "the request arrived" and "the service is doing work."
+It serves as the seam between request arrival and service execution.
 
-## What Dispatch Does Not Own
+## Boundaries
 
-Dispatch is not where the domain behavior lives. It should not be the place that explains:
+Dispatch does not define:
 
-- repository mutation rules
-- blob-storage policy
-- account lifecycle semantics
-- PLC or identity resolution behavior
+- repository mutation rules.
+- blob-storage policy.
+- account lifecycle semantics.
+- PLC or identity resolution.
 
-If a request reaches the right handler and the result is still wrong, the bug usually lives below dispatch.
+If the request reaches the correct handler but produces the wrong result, the issue likely resides below dispatch.
 
 ## Why NSID Mapping Matters
 

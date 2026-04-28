@@ -26,18 +26,18 @@ flowchart TD
 
 ## The Important Mental Model
 
-Keep these ideas separate:
+Separate these concepts:
 
 - records are user-facing logical objects
 - blocks and commits are repository-structure artifacts
 - blobs are adjacent to the repository but have their own storage path
 - the actor store is the persistence boundary underneath all of it
 
-That separation explains why one request can succeed at the record layer while a later sync or export path still fails.
+This separation explains why a request can succeed at the record layer but fail during sync or export.
 
 ## What A Normal Write Means
 
-A normal write is not just "insert a record row." It usually means:
+A normal write involves more than inserting a record row:
 
 1. validate and normalize the record input
 2. encode and identify the record content
@@ -45,11 +45,11 @@ A normal write is not just "insert a record row." It usually means:
 4. create and sign the new commit material
 5. expose the result to sync and firehose consumers
 
-That is why the commit deep dive is the most important repository walkthrough in the guide.
+The commit deep dive is the most critical repository walkthrough.
 
 ## What This Summary Does Not Try To Do
 
-This page is the conceptual map. It does not try to inline CBOR, CID, CAR, blob, and commit implementation details all at once. Those details are now split into focused deep dives and protocol articles so contributors can read the part they actually need.
+This conceptual map omits inline CBOR, CID, CAR, blob, and commit implementation details. Those details reside in focused deep dives and protocol articles.
 
 ## Related Deep Dives
 

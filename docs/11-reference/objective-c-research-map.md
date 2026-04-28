@@ -8,15 +8,13 @@ outline: deep
 
 ## Why this exists
 
-When a Garazyk change lands in the "I know this is an Objective-C or Cocoa
-thing, but I do not remember where to look" category, normal code search is not
-enough. The repository has strong tests and explicit architecture, but niche
+When a change involves obscure Objective-C or Cocoa concepts, normal code search is
+not enough. The repository has strong tests and explicit architecture, but niche
 questions about `KVO`, `NSInvocation`, message forwarding, associated objects,
-`autorelease pool` behavior, or `AppKit` still benefit from outside research.
+`autorelease pool` behavior, or `AppKit` benefit from outside research.
 
-This page is the short path from symptom to the right research source. It is
-written for contributor lookup and debugging, not for beginner Objective-C
-training.
+This page maps symptoms to research sources. It provides lookup and debugging
+help, not beginner Objective-C training.
 
 ## Trust order for sources
 
@@ -49,7 +47,7 @@ Apple APIs first.
 
 ## Evidence tags
 
-Use these tags as a shorthand for how hard you should trust an external article:
+Use these tags to gauge an external article's reliability:
 
 - `current`: safe as a first stop for current APIs or observed behavior
 - `conceptually useful but dated`: useful for mental models, but re-check API

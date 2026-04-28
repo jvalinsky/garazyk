@@ -12,8 +12,7 @@ address it by CID, and hand it back to sync and explorer surfaces. It does not
 yet try to solve every long-term lifecycle problem such as quotas, garbage
 collection, or tiered object storage.
 
-The important contributor question is not "where are the bytes?" It is "which
-layer owns correctness for those bytes?"
+The key question is which layer owns correctness for these bytes.
 
 ## Why The Storage Layer Is Split
 
@@ -52,9 +51,7 @@ The current write path is conservative:
 4. store bytes when needed
 5. persist blob metadata for the DID
 
-This ordering is deliberate. The server does not want provider bytes that never
-become visible to the application, and it does not want to trust transport
-metadata without revalidating it at the storage boundary.
+This ordering is deliberate. The server rejects provider bytes that never become visible to the application, and it revalidates transport metadata at the storage boundary.
 
 For the request-layer guardrails that happen before `BlobStorage` runs, see
 [Blob Lifecycle](./blob-lifecycle) and [Blob Quotas](./blob-quotas).
@@ -83,9 +80,7 @@ The shipped lifecycle controls are explicit:
 - fetch metadata for a CID
 - delete a blob for a DID
 
-That means operators and contributors should think in terms of visible,
-requested actions rather than background cleanup. If a blob is removed today,
-it is because an implemented code path asked for that removal.
+Operators and contributors must rely on visible, requested actions rather than background cleanup. A blob is only removed when an implemented code path requests it.
 
 ## What This Layer Does Not Promise
 

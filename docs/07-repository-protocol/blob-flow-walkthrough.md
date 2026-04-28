@@ -6,7 +6,7 @@ title: Blob Flow Walkthrough
 
 ## Goal
 
-Read this page when you need the concrete blob path from upload to read or delete. The goal is to separate what the current runtime really does from maintenance features it does not yet promise, especially around cleanup and quota accounting.
+This page details the concrete blob path from upload to read or delete. It separates actual runtime behavior from unimplemented maintenance features, especially around cleanup and quota accounting.
 
 ## Full Flow
 
@@ -40,7 +40,7 @@ Blob behavior is split on purpose:
 - the blob provider owns raw byte persistence,
 - repository records may later reference the blob CID but do not own the byte store.
 
-That means "blob exists" can mean different things depending on whether you checked metadata, provider bytes, or a record reference.
+"Blob exists" means different things depending on whether you check metadata, provider bytes, or a record reference.
 
 ## Walkthrough: Upload And Later Read
 
@@ -58,7 +58,7 @@ This split explains why provider failures and metadata failures look different i
 
 ## Walkthrough: Delete
 
-Delete is explicit and narrower than contributors often assume.
+Delete is explicit and narrow.
 
 1. The delete call resolves the blob CID and actor.
 2. Metadata is removed from the actor store.
@@ -70,7 +70,7 @@ What does not happen automatically:
 - background garbage collection,
 - automatic cleanup after a record stops referencing a blob.
 
-If you expect those behaviors, you will debug the wrong subsystem.
+Expecting these behaviors leads to debugging the wrong subsystem.
 
 ## Where To Debug When This Breaks
 
