@@ -25,6 +25,7 @@
 #import "AppView/Services/BookmarkService.h"
 #import "AppView/Services/AgeAssuranceService.h"
 #import "Network/AppViewXRpcRoutePack.h"
+#import "AppView/Server/Admin/AppViewAdminRoutePack.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -38,6 +39,7 @@
 @property (nonatomic, strong) AppViewDatabase *database;
 @property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
 @property (nonatomic, strong) AppViewBackfillOrchestrator *orchestrator;
+@property (nonatomic, strong) AppViewAdminRoutePack *adminRoutePack;
 @property (nonatomic, strong) AppViewRelevanceSet *relevanceSet;
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 @property (nonatomic, strong) HttpServer *httpServer;
@@ -207,6 +209,13 @@ static AppViewRuntime *_sharedRuntime = nil;
                                                                               jwtMinter:jwtMinter];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
+    // Register admin routes
+    _adminRoutePack = [[AppViewAdminRoutePack alloc]
+        initWithOrchestrator:_orchestrator
+                ingestEngine:_ingestEngine
+                    database:_database
+                 adminSecret:config.adminSecret];
+    [_adminRoutePack registerRoutesWithServer:_httpServer];
 
     NSError *listenErr = nil;
     if (![_httpServer startWithError:&listenErr]) {
