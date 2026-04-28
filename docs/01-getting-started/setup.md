@@ -109,6 +109,17 @@ xcodebuild -scheme AllTests build
 
 The CLI grammar is `kaszlak <command> [flags]`, and the built binary you will usually invoke directly is `./build/bin/kaszlak`.
 
+### Step 6: start the Admin UI when you need operator workflows
+
+The Admin UI now runs as its own service:
+
+```bash
+xcodebuild -scheme garazyk-ui build
+GARAZYK_UI_ADMIN_PASSWORD=dev-admin ./build/bin/garazyk-ui serve
+```
+
+It listens on `http://127.0.0.1:2590/admin` by default. Use `GARAZYK_UI_PDS_URL`, `GARAZYK_UI_PLC_URL`, `GARAZYK_UI_RELAY_URL`, `GARAZYK_UI_APPVIEW_URL`, and `GARAZYK_UI_CHAT_URL` when your backing services are not on their default local ports.
+
 ## Recommended Linux Workflow
 
 Linux is supported, but the contributor ergonomics are different because the GNUstep toolchain is closer to the raw build system.
@@ -166,6 +177,7 @@ After the server starts, verify the discovery and contributor surfaces rather th
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq '.did'
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/ui/index.html
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2590/admin
 ```
 
 
@@ -174,6 +186,7 @@ These checks confirm:
 - protocol discovery,
 - Explorer and OpenAPI docs routing,
 - and the newer `/ui` asset path.
+- the standalone Admin UI service, when it is running.
 
 ## Production-Like Docker Workflow
 
@@ -212,4 +225,10 @@ Development defaults and secure deployment defaults are not the same thing. Prod
 - [Config Reference](../11-reference/config-reference)
 - [CLI Reference](../11-reference/cli-reference)
 - [Testing Map](../11-reference/testing-map)
-- [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)

@@ -651,4 +651,11 @@ To add or update diagrams:
 2. Update this index page with diagram details
 3. Add references in relevant documentation pages
 4. Test diagram rendering and accessibility
-5. Submit a pull request with your changes\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+5. Submit a pull request with your changes
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

@@ -109,4 +109,11 @@ That is the standard that keeps the system interoperable.
 - [IPLD and Multiformats Series](./)
 - [AT Protocol Basics](../atproto-basics)
 - [CBOR and DAG-CBOR](./cbor-and-dag-cbor)
-- [CIDs and Multiformats](./cids-and-multiformats)\n\n## Related\n\n- [Documentation Map](../../11-reference/documentation-map.md)\n- [Contributor Guide](../../index.md)\n- [Repository Documentation Index](../../repo-index/index.md)\n\n
+- [CIDs and Multiformats](./cids-and-multiformats)
+
+## Related
+
+- [Documentation Map](../../11-reference/documentation-map.md)
+- [Contributor Guide](../../index.md)
+- [Repository Documentation Index](../../repo-index/index.md)
+

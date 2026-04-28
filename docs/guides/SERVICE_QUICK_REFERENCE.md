@@ -22,9 +22,9 @@ VERBOSE=true ./scripts/start-all-services.sh
 | Service | URL | Purpose |
 |---------|-----|---------|
 | PDS API | `http://localhost:2583` | Main XRPC server |
-| PDS Admin UI | `http://localhost:2583/admin` | Admin interface |
-| PDS Explorer | `http://localhost:2583/explore` | Web explorer |
-| API Docs | `http://localhost:2583/explore/api/docs` | OpenAPI docs |
+| Admin UI | `http://127.0.0.1:2590/admin` | Standalone operator interface (`garazyk-ui`) |
+| Explorer API | `http://localhost:2583/api/pds/*` | Runtime inspection endpoints |
+| API Docs | `http://localhost:2583/api/pds/docs` | OpenAPI docs |
 | PLC Server | `http://127.0.0.1:2582` | Identity resolver (internal) |
 
 ## Common Commands
@@ -123,6 +123,7 @@ ls -la build/bin/
 # Rebuild if needed
 xcodebuild -scheme kaszlak build
 xcodebuild -scheme campagnola build
+xcodebuild -scheme garazyk-ui build
 
 # Check logs for errors
 tail -f logs/pds.log

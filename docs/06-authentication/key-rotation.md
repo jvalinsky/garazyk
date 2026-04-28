@@ -68,4 +68,11 @@ These failures often look like "PLC rejected my update," but the root cause is u
 
 - [PLC Directory](../02-core-concepts/plc-directory)
 - [PLC Server Operations](../11-reference/plc-server-operations)
-- [Cryptography](../02-core-concepts/cryptography)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Cryptography](../02-core-concepts/cryptography)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

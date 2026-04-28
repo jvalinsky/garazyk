@@ -634,4 +634,11 @@ Validation logic should be thoroughly tested with both valid and invalid inputs:
 
 - AT Protocol Specification: https://atproto.com/specs/atp
 - OWASP Input Validation Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
-- CWE-20: Improper Input Validation: https://cwe.mitre.org/data/definitions/20.html\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- CWE-20: Improper Input Validation: https://cwe.mitre.org/data/definitions/20.html
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

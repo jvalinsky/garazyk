@@ -766,4 +766,11 @@ self.maxWebSocketConnectionsPerIP = 5;
 
 - **[Rate Limiting](rate-limiting)** — Rate limiting strategies
 - **[Request Throttling](request-throttling)** — Per-endpoint throttling
-- **[Input Validation](input-validation)** — Input validation strategies\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- **[Input Validation](input-validation)** — Input validation strategies
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

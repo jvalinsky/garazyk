@@ -604,4 +604,11 @@ jobs:
 - OWASP Top 10: https://owasp.org/www-project-top-ten/
 - CWE Top 25: https://cwe.mitre.org/top25/
 - NIST Secure Software Development Framework: https://csrc.nist.gov/projects/ssdf
-- AT Protocol Security Considerations: https://atproto.com/specs/security\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- AT Protocol Security Considerations: https://atproto.com/specs/security
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

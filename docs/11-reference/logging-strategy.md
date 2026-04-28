@@ -117,4 +117,11 @@ Use metrics first, then logs, then code. That order usually minimizes noise.
     "components": ["HTTP", "Auth", "Database"]
   }
 }
-```\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+```
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

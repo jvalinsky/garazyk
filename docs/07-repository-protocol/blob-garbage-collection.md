@@ -104,4 +104,11 @@ something operators can actually run.
 
 Today the safe mental model is simple: explicit delete, no automatic sweep.
 Treat older references to `PDSCLIGCCommand.m` or `kaszlak gc blobs` as
-historical design notes, not part of the shipped Garazyk PDS toolchain.\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+historical design notes, not part of the shipped Garazyk PDS toolchain.
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

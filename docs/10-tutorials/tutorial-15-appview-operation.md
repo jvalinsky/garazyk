@@ -97,7 +97,7 @@ When Syrena encounters a DID it hasn't seen before, it triggers a backfill.
 
 ---
 
-## Failure Modes to Watch For
+## Troubleshooting
 
 | Failure Mode | Symptom | Root Cause / Mitigation |
 | --- | --- | --- |
@@ -113,16 +113,9 @@ When Syrena encounters a DID it hasn't seen before, it triggers a backfill.
 Use the `syrena` utility to inspect the internal state of the AppView.
 
 ```bash
-# Check global ingest status
 syrena status
-
-# List repositories currently being backfilled
 syrena backfill list
-
-# Inspect the specialized index for a specific user
 syrena index inspect did:plc:123... --collection app.bsky.feed.post
-
-# Force a re-index of a specific repository
 syrena index reindex did:plc:123...
 ```
 

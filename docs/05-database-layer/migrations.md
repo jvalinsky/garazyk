@@ -694,4 +694,11 @@ Before deploying a migration:
 - [Migration Strategy](migration-strategy) — Planning migrations
 - [Migration Rollback](migration-rollback) — Rollback procedures
 - [Data Integrity](data-integrity) — Consistency checks
-- [Zero-Downtime Migrations](zero-downtime-migrations) — Online migrations\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Zero-Downtime Migrations](zero-downtime-migrations) — Online migrations
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

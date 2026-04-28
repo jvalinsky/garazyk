@@ -5,7 +5,7 @@ description: Guide to running and managing ATProto PDS and supporting services
 
 # Service Orchestration Guide
 
-This guide describes how to run and manage the ATProto stack, including the PLC identity resolver, PDS (personal data server), and Admin UI.
+This guide describes how to run and manage the local ATProto stack: PLC identity resolver, PDS, and the optional standalone Admin UI service.
 
 ## Architecture
 
@@ -22,7 +22,6 @@ The ATProto stack consists of several interconnected services:
 ├───────────────────────────┤
 │ • Port 2583               │
 │ • XRPC Server             │
-│ • Admin UI (/admin)       │
 └─────────────┬─────────────┘
               │
               ▼ (DID resolution)
@@ -33,11 +32,20 @@ The ATProto stack consists of several interconnected services:
 │ • Identity verification   │
 │ • Service discovery       │
 └───────────────────────────┘
+
+┌───────────────────────────┐
+│ Admin UI (garazyk-ui)     │
+├───────────────────────────┤
+│ • Port 2590               │
+│ • /admin                  │
+│ • Calls PDS/PLC/Relay APIs│
+└───────────────────────────┘
 ```
 
 ### Dependencies
 - **PLC (campagnola)**: Must start before the PDS to handle identity resolution.
 - **PDS (kaszlak)**: Depends on the PLC for identity operations.
+- **Admin UI (garazyk-ui)**: Optional. Start it after the backing services it should operate against.
 
 ## Quick Start
 
@@ -46,6 +54,7 @@ The ATProto stack consists of several interconnected services:
 xcodegen generate
 xcodebuild -scheme campagnola build
 xcodebuild -scheme kaszlak build
+xcodebuild -scheme garazyk-ui build
 ```
 
 ### 2. Start Services
@@ -104,7 +113,7 @@ Provides lifecycle management for running services.
 ### Manual Health Checks
 - **PLC**: `curl -s http://127.0.0.1:2582/_health`
 - **PDS**: `curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer`
-- **Admin UI**: `curl -I http://localhost:2583/admin`
+- **Admin UI**: `curl -I http://127.0.0.1:2590/admin`
 
 ### Logging
 Logs are stored in the `logs/` directory. Use `./scripts/services-control.sh follow all` to monitor both services in real-time.

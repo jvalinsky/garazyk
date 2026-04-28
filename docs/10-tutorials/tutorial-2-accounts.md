@@ -173,4 +173,11 @@ curl -sS -X POST http://127.0.0.1:2583/xrpc/com.atproto.server.createSession \
   -H 'Content-Type: application/json' \
   -d '{"identifier":"alice.test","password":"password"}'
 kill $PID
-```\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+```
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

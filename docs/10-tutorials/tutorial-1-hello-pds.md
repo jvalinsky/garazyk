@@ -4,7 +4,22 @@ title: "Tutorial 1: Hello PDS"
 
 # Tutorial 1: Hello PDS
 
-This tutorial traces the Garazyk startup sequence and the `describeServer` discovery response. Understanding this path identifies how the codebase registers routes and handles protocol discovery.
+## Overview
+
+This tutorial traces the Garazyk startup sequence and the `describeServer` discovery response. That path shows how the codebase loads configuration, registers routes, and exposes protocol discovery.
+
+**Learning Objectives:**
+- Trace the PDS boot path from CLI command to HTTP listener.
+- Find where `com.atproto.server.describeServer` is registered and handled.
+- Verify that discovery metadata matches local configuration.
+
+**Estimated Time:** 25-35 minutes
+
+## Prerequisites
+
+- XcodeGen and Xcode installed on macOS.
+- `kaszlak` buildable from the repository root.
+- `jq` installed for JSON inspection.
 
 ## Startup Path
 
@@ -49,6 +64,14 @@ Check that:
 - The `did` matches your configured issuer.
 - The `availableUserDomains` match your configuration.
 
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| `xcodebuild` cannot find the scheme | Run `xcodegen generate` again from the repository root. |
+| `curl` cannot connect | Confirm `kaszlak serve` is still running and listening on port `2583`. |
+| Discovery fields look wrong | Check `config.json`, CLI overrides, and `PDSConfiguration.m`. |
+
 ## Testing Invariants
 
 Refer to these tests to understand the expected behavior of the boot and discovery paths:
@@ -66,7 +89,16 @@ deciduous add action "Verified describeServer handler registration" -c 90
 deciduous link <goal_id> <action_id>
 ```
 
----
+## Next Steps
+
+1. Continue to [Tutorial 2: Accounts](./tutorial-2-accounts).
+2. Read [Request Lifecycle](../01-getting-started/request-lifecycle) for the HTTP path.
+
+## Summary
+
+The discovery endpoint is the smallest useful slice of the PDS runtime. If you can trace it from CLI startup to XRPC response, the rest of the server is easier to debug.
+
+## Related
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)

@@ -25,4 +25,11 @@ This page indexes markdown that lives next to implementation code.
 
 - [Tooling and Skills Documentation](./tooling-and-skills-documentation)
 - [Repository Documentation Index](../repo-index/index)
-- [Backlinks](../repo-index/backlinks)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Backlinks](../repo-index/backlinks)
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

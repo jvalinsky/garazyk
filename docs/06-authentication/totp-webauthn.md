@@ -65,4 +65,11 @@ TOTP and WebAuthn live at the first layer. They do not replace session storage, 
 
 - [OAuth 2.0 with DPoP](./oauth2-dpop)
 - [Security Best Practices](./security-best-practices)
-- [Troubleshooting a Failing Endpoint](../11-reference/troubleshooting-a-failing-endpoint)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Troubleshooting a Failing Endpoint](../11-reference/troubleshooting-a-failing-endpoint)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

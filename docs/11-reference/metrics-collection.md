@@ -111,4 +111,11 @@ curl -sS http://127.0.0.1:2583/metrics | rg '^pds_auth_failures_total'
 
 ```bash
 curl -sS http://127.0.0.1:2583/metrics | rg '^pds_request_latency_seconds'
-```\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+```
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

@@ -6,11 +6,11 @@ title: "Tutorial 13: Admin UI Internals & Instrumentation"
 
 ## Overview
 
-The Garazyk Admin UI is more than just a dashboard; it is a window into the PDS's operational state. This tutorial explains how the Objective-J frontend communicates with the backend Admin services to manage accounts, monitor health, and audit actions.
+The Garazyk Admin UI runs as `garazyk-ui`, a standalone Objective-C service that renders operator workflows and calls the backing PDS, PLC, Relay, AppView, and Chat APIs.
 
 **Learning Objectives:**
-- Understand the administrative authentication flow via `/admin/login`.
-- Explore the `PDSAdminController` and its role as a service bridge.
+- Understand the UI session flow through `/admin/login`.
+- Trace how `UIBackendClient` calls admin and service endpoints.
 - Map Admin UI features to `com.atproto.admin.*` XRPC methods.
 - Analyze how the PDS collects and exposes server-wide instrumentation.
 
@@ -38,25 +38,28 @@ deciduous add action "Traced admin login to token issuance" -c 90
 
 ## Step 2: Administrative Authentication
 
-Access to the Admin UI and the `com.atproto.admin` namespace is protected by a dedicated administrative password.
+Access to the Admin UI is protected by `GARAZYK_UI_ADMIN_PASSWORD`. Backend admin calls still depend on the tokens configured for each service.
 
 ### The `/admin/login` Flow
-Unlike user sessions, admin access uses a specialized endpoint.
-1.  **Request**: The client sends a `POST /admin/login` with the admin password.
-2.  **Validation**: The PDS validates the password against the `PDS_ADMIN_PASSWORD` environment variable.
-3.  **Token**: If successful, the server issues a **Bearer Token**. This token must be included in the `Authorization` header for all subsequent admin requests.
+Unlike user sessions, UI access uses a local service session:
+1. The client sends `POST /admin/login` to `garazyk-ui`.
+2. `UIAuthManager` validates the password against `GARAZYK_UI_ADMIN_PASSWORD`.
+3. The UI service sets a `ui_admin_token` cookie. It also accepts the same token as a bearer token for API-style requests.
+
+The UI session only gates access to `garazyk-ui`. Calls from the UI service to the PDS or other backends use the configured `GARAZYK_UI_PDS_TOKEN`, `GARAZYK_UI_PLC_TOKEN`, `GARAZYK_UI_RELAY_TOKEN`, `GARAZYK_UI_APPVIEW_TOKEN`, and `GARAZYK_UI_CHAT_TOKEN` values when those services require bearer auth.
 
 ---
 
-## Step 3: The `PDSAdminController` Bridge
+## Step 3: The `UIBackendClient` Bridge
 
-The `PDSAdminController` is the central entry point for all administrative logic. It follows the "Thin Controller" pattern, delegating actual work to the `PDSAdminService`.
+`UIBackendClient` is the Admin UI service bridge. It builds backend URLs from `UIServiceConfig`, attaches bearer tokens when present, and normalizes failures into dashboard-friendly response dictionaries.
 
 ### Core Responsibilities
-- **Account Takedowns**: Managing the `admin_takedowns` table to block malicious actors.
-- **Invite Management**: Enabling/disabling invite codes for specific accounts.
-- **Diagnostic Jobs**: Triggering background tasks like **Blob Audits** (checking CID consistency) or **Repository Repairs**.
-- **Audit Logging**: Every action taken by an admin is recorded in the `admin_audit_log` table via `logAdminAction:subjectType:subjectId:details:ipAddress:adminDid:error:`.
+- Account search, invite management, sessions, and app-password operations through PDS admin XRPC.
+- PLC status, DID lookup, and log export.
+- Relay crawl, upstream, and health checks.
+- AppView ingest, backfill, and metrics views.
+- Ozone and Chat moderation workflows.
 
 ---
 
@@ -82,17 +85,18 @@ Check `PLCMetrics.m` to see how it increments counters for requests, errors, and
 ## Step 5: Verification and Debugging
 
 ### Perform an Admin Login (CLI)
-You can manually obtain an admin token using `curl`:
+You can verify the UI login endpoint with `curl`:
 
 ```bash
-# Obtain the admin token
-curl -sS -X POST http://127.0.0.1:2583/admin/login \
+GARAZYK_UI_ADMIN_PASSWORD=dev-admin ./build/bin/garazyk-ui serve
+
+curl -i -sS -X POST http://127.0.0.1:2590/admin/login \
   -H "Content-Type: application/json" \
-  -d '{"password":"your-admin-password"}' | jq .token
+  -d '{"password":"dev-admin"}'
 ```
 
 ### Query Server Stats
-Use your admin token to query the server's internal state:
+Use the PDS admin bearer token to query the server's internal state:
 
 ```bash
 # Query server stats
@@ -115,7 +119,8 @@ curl -sS http://127.0.0.1:2583/xrpc/com.atproto.admin.queryAuditLog \
 
 | Failure Mode | Symptom | Mitigation |
 | --- | --- | --- |
-| **Invalid Admin Token** | Status 401 (Unauthorized) on admin routes. | Re-run `/admin/login` or check if `PDS_ADMIN_PASSWORD` was changed. |
+| **Invalid UI Session** | Status 401 on `garazyk-ui` routes. | Re-run `/admin/login` or check `GARAZYK_UI_ADMIN_PASSWORD`. |
+| **Backend Auth Failure** | UI loads, but a panel shows backend errors. | Check the relevant `GARAZYK_UI_*_TOKEN` and `GARAZYK_UI_*_URL` values. |
 | **Takedown Bypass** | User can still post after takedown. | Check if the `PDSRecordService` correctly queries `isAccountTakedownActive:` before writes. |
 | **Audit Log Overflow** | Slow database queries on large logs. | Implement log rotation or pruning for the `admin_audit_log` table. |
 | **Metrics Latency** | `/_metrics` takes too long to respond. | Ensure metrics collection doesn't perform blocking database reads on every request. |
@@ -128,7 +133,7 @@ curl -sS http://127.0.0.1:2583/xrpc/com.atproto.admin.queryAuditLog \
 
 ## Summary
 
-The Admin UI and its backend internals provide the "control tower" for your PDS. By understanding the authentication, service bridging, and instrumentation layers, you can build tools that make Garazyk easier to operate at scale.
+The Admin UI combines a local UI session, backend bearer-token configuration, and service-specific admin endpoints. When you change an operator workflow, trace all three pieces before assuming the bug lives in the HTML.
 
 Always use `deciduous` to document changes to the admin surface or new instrumentation hooks.
 

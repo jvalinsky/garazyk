@@ -1,11 +1,11 @@
 [
   {
-    "hash": "711c6b62f9bd06f4dbc42fb3495191ada57d93b3",
-    "short_hash": "711c6b6",
+    "hash": "01cf31c22c815c3ea4053b8ab1dd19d473a0ad46",
+    "short_hash": "01cf31c",
     "author": "Security Bot",
-    "date": "2026-04-27T13:24:01-04:00",
-    "message": "docs: deslop maintenance and migration documentation",
-    "files_changed": 2
+    "date": "2026-04-27T15:42:14-04:00",
+    "message": "feat(appview): add BookmarkIndexer and GroupIndexer, extract Chat/Moderation to microservices\n\nSummary:\n- AppViewBookmarkIndexer: indexes app.bsky.bookmark records to bookmarks table\n- AppViewGroupIndexer: indexes chat.bsky.group.definition to groups tables\n- Removed ChatModerationService from AppView (microservices approach)\n- Now supports arbitrary lexicons via generic fallback plus specialized indexers\n\nThis implements the microservice architecture decision:\n- Chat and Moderation now belong in their own dedicated services\n- AppView focuses purely on public firehose indexing",
+    "files_changed": 5
   },
   {
     "hash": "996cc3352b74ff4faf9b63b55a8e79853c67b09c",

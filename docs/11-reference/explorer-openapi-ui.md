@@ -112,4 +112,11 @@ For this docs pass, the current contributor truth is:
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
 - [Tutorial 7a: Objective-J Intro](../10-tutorials/tutorial-7a-objective-j-intro)
 - [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui)
-- [API Reference](./api-reference)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [API Reference](./api-reference)
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

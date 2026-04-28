@@ -292,4 +292,11 @@ These prove the exact mechanics this part described:
 
 ## Next step
 
-Continue to [Part 2: Routing, pipelining, and responses](./http-routing-pipelining-and-responses).\n\n## Related\n\n- [Documentation Map](../../11-reference/documentation-map.md)\n- [Contributor Guide](../../index.md)\n- [Repository Documentation Index](../../repo-index/index.md)\n\n
+Continue to [Part 2: Routing, pipelining, and responses](./http-routing-pipelining-and-responses).
+
+## Related
+
+- [Documentation Map](../../11-reference/documentation-map.md)
+- [Contributor Guide](../../index.md)
+- [Repository Documentation Index](../../repo-index/index.md)
+

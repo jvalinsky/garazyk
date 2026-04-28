@@ -592,4 +592,11 @@ The SubscribeReposHandler broadcasts repository commits to all connected clients
 
 - **[Backpressure](backpressure)** — Flow control
 - **[WebSocket Server](websocket-server)** — WebSocket implementation
-- **[Firehose Overview](firehose-overview)** — Architecture overview\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- **[Firehose Overview](firehose-overview)** — Architecture overview
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

@@ -41,6 +41,49 @@ The server is available by default at `http://localhost:2583`.
 - **campagnola**: The PLC identity resolver.
 - **AllTests**: The integration and unit test suite.
 
+## Admin UI Server
+
+`garazyk-ui` is a separate Admin UI service. It talks to the PDS, PLC, Relay, AppView, and Chat services over their HTTP APIs instead of running inside the PDS process.
+
+### Run the Admin UI
+
+```bash
+xcodegen generate
+xcodebuild -scheme garazyk-ui build
+
+./build/bin/garazyk-ui serve
+```
+
+By default the UI listens on `http://127.0.0.1:2590/admin`.
+
+### Configuration
+
+| Variable | Description |
+|---------|-------------|
+| GARAZYK_UI_HOST | Bind host. Defaults to `127.0.0.1`. |
+| GARAZYK_UI_PORT | Bind port. Defaults to `2590`. |
+| GARAZYK_UI_ADMIN_PASSWORD | Password for the UI login page. Defaults to `changeme`. |
+| GARAZYK_UI_PDS_URL | PDS base URL. Defaults to `http://127.0.0.1:2583`. |
+| GARAZYK_UI_PLC_URL | PLC base URL. Defaults to `http://127.0.0.1:2582`. |
+| GARAZYK_UI_RELAY_URL | Relay base URL. Defaults to `http://127.0.0.1:2584`. |
+| GARAZYK_UI_APPVIEW_URL | AppView base URL. Defaults to `http://127.0.0.1:3200`. |
+| GARAZYK_UI_CHAT_URL | Chat base URL. Defaults to the AppView URL. |
+| GARAZYK_UI_PDS_TOKEN | Optional bearer token for PDS admin XRPC calls. |
+| GARAZYK_UI_PLC_TOKEN | Optional bearer token for PLC admin calls. |
+| GARAZYK_UI_RELAY_TOKEN | Optional bearer token for Relay admin calls. |
+| GARAZYK_UI_APPVIEW_TOKEN | Optional bearer token for AppView admin calls. |
+| GARAZYK_UI_CHAT_TOKEN | Optional bearer token for Chat admin calls. |
+| GARAZYK_UI_ASSETS_DIR | Optional path to the Admin UI asset directory. |
+
+### Endpoints
+
+- `/` redirects to `/admin`.
+- `/admin/login` handles UI login.
+- `/admin` serves the dashboard shell.
+- `/admin/partials/*` serves HTMX fragments for account, relay, PLC, AppView, Ozone, and Chat views.
+- `/admin/actions/*` handles operator actions.
+- `/lab` serves the OAuth lab surface.
+
 ### Configurations
 - **Debug**: Includes logging, assertions, and debug symbols.
 - **Release**: Enables compiler optimizations and strips symbols for deployment.
@@ -88,8 +131,8 @@ Run the following scripts to verify system health:
 
 ### Manual Health Checks
 - **Health Endpoint**: `curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer`
-- **Admin UI**: `http://localhost:2583/admin`
-- **Explorer**: `http://localhost:2583/explore`
+- **Admin UI**: `http://127.0.0.1:2590/admin`
+- **Explorer/OpenAPI**: `http://localhost:2583/api/pds/docs`
 
 ## Troubleshooting
 

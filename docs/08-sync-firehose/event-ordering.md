@@ -459,4 +459,11 @@ Every event is persisted to the database:
 - [Event Replay](event-replay) — Cursor-based catch-up
 - [Reliability Guarantees](reliability-guarantees) — Delivery semantics
 - [Commit Broadcasting](commit-broadcasting) — Event distribution
-- [Firehose Overview](firehose-overview) — Architecture overview\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Firehose Overview](firehose-overview) — Architecture overview
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

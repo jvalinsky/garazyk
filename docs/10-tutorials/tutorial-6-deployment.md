@@ -4,7 +4,24 @@ title: "Tutorial 6: Production Deployment"
 
 # Tutorial 6: Production Deployment
 
-This tutorial describes the production deployment model: a Linux container runtime using Docker Compose, Nginx as a reverse proxy, and specific configuration for protocol interoperability.
+## Overview
+
+This tutorial describes the production deployment model: a Linux container runtime using Docker Compose, Nginx as a reverse proxy, and explicit configuration for protocol interoperability.
+
+**Learning Objectives:**
+- Understand the production topology used by the deployment docs.
+- Configure the PDS with production-safe settings.
+- Verify public discovery routing after deploy.
+- Identify common deployment mistakes before they reach users.
+
+**Estimated Time:** 35-50 minutes
+
+## Prerequisites
+
+- Docker and Docker Compose installed on the target host.
+- A DNS name pointing at the deployment host.
+- TLS certificates managed by Nginx or the deployment platform.
+- Access to the repository checkout on the deployment host.
 
 ## Deployment Topology
 
@@ -74,13 +91,22 @@ curl -sS https://your-pds.com/xrpc/com.atproto.server.describeServer | jq .
 
 Durable state is stored in the `/var/lib/atprotopds` volume. Backup procedures should target the contents of this volume rather than the container itself.
 
-## Common Pitfalls
+## Troubleshooting
 
 - **Working Directory**: Running compose commands from the repository root instead of `docker/pds/`.
 - **Local Defaults**: Using development settings (e.g., mock PLC) in a production environment.
 - **Direct Exposure**: Bypassing Nginx and exposing the PDS port directly to the internet.
 
----
+## Next Steps
+
+1. Review [Configuration Reference](../11-reference/config-reference).
+2. Review [Monitoring](../11-reference/performance-monitoring) before enabling public traffic.
+
+## Summary
+
+A production deployment should make the public HTTPS issuer, PLC directory, proxy headers, and persistent data volume explicit. Treat local defaults as developer conveniences, not deployment policy.
+
+## Related
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)

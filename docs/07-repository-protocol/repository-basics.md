@@ -61,4 +61,11 @@ This page is the conceptual map. It does not try to inline CBOR, CID, CAR, blob,
 - [Blob Storage](./blob-storage)
 - [Blob Lifecycle](./blob-lifecycle)
 - [Repository Data Structures](../02-core-concepts/repository-data-structures-walkthrough)
-- [CID and Hashing](./cid-and-hashing)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [CID and Hashing](./cid-and-hashing)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

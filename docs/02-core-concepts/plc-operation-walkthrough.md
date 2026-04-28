@@ -122,4 +122,11 @@ Starting from the returned document alone usually hides the real bug.
 - [PLC Directory](./plc-directory)
 - [DID Document Updates](./did-document-updates)
 - [PLC Server Operations](../11-reference/plc-server-operations)
-- [Cryptography In Practice](./cryptography-in-practice)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Cryptography In Practice](./cryptography-in-practice)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

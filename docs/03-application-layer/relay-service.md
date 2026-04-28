@@ -69,4 +69,11 @@ federation story.
 
 - [Repository Service](./repository-service)
 - [Services Overview](./services-overview)
-- [Request Lifecycle](../01-getting-started/request-lifecycle)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Request Lifecycle](../01-getting-started/request-lifecycle)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

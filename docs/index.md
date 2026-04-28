@@ -103,4 +103,11 @@ That is the right mental model for a production codebase.
 - [Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui)
 - [Testing Map](11-reference/testing-map)
 - [Troubleshooting](11-reference/troubleshooting)
-- [Documentation and Comment Style Guide](../DOCUMENTATION.md)\n\n## Related\n\n- [Documentation Map](11-reference/documentation-map.md)\n- [Contributor Guide](index.md)\n- [Repository Documentation Index](repo-index/index.md)\n\n
+- [Documentation and Comment Style Guide](../DOCUMENTATION.md)
+
+## Related
+
+- [Documentation Map](11-reference/documentation-map.md)
+- [Contributor Guide](index.md)
+- [Repository Documentation Index](repo-index/index.md)
+

@@ -217,4 +217,11 @@ If a config example and the code disagree, trust `PDSConfiguration`.
 
 - [Setup](../01-getting-started/setup)
 - [Email & Verification](../06-authentication/email-and-verification)
-- [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

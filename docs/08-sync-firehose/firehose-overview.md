@@ -102,4 +102,11 @@ That means debugging stream issues often crosses three layers:
 - [WebSocket Server](./websocket-server)
 - [Commit Broadcasting](./commit-broadcasting)
 - [Backpressure](./backpressure)
-- [Event Replay](./event-replay)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Event Replay](./event-replay)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

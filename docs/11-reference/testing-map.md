@@ -109,4 +109,11 @@ Use tests to protect invariants. Use manual checks to confirm the contributor to
 - [Test Organization](./test-organization)
 - [Property-Based Testing](./property-based-testing)
 - [E2E Testing](./e2e-testing)
-- [docs/tests/README](../tests/README)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [docs/tests/README](../tests/README)
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

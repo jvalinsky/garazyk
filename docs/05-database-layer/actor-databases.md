@@ -45,4 +45,11 @@ That means some actor-store bugs are really pool or path bugs, not record-format
 
 - [SQLite Architecture](./sqlite-architecture)
 - [Service Databases](./service-databases)
-- [Repository Basics](../07-repository-protocol/repository-basics)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Repository Basics](../07-repository-protocol/repository-basics)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+
