@@ -18,10 +18,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface XrpcAppBskyVideoPack : NSObject
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                  appViewDatabase:(PDSDatabase *)appViewDatabase
-                       jwtMinter:(JWTMinter *)jwtMinter
-                 adminController:(id<PDSAdminController>)adminController;
+               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                   appViewDatabase:(PDSDatabase *)appViewDatabase
+                        jwtMinter:(JWTMinter *)jwtMinter
+                  adminController:(id<PDSAdminController>)adminController
+                     blobProvider:(id<PDSBlobProvider>)blobProvider;
 
 @end
 
