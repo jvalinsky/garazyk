@@ -10,7 +10,7 @@ title: Architecture Overview
 
 *Complete system architecture showing all major components and their interactions*
 
-The Garazyk ecosystem is built as a layered architecture with clear separation of concerns, supporting both monolithic (PDS) and distributed (AppView, Relay, PLC) deployment models:
+Garazyk uses a layered architecture to support both monolithic (PDS) and distributed (AppView, Relay, PLC) deployments.
 
 ```text
 
@@ -85,13 +85,19 @@ The Garazyk ecosystem is built as a layered architecture with clear separation o
 ## Core Architectural Patterns
 
 ### 1. Sans-I/O Protocol Logic
-The system utilizes a **Sans-I/O architecture** for HTTP and WebSocket handling. Protocol logic is implemented as pure state machines (`HttpProtocolSession`, `WebSocketProtocolSession`) that are decoupled from socket operations. This ensures that the same codebase is highly portable and facilitates deterministic testing. See the [Sans-I/O Guide](../04-network-layer/sans-io) for more details.
+The system uses a **Sans-I/O architecture** for HTTP and WebSocket handling. Protocol logic is implemented as pure state machines (`HttpProtocolSession`, `WebSocketProtocolSession`) that are decoupled from socket operations. This ensures that the same codebase is highly portable and facilitates deterministic testing. See the [Sans-I/O Guide](../04-network-layer/sans-io) for more details.
 
 ### 2. Standalone Binary Suite
 While the system can run as a unified PDS, it provides a suite of standalone binaries for distributed deployments:
 *   **Syrena (`syrena`)**: A standalone AppView for feed generation and profile indexing.
 *   **Zuk (`zuk`)**: An AT Protocol relay for firehose aggregation.
 *   **Campagnola (`campagnola`)**: A standalone PLC directory server.
+
+### 3. Cross-Database Atomicity
+The `PDSDatabasePool` isolates tenant data into individual Actor DBs to sidestep SQLite concurrency limits. `PDSServiceDatabases` holds shared state like DIDs and users. Operations spanning both boundaries, such as account creation, require distributed atomicity. The system implements a local two-phase commit: it first locks and provisions the Actor DB (writing the initial MST and DID document), and only upon successful commit does it insert the user record into the Service DB. This prevents orphaned user records in the shared state if provisioning fails.
+
+### 4. Cryptographic Management
+The `XrpcDispatcher` handles cryptographic token binding at the edge. `XrpcAuthHelper` verifies JWT and DPoP (Demonstrating Proof-of-Possession) key pairs. When a client presents a DPoP proof, the dispatcher verifies the cryptographic signature against the request's HTTP method and URI. This binds the token to that exact transport operation and prevents replay attacks.
 
 ## Layer Descriptions
 
@@ -189,7 +195,7 @@ The database layer uses SQLite with two types of databases:
 
 ## Request Flow
 
-Here's how a typical request flows through the system:
+A typical request flows through the system:
 
 ```text
 
@@ -365,6 +371,7 @@ Common error codes:
 - **[Core Concepts](../02-core-concepts/atproto-basics)** — AT Protocol fundamentals
 - **[Application Layer](../03-application-layer/pds-application)** — Service architecture
 - **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC details
+- **[MST Implementation Details](../11-reference/mst-implementation.md)** — Detailed look at the Merkle Search Tree mechanics
 
 ## Related
 
