@@ -12,10 +12,11 @@
 @implementation XrpcAppBskyVideoPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                  appViewDatabase:(PDSDatabase *)appViewDatabase
-                       jwtMinter:(JWTMinter *)jwtMinter
-                  adminController:(id<PDSAdminController>)adminController {
+               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                   appViewDatabase:(PDSDatabase *)appViewDatabase
+                        jwtMinter:(JWTMinter *)jwtMinter
+                   adminController:(id<PDSAdminController>)adminController
+                      blobProvider:(id<PDSBlobProvider>)blobProvider {
 
   [dispatcher registerMethod:@"app.bsky.video.getJobStatus"
 
@@ -38,13 +39,13 @@
   }];
 
   [dispatcher registerMethod:@"app.bsky.video.uploadVideo"
-                      handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(HttpRequest *request, HttpResponse *response) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                          jwtMinter:jwtMinter
-                                                    adminController:adminController
-                                                            request:request
-                                                           response:response];
+                                                           jwtMinter:jwtMinter
+                                                     adminController:adminController
+                                                             request:request
+                                                            response:response];
     if (!did) {
       if (response.statusCode == HttpStatusOK) {
         response.statusCode = HttpStatusUnauthorized;
@@ -61,6 +62,11 @@
       return;
     }
 
+    if (request.body.length > 100 * 1024 * 1024) {
+      [XrpcErrorHelper setValidationError:response message:@"File exceeds 100MB limit"];
+      return;
+    }
+
     NSString *mimeType = [request headerForKey:@"Content-Type"];
     if (!mimeType) {
       mimeType = @"video/mp4";
@@ -69,7 +75,16 @@
     NSError *error = nil;
     NSString *jobId = [[NSUUID UUID] UUIDString];
     NSNumber *fileSize = @(request.body.length);
-    NSString *blobCid = [[NSUUID UUID] UUIDString];
+
+    CID *cid = [CID sha256:request.body];
+    NSString *blobCid = cid.nsString;
+
+    BOOL stored = [blobProvider storeBlobData:request.body forCID:cid error:&error];
+    if (!stored) {
+      PDS_LOG_ERROR(@"Failed to store video blob: %@", error);
+      [XrpcErrorHelper setInternalServerError:response message:@"Failed to store video"];
+      return;
+    }
 
     BOOL created = [appViewDatabase createVideoJobWithId:jobId
                                                did:did
@@ -90,8 +105,8 @@
       @"jobStatus" : @{
         @"jobId" : jobId,
         @"did" : did,
-        @"state" : @"JOB_STATE_COMPLETED",
-        @"progress" : @100
+        @"state" : @"JOB_STATE_PENDING",
+        @"progress" : @0
       }
     }];
   }];
@@ -140,7 +155,7 @@
   } else if ([state isEqualToString:@"PROCESSING"]) {
     jobState = @"JOB_STATE_PROCESSING";
   } else if ([state isEqualToString:@"COMPLETED"]) {
-    jobState = @"JOB_STATE_COMPLETE";
+    jobState = @"JOB_STATE_COMPLETED";
   } else if ([state isEqualToString:@"FAILED"]) {
     jobState = @"JOB_STATE_FAILED";
   } else {
