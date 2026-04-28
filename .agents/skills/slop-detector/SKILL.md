@@ -1,5 +1,7 @@
+---
 name: slop-detector
 description: Use when reviewing code or searching the codebase for patterns that suggest low-effort LLM generation ("vibe-coding"), architectural shortcuts, or redundant boilerplate.
+---
 
 # Slop Detector
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Objective-C Security Audit"
+  short_description: "Audit Objective-C security risks"
+  default_prompt: "Use $objc-security-audit to review this Objective-C code for security issues."

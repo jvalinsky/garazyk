@@ -1,0 +1,4 @@
+interface:
+  display_name: "Objective-C Architecture Audit"
+  short_description: "Audit Objective-C architecture risks"
+  default_prompt: "Use $objc-architecture-audit to review this Objective-C architecture for reliability and compatibility risks."

@@ -40,4 +40,7 @@ This master skill consolidates security auditing for SQL injection, cryptography
 
 ## Resources
 - **Scripts**: Combined in `objc-security-audit/scripts/`
-- **Checklists**: Consolidated in `objc-security-audit/references/security-checklist.md`
+- **SQL injection checklist**: `objc-security-audit/references/sql-injection-checklist.md`
+- **Crypto checklist**: `objc-security-audit/references/crypto-security-checklist.md`
+- **Secrets checklist**: `objc-security-audit/references/secrets-detection-checklist.md`
+- **Log redaction checklist**: `objc-security-audit/references/log-redaction-checklist.md`

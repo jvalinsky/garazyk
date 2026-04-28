@@ -136,6 +136,28 @@
     XCTAssertNil(fetched, @"Expired cache should return nil");
 }
 
+- (void)testPersistEventDuplicateSequenceReturnsError {
+    NSData *eventData = [@"{}" dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *error = nil;
+
+    XCTAssertTrue([self.serviceDatabases persistEvent:42
+                                                 type:@"info"
+                                                 data:eventData
+                                                error:&error],
+                  @"Initial persist should succeed: %@", error);
+
+    error = nil;
+    XCTAssertFalse([self.serviceDatabases persistEvent:42
+                                                  type:@"info"
+                                                  data:eventData
+                                                 error:&error],
+                   @"Duplicate sequence should fail");
+    XCTAssertNotNil(error, @"Duplicate sequence should surface a transaction error");
+
+    NSArray<NSDictionary *> *events = [self.serviceDatabases getEventsSince:0 limit:10 error:&error];
+    XCTAssertEqual(events.count, 1);
+}
+
 - (void)testAccountUpdate {
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
     account.did = @"did:plc:update_test";
