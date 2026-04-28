@@ -365,6 +365,43 @@ int main(int argc, const char * argv[]) {
                      [relayAPIHandler handleRequest:request response:response];
                  }];
 
+        // POST routes for relay API
+        [server addRoute:@"POST"
+                    path:@"/api/relay/upstreams"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [relayAPIHandler handleRequest:request response:response];
+                 }];
+
+        [server addRoute:@"POST"
+                    path:@"/api/relay/requestCrawl"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [relayAPIHandler handleRequest:request response:response];
+                 }];
+
+        [server addRoute:@"POST"
+                    path:@"/api/relay/upstreams/reconnect-all"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [relayAPIHandler handleRequest:request response:response];
+                 }];
+
+        [server addRoute:@"POST"
+                    path:@"/api/relay/upstreams/disconnect-all"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [relayAPIHandler handleRequest:request response:response];
+                 }];
+
+        [server addRoute:@"GET"
+                    path:@"/api/relay/capabilities"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [relayAPIHandler handleRequest:request response:response];
+                 }];
+
+        // Catch-all for upstream sub-paths (connect/disconnect individual URLs)
+        [server addHandlerForPath:@"/api/relay/upstreams/"
+                          handler:^(HttpRequest *request, HttpResponse *response) {
+                              [relayAPIHandler handleRequest:request response:response];
+                          }];
+
 
         // OPTIONS preflight for WebSocket upgrade (CORS)
         [server addRoute:@"OPTIONS"
@@ -421,7 +458,12 @@ int main(int argc, const char * argv[]) {
         printf("\nAPI endpoints:\n");
         printf("  GET  /api/relay/metrics\n");
         printf("  GET  /api/relay/upstreams\n");
+        printf("  POST /api/relay/upstreams\n");
+        printf("  GET  /api/relay/capabilities\n");
         printf("  GET  /api/relay/health\n");
+        printf("  POST /api/relay/requestCrawl\n");
+        printf("  POST /api/relay/upstreams/reconnect-all\n");
+        printf("  POST /api/relay/upstreams/disconnect-all\n");
         printf("\nFirehose endpoint:\n");
         printf("  WS   /xrpc/com.atproto.sync.subscribeRepos\n");
         printf("\nPress Ctrl+C to stop.\n");
