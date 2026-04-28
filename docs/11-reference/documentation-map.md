@@ -38,4 +38,11 @@ title: Documentation Map
 
 - [Setup](../01-getting-started/setup)
 - [Testing Map](./testing-map)
-- [Contributing Guide](../../CONTRIBUTING.md)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Contributing Guide](../../CONTRIBUTING.md)
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

@@ -84,4 +84,11 @@ Before or during the tutorial track, these pages usually pay off:
 ## Related Reading
 
 - [Overview](../01-getting-started/overview)
-- [Architecture Overview](../01-getting-started/architecture-overview)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Architecture Overview](../01-getting-started/architecture-overview)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

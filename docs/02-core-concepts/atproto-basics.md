@@ -106,4 +106,11 @@ flow instead of long payload dumps.
 - [IPLD and Multiformats Series](./ipld-foundations/)
 - [Protocol Flow Walkthrough](./protocol-flow-walkthrough)
 - [PLC Directory](./plc-directory)
-- [Cryptography](./cryptography)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Cryptography](./cryptography)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

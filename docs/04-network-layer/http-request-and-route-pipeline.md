@@ -94,4 +94,11 @@ This is why a firehose bug can look like "routing is broken" even when the route
 - `/api/pds/*` is contributor and operator tooling.
 - `/ui` serves the browser-facing Cappuccino UI.
 - `/oauth/*` and `/.well-known/*` cover authorization and discovery.
-- `/api/mst/*` and node-info routes are debugging and inspection surfaces.\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- `/api/mst/*` and node-info routes are debugging and inspection surfaces.
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+
