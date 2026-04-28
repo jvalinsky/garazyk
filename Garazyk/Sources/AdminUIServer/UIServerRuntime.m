@@ -65,6 +65,10 @@ static NSUInteger UISafeLength(id value) {
         _configuration = configuration;
         _authManager = [[UIAuthManager alloc] initWithPassword:configuration.adminPassword ?: @""];
         _backendClient = [[UIBackendClient alloc] initWithConfiguration:configuration];
+        // Auto-obtain PDS admin JWT if a password is configured but no token
+        if (configuration.pdsAdminPassword.length > 0 && configuration.pdsAdminToken.length == 0) {
+            [_backendClient refreshPDSAdminToken];
+        }
     }
     return self;
 }
@@ -2216,23 +2220,50 @@ static NSUInteger UISafeLength(id value) {
     if (result[@"error"]) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
-    NSDictionary *root = result[@"root"];
-    if (!root) {
+    NSArray *nodes = [result[@"nodes"] isKindOfClass:[NSArray class]] ? result[@"nodes"] : @[];
+    NSString *rootCID = result[@"rootCID"] ?: @"";
+    NSNumber *nodeCount = result[@"nodeCount"] ?: @(0);
+    NSNumber *entryCount = result[@"entryCount"] ?: @(0);
+    NSNumber *maxDepth = result[@"maxDepth"] ?: @(0);
+
+    if (nodes.count == 0 && rootCID.length == 0) {
         return @"<div class=\"alert alert-info\">No tree data available.</div>";
     }
+
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">DID</span><span class=\"text-mono text-sm\">%@</span></div>", UIEscaped(result[@"did"] ?: @"")];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">CID</span><span class=\"text-mono text-sm\">%@</span></div>", UIEscaped(root[@"cid"] ?: @"")];
-    NSArray *entries = [root[@"entries"] isKindOfClass:[NSArray class]] ? root[@"entries"] : @[];
-    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Entries</span><span>%lu</span></div>", (unsigned long)entries.count];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Root CID</span><span class=\"text-mono text-sm\">%@</span></div>", UIEscaped(rootCID)];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Nodes</span><span>%@</span></div>", nodeCount];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Entries</span><span>%@</span></div>", entryCount];
+    [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">Max Depth</span><span>%@</span></div>", maxDepth];
     [html appendString:@"</div>"];
-    if (entries.count > 0) {
-        [html appendString:@"<table class=\"table mt-sm\"><thead><tr><th>Key</th><th>CID</th></tr></thead><tbody>"];
-        for (NSDictionary *e in entries) {
-            [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td class=\"text-mono text-sm\">%@</td></tr>",
-                UIEscaped(e[@"key"] ?: @""), UIEscaped(e[@"cid"] ?: @"")];
+
+    // Render node table
+    if (nodes.count > 0) {
+        [html appendString:@"<table class=\"table mt-sm\"><thead><tr><th>CID</th><th>Level</th><th>Kind</th><th>Entries</th></tr></thead><tbody>"];
+        for (NSDictionary *node in nodes) {
+            NSString *cid = node[@"cid"] ?: @"";
+            NSNumber *level = node[@"level"] ?: @(0);
+            NSString *kind = node[@"kind"] ?: @"";
+            NSArray *entries = [node[@"entries"] isKindOfClass:[NSArray class]] ? node[@"entries"] : @[];
+            [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td>%@</td><td>%lu</td></tr>",
+                UIEscaped(cid), level, UIEscaped(kind), (unsigned long)entries.count];
         }
         [html appendString:@"</tbody></table>"];
+
+        // Render entries for each node
+        for (NSDictionary *node in nodes) {
+            NSArray *entries = [node[@"entries"] isKindOfClass:[NSArray class]] ? node[@"entries"] : @[];
+            if (entries.count > 0) {
+                NSString *cid = node[@"cid"] ?: @"";
+                [html appendFormat:@"<h4 class=\"mt-md\">Node %@</h4>", UIEscaped([cid substringToIndex:MIN(16, cid.length)])];
+                [html appendString:@"<table class=\"table\"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>"];
+                for (NSDictionary *e in entries) {
+                    [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td class=\"text-mono text-sm\">%@</td></tr>",
+                        UIEscaped(e[@"fullKey"] ?: @""), UIEscaped(e[@"value"] ?: @"")];
+                }
+                [html appendString:@"</tbody></table>"];
+            }
+        }
     }
     return html;
 }
