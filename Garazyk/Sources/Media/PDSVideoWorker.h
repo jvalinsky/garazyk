@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 
+@class PDSServiceDatabases;
+
 NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const PDSVideoWorkerErrorDomain;
@@ -26,6 +28,7 @@ typedef NS_ENUM(NSInteger, PDSVideoJobState) {
 @property (nonatomic, assign, getter=isEnabled) BOOL enabled;
 @property (nonatomic, assign) NSTimeInterval pollInterval;
 @property (nonatomic, assign) NSInteger maxConcurrentJobs;
+@property (nonatomic, strong, nullable) PDSServiceDatabases *serviceDatabases;
 
 - (void)start;
 - (void)stop;
