@@ -4,13 +4,14 @@ title: "Phase 2: Video Processing Pipeline Plan"
 
 # Phase 2: Video Processing Pipeline
 
-> **Status:** 50% Complete (upload exists, processing stubbed)
+> **Status:** COMPLETE
 > **Priority:** P1 (High)
 > **Generated:** 2026-04-10
+> **Completed:** 2026-04-28
 
 ## Executive Summary
 
-The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing is stubbed - returns "Processing not implemented" at line 2740 of XrpcAppBskyMethods.m. This plan covers implementing the full video processing pipeline.
+The full video processing pipeline is now implemented. All three XRPC endpoints (`uploadVideo`, `getJobStatus`, `getUploadLimits`) are functional with real processing. The pipeline uses AVFoundation (not FFmpeg) for transcoding and thumbnail generation, with a background worker that polls for pending jobs.
 
 ---
 
@@ -18,20 +19,23 @@ The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing i
 
 | Endpoint | Status | Location |
 |----------|--------|----------|
-| `app.bsky.video.uploadVideo` | ✅ Upload works | `XrpcAppBskyMethods.m:2708-2743` |
-| `app.bsky.video.getJobStatus` | ⚠️ Stub (404) | `XrpcAppBskyMethods.m:2697-2706` |
-| `app.bsky.video.getUploadLimits` | ⚠️ Hardcoded values | `XrpcAppBskyMethods.m:2745-2754` |
+| `app.bsky.video.uploadVideo` | ✅ Complete | `XrpcAppBskyVideoPack.m` |
+| `app.bsky.video.getJobStatus` | ✅ Complete | `XrpcAppBskyVideoPack.m` |
+| `app.bsky.video.getUploadLimits` | ✅ Complete (dynamic) | `XrpcAppBskyVideoPack.m` |
 
-### Current Stub Behavior (Line 2740)
-```objc
-"message": @"Video stored. Processing not implemented."
-```
+### Implementation Details
+
+- **Transcoding**: `PDSVideoTranscoder` uses AVFoundation (`AVAssetExportSession`) with quality presets (480p, 720p, 1080p, HEVC)
+- **Thumbnails**: `PDSVideoThumbnailGenerator` uses `AVAssetImageGenerator` for frame extraction
+- **Worker**: `PDSVideoWorker` singleton polls for PENDING jobs, processes them through the full pipeline, and handles retry logic (max 3 retries)
+- **Database**: `video_jobs` table in service DB with 18 columns, 3 indexes
+- **Startup**: Worker auto-starts in `PDSApplication` launch
 
 ---
 
 ## Tasks
 
-### Task 2.1: Implement Video Job Status Tracking
+### Task 2.1: Implement Video Job Status Tracking ✅ COMPLETE
 
 **Goal:** Move from 404 to actual state tracking
 
@@ -63,7 +67,7 @@ The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing i
 
 ---
 
-### Task 2.2: Integrate FFmpeg for Video Transcoding
+### Task 2.2: Video Transcoding ✅ COMPLETE (AVFoundation, not FFmpeg)
 
 **Goal:** Convert uploaded videos to H.264/H.265 for web compatibility
 
@@ -97,7 +101,7 @@ The video upload endpoint exists (`app.bsky.video.uploadVideo`) but processing i
 
 ---
 
-### Task 2.3: Implement Thumbnail Generation
+### Task 2.3: Implement Thumbnail Generation ✅ COMPLETE
 
 **Goal:** Generate video thumbnails for preview
 
@@ -117,9 +121,11 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 
 ---
 
-### Task 2.4: Implement Video Moderation/Blur Processing
+### Task 2.4: Implement Video Moderation/Blur Processing ⬜ DEFERRED
 
 **Goal:** Process videos for content moderation (NSFW blur, etc.)
+
+> Deferred: moderation integration depends on Ozone service maturity.
 
 **Files:**
 - Implementation: `Garazyk/Sources/Moderation/PDSVideoModerationProcessor.m`
@@ -133,9 +139,11 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 
 ---
 
-### Task 2.5: Implement Async Job Updates (WebSocket/EventStream)
+### Task 2.5: Implement Async Job Updates (WebSocket/EventStream) ⬜ DEFERRED
 
 **Goal:** Notify clients of job progress in real-time
+
+> Deferred: clients currently poll via `getJobStatus`. WebSocket event streaming is a future enhancement.
 
 **Files:**
 - New: `Garazyk/Sources/Sync/PDSVideoJobEventStream.m`
@@ -160,7 +168,7 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 
 ---
 
-### Task 2.6: Make getUploadLimits Dynamic
+### Task 2.6: Make getUploadLimits Dynamic ✅ COMPLETE
 
 **Goal:** Return limits based on user tier and storage
 
@@ -187,7 +195,7 @@ ffmpeg -i input.mp4 -ss 00:00:01 -vframes 1 -s 640x360 thumbnail.jpg
 
 ---
 
-### Task 2.7: Create Video Processing Worker/Queue
+### Task 2.7: Create Video Processing Worker/Queue ✅ COMPLETE
 
 **Goal:** Background processing for video jobs
 
@@ -244,10 +252,14 @@ CREATE INDEX idx_video_jobs_created ON video_jobs(created_at);
 
 ## Dependencies
 
-- `Garazyk/Sources/Network/XrpcAppBskyMethods.m` - Endpoint registration
-- `Garazyk/Sources/Database/PDSDatabase.m` - Job storage
-- `Garazyk/Sources/App/PDSConfiguration.m` - Configuration
-- FFmpeg (system dependency)
+- `Garazyk/Sources/Network/XrpcAppBskyVideoPack.m` - XRPC endpoint registration
+- `Garazyk/Sources/Media/PDSVideoTranscoder.m` - AVFoundation transcoding
+- `Garazyk/Sources/Media/PDSVideoThumbnailGenerator.m` - Thumbnail generation
+- `Garazyk/Sources/Media/PDSVideoWorker.m` - Background job processing
+- `Garazyk/Sources/Database/PDSDatabase.m` - Job storage (video_jobs methods)
+- `Garazyk/Sources/Database/Schema.m` - video_jobs DDL and indexes
+- `Garazyk/Sources/App/PDSApplication.m` - Worker lifecycle (start/stop)
+- AVFoundation (macOS system framework)
 
 ---
 
@@ -260,8 +272,11 @@ CREATE INDEX idx_video_jobs_created ON video_jobs(created_at);
 
 ## Next Steps
 
-After Phase 1 (OAuth) verification:
-1. Begin Task 2.1 - Implement job status tracking
-2. Add FFmpeg to system dependencies
-3. Create video processing worker
-4. Test full pipeline end-to-end
+Completed tasks: 2.1, 2.2, 2.3, 2.6, 2.7
+Deferred tasks: 2.4 (moderation blur), 2.5 (WebSocket events)
+
+Remaining work:
+1. Add video-related configuration to PDSConfiguration (max file size, duration limits)
+2. Implement Task 2.4 when Ozone integration matures
+3. Implement Task 2.5 for real-time job progress via WebSocket
+4. Add GNUstep/Linux compatibility (AVFoundation → GStreamer fallback)

@@ -4,7 +4,7 @@ title: Test Coverage Goals
 
 # Test Coverage Goals
 
-Garazyk PDS maintains comprehensive test coverage with over 1,017 tests across all layers. This document outlines coverage targets, critical paths that must be tested, and known gaps.
+Garazyk PDS maintains comprehensive test coverage with over 2,400 tests across all layers. This document outlines coverage targets, critical paths that must be tested, and known gaps.
 
 ## Current Test Coverage
 
@@ -14,17 +14,18 @@ Garazyk PDS maintains comprehensive test coverage with over 1,017 tests across a
 |----------|------------|-----------------|
 | Core Protocol (CBOR, CAR, CID, MST) | ~150 | 95%+ |
 | Authentication & OAuth | ~120 | 90%+ |
-| Network Layer (HTTP, XRPC) | ~180 | 85%+ |
-| Database Layer | ~100 | 85%+ |
+| Network Layer (HTTP, XRPC) | ~195 | 85%+ |
+| Database Layer | ~110 | 85%+ |
 | Repository Operations | ~90 | 90%+ |
 | Identity & DID Resolution | ~80 | 90%+ |
 | Sync & Firehose | ~70 | 85%+ |
 | Admin & Moderation | ~60 | 80%+ |
 | Services Layer | ~80 | 85%+ |
+| Video Processing | ~54 | 85%+ |
 | Security & Validation | ~50 | 95%+ |
 | Integration Tests | ~37 | N/A |
 
-**Total: 1,017 tests**
+**Total: 2,400+ tests**
 
 ### Coverage by Source Directory
 
@@ -40,6 +41,7 @@ Garazyk/Sources/
 ├── Sync/           85%+ coverage (Firehose, WebSocket)
 ├── Admin/          80%+ coverage (Moderation, takedowns)
 ├── Services/       85%+ coverage (Account, Record, Blob services)
+├── Media/          85%+ coverage (Video transcoding, thumbnail generation, worker)
 ├── App/            75%+ coverage (Application layer)
 ├── CLI/            70%+ coverage (CLI commands)
 ├── PLC/            85%+ coverage (PLC directory operations)
@@ -315,6 +317,26 @@ Gaps:
 - Test concurrent access patterns
 - Verify garbage collection correctness
 
+#### 6. Video Processing
+
+```
+
+Current Coverage: ~85%
+Target: 90%
+Priority: MEDIUM
+
+Gaps:
+- AVFoundation transcoding on Linux/GNUstep (no AVFoundation)
+- Large video files (>100MB)
+- Concurrent job processing edge cases
+- Temp file cleanup on crash
+```
+
+**Mitigation:**
+- Integration tests use XCTSkip for headless CI
+- VideoIntegrationTestBase generates MP4 fixtures programmatically
+- Worker tests use MockBlobProvider for deterministic unit testing
+
 ## Test Quality Metrics
 
 ### Test Characteristics
@@ -331,7 +353,7 @@ Good tests should be:
 
 ```
 
-Total Tests: 1,017
+Total Tests: 2,400+
 Average Test Duration: ~0.15s
 Total Suite Duration: ~150s (2.5 minutes)
 Flaky Tests: 0 (target: 0)

@@ -162,6 +162,17 @@ Key env overrides use the `PDS_RATELIMIT_*` prefix.
 | `blob_storage.s3_secret_access_key` | S3 credentials |
 | `blob_storage.cdn_url` | CDN base URL for blobs |
 
+### Video processing
+
+| Key | Purpose |
+| --- | --- |
+| `video.max_concurrent_jobs` | Max simultaneous video processing jobs (default: 2) |
+| `video.poll_interval_seconds` | Worker poll interval for pending jobs (default: 5) |
+| `video.max_concurrent_exports` | Max parallel AVAssetExportSession operations (default: 2) |
+| `video.default_quality` | Default transcoding quality preset (`480p`, `720p`, `1080p`, `hevc`) |
+
+The video worker is started automatically by `PDSApplication` and requires no explicit enable flag. On Linux/GNUstep (no AVFoundation), video transcoding will fail gracefully.
+
 This `appview` block is the current loader shape. Older camelCase examples such as `appViewURL` and `localAppViewEnabled` should be treated as stale unless the code changes.
 
 ## Defaults vs Recommended Practice

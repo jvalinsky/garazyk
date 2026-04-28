@@ -33,6 +33,7 @@ The service layer is backed by three distinct SQLite databases to isolate operat
 *   `passkeys`: WebAuthn credential metadata.
 *   `actor_preferences`, `actor_mutes`: Per-account service-side settings.
 *   `conversations`, `messages`, `groups`: Chat and social group metadata.
+*   `video_jobs`: Asynchronous video processing job queue (transcoding, thumbnail generation, state tracking with retry logic). Indexed by `did`, `state`, and `created_at`.
 
 ### 2. DID Cache Database (`did_cache.db`)
 *   `did_cache`: Local cache of resolved DID documents with expiration tracking.
@@ -55,6 +56,7 @@ You usually land in the service databases for:
 - session persistence and token-adjacent state
 - DID cache reads and writes
 - sequencer event persistence for sync consumers
+- video job lifecycle management (create, poll, update state, retry)
 
 These are process-level concerns, not repository-structure concerns.
 
