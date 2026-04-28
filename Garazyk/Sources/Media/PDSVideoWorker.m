@@ -2,6 +2,7 @@
 #import "Media/PDSVideoThumbnailGenerator.h"
 #import "Media/PDSVideoTranscoder.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Debug/PDSLogger.h"
 
@@ -106,7 +107,7 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
         }
     }
 
-    PDSDatabase *database = [PDSDatabase sharedDatabase];
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
     if (!database || !database.isOpen) {
         return;
     }
@@ -135,7 +136,8 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 }
 
 - (NSArray<NSDictionary *> *)queryPendingJobsWithLimit:(NSInteger)limit error:(NSError **)error {
-    PDSDatabase *database = [PDSDatabase sharedDatabase];
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:error];
+    if (!database) return @[];
     NSString *sql = @"SELECT * FROM video_jobs WHERE state = 'PENDING' ORDER BY created_at ASC LIMIT ?";
     return [database executeParameterizedQuery:sql params:@[@(limit)] error:error];
 }
@@ -146,7 +148,7 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 
         [self updateJobProgress:jobId progress:0 message:@"Starting processing"];
 
-        PDSDatabase *database = [PDSDatabase sharedDatabase];
+        PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
         NSError *dbError = nil;
         NSDictionary *job = [database getVideoJobById:jobId error:&dbError];
 
@@ -180,21 +182,23 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
                 state:(NSString *)state
              progress:(NSInteger)progress
               message:(NSString *)message {
-    [[PDSDatabase sharedDatabase] updateVideoJobState:jobId
-                                         state:state
-                                      progress:@(progress)
-                                       message:message
-                                         error:nil];
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
+    [database updateVideoJobState:jobId
+                            state:state
+                         progress:@(progress)
+                          message:message
+                            error:nil];
 }
 
 - (void)updateJobProgress:(NSString *)jobId
                progress:(NSInteger)progress
                 message:(NSString *)message {
-    [[PDSDatabase sharedDatabase] updateVideoJobState:jobId
-                                         state:@"PROCESSING"
-                                      progress:@(progress)
-                                       message:message
-                                         error:nil];
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
+    [database updateVideoJobState:jobId
+                            state:@"PROCESSING"
+                         progress:@(progress)
+                          message:message
+                            error:nil];
 }
 
 - (void)completeJob:(NSString *)jobId {
