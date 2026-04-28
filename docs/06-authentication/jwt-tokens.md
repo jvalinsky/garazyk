@@ -6,7 +6,7 @@ title: JWT Tokens
 
 ## Overview
 
-Garazyk uses JWTs for access tokens and refresh-token-adjacent session flows, with optional DPoP binding layered on top. The important contributor detail is that token handling is not purely stateless in this repo: session persistence remains part of the contract.
+Garazyk uses JWTs for access tokens and refresh-token-adjacent session flows, with optional DPoP binding. Token handling is not purely stateless: session persistence is part of the contract.
 
 ## Token Families In Practice
 
@@ -16,11 +16,11 @@ The runtime works with three related token shapes:
 - refresh-token-backed session renewal
 - DPoP proofs that bind a request to the key the token was minted for
 
-The token surface only makes sense when you read it together with session storage and auth helpers.
+The token surface operates alongside session storage and auth helpers.
 
 ## Why Session State Still Matters
 
-A valid JWT is not the whole answer. The runtime also uses persisted session state so it can:
+A valid JWT alone is insufficient. The runtime uses persisted session state to:
 
 - look up active tokens quickly
 - rotate and revoke sessions
@@ -38,7 +38,7 @@ Separate these concerns when you debug token behavior:
 - session lookup and refresh behavior
 - request-time verification in auth helpers
 
-Collapsing them into one mental model makes token bugs look much more mysterious than they are.
+Mixing these concepts complicates debugging.
 
 ## Common Failure Modes
 

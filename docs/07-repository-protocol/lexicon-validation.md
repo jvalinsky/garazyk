@@ -31,7 +31,7 @@ The system supports three validation modes, which can be configured per collecti
 
 ## Interoperability
 
-By strictly enforcing lexicon schemas, Garazyk ensures high interoperability with other PDS and AppView implementations. Our validation suite is verified against the official AT Protocol test fixtures to ensure 100% compatibility with the specification.
+Strictly enforcing lexicon schemas ensures high interoperability with other PDS and AppView implementations. Our validation suite is verified against the official AT Protocol test fixtures to ensure 100% compatibility with the specification.
 
 ## Adding New Lexicons
 

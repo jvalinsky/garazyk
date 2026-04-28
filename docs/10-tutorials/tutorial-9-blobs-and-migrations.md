@@ -8,7 +8,7 @@ title: "Tutorial 9: Blobs and Migrations"
 
 This tutorial covers the management of binary large objects (blobs) and the evolution of the PDS database schema. In Garazyk, binary data is addressed by CID and stored outside the primary database, while the schema itself is managed through a versioned migration system.
 
-The goal is to teach you how to:
+You will learn how to:
 - Handle blob uploads and content-addressed storage.
 - Understand the relationship between the filesystem and the database metadata.
 - Safely evolve the database schema using migration providers.
@@ -30,7 +30,7 @@ The goal is to teach you how to:
 
 ## What You Will Build
 
-You will walk through the lifecycle of a blob and a schema change. The output is a clear understanding of:
+You will walk through the lifecycle of a blob and a schema change:
 1. The **Blob Write Path**: From XRPC to disk.
 2. The **Migration Loop**: From version detection to commit.
 3. **Verification Tooling**: How to prove the system is consistent.

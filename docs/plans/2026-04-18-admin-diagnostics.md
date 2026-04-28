@@ -1,7 +1,7 @@
 # Plan: System Diagnostics Dashboard
 
 ## Objective
-Provide a robust suite of diagnostic tools for PDS operators to monitor internal service health, data consistency, and system-level performance.
+Provide diagnostic tools for PDS operators to monitor service health, data consistency, and system performance.
 
 ## Backend Enhancements
 ### PDSMetrics

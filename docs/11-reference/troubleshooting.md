@@ -6,9 +6,9 @@ title: Troubleshooting
 
 ## Overview
 
-The fastest way to troubleshoot Garazyk is to start from the failing surface,
-not from the whole codebase. A request failure, a relay problem, and a PLC
-resolution issue all look similar to a user, but they live in different parts
+Troubleshoot Garazyk by starting from the failing surface,
+not the whole codebase. A request failure, a relay problem, and a PLC
+resolution issue look similar to a user, but they live in different parts
 of the runtime.
 
 This page is a workflow map, not a dump of generic shell commands.
@@ -27,7 +27,7 @@ Use this first split:
 | admin or explorer view is wrong | admin handler or `/api/pds/*` surface, then backing service |
 | system is slow | `/metrics`, component logs, then owning service |
 
-That split matters because each path has a different source of truth.
+This split separates each path's source of truth.
 
 ## Startup Failures
 
@@ -58,12 +58,12 @@ The key questions are:
 - is the token bound to the expected DPoP key?
 - is the target account suspended or taken down?
 
-Most "mysterious" auth failures are one of those five cases.
+Most "mysterious" auth failures fall into one of these five cases.
 
 ## Blob And Repository Failures
 
-Blob and repository issues often get confused because records can reference
-blobs and repository exports can include blob-related behavior nearby in the
+Blob and repository issues get confused because records reference
+blobs and repository exports include blob-related behavior nearby in the
 codebase.
 
 Use this split:
@@ -76,15 +76,15 @@ whether the code ever implements the cleanup or import path you expect.
 
 ## Identity And PLC Failures
 
-Identity debugging is usually about one of three mismatches:
+Identity debugging usually involves one of three mismatches:
 
 - the DID string is invalid for the supported method
 - PLC state or audit history does not validate
 - the handle, `alsoKnownAs`, or service endpoint does not match the expected
   identity state
 
-That is why identity work should start with the DID and PLC pages, not with the
-UI that happens to display the result.
+Start identity work with the DID and PLC pages, not the
+UI that displays the result.
 
 ## Slow Or Degrading Systems
 
@@ -95,7 +95,7 @@ If the system is slow:
 3. read the matching component logs
 4. inspect the owning service or database path
 
-Performance issues are easier to fix when you know whether the pressure is in
+Performance issues are easier to fix when you identify the pressure point:
 auth, repository export, blob handling, or sync delivery.
 
 ## When Tests Should Drive The Investigation
@@ -107,7 +107,7 @@ Read tests early when:
 - identity or repository invariants seem broken
 - you are unsure whether a limitation is intentional or missing work
 
-The repo has enough explicit tests that they are often the fastest way to
+The repository's explicit tests are often the fastest way to
 separate a bug from a documented gap.
 
 ## Related Deep Dives
