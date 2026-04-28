@@ -87,6 +87,7 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
         @"plcURL": @"plcBaseURL",
         @"relayURL": @"relayBaseURL",
         @"appViewURL": @"appViewBaseURL",
+        @"appviewURL": @"appViewBaseURL",
         @"chatURL": @"chatBaseURL"
     };
 
@@ -116,6 +117,9 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     if (updates[@"appviewToken"] != nil) {
         self.appViewAdminToken = updates[@"appviewToken"].length > 0 ? updates[@"appviewToken"] : nil;
     }
+    if (updates[@"appViewToken"] != nil) {
+        self.appViewAdminToken = updates[@"appViewToken"].length > 0 ? updates[@"appViewToken"] : nil;
+    }
     if (updates[@"chatToken"] != nil) {
         self.chatAdminToken = updates[@"chatToken"].length > 0 ? updates[@"chatToken"] : nil;
     }
@@ -124,4 +128,3 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
 }
 
 @end
-
