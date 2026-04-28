@@ -12,6 +12,7 @@
 #endif
 
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
+static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 
 @interface PDSDatabase ()
 
@@ -19,7 +20,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
 @property (nonatomic, strong) NSMutableDictionary *statementCache;
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
 @property (nonatomic, strong) NSMutableArray<NSString *> *statementCacheOrder;
 
 @end
@@ -40,9 +41,18 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     if (self) {
         _statementCache = [NSMutableDictionary dictionary];
         _statementCacheOrder = [NSMutableArray array];
-        _cacheQueue = dispatch_queue_create("com.atproto.pds.database.cache", DISPATCH_QUEUE_SERIAL);
+        _dbQueue = dispatch_queue_create("com.atproto.pds.database.db", DISPATCH_QUEUE_SERIAL);
+        dispatch_queue_set_specific(_dbQueue, kPDSDatabaseQueueKey, (void *)kPDSDatabaseQueueKey, NULL);
     }
     return self;
+}
+
+- (void)safeExecuteSync:(void(^)(void))block {
+    if (dispatch_get_specific(kPDSDatabaseQueueKey)) {
+        block();
+    } else {
+        dispatch_sync(self.dbQueue, block);
+    }
 }
 
 + (instancetype)databaseAtURL:(NSURL *)url {
@@ -75,40 +85,46 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         }
     }
 
-    int rc = sqlite3_open(self.databaseURL.path.fileSystemRepresentation, &_db);
-    if (rc != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
-                                         code:PDSDatabaseErrorNotOpen
-                                     userInfo:@{NSLocalizedDescriptionKey: @(sqlite3_errmsg(_db))}];
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+        int rc = sqlite3_open(self.databaseURL.path.fileSystemRepresentation, &_db);
+        if (rc != SQLITE_OK) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
+                                             code:PDSDatabaseErrorNotOpen
+                                         userInfo:@{NSLocalizedDescriptionKey: @(sqlite3_errmsg(_db))}];
+            }
+            result = NO;
+            return;
         }
-        return NO;
-    }
 
-    sqlite3_busy_timeout(_db, 60000);
+        sqlite3_busy_timeout(_db, 60000);
 
+        // Mark database as open immediately so subsequent operations (including migrations)
+        // can execute. This must be set before running migrations that use executeParameterizedUpdate.
+        self.isOpen = YES;
 
-    // Mark database as open immediately so subsequent operations (including migrations)
-    // can execute. This must be set before running migrations that use executeParameterizedUpdate.
-    self.isOpen = YES;
+        [self setPerformanceOptimizations:error];
+        [self setWalMode:error];
+        [self createSchema:error];
 
-    [self setPerformanceOptimizations:error];
-    [self setWalMode:error];
-    [self createSchema:error];
+        // Run pending migrations
+        PDSMigrationExecutor *executor = [[PDSMigrationExecutor alloc] init];
+        NSArray *migrations = @[
+            [[PDSServiceMigration001 alloc] init],
+            // Future migrations go here
+        ];
+        if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
+            PDS_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
+            [self close];  // Clean up on failure
+            result = NO;
+            return;
+        }
 
-    // Run pending migrations
-    PDSMigrationExecutor *executor = [[PDSMigrationExecutor alloc] init];
-    NSArray *migrations = @[
-        [[PDSServiceMigration001 alloc] init],
-        // Future migrations go here
-    ];
-    if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
-        PDS_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
-        [self close];  // Clean up on failure
-        return NO;
-    }
+        result = self.isOpen;
+    }];
 
-    return self.isOpen;
+    return result;
 }
 
 
@@ -118,7 +134,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         return;
     }
 
-    dispatch_sync(self.cacheQueue, ^{
+    [self safeExecuteSync:^{
         if (!_db) return;
 
         // Finalize all cached statements
@@ -137,7 +153,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         // can corrupt virtual table internals and crash.
         sqlite3_close_v2(_db);
         _db = NULL;
-    });
+    }];
 
     self.isOpen = NO;
     PDS_LOG_DB_DEBUG(@"Database connection closed");
@@ -149,7 +165,7 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
 - (sqlite3_stmt *)preparedStatementForQuery:(NSString *)query {
     __block sqlite3_stmt *stmt = NULL;
-    dispatch_sync(self.cacheQueue, ^{
+    [self safeExecuteSync:^{
         NSValue *stmtValue = self.statementCache[query];
         if (stmtValue) {
             stmt = [stmtValue pointerValue];
@@ -177,22 +193,32 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         } else {
             stmt = NULL;
         }
-    });
+    }];
     return stmt;
 }
 
 - (BOOL)prepareStatement:(sqlite3_stmt **)stmt sql:(NSString *)sql error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) {
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
         }
-        return NO;
+        result = NO;
+        return;
     }
-    return YES;
+    result = YES;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)setWalMode:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     char *errMsg = NULL;
     int rc = sqlite3_exec(_db, "PRAGMA journal_mode=WAL", NULL, NULL, &errMsg);
     if (rc != SQLITE_OK && errMsg) {
@@ -201,12 +227,19 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                                      userInfo:@{NSLocalizedDescriptionKey: @(errMsg)}];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
-    return YES;
+    result = YES;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)setPerformanceOptimizations:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     char *errMsg = NULL;
     int rc;
 
@@ -215,7 +248,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, "PRAGMA cache_size=65536", NULL, NULL, &errMsg);
@@ -223,7 +257,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, "PRAGMA temp_store=MEMORY", NULL, NULL, &errMsg);
@@ -231,7 +266,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, "PRAGMA mmap_size=268435456", NULL, NULL, &errMsg);
@@ -239,7 +275,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, "PRAGMA page_size=65536", NULL, NULL, &errMsg);
@@ -247,20 +284,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)createSchema:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     char *errMsg = NULL;
     int rc = sqlite3_exec(_db, [kPDSAccountTableCreateSQL UTF8String], NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSRepoTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -268,7 +314,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSRecordTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -276,7 +323,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSBlockTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -284,7 +332,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSBlobTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -292,7 +341,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexBlocksRepoDidSQL UTF8String], NULL, NULL, &errMsg);
@@ -300,7 +350,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexBlobsDidSQL UTF8String], NULL, NULL, &errMsg);
@@ -308,7 +359,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexAccountsHandleSQL UTF8String], NULL, NULL, &errMsg);
@@ -316,7 +368,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSInviteCodeTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -324,7 +377,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSAdminTakedownTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -332,7 +386,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSAdminAuditLogTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -340,7 +395,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSReportsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -348,7 +404,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSAdminConfigTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -356,7 +413,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexInviteCodesAccountDidSQL UTF8String], NULL, NULL, &errMsg);
@@ -364,7 +422,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexTakedownsSubjectIdSQL UTF8String], NULL, NULL, &errMsg);
@@ -372,7 +431,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexAuditLogAdminSQL UTF8String], NULL, NULL, &errMsg);
@@ -380,7 +440,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexAuditLogSubjectSQL UTF8String], NULL, NULL, &errMsg);
@@ -388,7 +449,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexAuditLogCreatedSQL UTF8String], NULL, NULL, &errMsg);
@@ -396,7 +458,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexReportsStatusSQL UTF8String], NULL, NULL, &errMsg);
@@ -404,7 +467,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexReportsSubjectSQL UTF8String], NULL, NULL, &errMsg);
@@ -412,7 +476,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexReportsReportedBySQL UTF8String], NULL, NULL, &errMsg);
@@ -420,7 +485,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexReportsCreatedSQL UTF8String], NULL, NULL, &errMsg);
@@ -428,7 +494,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSPasskeysTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -436,7 +503,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSOAuthClientsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -444,7 +512,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSLabelTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -452,7 +521,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSReservedHandleTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -460,7 +530,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexLabelsUriSQL UTF8String], NULL, NULL, &errMsg);
@@ -468,7 +539,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexLabelsSourceSQL UTF8String], NULL, NULL, &errMsg);
@@ -476,7 +548,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexReservedHandlesHandleSQL UTF8String], NULL, NULL, &errMsg);
@@ -484,7 +557,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSJWTSigningKeysTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -492,7 +566,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexPasskeysAccountDidSQL UTF8String], NULL, NULL, &errMsg);
@@ -500,7 +575,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexPasskeysCredentialIdSQL UTF8String], NULL, NULL, &errMsg);
@@ -508,7 +584,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSBookmarkTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -516,7 +593,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSStarterPackTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -524,7 +602,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexBookmarksDidSQL UTF8String], NULL, NULL, &errMsg);
@@ -532,7 +611,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexStarterPacksDidSQL UTF8String], NULL, NULL, &errMsg);
@@ -540,7 +620,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     // Chat tables
@@ -549,7 +630,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSConversationMembersTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -557,7 +639,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSMessagesTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -565,7 +648,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSMessageReactionsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -573,7 +657,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexConversationMembersConvoSQL UTF8String], NULL, NULL, &errMsg);
@@ -581,7 +666,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexConversationMembersActorSQL UTF8String], NULL, NULL, &errMsg);
@@ -589,7 +675,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexMessagesConvoSQL UTF8String], NULL, NULL, &errMsg);
@@ -597,7 +684,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexMessagesCreatedSQL UTF8String], NULL, NULL, &errMsg);
@@ -605,7 +693,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     // Group tables
@@ -614,7 +703,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSGroupMembersTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -622,7 +712,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSGroupInviteLinksTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -630,7 +721,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSGroupJoinRequestsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -638,7 +730,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexGroupMembersGroupSQL UTF8String], NULL, NULL, &errMsg);
@@ -646,7 +739,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexGroupMembersMemberSQL UTF8String], NULL, NULL, &errMsg);
@@ -654,7 +748,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexGroupInviteLinksGroupSQL UTF8String], NULL, NULL, &errMsg);
@@ -662,7 +757,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexGroupJoinRequestsGroupSQL UTF8String], NULL, NULL, &errMsg);
@@ -670,7 +766,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexGroupJoinRequestsRequesterSQL UTF8String], NULL, NULL, &errMsg);
@@ -678,7 +775,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSGroupMessagesTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -686,7 +784,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSGroupMessageReactionsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -694,7 +793,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexGroupMessagesGroupSQL UTF8String], NULL, NULL, &errMsg);
@@ -702,7 +802,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSIndexGroupMessagesCreatedSQL UTF8String], NULL, NULL, &errMsg);
@@ -710,7 +811,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSVideoJobsTableCreateSQL UTF8String], NULL, NULL, &errMsg);
@@ -718,7 +820,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSVideoJobsIndexDidSQL UTF8String], NULL, NULL, &errMsg);
@@ -726,7 +829,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSVideoJobsIndexStateSQL UTF8String], NULL, NULL, &errMsg);
@@ -734,7 +838,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     rc = sqlite3_exec(_db, [kPDSVideoJobsIndexCreatedSQL UTF8String], NULL, NULL, &errMsg);
@@ -742,7 +847,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     // Migrations for accounts table
@@ -761,7 +867,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
             sqlite3_free(errMsg);
             if (error) *error = e;
-            return NO;
+            result = NO;
+            return;
         }
         if (errMsg) {
             sqlite3_free(errMsg);
@@ -783,7 +890,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
             sqlite3_free(errMsg);
             if (error) *error = e;
-            return NO;
+            result = NO;
+            return;
         }
         if (errMsg) {
             sqlite3_free(errMsg);
@@ -793,17 +901,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (errMsg) sqlite3_free(errMsg);
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)executeRawSQL:(NSString *)sql error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     if (!self.isOpen) {
         if (error) {
             *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                          code:PDSDatabaseErrorNotOpen
                                      userInfo:@{NSLocalizedDescriptionKey:@"Database is not open"}];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     char *errMsg = NULL;
@@ -813,20 +929,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<NSDictionary *> *)executeQuery:(NSString *)sql error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     if (!self.isOpen) {
         if (error) {
             *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                          code:PDSDatabaseErrorNotOpen
                                      userInfo:@{NSLocalizedDescriptionKey:@"Database is not open"}];
         }
-        return @[];
+        result = @[];
+        return;
     }
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
@@ -836,7 +961,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         if (error) {
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
         }
-        return @[];
+        result = @[];
+        return;
     }
 
     NSMutableArray *results = [NSMutableArray array];
@@ -854,42 +980,69 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         [results addObject:row];
     }
 
-    return results;
+    result = results;
+
+    return;
+    }];
+    return result;
 }
 
 - (id)valueFromStatement:(sqlite3_stmt *)stmt columnIndex:(int)colIndex {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     int type = sqlite3_column_type(stmt, colIndex);
     switch (type) {
         case SQLITE_INTEGER:
-            return @(sqlite3_column_int64(stmt, colIndex));
+            result = @(sqlite3_column_int64(stmt, colIndex));
+            return;
         case SQLITE_FLOAT:
-            return @(sqlite3_column_double(stmt, colIndex));
+            result = @(sqlite3_column_double(stmt, colIndex));
+            return;
         case SQLITE_BLOB: {
             const void *bytes = sqlite3_column_blob(stmt, colIndex);
             int size = sqlite3_column_bytes(stmt, colIndex);
-            return [NSData dataWithBytes:bytes length:size];
+            result = [NSData dataWithBytes:bytes length:size];
+            return;
         }
         case SQLITE_TEXT: {
             const unsigned char *text = sqlite3_column_text(stmt, colIndex);
-            return @((const char *)text);
+            result = @((const char *)text);
+            return;
         }
         case SQLITE_NULL:
         default:
-            return nil;
+            result = nil;
+            return;
     }
+    }];
+    return result;
 }
 
 - (NSError *)errorWithMessage:(const char *)message code:(NSInteger)code {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *msg = message ? @(message) : @"Unknown error";
-    return [NSError errorWithDomain:PDSDatabaseErrorDomain
+    result = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                code:code
                            userInfo:@{NSLocalizedDescriptionKey: msg}];
+    return;
+    }];
+    return result;
 }
 
 - (NSError *)errorWithDescription:(NSString *)message code:(NSInteger)code {
-    return [NSError errorWithDomain:PDSDatabaseErrorDomain
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
+    result = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                code:code
                            userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error"}];
+
+    return;
+    }];
+    return result;
 }
 
 #pragma mark - Parameterized Queries
@@ -897,11 +1050,15 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 - (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
                                                 params:(NSArray *)params
                                                  error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     if (!self.isOpen) {
         if (error) {
             *error = [self errorWithMessage:"Database is not open" code:PDSDatabaseErrorNotOpen];
         }
-        return @[];
+        result = @[];
+        return;
     }
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
@@ -911,7 +1068,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         if (error) {
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
         }
-        return @[];
+        result = @[];
+        return;
     }
 
     for (NSUInteger i = 0; i < params.count; i++) {
@@ -948,17 +1106,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         [results addObject:row];
     }
 
-    return results;
+    result = results;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
                             params:(NSArray *)params
                              error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     if (!self.isOpen) {
         if (error) {
             *error = [self errorWithMessage:"Database is not open" code:PDSDatabaseErrorNotOpen];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
@@ -968,7 +1134,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         if (error) {
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     for (NSUInteger i = 0; i < params.count; i++) {
@@ -998,15 +1165,23 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
     }
 
-    return success;
+    result = success;
+
+    return;
+    }];
+    return result;
 }
 
 #pragma mark - Accounts
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     // Validate handle
     if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
-        return NO;
+        result = NO;
+        return;
     }
     account.handle = [ATProtoHandleValidator normalizeHandle:account.handle];
 
@@ -1016,7 +1191,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, account.did.UTF8String, -1, SQLITE_STATIC);
@@ -1045,16 +1221,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     // Validate handle
     if (![ATProtoHandleValidator validateHandle:account.handle error:error]) {
-        return NO;
+        result = NO;
+        return;
     }
     account.handle = [ATProtoHandleValidator normalizeHandle:account.handle];
 
@@ -1064,7 +1249,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, account.handle.UTF8String, -1, SQLITE_STATIC);
@@ -1095,20 +1281,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
@@ -1118,38 +1313,54 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         account = [self accountFromStatement:stmt];
     }
 
-    return account;
+    result = account;
+
+    return;
+    }];
+    return result;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
-    handle = [ATProtoHandleValidator normalizeHandle:handle];
-    sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_STATIC);
+    NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
+    sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_STATIC);
 
     PDSDatabaseAccount *account = nil;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         account = [self accountFromStatement:stmt];
     }
 
-    return account;
+    result = account;
+
+    return;
+    }];
+    return result;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, email.UTF8String, -1, SQLITE_STATIC);
@@ -1159,17 +1370,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         account = [self accountFromStatement:stmt];
     }
 
-    return account;
+    result = account;
+
+    return;
+    }];
+    return result;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM accounts WHERE refresh_jwt = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     // Convert NSString refreshToken to NSData for BLOB comparison
@@ -1181,19 +1400,27 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         account = [self accountFromStatement:stmt];
     }
 
-    return account;
+    result = account;
+
+    return;
+    }];
+    return result;
 }
 
 
 
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return @[];
+        result = @[];
+        return;
     }
 
     NSMutableArray *accounts = [NSMutableArray array];
@@ -1204,10 +1431,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         }
     }
 
-    return accounts;
+    result = accounts;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit afterDid:(nullable NSString *)afterDid error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = afterDid
         ? @"SELECT * FROM accounts WHERE did > ? ORDER BY did ASC LIMIT ?"
         : @"SELECT * FROM accounts ORDER BY did ASC LIMIT ?";
@@ -1216,7 +1450,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return @[];
+        result = @[];
+        return;
     }
 
     int idx = 1;
@@ -1233,17 +1468,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         }
     }
 
-    return accounts;
+    result = accounts;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM accounts WHERE did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
@@ -1252,22 +1495,31 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 #pragma mark - WebAuthn Credentials
 
 - (BOOL)storeWebAuthnCredential:(NSDictionary *)credential forDid:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT OR REPLACE INTO webauthn_credentials (id, account_did, credential_id, public_key_cose, sign_count, aaguid, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     NSString *credentialId = [[NSUUID UUID] UUIDString];
@@ -1283,20 +1535,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<NSDictionary *> *)getWebAuthnCredentialsForDid:(NSString *)did error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM webauthn_credentials WHERE account_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return @[];
+        result = @[];
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
@@ -1326,17 +1587,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         [credentials addObject:cred];
     }
 
-    return credentials;
+    result = credentials;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deleteWebAuthnCredential:(NSData *)credentialId forDid:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM webauthn_credentials WHERE credential_id = ? AND account_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     [self bindData:credentialId toStatement:stmt index:1];
@@ -1346,20 +1615,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)updateWebAuthnCredentialSignCount:(NSData *)credentialId forDid:(NSString *)did signCount:(uint32_t)signCount error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"UPDATE webauthn_credentials SET sign_count = ? WHERE credential_id = ? AND account_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_int(stmt, 1, signCount);
@@ -1370,10 +1648,15 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt {
@@ -1466,13 +1749,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #pragma mark - Repos
 
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT INTO repos (owner_did, root_cid, collection_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?)";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, repo.ownerDid.UTF8String, -1, SQLITE_STATIC);
@@ -1488,20 +1775,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)updateRepoRoot:(NSString *)ownerDid rootCid:(NSData *)rootCid error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"UPDATE repos SET root_cid = ?, updated_at = ? WHERE owner_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     [self bindData:rootCid toStatement:stmt index:1];
@@ -1514,20 +1810,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         if (error) {
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (nullable PDSDatabaseRepo *)getRepoForDid:(NSString *)did error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM repos WHERE owner_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
@@ -1537,17 +1842,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         repo = [self repoFromStatement:stmt];
     }
 
-    return repo;
+    result = repo;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<PDSDatabaseRepo *> *)getAllReposWithError:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM repos ORDER BY updated_at DESC";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return @[];
+        result = @[];
+        return;
     }
 
     NSMutableArray *repos = [NSMutableArray array];
@@ -1558,17 +1871,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         }
     }
 
-    return repos;
+    result = repos;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deleteRepo:(NSString *)ownerDid error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM repos WHERE owner_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, ownerDid.UTF8String, -1, SQLITE_STATIC);
@@ -1577,10 +1898,15 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (PDSDatabaseRepo *)repoFromStatement:(sqlite3_stmt *)stmt {
@@ -1606,13 +1932,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #pragma mark - Blocks
 
 - (BOOL)saveBlock:(PDSDatabaseBlock *)block error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     [self bindData:block.cid toStatement:stmt index:1];
@@ -1633,15 +1963,24 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)saveBlocks:(NSArray<PDSDatabaseBlock *> *)blocks error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     if (blocks.count == 0) {
-        return YES;
+        result = YES;
+        return;
     }
 
     NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
@@ -1650,7 +1989,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     for (PDSDatabaseBlock *block in blocks) {
@@ -1671,23 +2011,32 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                 NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
                 *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
             }
-            return NO;
+            result = NO;
+            return;
         }
 
         sqlite3_reset(stmt);
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (nullable PDSDatabaseBlock *)getBlockWithCid:(NSData *)cid repoDid:(NSString *)repoDid error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM blocks WHERE cid = ? AND repo_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     [self bindData:cid toStatement:stmt index:1];
@@ -1698,17 +2047,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         block = [self blockFromStatement:stmt];
     }
 
-    return block;
+    result = block;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<PDSDatabaseBlock *> *)getBlocksForRepo:(NSString *)repoDid limit:(NSInteger)limit offset:(NSInteger)offset error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM blocks WHERE repo_did = ? ORDER BY created_at ASC LIMIT ? OFFSET ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return @[];
+        result = @[];
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, repoDid.UTF8String, -1, SQLITE_STATIC);
@@ -1723,17 +2080,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         }
     }
 
-    return blocks;
+    result = blocks;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSInteger)getBlockCountForRepo:(NSString *)repoDid error:(NSError **)error {
+    __block NSInteger result = 0;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT COUNT(*) FROM blocks WHERE repo_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return 0;
+        result = 0;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, repoDid.UTF8String, -1, SQLITE_STATIC);
@@ -1743,17 +2108,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         count = sqlite3_column_int64(stmt, 0);
     }
 
-    return count;
+    result = count;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deleteBlock:(NSData *)cid repoDid:(NSString *)repoDid error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM blocks WHERE cid = ? AND repo_did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     [self bindData:cid toStatement:stmt index:1];
@@ -1763,10 +2136,15 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (PDSDatabaseBlock *)blockFromStatement:(sqlite3_stmt *)stmt {
@@ -1798,13 +2176,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #pragma mark - Blobs
 
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mime_type, size, created_at) VALUES (?, ?, ?, ?, ?)";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     [self bindData:blob.cid toStatement:stmt index:1];
@@ -1824,20 +2206,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (nullable PDSDatabaseBlob *)getBlobWithCid:(NSData *)cid error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM blobs WHERE cid = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     [self bindData:cid toStatement:stmt index:1];
@@ -1847,17 +2238,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         blob = [self blobFromStatement:stmt];
     }
 
-    return blob;
+    result = blob;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<PDSDatabaseBlob *> *)getBlobsForDid:(NSString *)did limit:(NSInteger)limit offset:(NSInteger)offset error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM blobs WHERE did = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return @[];
+        result = @[];
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
@@ -1872,17 +2271,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         }
     }
 
-    return blobs;
+    result = blobs;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSInteger)getBlobCountForDid:(NSString *)did error:(NSError **)error {
+    __block NSInteger result = 0;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT COUNT(*) FROM blobs WHERE did = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return 0;
+        result = 0;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
@@ -1892,17 +2299,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         count = sqlite3_column_int64(stmt, 0);
     }
 
-    return count;
+    result = count;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deleteBlob:(NSData *)cid error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM blobs WHERE cid = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     [self bindData:cid toStatement:stmt index:1];
@@ -1911,10 +2326,15 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (PDSDatabaseBlob *)blobFromStatement:(sqlite3_stmt *)stmt {
@@ -1941,19 +2361,24 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #pragma mark - Transactions
 
 - (BOOL)beginTransactionWithError:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     if (!self.isOpen || !_db) {
         if (error) {
             *error = [self errorWithDescription:@"Cannot begin transaction: database is not open"
                                            code:PDSDatabaseErrorNotOpen];
         }
-        return NO;
+        result = NO;
+        return;
     }
     if (sqlite3_get_autocommit(_db) == 0) {
         if (error) {
             *error = [self errorWithDescription:@"Cannot begin transaction: transaction already active; use transactWithBlock:error: for nested work"
                                            code:PDSDatabaseErrorQueryFailed];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     char *errMsg = NULL;
@@ -1962,25 +2387,34 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
-    return YES;
+    result = YES;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)commitTransactionWithError:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     if (!self.isOpen || !_db) {
         if (error) {
             *error = [self errorWithDescription:@"Cannot commit transaction: database is not open"
                                            code:PDSDatabaseErrorNotOpen];
         }
-        return NO;
+        result = NO;
+        return;
     }
     if (sqlite3_get_autocommit(_db) != 0) {
         if (error) {
             *error = [self errorWithDescription:@"Cannot commit transaction: no active transaction"
                                            code:PDSDatabaseErrorQueryFailed];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     char *errMsg = NULL;
@@ -1989,25 +2423,34 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
-    return YES;
+    result = YES;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)rollbackTransactionWithError:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     if (!self.isOpen || !_db) {
         if (error) {
             *error = [self errorWithDescription:@"Cannot roll back transaction: database is not open"
                                            code:PDSDatabaseErrorNotOpen];
         }
-        return NO;
+        result = NO;
+        return;
     }
     if (sqlite3_get_autocommit(_db) != 0) {
         if (error) {
             *error = [self errorWithDescription:@"Cannot roll back transaction: no active transaction"
                                            code:PDSDatabaseErrorQueryFailed];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     char *errMsg = NULL;
@@ -2016,19 +2459,27 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
-    return YES;
+    result = YES;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)transactWithBlock:(void (^)(NSError **error))block error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     if (!block) {
         if (error) {
             *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                           code:PDSDatabaseErrorQueryFailed
                                       userInfo:@{NSLocalizedDescriptionKey: @"Block cannot be nil"}];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     if (!self.isOpen || !_db) {
@@ -2036,7 +2487,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             *error = [self errorWithDescription:@"Cannot start transaction: database is not open"
                                            code:PDSDatabaseErrorNotOpen];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
     BOOL useSavepoint = (sqlite3_get_autocommit(_db) == 0);
@@ -2054,7 +2506,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
         if (error) *error = e;
-        return NO;
+        result = NO;
+        return;
     }
 
     @try {
@@ -2071,7 +2524,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                 sqlite3_exec(_db, "ROLLBACK", NULL, NULL, NULL);
             }
             if (error) *error = blockError;
-            return NO;
+            result = NO;
+            return;
         }
 
         if (sqlite3_get_autocommit(_db) != 0) {
@@ -2081,7 +2535,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                     : @"Cannot commit transaction: transaction was closed inside transaction block";
                 *error = [self errorWithDescription:message code:PDSDatabaseErrorQueryFailed];
             }
-            return NO;
+            result = NO;
+            return;
         }
 
         NSString *finishSQL = useSavepoint ? [NSString stringWithFormat:@"RELEASE %@", savepointName] : @"COMMIT";
@@ -2099,9 +2554,11 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                 sqlite3_exec(_db, "ROLLBACK", NULL, NULL, NULL);
             }
             if (error) *error = commitError;
-            return NO;
+            result = NO;
+            return;
         }
-        return YES;
+        result = YES;
+        return;
     } @catch (NSException *exception) {
         if (useSavepoint) {
             NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
@@ -2116,18 +2573,24 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                                           code:PDSDatabaseErrorQueryFailed
                                       userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Transaction failed"}];
         }
-        return NO;
+        result = NO;
+        return;
     }
+    }];
+    return result;
 }
 
 #pragma mark - Helpers
 
 - (void)bindData:(nullable NSData *)data toStatement:(sqlite3_stmt *)stmt index:(int)index {
+    [self safeExecuteSync:^{
+
     if (data && data.length > 0) {
         sqlite3_bind_blob(stmt, index, data.bytes, (int)data.length, SQLITE_STATIC);
     } else {
         sqlite3_bind_null(stmt, index);
     }
+    }];
 }
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
@@ -2158,12 +2621,16 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #pragma mark - OAuth Clients
 
 - (NSDictionary *)getClientWithID:(NSString *)clientID error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM oauth_clients WHERE client_id = ?";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, clientID.UTF8String, -1, SQLITE_STATIC);
@@ -2195,16 +2662,24 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         client = dict;
     }
 
-    return client;
+    result = client;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)createClient:(NSDictionary *)client error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT OR REPLACE INTO oauth_clients (client_id, client_secret, redirect_uris, grant_types, scope, created_at) VALUES (?, ?, ?, ?, ?, ?)";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     NSString *clientID = client[@"client_id"];
@@ -2236,19 +2711,27 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
-    return YES;
+    result = YES;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)seedTestClient:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     #ifndef DEBUG
     if (error) {
         *error = [NSError errorWithDomain:@"PDSDatabase"
                                      code:-1
                                  userInfo:@{NSLocalizedDescriptionKey: @"Test client seeding disabled in release builds"}];
     }
-    return NO;
+    result = NO;
+    return;
     #else
     NSDictionary *testClient = @{
         @"client_id": @"test-client",
@@ -2266,17 +2749,24 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         @"grant_types": @"authorization_code,refresh_token",
         @"scope": @"atproto"
     };
-    return [self createClient:confidentialClient error:error];
+    result = [self createClient:confidentialClient error:error];
+    return;
     #endif
+    }];
+    return result;
 }
 
 - (NSArray<NSDictionary *> *)getAllOAuthClientsWithError:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM oauth_clients ORDER BY created_at DESC";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     NSMutableArray *clients = [NSMutableArray array];
@@ -2305,16 +2795,24 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         [clients addObject:dict];
     }
 
-    return clients;
+    result = clients;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deleteOAuthClientWithID:(NSString *)clientID error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM oauth_clients WHERE client_id = ?";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, clientID.UTF8String, -1, SQLITE_STATIC);
@@ -2322,10 +2820,15 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
-    return sqlite3_changes(_db) > 0;
+    result = sqlite3_changes(_db) > 0;
+
+    return;
+    }];
+    return result;
 }
 
 @end
@@ -2335,13 +2838,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 @implementation PDSDatabase (Records)
 
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM records WHERE uri = ?";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, uri.UTF8String, -1, SQLITE_STATIC);
@@ -2351,17 +2858,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         record = [self recordFromStatement:stmt];
     }
 
-    return record;
+    result = record;
+
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)saveRecord:(PDSDatabaseRecord *)record error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, created_at) VALUES (?, ?, ?, ?, ?, ?)";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return NO;
+        result = NO;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, record.uri.UTF8String, -1, SQLITE_STATIC);
@@ -2380,13 +2895,21 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
             *error = [self errorWithMessage:sqlite3_errmsg(_db) code:errorCode];
         }
-        return NO;
+        result = NO;
+        return;
     }
 
-    return YES;
+    result = YES;
+
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<PDSDatabaseRecord *> *)getRecordsForDid:(NSString *)did collection:(nullable NSString *)collection error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSMutableString *sql = [NSMutableString stringWithString:@"SELECT * FROM records WHERE did = ?"];
     NSMutableArray *params = [NSMutableArray arrayWithObject:did];
 
@@ -2401,7 +2924,8 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return @[];
+        result = @[];
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
@@ -2417,7 +2941,11 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         }
     }
 
-    return records;
+    result = records;
+
+    return;
+    }];
+    return result;
 }
 
 @end
@@ -2452,6 +2980,9 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 @implementation PDSDatabase (Moderation)
 
 - (BOOL)takeDownAccount:(NSString *)did reason:(NSString *)reason takedownRef:(NSString *)ref error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT OR REPLACE INTO admin_takedowns (id, subjectType, subjectId, reason, takedownRef, applied, createdBy, createdAt) VALUES (?, ?, ?, ?, ?, 1, 'admin', ?)";
     
     // Generate simple ID
@@ -2467,50 +2998,97 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         dateStr
     ];
     
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)reinstateAccount:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     // Mark takedown as applied=0
     NSString *sql = @"UPDATE admin_takedowns SET applied = 0 WHERE subjectId = ? AND subjectType = 'account'";
-    return [self executeParameterizedUpdate:sql params:@[did] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[did] error:error];
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deactivateAccount:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     // Set account status to "deactivated" (user-initiated, reversible)
     NSString *sql = @"UPDATE accounts SET status = 'deactivated', deactivated_at = ?, updated_at = ? WHERE did = ?";
     NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-    return [self executeParameterizedUpdate:sql params:@[dateStr, @(now), did] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[dateStr, @(now), did] error:error];
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)activateAccount:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     // Set account status back to "active" (reverses deactivation)
     NSString *sql = @"UPDATE accounts SET status = 'active', deactivated_at = NULL, updated_at = ? WHERE did = ?";
     NSNumber *now = @([[NSDate date] timeIntervalSince1970]);
-    return [self executeParameterizedUpdate:sql params:@[now, did] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[now, did] error:error];
+    return;
+    }];
+    return result;
 }
 
 - (NSString *)accountStatusForDid:(NSString *)did error:(NSError **)error {
-    if (!did) return nil;
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
+    if (!did) {
+        result = nil;
+        return;
+    }
     NSString *sql = @"SELECT status FROM accounts WHERE did = ?";
     NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
-    if (rows.count == 0) return nil;
-    return rows.firstObject[@"status"];
+    if (rows.count == 0) {
+        result = nil;
+        return;
+    }
+    result = rows.firstObject[@"status"];
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)isAccountTakedownActive:(NSString *)did error:(NSError **)error {
-    if (!did) return NO;
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
+    if (!did) {
+        result = NO;
+        return;
+    }
     NSString *sql = @"SELECT applied FROM admin_takedowns WHERE subjectId = ? AND subjectType = 'account' ORDER BY createdAt DESC LIMIT 1";
     NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[did] error:error];
     if (rows.count == 0) {
-        return NO;
+        result = NO;
+        return;
     }
     NSNumber *applied = rows.firstObject[@"applied"];
-    return applied ? applied.boolValue : NO;
+    result = applied ? applied.boolValue : NO;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)createLabel:(NSDictionary *)label error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT INTO labels (src, uri, cid, val, neg, cts, exp) VALUES (?, ?, ?, ?, ?, ?, ?)";
     
     NSArray *params = @[
@@ -2523,10 +3101,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         label[@"exp"] ?: [NSNull null]
     ];
     
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<NSDictionary *> *)getLabelsWithPatterns:(NSArray<NSString *> *)uriPatterns sources:(NSArray<NSString *> *)sources limit:(NSInteger)limit cursor:(NSString *)cursor error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     
     NSMutableString *sql = [@"SELECT * FROM labels WHERE 1=1" mutableCopy];
     NSMutableArray *params = [NSMutableArray array];
@@ -2563,7 +3148,11 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     [sql appendString:@" ORDER BY id ASC LIMIT ?"];
     [params addObject:@(limit)];
     
-    return [self executeParameterizedQuery:sql params:params error:error];
+    result = [self executeParameterizedQuery:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 @end
@@ -2573,6 +3162,9 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 @implementation PDSDatabase (AdminAudit)
 
 - (BOOL)insertAuditLogEntry:(NSDictionary *)entry error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"INSERT INTO admin_audit_log (admin_did, action, subject_type, subject_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
     
     NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
@@ -2587,10 +3179,17 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         dateStr
     ];
     
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<NSDictionary *> *)queryAuditLog:(NSDictionary *)filters limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSMutableString *sql = [@"SELECT * FROM admin_audit_log WHERE 1=1" mutableCopy];
     NSMutableArray *params = [NSMutableArray array];
     
@@ -2632,15 +3231,25 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     [sql appendString:@" ORDER BY id DESC LIMIT ?"];
     [params addObject:@(limit)];
     
-    return [self executeParameterizedQuery:sql params:params error:error];
+    result = [self executeParameterizedQuery:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)deleteAuditLogsOlderThanDays:(NSInteger)days error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSDate *cutoffDate = [[NSDate date] dateByAddingTimeInterval:-((NSTimeInterval)days * 24 * 60 * 60)];
     NSString *cutoffStr = [[NSDateFormatter atproto_iso8601Formatter] stringFromDate:cutoffDate];
     
     NSString *sql = @"DELETE FROM admin_audit_log WHERE created_at < ?";
-    return [self executeParameterizedUpdate:sql params:@[cutoffStr] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[cutoffStr] error:error];
+    return;
+    }];
+    return result;
 }
 
 @end
@@ -2650,6 +3259,9 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 @implementation PDSDatabase (Reports)
 
 - (NSString *)createReport:(NSDictionary *)report error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *reportId = [[NSUUID UUID] UUIDString];
     NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     
@@ -2667,12 +3279,19 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     ];
     
     if ([self executeParameterizedUpdate:sql params:params error:error]) {
-        return reportId;
+        result = reportId;
+        return;
     }
-    return nil;
+    result = nil;
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<NSDictionary *> *)queryReports:(NSDictionary *)filters limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSMutableString *sql = [@"SELECT * FROM reports WHERE 1=1" mutableCopy];
     NSMutableArray *params = [NSMutableArray array];
     
@@ -2709,16 +3328,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     [sql appendString:@" ORDER BY id DESC LIMIT ?"];
     [params addObject:@(limit)];
     
-    return [self executeParameterizedQuery:sql params:params error:error];
+    result = [self executeParameterizedQuery:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 - (nullable NSDictionary *)getReportById:(NSString *)reportId error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM reports WHERE report_id = ?";
     NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[reportId] error:error];
-    return rows.firstObject;
+    result = rows.firstObject;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)updateReportStatus:(NSString *)reportId status:(NSString *)status resolvedBy:(nullable NSString *)adminDid notes:(nullable NSString *)notes error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSMutableString *sql = [@"UPDATE reports SET status = ?" mutableCopy];
     NSMutableArray *params = [NSMutableArray arrayWithObjects:status, nil];
     
@@ -2731,7 +3363,11 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     [sql appendString:@" WHERE report_id = ?"];
     [params addObject:reportId];
     
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 @end
@@ -2741,26 +3377,42 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 @implementation PDSDatabase (AdminConfig)
 
 - (nullable NSString *)getAdminConfigValue:(NSString *)key error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT value FROM admin_config WHERE key = ?";
     NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:@[key] error:error];
-    return rows.firstObject[@"value"];
+    result = rows.firstObject[@"value"];
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)setAdminConfigValue:(NSString *)value forKey:(NSString *)key error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *dateStr = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSString *sql = @"INSERT OR REPLACE INTO admin_config (key, value, updated_at) VALUES (?, ?, ?)";
-    return [self executeParameterizedUpdate:sql params:@[key, value, dateStr] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[key, value, dateStr] error:error];
+    return;
+    }];
+    return result;
 }
 
 #pragma mark - VideoJobs
 
 - (NSDictionary *)getVideoJobById:(NSString *)jobId error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT * FROM video_jobs WHERE job_id = ?";
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        return nil;
+        result = nil;
+        return;
     }
 
     sqlite3_bind_text(stmt, 1, jobId.UTF8String, -1, SQLITE_STATIC);
@@ -2771,7 +3423,10 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
     }
 
     sqlite3_finalize(stmt);
-    return job;
+    result = job;
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)createVideoJobWithId:(NSString *)jobId
@@ -2780,6 +3435,9 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                     mimeType:(NSString *)mimeType
                     fileSize:(NSNumber *)fileSize
                         error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSString *sql = @"INSERT INTO video_jobs (job_id, did, blob_cid, mime_type, file_size, state, progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)";
     
@@ -2793,7 +3451,11 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         now
     ];
     
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)updateVideoJobState:(NSString *)jobId
@@ -2801,6 +3463,9 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                     progress:(NSNumber *)progress
                      message:(NSString *)message
                        error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSString *sql = @"UPDATE video_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
     
@@ -2812,13 +3477,20 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         jobId ?: [NSNull null]
     ];
     
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)setAgeAssurance:(NSString *)assurance
              verifiedAt:(NSString *)verifiedAt
                 forDid:(NSString *)did
                 error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"UPDATE accounts SET age_assurance = ?, age_verified_at = ?, updated_at = ? WHERE did = ?";
     NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
     NSArray *params = @[
@@ -2827,7 +3499,10 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         now,
         did ?: [NSNull null]
     ];
-    return [self executeParameterizedUpdate:sql params:params error:error];
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    return;
+    }];
+    return result;
 }
 
 - (NSDictionary *)dictionaryFromVideoJobsStatement:(sqlite3_stmt *)stmt {
@@ -2864,28 +3539,58 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #pragma mark - Sessions & Security
 
 - (NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT token, created_at, expires_at FROM refresh_tokens WHERE account_did = ? ORDER BY created_at DESC";
-    return [self executeParameterizedQuery:sql params:@[did] error:error];
+    result = [self executeParameterizedQuery:sql params:@[did] error:error];
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)revokeSession:(NSString *)token error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM refresh_tokens WHERE token = ?";
-    return [self executeParameterizedUpdate:sql params:@[token] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[token] error:error];
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
-    return [self executeParameterizedUpdate:sql params:@[did] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[did] error:error];
+    return;
+    }];
+    return result;
 }
 
 - (NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"SELECT id, name, privileged, created_at FROM app_passwords WHERE account_did = ? ORDER BY created_at DESC";
-    return [self executeParameterizedQuery:sql params:@[did] error:error];
+    result = [self executeParameterizedQuery:sql params:@[did] error:error];
+    return;
+    }];
+    return result;
 }
 
 - (BOOL)revokeAppPassword:(NSString *)passwordId forDid:(NSString *)did error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
     NSString *sql = @"DELETE FROM app_passwords WHERE id = ? AND account_did = ?";
-    return [self executeParameterizedUpdate:sql params:@[passwordId, did] error:error];
+    result = [self executeParameterizedUpdate:sql params:@[passwordId, did] error:error];
+    return;
+    }];
+    return result;
 }
 
 @end
