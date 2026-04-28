@@ -6,13 +6,13 @@ title: "Tutorial 6: Production Deployment"
 
 ## Overview
 
-This tutorial describes the production deployment model: a Linux container runtime using Docker Compose, Nginx as a reverse proxy, and explicit configuration for protocol interoperability.
+This tutorial covers production deployment: a Linux container runtime using Docker Compose, Nginx as a reverse proxy, and explicit configuration for protocol interoperability.
 
 **Learning Objectives:**
-- Understand the production topology used by the deployment docs.
+- Understand the production topology.
 - Configure the PDS with production-safe settings.
-- Verify public discovery routing after deploy.
-- Identify common deployment mistakes before they reach users.
+- Verify public discovery routing after deployment.
+- Identify common deployment mistakes.
 
 **Estimated Time:** 35-50 minutes
 
@@ -78,10 +78,13 @@ Ensure the AppView configuration uses the correct key format:
 
 ## Verification
 
-Verify a new deployment by checking discovery metadata and public routing.
+Verify a new deployment by checking discovery metadata and public routing. The diagram above shows a full AppView and Relay topology, but the `docker-compose.yml` provided in `docker/pds` is a minimal, PDS-only configuration.
+
+Before running compose, you must create the external volume:
 
 ```bash
 cd docker/pds
+docker volume create local_pds_data
 docker compose up -d
 docker compose logs --tail=100 pds
 curl -sS https://your-pds.com/xrpc/com.atproto.server.describeServer | jq .
