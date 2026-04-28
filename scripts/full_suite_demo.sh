@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # full_suite_demo.sh — Launch full ATProto stack with demo data and Admin UI
 #
-# Starts: PLC → PDS → Relay → AppView → Admin UI
+# Starts: PLC → PDS → Relay → AppView → Chat → Admin UI
 # Seeds accounts with 10+ records each, wires Relay→PDS via requestCrawl,
 # ensures AppView backfills from Relay, and launches Admin UI.
 #
@@ -25,6 +25,7 @@ PLC_PORT="${PLC_PORT:-2582}"
 PDS_PORT="${PDS_PORT:-2583}"
 RELAY_PORT="${RELAY_PORT:-2584}"
 APPVIEW_PORT="${APPVIEW_PORT:-3200}"
+CHAT_PORT="${CHAT_PORT:-2585}"
 UI_PORT="${UI_PORT:-2590}"
 
 # URLs
@@ -32,12 +33,14 @@ PLC_URL="http://127.0.0.1:$PLC_PORT"
 PDS_URL="http://127.0.0.1:$PDS_PORT"
 RELAY_URL="http://127.0.0.1:$RELAY_PORT"
 APPVIEW_URL="http://127.0.0.1:$APPVIEW_PORT"
+CHAT_URL="http://127.0.0.1:$CHAT_PORT"
 UI_URL="http://127.0.0.1:$UI_PORT"
 
 # Secrets
 PDS_MASTER_SECRET="${PDS_MASTER_SECRET:-test-master-secret-123}"
 PDS_ADMIN_PASSWORD="${PDS_ADMIN_PASSWORD:-localdevadmin}"
 APPVIEW_ADMIN_SECRET="${APPVIEW_ADMIN_SECRET:-localdevadmin}"
+CHAT_ADMIN_SECRET="${CHAT_ADMIN_SECRET:-localdevadmin}"
 UI_ADMIN_PASSWORD="${UI_ADMIN_PASSWORD:-localdev}"
 
 LOG_DIR="$DEMO_ROOT/logs"
@@ -86,7 +89,7 @@ cleanup() {
         done < "$PID_FILE"
     fi
     # Stray processes
-    for name in campagnola kaszlak zuk syrena garazyk-ui; do
+    for name in campagnola kaszlak zuk syrena syrena-chat garazyk-ui; do
         pkill -f "$name.*serve" 2>/dev/null || true
     done
     sleep 1
@@ -128,7 +131,7 @@ log "Starting full ATProto suite demo..."
 echo ""
 
 # Check binaries
-for bin in campagnola kaszlak zuk syrena garazyk-ui; do
+for bin in campagnola kaszlak zuk syrena syrena-chat garazyk-ui; do
     if [[ ! -x "$BUILD_DIR/$bin" ]]; then
         error "Binary not found: $BUILD_DIR/$bin"
         error "Build with: xcodebuild -scheme $bin build"
@@ -138,7 +141,7 @@ done
 
 # Clean + create dirs
 rm -rf "$DEMO_ROOT"
-mkdir -p "$DEMO_ROOT"/{plc,pds,relay,appview,ui,logs}
+mkdir -p "$DEMO_ROOT"/{plc,pds,relay,appview,chat,ui,logs}
 > "$PID_FILE"
 
 # ── 1. Start PLC ──────────────────────────────────────────────────────────
@@ -163,28 +166,46 @@ echo "PID=$!" >> "$PID_FILE"
 
     wait_for_http "$PDS_URL/xrpc/com.atproto.server.describeServer" "PDS" 60
 
+# Brief pause to let PDS finish initializing PLC client
+sleep 2
+
+# Create admin account (with retry — PLC may need a moment)
+log "Creating PDS admin account..."
+for attempt in 1 2 3; do
+    ADMIN_CREATE_RESP=$(curl -s -X POST "$PDS_URL/xrpc/com.atproto.server.createAccount" \
+        -H "Content-Type: application/json" \
+        -d "{\"email\": \"admin@localhost\", \"handle\": \"pds-admin.test\", \"password\": \"$PDS_ADMIN_PASSWORD\"}" \
+        2>/dev/null || echo "{}")
+    if echo "$ADMIN_CREATE_RESP" | jq -e '.did' >/dev/null 2>&1; then
+        ok "Admin account created (DID: $(echo "$ADMIN_CREATE_RESP" | jq -r '.did'))"
+        break
+    elif echo "$ADMIN_CREATE_RESP" | jq -e '.error' >/dev/null 2>&1; then
+        ERR_MSG=$(echo "$ADMIN_CREATE_RESP" | jq -r '.message // .error' 2>/dev/null)
+        if [[ "$attempt" -lt 3 ]]; then
+            info "Admin account creation attempt $attempt failed: $ERR_MSG — retrying in 2s..."
+            sleep 2
+        else
+            info "Admin account creation failed: $ERR_MSG"
+        fi
+    else
+        info "Admin account creation response: ${ADMIN_CREATE_RESP:0:100}"
+        break
+    fi
+done
+sleep 1
+
 # Get PDS admin token (JWT) for UI to use
-# PDS uses JWT from createSession, not /admin/login
+# Get admin-scoped JWT via PDS /admin/login endpoint
 log "Getting PDS admin token (JWT)..."
-PDS_ADMIN_TOKEN=$(curl -s -X POST "$PDS_URL/xrpc/com.atproto.server.createSession" \
+PDS_ADMIN_TOKEN=$(curl -s -X POST "$PDS_URL/admin/login" \
     -H "Content-Type: application/json" \
-    -d "{\"identifier\": \"admin\", \"password\": \"$PDS_ADMIN_PASSWORD\"}" 2>/dev/null | \
-    jq -r '.accessJwt // empty' 2>/dev/null || echo "")
+    -d "{\"password\": \"$PDS_ADMIN_PASSWORD\"}" 2>/dev/null | \
+    jq -r '.token // empty' 2>/dev/null || echo "")
 if [[ -n "$PDS_ADMIN_TOKEN" && "$PDS_ADMIN_TOKEN" != "null" ]]; then
     ok "PDS admin JWT obtained"
 else
-    # Try with a seeded account instead
-    log "Trying to get token via seeded account..."
-    PDS_ADMIN_TOKEN=$(curl -s -X POST "$PDS_URL/xrpc/com.atproto.server.createSession" \
-        -H "Content-Type: application/json" \
-        -d "{\"identifier\": \"alice.test\", \"password\": \"alicepass\"}" 2>/dev/null | \
-        jq -r '.accessJwt // empty' 2>/dev/null || echo "")
-    if [[ -n "$PDS_ADMIN_TOKEN" && "$PDS_ADMIN_TOKEN" != "null" ]]; then
-        ok "PDS admin JWT obtained via alice.test"
-    else
-        warn "Failed to get PDS admin token — UI admin features may not work"
-        PDS_ADMIN_TOKEN=""
-    fi
+    warn "Failed to get PDS admin token — UI admin features may not work"
+    PDS_ADMIN_TOKEN=""
 fi
 
 # ── 3. Start Relay ────────────────────────────────────────────────────────
@@ -219,7 +240,8 @@ fi
 sleep 1
 ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('ws://127.0.0.1:$PDS_PORT/xrpc/com.atproto.sync.subscribeRepos', safe='')" 2>/dev/null || echo "ws%3A%2F%2F127.0.0.1%3A$PDS_PORT%2Fxrpc%2Fcom.atproto.sync.subscribeRepos")
 RESP=$(curl -s -X POST "$RELAY_URL/api/relay/upstreams/$ENCODED_URL/connect" \
-    -H "Authorization: Bearer $APPVIEW_ADMIN_SECRET" 2>/dev/null || echo "{}")
+    -H "Authorization: Bearer $APPVIEW_ADMIN_SECRET" \
+    -H "Content-Length: 0" 2>/dev/null || echo "{}")
 if echo "$RESP" | grep -q "success.*true"; then
     ok "Relay connecting to PDS"
 else
@@ -264,6 +286,18 @@ for i in {1..40}; do
     sleep 0.5
 done
 
+# ── 5.5. Start Chat Service ──────────────────────────────────────────
+
+log "Starting Chat (syrena-chat) on port $CHAT_PORT..."
+PDS_URL="$PDS_URL" \
+CHAT_ADMIN_SECRET="$CHAT_ADMIN_SECRET" \
+    "$BUILD_DIR/syrena-chat" serve --port "$CHAT_PORT" --data-dir "$DEMO_ROOT/chat" \
+    > "$LOG_DIR/chat.log" 2>&1 &
+echo "PID=$!" >> "$PID_FILE"
+
+wait_for_http "$CHAT_URL/_health" "Chat" 30 || \
+    warn "Chat service health check failed — chat tab may not work"
+
 # ── 6. Start Admin UI (wired to all backends) ──────────────────────────
 
 log "Starting Admin UI (garazyk-ui) on port $UI_PORT..."
@@ -271,13 +305,13 @@ GARAZYK_UI_PDS_URL="$PDS_URL" \
 GARAZYK_UI_PLC_URL="$PLC_URL" \
 GARAZYK_UI_RELAY_URL="$RELAY_URL" \
 GARAZYK_UI_APPVIEW_URL="$APPVIEW_URL" \
-GARAZYK_UI_CHAT_URL="$PDS_URL" \
+GARAZYK_UI_CHAT_URL="$CHAT_URL" \
 GARAZYK_UI_ADMIN_PASSWORD="$UI_ADMIN_PASSWORD" \
 GARAZYK_UI_PDS_TOKEN="${PDS_ADMIN_TOKEN:-}" \
 GARAZYK_UI_PLC_TOKEN="$APPVIEW_ADMIN_SECRET" \
 GARAZYK_UI_RELAY_TOKEN="$APPVIEW_ADMIN_SECRET" \
 GARAZYK_UI_APPVIEW_TOKEN="$APPVIEW_ADMIN_SECRET" \
-GARAZYK_UI_CHAT_TOKEN="${PDS_ADMIN_TOKEN:-}" \
+GARAZYK_UI_CHAT_TOKEN="$CHAT_ADMIN_SECRET" \
     "$BUILD_DIR/garazyk-ui" serve \
     > "$LOG_DIR/ui.log" 2>&1 &
 echo "PID=$!" >> "$PID_FILE"
@@ -354,6 +388,7 @@ info "PLC:      $PLC_URL"
 info "PDS:      $PDS_URL"
 info "Relay:    $RELAY_URL"
 info "AppView:  $APPVIEW_URL"
+info "Chat:     $CHAT_URL"
 info "Admin UI: $UI_URL/admin"
 echo ""
 info "Demo Accounts:"
