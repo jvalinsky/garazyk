@@ -94,4 +94,11 @@ instead of a specialized Merkle-DAG application.
 - [CBOR and DAG-CBOR](./cbor-and-dag-cbor)
 - [CIDs and Multiformats](./cids-and-multiformats)
 - [Merkle Search Trees](../mst-trees)
-- [Repository Data Structures Walkthrough](../repository-data-structures-walkthrough)\n\n## Related\n\n- [Documentation Map](../../11-reference/documentation-map.md)\n- [Contributor Guide](../../index.md)\n- [Repository Documentation Index](../../repo-index/index.md)\n\n
+- [Repository Data Structures Walkthrough](../repository-data-structures-walkthrough)
+
+## Related
+
+- [Documentation Map](../../11-reference/documentation-map.md)
+- [Contributor Guide](../../index.md)
+- [Repository Documentation Index](../../repo-index/index.md)
+

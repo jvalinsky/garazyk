@@ -71,4 +71,11 @@ The docs are intentionally split this way so the top-level pages stay readable w
 
 - If you are new to the repo, continue with [Setup](./setup) and [Codebase Map](./codebase-map).
 - If you are chasing a bug, start with [Request Lifecycle](./request-lifecycle) and [Troubleshooting](../11-reference/troubleshooting).
-- If you want a guided implementation path, use the [Tutorials](../10-tutorials/index).\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- If you want a guided implementation path, use the [Tutorials](../10-tutorials/index).
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

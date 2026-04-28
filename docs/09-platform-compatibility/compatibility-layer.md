@@ -63,4 +63,11 @@ The bad middle ground is sprinkling raw `#if` branches across unrelated business
 
 - [macOS and Linux Compatibility](./macos-linux)
 - [Platform-Specific Network Transport](./network-transport)
-- [Setup](../01-getting-started/setup)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Setup](../01-getting-started/setup)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

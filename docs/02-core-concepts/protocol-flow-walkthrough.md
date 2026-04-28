@@ -133,4 +133,11 @@ This is the contributor habit that makes the rest of the docs useful.
 - [Services Overview](../03-application-layer/services-overview)
 - [Auth Helpers](../04-network-layer/auth-helpers)
 - [Blob Service](../03-application-layer/blob-service)
-- [Repository Service](../03-application-layer/repository-service)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Repository Service](../03-application-layer/repository-service)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

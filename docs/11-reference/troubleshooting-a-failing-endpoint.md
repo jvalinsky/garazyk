@@ -85,4 +85,11 @@ The common mistake is to go to logs before knowing which layer should be logging
 4. service
 5. store
 6. side effects
-7. tests\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+7. tests
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

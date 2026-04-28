@@ -40,4 +40,11 @@ Use those when you need a catalog or historical detail that would be too dense f
 - [Contributing Guide](../CONTRIBUTING)
 - [Documentation and Comment Style Guide](../DOCUMENTATION)
 - [Agent Instructions (AGENTS.md)](../AGENTS)
-- [Repository Documentation Index](repo-index/index)\n\n## Related\n\n- [Documentation Map](11-reference/documentation-map.md)\n- [Contributor Guide](index.md)\n- [Repository Documentation Index](repo-index/index.md)\n\n
+- [Repository Documentation Index](repo-index/index)
+
+## Related
+
+- [Documentation Map](11-reference/documentation-map.md)
+- [Contributor Guide](index.md)
+- [Repository Documentation Index](repo-index/index.md)
+

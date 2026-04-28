@@ -575,4 +575,11 @@ Start here when you change administrative or moderation behavior:
 - [PDSApplication](pds-application) - Application-level integration
 - [Authentication](../06-authentication/jwt-tokens) - Admin authentication and authorization
 - [Security Best Practices](../06-authentication/security-best-practices) - Security considerations for admin operations
-- [Logging Strategy](../11-reference/logging-strategy) - Audit logging implementation\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Logging Strategy](../11-reference/logging-strategy) - Audit logging implementation
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

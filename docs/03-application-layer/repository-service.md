@@ -100,4 +100,11 @@ Start here when you change repository, MST, or CAR behavior:
 - [Services Overview](./services-overview)
 - [Relay Service](./relay-service)
 - [Blob Service](./blob-service)
-- [ATProto Basics](../02-core-concepts/atproto-basics)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [ATProto Basics](../02-core-concepts/atproto-basics)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

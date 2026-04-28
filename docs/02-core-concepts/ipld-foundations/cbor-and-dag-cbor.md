@@ -101,4 +101,11 @@ That is why serialization rules are part of the protocol contract.
 
 - [CIDs and Multiformats](./cids-and-multiformats)
 - [CBOR and CAR](../cbor-and-car)
-- [Repository Data Structures Walkthrough](../repository-data-structures-walkthrough)\n\n## Related\n\n- [Documentation Map](../../11-reference/documentation-map.md)\n- [Contributor Guide](../../index.md)\n- [Repository Documentation Index](../../repo-index/index.md)\n\n
+- [Repository Data Structures Walkthrough](../repository-data-structures-walkthrough)
+
+## Related
+
+- [Documentation Map](../../11-reference/documentation-map.md)
+- [Contributor Guide](../../index.md)
+- [Repository Documentation Index](../../repo-index/index.md)
+
