@@ -8,6 +8,8 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
+#import "Media/PDSVideoWorker.h"
+#import "Blob/PDSBlobProvider.h"
 
 @implementation XrpcAppBskyVideoPack
 
@@ -15,8 +17,7 @@
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                    appViewDatabase:(PDSDatabase *)appViewDatabase
                         jwtMinter:(JWTMinter *)jwtMinter
-                   adminController:(id<PDSAdminController>)adminController
-                      blobProvider:(id<PDSBlobProvider>)blobProvider {
+                  adminController:(id<PDSAdminController>)adminController {
 
   [dispatcher registerMethod:@"app.bsky.video.getJobStatus"
 
@@ -72,12 +73,18 @@
       mimeType = @"video/mp4";
     }
 
+    id<PDSBlobProvider> blobProvider = [PDSVideoWorker sharedWorker].blobProvider;
+    if (!blobProvider) {
+      [XrpcErrorHelper setInternalServerError:response message:@"Blob provider not configured"];
+      return;
+    }
+
     NSError *error = nil;
     NSString *jobId = [[NSUUID UUID] UUIDString];
     NSNumber *fileSize = @(request.body.length);
 
     CID *cid = [CID sha256:request.body];
-    NSString *blobCid = cid.nsString;
+    NSString *blobCid = cid.stringValue;
 
     BOOL stored = [blobProvider storeBlobData:request.body forCID:cid error:&error];
     if (!stored) {
