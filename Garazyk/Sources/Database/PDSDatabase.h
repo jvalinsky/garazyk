@@ -890,10 +890,18 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                      fileSize:(NSNumber *)fileSize
                         error:(NSError **)error;
 - (BOOL)updateVideoJobState:(NSString *)jobId
-                       state:(NSString *)state
-                    progress:(NSNumber *)progress
-                     message:(nullable NSString *)message
-                       error:(NSError **)error;
+                        state:(NSString *)state
+                     progress:(NSNumber *)progress
+                      message:(nullable NSString *)message
+                        error:(NSError **)error;
+
+- (BOOL)updateVideoJobResults:(NSString *)jobId
+           processedBlobCid:(NSString *)processedBlobCid
+          thumbnailBlobCid:(NSString *)thumbnailBlobCid
+                     error:(NSError **)error;
+
+- (BOOL)incrementVideoJobRetry:(NSString *)jobId
+                         error:(NSError **)error;
 
 - (BOOL)setAgeAssurance:(nullable NSString *)assurance
               verifiedAt:(nullable NSString *)verifiedAt

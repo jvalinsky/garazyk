@@ -21,8 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                    appViewDatabase:(PDSDatabase *)appViewDatabase
                         jwtMinter:(JWTMinter *)jwtMinter
-                  adminController:(id<PDSAdminController>)adminController
-                     blobProvider:(id<PDSBlobProvider>)blobProvider;
+                  adminController:(id<PDSAdminController>)adminController;
 
 @end
 
