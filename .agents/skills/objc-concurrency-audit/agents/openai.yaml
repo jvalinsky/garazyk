@@ -1,0 +1,4 @@
+interface:
+  display_name: "Objective-C Concurrency Audit"
+  short_description: "Audit locks, queues, and races"
+  default_prompt: "Use $objc-concurrency-audit to review this Objective-C code for concurrency bugs."

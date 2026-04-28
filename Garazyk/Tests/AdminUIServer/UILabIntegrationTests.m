@@ -10,6 +10,8 @@
 #import <dispatch/dispatch.h>
 #import "AdminUIServer/UIServerRuntime.h"
 #import "AdminUIServer/UIServiceConfig.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 
 static NSString * const UILabIntegrationTestHost = @"127.0.0.1";
 static const NSUInteger UILabIntegrationTestPort = 25999;
@@ -56,11 +58,6 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
     self.config.chatAdminToken = @"admin-token";
 
     self.runtime = [[UIServerRuntime alloc] initWithConfiguration:self.config];
-
-    NSError *error = nil;
-    BOOL started = [self.runtime startWithError:&error];
-    XCTAssertTrue(started, @"Failed to start UIServerRuntime on %@:%lu: %@", self.config.host, (unsigned long)self.config.port, error);
-    XCTAssertTrue(self.runtime.isRunning);
 }
 
 - (void)tearDown {
@@ -76,6 +73,19 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 
 - (NSData *)jsonDataFromDictionary:(NSDictionary *)dictionary error:(NSError **)error {
     return [NSJSONSerialization dataWithJSONObject:dictionary options:0 error:error];
+}
+
+- (HttpMethod)httpMethodFromString:(NSString *)method {
+    if ([method isEqualToString:@"POST"]) {
+        return HttpMethodPOST;
+    }
+    if ([method isEqualToString:@"PUT"]) {
+        return HttpMethodPUT;
+    }
+    if ([method isEqualToString:@"DELETE"]) {
+        return HttpMethodDELETE;
+    }
+    return HttpMethodGET;
 }
 
 - (NSString *)headerValueForName:(NSString *)headerName response:(NSHTTPURLResponse *)response {
@@ -117,47 +127,33 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
                            (unsigned long)UILabIntegrationTestPort,
                            path];
     NSURL *url = [NSURL URLWithString:urlString];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    request.HTTPMethod = method;
-    request.timeoutInterval = UILabIntegrationTestTimeout;
-    request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
-    request.HTTPShouldHandleCookies = NO;
-    if (body.length > 0) {
-        request.HTTPBody = body;
-    }
-    for (NSString *key in headers) {
-        [request setValue:headers[key] forHTTPHeaderField:key];
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    NSMutableDictionary *queryParams = [NSMutableDictionary dictionary];
+    for (NSURLQueryItem *item in components.queryItems ?: @[]) {
+        queryParams[item.name] = item.value ?: @"";
     }
 
-    NSURLSessionConfiguration *sessionConfiguration = [NSURLSessionConfiguration ephemeralSessionConfiguration];
-    sessionConfiguration.timeoutIntervalForRequest = UILabIntegrationTestTimeout;
-    sessionConfiguration.timeoutIntervalForResource = UILabIntegrationTestTimeout;
-    sessionConfiguration.HTTPShouldSetCookies = NO;
-    sessionConfiguration.HTTPShouldUsePipelining = NO;
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:[self httpMethodFromString:method]
+                                                  methodString:method
+                                                          path:components.path ?: path
+                                                   queryString:components.percentEncodedQuery ?: @""
+                                                    queryParams:queryParams
+                                                        version:@"HTTP/1.1"
+                                                        headers:headers ?: @{}
+                                                           body:body ?: [NSData data]
+                                                  remoteAddress:@"127.0.0.1"];
+    HttpResponse *runtimeResponse = [self.runtime dispatchRequestForTesting:request];
 
-    UILabHTTPRedirectBlockingDelegate *delegate = [[UILabHTTPRedirectBlockingDelegate alloc] init];
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration
-                                                          delegate:delegate
-                                                     delegateQueue:nil];
-
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    __block NSData *resultData = nil;
-    __block NSURLResponse *resultResponse = nil;
-    __block NSError *resultError = nil;
-
-    [[session dataTaskWithRequest:request
-                completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-                    resultData = data;
-                    resultResponse = response;
-                    resultError = error;
-                    dispatch_semaphore_signal(semaphore);
-                }] resume];
-
-    if (dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(UILabIntegrationTestTimeout * NSEC_PER_SEC))) != 0) {
-        resultError = [NSError errorWithDomain:@"UILabIntegrationTests"
-                                          code:-1001
-                                      userInfo:@{NSLocalizedDescriptionKey : @"Timed out waiting for HTTP response"}];
+    NSMutableDictionary *responseHeaders = [runtimeResponse.headers mutableCopy] ?: [NSMutableDictionary dictionary];
+    if (runtimeResponse.contentType.length > 0) {
+        responseHeaders[@"Content-Type"] = runtimeResponse.contentType;
     }
+    NSHTTPURLResponse *resultResponse = [[NSHTTPURLResponse alloc] initWithURL:url
+                                                                    statusCode:runtimeResponse.statusCode
+                                                                   HTTPVersion:@"HTTP/1.1"
+                                                                  headerFields:responseHeaders];
+    NSData *resultData = runtimeResponse.body ?: [NSData data];
+    NSError *resultError = nil;
 
     if (outResponse) {
         *outResponse = resultResponse;
@@ -166,7 +162,6 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
         *outError = resultError;
     }
 
-    [session finishTasksAndInvalidate];
     return resultData;
 }
 

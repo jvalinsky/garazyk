@@ -1,0 +1,4 @@
+interface:
+  display_name: "Better Code Objective-C"
+  short_description: "Apply Objective-C coding standards"
+  default_prompt: "Use $better-code-objc to improve this Objective-C implementation."

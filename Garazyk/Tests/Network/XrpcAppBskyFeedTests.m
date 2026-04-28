@@ -151,26 +151,24 @@
 
 #pragma mark - getLikes Tests
 
-- (void)testGetLikesNotSupportedWithoutUpstream {
-    // getLikes is proxied to upstream AppView; returns 501 without one
+- (void)testGetLikesSuccess {
+    // getLikes is now locally implemented; returns 200 with empty likes for unknown URI
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getLikes"
                                              queryString:@"uri=at://did:plc:test/app.bsky.feed.post/abc"
                                              queryParams:@{@"uri": @"at://did:plc:test/app.bsky.feed.post/abc"}
                                                  headers:@{}];
-    XCTAssertEqual(response.statusCode, 501);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"NotSupported");
+    XCTAssertEqual(response.statusCode, 200);
 }
 
 #pragma mark - getRepostedBy Tests
 
-- (void)testGetRepostedByNotSupportedWithoutUpstream {
-    // getRepostedBy is proxied to upstream AppView; returns 501 without one
+- (void)testGetRepostedBySuccess {
+    // getRepostedBy is now locally implemented; returns 200 with empty results for unknown URI
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getRepostedBy"
                                              queryString:@"uri=at://did:plc:test/app.bsky.feed.post/abc"
                                              queryParams:@{@"uri": @"at://did:plc:test/app.bsky.feed.post/abc"}
                                                  headers:@{}];
-    XCTAssertEqual(response.statusCode, 501);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"NotSupported");
+    XCTAssertEqual(response.statusCode, 200);
 }
 
 #pragma mark - getActorFeeds Tests

@@ -1,3 +1,8 @@
+---
+name: using-deciduous
+description: Use when tracking development goals, decisions, actions, outcomes, archaeology pivots, and scratchpad links in the deciduous decision graph.
+---
+
 # Deciduous: Decision Graph for AI Development
 
 Use this skill to track goals, decisions, and outcomes in the `deciduous` graph.

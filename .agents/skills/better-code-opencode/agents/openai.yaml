@@ -1,0 +1,4 @@
+interface:
+  display_name: "Better Code Opencode"
+  short_description: "Apply agentic engineering heuristics"
+  default_prompt: "Use $better-code-opencode to guide this code change for correctness, clarity, and changeability."

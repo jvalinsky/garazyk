@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slop Detector"
+  short_description: "Find low-effort generated code patterns"
+  default_prompt: "Use $slop-detector to audit this code for generated-code shortcuts and boilerplate."
