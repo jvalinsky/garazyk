@@ -92,6 +92,133 @@
     ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
     NotificationService *notificationService = [[NotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
 
+    // app.bsky.notification.getPreferences
+    [dispatcher registerMethod:@"app.bsky.notification.getPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSError *error = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
+
+        // Build the app.bsky.notification.defs#preferences output.
+        // The lexicon requires: chat, follow, like, likeViaRepost, mention, quote,
+        // reply, repost, repostViaRepost, starterpackJoined, subscribedPost,
+        // unverified, verified.
+        // We parse any stored notification preferences from the actor preferences array,
+        // then fill defaults for any missing fields.
+        NSDictionary *defaults = @{
+            @"chat": @{@"$type": @"app.bsky.notification.defs#chatPreference", @"include": @"all", @"push": @NO},
+            @"follow": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"like": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"likeViaRepost": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"mention": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"quote": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"reply": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"repost": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"repostViaRepost": @{@"$type": @"app.bsky.notification.defs#filterablePreference", @"include": @"all", @"list": @YES, @"push": @NO},
+            @"starterpackJoined": @{@"$type": @"app.bsky.notification.defs#preference", @"list": @YES, @"push": @NO},
+            @"subscribedPost": @{@"$type": @"app.bsky.notification.defs#preference", @"list": @YES, @"push": @NO},
+            @"unverified": @{@"$type": @"app.bsky.notification.defs#preference", @"list": @YES, @"push": @NO},
+            @"verified": @{@"$type": @"app.bsky.notification.defs#preference", @"list": @YES, @"push": @NO},
+        };
+
+        NSMutableDictionary *prefs = [defaults mutableCopy];
+
+        // Override from stored actor preferences
+        if (currentPrefs && currentPrefs[@"preferences"] && [currentPrefs[@"preferences"] isKindOfClass:[NSArray class]]) {
+            for (NSDictionary *pref in currentPrefs[@"preferences"]) {
+                NSString *type = pref[@"$type"];
+                if ([type isEqualToString:@"app.bsky.notification.defs#chatPreference"]) {
+                    prefs[@"chat"] = pref;
+                } else if ([type isEqualToString:@"app.bsky.notification.defs#filterablePreference"]) {
+                    // Filterable prefs are keyed by a "kind" field stored alongside
+                    NSString *kind = pref[@"kind"];
+                    if (kind && prefs[kind]) {
+                        prefs[kind] = pref;
+                    }
+                } else if ([type isEqualToString:@"app.bsky.notification.defs#preference"]) {
+                    NSString *kind = pref[@"kind"];
+                    if (kind && prefs[kind]) {
+                        prefs[kind] = pref;
+                    }
+                }
+            }
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{ @"preferences": prefs }];
+    }];
+
+    // app.bsky.notification.putPreferences
+    [dispatcher registerMethod:@"app.bsky.notification.putPreferences" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = request.jsonBody;
+        if (!body || ![body isKindOfClass:[NSDictionary class]]) {
+            [XrpcErrorHelper setValidationError:response message:@"Missing request body"];
+            return;
+        }
+
+        // The lexicon input is { "priority": boolean }
+        // Store as a notification preference in the actor preferences array
+        BOOL priority = [body[@"priority"] boolValue];
+
+        NSError *error = nil;
+        NSDictionary *currentPrefs = [actorService getPreferencesForActor:actorDID error:&error];
+
+        NSMutableArray *prefsList = [NSMutableArray array];
+        if (currentPrefs && currentPrefs[@"preferences"] && [currentPrefs[@"preferences"] isKindOfClass:[NSArray class]]) {
+            prefsList = [currentPrefs[@"preferences"] mutableCopy];
+        }
+
+        // Remove any existing notification priority entry
+        NSMutableArray *filtered = [NSMutableArray array];
+        for (NSDictionary *pref in prefsList) {
+            if (![pref[@"$type"] isEqualToString:@"app.bsky.notification.defs#preference"] ||
+                ![pref[@"kind"] isEqualToString:@"priority"]) {
+                [filtered addObject:pref];
+            }
+        }
+
+        // Add the updated priority preference
+        [filtered addObject:@{
+            @"$type": @"app.bsky.notification.defs#preference",
+            @"kind": @"priority",
+            @"list": @(priority),
+            @"push": @(priority)
+        }];
+
+        BOOL success = [actorService putPreferencesForActor:actorDID preferences:filtered error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to save preferences"];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
     // app.bsky.notification.listNotifications
     [dispatcher registerMethod:@"app.bsky.notification.listNotifications" handler:^(HttpRequest *request, HttpResponse *response) {
 
@@ -364,6 +491,9 @@
             if (value && [value isKindOfClass:[NSDictionary class]]) {
                 NSMutableDictionary *pref = [value mutableCopy];
                 pref[@"$type"] = typeMap[key];
+                if (![key isEqualToString:@"chat"]) {
+                    pref[@"kind"] = key;
+                }
                 [prefsToStore addObject:[pref copy]];
             }
         }
