@@ -244,6 +244,10 @@ static const NSUInteger kMaxVarintSize = 9;
     return [@"b" stringByAppendingString:base32String];
 }
 
+- (NSString *)description {
+    return self.stringValue ?: @"<CID: nil>";
+}
+
 #pragma mark - Comparison and Equality
 
 - (BOOL)isEqualToCID:(CID *)other {
