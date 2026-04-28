@@ -14,6 +14,22 @@ Standards-oriented AT Protocol implementation in Objective-C for macOS and Linux
 - [Tutorials](docs/10-tutorials/index.md)
 - [CLI Reference](docs/11-reference/cli-reference.md)
 
+## Prerequisites
+
+Before building, ensure you have the necessary toolchains installed.
+
+**macOS:**
+```bash
+xcode-select --install
+brew install cmake xcodegen
+```
+
+**Linux/GNUstep:**
+```bash
+sudo apt-get update
+sudo apt-get install clang libblocksruntime-dev cmake libsqlite3-dev libssl-dev
+```
+
 ## Quick Build
 
 ### macOS
