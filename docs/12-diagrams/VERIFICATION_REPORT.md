@@ -203,7 +203,7 @@ The **system-architecture.svg** diagram has been verified and meets all quality 
 
 The diagram is production-ready and provides developers with a clear, accurate representation of the PDS system architecture.
 
-**Note:** Four additional diagrams (request-flow.svg, database-schema.svg, auth-flow.svg, firehose-flow.svg) are referenced in the design document but not yet created. These should be created in a separate task to complete the diagram suite.
+**Note:** Four additional diagrams (request-flow.svg, database-schema.svg, auth-flow.svg, firehose-flow.svg) are referenced in the design document but not yet created. Create these in a separate task to complete the diagram suite.
 
 ## Related
 

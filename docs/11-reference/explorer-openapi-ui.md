@@ -6,7 +6,7 @@ title: Explorer, OpenAPI, and UI
 
 ## Overview
 
-Garazyk exposes several contributor-facing browser tools in addition to its protocol endpoints. These tools exist to make the runtime inspectable without writing a separate client app.
+Garazyk exposes several contributor-facing browser tools in addition to its protocol endpoints. These tools make the runtime inspectable without a separate client app.
 
 The key distinction is:
 
@@ -14,7 +14,7 @@ The key distinction is:
 - `/api/pds/*` is the inspection and documentation surface,
 - `/ui` is the newer Cappuccino-based browser UI.
 
-If you keep those roles separate in your head, the code is much easier to navigate.
+Keeping these roles separate makes the code easier to navigate.
 
 ## The Main Contributor Surfaces
 
@@ -29,14 +29,14 @@ If you keep those roles separate in your head, the code is much easier to naviga
 
 ## Why These Surfaces Exist
 
-These routes are not "extra product features." They are contributor tools that solve specific debugging problems:
+These routes are contributor tools that solve specific debugging problems:
 
 - inspect data quickly,
 - verify route wiring,
 - compare UI behavior to raw API output,
 - and make the project easier to operate without custom scripts.
 
-That is why the code lives partly in app/UI handlers rather than the XRPC method registry.
+This explains why the code lives partly in app/UI handlers rather than the XRPC method registry.
 
 ## Explorer and OpenAPI
 
@@ -72,7 +72,7 @@ The server builder wires these surfaces explicitly:
 - `ExploreHandler` owns the Explorer and OpenAPI endpoints
 - `CappuccinoUIHandler` owns the `/ui` asset path
 
-This matters because UI breakage is often not a UI bug. It can be:
+UI breakage is often not a UI bug. It can be:
 
 - missing route registration,
 - an asset staging problem,
@@ -87,7 +87,7 @@ When you change a feature that has both protocol and tooling impact:
 3. verify `/api/pds/docs` and the OpenAPI output if the Explorer surface changed,
 4. verify `/ui` if the feature is rendered there.
 
-That order isolates failures cleanly.
+This order isolates failures cleanly.
 
 ## Quick Checks
 
@@ -100,7 +100,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/ui/Info.plist
 
 ## Legacy and Archival Context
 
-Older docs under `docs/guides/`, `docs/architecture/`, and some README material still describe `/explore/` routes. Treat those as historical context unless they match the current server builder and handlers.
+Older docs under `docs/guides/`, `docs/architecture/`, and some README material describe `/explore/` routes. Treat them as historical context unless they match the current server builder and handlers.
 
 For this docs pass, the current contributor truth is:
 

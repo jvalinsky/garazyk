@@ -4,46 +4,46 @@ title: Sans-I/O Architecture
 
 # Sans-I/O Architecture
 
-The PDS and its associated servers (Syrena AppView, Zuk Relay) utilize a **Sans-I/O architecture** for core protocol handling. This design pattern decouples protocol state logic from actual network side effects, enabling high portability, deterministic testing, and extreme resilience.
+Garazyk uses a **Sans-I/O architecture** for protocol handling in the PDS and associated servers (Syrena, Zuk). This pattern decouples protocol logic from network side effects, supporting portability and deterministic testing.
 
-## Core Principle
+## Principles
 
-In a traditional network implementation, the code that parses HTTP or WebSocket frames often owns the socket, manages buffers, and handles threading. In a Sans-I/O model:
+Traditional network implementations often combine frame parsing with socket ownership and buffer management. Sans-I/O separates these concerns:
 
-1.  **State Machines are "Pure":** Protocol engines (like `HttpProtocolSession`) do not perform any I/O. They are completely unaware of sockets, file handles, or system timers.
-2.  **Explicit Data Feeding:** Raw bytes are explicitly pushed into the state machine via a `feedData:` method.
-3.  **Action/Event Queues:** Instead of executing side effects, the state machine returns an array of structured "Events" or "Actions" that the caller (the Driver) must execute.
+1.  **Pure State Machines:** Protocol engines like `HttpProtocolSession` do not perform I/O. They are unaware of sockets, file handles, or system timers.
+2.  **Explicit Data Feeding:** Raw bytes are pushed into the state machine via `feedData:`.
+3.  **Action/Event Queues:** The state machine returns an array of structured events or actions that the caller (the Driver) executes.
 
 ## Architectural Layers
 
 ### 1. Protocol State Machines (`Sources/Network/`, `Sources/Sync/WebSocket/`)
 
-These objects represent the "Brains" of the protocol.
+These objects manage protocol logic:
 
-*   **`HttpProtocolSession`**: Manages the HTTP/1.1 lifecycle. It uses `Http1Parser` for segmenting bytes and `Http1PipelinePolicy` for managing request/response sequencing.
-*   **`WebSocketProtocolSession`**: Manages WebSocket framing, masking, and control frames. It handles heartbeats deterministically.
+*   **`HttpProtocolSession`**: Manages the HTTP/1.1 lifecycle. It uses `Http1Parser` for segmenting bytes and `Http1PipelinePolicy` for request/response sequencing.
+*   **`WebSocketProtocolSession`**: Manages WebSocket framing, masking, and control frames, including heartbeats.
 
 ### 2. I/O Drivers (`Sources/Network/HttpServer.m`)
 
-The Driver represents the "Muscles" of the system. It handles the platform-specific heavy lifting.
+The Driver handles platform-specific implementation:
 
-*   **`HttpServer`**: Owns the listening socket. When a connection is accepted, it creates an `HttpProtocolSession`. As data arrives from the network, it feeds the session and executes the returned events (e.g., calling an XRPC handler).
-*   **`WebSocketHandler`**: Acts as a bridge, driving a `WebSocketProtocolSession` after an HTTP upgrade has been completed.
+*   **`HttpServer`**: Owns the listening socket and creates an `HttpProtocolSession` for each connection. It feeds data to the session and executes the returned events.
+*   **`WebSocketHandler`**: Drives a `WebSocketProtocolSession` after an HTTP upgrade.
 
 ### 3. Abstract Transport (`Sources/Network/PDSNetworkTransport.h`)
 
-This layer provides a consistent interface for the Driver to interact with the underlying network, regardless of the platform.
+This layer provides a consistent interface for the Driver:
 
-*   **`PDSNetworkConnection`**: A protocol defining `sendData:`, `close`, and callbacks for data arrival.
-*   **`PDSNetworkTransportMac`**: Implements transport using Apple's `Network.framework`.
-*   **`PDSNetworkTransportLinux`**: Implements transport using BSD sockets and `dispatch_source_t`.
+*   **`PDSNetworkConnection`**: Defines `sendData:`, `close`, and data arrival callbacks.
+*   **`PDSNetworkTransportMac`**: Uses Apple's `Network.framework`.
+*   **`PDSNetworkTransportLinux`**: Uses BSD sockets and `dispatch_source_t`.
 
 ## Deterministic Testing
 
-The primary benefit of Sans-I/O is **100% deterministic testing**.
+Sans-I/O enables deterministic testing without opening network ports.
 
-### Testing the Protocol
-We can test the HTTP parser by feeding it fragmented data, malformed headers, or interleaved pipelined requests without ever opening a real port:
+### Protocol Testing
+The HTTP parser can be tested by feeding it fragmented data or malformed headers directly:
 
 ```objc
 // Pseudo-code example of a characterization test
@@ -54,30 +54,30 @@ XCTAssertTrue([events[0] isKindOfClass:[HttpSessionEventRequestReady class]]);
 ```
 
 ### Heartbeat Consistency
-WebSocket heartbeats are often flaky in tests due to timing. In our Sans-I/O implementation, the session accepts a `tick:now` call. The test can "fast-forward" time manually to verify that pings are sent and timeouts are triggered exactly when expected.
+Tests verify WebSocket heartbeats by calling `tick:now` and "fast-forwarding" time to check pings and timeouts.
 
-## Data Flow Pattern
+## Data Flow
 
 ### Inbound Path (Read)
 1.  **Kernel** receives packets.
-2.  **Platform Transport** (Mac/Linux) reads bytes into an `NSData` buffer.
-3.  **Driver** (`HttpServer`) receives the data and calls `[session feedData:buffer]`.
-4.  **Session** transitions its state and returns `HttpSessionEvent` objects.
-5.  **Driver** iterates through events and dispatches business logic.
+2.  **Platform Transport** reads bytes into an `NSData` buffer.
+3.  **Driver** (`HttpServer`) calls `[session feedData:buffer]`.
+4.  **Session** returns `HttpSessionEvent` objects.
+5.  **Driver** executes business logic based on events.
 
 ### Outbound Path (Write)
 1.  **XRPC Handler** returns a result.
 2.  **Driver** serializes the result and calls `[session queueResponse:...]`.
-3.  **Session** returns an action indicating bytes are ready to send.
+3.  **Session** returns an action when bytes are ready.
 4.  **Driver** calls `[connection sendData:...]` on the platform transport.
 
-## Specific Implementations
+## Implementations
 
 ### HTTP Pipelining
-The `Http1PipelinePolicy` tracks how many requests have been read vs. how many responses have been sent. It enforces a maximum reading budget to prevent memory exhaustion from an aggressive client.
+`Http1PipelinePolicy` tracks requests read versus responses sent, enforcing a reading budget to prevent memory exhaustion.
 
 ### WebSocket Backpressure
-The `WebSocketProtocolSession` calculates a "Fill Percentage" based on the outbound buffer. It generates `BackpressureWarning` events when the buffer exceeds a threshold, allowing the PDS to slow down the Firehose for that specific client.
+`WebSocketProtocolSession` calculates a fill percentage for the outbound buffer. It generates `BackpressureWarning` events when the buffer exceeds a threshold, allowing the PDS to slow down the firehose for that client.
 
 ---
 

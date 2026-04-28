@@ -10,8 +10,8 @@ Garazyk ships a standalone PLC server alongside the PDS. Its job is narrower
 than the PDS job: accept PLC operations, validate them, store history, and
 serve current DID documents plus audit logs.
 
-That boundary matters because PLC operational guidance should be about identity
-history, not about account or repository state.
+This boundary ensures PLC operational guidance focuses on identity
+history, not account or repository state.
 
 ## The Runtime Model
 
@@ -35,8 +35,7 @@ The standalone PLC server exposes a small surface:
 - `GET /_health` exposes a health check
 - `GET /_metrics` exposes PLC metrics
 
-That small API is a feature. PLC becomes much easier to reason about when the
-server only exposes the operations that define identity state.
+This small API makes the PLC easier to reason about by only exposing operations that define identity state.
 
 ## Why Persistence Is Optional In Dev And Mandatory In Real Ops
 
@@ -48,7 +47,7 @@ The reason to keep both is simple:
 - local development needs low-friction startup
 - operational identity infrastructure needs durable history and replay
 
-The mistake is assuming those two modes are interchangeable. They are not.
+Do not treat these two modes as interchangeable.
 
 ## Validation And Audit Rules
 
@@ -63,7 +62,7 @@ through `PLCAuditor`, which verifies:
 - normalization of fields such as `alsoKnownAs` and service endpoints
 - rate limits for operation frequency
 
-This is the most important operational fact about the PLC server. The durable
+The durable
 store is only as useful as the replay and validation rules protecting it.
 
 ## Understanding DID State
@@ -77,7 +76,7 @@ contains the fields contributors care about most:
 - services
 - tombstone status
 
-That means a DID mismatch is usually a history or normalization problem, not a
+A DID mismatch is usually a history or normalization problem, not a
 simple key-value lookup failure.
 
 ## Operational Habits That Matter

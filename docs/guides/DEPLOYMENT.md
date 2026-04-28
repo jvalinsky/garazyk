@@ -55,7 +55,7 @@ These must be set before starting the server. The process will **refuse to start
 | `PDS_ENV` | Recommended | `production` | Enables startup safety checks |
 | `PDS_ADMIN_PASSWORD` | Yes | `pbkdf2:600000:<salt>:<hash>` | Use `pbkdf2:` prefix; plain text triggers a warning |
 | `PDS_DISABLE_X_ADMIN_TOKEN_HEADER` | Recommended | `1` | Disable legacy header in production |
-| `PDS_EMAIL_PROVIDER_TYPE` | Recommended | `resend` or `smtp` | Email required for account confirmation |
+| `PDS_EMAIL_PROVIDER_TYPE` | Recommended | `resend` | Email required for account confirmation; `smtp` currently fails closed |
 
 For Resend email:
 

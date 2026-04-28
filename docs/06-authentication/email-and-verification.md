@@ -6,13 +6,13 @@ title: Email and Verification
 
 ## Overview
 
-Account creation in Garazyk is not just "accept email and password." The implementation combines registration policy, handle/domain rules, optional email delivery, and optional verification providers.
+Account creation in Garazyk combines registration policy, handle/domain rules, optional email delivery, and optional verification providers.
 
-The important contributor distinction is this:
+Settings fall into three categories:
 
-- some settings are product policy,
-- some settings are integration points,
-- and some settings exist mainly to support local development or tests.
+- product policy,
+- integration points,
+- local development or test support.
 
 Understanding which is which prevents accidental production regressions.
 
@@ -45,7 +45,7 @@ The PDS supports pluggable providers rather than hard-coding one delivery mechan
 - `email.provider`
 - provider-specific SMTP and Resend settings
 
-The default posture is intentionally conservative: no provider is assumed unless configured.
+No provider is assumed unless configured.
 
 ## Email Providers
 
@@ -55,10 +55,10 @@ The configuration loader supports these email provider modes:
 | --- | --- |
 | `none` | No outbound email integration |
 | `mock` | Tests and local development |
-| `smtp` | SMTP delivery using configured host, port, credentials, and TLS flag |
+| `smtp` | Accepted configuration for future SMTP support; runtime sends fail closed because SMTP delivery is not implemented |
 | `resend` | HTTP delivery using the Resend integration and secrets provider settings |
 
-The practical rule for contributors is simple: if a docs example needs email, it should say whether it assumes `mock`, `smtp`, or `resend`.
+If a docs example needs email, state whether it assumes `mock`, `smtp`, or `resend`.
 
 ## Phone Verification Providers
 
@@ -78,11 +78,11 @@ Provider configuration spans several categories:
 
 | Category | Example keys |
 | --- | --- |
-| SMTP transport | `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_use_tls` |
+| SMTP transport | `smtp_host`, `smtp_port`, `smtp_username`, `smtp_password`, `smtp_use_tls` for future SMTP support |
 | Resend integration | `resend_api_key_source`, `resend_api_key_env_var`, `resend_keychain_service`, `resend_keychain_account`, `resend_from_address`, `resend_api_endpoint` |
 | Environment overrides | `PDS_EMAIL_PROVIDER`, `PDS_EMAIL_SMTP_*`, `PDS_RESEND_*` |
 
-For storage and secret-handling guidance, use [Secrets Management](./secrets-management). This page is about how the verification model fits into contributor workflows, not how to store credentials safely.
+This page explains how the verification model fits into contributor workflows. For credential storage guidance, see [Secrets Management](./secrets-management).
 
 ## Why This Design Exists
 
@@ -92,7 +92,7 @@ The email and verification design solves three different problems:
 2. Production deployments need explicit, auditable integration points for real delivery providers.
 3. Core account logic should not need to know whether a message was sent via SMTP, Resend, or a test double.
 
-That separation is why provider choice belongs in configuration and why docs should explain the operational reason behind each setting.
+Therefore, provider choice belongs in configuration, and docs should explain the operational reason behind each setting.
 
 ## What Contributors Usually Touch
 
@@ -117,7 +117,7 @@ Use these assumptions unless a task says otherwise:
 - integration testing: explicit mock provider
 - production docs: invite codes enabled, real issuer, real PLC, real provider or an explicit note that email is not enabled
 
-That keeps the docs honest about what is runnable, what is safe, and what still depends on deployment policy.
+These defaults clarify what is runnable, what is safe, and what depends on deployment policy.
 
 ## Related Reading
 
@@ -131,4 +131,3 @@ That keeps the docs honest about what is runnable, what is safe, and what still 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
 - [Repository Documentation Index](../repo-index/index.md)
-

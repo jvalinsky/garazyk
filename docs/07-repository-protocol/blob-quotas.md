@@ -6,10 +6,7 @@ title: Blob Quotas
 
 ## Overview
 
-Garazyk PDS does not currently implement a full per-account storage quota
-system. The shipped protection model is narrower and easier to reason about:
-reject obviously bad uploads early, limit how quickly a DID can create blob
-pressure, and expose enough metrics for operators to watch overall capacity.
+Garazyk PDS does not implement a full per-account storage quota system. The protection model rejects bad uploads early, limits how quickly a DID can create blob pressure, and exposes metrics for operators to monitor capacity.
 
 **What exists today:**
 - MIME-aware size validation in `MimeTypeValidator`
@@ -24,13 +21,9 @@ pressure, and expose enough metrics for operators to watch overall capacity.
 
 ## Why The Current Design Is Smaller
 
-A true storage quota sounds straightforward, but it creates hard accounting
-questions at write time. The server has to know which database is authoritative,
-how provider-level deduplication affects per-user usage, and what should happen
-if a delete races with a record update or import. The current implementation
-avoids inventing answers it cannot enforce consistently.
+A true storage quota creates difficult accounting questions at write time. The server must know which database is authoritative, how provider-level deduplication affects per-user usage, and what happens if a delete races with a record update or import. The current implementation avoids unenforceable answers.
 
-That is why the codebase currently focuses on three simpler guarantees:
+The codebase focuses on three simpler guarantees:
 - validate uploads before storing provider data
 - bound write pressure per DID with rate limiting
 - expose aggregate capacity signals for operators
@@ -60,9 +53,7 @@ entry points are added.
 
 ### Per-DID Upload Rate Limiting
 
-Blob uploads also have a separate per-DID rate limit. This is the closest thing
-the current codebase has to a quota feature: it limits how quickly an account
-can create new blob pressure, not how many retained bytes it owns forever.
+Blob uploads also have a separate per-DID rate limit. This limits how quickly an account can create new blob pressure, rather than bounding total retained bytes.
 
 ```json
 {
@@ -95,9 +86,7 @@ blob correctness.
 
 ## Operational Visibility
 
-Because there is no per-user quota ledger, operators should think in terms of
-system capacity and per-user write pressure rather than a user-facing quota
-balance.
+Operators must monitor system capacity and per-user write pressure rather than user-facing quota balances.
 
 The current observability surfaces are:
 - Prometheus metrics `pds_blob_count` and `pds_blob_storage_bytes`
@@ -120,13 +109,11 @@ rather than looking for quota status or repair commands that do not exist.
 - There is no quota repair or reset tooling after manual database edits.
 - Aggregate metrics exist, but per-user blob storage metrics do not.
 
-Older docs that describe `kaszlak quota status`, `quota set`, or `quota reset`
-should be treated as future design notes, not current behavior.
+Older docs describing `kaszlak quota status`, `quota set`, or `quota reset` are future design notes.
 
 ## If You Need Real Quotas
 
-The next step is not to add a CLI first. The next step is to define a reliable
-accounting model.
+Defining a reliable accounting model precedes adding a CLI.
 
 That work should answer:
 - whether quota state lives in actor databases, a service database, or derived
@@ -135,8 +122,7 @@ That work should answer:
 - which write boundary enforces the quota before persistence becomes visible
 - what introspection and repair tooling operators need when accounting drifts
 
-Once those invariants are explicit, the CLI and admin surfaces can describe a
-real feature instead of a hypothetical one.
+Explicit invariants allow the CLI and admin surfaces to describe a real feature.
 
 ## Summary
 

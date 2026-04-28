@@ -6,9 +6,9 @@ title: Request Lifecycle
 
 ## Overview
 
-A useful mental model for Garazyk is: transport first, protocol second, service logic third, persistence last. When you debug a bug, you are usually finding the stage where that chain stopped behaving as expected.
+Think of Garazyk as a chain: transport first, protocol second, service logic third, persistence last. Debugging usually involves finding where this chain stopped behaving as expected.
 
-This page describes the normal flow for a request that enters the PDS and the places contributors most often need to inspect.
+This page describes the flow for a request entering the PDS and the areas contributors inspect most often.
 
 ## The Main Path
 
@@ -61,7 +61,7 @@ Useful surfaces exposed by the builder include:
 For XRPC methods, the next stop is the dispatch and registration layer:
 
 - `XrpcDispatcher` handles request normalization, method lookup, and shared error shaping.
-- `XrpcMethodRegistry` maps NSIDs such as `com.atproto.repo.createRecord` to the actual Objective-C handler blocks.
+- `XrpcMethodRegistry` maps NSIDs such as `com.atproto.repo.createRecord` to the Objective-C handler blocks.
 - Auth helpers, rate limiting, and request validation run here or immediately around it.
 
 This stage answers questions like:

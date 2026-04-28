@@ -6,12 +6,10 @@ title: Protocol Flow Walkthrough
 
 ## Overview
 
-[AT Protocol Basics](./atproto-basics) gives the mental model. This page shows
-what that model looks like when it passes through Garazyk's code.
+[AT Protocol Basics](./atproto-basics) provides the mental model. This page shows
+that model in Garazyk's code.
 
-The goal is not to document every endpoint. The goal is to make the recurring
-shape of an ATProto request obvious enough that new contributors can trace a
-feature change without guessing.
+This page shows the recurring shape of an ATProto request to help contributors trace feature changes.
 
 ## One Request, Four Layers
 
@@ -22,8 +20,7 @@ Most protocol requests in this repository move through the same four layers:
 3. service orchestration
 4. persistence or content-addressed storage
 
-That pattern is why the codebase separates network helpers, services, and
-storage code so aggressively.
+The codebase separates network helpers, services, and storage code to support this pattern.
 
 ```mermaid
 flowchart LR
@@ -54,7 +51,7 @@ mostly configuration plus response shaping.
 }];
 ```
 
-Why this example matters:
+Key takeaways:
 
 - it shows route registration is where a protocol method becomes "real"
 - it shows some ATProto surfaces are mostly config-driven
@@ -100,8 +97,7 @@ NSDictionary *result = [blobService uploadBlob:blobData
                                          error:&error];
 ```
 
-That is the recurring architectural pattern in one snippet: authenticate at the
-network edge, then hand real work to a service.
+Authenticate at the network edge, then pass work to a service.
 
 ## Where Records And Repositories Fit
 
@@ -112,8 +108,7 @@ different:
 - repository-facing reads and exports call `PDSRepositoryService`
 - both eventually rely on actor stores, MST logic, or CAR materialization
 
-That is why record changes often need both service-level reasoning and
-repository-level verification.
+Record changes often require both service-level reasoning and repository-level verification.
 
 ## How To Trace A Change
 
@@ -124,8 +119,6 @@ When you touch an ATProto behavior, use this loop:
 3. find the owning service
 4. inspect the repo, blob, or database code behind that service
 5. read the nearest tests before assuming the current behavior is intentional
-
-This is the contributor habit that makes the rest of the docs useful.
 
 ## Related Reading
 
