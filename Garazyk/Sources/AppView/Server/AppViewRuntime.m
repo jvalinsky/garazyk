@@ -105,6 +105,12 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     AppViewConfiguration *config = _configuration ?: [AppViewConfiguration defaultConfiguration];
 
+    NSError *configErr = nil;
+    if (![config validate:&configErr]) {
+        if (error) *error = configErr;
+        return NO;
+    }
+
     // Ensure data directory exists
     NSError *mkdirErr = nil;
     [[NSFileManager defaultManager] createDirectoryAtPath:config.dataDirectory
@@ -197,7 +203,6 @@ static AppViewRuntime *_sharedRuntime = nil;
                                                                     graphService:_graphService
                                                               notificationService:_notificationService
                                                               ageAssuranceService:_ageAssuranceService
-                                                                     chatModerationService:nil
                                                                                database:_database
                                                                               jwtMinter:jwtMinter];
     [xrpcPack registerRoutesWithServer:_httpServer];

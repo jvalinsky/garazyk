@@ -129,7 +129,7 @@ NSString *const PDSKeychainSecretsProviderErrorDomain = @"PDSKeychainSecretsProv
     
     OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
     
-    if (status == errSecItemNotFound) {
+    if (status == errSecItemNotFound || status == errSecParam) {
         return YES;
     }
     
