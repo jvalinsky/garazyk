@@ -169,6 +169,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)ozoneTemplatesTableSchema;
 - (NSString *)ozoneTeamTableSchema;
 - (NSString *)ozoneScheduledActionsTableSchema;
+- (NSString *)ozoneSubjectsTableSchema;
 - (NSString *)ozoneSafelinksTableSchema;
 
 #pragma mark - BSky AppView Schemas
