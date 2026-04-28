@@ -563,4 +563,11 @@ Keep E2E test count manageable (~50 tests) and focus on critical workflows.
 - [Test Organization](test-organization) - Test structure and discovery
 - [Property-Based Testing](property-based-testing) - PBT framework
 - [Test Coverage Goals](test-coverage-goals) - Coverage targets
-- [Troubleshooting](troubleshooting) - Common test failures\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Troubleshooting](troubleshooting) - Common test failures
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

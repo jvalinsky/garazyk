@@ -364,4 +364,11 @@ Common error codes:
 - **[Setup Guide](setup)** — Platform-specific setup
 - **[Core Concepts](../02-core-concepts/atproto-basics)** — AT Protocol fundamentals
 - **[Application Layer](../03-application-layer/pds-application)** — Service architecture
-- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC details\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC details
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

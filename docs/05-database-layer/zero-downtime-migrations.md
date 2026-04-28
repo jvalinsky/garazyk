@@ -890,4 +890,11 @@ Schedule migrations during low-traffic periods:
 - [Migration Rollback](migration-rollback) — Rollback procedures
 - [Data Integrity](data-integrity) — Verification and consistency checks
 - [WAL Mode](wal-mode) — Write-Ahead Logging benefits
-- [SQLite Architecture](sqlite-architecture) — Database design patterns\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [SQLite Architecture](sqlite-architecture) — Database design patterns
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

@@ -42,4 +42,11 @@ When storage bugs look like timing or lock problems, this page is the conceptual
 
 - [SQLite Architecture](./sqlite-architecture)
 - [Service Databases](./service-databases)
-- [Actor Databases](./actor-databases)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Actor Databases](./actor-databases)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

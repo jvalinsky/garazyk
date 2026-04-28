@@ -77,4 +77,11 @@ It also is not a universal fairness scheduler across every route. If a path is b
 
 - [Auth Helpers](./auth-helpers)
 - [Troubleshooting a Failing Endpoint](../11-reference/troubleshooting-a-failing-endpoint)
-- [Blob Quotas](../07-repository-protocol/blob-quotas)\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Blob Quotas](../07-repository-protocol/blob-quotas)
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+
