@@ -18,6 +18,8 @@
 #import "Core/Repositories/PDSRecordRepository.h"
 #import "Core/Repositories/PDSSQLiteRecordRepository.h"
 #import "Repository/MST.h"
+#import "Repository/CBOR.h"
+#import "Core/MSTCacheManager.h"
 #import <CommonCrypto/CommonDigest.h>
 #import "Repository/RepoCommit.h"
 #include <math.h>
@@ -1078,6 +1080,12 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     return rootCID;
 }
 
+- (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
+                                        store:(PDSActorStore *)store
+                                        error:(NSError **)error {
+    return [MSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
+}
+
 - (nullable MST *)loadRepoMSTForDid:(NSString *)did
                                store:(PDSActorStore *)store
                                error:(NSError **)error {
@@ -1198,9 +1206,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     __block NSError *queueError = nil;
 
     dispatch_sync(self.mstCacheQueue, ^{
-        MST *mst = self.mstCacheByDid[did];
+        MST *mst = [[MSTCacheManager sharedManager] mstForDid:did];
         if (!mst) {
-            mst = [self loadRepoMSTForDid:did store:store error:&queueError];
+            // Try incremental loading from stored repo blocks first
+            mst = [self loadMSTFromRepoBlocksForDid:did store:store error:&queueError];
+            if (!mst) {
+                // Fallback: full rebuild from records
+                mst = [self loadRepoMSTForDid:did store:store error:&queueError];
+            }
             if (!mst) {
                 return;
             }
@@ -1230,7 +1243,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             queueError = [NSError errorWithDomain:@"PDSRecordService"
                                              code:-3
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
-            [self.mstCacheByDid removeObjectForKey:did];
+            [[MSTCacheManager sharedManager] removeMSTForDid:did];
             return;
         }
 
@@ -1252,7 +1265,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 
         NSData *signature = [store signData:[commit serialize] error:&queueError];
         if (!signature) {
-            [self.mstCacheByDid removeObjectForKey:did];
+            [[MSTCacheManager sharedManager] removeMSTForDid:did];
             return;
         }
         commit.signature = signature;
@@ -1263,7 +1276,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             queueError = [NSError errorWithDomain:@"PDSRecordService"
                                              code:-1
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize signed commit"}];
-            [self.mstCacheByDid removeObjectForKey:did];
+            [[MSTCacheManager sharedManager] removeMSTForDid:did];
             return;
         }
 
@@ -1279,7 +1292,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                                                            rev:rev
                                                                          error:&queueError];
         if (!mstBlocks) {
-            [self.mstCacheByDid removeObjectForKey:did];
+            [[MSTCacheManager sharedManager] removeMSTForDid:did];
             return;
         }
 
@@ -1309,7 +1322,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         } error:&queueError];
 
         if (!updated) {
-            [self.mstCacheByDid removeObjectForKey:did];
+            [[MSTCacheManager sharedManager] removeMSTForDid:did];
             if (!queueError) {
                 queueError = [NSError errorWithDomain:@"PDSRecordService"
                                                  code:-4
@@ -1318,7 +1331,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             return;
         }
 
-        self.mstCacheByDid[did] = mst;
+        [[MSTCacheManager sharedManager] setMST:mst forDid:did];
         result = @{
             @"cid": commitCID.stringValue ?: @"",
             @"rev": rev ?: @""

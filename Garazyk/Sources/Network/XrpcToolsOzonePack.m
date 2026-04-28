@@ -6,7 +6,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
-#import "AppView/Services/ModerationService.h"
+#import "Ozone/Services/ModerationService.h"
 #import "Database/PDSDatabase.h"
 
 @implementation XrpcToolsOzonePack

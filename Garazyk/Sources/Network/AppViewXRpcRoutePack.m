@@ -10,7 +10,6 @@
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/AgeAssuranceService.h"
-#import "AppView/Services/ChatModerationService.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/DID.h"
 
@@ -30,7 +29,6 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     GraphService *_graphService;
     NotificationService *_notificationService;
     AgeAssuranceService *_ageAssuranceService;
-    ChatModerationService *_chatModerationService;
     id<PDSQueryDatabase> _database;
     JWTMinter *_jwtMinter;
 }
@@ -40,7 +38,6 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                        graphService:(nullable GraphService *)graphService
                  notificationService:(NotificationService *)notificationService
                 ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-               chatModerationService:(nullable ChatModerationService *)chatModerationService
                           database:(nullable id<PDSQueryDatabase>)database
                          jwtMinter:(nullable JWTMinter *)jwtMinter
 {
@@ -52,7 +49,6 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
         _graphService = graphService;
         _notificationService = notificationService;
         _ageAssuranceService = ageAssuranceService;
-        _chatModerationService = chatModerationService;
         _database = database;
         _jwtMinter = jwtMinter;
     }
@@ -322,24 +318,6 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                  [self handleAgeAssuranceGetState:request response:response];
              }];
 
-    // --- chat.bsky.moderation ---
-    [server addRoute:@"GET"
-                path:@"/xrpc/chat.bsky.moderation.getActorMetadata"
-             handler:^(HttpRequest *request, HttpResponse *response) {
-                 [self handleChatGetActorMetadata:request response:response];
-             }];
-
-    [server addRoute:@"GET"
-                path:@"/xrpc/chat.bsky.moderation.getMessageContext"
-             handler:^(HttpRequest *request, HttpResponse *response) {
-                 [self handleChatGetMessageContext:request response:response];
-             }];
-
-    [server addRoute:@"POST"
-                path:@"/xrpc/chat.bsky.moderation.updateActorAccess"
-             handler:^(HttpRequest *request, HttpResponse *response) {
-                 [self handleChatUpdateActorAccess:request response:response];
-             }];
 }
 
 #pragma mark - Auth Helpers
@@ -1553,88 +1531,6 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
             @"computedAt": [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]]
         }
     }];
-}
-
-#pragma mark - chat.bsky.moderation
-
-- (void)handleChatGetActorMetadata:(HttpRequest *)request response:(HttpResponse *)response
-{
-    NSString *actorDID = [self requireAuth:request response:response];
-    if (!actorDID) return;
-
-    NSString *target = [request queryParamForKey:@"actor"];
-    if (!target) {
-        response.statusCode = 400;
-        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
-        return;
-    }
-
-    if (!_chatModerationService) {
-        response.statusCode = 503;
-        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Chat moderation service not available" }];
-        return;
-    }
-
-    NSError *error = nil;
-    NSDictionary *metadata = [_chatModerationService getActorMetadata:target error:&error];
-    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
-    
-    response.statusCode = 200;
-    [response setJsonBody:metadata ?: @{}];
-}
-
-- (void)handleChatGetMessageContext:(HttpRequest *)request response:(HttpResponse *)response
-{
-    NSString *actorDID = [self requireAuth:request response:response];
-    if (!actorDID) return;
-
-    NSString *messageId = [request queryParamForKey:@"messageId"];
-    if (!messageId) {
-        response.statusCode = 400;
-        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"messageId parameter is required" }];
-        return;
-    }
-
-    if (!_chatModerationService) {
-        response.statusCode = 503;
-        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Chat moderation service not available" }];
-        return;
-    }
-
-    NSError *error = nil;
-    NSDictionary *context = [_chatModerationService getMessageContext:messageId error:&error];
-    if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
-    
-    response.statusCode = 200;
-    [response setJsonBody:context ?: @{}];
-}
-
-- (void)handleChatUpdateActorAccess:(HttpRequest *)request response:(HttpResponse *)response
-{
-    NSString *actorDID = [self requireAuth:request response:response];
-    if (!actorDID) return;
-
-    NSDictionary *body = request.jsonBody;
-    if (!body || !body[@"actor"]) {
-        response.statusCode = 400;
-        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor required in body" }];
-        return;
-    }
-
-    if (!_chatModerationService) {
-        response.statusCode = 503;
-        [response setJsonBody:@{ @"error": @"ServiceUnavailable", @"message": @"Chat moderation service not available" }];
-        return;
-    }
-
-    NSError *error = nil;
-    BOOL success = [_chatModerationService updateActorAccess:body[@"actor"]
-                                                   access:body[@"access"] ?: @{}
-                                                    error:&error];
-    if (!success) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription }]; return; }
-    
-    response.statusCode = 200;
-    [response setJsonBody:@{}];
 }
 
 @end

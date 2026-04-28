@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 
 @class UIServiceConfig;
+@class HttpRequest;
+@class HttpResponse;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -12,8 +14,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration;
 - (BOOL)startWithError:(NSError **)error;
 - (void)stop;
+- (HttpResponse *)dispatchRequestForTesting:(HttpRequest *)request;
 
 @end
 
 NS_ASSUME_NONNULL_END
-

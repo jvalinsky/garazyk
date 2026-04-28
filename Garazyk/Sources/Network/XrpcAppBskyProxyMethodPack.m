@@ -44,8 +44,6 @@
     @"app.bsky.actor.getProfiles",
     @"app.bsky.actor.searchActors",
     @"app.bsky.actor.getSuggestions",
-    @"app.bsky.feed.getLikes",
-    @"app.bsky.feed.getRepostedBy",
     @"app.bsky.graph.verification.createVerification",
     @"app.bsky.graph.verification.deleteVerification"
   ];

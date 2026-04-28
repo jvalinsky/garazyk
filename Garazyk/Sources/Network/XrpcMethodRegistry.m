@@ -530,11 +530,11 @@ static void registerMethodsWithDispatcherUsingServices(
                               relayService:relayService
                             configuration:config];
 
-  [XrpcAppBskyMethods registerPDSLevelMethodsWithDispatcher:dispatcher
-                                            serviceDatabases:serviceDatabases
-                                                   jwtMinter:jwtMinter
-                                             adminController:adminController
-                                               emailProvider:emailProvider];
+  [XrpcAppBskyMethods registerWithDispatcher:dispatcher
+                            serviceDatabases:serviceDatabases
+                                    jwtMinter:jwtMinter
+                              adminController:adminController
+                                emailProvider:emailProvider];
 
   [XrpcAdminMethods registerWithDispatcher:dispatcher
 

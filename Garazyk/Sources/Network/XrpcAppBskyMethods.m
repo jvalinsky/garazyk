@@ -9,7 +9,6 @@
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/AgeAssuranceService.h"
-#import "AppView/Services/ChatModerationService.h"
 #import "AppView/Services/DraftService.h"
 #import "AppView/Services/RecordLifecycleHandler.h"
 #import "AppView/Services/SearchIndexService.h"
@@ -27,9 +26,9 @@
 #import "Network/XrpcAppBskyProxyMethodPack.h"
 #import "Network/XrpcAppBskyUnspeccedPack.h"
 #import "Network/XrpcAppBskyVideoPack.h"
-#import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcChatBskyGroupPack.h"
 #import "Network/XrpcChatBskyActorPack.h"
+#import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcToolsOzonePack.h"
 
 static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
@@ -66,8 +65,6 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
   // Bookmarks, chat, and Ozone are PDS-side concerns
   BookmarkService *bookmarkService =
       [[BookmarkService alloc] initWithDatabase:appViewDatabase];
-  ChatModerationService *chatModerationService =
-      [[ChatModerationService alloc] initWithDatabase:appViewDatabase];
 
   [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher
                                     bookmarkService:bookmarkService
@@ -76,16 +73,15 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
   // Only register local chat handlers if a remote chat service is not configured
   if (!dispatcher.chatURL) {
-      [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
-                                     appViewDatabase:appViewDatabase
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController];
       [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
                                      appViewDatabase:appViewDatabase
                                           jwtMinter:jwtMinter
                                     adminController:adminController];
-      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher
-                              chatModerationService:chatModerationService];
+      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher];
+      [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
+                                    appViewDatabase:appViewDatabase
+                                         jwtMinter:jwtMinter
+                                   adminController:adminController];
   }
 
   [XrpcToolsOzonePack registerWithDispatcher:dispatcher

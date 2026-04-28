@@ -50,7 +50,7 @@
             return;
         }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:result ?: @{@"feed": @[], @"cursor": [NSNull null]}];
     }];
 
     // app.bsky.feed.getTimeline
@@ -75,7 +75,7 @@
             return;
         }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:result ?: @{@"feed": @[], @"cursor": [NSNull null]}];
     }];
 
     // app.bsky.feed.getActorLikes
@@ -94,7 +94,7 @@
             return;
         }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:result ?: @{@"feed": @[], @"cursor": [NSNull null]}];
     }];
 
     // app.bsky.feed.getPostThread
@@ -115,8 +115,8 @@
         }
         NSError *error = nil;
         NSDictionary *result = [feedService getPostThread:uri depth:depth error:&error];
-        if (error) {
-            [XrpcErrorHelper setNotFoundError:response message:error.localizedDescription];
+        if (!result || error) {
+            [XrpcErrorHelper setNotFoundError:response message:error.localizedDescription ?: @"Post thread not found"];
             return;
         }
         response.statusCode = HttpStatusOK;
@@ -139,7 +139,7 @@
             return;
         }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:result ?: @{@"feed": @[], @"cursor": [NSNull null]}];
     }];
 
     // app.bsky.feed.getPosts
@@ -161,7 +161,7 @@
             return;
         }
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:result];
+        [response setJsonBody:result ?: @{@"posts": @[]}];
     }];
 
     // app.bsky.feed.getFeedGenerators
@@ -563,7 +563,7 @@
         FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
         NSError *error = nil;
         NSDictionary *result = [feedService getListFeed:list limit:limit cursor:cursor error:&error];
-        if (error) {
+        if (error && !result) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load list feed"];
             return;
         }

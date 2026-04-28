@@ -169,7 +169,14 @@ static NSString *appPasswordGenerateSecret(void) {
 
 - (BOOL)executeSQL:(NSString *)sql onPool:(PDSDatabasePool *)pool error:(NSError **)error {
     PDSActorStore *store = [pool storeForDid:@"__service__" error:error];
-    if (!store) return NO;
+    if (!store || !store.db) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                        code:SQLITE_ERROR
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Database not open"}];
+        }
+        return NO;
+    }
 
     char *errMsg = NULL;
     int result = sqlite3_exec(store.db, sql.UTF8String, NULL, NULL, &errMsg);
@@ -729,7 +736,14 @@ static NSString *appPasswordGenerateSecret(void) {
         sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
         sqlite3_bind_blob(stmt, 3, data.bytes, (int)data.length, SQLITE_TRANSIENT);
         sqlite3_bind_double(stmt, 4, [[NSDate date] timeIntervalSince1970]);
-        success = (sqlite3_step(stmt) == SQLITE_DONE);
+        int rc = sqlite3_step(stmt);
+        success = (rc == SQLITE_DONE);
+        if (!success && innerError) {
+            NSString *message = [NSString stringWithFormat:@"Failed to persist event: %s", sqlite3_errmsg(store.db)];
+            *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                              code:rc
+                                          userInfo:@{NSLocalizedDescriptionKey: message}];
+        }
     } error:error];
     return success;
 }

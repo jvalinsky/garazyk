@@ -53,6 +53,10 @@ static NSUInteger UISafeLength(id value) {
 
 @end
 
+@interface HttpServer (UIServerRuntimeTesting)
+- (HttpResponse *)dispatchRequest:(HttpRequest *)request;
+@end
+
 @implementation UIServerRuntime
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
@@ -98,6 +102,14 @@ static NSUInteger UISafeLength(id value) {
     }
     [self.httpServer stop];
     self.running = NO;
+}
+
+- (HttpResponse *)dispatchRequestForTesting:(HttpRequest *)request {
+    if (!self.httpServer) {
+        self.httpServer = [HttpServer serverWithHost:self.configuration.host port:self.configuration.port];
+        [self registerRoutes];
+    }
+    return [self.httpServer dispatchRequest:request];
 }
 
 - (void)registerRoutes {
@@ -2578,4 +2590,3 @@ static NSUInteger UISafeLength(id value) {
 }
 
 @end
-

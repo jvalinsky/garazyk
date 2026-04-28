@@ -17,11 +17,14 @@
    appview.backfill.enabled              APPVIEW_BACKFILL_ENABLED
    appview.backfill.global_workers       APPVIEW_BACKFILL_GLOBAL_WORKERS
    appview.backfill.per_host_workers     APPVIEW_BACKFILL_PER_HOST_WORKERS
+   appview.master_secret                 APPVIEW_MASTER_SECRET
+   appview.plc.url                       APPVIEW_PLC_URL
    appview.partial.enabled               APPVIEW_PARTIAL_ENABLED
    appview.partial.seed_dids[]           APPVIEW_PARTIAL_SEED_DIDS (comma-sep)
    appview.partial.allowlist[]           APPVIEW_PARTIAL_ALLOWLIST (comma-sep)
    appview.partial.ttl_hours             APPVIEW_PARTIAL_TTL_HOURS
    appview.partial.proxy_fallback        APPVIEW_PARTIAL_PROXY_FALLBACK
+   appview.partial.proxy_fallback_url    APPVIEW_PARTIAL_PROXY_FALLBACK_URL
    appview.http.port                     APPVIEW_HTTP_PORT
    appview.data_directory                APPVIEW_DATA_DIR
    appview.admin_secret                  APPVIEW_ADMIN_SECRET

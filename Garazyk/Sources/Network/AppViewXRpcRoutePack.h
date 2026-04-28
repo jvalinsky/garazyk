@@ -6,7 +6,6 @@
 @class GraphService;
 @class NotificationService;
 @class AgeAssuranceService;
-@class ChatModerationService;
 @class JWTMinter;
 @class HttpServer;
 
@@ -19,7 +18,6 @@ NS_ASSUME_NONNULL_BEGIN
                        graphService:(nullable GraphService *)graphService
                  notificationService:(NotificationService *)notificationService
                 ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-               chatModerationService:(nullable ChatModerationService *)chatModerationService
                           database:(nullable id<PDSQueryDatabase>)database
                          jwtMinter:(nullable JWTMinter *)jwtMinter;
 

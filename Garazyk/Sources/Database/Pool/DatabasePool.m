@@ -7,8 +7,18 @@
 
 NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 
-@interface PDSDatabasePool ()
+@interface PDSDatabasePoolTimerProxy : NSObject
+@property (nonatomic, weak) id pool;
+@end
 
+@implementation PDSDatabasePoolTimerProxy
+- (void)evictionTimerFired:(NSTimer *)timer {
+    [self.pool performSelector:@selector(evictionTimerFired:) withObject:timer];
+}
+@end
+
+@interface PDSDatabasePool ()
+- (void)evictionTimerFired:(NSTimer *)timer;
 @property (nonatomic, copy, readwrite) NSString *dbDirectory;
 @property (nonatomic, assign, readwrite) NSUInteger maxSize;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, PDSActorStore *> *stores;
@@ -21,6 +31,12 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 @end
 
 @implementation PDSDatabasePool
+
+- (void)evictionTimerFired:(NSTimer *)timer {
+    dispatch_async(self.evictionQueue, ^{
+        [self evictUnusedStores];
+    });
+}
 
 - (instancetype)initWithDbDirectory:(NSString *)dbDirectory maxSize:(NSUInteger)maxSize {
     self = [super init];
@@ -42,8 +58,10 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             }
         }
         
+        PDSDatabasePoolTimerProxy *proxy = [[PDSDatabasePoolTimerProxy alloc] init];
+        proxy.pool = self;
         _evictionTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
-                                                          target:self
+                                                          target:proxy
                                                         selector:@selector(evictionTimerFired:)
                                                         userInfo:nil
                                                          repeats:YES];
@@ -136,12 +154,6 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
     return store;
 }
 
-- (void)evictionTimerFired:(NSTimer *)timer {
-    dispatch_async(self.evictionQueue, ^{
-        [self evictUnusedStores];
-    });
-}
-
 - (void)evictUnusedStores {
     NSDate *cutoff = [NSDate dateWithTimeIntervalSinceNow:-300];
     
@@ -199,6 +211,8 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
 }
 
 - (void)closeAll {
+    [self.evictionTimer invalidate];
+    self.evictionTimer = nil;
     dispatch_sync(self.poolQueue, ^{
         for (NSString *did in self.stores) {
             PDSActorStore *store = self.stores[did];

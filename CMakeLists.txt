@@ -337,6 +337,8 @@ file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
   "Garazyk/Sources/AppView/*.c"
   "Garazyk/Sources/Chat/*.m"
   "Garazyk/Sources/Chat/*.c"
+  "Garazyk/Sources/Ozone/*.m"
+  "Garazyk/Sources/Ozone/*.c"
   "Garazyk/Sources/Media/*.m"
   "Garazyk/Sources/Media/*.c"
   "Garazyk/Sources/Federation/*.m"

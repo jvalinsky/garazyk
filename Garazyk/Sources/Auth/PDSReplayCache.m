@@ -5,6 +5,7 @@
 @implementation PDSReplayCache {
     sqlite3 *_db;
     NSTimer *_cleanupTimer;
+    dispatch_queue_t _databaseQueue;
 }
 
 + (instancetype)sharedCache {
@@ -29,6 +30,7 @@
             PDS_LOG_AUTH_ERROR(@"Failed to open replay cache database: %s", sqlite3_errmsg(_db));
             return nil;
         }
+        _databaseQueue = dispatch_queue_create("com.garazyk.auth.replay-cache.database", DISPATCH_QUEUE_SERIAL);
         sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
 
         const char *createSQL =
@@ -56,10 +58,12 @@
 - (void)invalidate {
     [_cleanupTimer invalidate];
     _cleanupTimer = nil;
-    if (_db) {
-        sqlite3_close(_db);
-        _db = NULL;
-    }
+    dispatch_sync(_databaseQueue, ^{
+        if (_db) {
+            sqlite3_close(_db);
+            _db = NULL;
+        }
+    });
 }
 
 - (void)dealloc {
@@ -70,67 +74,79 @@
     if (!jti || !expiration) return NO;
 
     NSTimeInterval expiresAt = [expiration timeIntervalSince1970];
+    __block BOOL result = NO;
 
-    // Use BEGIN IMMEDIATE to acquire a RESERVED lock before any reads.
-    // This makes the check-and-insert atomic: two concurrent calls for the
-    // same JTI cannot both pass the SELECT and both INSERT.
-    if (sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK) {
-        PDS_LOG_AUTH_ERROR(@"Replay cache: failed to begin transaction: %s", sqlite3_errmsg(_db));
-        return NO;
-    }
+    dispatch_sync(_databaseQueue, ^{
+        if (!_db) {
+            return;
+        }
 
-    // Check if a non-expired entry exists
-    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-    BOOL replayDetected = NO;
+        // Use BEGIN IMMEDIATE to keep check-and-insert atomic. Access to the
+        // single SQLite connection is serialized to avoid nested transactions.
+        if (sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK) {
+            PDS_LOG_AUTH_ERROR(@"Replay cache: failed to begin transaction: %s", sqlite3_errmsg(_db));
+            return;
+        }
 
-    const char *selectSQL = "SELECT expires_at FROM jti_cache WHERE jti = ?";
-    sqlite3_stmt *selectStmt = NULL;
-    if (sqlite3_prepare_v2(_db, selectSQL, -1, &selectStmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_text(selectStmt, 1, jti.UTF8String, -1, SQLITE_TRANSIENT);
-        if (sqlite3_step(selectStmt) == SQLITE_ROW) {
-            double existingExpiry = sqlite3_column_double(selectStmt, 0);
-            if (existingExpiry >= now) {
-                // Non-expired entry exists — replay detected
-                replayDetected = YES;
+        // Check if a non-expired entry exists
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+        BOOL replayDetected = NO;
+
+        const char *selectSQL = "SELECT expires_at FROM jti_cache WHERE jti = ?";
+        sqlite3_stmt *selectStmt = NULL;
+        if (sqlite3_prepare_v2(_db, selectSQL, -1, &selectStmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(selectStmt, 1, jti.UTF8String, -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(selectStmt) == SQLITE_ROW) {
+                double existingExpiry = sqlite3_column_double(selectStmt, 0);
+                if (existingExpiry >= now) {
+                    replayDetected = YES;
+                }
             }
         }
-    }
-    sqlite3_finalize(selectStmt);
+        sqlite3_finalize(selectStmt);
 
-    if (replayDetected) {
-        sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL);
-        return NO;
-    }
-
-    // Insert or replace (new or expired entry)
-    const char *insertSQL = "INSERT OR REPLACE INTO jti_cache (jti, expires_at) VALUES (?, ?)";
-    sqlite3_stmt *insertStmt = NULL;
-    BOOL insertSucceeded = NO;
-    if (sqlite3_prepare_v2(_db, insertSQL, -1, &insertStmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_text(insertStmt, 1, jti.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_bind_double(insertStmt, 2, expiresAt);
-        if (sqlite3_step(insertStmt) == SQLITE_DONE) {
-            insertSucceeded = YES;
+        if (replayDetected) {
+            sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL);
+            return;
         }
-    }
-    sqlite3_finalize(insertStmt);
 
-    if (sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
-        PDS_LOG_AUTH_ERROR(@"Replay cache: failed to commit transaction: %s", sqlite3_errmsg(_db));
-        return NO;
-    }
+        // Insert or replace (new or expired entry)
+        const char *insertSQL = "INSERT OR REPLACE INTO jti_cache (jti, expires_at) VALUES (?, ?)";
+        sqlite3_stmt *insertStmt = NULL;
+        BOOL insertSucceeded = NO;
+        if (sqlite3_prepare_v2(_db, insertSQL, -1, &insertStmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(insertStmt, 1, jti.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_double(insertStmt, 2, expiresAt);
+            if (sqlite3_step(insertStmt) == SQLITE_DONE) {
+                insertSucceeded = YES;
+            }
+        }
+        sqlite3_finalize(insertStmt);
 
-    return insertSucceeded;
+        if (sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
+            PDS_LOG_AUTH_ERROR(@"Replay cache: failed to commit transaction: %s", sqlite3_errmsg(_db));
+            return;
+        }
+
+        result = insertSucceeded;
+    });
+
+    return result;
 }
 
 - (void)cleanup {
-    const char *deleteSQL = "DELETE FROM jti_cache WHERE expires_at < ?";
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(_db, deleteSQL, -1, &stmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_double(stmt, 1, [[NSDate date] timeIntervalSince1970]);
-        sqlite3_step(stmt);
-    }
-    sqlite3_finalize(stmt);
+    dispatch_sync(_databaseQueue, ^{
+        if (!_db) {
+            return;
+        }
+        const char *deleteSQL = "DELETE FROM jti_cache WHERE expires_at < ?";
+        sqlite3_stmt *stmt = NULL;
+        if (sqlite3_prepare_v2(_db, deleteSQL, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_double(stmt, 1, [[NSDate date] timeIntervalSince1970]);
+            sqlite3_step(stmt);
+        }
+        sqlite3_finalize(stmt);
+    });
 }
 
 @end

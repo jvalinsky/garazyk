@@ -106,7 +106,10 @@
     NSString *proxyFallback = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_PROXY_FALLBACK"];
     if (proxyFallback) config.partialProxyFallback = [proxyFallback boolValue];
 
-    NSString *fallbackURL = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PROXY_FALLBACK_URL"];
+    NSString *fallbackURL = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PARTIAL_PROXY_FALLBACK_URL"];
+    if (fallbackURL.length == 0) {
+        fallbackURL = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_PROXY_FALLBACK_URL"];
+    }
     if (fallbackURL.length > 0) config.partialProxyFallbackURL = fallbackURL;
 
     return config;

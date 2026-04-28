@@ -35,8 +35,8 @@
     _port = 2583;
     _enableXrpc = YES;
     _enableOAuth = YES;
-    _enableOAuthDemo = NO;
-    _enableMSTViewer = NO;
+    _enableOAuthDemo = YES;
+    _enableMSTViewer = YES;
     _enableNodeInfo = YES;
   }
   return self;

@@ -904,6 +904,10 @@
     return response ?: @{@"options": @[]};
 }
 
+- (NSDictionary *)fetchOzoneSettings {
+    return [self listOzoneSettings];
+}
+
 - (NSDictionary *)upsertOzoneSetting:(NSDictionary *)option {
     if (!option) {
         return @{@"error": @"invalid_params", @"message": @"Option specification required"};
@@ -1575,4 +1579,3 @@
 }
 
 @end
-
