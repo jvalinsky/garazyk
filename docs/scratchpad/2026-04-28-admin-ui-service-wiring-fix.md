@@ -17,6 +17,18 @@ Make existing Admin UI panels call real, service-correct backend endpoints while
 - Keep refresh token lookup/revoke inside `PDSServiceDatabases`; public route responses only see SHA-256 token hashes.
 - Use `UIBackendClient` as the single service URL/probe boundary for Admin UI panels and connection tests.
 
+## Verification
+
+- `xcodegen generate` succeeded.
+- `xcodebuild -scheme AllTests build` is currently blocked by unrelated untracked video test sources:
+  - `Garazyk/Tests/Database/PDSVideoJobsTests.m`
+  - `Garazyk/Tests/Media/`
+- The new Admin UI/PDS admin test objects compile directly through CMake:
+  - `UIBackendClientTests.m.o`
+  - `UIServerRuntimeTests.m.o`
+  - `PDSHttpPDSAdminRoutePackTests.m.o`
+- `xcodebuild -scheme kaszlak build` succeeded.
+
 ## Deciduous Links
 
 - Goal node: 636
