@@ -11,6 +11,7 @@
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
 #import "Network/PDSHttpMetricsRoutePack.h"
+#import "Network/PDSHttpMSTViewerRoutePack.h"
 #import "Network/PDSHttpNodeInfoRoutePack.h"
 #import "Network/PDSHttpOAuthRoutePack.h"
 #import "Network/PDSHttpRelayAPIRoutePack.h"
@@ -157,6 +158,11 @@
                                         }];
 
   [PDSHttpMetricsRoutePack registerRoutesWithServer:server];
+
+  if (self.enableMSTViewer) {
+    [PDSHttpMSTViewerRoutePack registerRoutesWithServer:server
+                                             controller:self.controller];
+  }
 
   [server addRoute:@"GET"
               path:@"/"

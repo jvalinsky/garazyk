@@ -17,6 +17,31 @@
     return self;
 }
 
+- (BOOL)refreshPDSAdminToken {
+    NSString *password = self.configuration.pdsAdminPassword;
+    if (password.length == 0) {
+        return NO;
+    }
+
+    NSURL *url = [self URLByAppendingPath:@"/admin/login"
+                               queryItems:nil
+                                  baseURL:self.configuration.pdsBaseURL];
+    NSDictionary *body = @{@"password": password};
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url
+                                                     method:@"POST"
+                                                       body:body
+                                                  bearerToken:nil
+                                                   statusCode:&status
+                                                        error:&error];
+    if (status == 200 && response[@"token"]) {
+        self.configuration.pdsAdminToken = response[@"token"];
+        return YES;
+    }
+    return NO;
+}
+
 - (NSDictionary *)fetchServiceOverview {
     dispatch_group_t group = dispatch_group_create();
     dispatch_queue_t queue = dispatch_queue_create("com.garazyk.service.probes", DISPATCH_QUEUE_CONCURRENT);
@@ -28,10 +53,10 @@
     // Use NSNull for nil tokens to avoid dictionary literal crash
     NSArray<NSDictionary *> *probeSpecs = @[
         @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL, @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
-        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL, @"xrpcPath": [NSNull null], @"token": self.configuration.plcAdminToken ?: [NSNull null]},
+        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
         @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL, @"xrpcPath": @"/xrpc/com.atproto.sync.listRepos?limit=1", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
-        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL, @"xrpcPath": @"/xrpc/app.bsky.feed.getTimeline?limit=1", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
-        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/xrpc/chat.bsky.convo.listConvos?limit=1", @"token": self.configuration.chatAdminToken ?: [NSNull null]}
+        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL, @"xrpcPath": @"/", @"token": [NSNull null]},
+        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/_health", @"token": [NSNull null]}
     ];
 
     for (NSDictionary *spec in probeSpecs) {
@@ -72,10 +97,9 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url
+    NSDictionary *response = [self performPDSRequestWithURL:url
                                                       method:@"GET"
                                                         body:nil
-                                                 bearerToken:self.configuration.pdsAdminToken
                                                   statusCode:&status
                                                        error:&error];
     if (status < 200 || status >= 300 || !response) {
@@ -97,10 +121,9 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url
+    NSDictionary *response = [self performPDSRequestWithURL:url
                                                       method:@"GET"
                                                         body:nil
-                                                 bearerToken:self.configuration.pdsAdminToken
                                                   statusCode:&status
                                                        error:&error];
     if (status < 200 || status >= 300 || !response) {
@@ -128,10 +151,9 @@
     NSDictionary *body = @{@"account": trimmed};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url
+    NSDictionary *response = [self performPDSRequestWithURL:url
                                                       method:@"POST"
                                                         body:body
-                                                 bearerToken:self.configuration.pdsAdminToken
                                                   statusCode:&status
                                                        error:&error];
     if (status < 200 || status >= 300) {
@@ -371,7 +393,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"account_info_failed", @"message": error.localizedDescription ?: @"Account info fetch failed"};
     }
@@ -384,7 +406,7 @@
     NSDictionary *body = @{@"did": did, @"handle": handle};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"handle_update_failed", @"message": error.localizedDescription ?: @"Handle update failed"};
     }
@@ -397,7 +419,7 @@
     NSDictionary *body = @{@"did": did};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"account_delete_failed", @"message": error.localizedDescription ?: @"Account deletion failed"};
     }
@@ -415,7 +437,7 @@
         NSDictionary *body = @{@"subject": @{@"$type": @"com.atproto.admin.defs#repoRef", @"did": did}};
         NSInteger status = 0;
         NSError *error = nil;
-        [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+        [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
         
         if (status >= 200 && status < 300) {
             [succeeded addObject:did];
@@ -468,7 +490,7 @@
     NSDictionary *body = @{@"account": trimmed};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"enable_invites_failed", @"message": error.localizedDescription ?: @"Enable invites failed"};
     }
@@ -479,7 +501,7 @@
     NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.admin.getServerStats" queryItems:nil baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"server_stats_failed", @"message": error.localizedDescription ?: @"Server stats failed"};
     }
@@ -493,7 +515,7 @@
     NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.admin.queryAuditLog" queryItems:params baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"audit_log_failed", @"message": error.localizedDescription ?: @"Audit log fetch failed"};
     }
@@ -507,7 +529,7 @@
     NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.admin.getModerationReports" queryItems:params baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"reports_fetch_failed", @"message": error.localizedDescription ?: @"Reports fetch failed"};
     }
@@ -521,7 +543,7 @@
     if (action.length > 0) body[@"action"] = action;
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"report_resolve_failed", @"message": error.localizedDescription ?: @"Report resolution failed"};
     }
@@ -535,7 +557,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"describe_repo_failed", @"message": error.localizedDescription ?: @"Describe repo failed"};
     }
@@ -552,7 +574,7 @@
     NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.repo.listRecords" queryItems:params baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"list_records_failed", @"message": error.localizedDescription ?: @"List records failed"};
     }
@@ -568,7 +590,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"get_record_failed", @"message": error.localizedDescription ?: @"Get record failed"};
     }
@@ -635,7 +657,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"blob_list_failed", @"message": error.localizedDescription ?: @"Failed to fetch blobs"};
     }
@@ -651,7 +673,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
         return @{@"error": @"blob_fetch_failed", @"message": error.localizedDescription ?: @"Blob fetch failed"};
     }
@@ -670,7 +692,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"ozone_statuses_failed", @"message": error.localizedDescription ?: @"Failed to fetch statuses"};
     }
@@ -686,7 +708,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"ozone_events_failed", @"message": error.localizedDescription ?: @"Failed to fetch events"};
     }
@@ -702,7 +724,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:event bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:event statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"emit_event_failed", @"message": error.localizedDescription ?: @"Failed to emit event"};
     }
@@ -718,7 +740,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"subject_status_failed", @"message": error.localizedDescription ?: @"Failed to fetch subject status"};
     }
@@ -734,7 +756,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"moderation_reports_failed", @"message": error.localizedDescription ?: @"Failed to fetch reports"};
     }
@@ -757,7 +779,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"scheduled_actions_failed", @"message": error.localizedDescription ?: @"Failed to fetch scheduled actions"};
     }
@@ -773,7 +795,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:actionSpec bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:actionSpec statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"schedule_action_failed", @"message": error.localizedDescription ?: @"Failed to schedule action"};
     }
@@ -790,7 +812,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"cancel_scheduled_actions_failed", @"message": error.localizedDescription ?: @"Failed to cancel scheduled actions"};
     }
@@ -803,7 +825,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"list_verifications_failed", @"message": error.localizedDescription ?: @"Failed to fetch verifications"};
     }
@@ -820,7 +842,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"grant_verifications_failed", @"message": error.localizedDescription ?: @"Failed to grant verifications"};
     }
@@ -837,7 +859,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"revoke_verifications_failed", @"message": error.localizedDescription ?: @"Failed to revoke verifications"};
     }
@@ -851,7 +873,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"fetch_safelinks_failed", @"message": error.localizedDescription ?: @"Failed to fetch safelink rules"};
     }
@@ -867,7 +889,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:rule bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:rule statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"add_safelink_failed", @"message": error.localizedDescription ?: @"Failed to add safelink rule"};
     }
@@ -884,7 +906,7 @@
                                         baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:requestUrl method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:requestUrl method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"remove_safelink_failed", @"message": error.localizedDescription ?: @"Failed to remove safelink rule"};
     }
@@ -897,7 +919,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:@{} bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:@{} statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"list_settings_failed", @"message": error.localizedDescription ?: @"Failed to fetch settings"};
     }
@@ -917,7 +939,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:option bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:option statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"upsert_setting_failed", @"message": error.localizedDescription ?: @"Failed to upsert setting"};
     }
@@ -934,7 +956,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"remove_settings_failed", @"message": error.localizedDescription ?: @"Failed to remove settings"};
     }
@@ -951,7 +973,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"find_related_failed", @"message": error.localizedDescription ?: @"Failed to find related accounts"};
     }
@@ -968,7 +990,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"find_correlation_failed", @"message": error.localizedDescription ?: @"Failed to find correlation"};
     }
@@ -984,7 +1006,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:patterns bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:patterns statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"search_accounts_failed", @"message": error.localizedDescription ?: @"Failed to search accounts"};
     }
@@ -1001,7 +1023,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"hosting_history_failed", @"message": error.localizedDescription ?: @"Failed to fetch hosting history"};
     }
@@ -1016,7 +1038,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"team_members_failed", @"message": error.localizedDescription ?: @"Failed to fetch team members"};
     }
@@ -1032,7 +1054,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:member bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:member statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"add_member_failed", @"message": error.localizedDescription ?: @"Failed to add team member"};
     }
@@ -1049,7 +1071,7 @@
     NSDictionary *body = @{@"did": did};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"remove_member_failed", @"message": error.localizedDescription ?: @"Failed to remove team member"};
     }
@@ -1067,7 +1089,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"ozone_sets_failed", @"message": error.localizedDescription ?: @"Failed to fetch sets"};
     }
@@ -1083,7 +1105,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:setSpec bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:setSpec statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"upsert_set_failed", @"message": error.localizedDescription ?: @"Failed to upsert set"};
     }
@@ -1100,7 +1122,7 @@
     NSDictionary *body = @{@"name": name};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"delete_set_failed", @"message": error.localizedDescription ?: @"Failed to delete set"};
     }
@@ -1115,7 +1137,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"ozone_templates_failed", @"message": error.localizedDescription ?: @"Failed to fetch templates"};
     }
@@ -1131,7 +1153,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:template bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:template statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"create_template_failed", @"message": error.localizedDescription ?: @"Failed to create template"};
     }
@@ -1148,7 +1170,7 @@
     NSDictionary *body = @{@"name": name};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"delete_template_failed", @"message": error.localizedDescription ?: @"Failed to delete template"};
     }
@@ -1163,7 +1185,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"ozone_config_failed", @"message": error.localizedDescription ?: @"Failed to fetch ozone config"};
     }
@@ -1179,7 +1201,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:config bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:config statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"update_config_failed", @"message": error.localizedDescription ?: @"Failed to update config"};
     }
@@ -1197,7 +1219,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"sessions_failed", @"message": error.localizedDescription ?: @"Failed to fetch sessions"};
     }
@@ -1214,7 +1236,7 @@
     NSDictionary *body = @{@"did": did, @"id": sessionID};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"revoke_session_failed", @"message": error.localizedDescription ?: @"Failed to revoke session"};
     }
@@ -1230,7 +1252,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"app_passwords_failed", @"message": error.localizedDescription ?: @"Failed to fetch app passwords"};
     }
@@ -1247,7 +1269,7 @@
     NSDictionary *body = @{@"did": did, @"name": passwordName};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"create_app_password_failed", @"message": error.localizedDescription ?: @"Failed to create app password"};
     }
@@ -1264,7 +1286,7 @@
     NSDictionary *body = @{@"did": did, @"name": passwordName};
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"POST" body:body bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"delete_app_password_failed", @"message": error.localizedDescription ?: @"Failed to delete app password"};
     }
@@ -1279,7 +1301,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"mst_accounts_failed", @"message": error.localizedDescription ?: @"Failed to fetch MST accounts"};
     }
@@ -1295,7 +1317,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"mst_tree_failed", @"message": error.localizedDescription ?: @"Failed to fetch MST tree"};
     }
@@ -1311,7 +1333,7 @@
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.pdsAdminToken statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"mst_stats_failed", @"message": error.localizedDescription ?: @"Failed to fetch MST stats"};
     }
@@ -1364,6 +1386,27 @@
     }
 
     return components.URL ?: url;
+}
+
+- (NSDictionary *)performPDSRequestWithURL:(NSURL *)url method:(NSString *)method body:(nullable NSDictionary *)body statusCode:(NSInteger *)statusCode error:(NSError **)error {
+    NSDictionary *response = [self performJSONRequestWithURL:url
+                                                     method:method
+                                                       body:body
+                                                  bearerToken:self.configuration.pdsAdminToken
+                                                   statusCode:statusCode
+                                                        error:error];
+    // Auto-refresh on 401 if we have a PDS admin password configured
+    if (statusCode && *statusCode == 401 && self.configuration.pdsAdminPassword.length > 0) {
+        if ([self refreshPDSAdminToken]) {
+            response = [self performJSONRequestWithURL:url
+                                                method:method
+                                                  body:body
+                                             bearerToken:self.configuration.pdsAdminToken
+                                              statusCode:statusCode
+                                                   error:error];
+        }
+    }
+    return response;
 }
 
 - (NSDictionary *)performJSONRequestWithURL:(NSURL *)url method:(NSString *)method body:(nullable NSDictionary *)body bearerToken:(nullable NSString *)token statusCode:(NSInteger *)statusCode error:(NSError **)error {
@@ -1540,6 +1583,16 @@
             id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
             if ([json isKindOfClass:[NSDictionary class]] && json[@"version"]) {
                 result[@"version"] = [json[@"version"] description];
+            } else {
+                // Handle plain text responses (e.g. "syrena 1.0.0")
+                NSString *text = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                if (text.length > 0) {
+                    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(\\d+\\.\\d+\\.\\d+)" options:0 error:nil];
+                    NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, text.length)];
+                    if (match) {
+                        result[@"version"] = [text substringWithRange:match.range];
+                    }
+                }
             }
         }
         return [result copy];

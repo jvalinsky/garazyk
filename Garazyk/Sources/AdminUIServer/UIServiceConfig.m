@@ -55,6 +55,7 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     config.chatBaseURL = UIURLFromString(chatURL, @"http://127.0.0.1:3200");
 
     config.pdsAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_TOKEN");
+    config.pdsAdminPassword = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_PASSWORD");
     config.plcAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_PLC_TOKEN");
     config.relayAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_RELAY_TOKEN");
     config.appViewAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_APPVIEW_TOKEN");

@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) NSURL *chatBaseURL;
 
 @property(nonatomic, copy, nullable) NSString *pdsAdminToken;
+@property(nonatomic, copy, nullable) NSString *pdsAdminPassword;
 @property(nonatomic, copy, nullable) NSString *plcAdminToken;
 @property(nonatomic, copy, nullable) NSString *relayAdminToken;
 @property(nonatomic, copy, nullable) NSString *appViewAdminToken;
