@@ -320,25 +320,35 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
                                              message:@"Database is closed"];
             return;
         }
+        if (!block) {
+            localError = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError
+                                             message:@"Transaction block cannot be nil"];
+            return;
+        }
         
         // Check if already in a transaction using sqlite3_get_autocommit()
         // autocommit=1 means NOT in a transaction; autocommit=0 means in a transaction
         int autocommit = sqlite3_get_autocommit(self.db);
         BOOL useSavepoint = (autocommit == 0);
+        NSString *savepointName = nil;
         
         char *errMsg = NULL;
         int result;
         
         if (useSavepoint) {
             // Already in a transaction — use SAVEPOINT for nested scope
-            result = sqlite3_exec(self.db, "SAVEPOINT sp_transact", NULL, NULL, &errMsg);
+            savepointName = [[NSString stringWithFormat:@"sp_transact_%@", NSUUID.UUID.UUIDString]
+                             stringByReplacingOccurrencesOfString:@"-" withString:@"_"];
+            NSString *sql = [NSString stringWithFormat:@"SAVEPOINT %@", savepointName];
+            result = sqlite3_exec(self.db, sql.UTF8String, NULL, NULL, &errMsg);
         } else {
             // Not in a transaction — start one
             result = sqlite3_exec(self.db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
         }
         
         if (result != SQLITE_OK) {
-            localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+            NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Failed to start transaction";
+            localError = [self errorWithSQLiteResult:result message:message];
             sqlite3_free(errMsg);
             return;
         }
@@ -358,25 +368,41 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         }
         
         if (success) {
+            if (sqlite3_get_autocommit(self.db) != 0) {
+                NSString *message = useSavepoint
+                    ? @"Cannot release transaction savepoint: enclosing transaction was closed inside transaction block"
+                    : @"Cannot commit transaction: transaction was closed inside transaction block";
+                localError = [ATProtoError errorWithCode:ATProtoErrorCodeDatabaseError message:message];
+                [self.stmtCache removeAllObjects];
+                return;
+            }
+
             if (useSavepoint) {
-                result = sqlite3_exec(self.db, "RELEASE sp_transact", NULL, NULL, &errMsg);
+                NSString *sql = [NSString stringWithFormat:@"RELEASE %@", savepointName];
+                result = sqlite3_exec(self.db, sql.UTF8String, NULL, NULL, &errMsg);
             } else {
                 result = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
             }
             if (result != SQLITE_OK) {
-                localError = [self errorWithSQLiteResult:result message:[NSString stringWithUTF8String:errMsg]];
+                NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Failed to finish transaction";
+                localError = [self errorWithSQLiteResult:result message:message];
                 sqlite3_free(errMsg);
                 if (useSavepoint) {
-                    sqlite3_exec(self.db, "ROLLBACK TO sp_transact", NULL, NULL, NULL);
-                } else {
+                    NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+                    NSString *releaseSQL = [NSString stringWithFormat:@"RELEASE %@", savepointName];
+                    sqlite3_exec(self.db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+                    sqlite3_exec(self.db, releaseSQL.UTF8String, NULL, NULL, NULL);
+                } else if (sqlite3_get_autocommit(self.db) == 0) {
                     sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
                 }
             }
         } else {
             if (useSavepoint) {
-                sqlite3_exec(self.db, "ROLLBACK TO sp_transact", NULL, NULL, NULL);
-                sqlite3_exec(self.db, "RELEASE sp_transact", NULL, NULL, NULL);
-            } else {
+                NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+                NSString *releaseSQL = [NSString stringWithFormat:@"RELEASE %@", savepointName];
+                sqlite3_exec(self.db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+                sqlite3_exec(self.db, releaseSQL.UTF8String, NULL, NULL, NULL);
+            } else if (sqlite3_get_autocommit(self.db) == 0) {
                 sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
             }
             localError = blockError;

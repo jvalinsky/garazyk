@@ -14,14 +14,22 @@
 @property (nonatomic, strong, nullable) id<PDSNetworkListener> listener;
 @property (nonatomic, strong) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger requestedPort;
+@property (nonatomic, copy) PDSWebSocketListenerFactory listenerFactory;
 @end
 
 @implementation PDSWebSocketServer
 
 - (instancetype)initWithPort:(NSUInteger)port {
+    return [self initWithPort:port listenerFactory:^id<PDSNetworkListener> _Nullable(NSUInteger requestedPort) {
+        return [PDSNetworkTransportFactory createListenerWithPort:requestedPort];
+    }];
+}
+
+- (instancetype)initWithPort:(NSUInteger)port listenerFactory:(PDSWebSocketListenerFactory)listenerFactory {
     self = [super init];
     if (self) {
         _requestedPort = port;
+        _listenerFactory = [listenerFactory copy];
         _eventQueue = dispatch_queue_create("com.pds.websocket.server", DISPATCH_QUEUE_SERIAL);
     }
     return self;
@@ -40,8 +48,7 @@
     __block NSError *blockError = nil;
 
     dispatch_sync(_eventQueue, ^{
-        // Create listener using platform-specific transport factory
-        id<PDSNetworkListener> listener = [PDSNetworkTransportFactory createListenerWithPort:self.requestedPort];
+        id<PDSNetworkListener> listener = self.listenerFactory ? self.listenerFactory(self.requestedPort) : nil;
         if (!listener) {
             blockError = [NSError errorWithDomain:@"PDSWebSocketServer"
                                              code:-1

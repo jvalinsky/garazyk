@@ -6,6 +6,8 @@
 @protocol PDSAdminController;
 @class PDSConfiguration;
 
+NS_ASSUME_NONNULL_BEGIN
+
 /**
  * XrpcLabelMethods registers all com.atproto.label.* and com.atproto.temp.* endpoint handlers.
  *
@@ -35,3 +37,5 @@
                  configuration:(PDSConfiguration *)configuration;
 
 @end
+
+NS_ASSUME_NONNULL_END

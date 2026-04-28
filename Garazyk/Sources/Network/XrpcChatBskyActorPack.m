@@ -9,12 +9,10 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
-#import "AppView/Services/ChatModerationService.h"
 
 @implementation XrpcChatBskyActorPack
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-         chatModerationService:(nullable ChatModerationService *)chatModerationService {
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher {
     // chat.bsky.actor.deleteAccount - Delete chat account
     [dispatcher registerMethod:@"chat.bsky.actor.deleteAccount"
                        handler:^(HttpRequest *request, HttpResponse *response) {
@@ -64,24 +62,15 @@
             return;
         }
 
-        if (chatModerationService) {
-            NSError *error = nil;
-            NSDictionary *metadata = [chatModerationService getActorMetadata:actor error:&error];
-            if (error) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-                return;
-            }
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:metadata ?: @{}];
-        } else {
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{
-                @"actor": actor,
-                @"muted": @NO,
-                @"blocked": @NO,
-                @"labels": @[]
-            }];
-        }
+        // Stub response — chat moderation is handled by the dedicated syrena-chat service
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"did": actor,
+            @"actor": actor,
+            @"muted": @NO,
+            @"blocked": @NO,
+            @"labels": @[]
+        }];
     }];
 
     // chat.bsky.moderation.getMessageContext - Get message context for moderation
@@ -99,22 +88,12 @@
             return;
         }
 
-        if (chatModerationService) {
-            NSError *error = nil;
-            NSDictionary *context = [chatModerationService getMessageContext:messageId error:&error];
-            if (error) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-                return;
-            }
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:context ?: @{}];
-        } else {
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{
-                @"message": @{@"id": messageId},
-                @"context": @[]
-            }];
-        }
+        // Stub response — chat moderation is handled by the dedicated syrena-chat service
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{
+            @"message": @{@"id": messageId},
+            @"context": @[]
+        }];
     }];
 
     // chat.bsky.moderation.updateActorAccess - Update actor's chat access
@@ -133,21 +112,9 @@
             return;
         }
 
-        if (chatModerationService) {
-            NSError *error = nil;
-            BOOL success = [chatModerationService updateActorAccess:actor
-                                                           access:body[@"access"] ?: @{}
-                                                            error:&error];
-            if (!success) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-                return;
-            }
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{}];
-        } else {
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{}];
-        }
+        // Stub response — chat moderation is handled by the dedicated syrena-chat service
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
     }];
 }
 

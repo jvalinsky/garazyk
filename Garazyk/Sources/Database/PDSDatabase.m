@@ -886,6 +886,12 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
                            userInfo:@{NSLocalizedDescriptionKey: msg}];
 }
 
+- (NSError *)errorWithDescription:(NSString *)message code:(NSInteger)code {
+    return [NSError errorWithDomain:PDSDatabaseErrorDomain
+                               code:code
+                           userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error"}];
+}
+
 #pragma mark - Parameterized Queries
 
 - (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
@@ -1935,6 +1941,21 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 #pragma mark - Transactions
 
 - (BOOL)beginTransactionWithError:(NSError **)error {
+    if (!self.isOpen || !_db) {
+        if (error) {
+            *error = [self errorWithDescription:@"Cannot begin transaction: database is not open"
+                                           code:PDSDatabaseErrorNotOpen];
+        }
+        return NO;
+    }
+    if (sqlite3_get_autocommit(_db) == 0) {
+        if (error) {
+            *error = [self errorWithDescription:@"Cannot begin transaction: transaction already active; use transactWithBlock:error: for nested work"
+                                           code:PDSDatabaseErrorQueryFailed];
+        }
+        return NO;
+    }
+
     char *errMsg = NULL;
     int rc = sqlite3_exec(_db, "BEGIN TRANSACTION", NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
@@ -1947,6 +1968,21 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 }
 
 - (BOOL)commitTransactionWithError:(NSError **)error {
+    if (!self.isOpen || !_db) {
+        if (error) {
+            *error = [self errorWithDescription:@"Cannot commit transaction: database is not open"
+                                           code:PDSDatabaseErrorNotOpen];
+        }
+        return NO;
+    }
+    if (sqlite3_get_autocommit(_db) != 0) {
+        if (error) {
+            *error = [self errorWithDescription:@"Cannot commit transaction: no active transaction"
+                                           code:PDSDatabaseErrorQueryFailed];
+        }
+        return NO;
+    }
+
     char *errMsg = NULL;
     int rc = sqlite3_exec(_db, "COMMIT", NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
@@ -1959,6 +1995,21 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 }
 
 - (BOOL)rollbackTransactionWithError:(NSError **)error {
+    if (!self.isOpen || !_db) {
+        if (error) {
+            *error = [self errorWithDescription:@"Cannot roll back transaction: database is not open"
+                                           code:PDSDatabaseErrorNotOpen];
+        }
+        return NO;
+    }
+    if (sqlite3_get_autocommit(_db) != 0) {
+        if (error) {
+            *error = [self errorWithDescription:@"Cannot roll back transaction: no active transaction"
+                                           code:PDSDatabaseErrorQueryFailed];
+        }
+        return NO;
+    }
+
     char *errMsg = NULL;
     int rc = sqlite3_exec(_db, "ROLLBACK", NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
@@ -1980,9 +2031,29 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         return NO;
     }
 
-    NSError *beginError = nil;
-    if (![self beginTransactionWithError:&beginError]) {
-        if (error) *error = beginError;
+    if (!self.isOpen || !_db) {
+        if (error) {
+            *error = [self errorWithDescription:@"Cannot start transaction: database is not open"
+                                           code:PDSDatabaseErrorNotOpen];
+        }
+        return NO;
+    }
+
+    BOOL useSavepoint = (sqlite3_get_autocommit(_db) == 0);
+    NSString *savepointName = nil;
+    NSString *beginSQL = @"BEGIN TRANSACTION";
+    if (useSavepoint) {
+        savepointName = [[NSString stringWithFormat:@"pds_tx_%@", NSUUID.UUID.UUIDString]
+                         stringByReplacingOccurrencesOfString:@"-" withString:@"_"];
+        beginSQL = [NSString stringWithFormat:@"SAVEPOINT %@", savepointName];
+    }
+
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(_db, beginSQL.UTF8String, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
+        sqlite3_free(errMsg);
+        if (error) *error = e;
         return NO;
     }
 
@@ -1991,21 +2062,55 @@ NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
         block(&blockError);
 
         if (blockError) {
-            [self rollbackTransactionWithError:nil];
+            if (useSavepoint) {
+                NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+                NSString *releaseSQL = [NSString stringWithFormat:@"RELEASE %@", savepointName];
+                sqlite3_exec(_db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+                sqlite3_exec(_db, releaseSQL.UTF8String, NULL, NULL, NULL);
+            } else if (sqlite3_get_autocommit(_db) == 0) {
+                sqlite3_exec(_db, "ROLLBACK", NULL, NULL, NULL);
+            }
             if (error) *error = blockError;
             return NO;
         }
 
-        NSError *commitError = nil;
-        if (![self commitTransactionWithError:&commitError]) {
-            [self rollbackTransactionWithError:nil];
-            if (error) *error = commitError;
+        if (sqlite3_get_autocommit(_db) != 0) {
+            if (error) {
+                NSString *message = useSavepoint
+                    ? @"Cannot release transaction savepoint: enclosing transaction was closed inside transaction block"
+                    : @"Cannot commit transaction: transaction was closed inside transaction block";
+                *error = [self errorWithDescription:message code:PDSDatabaseErrorQueryFailed];
+            }
             return NO;
         }
 
+        NSString *finishSQL = useSavepoint ? [NSString stringWithFormat:@"RELEASE %@", savepointName] : @"COMMIT";
+        errMsg = NULL;
+        rc = sqlite3_exec(_db, finishSQL.UTF8String, NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSError *commitError = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
+            sqlite3_free(errMsg);
+            if (useSavepoint) {
+                NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+                NSString *releaseSQL = [NSString stringWithFormat:@"RELEASE %@", savepointName];
+                sqlite3_exec(_db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+                sqlite3_exec(_db, releaseSQL.UTF8String, NULL, NULL, NULL);
+            } else if (sqlite3_get_autocommit(_db) == 0) {
+                sqlite3_exec(_db, "ROLLBACK", NULL, NULL, NULL);
+            }
+            if (error) *error = commitError;
+            return NO;
+        }
         return YES;
     } @catch (NSException *exception) {
-        [self rollbackTransactionWithError:nil];
+        if (useSavepoint) {
+            NSString *rollbackSQL = [NSString stringWithFormat:@"ROLLBACK TO %@", savepointName];
+            NSString *releaseSQL = [NSString stringWithFormat:@"RELEASE %@", savepointName];
+            sqlite3_exec(_db, rollbackSQL.UTF8String, NULL, NULL, NULL);
+            sqlite3_exec(_db, releaseSQL.UTF8String, NULL, NULL, NULL);
+        } else if (sqlite3_get_autocommit(_db) == 0) {
+            sqlite3_exec(_db, "ROLLBACK", NULL, NULL, NULL);
+        }
         if (error) {
             *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                           code:PDSDatabaseErrorQueryFailed

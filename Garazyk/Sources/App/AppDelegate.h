@@ -20,6 +20,8 @@
 #define PDS_NS_APPLICATION_DELEGATE
 #endif
 
+NS_ASSUME_NONNULL_BEGIN
+
 /*!
  @class AppDelegate
 
@@ -36,9 +38,11 @@
 
 #if TARGET_OS_OSX || defined(__APPLE__)
 /*! macOS menu bar status item for PDS controls. */
-@property (strong, nonatomic) NSStatusItem *statusItem;
+@property (strong, nonatomic, nullable) NSStatusItem *statusItem;
 /*! Main application window. */
-@property (strong, nonatomic) NSWindow *window;
+@property (strong, nonatomic, nullable) NSWindow *window;
 #endif
 
 @end
+
+NS_ASSUME_NONNULL_END

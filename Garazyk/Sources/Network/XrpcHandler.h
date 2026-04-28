@@ -93,12 +93,20 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 
 /*!
  @method sharedDispatcher
- 
+  
  @abstract Returns the shared dispatcher instance.
- 
+  
  @return The singleton XrpcDispatcher.
  */
 + (instancetype)sharedDispatcher;
+
+/*!
+ @method resetSharedDispatcher
+ 
+ @abstract Resets the shared dispatcher instance.
+ */
++ (void)resetSharedDispatcher;
+
 
 /*!
  @method registerMethod:handler:
