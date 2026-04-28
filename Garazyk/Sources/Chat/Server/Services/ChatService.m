@@ -60,16 +60,23 @@
     // Sort members for deterministic query
     NSArray *sortedMembers = [memberDids sortedArrayUsingSelector:@selector(compare:)];
 
-    // Query conversations with exact member set
-    NSString *query = @"SELECT DISTINCT cm1.convo_id FROM conversation_members cm1 "
-                     @"WHERE cm1.member_did = ? AND cm1.convo_id IN ("
-                     @"  SELECT convo_id FROM conversation_members "
-                     @"  GROUP BY convo_id HAVING COUNT(DISTINCT member_did) = ?"
-                     @") LIMIT 1";
+    // Build query that checks ALL members are present and no extras exist.
+    // For N members: each member must be in the conversation, AND the total
+    // member count must equal N (prevents matching a superset conversation).
+    NSMutableString *query = [NSMutableString stringWithString:@"SELECT c.id FROM conversations c WHERE "];
+    NSMutableArray *params = [NSMutableArray array];
+
+    for (NSUInteger i = 0; i < sortedMembers.count; i++) {
+        if (i > 0) [query appendString:@" AND "];
+        [query appendFormat:@"c.id IN (SELECT convo_id FROM conversation_members WHERE member_did = ?)"];
+        [params addObject:sortedMembers[i]];
+    }
+    [query appendFormat:@" AND (SELECT COUNT(*) FROM conversation_members WHERE convo_id = c.id) = ? LIMIT 1"];
+    [params addObject:@(sortedMembers.count)];
 
     NSError *queryError = nil;
     NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
-                                                                      params:@[sortedMembers[0], @(sortedMembers.count)]
+                                                                      params:params
                                                                        error:&queryError];
     if (queryError) {
         if (error) *error = queryError;
@@ -77,7 +84,7 @@
     }
 
     if (rows.count > 0) {
-        NSString *convoId = rows[0][@"convo_id"];
+        NSString *convoId = rows[0][@"id"];
         return [self getConversationWithId:convoId error:error];
     }
 
