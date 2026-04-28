@@ -1,0 +1,36 @@
+FROM debian:bookworm-slim AS builder
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential \
+    clang \
+    cmake \
+    libblocksruntime-dev \
+    libssl-dev \
+    libsqlite3-dev \
+    gnustep-devel \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . .
+
+RUN mkdir build-linux && cd build-linux && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build . -j $(nproc) --target garazyk-ui
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    gnustep-core-devel \
+    libblocksruntime0 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /src/build-linux/bin/garazyk-ui /usr/local/bin/garazyk-ui
+COPY --from=builder /src/Garazyk/Sources/Admin/Public /usr/share/garazyk-ui/public
+
+ENV GARAZYK_UI_PORT=2590
+ENV GARAZYK_UI_HOST=0.0.0.0
+
+EXPOSE 2590
+
+ENTRYPOINT ["garazyk-ui", "serve", "--foreground"]
