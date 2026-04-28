@@ -6,6 +6,7 @@
 #import "Chat/Server/Services/ChatModerationService.h"
 #import "Chat/Server/ChatAuthManager.h"
 #import "Network/HttpServer.h"
+#import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcChatBskyConvoPack.h"
@@ -81,8 +82,10 @@
 
     [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher
                                    appViewDatabase:(id<PDSQueryDatabase>)self.db
+                                 serviceDatabase:nil
                                         jwtMinter:nil
-                                  adminController:nil];
+                                  adminController:nil
+                                     adminSecret:self.configuration.adminSecret];
 
     [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher
                                    appViewDatabase:(id<PDSQueryDatabase>)self.db
@@ -95,6 +98,14 @@
     if (self.configuration.pdsUrl.length > 0) {
         [ChatAuthManager sharedManager].pdsUrl = self.configuration.pdsUrl;
     }
+
+    // Add health endpoint
+    [self.httpServer addRoute:@"GET"
+                        path:@"/_health"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                         response.statusCode = 200;
+                         [response setBodyString:@"ok"];
+                     }];
 
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;
