@@ -838,7 +838,7 @@
         CID *cid = [node getCID:cache];
         if (!cid) continue;
 
-        NSString *cidString = [cid description];
+        NSString *cidString = [cid stringValue];
         if ([addedCIDs containsObject:cidString]) continue;
         [addedCIDs addObject:cidString];
 
@@ -859,10 +859,10 @@
             entryCount++;
             NSMutableDictionary *entryDict = [NSMutableDictionary dictionary];
             entryDict[@"fullKey"] = entry.fullKey ?: @"";
-            entryDict[@"value"] = [entry.value description] ?: @"";
+            entryDict[@"value"] = [entry.value stringValue] ?: @"";
 
             if (entry.tree) {
-                entryDict[@"tree"] = [entry.tree description];
+                entryDict[@"tree"] = [entry.tree stringValue];
             }
 
             [entriesArray addObject:entryDict];
@@ -873,7 +873,7 @@
         if (node.internalLeft) {
             CID *leftCID = [node.internalLeft getCID:cache];
             if (leftCID) {
-                nodeDict[@"left"] = [leftCID description];
+                nodeDict[@"left"] = [leftCID stringValue];
             }
         }
 
@@ -892,7 +892,7 @@
     }
 
     return @{
-        @"rootCID": [rootCID description],
+        @"rootCID": [rootCID stringValue],
         @"nodeCount": @(nodesArray.count),
         @"entryCount": @(entryCount),
         @"maxDepth": @(maxDepth),
@@ -936,7 +936,7 @@
         CID *cid = [node getCID:cache];
         if (!cid) continue;
 
-        NSString *cidString = [cid description];
+        NSString *cidString = [cid stringValue];
         if ([visited containsObject:cidString]) continue;
         [visited addObject:cidString];
 
@@ -981,7 +981,7 @@
         @"internalNodeCount": @(internalNodeCount),
         @"maxDepth": @(maxDepth),
         @"avgDepth": @(avgDepth),
-        @"rootCID": rootCID ? [rootCID description] : @"",
+        @"rootCID": rootCID ? [rootCID stringValue] : @"",
         @"balanceFactor": @(balanceFactor)
     };
 }
@@ -1013,7 +1013,7 @@
         CID *cid = [node getCID:cache];
         if (!cid) continue;
 
-        NSString *cidString = [cid description];
+        NSString *cidString = [cid stringValue];
         NSString *nodeID = [cidString substringToIndex:MIN(12, cidString.length)];
 
         if ([visited containsObject:cidString]) continue;
@@ -1029,7 +1029,7 @@
         if (node.internalLeft) {
             CID *leftCID = [node.internalLeft getCID:cache];
             if (leftCID) {
-                NSString *leftID = [[leftCID description] substringToIndex:MIN(12, [[leftCID description] length])];
+                NSString *leftID = [[leftCID stringValue] substringToIndex:MIN(12, [[leftCID stringValue] length])];
                 [edges addObject:[NSString stringWithFormat:@"  \"%@\" -> \"%@\" [label=\"left\", color=\"#666666\"];\n",
                                 nodeID, leftID]];
                 [queue addObject:node.internalLeft];
@@ -1042,7 +1042,7 @@
             if (entry.internalTree) {
                 CID *treeCID = [entry.internalTree getCID:cache];
                 if (treeCID) {
-                    NSString *treeID = [[treeCID description] substringToIndex:MIN(12, [[treeCID description] length])];
+                    NSString *treeID = [[treeCID stringValue] substringToIndex:MIN(12, [[treeCID stringValue] length])];
                     NSString *entryKey = entry.fullKey ?: @"";
                     if (entryKey.length > 20) {
                         entryKey = [[entryKey substringToIndex:17] stringByAppendingString:@"..."];
