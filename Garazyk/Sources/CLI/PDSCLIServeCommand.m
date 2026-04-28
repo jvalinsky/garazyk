@@ -1,6 +1,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
+#import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
@@ -253,6 +254,37 @@
                   response.statusCode = 200;
                   [response setJsonBody:@{@"version" : @"0.1.0"}];
                 }];
+
+  // Admin Login: accepts admin password, returns admin-scoped JWT
+  [httpServer addRoute:@"POST"
+                  path:@"/admin/login"
+               handler:^(HttpRequest *request, HttpResponse *response) {
+                 NSDictionary *body = request.jsonBody;
+                 if (![body isKindOfClass:[NSDictionary class]]) {
+                   response.statusCode = 400;
+                   [response setJsonBody:@{@"error": @"InvalidRequest",
+                                           @"message": @"Expected JSON body"}];
+                   return;
+                 }
+                 NSString *password = body[@"password"];
+                 if (!password || password.length == 0) {
+                   response.statusCode = 400;
+                   [response setJsonBody:@{@"error": @"InvalidRequest",
+                                           @"message": @"Password required"}];
+                   return;
+                 }
+                 NSError *authError = nil;
+                 if (![[PDSAdminAuth sharedAuth] authenticateWithPassword:password
+                                                                    error:&authError]) {
+                   response.statusCode = authError.code == 401 ? 401 : 403;
+                   [response setJsonBody:@{@"error": @"AuthenticationFailed",
+                                           @"message": authError.localizedDescription ?: @"Invalid credentials"}];
+                   return;
+                 }
+                 NSString *token = [PDSAdminAuth sharedAuth].adminToken;
+                 response.statusCode = 200;
+                 [response setJsonBody:@{@"token": token ?: @""}];
+               }];
 
   [httpServer addRoute:@"GET"
                   path:@"/robots.txt"
