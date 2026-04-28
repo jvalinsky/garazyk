@@ -3,6 +3,9 @@
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 #import <AVFoundation/AVFoundation.h>
+#import <CoreMedia/CoreMedia.h>
+#import <ImageIO/ImageIO.h>
+#import <CoreServices/CoreServices.h>
 
 NSString * const PDSVideoThumbnailErrorDomain = @"com.atproto.pds.video.thumbnail";
 
@@ -79,8 +82,7 @@ NSString * const PDSVideoThumbnailErrorDomain = @"com.atproto.pds.video.thumbnai
                 return;
             }
 
-            UIImage *thumbnail = [UIImage imageWithCGImage:imgRef];
-            NSData *jpegData = UIImageJPEGRepresentation(thumbnail, 0.8);
+            NSData *jpegData = [self jpegDataFromCGImage:imgRef compression:0.8];
             CGImageRelease(imgRef);
 
             if (!jpegData) {
@@ -94,6 +96,19 @@ NSString * const PDSVideoThumbnailErrorDomain = @"com.atproto.pds.video.thumbnai
             if (completion) completion(jpegData, nil);
         }
     });
+}
+
+- (nullable NSData *)jpegDataFromCGImage:(CGImageRef)image compression:(float)quality {
+    NSMutableData *data = [NSMutableData data];
+    CGImageDestinationRef dest = CGImageDestinationCreateWithData((__bridge CFMutableDataRef)data, kUTTypeJPEG, 1, NULL);
+    if (!dest) return nil;
+
+    NSDictionary *props = @{(__bridge id)kCGImageDestinationLossyCompressionQuality: @(quality)};
+    CGImageDestinationAddImage(dest, image, (__bridge CFDictionaryRef)props);
+    BOOL success = CGImageDestinationFinalize(dest);
+    CFRelease(dest);
+
+    return success ? data : nil;
 }
 
 - (nullable CID *)storeThumbnailData:(NSData *)thumbnailData
