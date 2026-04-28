@@ -40,15 +40,19 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
     XCTAssertEqual(unauthorized.statusCode, 401);
 
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    HttpResponse *update = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferences"
-                                                    body:@{@"priority": @YES}
+    HttpResponse *update = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.notification.putPreferencesV2"
+                                                    body:@{@"follow": @{@"include": @"all", @"list": @NO, @"push": @YES}}
                                                  headers:@{@"authorization": authHeader}];
     XCTAssertEqual(update.statusCode, 200);
 
     HttpResponse *fetch = [self sendGetRequestWithPath:@"/xrpc/app.bsky.notification.getPreferences"
                                                headers:@{@"authorization": authHeader}];
     XCTAssertEqual(fetch.statusCode, 200);
-    XCTAssertEqualObjects(fetch.jsonBody[@"priority"], @YES);
+    NSDictionary *preferences = fetch.jsonBody[@"preferences"];
+    NSDictionary *follow = preferences[@"follow"];
+    XCTAssertTrue([follow isKindOfClass:[NSDictionary class]]);
+    XCTAssertEqualObjects(follow[@"list"], @NO);
+    XCTAssertEqualObjects(follow[@"push"], @YES);
 }
 
 - (void)testGraphMuteActorListValidationAndIdempotence {

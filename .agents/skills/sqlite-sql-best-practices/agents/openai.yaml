@@ -1,0 +1,4 @@
+interface:
+  display_name: "SQLite SQL Best Practices"
+  short_description: "Write safer, faster SQLite and SQL"
+  default_prompt: "Use $sqlite-sql-best-practices to review this SQLite query for performance, correctness, and security."

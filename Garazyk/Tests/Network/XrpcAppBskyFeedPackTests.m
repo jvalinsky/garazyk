@@ -1,6 +1,9 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "AppView/Services/GraphService.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/PDSBlock.h"
+#import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import "Network/XrpcAppBskyFeedPack.h"
 
 #ifndef XCTAssertIsInstance
@@ -27,75 +30,93 @@
 }
 
 - (NSDictionary *)createPostForDid:(NSString *)did text:(NSString *)text {
-    return [self createdRecordForDid:did
-                           collection:@"app.bsky.feed.post"
-                               record:@{
-                                   @"$type" : @"app.bsky.feed.post",
-                                   @"text" : text,
-                                   @"createdAt" : [self iso8601String]
-                               }];
+    NSDictionary *record = @{
+        @"$type" : @"app.bsky.feed.post",
+        @"text" : text,
+        @"createdAt" : [self iso8601String]
+    };
+    NSDictionary *created = [self createdRecordForDid:did
+                                           collection:@"app.bsky.feed.post"
+                                               record:record];
+    [self seedRecordInServiceDB:created record:record forDid:did collection:@"app.bsky.feed.post"];
+    return created;
 }
 
 - (NSDictionary *)createReplyForDid:(NSString *)did parentURI:(NSString *)parentURI text:(NSString *)text {
-    return [self createdRecordForDid:did
-                           collection:@"app.bsky.feed.post"
-                               record:@{
-                                   @"$type" : @"app.bsky.feed.post",
-                                   @"text" : text,
-                                   @"reply" : @{
-                                       @"parent" : @{@"uri" : parentURI},
-                                       @"root" : @{@"uri" : parentURI}
-                                   },
-                                   @"createdAt" : [self iso8601String]
-                               }];
+    NSDictionary *record = @{
+        @"$type" : @"app.bsky.feed.post",
+        @"text" : text,
+        @"reply" : @{
+            @"parent" : @{@"uri" : parentURI},
+            @"root" : @{@"uri" : parentURI}
+        },
+        @"createdAt" : [self iso8601String]
+    };
+    NSDictionary *created = [self createdRecordForDid:did
+                                           collection:@"app.bsky.feed.post"
+                                               record:record];
+    [self seedRecordInServiceDB:created record:record forDid:did collection:@"app.bsky.feed.post"];
+    return created;
 }
 
 - (NSDictionary *)createLikeForDid:(NSString *)did subjectURI:(NSString *)subjectURI {
-    return [self createdRecordForDid:did
-                           collection:@"app.bsky.feed.like"
-                               record:@{
-                                   @"$type" : @"app.bsky.feed.like",
-                                   @"subject" : @{@"uri" : subjectURI},
-                                   @"createdAt" : [self iso8601String]
-                               }];
+    NSDictionary *record = @{
+        @"$type" : @"app.bsky.feed.like",
+        @"subject" : @{@"uri" : subjectURI},
+        @"createdAt" : [self iso8601String]
+    };
+    NSDictionary *created = [self createdRecordForDid:did
+                                           collection:@"app.bsky.feed.like"
+                                               record:record];
+    [self seedRecordInServiceDB:created record:record forDid:did collection:@"app.bsky.feed.like"];
+    return created;
 }
 
 - (NSDictionary *)createRepostForDid:(NSString *)did subjectURI:(NSString *)subjectURI {
-    return [self createdRecordForDid:did
-                           collection:@"app.bsky.feed.repost"
-                               record:@{
-                                   @"$type" : @"app.bsky.feed.repost",
-                                   @"subject" : @{@"uri" : subjectURI},
-                                   @"createdAt" : [self iso8601String]
-                               }];
+    NSDictionary *record = @{
+        @"$type" : @"app.bsky.feed.repost",
+        @"subject" : @{@"uri" : subjectURI},
+        @"createdAt" : [self iso8601String]
+    };
+    NSDictionary *created = [self createdRecordForDid:did
+                                           collection:@"app.bsky.feed.repost"
+                                               record:record];
+    [self seedRecordInServiceDB:created record:record forDid:did collection:@"app.bsky.feed.repost"];
+    return created;
 }
 
 - (NSDictionary *)createQuoteForDid:(NSString *)did subjectURI:(NSString *)subjectURI text:(NSString *)text {
-    return [self createdRecordForDid:did
-                           collection:@"app.bsky.feed.post"
-                               record:@{
-                                   @"$type" : @"app.bsky.feed.post",
-                                   @"text" : text,
-                                   @"embed" : @{
-                                       @"$type" : @"app.bsky.embed.record",
-                                       @"record" : @{@"uri" : subjectURI}
-                                   },
-                                   @"createdAt" : [self iso8601String]
-                               }];
+    NSDictionary *record = @{
+        @"$type" : @"app.bsky.feed.post",
+        @"text" : text,
+        @"embed" : @{
+            @"$type" : @"app.bsky.embed.record",
+            @"record" : @{@"uri" : subjectURI}
+        },
+        @"createdAt" : [self iso8601String]
+    };
+    NSDictionary *created = [self createdRecordForDid:did
+                                           collection:@"app.bsky.feed.post"
+                                               record:record];
+    [self seedRecordInServiceDB:created record:record forDid:did collection:@"app.bsky.feed.post"];
+    return created;
 }
 
 - (NSDictionary *)createFeedGeneratorForDid:(NSString *)did
                                   displayName:(NSString *)displayName
                                    items:(NSArray *)items {
-    return [self createdRecordForDid:did
-                           collection:@"app.bsky.feed.generator"
-                               record:@{
-                                   @"$type" : @"app.bsky.feed.generator",
-                                   @"displayName" : displayName,
-                                   @"description" : [NSString stringWithFormat:@"%@ description", displayName],
-                                   @"items" : items,
-                                   @"createdAt" : [self iso8601String]
-                               }];
+    NSDictionary *record = @{
+        @"$type" : @"app.bsky.feed.generator",
+        @"displayName" : displayName,
+        @"description" : [NSString stringWithFormat:@"%@ description", displayName],
+        @"items" : items,
+        @"createdAt" : [self iso8601String]
+    };
+    NSDictionary *created = [self createdRecordForDid:did
+                                           collection:@"app.bsky.feed.generator"
+                                               record:record];
+    [self seedRecordInServiceDB:created record:record forDid:did collection:@"app.bsky.feed.generator"];
+    return created;
 }
 
 - (void)seedListItemForListURI:(NSString *)listURI subjectDid:(NSString *)subjectDid {
@@ -103,6 +124,16 @@
     PDSDatabase *database = [self.application.serviceDatabases serviceDatabaseWithError:&dbError];
     XCTAssertNil(dbError);
     XCTAssertNotNil(database);
+
+    // Ensure the bsky_graph_listitems and bsky_graph_lists tables exist
+    // (these are AppView tables not created by the default PDSDatabase schema)
+    [database executeParameterizedUpdate:@"CREATE TABLE IF NOT EXISTS bsky_graph_lists (uri TEXT PRIMARY KEY, creator_did TEXT, name TEXT, description TEXT, purpose TEXT, cursor INTEGER DEFAULT 0, indexed_at REAL)" params:@[] error:nil];
+    [database executeParameterizedUpdate:@"CREATE TABLE IF NOT EXISTS bsky_graph_listitems (uri TEXT PRIMARY KEY, list_uri TEXT NOT NULL, subject_did TEXT NOT NULL, created_at INTEGER)" params:@[] error:nil];
+
+    // Insert the list itself so the FK constraint is satisfied
+    [database executeParameterizedUpdate:@"INSERT OR REPLACE INTO bsky_graph_lists (uri, creator_did, name, purpose) VALUES (?, ?, ?, ?)"
+                                  params:@[listURI, subjectDid, @"test-list", @"app.bsky.graph.defs#curatelist"]
+                                   error:nil];
 
     GraphService *graphService = [[GraphService alloc] initWithDatabase:database];
     NSError *error = nil;
@@ -114,6 +145,57 @@
                                         error:&error];
     XCTAssertTrue(success);
     XCTAssertNil(error);
+}
+
+- (void)seedRecordInServiceDB:(NSDictionary *)createdRecord
+                        record:(NSDictionary *)record
+                     forDid:(NSString *)did
+                   collection:(NSString *)collection {
+    NSError *dbError = nil;
+    PDSDatabase *database = [self.application.serviceDatabases serviceDatabaseWithError:&dbError];
+    XCTAssertNil(dbError);
+    XCTAssertNotNil(database);
+
+    NSString *uri = createdRecord[@"uri"];
+    NSString *cidStr = createdRecord[@"cid"];
+    XCTAssertNotNil(uri);
+    XCTAssertNotNil(cidStr);
+
+    // Parse URI to extract rkey: at://did/collection/rkey
+    NSArray *components = [uri componentsSeparatedByString:@"/"];
+    NSString *rkey = components.count >= 5 ? components[4] : @"";
+
+    // CBOR-encode the record for the blocks table
+    NSError *cborError = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cborError];
+    XCTAssertNil(cborError);
+    XCTAssertNotNil(cborData);
+
+    // Compute CID from CBOR data (same as PDSController does)
+    NSData *digest = [CID sha256Digest:cborData];
+    CID *cid = [CID cidWithDigest:digest codec:0x71]; // dag-cbor codec
+
+    // Insert into records table
+    NSString *valueJSON = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:record options:0 error:nil] encoding:NSUTF8StringEncoding];
+    NSString *insertSQL = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value) VALUES (?, ?, ?, ?, ?, ?)";
+    BOOL insertOK = [database executeParameterizedUpdate:insertSQL
+                                                  params:@[uri, did, collection, rkey, cid.stringValue ?: cidStr, valueJSON ?: @""]
+                                                   error:&dbError];
+    XCTAssertTrue(insertOK);
+    XCTAssertNil(dbError);
+
+    // Insert into blocks table for getRecordBodyFromCID: lookups
+    PDSDatabaseBlock *block = [[PDSDatabaseBlock alloc] init];
+    block.cid = cid.bytes;
+    block.repoDid = did;
+    block.blockData = cborData;
+    block.contentType = @"application/cbor";
+    block.size = (NSInteger)cborData.length;
+    block.createdAt = [NSDate date];
+
+    BOOL blockOK = [database saveBlock:block error:&dbError];
+    XCTAssertTrue(blockOK);
+    XCTAssertNil(dbError);
 }
 
 - (void)testGetAuthorFeedRequiresActor {

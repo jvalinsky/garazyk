@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debugging Objective-C Crashes"
+  short_description: "Diagnose macOS Objective-C crashes"
+  default_prompt: "Use $debugging-objc-crashes to analyze this Objective-C crash report."
