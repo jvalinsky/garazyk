@@ -47,4 +47,94 @@
     }
 }
 
+- (void)testTransactWithBlockCommitsTopLevel {
+    NSError *error = nil;
+    XCTAssertTrue([self.database executeParameterizedUpdate:@"CREATE TABLE IF NOT EXISTS tx_scope_test (id INTEGER PRIMARY KEY, value TEXT)"
+                                                     params:@[]
+                                                      error:&error],
+                  @"Create table failed: %@", error);
+
+    BOOL success = [self.database transactWithBlock:^(NSError **txError) {
+        [self.database executeParameterizedUpdate:@"INSERT INTO tx_scope_test (value) VALUES (?)"
+                                           params:@[@"committed"]
+                                            error:txError];
+    } error:&error];
+    XCTAssertTrue(success, @"Transaction should commit: %@", error);
+
+    NSArray<NSDictionary *> *rows = [self.database executeParameterizedQuery:@"SELECT COUNT(*) AS count FROM tx_scope_test"
+                                                                      params:@[]
+                                                                       error:&error];
+    XCTAssertEqual([rows.firstObject[@"count"] integerValue], 1);
+}
+
+- (void)testTransactWithBlockRollsBackOnBlockError {
+    NSError *error = nil;
+    XCTAssertTrue([self.database executeParameterizedUpdate:@"CREATE TABLE IF NOT EXISTS tx_scope_test (id INTEGER PRIMARY KEY, value TEXT)"
+                                                     params:@[]
+                                                      error:&error],
+                  @"Create table failed: %@", error);
+
+    BOOL success = [self.database transactWithBlock:^(NSError **txError) {
+        [self.database executeParameterizedUpdate:@"INSERT INTO tx_scope_test (value) VALUES (?)"
+                                           params:@[@"rolled-back"]
+                                            error:txError];
+        if (txError) {
+            *txError = [NSError errorWithDomain:@"PDSDatabaseLRUTests"
+                                           code:1
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Force rollback"}];
+        }
+    } error:&error];
+    XCTAssertFalse(success, @"Transaction should fail when block sets an error");
+    XCTAssertNotNil(error);
+
+    NSArray<NSDictionary *> *rows = [self.database executeParameterizedQuery:@"SELECT COUNT(*) AS count FROM tx_scope_test"
+                                                                      params:@[]
+                                                                       error:&error];
+    XCTAssertEqual([rows.firstObject[@"count"] integerValue], 0);
+}
+
+- (void)testNestedTransactWithBlockUsesSavepoint {
+    NSError *error = nil;
+    XCTAssertTrue([self.database executeParameterizedUpdate:@"CREATE TABLE IF NOT EXISTS tx_scope_test (id INTEGER PRIMARY KEY, value TEXT)"
+                                                     params:@[]
+                                                      error:&error],
+                  @"Create table failed: %@", error);
+
+    BOOL success = [self.database transactWithBlock:^(NSError **outerError) {
+        [self.database executeParameterizedUpdate:@"INSERT INTO tx_scope_test (value) VALUES (?)"
+                                           params:@[@"outer"]
+                                            error:outerError];
+
+        NSError *innerError = nil;
+        BOOL innerSuccess = [self.database transactWithBlock:^(NSError **txError) {
+            [self.database executeParameterizedUpdate:@"INSERT INTO tx_scope_test (value) VALUES (?)"
+                                               params:@[@"inner"]
+                                                error:txError];
+            if (txError) {
+                *txError = [NSError errorWithDomain:@"PDSDatabaseLRUTests"
+                                               code:2
+                                           userInfo:@{NSLocalizedDescriptionKey: @"Rollback nested savepoint"}];
+            }
+        } error:&innerError];
+        XCTAssertFalse(innerSuccess);
+        XCTAssertNotNil(innerError);
+    } error:&error];
+    XCTAssertTrue(success, @"Outer transaction should commit after inner savepoint rollback: %@", error);
+
+    NSArray<NSDictionary *> *rows = [self.database executeParameterizedQuery:@"SELECT value FROM tx_scope_test ORDER BY id"
+                                                                      params:@[]
+                                                                       error:&error];
+    XCTAssertEqual(rows.count, 1);
+    XCTAssertEqualObjects(rows.firstObject[@"value"], @"outer");
+}
+
+- (void)testCommitWithoutBeginReturnsClearError {
+    NSError *error = nil;
+    BOOL success = [self.database commitTransactionWithError:&error];
+    XCTAssertFalse(success);
+    XCTAssertNotNil(error);
+    XCTAssertTrue([error.localizedDescription containsString:@"no active transaction"],
+                  @"Unexpected error: %@", error);
+}
+
 @end

@@ -1,3 +1,8 @@
+---
+name: debugging-objc-crashes
+description: Systematic macOS Objective-C crash diagnosis using crash logs, lldb, signal patterns, memory debugging, and common ARC/concurrency crash fixes.
+---
+
 # Debugging Objective-C Crashes on macOS
 
 ## Purpose

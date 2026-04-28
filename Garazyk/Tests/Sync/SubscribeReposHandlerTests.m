@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Network/XrpcHandler.h"
 #import "App/PDSController.h"
 #import "Repository/RepoCommit.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
@@ -90,6 +91,7 @@
 - (void)tearDown {
     [self.handler stop];
     [self.controller stopServer];
+    [XrpcDispatcher resetSharedDispatcher];
     self.handler = nil;
     self.controller = nil;
     @autoreleasepool { }  // Drain to ensure deallocs before file deletion
