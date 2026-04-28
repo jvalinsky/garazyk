@@ -10,6 +10,76 @@
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
 
+@interface UIBackendClient (UIBackendClientTests)
+- (NSDictionary *)performJSONRequestWithURL:(NSURL *)url
+                                     method:(NSString *)method
+                                       body:(nullable NSDictionary *)body
+                                bearerToken:(nullable NSString *)token
+                                 statusCode:(NSInteger *)statusCode
+                                      error:(NSError **)error;
+- (NSData *)performRequestWithURL:(NSURL *)url
+                           method:(NSString *)method
+                             body:(nullable NSData *)body
+                      contentType:(nullable NSString *)contentType
+                      bearerToken:(nullable NSString *)token
+                       statusCode:(NSInteger *)statusCode
+                            error:(NSError **)error;
+@end
+
+@interface UIBackendClientStub : UIBackendClient
+@property(nonatomic, strong) NSMutableArray<NSDictionary *> *capturedRequests;
+@property(nonatomic, strong) NSDictionary *nextJSONResponse;
+@end
+
+@implementation UIBackendClientStub
+
+- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
+    self = [super initWithConfiguration:configuration];
+    if (self) {
+        _capturedRequests = [NSMutableArray array];
+        _nextJSONResponse = @{};
+    }
+    return self;
+}
+
+- (NSDictionary *)performJSONRequestWithURL:(NSURL *)url
+                                     method:(NSString *)method
+                                       body:(nullable NSDictionary *)body
+                                bearerToken:(nullable NSString *)token
+                                 statusCode:(NSInteger *)statusCode
+                                      error:(NSError **)error {
+    [self.capturedRequests addObject:@{
+        @"url": url.absoluteString ?: @"",
+        @"method": method ?: @"",
+        @"body": body ?: @{},
+        @"token": token ?: @""
+    }];
+    if (statusCode) {
+        *statusCode = 200;
+    }
+    return self.nextJSONResponse ?: @{};
+}
+
+- (NSData *)performRequestWithURL:(NSURL *)url
+                           method:(NSString *)method
+                             body:(nullable NSData *)body
+                      contentType:(nullable NSString *)contentType
+                      bearerToken:(nullable NSString *)token
+                       statusCode:(NSInteger *)statusCode
+                            error:(NSError **)error {
+    [self.capturedRequests addObject:@{
+        @"url": url.absoluteString ?: @"",
+        @"method": method ?: @"",
+        @"token": token ?: @""
+    }];
+    if (statusCode) {
+        *statusCode = 200;
+    }
+    return [@"{\"version\":\"1.0.0\"}" dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+@end
+
 @interface UIBackendClientTests : XCTestCase
 @property (nonatomic, strong) UIBackendClient *client;
 @property (nonatomic, strong) UIServiceConfig *config;
@@ -501,6 +571,117 @@
     XCTAssertNotNil(self.config.relayAdminToken);
     XCTAssertNotNil(self.config.appViewAdminToken);
     XCTAssertNotNil(self.config.chatAdminToken);
+}
+
+#pragma mark - Exact Request Wiring Tests
+
+- (UIBackendClientStub *)stubClient {
+    self.config.pdsBaseURL = [NSURL URLWithString:@"http://localhost:3001/"];
+    return [[UIBackendClientStub alloc] initWithConfiguration:self.config];
+}
+
+- (NSDictionary *)lastCapturedRequestFromStub:(UIBackendClientStub *)stub {
+    NSDictionary *request = stub.capturedRequests.lastObject;
+    XCTAssertNotNil(request);
+    return request ?: @{};
+}
+
+- (void)testSecuritySessionsUsePrivatePDSAdminRouteWithHashedSessionIDBody {
+    UIBackendClientStub *stub = [self stubClient];
+
+    [stub fetchActiveSessionsForDID:@"did:plc:alice"];
+    NSDictionary *fetchRequest = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(fetchRequest[@"method"], @"GET");
+    XCTAssertEqualObjects(fetchRequest[@"url"], @"http://localhost:3001/admin/api/accounts/did%3Aplc%3Aalice/sessions");
+    XCTAssertEqualObjects(fetchRequest[@"token"], @"admin-token-pds");
+
+    [stub revokeSessionForDID:@"did:plc:alice" sessionID:@"hash-session-id"];
+    NSDictionary *revokeRequest = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(revokeRequest[@"method"], @"POST");
+    XCTAssertEqualObjects(revokeRequest[@"url"], @"http://localhost:3001/admin/api/accounts/did%3Aplc%3Aalice/sessions/revoke");
+    XCTAssertEqualObjects(revokeRequest[@"body"], @{@"id": @"hash-session-id"});
+}
+
+- (void)testSecurityAppPasswordsUsePrivatePDSAdminRoutes {
+    UIBackendClientStub *stub = [self stubClient];
+
+    [stub fetchAppPasswordsForDID:@"did:plc:alice"];
+    NSDictionary *listRequest = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(listRequest[@"method"], @"GET");
+    XCTAssertEqualObjects(listRequest[@"url"], @"http://localhost:3001/admin/api/accounts/did%3Aplc%3Aalice/app-passwords");
+    XCTAssertEqualObjects(listRequest[@"token"], @"admin-token-pds");
+
+    [stub createAppPasswordForDID:@"did:plc:alice" name:@"ops"];
+    NSDictionary *createRequest = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(createRequest[@"method"], @"POST");
+    XCTAssertEqualObjects(createRequest[@"url"], @"http://localhost:3001/admin/api/accounts/did%3Aplc%3Aalice/app-passwords");
+    XCTAssertEqualObjects(createRequest[@"body"], @{@"name": @"ops"});
+
+    [stub deleteAppPasswordForDID:@"did:plc:alice" passwordName:@"ops"];
+    NSDictionary *deleteRequest = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(deleteRequest[@"method"], @"POST");
+    XCTAssertEqualObjects(deleteRequest[@"url"], @"http://localhost:3001/admin/api/accounts/did%3Aplc%3Aalice/app-passwords/revoke");
+    XCTAssertEqualObjects(deleteRequest[@"body"], @{@"name": @"ops"});
+}
+
+- (void)testChatLockUsesLockConvoEndpointOnChatService {
+    UIBackendClientStub *stub = [self stubClient];
+
+    [stub lockChatConvo:@"convo-123"];
+    NSDictionary *request = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(request[@"method"], @"POST");
+    XCTAssertEqualObjects(request[@"url"], @"http://localhost:5000/xrpc/chat.bsky.convo.lockConvo");
+    XCTAssertEqualObjects(request[@"token"], @"admin-token-chat");
+    XCTAssertEqualObjects(request[@"body"], @{@"convoId": @"convo-123"});
+}
+
+- (void)testOzoneReportsCallReportEventEndpointNotStatuses {
+    UIBackendClientStub *stub = [self stubClient];
+    stub.nextJSONResponse = @{@"events": @[@{@"subject": @"did:plc:alice", @"reportType": @"spam", @"createdBy": @"did:plc:reporter"}]};
+
+    NSDictionary *result = [stub fetchModerationReportsWithCursor:@"cursor-a" limit:50];
+    NSDictionary *request = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(request[@"method"], @"GET");
+    XCTAssertEqualObjects(request[@"url"], @"http://localhost:3001/xrpc/tools.ozone.moderation.queryEvents?cursor=cursor-a&limit=50&types=tools.ozone.moderation.defs%23modEventReport");
+    XCTAssertEqualObjects(request[@"token"], @"admin-token-pds");
+    XCTAssertEqualObjects(result[@"reports"][0][@"subject"], @"did:plc:alice");
+}
+
+- (void)testOzoneSettingsUseGetQueryParams {
+    UIBackendClientStub *stub = [self stubClient];
+
+    [stub listOzoneSettings];
+    NSDictionary *request = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(request[@"method"], @"GET");
+    XCTAssertEqualObjects(request[@"url"], @"http://localhost:3001/xrpc/tools.ozone.setting.listOptions?limit=50&scope=instance");
+    XCTAssertEqualObjects(request[@"body"], @{});
+}
+
+- (void)testPLCListUnwrapsItemsResponseIntoDIDs {
+    UIBackendClientStub *stub = [self stubClient];
+    stub.nextJSONResponse = @{@"items": @[@"did:plc:one", @"did:plc:two"]};
+
+    NSDictionary *result = [stub fetchPLCList];
+    NSDictionary *request = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(request[@"method"], @"GET");
+    XCTAssertEqualObjects(request[@"url"], @"http://localhost:4000/_list");
+    XCTAssertEqualObjects(result[@"dids"], (@[@"did:plc:one", @"did:plc:two"]));
+}
+
+- (void)testServiceConnectionProbeUsesServiceSpecificHealthEndpoint {
+    UIBackendClientStub *stub = [self stubClient];
+
+    [stub testConnectionForService:@"relay"];
+    NSDictionary *relayRequest = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(relayRequest[@"method"], @"GET");
+    XCTAssertEqualObjects(relayRequest[@"url"], @"http://localhost:7002/api/relay/health");
+    XCTAssertEqualObjects(relayRequest[@"token"], @"admin-token-relay");
+
+    [stub testConnectionForService:@"appview"];
+    NSDictionary *appViewRequest = [self lastCapturedRequestFromStub:stub];
+    XCTAssertEqualObjects(appViewRequest[@"method"], @"GET");
+    XCTAssertEqualObjects(appViewRequest[@"url"], @"http://localhost:3000/admin/ingest/health");
+    XCTAssertEqualObjects(appViewRequest[@"token"], @"admin-token-appview");
 }
 
 @end

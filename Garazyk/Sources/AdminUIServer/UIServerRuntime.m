@@ -934,6 +934,23 @@ static NSUInteger UISafeLength(id value) {
         [response setBodyString:[response.bodyString stringByAppendingString:[weakSelf renderConnectionsPartial]]];
     }];
 
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/test-connection" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *body = request.jsonBody;
+        NSString *service = [body[@"service"] isKindOfClass:[NSString class]] ? body[@"service"] : @"";
+        NSString *urlString = [body[@"url"] isKindOfClass:[NSString class]] ? body[@"url"] : @"";
+        NSString *token = [body[@"token"] isKindOfClass:[NSString class]] ? body[@"token"] : nil;
+        NSURL *url = [NSURL URLWithString:urlString ?: @""];
+        if (service.length == 0 || url.scheme.length == 0 || url.host.length == 0) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"name": service ?: @"", @"status": @"error", @"error": @"Valid service and URL are required"}];
+            return;
+        }
+        NSDictionary *result = [weakSelf.backendClient testConnectionForService:service baseURL:url adminToken:token];
+        response.statusCode = 200;
+        [response setJsonBody:result ?: @{}];
+    }];
+
     // AppView: Rebuild backfill scope
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-rebuild-scope" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -1417,21 +1434,20 @@ static NSUInteger UISafeLength(id value) {
     "const resp=await fetch('/admin/actions/lock-chat-convo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({convoID})});"
     "document.getElementById('chat-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/chat-convos','#chat-convos');}"
     "async function saveConnections(){"
-    "const services=['pds','plc','relay','appview','chat'];"
+    "const services=[['pds','pds'],['plc','plc'],['relay','relay'],['appview','appView'],['chat','chat']];"
     "const body={};"
-    "services.forEach(s=>{body[s+'URL']=document.getElementById('conn-'+s+'-url').value;body[s+'Token']=document.getElementById('conn-'+s+'-token').value;});"
+    "services.forEach(([id,key])=>{body[key+'URL']=document.getElementById('conn-'+id+'-url').value;body[key+'Token']=document.getElementById('conn-'+id+'-token').value;});"
     "const resp=await fetch('/admin/actions/update-connections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});"
-    "document.getElementById('connections-save-result').innerHTML=await resp.text();}"
+    "document.getElementById('connections-form').innerHTML=await resp.text();}"
     "async function testConnection(service){"
     "const url=document.getElementById('conn-'+service+'-url').value;"
     "const token=document.getElementById('conn-'+service+'-token').value;"
     "const resultEl=document.getElementById('conn-'+service+'-test-result');"
     "resultEl.textContent='Testing...';"
-    "try{const headers={'Content-Type':'application/json'};"
-    "if(token)headers['Authorization']='Bearer '+token;"
-    "const resp=await fetch(url+'/xrpc/com.atproto.server.describeServer',{headers,signal:AbortSignal.timeout(5000)});"
-    "if(resp.ok){resultEl.innerHTML='<span class=\"badge badge-success\">Connected</span>';}"
-    "else{resultEl.innerHTML='<span class=\"badge badge-destructive\">HTTP '+resp.status+'</span>';}}"
+    "try{const resp=await fetch('/admin/actions/test-connection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service,url,token})});"
+    "const result=await resp.json();"
+    "if(result.status==='online'){resultEl.innerHTML='<span class=\"badge badge-success\">Connected</span>';}"
+    "else{resultEl.innerHTML='<span class=\"badge badge-destructive\">'+(result.error||result.status||'Failed')+'</span>';}}"
     "catch(e){resultEl.innerHTML='<span class=\"badge badge-destructive\">Failed</span>';}}"
     "</script>"
     "</body></html>";
@@ -2110,7 +2126,7 @@ static NSUInteger UISafeLength(id value) {
 #pragma mark - Render Methods
 
 - (NSString *)renderConnectionsPartial {
-    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form\" hx-post=\"/admin/actions/update-connections\" hx-target=\"#connections-form\">"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<form class=\"form\" onsubmit=\"saveConnections();return false;\">"];
     
     NSDictionary *fields = @{
         @"pdsURL": UISafe([self.configuration.pdsBaseURL absoluteString], @""),
@@ -2127,28 +2143,39 @@ static NSUInteger UISafeLength(id value) {
     
     [html appendString:@"<div class=\"grid-2\">"];
     
-    NSArray *order = @[@"pds", @"appView", @"relay", @"plc", @"chat"];
-    for (NSString *key in order) {
+    NSArray<NSDictionary *> *order = @[
+        @{@"id": @"pds", @"key": @"pds", @"label": @"PDS"},
+        @{@"id": @"appview", @"key": @"appView", @"label": @"APPVIEW"},
+        @{@"id": @"relay", @"key": @"relay", @"label": @"RELAY"},
+        @{@"id": @"plc", @"key": @"plc", @"label": @"PLC"},
+        @{@"id": @"chat", @"key": @"chat", @"label": @"CHAT"}
+    ];
+    for (NSDictionary *entry in order) {
+        NSString *inputID = entry[@"id"];
+        NSString *key = entry[@"key"];
         NSString *urlKey = [key stringByAppendingString:@"URL"];
         NSString *tokenKey = [key stringByAppendingString:@"Token"];
         
         [html appendFormat:@"<div class=\"card\">"];
-        [html appendFormat:@"<div class=\"card-title mb-md\">%@ Service</div>", [key uppercaseString]];
+        [html appendFormat:@"<div class=\"card-title mb-md\">%@ Service</div>", entry[@"label"]];
         
         [html appendFormat:@"<div class=\"form-group\">"];
         [html appendFormat:@"<label class=\"form-label\">Base URL</label>"];
-        [html appendFormat:@"<input type=\"text\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", urlKey, UIEscaped(fields[urlKey])];
+        [html appendFormat:@"<input id=\"conn-%@-url\" type=\"text\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", inputID, urlKey, UIEscaped(fields[urlKey])];
         [html appendString:@"</div>"];
         
         [html appendFormat:@"<div class=\"form-group\">"];
         [html appendFormat:@"<label class=\"form-label\">Admin Token</label>"];
-        [html appendFormat:@"<input type=\"password\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", tokenKey, UIEscaped(fields[tokenKey])];
+        [html appendFormat:@"<input id=\"conn-%@-token\" type=\"password\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", inputID, tokenKey, UIEscaped(fields[tokenKey])];
         [html appendString:@"</div>"];
+
+        [html appendFormat:@"<div class=\"d-flex align-center gap-sm\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" onclick=\"testConnection('%@')\">Test</button><span id=\"conn-%@-test-result\" class=\"text-sm text-secondary\"></span></div>", inputID, inputID];
         
         [html appendString:@"</div>"];
     }
     
     [html appendString:@"</div>"];
+    [html appendString:@"<div id=\"connections-save-result\" class=\"mt-md\"></div>"];
     [html appendString:@"<div class=\"mt-lg d-flex justify-end\">"];
     [html appendString:@"<button type=\"submit\" class=\"btn btn-primary\">Save Cluster Configuration</button>"];
     [html appendString:@"</div></form>"];

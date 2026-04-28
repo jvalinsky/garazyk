@@ -1,6 +1,15 @@
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
 
+static NSString *UIBackendEscapedPathSegment(NSString *segment) {
+    if (![segment isKindOfClass:[NSString class]]) {
+        return @"";
+    }
+    NSMutableCharacterSet *allowed = [NSMutableCharacterSet alphanumericCharacterSet];
+    [allowed addCharactersInString:@"-._~"];
+    return [segment stringByAddingPercentEncodingWithAllowedCharacters:allowed] ?: @"";
+}
+
 @interface UIBackendClient ()
 
 @property(nonatomic, strong) UIServiceConfig *configuration;
@@ -49,15 +58,7 @@
     NSMutableArray<NSDictionary *> *services = [NSMutableArray array];
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(1);
 
-    // Define probe specifications: name, baseURL, xrpcPath, token
-    // Use NSNull for nil tokens to avoid dictionary literal crash
-    NSArray<NSDictionary *> *probeSpecs = @[
-        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL, @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
-        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
-        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL, @"xrpcPath": @"/xrpc/com.atproto.sync.listRepos?limit=1", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
-        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL, @"xrpcPath": @"/", @"token": [NSNull null]},
-        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/_health", @"token": [NSNull null]}
-    ];
+    NSArray<NSDictionary *> *probeSpecs = [self serviceProbeSpecifications];
 
     for (NSDictionary *spec in probeSpecs) {
         dispatch_group_enter(group);
@@ -86,6 +87,36 @@
     NSISO8601DateFormatter *formatter = [[NSISO8601DateFormatter alloc] init];
     NSString *generatedAt = [formatter stringFromDate:[NSDate date]];
     return @{@"services": services, @"generatedAt": generatedAt ?: @""};
+}
+
+- (NSDictionary *)testConnectionForService:(NSString *)serviceName {
+    NSString *normalized = [[serviceName ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    for (NSDictionary *spec in [self serviceProbeSpecifications]) {
+        if ([[spec[@"name"] lowercaseString] isEqualToString:normalized]) {
+            id tokenValue = spec[@"token"];
+            NSString *token = [tokenValue isKindOfClass:[NSNull class]] ? nil : tokenValue;
+            return [self probeServiceNamed:spec[@"name"]
+                                   baseURL:spec[@"baseURL"]
+                                  xrpcPath:spec[@"xrpcPath"]
+                               bearerToken:token];
+        }
+    }
+    return @{@"name": normalized ?: @"", @"status": @"error", @"error": @"Unknown service"};
+}
+
+- (NSDictionary *)testConnectionForService:(NSString *)serviceName
+                                   baseURL:(NSURL *)baseURL
+                                adminToken:(nullable NSString *)adminToken {
+    NSString *normalized = [[serviceName ?: @"" stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
+    for (NSDictionary *spec in [self serviceProbeSpecifications]) {
+        if ([[spec[@"name"] lowercaseString] isEqualToString:normalized]) {
+            return [self probeServiceNamed:spec[@"name"]
+                                   baseURL:baseURL
+                                  xrpcPath:spec[@"xrpcPath"]
+                               bearerToken:adminToken];
+        }
+    }
+    return @{@"name": normalized ?: @"", @"status": @"error", @"error": @"Unknown service"};
 }
 
 - (NSDictionary *)searchAccountsWithQuery:(NSString *)query {
@@ -357,12 +388,15 @@
     if (status < 200 || status >= 300) {
         return @{@"error": @"plc_list_failed", @"message": error.localizedDescription ?: @"PLC list fetch failed"};
     }
-    // PLC /_list returns a bare JSON array of DID strings; wrap it in a dict
-    if ([response isKindOfClass:[NSArray class]]) {
-        return @{@"dids": response};
-    }
     if ([response isKindOfClass:[NSDictionary class]]) {
-        return response;
+        NSDictionary *dict = (NSDictionary *)response;
+        if ([dict[@"dids"] isKindOfClass:[NSArray class]]) {
+            return dict;
+        }
+        if ([dict[@"items"] isKindOfClass:[NSArray class]]) {
+            return @{@"dids": dict[@"items"]};
+        }
+        return dict;
     }
     return @{@"dids": @[]};
 }
@@ -629,7 +663,7 @@
 
 - (NSDictionary *)lockChatConvo:(NSString *)convoID {
     if (!convoID.length) return @{@"error": @"convo_id_required"};
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/chat.bsky.convo.muteConvo" queryItems:@{} baseURL:self.configuration.chatBaseURL];
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/chat.bsky.convo.lockConvo" queryItems:nil baseURL:self.configuration.chatBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
     NSDictionary *body = @{@"convoId": convoID};
@@ -751,7 +785,8 @@
     NSMutableDictionary *params = [NSMutableDictionary dictionary];
     if (cursor.length > 0) params[@"cursor"] = cursor;
     if (limit > 0) params[@"limit"] = [NSString stringWithFormat:@"%lu", (unsigned long)limit];
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.moderation.queryStatuses"
+    params[@"types"] = @"tools.ozone.moderation.defs#modEventReport";
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.moderation.queryEvents"
                               queryItems:params
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
@@ -759,6 +794,25 @@
     NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"moderation_reports_failed", @"message": error.localizedDescription ?: @"Failed to fetch reports"};
+    }
+    if (![response[@"reports"] isKindOfClass:[NSArray class]] && [response[@"events"] isKindOfClass:[NSArray class]]) {
+        NSMutableArray<NSDictionary *> *reports = [NSMutableArray array];
+        for (NSDictionary *event in response[@"events"]) {
+            if (![event isKindOfClass:[NSDictionary class]]) {
+                continue;
+            }
+            id subject = event[@"subject"];
+            NSString *subjectString = [subject isKindOfClass:[NSString class]] ? subject : [subject description];
+            [reports addObject:@{
+                @"subject": subjectString ?: @"",
+                @"reason": event[@"reportType"] ?: event[@"reason"] ?: event[@"comment"] ?: @"",
+                @"reportedBy": event[@"createdBy"] ?: event[@"reportedBy"] ?: @"",
+                @"resolvedAt": event[@"resolvedAt"] ?: @""
+            }];
+        }
+        NSMutableDictionary *normalized = [response mutableCopy];
+        normalized[@"reports"] = reports;
+        return [normalized copy];
     }
     return response ?: @{};
 }
@@ -915,11 +969,11 @@
 
 - (NSDictionary *)listOzoneSettings {
     NSURL *url = [self URLByAppendingPath:@"/xrpc/tools.ozone.setting.listOptions"
-                              queryItems:nil
+                              queryItems:@{@"limit": @"50", @"scope": @"instance"}
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
-    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:@{} statusCode:&status error:&error];
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
     if (status < 200 || status >= 300) {
         return @{@"error": @"list_settings_failed", @"message": error.localizedDescription ?: @"Failed to fetch settings"};
     }
@@ -1214,8 +1268,8 @@
     if (did.length == 0) {
         return @{@"error": @"invalid_params", @"message": @"DID required"};
     }
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.server.listSessions"
-                              queryItems:@{@"did": did}
+    NSURL *url = [self URLByAppendingPath:[self pathWithSegments:@[@"admin", @"api", @"accounts", did, @"sessions"]]
+                              queryItems:nil
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
@@ -1230,10 +1284,10 @@
     if (did.length == 0 || sessionID.length == 0) {
         return @{@"error": @"invalid_params", @"message": @"DID and session ID required"};
     }
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.server.revokeSession"
+    NSURL *url = [self URLByAppendingPath:[self pathWithSegments:@[@"admin", @"api", @"accounts", did, @"sessions", @"revoke"]]
                               queryItems:nil
                                  baseURL:self.configuration.pdsBaseURL];
-    NSDictionary *body = @{@"did": did, @"id": sessionID};
+    NSDictionary *body = @{@"id": sessionID};
     NSInteger status = 0;
     NSError *error = nil;
     NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
@@ -1247,8 +1301,8 @@
     if (did.length == 0) {
         return @{@"error": @"invalid_params", @"message": @"DID required"};
     }
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.server.listAppPasswords"
-                              queryItems:@{@"did": did}
+    NSURL *url = [self URLByAppendingPath:[self pathWithSegments:@[@"admin", @"api", @"accounts", did, @"app-passwords"]]
+                              queryItems:nil
                                  baseURL:self.configuration.pdsBaseURL];
     NSInteger status = 0;
     NSError *error = nil;
@@ -1263,10 +1317,10 @@
     if (did.length == 0 || passwordName.length == 0) {
         return @{@"error": @"invalid_params", @"message": @"DID and name required"};
     }
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.server.createAppPassword"
+    NSURL *url = [self URLByAppendingPath:[self pathWithSegments:@[@"admin", @"api", @"accounts", did, @"app-passwords"]]
                               queryItems:nil
                                  baseURL:self.configuration.pdsBaseURL];
-    NSDictionary *body = @{@"did": did, @"name": passwordName};
+    NSDictionary *body = @{@"name": passwordName};
     NSInteger status = 0;
     NSError *error = nil;
     NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
@@ -1280,10 +1334,10 @@
     if (did.length == 0 || passwordName.length == 0) {
         return @{@"error": @"invalid_params", @"message": @"DID and name required"};
     }
-    NSURL *url = [self URLByAppendingPath:@"/xrpc/com.atproto.server.revokeAppPassword"
+    NSURL *url = [self URLByAppendingPath:[self pathWithSegments:@[@"admin", @"api", @"accounts", did, @"app-passwords", @"revoke"]]
                               queryItems:nil
                                  baseURL:self.configuration.pdsBaseURL];
-    NSDictionary *body = @{@"did": did, @"name": passwordName};
+    NSDictionary *body = @{@"name": passwordName};
     NSInteger status = 0;
     NSError *error = nil;
     NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:body statusCode:&status error:&error];
@@ -1365,27 +1419,66 @@
 
 #pragma mark - Private Helper Methods
 
+- (NSArray<NSDictionary *> *)serviceProbeSpecifications {
+    return @[
+        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL, @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
+        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
+        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL, @"xrpcPath": @"/api/relay/health", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
+        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL, @"xrpcPath": @"/admin/ingest/health", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
+        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]}
+    ];
+}
+
+- (NSString *)pathWithSegments:(NSArray<NSString *> *)segments {
+    NSMutableArray<NSString *> *escaped = [NSMutableArray arrayWithCapacity:segments.count];
+    for (NSString *segment in segments) {
+        [escaped addObject:UIBackendEscapedPathSegment(segment)];
+    }
+    return [@"/" stringByAppendingString:[escaped componentsJoinedByString:@"/"]];
+}
+
 - (NSURL *)URLByAppendingPath:(NSString *)path queryItems:(id)queryItems baseURL:(NSURL *)baseURL {
-    NSURL *url = [baseURL URLByAppendingPathComponent:path];
+    NSURLComponents *components = [NSURLComponents componentsWithURL:baseURL resolvingAgainstBaseURL:NO];
+    NSString *basePath = components.percentEncodedPath ?: @"";
+    NSString *appendPath = path ?: @"";
+    while ([basePath hasSuffix:@"/"] && basePath.length > 1) {
+        basePath = [basePath substringToIndex:basePath.length - 1];
+    }
+    while ([appendPath hasPrefix:@"/"]) {
+        appendPath = [appendPath substringFromIndex:1];
+    }
+    NSString *combinedPath = nil;
+    if (basePath.length == 0 || [basePath isEqualToString:@"/"]) {
+        combinedPath = appendPath.length > 0 ? [@"/" stringByAppendingString:appendPath] : @"/";
+    } else {
+        combinedPath = appendPath.length > 0 ? [basePath stringByAppendingFormat:@"/%@", appendPath] : basePath;
+    }
+    components.percentEncodedPath = combinedPath;
 
-    if (!queryItems) return url;
-
-    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    if (!queryItems) return components.URL ?: baseURL;
 
     if ([queryItems isKindOfClass:[NSDictionary class]]) {
         NSMutableArray<NSURLQueryItem *> *items = [NSMutableArray array];
         NSDictionary *dict = (NSDictionary *)queryItems;
-        for (NSString *key in dict) {
+        NSArray<NSString *> *keys = [[dict allKeys] sortedArrayUsingSelector:@selector(compare:)];
+        for (NSString *key in keys) {
             id value = dict[key];
-            NSString *valueStr = [value isKindOfClass:[NSString class]] ? value : [value description];
-            [items addObject:[NSURLQueryItem queryItemWithName:key value:valueStr]];
+            if ([value isKindOfClass:[NSArray class]]) {
+                for (id item in (NSArray *)value) {
+                    NSString *valueStr = [item isKindOfClass:[NSString class]] ? item : [item description];
+                    [items addObject:[NSURLQueryItem queryItemWithName:key value:valueStr]];
+                }
+            } else {
+                NSString *valueStr = [value isKindOfClass:[NSString class]] ? value : [value description];
+                [items addObject:[NSURLQueryItem queryItemWithName:key value:valueStr]];
+            }
         }
         components.queryItems = items;
     } else if ([queryItems isKindOfClass:[NSArray class]]) {
         components.queryItems = (NSArray<NSURLQueryItem *> *)queryItems;
     }
 
-    return components.URL ?: url;
+    return components.URL ?: baseURL;
 }
 
 - (NSDictionary *)performPDSRequestWithURL:(NSURL *)url method:(NSString *)method body:(nullable NSDictionary *)body statusCode:(NSInteger *)statusCode error:(NSError **)error {
@@ -1564,9 +1657,8 @@
     NSInteger status = 0;
     NSError *error = nil;
     
-    // Default to /xrpc/_health if no path provided
     NSString *probePath = xrpcPath ?: @"/xrpc/_health";
-    NSURL *probeURL = [NSURL URLWithString:probePath relativeToURL:baseURL];
+    NSURL *probeURL = [self URLByAppendingPath:probePath queryItems:nil baseURL:baseURL];
     
     NSData *data = [self performRequestWithURL:probeURL method:@"GET" body:nil contentType:nil bearerToken:token statusCode:&status error:&error];
     NSTimeInterval latency = ([[NSDate date] timeIntervalSince1970] - start) * 1000.0;

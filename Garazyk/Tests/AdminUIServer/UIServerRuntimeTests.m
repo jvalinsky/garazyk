@@ -7,11 +7,85 @@
  */
 
 #import <XCTest/XCTest.h>
+#import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServerRuntime.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+
+@interface UIServerRuntimeBackendStub : UIBackendClient
+@property(nonatomic, strong) NSMutableArray<NSString *> *calls;
+@property(nonatomic, copy) NSString *lastDID;
+@property(nonatomic, copy) NSString *lastConvoID;
+@property(nonatomic, copy) NSString *lastServiceName;
+@property(nonatomic, strong) NSURL *lastBaseURL;
+@property(nonatomic, copy) NSString *lastAdminToken;
+@end
+
+@implementation UIServerRuntimeBackendStub
+
+- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
+    self = [super initWithConfiguration:configuration];
+    if (self) {
+        _calls = [NSMutableArray array];
+    }
+    return self;
+}
+
+- (void)recordCall:(NSString *)call {
+    [self.calls addObject:call ?: @""];
+}
+
+- (NSDictionary *)fetchServiceOverview {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    return @{@"services": @[@{@"name": @"pds", @"status": @"online", @"url": @"http://localhost:3001"}]};
+}
+
+- (NSDictionary *)fetchActiveSessionsForDID:(NSString *)did {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    self.lastDID = did;
+    return @{@"sessions": @[@{@"id": @"session-hash", @"did": did ?: @"", @"createdAt": @"2026-04-28T00:00:00Z"}]};
+}
+
+- (NSDictionary *)fetchAppPasswordsForDID:(NSString *)did {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    self.lastDID = did;
+    return @{@"passwords": @[@{@"name": @"ops", @"did": did ?: @"", @"createdAt": @"2026-04-28T00:00:00Z"}]};
+}
+
+- (NSDictionary *)fetchModerationReportsWithCursor:(NSString *)cursor limit:(NSUInteger)limit {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    return @{@"reports": @[@{@"subject": @"did:plc:alice", @"reason": @"spam", @"reportedBy": @"did:plc:reporter"}]};
+}
+
+- (NSDictionary *)listOzoneSettings {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    return @{@"options": @[@{@"key": @"triageMode", @"value": @"manual"}]};
+}
+
+- (NSDictionary *)fetchPLCList {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    return @{@"dids": @[@"did:plc:alice"]};
+}
+
+- (NSDictionary *)lockChatConvo:(NSString *)convoID {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    self.lastConvoID = convoID;
+    return @{@"ok": @YES};
+}
+
+- (NSDictionary *)testConnectionForService:(NSString *)serviceName
+                                   baseURL:(NSURL *)baseURL
+                                adminToken:(NSString *)adminToken {
+    [self recordCall:NSStringFromSelector(_cmd)];
+    self.lastServiceName = serviceName;
+    self.lastBaseURL = baseURL;
+    self.lastAdminToken = adminToken;
+    return @{@"name": serviceName ?: @"", @"status": @"online", @"url": baseURL.absoluteString ?: @""};
+}
+
+@end
 
 @interface UIServerRuntimeTests : XCTestCase
 @property (nonatomic, strong) UIServiceConfig *config;
@@ -120,6 +194,21 @@
     NSString *tokenCookie = [[setCookie componentsSeparatedByString:@";"] firstObject];
     XCTAssertTrue([tokenCookie hasPrefix:@"ui_admin_token="]);
     return [tokenCookie stringByReplacingOccurrencesOfString:@"ui_admin_token=" withString:@""];
+}
+
+- (NSDictionary *)jsonFromResponse:(HttpResponse *)response {
+    XCTAssertGreaterThan(response.body.length, 0);
+    NSError *error = nil;
+    id json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:&error];
+    XCTAssertNil(error);
+    XCTAssertTrue([json isKindOfClass:[NSDictionary class]]);
+    return [json isKindOfClass:[NSDictionary class]] ? json : @{};
+}
+
+- (UIServerRuntimeBackendStub *)installBackendStub {
+    UIServerRuntimeBackendStub *stub = [[UIServerRuntimeBackendStub alloc] initWithConfiguration:self.config];
+    [self.runtime setValue:stub forKey:@"backendClient"];
+    return stub;
 }
 
 #pragma mark - Test: Initialization and Startup
@@ -408,6 +497,100 @@
 
     XCTAssertNotEqual(response.statusCode, 404);
     XCTAssertTrue([response.bodyString containsString:@"alert"]);
+}
+
+- (void)testDisplayedPartialsCallExpectedBackendMethods {
+    UIServerRuntimeBackendStub *stub = [self installBackendStub];
+    NSString *token = [self loginAndReturnSessionToken];
+
+    NSArray<NSDictionary *> *cases = @[
+        @{@"path": @"/admin/partials/overview", @"call": @"fetchServiceOverview"},
+        @{@"path": @"/admin/partials/sessions?did=did:plc:alice", @"call": @"fetchActiveSessionsForDID:"},
+        @{@"path": @"/admin/partials/app-passwords?did=did:plc:alice", @"call": @"fetchAppPasswordsForDID:"},
+        @{@"path": @"/admin/partials/ozone-reports?cursor=cursor-a", @"call": @"fetchModerationReportsWithCursor:limit:"},
+        @{@"path": @"/admin/partials/ozone-settings", @"call": @"listOzoneSettings"},
+        @{@"path": @"/admin/partials/plc-list", @"call": @"fetchPLCList"}
+    ];
+
+    for (NSDictionary *testCase in cases) {
+        [stub.calls removeAllObjects];
+        HttpRequest *request = [self createRequestWithMethod:@"GET"
+                                                        path:testCase[@"path"]
+                                                 sessionToken:token
+                                                    jsonBody:nil];
+        HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+        XCTAssertEqual(response.statusCode, 200, @"%@", testCase[@"path"]);
+        XCTAssertEqualObjects(stub.calls.lastObject, testCase[@"call"], @"%@", testCase[@"path"]);
+        XCTAssertFalse([response.bodyString containsString:@"Not Found"], @"%@", testCase[@"path"]);
+    }
+
+    XCTAssertEqualObjects(stub.lastDID, @"did:plc:alice");
+}
+
+- (void)testLockChatActionCallsBackendWithConvoID {
+    UIServerRuntimeBackendStub *stub = [self installBackendStub];
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"POST"
+                                                    path:@"/admin/actions/lock-chat-convo"
+                                             sessionToken:token
+                                                jsonBody:@{@"convoID": @"convo-123"}];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(stub.calls.lastObject, @"lockChatConvo:");
+    XCTAssertEqualObjects(stub.lastConvoID, @"convo-123");
+    XCTAssertTrue([response.bodyString containsString:@"Conversation locked"]);
+}
+
+- (void)testConnectionsUpdateActionAcceptsJSONAndRerendersMatchingInputIDs {
+    NSString *token = [self loginAndReturnSessionToken];
+    NSDictionary *body = @{
+        @"pdsURL": @"http://pds.example",
+        @"pdsToken": @"pds-token",
+        @"plcURL": @"http://plc.example",
+        @"plcToken": @"plc-token",
+        @"relayURL": @"http://relay.example",
+        @"relayToken": @"relay-token",
+        @"appViewURL": @"http://appview.example",
+        @"appViewToken": @"appview-token",
+        @"chatURL": @"http://chat.example",
+        @"chatToken": @"chat-token"
+    };
+    HttpRequest *request = [self createRequestWithMethod:@"POST"
+                                                    path:@"/admin/actions/update-connections"
+                                             sessionToken:token
+                                                jsonBody:body];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(self.config.appViewBaseURL.absoluteString, @"http://appview.example");
+    XCTAssertEqualObjects(self.config.appViewAdminToken, @"appview-token");
+    XCTAssertTrue([response.bodyString containsString:@"Connections updated"]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"conn-appview-url\""]);
+    XCTAssertTrue([response.bodyString containsString:@"id=\"conn-appview-token\""]);
+    XCTAssertTrue([response.bodyString containsString:@"onclick=\"testConnection('appview')\""]);
+}
+
+- (void)testConnectionTestActionRunsServerSideProbe {
+    UIServerRuntimeBackendStub *stub = [self installBackendStub];
+    NSString *token = [self loginAndReturnSessionToken];
+    HttpRequest *request = [self createRequestWithMethod:@"POST"
+                                                    path:@"/admin/actions/test-connection"
+                                             sessionToken:token
+                                                jsonBody:@{
+                                                    @"service": @"appview",
+                                                    @"url": @"http://appview.example",
+                                                    @"token": @"appview-token"
+                                                }];
+    HttpResponse *response = [self.runtime dispatchRequestForTesting:request];
+    NSDictionary *json = [self jsonFromResponse:response];
+
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(stub.calls.lastObject, @"testConnectionForService:baseURL:adminToken:");
+    XCTAssertEqualObjects(stub.lastServiceName, @"appview");
+    XCTAssertEqualObjects(stub.lastBaseURL.absoluteString, @"http://appview.example");
+    XCTAssertEqualObjects(stub.lastAdminToken, @"appview-token");
+    XCTAssertEqualObjects(json[@"status"], @"online");
 }
 
 @end

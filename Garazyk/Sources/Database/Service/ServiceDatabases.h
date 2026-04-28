@@ -160,6 +160,32 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 - (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)accountDid error:(NSError **)error;
 - (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error;
 
+/*!
+ @method listRefreshTokenSessionsForAccountDid:error:
+
+ @abstract List active refresh-token sessions for an account without exposing token values.
+
+ @param accountDid Account DID.
+ @param error Error pointer for retrieval failures.
+ @return Array of dictionaries with id, did, createdAt, and expiresAt.
+ */
+- (NSArray<NSDictionary *> *)listRefreshTokenSessionsForAccountDid:(NSString *)accountDid
+                                                             error:(NSError **)error;
+
+/*!
+ @method revokeRefreshTokenSessionForAccountDid:sessionID:error:
+
+ @abstract Revoke a refresh-token session by its non-secret token hash id.
+
+ @param accountDid Account DID.
+ @param sessionID SHA-256 based non-secret session id returned by listRefreshTokenSessionsForAccountDid:error:.
+ @param error Error pointer for revocation failures.
+ @return YES if a matching session was revoked, NO otherwise.
+ */
+- (BOOL)revokeRefreshTokenSessionForAccountDid:(NSString *)accountDid
+                                     sessionID:(NSString *)sessionID
+                                         error:(NSError **)error;
+
 #pragma mark - Invite Codes
 
 /*!
