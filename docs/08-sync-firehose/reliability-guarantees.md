@@ -6,7 +6,7 @@ title: Reliability Guarantees and Delivery Semantics
 
 ## Overview
 
-The firehose provides specific reliability guarantees for event delivery. Understanding these guarantees is critical for building correct applications on top of the firehose.
+The firehose provides specific reliability guarantees for event delivery.
 
 ## Delivery Semantics
 

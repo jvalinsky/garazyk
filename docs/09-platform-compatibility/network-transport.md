@@ -6,7 +6,7 @@ title: Platform-Specific Network Transport
 
 ## Overview
 
-`PDSNetworkTransport` is the server-side transport abstraction that lets `HttpServer` accept and use connections without hard-coding one platform's network stack. The critical contributor fact is that the current implementations are not the old CFNetwork or libcurl design. macOS uses the Network framework, and Linux/GNUstep uses non-blocking BSD sockets with dispatch-driven I/O.
+`PDSNetworkTransport` is the server-side transport abstraction that lets `HttpServer` accept and use connections without hard-coding one platform's network stack. The current implementations do not use CFNetwork or libcurl. macOS uses the Network framework, and Linux/GNUstep uses non-blocking BSD sockets with dispatch-driven I/O.
 
 ## Full Flow
 
@@ -39,7 +39,7 @@ The transport layer owns:
 - connection state changes
 - peer-address reporting for logging and rate limiting
 
-That is enough for `HttpServer` to parse requests and manage connection lifecycles without caring which platform created the socket.
+This allows `HttpServer` to parse requests and manage connection lifecycles independent of the platform.
 
 ## What It Does Not Own
 
@@ -61,7 +61,7 @@ Today the split is explicit:
 - `PDSNetworkTransportFactory` chooses the right implementation for the current build target
 - `HttpServer` attaches `newConnectionHandler` and copies `remoteAddress` into request state for logging and IP-based rate limiting
 
-If the server accepts connections on one platform but behaves strangely on another, this is one of the first places to inspect.
+If networking behaves differently between platforms, inspect these implementations first.
 
 ## Related Deep Dives
 

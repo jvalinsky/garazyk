@@ -6,7 +6,7 @@ title: Firehose Rate Limiting
 
 ## Overview
 
-Firehose rate limiting protects the PDS from being overwhelmed by WebSocket subscribers while ensuring fair resource distribution. Unlike HTTP request rate limiting, firehose rate limiting must handle:
+Firehose rate limiting protects the PDS from WebSocket subscribers and ensures fair resource distribution. Unlike HTTP request rate limiting, firehose rate limiting must handle:
 
 - Long-lived connections (hours to days)
 - High-volume event streams

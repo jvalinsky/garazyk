@@ -6,11 +6,9 @@ title: Blob Optimization
 
 ## Overview
 
-The old version of this page mixed real optimizations with design ideas that
-had not shipped. For contributors, that is worse than having no page at all.
+The old version mixed actual optimizations with unshipped design ideas.
 
-This rewrite keeps a narrower question in view: which blob optimizations are
-already present in the code, and why were they chosen?
+This section details the blob optimizations currently in the code and why they were chosen.
 
 ## Optimization In The Current Tree
 
@@ -21,8 +19,7 @@ Garazyk currently optimizes blob handling in four practical ways:
 - serve blobs from file-backed paths when possible
 - expose blob pressure through metrics instead of guessing
 
-None of those are glamorous, but they are the right first optimizations because
-they reduce waste without inventing new consistency rules.
+These optimizations reduce waste without adding complex consistency rules.
 
 ## Early Rejection Is A Performance Feature
 
@@ -30,9 +27,7 @@ Blob performance starts before storage. The upload path rejects oversized or
 otherwise invalid requests before the server spends time computing CIDs or
 writing provider bytes.
 
-That matters more than it sounds. An early rejection protects CPU, memory,
-disk, and request concurrency at the same time. It is both a correctness rule
-and a capacity optimization.
+Early rejection protects CPU, memory, disk, and request concurrency. It serves as both a correctness rule and a capacity optimization.
 
 ## Content Addressing Avoids Redundant Writes
 
@@ -40,8 +35,7 @@ Because blobs are addressed by CID, the provider can skip writing bytes it
 already has for that CID. That is the most important storage-side optimization
 in the current implementation.
 
-The point is not global deduplication policy. The point is that content
-addressing lets the storage layer avoid doing obviously redundant work.
+Content addressing allows the storage layer to avoid redundant work.
 
 ## File-Backed Reads Reduce Copying
 
@@ -50,18 +44,14 @@ provider-backed file location. When that path is available, higher layers can
 serve the blob without first forcing the entire payload through another in
 memory buffer.
 
-This is the clearest example of a useful optimization that does not complicate
-the protocol contract. The XRPC surface still sees "return this blob", but the
+This optimization does not complicate the protocol contract. The XRPC surface still sees "return this blob", but the
 service layer is free to choose a cheaper transport.
 
 ## Rate Limiting Is Also An Optimization
 
-Blob upload rate limiting is usually described as abuse protection, but it is
-also a performance optimization. It bounds how quickly one DID can force the
-server to hash, validate, and persist blob data.
+Blob upload rate limiting serves as both abuse protection and a performance optimization. It bounds how quickly one DID can force the server to hash, validate, and persist data.
 
-That is why blob protection docs and performance docs overlap here. Capacity
-work and abuse work are not separate concerns at this layer.
+Capacity work and abuse work overlap at this layer.
 
 ## Metrics Beat Guesswork
 
@@ -72,9 +62,7 @@ The current server exports the aggregate signals operators actually need:
 - request rates and latency
 - rate-limit rejection counts
 
-That is a better optimization strategy than inventing speculative cleanup jobs.
-If the metrics do not show sustained blob pressure, adding a more complex blob
-subsystem is usually premature.
+Monitoring these metrics is more effective than inventing speculative cleanup jobs. Without sustained blob pressure, a complex subsystem is premature.
 
 ## What Is Not Implemented
 
@@ -86,9 +74,7 @@ This repository does not currently implement:
 - a quota-aware optimizer
 - a blob repair CLI
 
-If you need one of those, start by defining the invariants first. The danger is
-not that the optimization is hard. The danger is that an optimization silently
-changes blob retention semantics.
+To add these features, define the invariants first. A poorly designed optimization can silently alter blob retention semantics.
 
 ## When To Extend This Area
 
@@ -98,8 +84,7 @@ A new blob optimization is worth adding when all three of these are true:
 - the new behavior has a clear ownership boundary
 - the docs can explain the retention and visibility rules without guessing
 
-That bar is deliberate. Blob systems become unreliable when "optimization" is
-used as a reason to hide lifecycle behavior.
+This high bar prevents optimizations from hiding lifecycle behavior.
 
 ## Related Reading
 

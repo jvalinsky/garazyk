@@ -77,13 +77,11 @@ Firehose behavior makes more sense after record semantics are already familiar. 
 
 > What event should exist after a repository mutation, and what ordering guarantees does the stream attempt to preserve?
 
-That is why the firehose tutorial belongs after records. Sync is downstream of repository truth, not a separate universe.
+That is why the firehose tutorial belongs after records. Sync is downstream of repository truth.
 
 ## Step 4: Understand Ordering, Replay, and Backpressure
 
-The firehose is interesting because it must answer more than "did a message send."
-
-It also needs to answer:
+The firehose must answer:
 
 - was ordering preserved,
 - can a client replay from a cursor,

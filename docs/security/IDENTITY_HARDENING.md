@@ -35,9 +35,9 @@ Optional hardware-backed security for JWT signing keys:
 - **Fallback**: Automatically falls back to Keychain or OpenSSL if Secure Enclave is unavailable (on non-supported systems).
 
 ### 4. Per-DID Rotation Key Activation
-Enabled the use of account-specific rotation keys to resolve handle update issues for migrated accounts:
-- **Priority**: The PDS now checks for a per-DID rotation key in the `ActorStore` before falling back to the server-wide singleton key.
-- **Compatibility**: This matches the behavior of the reference ATProto PDS implementation, ensuring seamless account mobility.
+Enabled account-specific rotation keys to resolve handle update issues for migrated accounts:
+- **Priority**: The PDS checks for a per-DID rotation key in the `ActorStore` before falling back to the server-wide singleton key.
+- **Compatibility**: This matches the reference ATProto PDS implementation, supporting account mobility.
 
 ## Technical Components
 

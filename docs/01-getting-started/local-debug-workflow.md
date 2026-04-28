@@ -6,7 +6,7 @@ title: Local Debug Workflow
 
 ## Goal
 
-Read this page when you want a repeatable contributor workflow for debugging locally: start from the failing symptom, identify the owning route and service, inspect the storage boundary, and then run the smallest test surface that can falsify your theory.
+Use this page to establish a repeatable debugging workflow: identify the failing symptom, find the owning route and service, inspect the storage boundary, and run the smallest relevant test.
 
 ## Full Flow
 
@@ -26,46 +26,46 @@ flowchart TD
     Test --> Verify
 ```
 
-## Why This Workflow Beats Random Grepping
+## Effective Debugging
 
-Garazyk has enough layers that a blind search often finds a related file before it finds the owning file. The faster workflow is:
+Garazyk's layered architecture makes blind searches inefficient; they often lead to related files rather than the actual owner. A more efficient workflow:
 
-1. classify the surface,
-2. follow the runtime path,
-3. confirm the storage or side-effect boundary,
-4. run the smallest useful test.
+1. Classify the surface.
+2. Follow the runtime path.
+3. Confirm the storage or side-effect boundary.
+4. Run the smallest useful test.
 
-That keeps local debugging anchored to the actual request path instead of the largest class with a familiar name.
+This keeps debugging anchored to the request path instead of the largest class with a familiar name.
 
 ## Walkthrough: A Failing Record Write
 
-Use a broken `com.atproto.repo.createRecord` request as the model.
+Use a broken `com.atproto.repo.createRecord` request as a model:
 
-1. Reproduce the failing request locally and record the exact status code and error body.
+1. Reproduce the failing request locally and record the status code and error body.
 2. Confirm the route family is `/xrpc/*`, not Explorer or UI.
-3. Inspect the domain method and `PDSRecordService` path before touching database code.
-4. If the service result looks wrong, inspect the actor-store transaction and commit metadata path.
-5. Run `PDSRecordServiceTests` or the closest integration test before running the full suite.
+3. Inspect the domain method and `PDSRecordService` before touching database code.
+4. If the service result is wrong, inspect the actor-store transaction and commit metadata path.
+5. Run `PDSRecordServiceTests` or the closest integration test before the full suite.
 
-That sequence mirrors the real runtime and prevents you from misclassifying a validation bug as a repository corruption bug.
+This sequence mirrors the runtime and prevents misclassifying validation bugs as repository corruption.
 
-## The Four Default Questions
+## Four Key Questions
 
-Ask these before deeper debugging:
+Ask these before deep debugging:
 
-- Did the request hit the handler you think it did?
-- Did auth or validation stop the request before service logic?
-- Which database family owns the data you expected to change?
-- Which targeted test should fail if your hypothesis is right?
+- Did the request hit the expected handler?
+- Did auth or validation stop the request before the service logic?
+- Which database family owns the data?
+- Which targeted test should fail if the hypothesis is right?
 
-Most local debugging gets easier as soon as those four answers are concrete.
+Answering these makes debugging easier.
 
-## Where To Debug When This Breaks
+## Where To Debug
 
-- Start in [Request Lifecycle](./request-lifecycle) when you are not sure which stage owns the failure.
-- Start in the network layer when the wrong route or auth path handles the request.
-- Start in the service layer when the request reaches the right owner but the behavior is wrong.
-- Start in [Testing Map](../11-reference/testing-map) when you know the owning subsystem but not the right test surface.
+- See [Request Lifecycle](./request-lifecycle) to identify the failing stage.
+- Check the network layer for routing or auth issues.
+- Check the service layer when the request reaches the right owner but behaves incorrectly.
+- See [Testing Map](../11-reference/testing-map) to find the right test surface.
 
 ## Tests That Should Fail If This Changes
 

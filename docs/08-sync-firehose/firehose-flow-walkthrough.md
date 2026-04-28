@@ -10,9 +10,7 @@ title: Firehose Flow Walkthrough
 page walks through the actual runtime path: route registration, subscriber
 startup, replay, live delivery, and backpressure enforcement.
 
-The important point is that Garazyk's firehose is not one monolithic
-"broadcast" method. It is a sequence of transport, replay, persistence, and
-queueing steps.
+Garazyk's firehose is a sequence of transport, replay, persistence, and queueing steps.
 
 ## Route Registration Starts On The Main HTTP Server
 
@@ -28,8 +26,7 @@ network stack.
                   }];
 ```
 
-That means the firehose inherits the same deployment boundary, hostname, and
-general HTTP runtime as the rest of the PDS.
+The firehose inherits the deployment boundary, hostname, and HTTP runtime of the PDS.
 
 ## A New Subscriber Goes Through Replay Setup First
 
@@ -67,8 +64,7 @@ if (hasCursor && !cursorValid) {
 }
 ```
 
-That is why replay behavior should be read as part of connection setup, not as
-an optional extra feature layered on later.
+Replay behavior is part of connection setup.
 
 ## No Cursor Means "Replay Current State, Then Go Live"
 
@@ -85,7 +81,7 @@ if (!hasCursor) {
 }
 ```
 
-That is a meaningful design choice:
+This design ensures:
 
 - the client does not begin with an empty view
 - the server can bootstrap a subscriber without requiring a stored cursor
@@ -109,7 +105,7 @@ NSData *eventData = [self.eventFormatter encodeCommitEvent:event error:&error];
 [self broadcastEventData:eventData];
 ```
 
-That order is the core operational invariant of the firehose:
+This order is the core operational invariant of the firehose:
 
 - assign sequence
 - encode the frame
@@ -132,8 +128,7 @@ if (connection.pendingSendCount >= self.maxPendingSendsPerConnection ||
 }
 ```
 
-This matters because replay, live commit broadcast, and connection health are
-not separate concerns. They all meet at the connection queue.
+Replay, live broadcast, and connection health all meet at the connection queue.
 
 ## The Payload Format Is DAG-CBOR End To End
 
@@ -149,8 +144,7 @@ if ([kind isEqualToString:@"commit"]) {
 }
 ```
 
-That is why firehose debugging can look like either a transport issue or a data
-format issue depending on where the failure happens.
+Firehose debugging can present as a transport issue or a data format issue.
 
 ## Practical Debugging Order
 
@@ -162,7 +156,7 @@ When a subscriber is missing data, check the flow in this order:
 4. did backpressure close the connection?
 5. did the client decode the DAG-CBOR frame correctly?
 
-That mirrors the implementation and usually gets to the fault line quickly.
+This sequence mirrors the implementation.
 
 ## Related Reading
 

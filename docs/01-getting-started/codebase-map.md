@@ -6,14 +6,14 @@ title: Codebase Map
 
 ## Overview
 
-Garazyk is easiest to understand when you stop thinking about it as one monolith and start reading it as a set of collaborating subsystems. The project has four contributor surfaces:
+Read Garazyk as a set of collaborating subsystems rather than a monolith. The project has four contributor surfaces:
 
 - Runtime code in `Garazyk/Sources/`
 - Tests in `Garazyk/Tests/`
 - Deployment assets in `docker/`
-- The canonical docs site in `docs/`
+- Canonical docs in `docs/`
 
-This page is the shortest route from "I can build it" to "I know where to change it."
+This page helps you navigate the codebase after your first build.
 
 ## Standalone Binaries
 
@@ -50,7 +50,7 @@ If you are onboarding to the codebase, read in this order:
 1. [Overview](./overview) for the architectural vocabulary.
 2. [Request Lifecycle](./request-lifecycle) to understand the end-to-end path.
 3. `Garazyk/Sources/App/PDSConfiguration.{h,m}` to learn what can be configured.
-4. `Garazyk/Sources/Network/PDSHttpServerBuilder.m` to see what the server actually exposes.
+4. `Garazyk/Sources/Network/PDSHttpServerBuilder.m` to see what the server exposes.
 5. `Garazyk/Sources/Network/XrpcMethodRegistry.m` to see how protocol methods are wired.
 6. One service path you care about, usually `PDSAccountService` or `PDSRecordService` in `Garazyk/Sources/Services/PDS/`.
 7. The matching test area in `Garazyk/Tests/App/Services/`.
@@ -69,16 +69,16 @@ flowchart LR
   Services --> Side["Relay, metrics, AppView, UI helpers"]
 ```
 
-The practical point is that most feature work is not "add a route." It is:
+Most feature work involves extending a service and exposing it through the network surface, rather than just adding a route:
 
-1. extend a service or controller,
-2. expose it through the correct network surface,
-3. update configuration or tests if needed,
-4. document the operational consequences.
+1. Extend a service or controller.
+2. Expose it through the correct network surface.
+3. Update configuration or tests.
+4. Document the operational consequences.
 
-## Tests Mirror the Runtime
+## Test/Runtime Mirroring
 
-The test tree mostly mirrors the runtime tree, which is a useful navigation trick:
+The test tree mirrors the runtime tree, making navigation easier:
 
 | Runtime area | Test area |
 | --- | --- |

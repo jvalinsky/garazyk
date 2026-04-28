@@ -14,15 +14,11 @@ The blob lifecycle in Garazyk is explicit and short:
 4. read or list blobs through implemented sync and explorer flows
 5. delete a blob explicitly if it should no longer be retained
 
-That is the real lifecycle today. There is no hidden background collector that
-finishes the job later.
+This is the actual lifecycle. No hidden background collector finishes the job later.
 
 ## Why The Lifecycle Starts With Upload
 
-ATProto records refer to blobs by CID-based references. That means the server
-has to stabilize the binary object before a record can point at it. The upload
-endpoint therefore exists to turn raw bytes into a validated, addressable blob
-object.
+ATProto records refer to blobs by CID-based references. The server must stabilize the binary object before a record points at it. The upload endpoint turns raw bytes into a validated, addressable blob.
 
 In Garazyk, `com.atproto.repo.uploadBlob` is the main entry point for this
 step. The request path applies basic payload guardrails, then `PDSBlobService`
@@ -32,8 +28,7 @@ lookup.
 ## Upload To Reference
 
 The service layer returns a blob object rather than a private storage record.
-That is important because the next consumer is usually record-writing code, not
-another storage API.
+The next consumer is usually record-writing code.
 
 In practice the workflow is:
 
@@ -54,16 +49,14 @@ The current tree exposes two main read surfaces:
 can return a real file path. Higher layers use that to avoid unnecessary copies
 for larger responses.
 
-The important architectural point is that sync reads are still service-backed.
-Handlers are not reaching straight into the provider.
+Sync reads are service-backed; handlers do not reach straight into the provider.
 
 ## Delete Path
 
 Deletion is implemented as an explicit API action, not as a derived side effect
-from record updates. Today that means `com.atproto.repo.deleteBlob` is the
-truthful contributor-facing delete path.
+from record updates. `com.atproto.repo.deleteBlob` is the explicit delete path.
 
-That smaller design keeps the behavior easy to reason about:
+This explicit design clarifies behavior:
 
 - a delete either succeeds or fails as a requested operation
 - there is no separate repair process required to "finish" the lifecycle
@@ -79,8 +72,7 @@ The current blob lifecycle does not include:
 - scheduled blob repair or verification jobs
 - a dedicated blob maintenance CLI
 
-Those ideas may still be useful later, but they are not part of the shipped
-lifecycle today.
+These are not part of the current lifecycle.
 
 ## Failure Modes To Keep In Mind
 
@@ -91,8 +83,7 @@ When blob behavior looks wrong, the failure is usually in one of four places:
 - the provider cannot persist or retrieve bytes for a CID
 - the caller is assuming automatic cleanup that the current code does not do
 
-Starting with that model is much faster than searching for a nonexistent
-background maintenance system.
+Using this model is faster than searching for a nonexistent background maintenance system.
 
 ## Related Deep Dives
 

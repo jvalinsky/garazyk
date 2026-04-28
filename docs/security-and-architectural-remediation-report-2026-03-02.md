@@ -5,7 +5,7 @@ title: Security and Architectural Remediation Report - 2026-03-02
 # Security and Architectural Remediation Report - 2026-03-02
 
 ## Overview
-This report documents the security hardening, architectural improvements, and stability fixes implemented in the ATProto PDS codebase. The primary objective was to address vulnerabilities highlighted in the security audit and ensure the system's robustness under stress.
+This report documents security hardening, architectural improvements, and stability fixes in the ATProto PDS codebase. This remediation addressed security vulnerabilities and improved system stability under stress.
 
 ## 1. Security Enhancements
 
@@ -55,8 +55,8 @@ This report documents the security hardening, architectural improvements, and st
 
 ### Incremental Protocol Parsing
 **Problem:** `HttpChunkedBodyParser` failed to correctly process fragmented network data (e.g., chunks split across packets).
-**Solution:** Implemented a more robust buffer-aware state machine that precisely tracks byte consumption and CRLF boundaries.
-**Impact:** Resilient handling of real-world network conditions.
+**Solution:** Implemented a buffer-aware state machine that precisely tracks byte consumption and CRLF boundaries.
+**Impact:** Resilient handling of fragmented network data.
 
 ### Identity Signing 500 Errors
 **Problem:** `RepoAuthIdentityTests` were failing with 500 errors due to a missing `PDS_MASTER_SECRET` in the test environment.

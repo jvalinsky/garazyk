@@ -7,7 +7,7 @@ title: Performance Monitoring
 ## Overview
 
 Performance work in Garazyk starts with the runtime signals the server already
-exports. That matters because this codebase has enough moving parts that
+exports. This codebase has enough moving parts that
 "profile everything" is usually the slowest way to debug a regression.
 
 The useful order is:

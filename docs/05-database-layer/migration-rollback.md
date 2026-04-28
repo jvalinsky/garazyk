@@ -6,7 +6,7 @@ title: Migration Rollback Procedures
 
 ## Overview
 
-Database migrations in the PDS are designed to be forward-only. However, when migrations fail or cause issues, rollback procedures are essential for recovery. This document covers rollback strategies, safety checks, and recovery procedures.
+Database migrations in the PDS are designed to be forward-only. When migrations fail or cause issues, explicit rollback procedures manage recovery. Establish safety checks and rollback strategies before deploying changes.
 
 ## Rollback Philosophy
 
