@@ -2,7 +2,21 @@
 
 The Admin UI runs as `garazyk-ui`, a standalone service that proxies operator workflows to the backing PDS, PLC, Relay, AppView, and Chat services.
 
-## Quick Start
+## Production Docker Deployment
+
+For a production deployment, the Admin UI should be run as a Docker container, matching the paradigm of the PDS.
+
+```bash
+cd docker
+docker build -f Dockerfile.ui -t garazyk-ui:local ..
+docker run -d -p 2590:2590 \
+  -e GARAZYK_UI_ADMIN_PASSWORD=change-this \
+  garazyk-ui:local
+```
+
+## Bare-metal Development Quick Start
+
+If you are developing the UI directly on macOS:
 
 ```bash
 xcodegen generate
