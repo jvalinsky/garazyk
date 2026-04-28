@@ -5,11 +5,11 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Debug/PDSLogger.h"
+#import <AVFoundation/AVFoundation.h>
 
 NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 
 @interface PDSVideoWorker ()
-@property (nonatomic, strong) id<PDSBlobProvider> blobProvider;
 @property (nonatomic, assign) BOOL isRunning;
 @property (nonatomic, strong) NSMutableSet<NSString *> *processingJobIds;
 @end
@@ -144,61 +144,176 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 
 - (void)processJob:(NSString *)jobId {
     dispatch_async(_workerQueue, ^{
-        PDS_LOG_INFO(@"Processing video job: %@", jobId);
+        @autoreleasepool {
+            PDS_LOG_INFO(@"Processing video job: %@", jobId);
 
-        [self updateJobProgress:jobId progress:0 message:@"Starting processing"];
+            [self updateJobProgress:jobId progress:10 message:@"Loading video"];
 
-        PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
-        NSError *dbError = nil;
-        NSDictionary *job = [database getVideoJobById:jobId error:&dbError];
+            PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
+            NSError *dbError = nil;
+            NSDictionary *job = [database getVideoJobById:jobId error:&dbError];
 
-        if (!job) {
-            PDS_LOG_ERROR(@"Job not found: %@", jobId);
-            [self failJob:jobId error:dbError ?: [NSError errorWithDomain:PDSVideoWorkerErrorDomain
-                                                          code:PDSVideoWorkerErrorDatabaseUnavailable
-                                                      userInfo:@{NSLocalizedDescriptionKey: @"Job not found"}]];
-            return;
+            if (!job) {
+                PDS_LOG_ERROR(@"Job not found: %@", jobId);
+                [self failJob:jobId error:dbError ?: [NSError errorWithDomain:PDSVideoWorkerErrorDomain
+                                                                       code:PDSVideoWorkerErrorDatabaseUnavailable
+                                                                   userInfo:@{NSLocalizedDescriptionKey: @"Job not found"}]];
+                return;
+            }
+
+            NSString *blobCid = job[@"blob_cid"];
+            if (!blobCid || [blobCid isEqual:[NSNull null]]) {
+                [self failJob:jobId error:[NSError errorWithDomain:PDSVideoWorkerErrorDomain
+                                                          code:PDSVideoWorkerErrorProcessingFailed
+                                                      userInfo:@{NSLocalizedDescriptionKey: @"Missing blob CID"}]];
+                return;
+            }
+
+            NSError *blobError = nil;
+            CID *cid = [CID cidFromString:blobCid];
+            if (!cid) {
+                [self failJob:jobId error:blobError ?: [NSError errorWithDomain:PDSVideoWorkerErrorDomain
+                                                                           code:PDSVideoWorkerErrorProcessingFailed
+                                                                       userInfo:@{NSLocalizedDescriptionKey: @"Invalid blob CID"}]];
+                return;
+            }
+            NSData *videoData = [self.blobProvider retrieveBlobDataForCID:cid error:&blobError];
+            if (!videoData) {
+                PDS_LOG_ERROR(@"Failed to retrieve blob %@: %@", blobCid, blobError);
+                [self failJob:jobId error:blobError ?: [NSError errorWithDomain:PDSVideoWorkerErrorDomain
+                                                                           code:PDSVideoWorkerErrorBlobProviderUnavailable
+                                                                       userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve video blob"}]];
+                return;
+            }
+
+            [self updateJobState:jobId state:@"PROCESSING" progress:15 message:@"Writing video to temp file"];
+
+            NSString *tempDir = NSTemporaryDirectory();
+            NSString *tempInputPath = [tempDir stringByAppendingFormat:@"video_in_%@.mp4", jobId];
+            NSString *tempOutputPath = [tempDir stringByAppendingFormat:@"video_out_%@.mp4", jobId];
+
+            NSURL *inputURL = [NSURL fileURLWithPath:tempInputPath];
+            NSURL *outputURL = [NSURL fileURLWithPath:tempOutputPath];
+
+            BOOL written = [videoData writeToURL:inputURL options:NSDataWritingAtomic error:&blobError];
+            if (!written) {
+                PDS_LOG_ERROR(@"Failed to write temp file: %@", blobError);
+                [self failJob:jobId error:blobError];
+                return;
+            }
+
+            [self updateJobProgress:jobId progress:20 message:@"Transcoding video"];
+
+            [[PDSVideoTranscoder sharedTranscoder] transcodeVideoAtURL:inputURL
+                                                              toQuality:PDSVideoTranscoderQuality720p
+                                                              outputURL:outputURL
+                                                              progress:^(float progress) {
+                NSInteger p = 20 + (NSInteger)(progress * 40);
+                [self updateJobProgress:jobId progress:p message:@"Transcoding video"];
+            }
+                                                            completion:^(NSURL *transcodedURL, NSError *transcodeError) {
+
+                if (!transcodedURL) {
+                    PDS_LOG_ERROR(@"Transcoding failed for job %@: %@", jobId, transcodeError);
+                    [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
+                    [self handleJobFailure:jobId error:transcodeError];
+                    return;
+                }
+
+                [self updateJobProgress:jobId progress:65 message:@"Generating thumbnail"];
+
+                [[PDSVideoThumbnailGenerator sharedGenerator] generateThumbnailAtTime:1.0
+                                                                       fromVideoURL:transcodedURL
+                                                                         maxWidth:640
+                                                                        maxHeight:360
+                                                                      completion:^(NSData *thumbnailData, NSError *thumbError) {
+
+                    CID *thumbnailCid = nil;
+                    if (thumbnailData) {
+                        thumbnailCid = [[PDSVideoThumbnailGenerator sharedGenerator] storeThumbnailData:thumbnailData
+                                                                                                forJob:jobId
+                                                                                                error:nil];
+                    } else {
+                        PDS_LOG_WARN(@"Thumbnail generation failed for job %@: %@", jobId, thumbError);
+                    }
+
+                    [self updateJobProgress:jobId progress:80 message:@"Storing processed video"];
+
+                    NSError *storeError = nil;
+                    NSData *processedData = [NSData dataWithContentsOfURL:transcodedURL];
+                    CID *processedCid = nil;
+
+                    if (processedData) {
+                        processedCid = [CID sha256:processedData];
+                        [self.blobProvider storeBlobData:processedData forCID:processedCid error:&storeError];
+                    }
+
+                    [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
+                    [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
+
+                    if (processedCid) {
+                        [self updateJobProgress:jobId progress:90 message:@"Updating job record"];
+
+                        BOOL updated = [database updateVideoJobResults:jobId
+                                                     processedBlobCid:processedCid.stringValue
+                                                    thumbnailBlobCid:thumbnailCid.stringValue
+                                                               error:&storeError];
+
+                        if (updated) {
+                        [self completeJob:jobId];
+                    } else {
+                        PDS_LOG_ERROR(@"Failed to update job results: %@", storeError);
+                        [self handleJobFailure:jobId error:storeError];
+                    }
+                } else {
+                    [self handleJobFailure:jobId error:storeError ?: [NSError errorWithDomain:PDSVideoWorkerErrorDomain
+                                                                                     code:PDSVideoWorkerErrorProcessingFailed
+                                                                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to store processed video"}]];
+                }
+            }];
+            }];
         }
-
-        NSString *inputPath = job[@"blob_cid"];
-        if (!inputPath) {
-            inputPath = job[@"original_filename"];
-        }
-
-        if (!inputPath) {
-            [self failJob:jobId error:[NSError errorWithDomain:PDSVideoWorkerErrorDomain
-                                                  code:PDSVideoWorkerErrorProcessingFailed
-                                              userInfo:@{NSLocalizedDescriptionKey: @"Input file not found"}]];
-            return;
-        }
-
-        [self updateJobState:jobId state:@"PROCESSING" progress:10 message:@"Video processing available on macOS with AVFoundation"];
-
-        [self completeJob:jobId];
     });
 }
 
+- (void)handleJobFailure:(NSString *)jobId error:(NSError *)error {
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
+    NSDictionary *job = [database getVideoJobById:jobId error:nil];
+    NSInteger retryCount = [job[@"retry_count"] integerValue];
+
+    if (retryCount < 3) {
+        PDS_LOG_WARN(@"Job %@ failed, retrying (%ld/3): %@", jobId, (long)retryCount + 1, error);
+        [database incrementVideoJobRetry:jobId error:nil];
+        @synchronized(self.processingJobIds) {
+            [self.processingJobIds removeObject:jobId];
+        }
+    } else {
+        PDS_LOG_ERROR(@"Job %@ failed permanently after %ld retries: %@", jobId, (long)retryCount, error);
+        [self failJob:jobId error:error];
+    }
+}
+
 - (void)updateJobState:(NSString *)jobId
-                state:(NSString *)state
-             progress:(NSInteger)progress
-              message:(NSString *)message {
+                 state:(NSString *)state
+              progress:(NSInteger)progress
+               message:(NSString *)message {
     PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
     [database updateVideoJobState:jobId
-                            state:state
-                         progress:@(progress)
-                          message:message
-                            error:nil];
+                             state:state
+                          progress:@(progress)
+                           message:message
+                             error:nil];
 }
 
 - (void)updateJobProgress:(NSString *)jobId
-               progress:(NSInteger)progress
-                message:(NSString *)message {
+                progress:(NSInteger)progress
+                 message:(NSString *)message {
     PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
     [database updateVideoJobState:jobId
-                            state:@"PROCESSING"
-                         progress:@(progress)
-                          message:message
-                            error:nil];
+                             state:@"PROCESSING"
+                          progress:@(progress)
+                           message:message
+                             error:nil];
 }
 
 - (void)completeJob:(NSString *)jobId {
@@ -212,7 +327,13 @@ NSString * const PDSVideoWorkerErrorDomain = @"com.atproto.pds.video.worker";
 }
 
 - (void)failJob:(NSString *)jobId error:(NSError *)error {
-    [self updateJobState:jobId state:@"FAILED" progress:0 message:error.localizedDescription];
+    PDSDatabase *database = [self.serviceDatabases serviceDatabaseWithError:nil];
+    NSString *errorMsg = error.localizedDescription ?: @"Unknown error";
+    [database updateVideoJobState:jobId
+                             state:@"FAILED"
+                          progress:@0
+                           message:errorMsg
+                             error:nil];
 
     @synchronized(self.processingJobIds) {
         [self.processingJobIds removeObject:jobId];
