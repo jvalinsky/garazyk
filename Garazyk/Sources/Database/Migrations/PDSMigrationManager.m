@@ -356,6 +356,56 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V8 Ozone Subjects & Safelinks Schema
+
+@interface V8OzoneSubjectsSchema : NSObject <PDSMigration>
+@end
+
+@implementation V8OzoneSubjectsSchema
+
+- (NSInteger)version {
+    return 8;
+}
+
+- (NSString *)name {
+    return @"ozone_subjects_safelinks_schema";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    PDSSchemaManager *sm = [PDSSchemaManager sharedManager];
+    NSArray *schemas = @[
+        [sm ozoneSubjectsTableSchema],
+        [sm ozoneSafelinksTableSchema],
+        @"CREATE INDEX IF NOT EXISTS idx_mod_subjects_state ON moderation_subjects(review_state)",
+        @"CREATE INDEX IF NOT EXISTS idx_mod_subjects_did ON moderation_subjects(subject_did)",
+        @"CREATE INDEX IF NOT EXISTS idx_mod_safelinks_url ON moderation_safelinks(url)"
+    ];
+
+    for (NSString *sql in schemas) {
+        char *errMsg = NULL;
+        int result = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (result != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V8 up failed: %@", msg]}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    sqlite3_exec(db, "DROP TABLE IF EXISTS moderation_subjects", NULL, NULL, NULL);
+    sqlite3_exec(db, "DROP TABLE IF EXISTS moderation_safelinks", NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
 #pragma mark - V1 Initial Schema Migration
 
 @interface V1InitialSchema : NSObject <PDSMigration>
@@ -1355,6 +1405,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V5HostingEventsSchema alloc] init]];
     [manager registerMigration:[[V6DraftsSchema alloc] init]];
     [manager registerMigration:[[V7SearchFTS5Schema alloc] init]];
+    [manager registerMigration:[[V8OzoneSubjectsSchema alloc] init]];
     return manager;
 }
 

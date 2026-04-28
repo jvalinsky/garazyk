@@ -55,12 +55,15 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 /*!
  @method sharedDatabase
- 
+
  @abstract Returns the shared singleton database instance.
- 
+
+ @discussion Deprecated. Use PDSServiceDatabases.serviceDatabaseWithError: instead,
+ which returns a queue-serialized, cached connection.
+
  @return The shared PDSDatabase instance.
  */
-+ (instancetype)sharedDatabase;
++ (instancetype)sharedDatabase __attribute__((deprecated("Use PDSServiceDatabases.serviceDatabaseWithError: instead")));
 
 
 /*!

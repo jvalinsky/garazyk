@@ -68,6 +68,7 @@ static NSString *appPasswordGenerateSecret(void) {
 @property (nonatomic, copy) NSString *serviceDbPath;
 @property (nonatomic, copy) NSString *didCacheDbPath;
 @property (nonatomic, copy) NSString *sequencerDbPath;
+@property (nonatomic, strong) PDSDatabase *serviceDb;
 
 @end
 
@@ -168,30 +169,33 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (BOOL)executeSQL:(NSString *)sql onPool:(PDSDatabasePool *)pool error:(NSError **)error {
-    PDSActorStore *store = [pool storeForDid:@"__service__" error:error];
-    if (!store || !store.db) {
-        if (error && !*error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                        code:SQLITE_ERROR
-                                    userInfo:@{NSLocalizedDescriptionKey: @"Database not open"}];
+    __block BOOL success = YES;
+    [pool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        if (!store.db) {
+            if (innerError) {
+                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                                  code:SQLITE_ERROR
+                                              userInfo:@{NSLocalizedDescriptionKey: @"Database not open"}];
+            }
+            success = NO;
+            return;
         }
-        return NO;
-    }
 
-    char *errMsg = NULL;
-    int result = sqlite3_exec(store.db, sql.UTF8String, NULL, NULL, &errMsg);
+        char *errMsg = NULL;
+        int result = sqlite3_exec(store.db, sql.UTF8String, NULL, NULL, &errMsg);
 
-    if (result != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
-                                        code:result
-                                    userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg]}];
+        if (result != SQLITE_OK) {
+            if (innerError) {
+                *innerError = [NSError errorWithDomain:PDSServiceDatabasesErrorDomain
+                                                  code:result
+                                              userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:errMsg]}];
+            }
+            sqlite3_free(errMsg);
+            success = NO;
         }
-        sqlite3_free(errMsg);
-        return NO;
-    }
-
-    return YES;
+    } error:error];
+    return success;
 }
 
 #pragma mark - Account Operations
@@ -243,25 +247,10 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
-    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
-    if (!store) return nil;
-
-    NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
-    __autoreleasing NSError *stmtError = nil;
-    sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
-    if (!stmt) {
-        if (error) *error = stmtError;
-        return nil;
-    }
-
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-
-    PDSDatabaseAccount *account = nil;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        account = [store accountFromStatement:stmt];
-    }
-
-    [store finalizeStatement:stmt];
+    __block PDSDatabaseAccount *account = nil;
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        account = [reader getAccountForDid:did error:innerError];
+    } error:error];
     return account;
 }
 
@@ -287,22 +276,22 @@ static NSString *appPasswordGenerateSecret(void) {
 
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-    PDSActorStore *store = [self.servicePool storeForDid:@"__service__" error:nil];
-    if (!store) return nil;
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSString *sql = @"SELECT a.* FROM accounts a "
+                         @"INNER JOIN refresh_tokens rt ON a.did = rt.account_did "
+                         @"WHERE rt.token = ? AND rt.expires_at > ?";
+        sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
 
-    NSString *sql = @"SELECT a.* FROM accounts a "
-                    @"INNER JOIN refresh_tokens rt ON a.did = rt.account_did "
-                    @"WHERE rt.token = ? AND rt.expires_at > ?";
-    __autoreleasing NSError *stmtError = nil;
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:&stmtError];
-    if (!stmt) return nil;
+        sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
 
-    sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
-
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        account = [store accountFromStatement:stmt];
-    }
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            account = [store accountFromStatement:stmt];
+        }
+        [store finalizeStatement:stmt];
+    } error:error];
     return account;
 }
 
@@ -798,10 +787,18 @@ static NSString *appPasswordGenerateSecret(void) {
 #pragma mark - Cleanup
 
 - (nullable PDSDatabase *)serviceDatabaseWithError:(NSError **)error {
+    if (self.serviceDb && self.serviceDb.isOpen) {
+        return self.serviceDb;
+    }
+
     NSString *dbFilePath = [self.serviceDbPath stringByAppendingPathComponent:@"service.db"];
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbFilePath]];
-    if (![db openWithError:error]) return nil;
-    return db;
+    if (![db openWithError:error]) {
+        self.serviceDb = nil;
+        return nil;
+    }
+    self.serviceDb = db;
+    return self.serviceDb;
 }
 
 - (nullable sqlite3 *)serviceDatabase {
@@ -810,6 +807,8 @@ static NSString *appPasswordGenerateSecret(void) {
 }
 
 - (void)closeAll {
+    [self.serviceDb close];
+    self.serviceDb = nil;
     [self.servicePool closeAll];
     [self.didCachePool closeAll];
     [self.sequencerPool closeAll];
