@@ -60,6 +60,22 @@ static NSString *appPasswordGenerateSecret(void) {
     return secret;
 }
 
+static NSString *refreshTokenSessionID(NSString *refreshToken) {
+    NSData *tokenData = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
+    if (!tokenData) {
+        return @"";
+    }
+
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(tokenData.bytes, (CC_LONG)tokenData.length, digest);
+
+    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
+    for (NSUInteger i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
+        [hex appendFormat:@"%02x", digest[i]];
+    }
+    return [hex copy];
+}
+
 @interface PDSServiceDatabases ()
 
 @property (nonatomic, strong, readwrite) PDSDatabasePool *servicePool;
@@ -413,6 +429,100 @@ static NSString *appPasswordGenerateSecret(void) {
     } error:&localError];
     if (error) *error = localError;
     return success;
+}
+
+- (NSArray<NSDictionary *> *)listRefreshTokenSessionsForAccountDid:(NSString *)accountDid
+                                                             error:(NSError **)error {
+    if (accountDid.length == 0) {
+        return @[];
+    }
+
+    __block NSMutableArray<NSDictionary *> *sessions = [NSMutableArray array];
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSString *sql = @"SELECT token, account_did, created_at, expires_at "
+                        @"FROM refresh_tokens "
+                        @"WHERE account_did = ? AND expires_at > ? "
+                        @"ORDER BY created_at DESC";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+
+        sqlite3_bind_text(stmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 2, [[NSDate date] timeIntervalSince1970]);
+
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const unsigned char *tokenText = sqlite3_column_text(stmt, 0);
+            const unsigned char *didText = sqlite3_column_text(stmt, 1);
+            if (!tokenText || !didText) {
+                continue;
+            }
+
+            NSString *token = [NSString stringWithUTF8String:(const char *)tokenText];
+            NSString *did = [NSString stringWithUTF8String:(const char *)didText];
+            NSTimeInterval createdAt = sqlite3_column_double(stmt, 2);
+            NSTimeInterval expiresAt = sqlite3_column_double(stmt, 3);
+            NSString *createdAtString = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:createdAt]] ?: @"";
+            NSString *expiresAtString = [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:expiresAt]] ?: @"";
+
+            [sessions addObject:@{
+                @"id": refreshTokenSessionID(token),
+                @"did": did ?: @"",
+                @"createdAt": createdAtString,
+                @"expiresAt": expiresAtString
+            }];
+        }
+    } error:error];
+
+    return [sessions copy];
+}
+
+- (BOOL)revokeRefreshTokenSessionForAccountDid:(NSString *)accountDid
+                                     sessionID:(NSString *)sessionID
+                                         error:(NSError **)error {
+    if (accountDid.length == 0 || sessionID.length == 0) {
+        return NO;
+    }
+
+    __block BOOL revoked = NO;
+    __block NSError *localError = nil;
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        NSString *selectSQL = @"SELECT token FROM refresh_tokens WHERE account_did = ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *selectStmt = [store prepareStatement:selectSQL error:innerError];
+        if (!selectStmt) return;
+
+        sqlite3_bind_text(selectStmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+
+        NSString *matchingToken = nil;
+        while (sqlite3_step(selectStmt) == SQLITE_ROW) {
+            const unsigned char *tokenText = sqlite3_column_text(selectStmt, 0);
+            if (!tokenText) {
+                continue;
+            }
+            NSString *candidate = [NSString stringWithUTF8String:(const char *)tokenText];
+            if ([refreshTokenSessionID(candidate) isEqualToString:sessionID]) {
+                matchingToken = candidate;
+                break;
+            }
+        }
+
+        if (matchingToken.length == 0) {
+            return;
+        }
+
+        NSString *deleteSQL = @"DELETE FROM refresh_tokens WHERE account_did = ? AND token = ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *deleteStmt = [store prepareStatement:deleteSQL error:innerError];
+        if (!deleteStmt) return;
+
+        sqlite3_bind_text(deleteStmt, 1, accountDid.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(deleteStmt, 2, matchingToken.UTF8String, -1, SQLITE_TRANSIENT);
+        revoked = (sqlite3_step(deleteStmt) == SQLITE_DONE && sqlite3_changes(store.db) > 0);
+    } error:&localError];
+
+    if (error) {
+        *error = localError;
+    }
+    return revoked;
 }
 
 #pragma mark - Invite Code Operations

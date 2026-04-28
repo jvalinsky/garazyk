@@ -18,6 +18,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)refreshPDSAdminToken;
 
 - (NSDictionary *)fetchServiceOverview;
+- (NSDictionary *)testConnectionForService:(NSString *)serviceName;
+- (NSDictionary *)testConnectionForService:(NSString *)serviceName
+                                   baseURL:(NSURL *)baseURL
+                                adminToken:(nullable NSString *)adminToken;
 - (NSDictionary *)searchAccountsWithQuery:(nullable NSString *)query;
 - (NSDictionary *)fetchInviteCodes;
 - (NSDictionary *)disableInvitesForAccount:(NSString *)account;
