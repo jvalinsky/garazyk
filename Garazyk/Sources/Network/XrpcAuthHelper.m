@@ -334,11 +334,12 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     NSError *takedownError = nil;
     BOOL isTakedown = [adminController isAccountTakedownActive:did error:&takedownError];
     if (takedownError) {
-        PDS_LOG_AUTH_WARN(@"Failed to check takedown status (%@)", XrpcAuthSanitizedErrorSummary(takedownError));
-        [self setAuthRequiredResponse:response];
-        return nil;
-    }
-    if (isTakedown) {
+        PDS_LOG_AUTH_WARN(@"Failed to check takedown status (%@) — allowing request",
+                         XrpcAuthSanitizedErrorSummary(takedownError));
+        // Database unavailable: allow request through rather than blocking all access.
+        // The takedown check is defense-in-depth; if the DB is down, blocking everything
+        // would be worse than allowing a potentially-taken-down account through.
+    } else if (isTakedown) {
         PDS_LOG_AUTH_WARN(@"Rejected request for suspended account %@", did);
         [self setAuthRequiredResponse:response];
         return nil;
