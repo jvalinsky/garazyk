@@ -80,8 +80,10 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
       [XrpcChatBskyActorPack registerWithDispatcher:dispatcher];
       [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
                                     appViewDatabase:appViewDatabase
+                                  serviceDatabase:appViewDatabase
                                          jwtMinter:jwtMinter
-                                   adminController:adminController];
+                                   adminController:adminController
+                                      adminSecret:nil];
   }
 
   [XrpcToolsOzonePack registerWithDispatcher:dispatcher
