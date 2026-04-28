@@ -274,7 +274,8 @@
       "Bash(/Users/jack/Software/garazyk/build/tests/AllTests -XCTest XrpcChatBskyConvoTests,PDSHttpServerBuilderTests 2)",
       "Bash(deciduous --help 2)",
       "Bash(deciduous add decision \"Phase B: Extend OAuthProviderStorage for sessions (not SessionStore)\" -d \"Add session CRUD methods to OAuthProviderStorage protocol. Implement in PDSAuthStorage with in-memory + SQLite backends. OAuth2Server migrates from raw activeSessions dict to storage protocol. Single storage abstraction for the OAuthProviderServer migration path.\" -c 88 2)",
-      "Bash(python3 -c \"\nimport json\nwith open('/Users/jack/Library/Logs/DiagnosticReports/kaszlak-2026-04-28-031425.ips') as f:\n    for line in f:\n        try:\n            d = json.loads(line)\n            if 'exception' in d:\n                print('Exception:', json.dumps(d['exception'], indent=2))\n            if 'faultingThread' in d:\n                print('Faulting thread:', d['faultingThread'])\n        except: pass\n\")"
+      "Bash(python3 -c \"\nimport json\nwith open('/Users/jack/Library/Logs/DiagnosticReports/kaszlak-2026-04-28-031425.ips') as f:\n    for line in f:\n        try:\n            d = json.loads(line)\n            if 'exception' in d:\n                print('Exception:', json.dumps(d['exception'], indent=2))\n            if 'faultingThread' in d:\n                print('Faulting thread:', d['faultingThread'])\n        except: pass\n\")",
+      "Bash(mkdir -p /Users/jack/Software/garazyk/Garazyk/Tests/Media)"
     ]
   }
 }
