@@ -276,6 +276,17 @@
            @")";
 }
 
+- (NSString *)ozoneSubjectsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS moderation_subjects ("
+           @"    subject_did TEXT NOT NULL,"
+           @"    subject_type TEXT NOT NULL,"
+           @"    review_state TEXT NOT NULL DEFAULT 'tools.ozone.moderation.defs#reviewOpen',"
+           @"    last_event_id TEXT,"
+           @"    updated_at REAL NOT NULL,"
+           @"    PRIMARY KEY(subject_did, subject_type)"
+           @")";
+}
+
 - (NSString *)ozoneSafelinksTableSchema {
     return @"CREATE TABLE IF NOT EXISTS moderation_safelinks ("
            @"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -349,6 +360,8 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self ozoneScheduledActionsTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self ozoneSubjectsTableSchema]];
+    [sql appendString:@";\n\n"];
     [sql appendString:[self ozoneSafelinksTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self bskyAgeAssuranceTableSchema]];
@@ -382,6 +395,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_events_subject ON moderation_events(subject_did, subject_type);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_events_created ON moderation_events(created_at);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_subjects_state ON moderation_subjects(review_state);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_set_members_did ON moderation_set_members(did);"];
     [sql appendString:@";\n"];

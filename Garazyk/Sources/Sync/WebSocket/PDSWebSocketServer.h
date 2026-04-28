@@ -16,6 +16,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSWebSocketServer;
+@protocol PDSNetworkListener;
 
 /*!
  @typedef PDSWebSocketConnectionHandler
@@ -34,6 +35,7 @@ typedef void (^PDSWebSocketConnectionHandler)(id<PDSWebSocketTransport> transpor
  @param error The error that occurred.
  */
 typedef void (^PDSWebSocketServerErrorHandler)(NSError *error);
+typedef id<PDSNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUInteger port);
 
 /*!
  @class PDSWebSocketServer
@@ -86,6 +88,9 @@ typedef void (^PDSWebSocketServerErrorHandler)(NSError *error);
  @return An initialized server instance.
  */
 - (instancetype)initWithPort:(NSUInteger)port;
+
+- (instancetype)initWithPort:(NSUInteger)port
+             listenerFactory:(PDSWebSocketListenerFactory)listenerFactory;
 
 /*!
  @method startWithError:

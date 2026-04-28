@@ -2,12 +2,13 @@
 #import "Config/ChatConfiguration.h"
 #import "Config/ChatSchemaManager.h"
 #import "Database/PDSDatabase.h"
-#import "AppView/Services/ChatService.h"
-#import "AppView/Services/ChatModerationService.h"
+#import "Chat/Server/Services/ChatService.h"
+#import "Chat/Server/Services/ChatModerationService.h"
+#import "Chat/Server/ChatAuthManager.h"
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
-#import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcChatBskyActorPack.h"
+#import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcChatBskyGroupPack.h"
 #import "Debug/PDSLogger.h"
 
@@ -74,23 +75,27 @@
     self.dispatcher = [[XrpcDispatcher alloc] init];
     
     // Register Handlers
-    // NOTE: Passing nil for dependencies that are PDS-specific for now. 
+    // NOTE: Passing nil for dependencies that are PDS-specific for now.
     // STANDALONE CHAT will need its own Auth validation logic in Phase 3.
+    [XrpcChatBskyActorPack registerWithDispatcher:self.dispatcher];
+
     [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher
                                    appViewDatabase:(id<PDSQueryDatabase>)self.db
-                                        jwtMinter:nil // To be replaced with ChatAuthManager
+                                        jwtMinter:nil
                                   adminController:nil];
-                                  
-    [XrpcChatBskyActorPack registerWithDispatcher:self.dispatcher
-                             chatModerationService:nil];
-                             
+
     [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher
                                    appViewDatabase:(id<PDSQueryDatabase>)self.db
                                         jwtMinter:nil
                                   adminController:nil];
 
-    self.httpServer = [HttpServer serverWithPort:self.configuration.httpPort];
-    
+    self.httpServer = [HttpServer serverWithHost:@"127.0.0.1" port:self.configuration.httpPort]; // Bind to localhost only — chat must be accessed through PDS proxy
+
+    // Configure auth manager with PDS URL for JWT signature verification
+    if (self.configuration.pdsUrl.length > 0) {
+        [ChatAuthManager sharedManager].pdsUrl = self.configuration.pdsUrl;
+    }
+
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;
     [self.httpServer addRoute:@"*" path:@"/xrpc/*" handler:^(HttpRequest *request, HttpResponse *response) {

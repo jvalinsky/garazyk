@@ -14,12 +14,16 @@
 #import "Debug/PDSLogger.h"
 #import "Core/Repositories/PDSBlockRepository.h"
 #import "Core/Repositories/PDSRepoRepository.h"
+#import "Core/MSTCacheManager.h"
 
 @interface PDSRepositoryService ()
 
 - (NSArray<PDSDatabaseRecord *> *)loadAllRecordsForStore:(PDSActorStore *)store
                                                       did:(NSString *)did
                                                     error:(NSError **)error;
+- (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
+                                        store:(PDSActorStore *)store
+                                        error:(NSError **)error;
 - (MST *)mstFromRecords:(NSArray<PDSDatabaseRecord *> *)records;
 - (nullable NSData *)recordBlockDataForRecord:(PDSDatabaseRecord *)record;
 - (CBORValue *)cidLinkValueForCID:(CID *)cid;
@@ -65,14 +69,30 @@
 #pragma mark - Repo Operations
 
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error {
+    // Check shared cache first
+    MST *cached = [[MSTCacheManager sharedManager] mstForDid:did];
+    if (cached) return cached;
+
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) return nil;
 
+    // Try incremental loading from repo blocks
+    MST *mst = [self loadMSTFromRepoBlocksForDid:did store:store error:nil];
+    if (mst) {
+        [[MSTCacheManager sharedManager] setMST:mst forDid:did];
+        return mst;
+    }
+
+    // Fallback: full rebuild from records
     NSArray<PDSDatabaseRecord *> *records = [self loadAllRecordsForStore:store did:did error:error];
     if (!records && error && *error) {
         return nil;
     }
-    return [self mstFromRecords:records ?: @[]];
+    mst = [self mstFromRecords:records ?: @[]];
+    if (mst) {
+        [[MSTCacheManager sharedManager] setMST:mst forDid:did];
+    }
+    return mst;
 }
 
 - (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error {
@@ -1327,6 +1347,12 @@
     }
 
     return allRecords;
+}
+
+- (nullable MST *)loadMSTFromRepoBlocksForDid:(NSString *)did
+                                        store:(PDSActorStore *)store
+                                        error:(NSError **)error {
+    return [MSTCacheManager loadMSTFromRepoBlocksForDid:did store:store error:error];
 }
 
 - (MST *)mstFromRecords:(NSArray<PDSDatabaseRecord *> *)records {

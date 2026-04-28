@@ -18,13 +18,18 @@
 
 @implementation XrpcDispatcher
 
+static XrpcDispatcher *_sharedInstance = nil;
+
 + (instancetype)sharedDispatcher {
-    static XrpcDispatcher *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedInstance = [[self alloc] init];
+        _sharedInstance = [[self alloc] init];
     });
-    return sharedInstance;
+    return _sharedInstance;
+}
+
++ (void)resetSharedDispatcher {
+    _sharedInstance = [[self alloc] init];
 }
 
 - (instancetype)init {
@@ -203,7 +208,9 @@
         }
     }
 
-    // 1. If method is local and protected, execute it
+    // 1. Protected methods always execute locally — never proxy them.
+    //    This prevents atproto-proxy header injection from redirecting
+    //    auth/admin requests to an attacker-controlled service.
     if (handler && isProtected) {
         PDS_LOG_INFO(@"XrpcHandler: Executing protected local handler for method=%@", methodId);
         [self executeHandler:handler methodId:methodId request:request response:response];
@@ -211,12 +218,14 @@
     }
 
     // 2. Handling for atproto-proxy header (Industry standard)
+    //    Only honored for non-protected methods with known proxied prefixes.
+    //    This enables service-to-service routing (chat/ozone/appview through PDS).
     NSString *atprotoProxy = [request headerForKey:@"atproto-proxy"];
-    if (atprotoProxy && !isProtected) {
+    if (atprotoProxy && [self isProxiableMethod:methodId]) {
         NSURL *resolvedURL = nil;
         NSString *resolvedDID = nil;
         NSError *resolveError = nil;
-        
+
         if ([self resolveProxyTarget:atprotoProxy outURL:&resolvedURL outDID:&resolvedDID error:&resolveError]) {
             PDS_LOG_INFO(@"Proxying XRPC method '%@' to resolved service %@ (%@)", methodId, resolvedDID, resolvedURL);
             XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithMinter:self.jwtMinter];
@@ -226,7 +235,7 @@
             PDS_LOG_ERROR(@"Failed to resolve atproto-proxy target '%@': %@", atprotoProxy, resolveError);
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
-                @"error": @"InvalidAtprotoProxy", 
+                @"error": @"InvalidAtprotoProxy",
                 @"message": resolveError.localizedDescription ?: @"Failed to resolve proxy target"
             }];
             return;
@@ -323,6 +332,29 @@
         @"error": @"MethodNotFound",
         @"message": [NSString stringWithFormat:@"XRPC method '%@' not found", methodId]
     }];
+}
+
+#pragma mark - Proxy Method Allowlist
+
+- (BOOL)isProxiableMethod:(NSString *)methodId {
+    // Only honor atproto-proxy for known proxied method prefixes.
+    // This prevents header injection attacks that redirect protected
+    // methods (com.atproto.server.createSession, etc.) to attacker servers.
+    static NSArray<NSString *> *proxiedPrefixes = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        proxiedPrefixes = @[
+            @"app.bsky.",      // AppView
+            @"chat.bsky.",     // Chat
+            @"tools.ozone.",   // Ozone
+        ];
+    });
+    for (NSString *prefix in proxiedPrefixes) {
+        if ([methodId hasPrefix:prefix]) {
+            return YES;
+        }
+    }
+    return NO;
 }
 
 #pragma mark - Proxy Resolution
