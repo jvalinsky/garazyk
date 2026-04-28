@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "Blob/PDSBlobProvider.h"
 
 @class PDSServiceDatabases;
 
@@ -29,6 +30,7 @@ typedef NS_ENUM(NSInteger, PDSVideoJobState) {
 @property (nonatomic, assign) NSTimeInterval pollInterval;
 @property (nonatomic, assign) NSInteger maxConcurrentJobs;
 @property (nonatomic, strong, nullable) PDSServiceDatabases *serviceDatabases;
+@property (nonatomic, strong, nullable) id<PDSBlobProvider> blobProvider;
 
 - (void)start;
 - (void)stop;
