@@ -14,6 +14,7 @@
 #import "Network/PDSHttpMSTViewerRoutePack.h"
 #import "Network/PDSHttpNodeInfoRoutePack.h"
 #import "Network/PDSHttpOAuthRoutePack.h"
+#import "Network/PDSHttpPDSAdminRoutePack.h"
 #import "Network/PDSHttpRelayAPIRoutePack.h"
 #import "Network/PDSHttpWellKnownRoutePack.h"
 #import "Network/PDSHttpXrpcRoutePack.h"
@@ -120,6 +121,9 @@
                                         application:self.application
                                          controller:self.controller];
   }
+
+  [PDSHttpPDSAdminRoutePack registerRoutesWithServer:server
+                                    serviceDatabases:self.serviceDatabases];
 
   if (self.enableXrpc) {
     [PDSHttpXrpcRoutePack registerRoutesWithServer:server
