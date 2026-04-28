@@ -4,7 +4,16 @@ title: Admin UI Documentation
 
 # Admin UI Documentation
 
-This hub maps Admin UI documentation into the canonical `docs/` path.
+This hub maps Admin UI documentation into the canonical `docs/` path and points to the current standalone service.
+
+## Current Runtime
+
+- Binary: `./build/bin/garazyk-ui`
+- Xcode scheme: `garazyk-ui`
+- Default URL: `http://127.0.0.1:2590/admin`
+- Login password variable: `GARAZYK_UI_ADMIN_PASSWORD`
+- Backend URL variables: `GARAZYK_UI_PDS_URL`, `GARAZYK_UI_PLC_URL`, `GARAZYK_UI_RELAY_URL`, `GARAZYK_UI_APPVIEW_URL`, `GARAZYK_UI_CHAT_URL`
+- Optional bearer-token variables: `GARAZYK_UI_PDS_TOKEN`, `GARAZYK_UI_PLC_TOKEN`, `GARAZYK_UI_RELAY_TOKEN`, `GARAZYK_UI_APPVIEW_TOKEN`, `GARAZYK_UI_CHAT_TOKEN`
 
 ## Canonical References
 
@@ -33,4 +42,10 @@ This hub maps Admin UI documentation into the canonical `docs/` path.
 
 - [Source-Adjacent Documentation](./source-adjacent-documentation)
 - [Tooling and Skills Documentation](./tooling-and-skills-documentation)
-- [Repository Documentation Index](../repo-index/index)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Repository Documentation Index](../repo-index/index)
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)

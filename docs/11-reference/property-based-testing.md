@@ -419,4 +419,11 @@ These limitations are mitigated by:
 - [Test Organization](test-organization) - Test structure and discovery
 - [E2E Testing](e2e-testing) - End-to-end test scenarios
 - [Test Coverage Goals](test-coverage-goals) - Coverage targets
-- [Security Audit Guide](security-audit-guide) - Security testing\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Security Audit Guide](security-audit-guide) - Security testing
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

@@ -798,4 +798,11 @@ secrets/
 - OWASP Secure Coding Practices: https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/
 - NIST Cybersecurity Framework: https://www.nist.gov/cyberframework
 - CIS Controls: https://www.cisecurity.org/controls
-- AT Protocol Security: https://atproto.com/specs/security\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- AT Protocol Security: https://atproto.com/specs/security
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

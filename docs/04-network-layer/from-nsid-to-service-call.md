@@ -88,4 +88,11 @@ That matters for contributor work because:
 2. Does auth fail before the service call?
 3. Does the domain block transform the payload correctly?
 4. Does the service return the expected commit or error?
-5. Does the XRPC adapter serialize the result you think it does?\n\n## Related\n\n- [Documentation Map](../11-reference/documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+5. Does the XRPC adapter serialize the result you think it does?
+
+## Related
+
+- [Documentation Map](../11-reference/documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

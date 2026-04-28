@@ -501,4 +501,11 @@ docker exec nspds curl -v https://plc.directory/health
 - [PLC Server Operations](plc-server-operations)
 - [DID Document Updates](../02-core-concepts/did-document-updates)
 - [Monitoring and Metrics](metrics-collection)
-- [Performance Monitoring](performance-monitoring)\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+- [Performance Monitoring](performance-monitoring)
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+

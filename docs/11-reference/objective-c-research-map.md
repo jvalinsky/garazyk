@@ -98,4 +98,11 @@ Use these pages together:
 - [Codebase Map](../01-getting-started/codebase-map) when you know the concept
   but not the owning subsystem
 - [macOS & Linux](../09-platform-compatibility/macos-linux) when the behavior
-  might be platform-specific instead of purely Objective-C-specific\n\n## Related\n\n- [Documentation Map](documentation-map.md)\n- [Contributor Guide](../index.md)\n- [Repository Documentation Index](../repo-index/index.md)\n\n
+  might be platform-specific instead of purely Objective-C-specific
+
+## Related
+
+- [Documentation Map](documentation-map.md)
+- [Contributor Guide](../index.md)
+- [Repository Documentation Index](../repo-index/index.md)
+
