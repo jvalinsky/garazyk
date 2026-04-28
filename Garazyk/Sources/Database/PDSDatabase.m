@@ -3536,6 +3536,48 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     return dict;
 }
 
+- (BOOL)updateVideoJobResults:(NSString *)jobId
+           processedBlobCid:(NSString *)processedBlobCid
+          thumbnailBlobCid:(NSString *)thumbnailBlobCid
+                     error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
+    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
+    NSString *sql = @"UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
+
+    NSArray *params = @[
+        processedBlobCid ?: [NSNull null],
+        thumbnailBlobCid ?: [NSNull null],
+        now,
+        jobId ?: [NSNull null]
+    ];
+
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    return;
+    }];
+    return result;
+}
+
+- (BOOL)incrementVideoJobRetry:(NSString *)jobId
+                         error:(NSError **)error {
+    __block BOOL result = NO;
+    [self safeExecuteSync:^{
+
+    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
+    NSString *sql = @"UPDATE video_jobs SET retry_count = retry_count + 1, state = 'PENDING', error_message = NULL, updated_at = ? WHERE job_id = ?";
+
+    NSArray *params = @[
+        now,
+        jobId ?: [NSNull null]
+    ];
+
+    result = [self executeParameterizedUpdate:sql params:params error:error];
+    return;
+    }];
+    return result;
+}
+
 #pragma mark - Sessions & Security
 
 - (NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error {
