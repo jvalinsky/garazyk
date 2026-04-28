@@ -6,8 +6,7 @@ title: CIDs and Multiformats
 
 ## Overview
 
-A CID is not just a hash string. It is a layered identifier built out of other
-multiformat components.
+A CID is a layered identifier built from multiformat components.
 
 At minimum, a CIDv1 combines:
 
@@ -50,8 +49,7 @@ Each supporting multiformat solves one problem:
 - `multibase`: self-describing text encoding for binary data
 - `unsigned-varint`: compact integer encoding used by CID and related specs
 
-These are small pieces, but they are why CIDs can evolve without hard-coding
-one global hash or one global string encoding forever.
+These components allow CIDs to evolve without hard-coding a global hash or string encoding.
 
 ## Why ATProto Uses A Narrow CID Subset
 
@@ -67,31 +65,26 @@ The current ATProto data model and repository specs bless a narrow profile:
 - hash type `sha-256` / `0x12` with 32-byte digests
 - `base32` text form with a `b` prefix when stringified
 
-That is the main reason ATProto CIDs are easier to reason about than generic
-IPLD CIDs.
+This narrow profile makes ATProto CIDs easier to reason about than generic IPLD CIDs.
 
 ## Why Multicodec Still Matters Even In A Narrow Profile
 
-Even if ATProto only blesses a handful of codecs today, the multicodec field is
-still doing real work:
+The multicodec field:
 
 - it distinguishes structured blocks from raw blobs
 - it keeps the CID self-describing
 - it gives the protocol room to evolve without redefining CID from scratch
 
-The multicodec table is the shared registry that makes those codes meaningful.
+The multicodec table makes these codes meaningful.
 
 ## The Practical Contributor Takeaway
 
-When you see a CID in Garazyk, do not ask only "what bytes did this hash?"
-Also ask:
+When analyzing a CID in Garazyk, ask:
 
 - what codec was this addressing?
 - was the string form converted through the right multibase?
 - did the parser or serializer interpret the varints correctly?
 - is the CID inside ATProto's blessed subset?
-
-That is the right debugging frame for repository and blob identity bugs.
 
 ## Sources
 

@@ -80,8 +80,8 @@ Related env overrides:
 | Key | Purpose |
 | --- | --- |
 | `phone_verification.provider` | verification provider selector |
-| `email.provider` | `none`, `mock`, `smtp`, or `resend` |
-| `email.smtp_host` | SMTP host |
+| `email.provider` | `none`, `mock`, `smtp`, or `resend`; `smtp` is accepted but delivery is not implemented |
+| `email.smtp_host` | SMTP host for future SMTP support |
 | `email.smtp_port` | SMTP port |
 | `email.smtp_username` | SMTP username |
 | `email.smtp_password` | SMTP password |
@@ -166,12 +166,33 @@ Key env overrides use the `PDS_RATELIMIT_*` prefix.
 
 | Key | Purpose |
 | --- | --- |
+| `PDS_VIDEO_MODE` | `internal` (default, in-process) or `external` (delegate to jelcz side-car) |
 | `video.max_concurrent_jobs` | Max simultaneous video processing jobs (default: 2) |
 | `video.poll_interval_seconds` | Worker poll interval for pending jobs (default: 5) |
 | `video.max_concurrent_exports` | Max parallel AVAssetExportSession operations (default: 2) |
 | `video.default_quality` | Default transcoding quality preset (`480p`, `720p`, `1080p`, `hevc`) |
 
-The video worker is started automatically by `PDSApplication` and requires no explicit enable flag. On Linux/GNUstep (no AVFoundation), video transcoding will fail gracefully.
+When `PDS_VIDEO_MODE=internal`, the video worker is started automatically by `PDSApplication`. When `external`, the PDS does not process video and the jelcz side-car handles it.
+
+### Jelcz Side-Car
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `JELCZ_PORT` | 2586 | HTTP port |
+| `JELCZ_DATA_DIR` | `./data/jelcz` | Database directory |
+| `JELCZ_BLOB_DIR` | `./data/jelcz/blobs` | Blob storage directory |
+| `JELCZ_PDS_URL` | `http://localhost:2583` | PDS endpoint for blob upload |
+| `JELCZ_DID` | `did:web:localhost` | Jelcz's DID for Service Auth |
+| `JELCZ_S3_BUCKET` | (none) | S3 bucket for blob storage |
+| `JELCZ_S3_REGION` | `us-east-1` | S3 region |
+| `JELCZ_S3_ENDPOINT` | (none) | S3-compatible endpoint |
+| `JELCZ_S3_ACCESS_KEY` | (none) | S3 access key |
+| `JELCZ_S3_SECRET_KEY` | (none) | S3 secret key |
+| `JELCZ_MAX_CONCURRENT_JOBS` | 2 | Max parallel transcoding jobs |
+| `JELCZ_POLL_INTERVAL` | 5.0 | Job poll interval (seconds) |
+| `JELCZ_MAX_UPLOAD_BYTES` | 104857600 | Max upload size (100MB) |
+| `JELCZ_MAX_OUTPUT_BYTES` | 52428800 | Max transcoded output size (50MB) |
+| `JELCZ_MAX_DURATION` | 180 | Max video duration (seconds) |
 
 This `appview` block is the current loader shape. Older camelCase examples such as `appViewURL` and `localAppViewEnabled` should be treated as stale unless the code changes.
 
@@ -235,4 +256,3 @@ If a config example and the code disagree, trust `PDSConfiguration`.
 - [Documentation Map](documentation-map.md)
 - [Contributor Guide](../index.md)
 - [Repository Documentation Index](../repo-index/index.md)
-

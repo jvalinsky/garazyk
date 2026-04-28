@@ -6,7 +6,7 @@ title: macOS and Linux Compatibility
 
 ## Overview
 
-Garazyk targets both macOS and Linux/GNUstep, but it does not get there by pretending both environments behave the same. Shared code sits on top of compat headers and platform abstractions, while crypto, key storage, networking, and some Foundation behavior still diverge in meaningful ways.
+Garazyk targets both macOS and Linux/GNUstep without pretending both environments behave the same. Shared code sits on top of compat headers and platform abstractions, while crypto, key storage, networking, and some Foundation behavior still diverge in meaningful ways.
 
 ## Full Flow
 
@@ -34,7 +34,7 @@ In this repo, the high-value differences are:
 - Foundation and tests: GNUstep needs targeted compatibility helpers where Apple Foundation or XCTest behavior is assumed
 - dispatch ownership: queue storage and ARC interaction are not identical across platforms
 
-Those are the seams most likely to turn a "works on my machine" patch into a Linux regression.
+These seams frequently turn a macOS-only patch into a Linux regression.
 
 ## What Contributors Should Verify
 

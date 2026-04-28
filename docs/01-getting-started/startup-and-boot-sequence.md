@@ -6,7 +6,7 @@ title: Startup and Boot Sequence
 
 ## Goal
 
-Read this page when the server fails before it handles useful traffic, or when you need to know how configuration, infrastructure, services, and route wiring are assembled during process startup. This is the shortest path from "the binary started" to "the runtime is actually serving the right surfaces."
+Use this page to debug server failures during startup or to understand how configuration, infrastructure, services, and routes assemble.
 
 ## Full Flow
 
@@ -30,50 +30,50 @@ flowchart TD
     Listen --> Relay
 ```
 
-## Why Startup Bugs Need Their Own Mental Model
+## Startup Boundaries
 
-Startup problems are not request problems. `PDSApplication` does a large amount of work before a single route can answer:
+Startup problems differ from request problems. `PDSApplication` performs several tasks before answering routes:
 
-- validates runtime identity assumptions,
-- prepares data paths and infrastructure,
-- creates shared services,
-- wires the HTTP server,
-- only then starts listening and enables relay side effects.
+- Validates runtime identity.
+- Prepares data paths and infrastructure.
+- Creates shared services.
+- Wires the HTTP server.
+- Starts listening and enables relay side effects.
 
-If the process dies early, reading endpoint code is usually wasted effort.
+If the process dies early, inspecting endpoint code is inefficient.
 
-## Walkthrough: `PDSApplication`
+## PDSApplication Sequence
 
-The core sequence lives in `Garazyk/Sources/App/PDSApplication.m`.
+The core sequence in `Garazyk/Sources/App/PDSApplication.m`:
 
-1. Configuration is loaded and logging is configured.
-2. Infrastructure is initialized, including key managers, databases, and other shared runtime dependencies.
-3. Production identity checks enforce that issuer values are real public HTTPS identities, not placeholders.
-4. Services are composed on top of that infrastructure.
-5. `startWithError:` creates or configures the `HttpServer` and applies `PDSHttpServerBuilder`.
-6. The HTTP server starts listening on the configured port.
-7. The relay service starts after the main server is up.
+1. Load configuration and configure logging.
+2. Initialize infrastructure, including key managers and databases.
+3. Enforce production identity checks (issuer must be a public HTTPS identity).
+4. Compose services on top of infrastructure.
+5. Create and configure `HttpServer` via `PDSHttpServerBuilder`.
+6. Start the HTTP listener.
+7. Start the relay service.
 
-That order explains why issuer mistakes, path-permission failures, or database setup bugs appear before any request-level logging you expected to see.
+This sequence helps identify why issuer errors, permission failures, or database bugs appear before request logging starts.
 
-## What To Check First During Startup Work
+## Startup Checklist
 
-- Is the issuer valid for the current environment?
+- Is the issuer valid for the environment?
 - Are the data directories writable?
-- Did shared databases initialize successfully?
-- Did route wiring complete before the server attempted to listen?
-- Did the relay service start only after the HTTP server succeeded?
+- Did shared databases initialize?
+- Did route wiring complete before the server listened?
+- Did the relay service start after the HTTP server?
 
-Those questions map cleanly to the major startup stages.
+These questions map to the startup stages.
 
-## Where To Debug When This Breaks
+## Debugging Startup
 
-- Start in `Garazyk/Sources/App/PDSApplication.m` for ordering, environment checks, and service composition.
-- Start in `Garazyk/Sources/Network/PDSHttpServerBuilder.m` when startup "succeeds" but key routes are missing.
-- Start in the database layer when the process dies during infrastructure setup.
-- Start in configuration loading when the runtime identity or data paths look wrong.
+- Check `Garazyk/Sources/App/PDSApplication.m` for ordering and service composition.
+- Check `Garazyk/Sources/Network/PDSHttpServerBuilder.m` if routes are missing.
+- Check the database layer if the process dies during infrastructure setup.
+- Check configuration loading if identity or data paths are incorrect.
 
-## Tests That Should Fail If This Changes
+## Relevant Tests
 
 - `Garazyk/Tests/App/PDSApplicationTests.m`
 - `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
@@ -82,11 +82,11 @@ Those questions map cleanly to the major startup stages.
 
 ## Appendix
 
-### Symptom split
+### Symptom Classification
 
-- process exits before binding a port: configuration or infrastructure
-- port binds but routes are missing: builder wiring
-- routes answer but relay is inert: post-start side effects
+- Process exits before binding a port: configuration or infrastructure failure.
+- Port binds but routes are missing: builder wiring failure.
+- Routes answer but relay is inert: post-start side effect failure.
 
 ## Related
 

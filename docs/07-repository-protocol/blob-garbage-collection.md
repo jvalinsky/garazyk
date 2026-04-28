@@ -6,15 +6,12 @@ title: Blob Garbage Collection
 
 ## Overview
 
-Garazyk PDS does not currently ship an automated garbage collector for
-orphaned blobs. The implemented blob lifecycle is simpler:
+Garazyk PDS does not include an automated garbage collector for orphaned blobs. The blob lifecycle is:
 - uploads store blob data plus metadata
 - sync and service surfaces can list blobs for a DID
 - explicit delete flows remove a blob on purpose
 
-Everything beyond that, such as mark-and-sweep jobs, dry-run GC commands,
-grace-period retention, or repair tooling, is still design work rather than
-current behavior.
+Mark-and-sweep jobs, dry-run GC commands, grace-period retention, and repair tooling are not implemented.
 
 ## What The Current Implementation Actually Does
 
@@ -31,20 +28,16 @@ records later.
 The current path removes actor-store metadata first and then asks the provider
 to delete the blob data.
 
-That is an intentional design choice: the current codebase trusts a direct
-delete request more than it trusts a background job trying to guess whether a
-blob is still reachable.
+The codebase relies on direct delete requests rather than background jobs that guess blob reachability.
 
 ### Enumeration Exists Without GC
 
 The server can already enumerate blobs through `com.atproto.sync.listBlobs` and
-the blob service list methods. That gives operators and sync consumers a way to
-inspect blob ownership today without pretending that a safe sweep phase exists.
+the blob service list methods. This allows operators and sync consumers to inspect blob ownership without a safe sweep phase.
 
 ## Why Automated GC Is Not Shipped Yet
 
-A correct blob GC is mostly an invariants problem, not a loop-over-records
-problem.
+A correct blob GC is an invariants problem, not a loop-over-records problem.
 
 Before a background collector can safely delete anything, the implementation has
 to answer:
@@ -54,8 +47,7 @@ to answer:
 - how operators will inspect and dry-run the cleanup before anything destructive
   happens
 
-The current tree does not answer those questions completely, so it should not
-document a shipped collector.
+The codebase does not fully answer these questions and does not ship a collector.
 
 ## What Operators Can Use Today
 
@@ -69,26 +61,21 @@ The current operational toolbox is smaller but real:
 curl -s http://localhost:2583/metrics | rg '^pds_blob_(count|storage_bytes)'
 ```
 
-If you need to reduce blob pressure for a specific DID today, use listing plus
-explicit deletion. Do not look for `kaszlak gc blobs`, `kaszlak verify blobs`,
-or `kaszlak repair blobs`; those command surfaces are not implemented.
+To reduce blob pressure for a specific DID, use listing and explicit deletion. Commands like `kaszlak gc blobs`, `kaszlak verify blobs`, or `kaszlak repair blobs` are not implemented.
 
 ## Why This Simpler Model Is Still Useful
 
-The absence of automated GC is a limitation, but it also keeps the operational
-story honest:
+The lack of automated GC clarifies the operational story:
 - blob deletion is intentional rather than heuristic
 - metrics describe what the server has actually stored
 - future GC work can be designed around real invariants instead of retrofitting
   a speculative CLI
 
-That is a better trade-off than shipping a destructive background operation with
-unclear ownership semantics.
+This avoids shipping a destructive background operation with unclear ownership semantics.
 
 ## Design Notes For Future GC Work
 
-If blob garbage collection becomes a roadmap item, the implementation should
-start with storage semantics, not a command name.
+Implementing blob garbage collection requires defining storage semantics first.
 
 The minimum checklist is:
 - define whether provider blobs need reference counting across DIDs
@@ -97,14 +84,11 @@ The minimum checklist is:
 - ensure metadata deletion and provider deletion cannot silently diverge
 - add observability for reclaimed bytes, skipped blobs, and repair conditions
 
-Only after those pieces exist should the docs describe a GC workflow as
-something operators can actually run.
+These pieces must exist before documenting a GC workflow.
 
 ## Summary
 
-Today the safe mental model is simple: explicit delete, no automatic sweep.
-Treat older references to `PDSCLIGCCommand.m` or `kaszlak gc blobs` as
-historical design notes, not part of the shipped Garazyk PDS toolchain.
+The current model requires explicit deletion with no automatic sweep. Older references to `PDSCLIGCCommand.m` or `kaszlak gc blobs` are historical design notes.
 
 ## Related
 

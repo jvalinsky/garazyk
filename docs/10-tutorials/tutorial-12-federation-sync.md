@@ -6,12 +6,12 @@ title: "Tutorial 12: Federation & Sync"
 
 ## Overview
 
-Garazyk does not exist in a vacuum. It is part of a federated network where data flows between Personal Data Servers (PDS), Relays, and AppViews. This tutorial explains how your PDS synchronizes its state with the rest of the network and how it consumes data from upstream Relays.
+Garazyk is part of a federated network where data flows between Personal Data Servers (PDS), Relays, and AppViews. This tutorial explains how your PDS synchronizes state with the network and consumes data from upstream Relays.
 
 **Learning Objectives:**
-- Understand the roles of PDS, Relay, and AppView in the federation model.
-- Trace the lifecycle of an upstream connection in `RelayClient.m`.
-- Analyze the reconnection and cursor management logic in `RelayUpstreamManager.m`.
+- Understand the roles of PDS, Relay, and AppView.
+- Trace upstream connections in `RelayClient.m`.
+- Analyze reconnection and cursor management in `RelayUpstreamManager.m`.
 - Verify federation health and event flow.
 
 **Estimated Time:** 40-50 minutes
@@ -120,9 +120,9 @@ tail -f pds.log | grep RelayClient
 
 ## Summary
 
-Federation is what turns a standalone PDS into a participant in a global network. By mastering `RelayClient` and `RelayUpstreamManager`, you can ensure that your PDS stays in sync with the network and provides a seamless experience for your users.
+Federation connects a standalone PDS to a global network. Using `RelayClient` and `RelayUpstreamManager` keeps your PDS in sync with the network.
 
-Always use `deciduous` to document changes to federation settings or sync logic.
+Use `deciduous` to document changes to federation settings or sync logic.
 
 ## Related
 

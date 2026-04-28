@@ -6,22 +6,22 @@ title: Method Registry
 
 ## Overview
 
-`XrpcMethodRegistry` assembles the public XRPC surface from domain-specific registration helpers. It is the place where the codebase turns service and controller dependencies into a concrete set of registered NSIDs.
+`XrpcMethodRegistry` defines the public XRPC surface using domain-specific registration helpers. It maps service dependencies to registered NSIDs.
 
-## What The Registry Owns
+## Responsibilities
 
-Treat the registry as the answer to these questions:
+The registry determines:
 
-- which NSIDs exist in this runtime
-- which domain module registered each method
-- what service dependencies must be present for registration to succeed
-- which shared method families are wired during startup
+- The NSIDs available in the runtime.
+- The domain module responsible for each method.
+- The service dependencies required for registration.
+- The method families wired during startup.
 
-That makes it more than a lookup table. It is part of the application boot sequence.
+The registry is part of the application boot sequence, not just a lookup table.
 
 ## Registration Order
 
-The registration order is critical for determining how the `XrpcDispatcher` handles overlapping or priority-sensitive NSIDs. The current implementation in `XrpcMethodRegistry.m` follows this sequence:
+Registration order determines how `XrpcDispatcher` handles overlapping NSIDs. `XrpcMethodRegistry.m` follows this sequence:
 
 1. **XrpcServerMethods** (`com.atproto.server.*`)
 2. **XrpcIdentityMethods** (`com.atproto.identity.*`)
@@ -32,26 +32,26 @@ The registration order is critical for determining how the `XrpcDispatcher` hand
 7. **XrpcLabelMethods** (`com.atproto.label.*`)
 8. **XrpcModerationMethods** (`com.atproto.moderation.*`)
 
-## Why Registration Order Matters
+## Why This Matters
 
-Endpoint behavior can look correct in unit tests and still disappear from the live runtime if registration changes. The registry matters because:
+Endpoint behavior may fail in the live runtime even if unit tests pass. The registry helps identify:
 
-- an unregistered method is indistinguishable from a missing feature to the caller
-- dependency drift can break one domain family while leaving others intact
-- auth and dispatch bugs are easier to localize once you know the owning registration module
+- Unregistered methods.
+- Broken dependencies within a domain family.
+- The registration module responsible for an auth or dispatch issue.
 
-In practice, the registry is where contributors confirm whether an endpoint is missing, miswired, or simply failing later in the stack.
+The registry confirms whether an endpoint is missing, miswired, or failing later in the stack.
 
-## What It Does Not Own
+## Boundaries
 
-The registry does not implement the endpoint semantics themselves. It should not be the main place you debug:
+The registry does not define endpoint semantics. It is not the place to debug:
 
-- record validation logic
-- JWT or DPoP proof verification
-- repository commit construction
-- blob provider behavior
+- record validation.
+- JWT or DPoP proof verification.
+- repository commit construction.
+- blob provider behavior.
 
-Those concerns live in the owning domain module and service layer.
+These reside in the domain module and service layer.
 
 ## When To Read The Deep Dives
 

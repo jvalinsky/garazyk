@@ -18,8 +18,6 @@ Moderation is essential for maintaining healthy online communities. The Admin Se
 - **Audit Trail**: Track all moderation actions for accountability and appeals
 - **Compliance**: Meet legal requirements for content removal and user safety
 
-Understanding the Admin Service is crucial for implementing responsible moderation policies and maintaining a safe, compliant PDS.
-
 ## When to Use This Service
 
 ### Use Admin Service When:

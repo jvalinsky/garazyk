@@ -6,7 +6,7 @@ title: Data Integrity Verification
 
 ## Overview
 
-Data integrity is critical for a PDS. This document covers verification strategies, consistency checks, repair procedures, and monitoring approaches to ensure database reliability.
+Data integrity is critical for a PDS. Verification strategies, consistency checks, repair procedures, and monitoring approaches ensure database reliability.
 
 ## Integrity Check Types
 

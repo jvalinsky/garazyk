@@ -6,7 +6,7 @@ title: "Tutorial 8: Endpoint Workflow"
 
 ## Overview
 
-This tutorial explains the contributor workflow for adding or modifying an endpoint in Garazyk. The goal is not to dump every method signature on one page. The goal is to teach the sequence of decisions that keeps endpoint work coherent:
+This tutorial explains the contributor workflow for adding or modifying an endpoint in Garazyk. It teaches the sequence of decisions that keeps endpoint work coherent:
 
 - choose the right surface,
 - change the right layer,

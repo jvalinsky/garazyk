@@ -98,7 +98,7 @@ When you need source truth for an endpoint, follow the same path every time:
 3. Identify the service layer or repository/database layer it calls into.
 4. Read the closest tests before assuming behavior is intentional.
 
-This workflow matters because endpoint bugs often live one layer away from the place where the HTTP route is declared.
+Endpoint bugs often live one layer away from the HTTP route declaration.
 
 ## OpenAPI Scope
 

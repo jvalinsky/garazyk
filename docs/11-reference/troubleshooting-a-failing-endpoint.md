@@ -6,7 +6,7 @@ title: Troubleshooting a Failing Endpoint
 
 ## Goal
 
-Read this page when one endpoint is failing and you need a fast decision tree from symptom to owning code, logs, metrics, and tests. This page is intentionally narrower than the main troubleshooting guide: it is for one broken request path, not whole-system diagnosis.
+Use this page when an endpoint fails to trace the symptom to the owning code, logs, metrics, and tests. This page is narrower than the main troubleshooting guide. It diagnoses one broken request path, not the whole system.
 
 ## Full Flow
 
@@ -38,7 +38,7 @@ One endpoint failure usually fits one of these buckets:
 - service returns the wrong data
 - write succeeds but the side effect is missing
 
-Your first job is to classify which bucket you are in. That is faster than opening every file that mentions the NSID.
+Classify the bucket first. This is faster than opening every file that mentions the NSID.
 
 ## Walkthrough: Endpoint Triage
 
@@ -49,7 +49,7 @@ Your first job is to classify which bucket you are in. That is faster than openi
 5. Check logs and `/metrics` only after you know the owning subsystem.
 6. Run the closest unit or subsystem test before escalating to integration tests.
 
-This flow is boring on purpose. It keeps contributors from skipping directly to the most complex component in the stack.
+This flow keeps contributors from skipping directly to the most complex component.
 
 ## Debug Surfaces Worth Using
 

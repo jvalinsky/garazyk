@@ -17,11 +17,11 @@ Backpressure is the mechanism that prevents overwhelming slow clients with event
 
 ### Without Backpressure
 
-Without backpressure, a single slow subscriber can accumulate queued frames until the connection drops, which turns transient slowness into data loss.
+Without backpressure, a slow subscriber accumulates queued frames until the connection drops, causing data loss.
 
 ### With Backpressure
 
-With backpressure enabled, the broadcaster classifies each subscriber by buffer pressure and either sends immediately, pauses and drains, or disconnects the subscriber before it can destabilize the rest of the fan-out.
+With backpressure, the broadcaster classifies each subscriber by buffer pressure to send immediately, pause and drain, or disconnect the subscriber.
 
 ```mermaid
 flowchart TD

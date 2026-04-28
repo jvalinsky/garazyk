@@ -6,7 +6,7 @@ title: HTTP Request and Route Pipeline
 
 ## Goal
 
-Read this page when you need the concrete route from socket-level request parsing to the handler family that finally owns the request. The point is not to memorize every route; it is to know where the runtime decides whether a request is XRPC, Explorer, OAuth, UI, or a WebSocket upgrade.
+This page documents the route from socket-level request parsing to the handler family that owns the request. It shows where the runtime decides whether a request is XRPC, Explorer, OAuth, UI, or a WebSocket upgrade.
 
 ## Full Flow
 
@@ -49,7 +49,7 @@ That order comes from `Garazyk/Sources/Network/PDSHttpServerBuilder.m`. If a spe
 
 ## Walkthrough: `describeServer`
 
-Use `GET /xrpc/com.atproto.server.describeServer` as the mental model for the plain request path.
+GET `/xrpc/com.atproto.server.describeServer` illustrates the plain request path.
 
 1. `HttpServer` accepts the connection and feeds bytes through the HTTP/1.1 parser.
 2. The parser enforces header and body limits before any XRPC code runs.

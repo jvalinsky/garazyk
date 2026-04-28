@@ -10,7 +10,7 @@ title: Commit Broadcasting
 
 *Process for broadcasting repository commits to firehose subscribers in real-time*
 
-Commit broadcasting is the mechanism that sends repository commits to all connected firehose subscribers in real-time. It:
+Commit broadcasting sends repository commits to all connected firehose subscribers in real-time. It:
 - Captures commits from the repository service
 - Formats commits as firehose events
 - Distributes events to all subscribed clients

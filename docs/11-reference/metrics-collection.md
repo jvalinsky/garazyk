@@ -6,94 +6,55 @@ title: Metrics Collection
 
 ## Overview
 
-Metrics collection in Garazyk is implemented, integrated, and worth trusting.
-Older versions of this page treated metrics as partial scaffolding. That is no
-longer an accurate description of the tree.
+Garazyk collects Prometheus-style metrics across its request path. This page describes the metrics model and how to interpret the available data.
 
-The main contributor question is: which metrics are already part of the request
-path, and how should you interpret them?
+## Metrics Model
 
-## The Metrics Model
+`PDSMetrics` is a singleton that collects counters, gauges, and latency histograms. This common model helps debug requests that cross subsystem boundaries (e.g., an endpoint touching auth, rate limiting, and storage).
 
-`PDSMetrics` is a singleton that collects Prometheus-style counters, gauges, and
-latency histograms. It is designed to answer operational questions without
-forcing every subsystem to invent its own export format.
+## Metric Families
 
-That common model matters because request debugging almost always crosses
-subsystem boundaries. A single endpoint can touch auth, rate limiting, storage,
-and sync behavior in one request.
+The PDS exports metrics for:
 
-## PDS Metric Families
+- HTTP request totals by method and status.
+- Per-endpoint request totals and latency.
+- Repository and blob counts/sizes.
+- Database size.
+- Active connections.
+- Firehose subscribers, events, and sequence numbers.
+- Rate-limit rejections and auth failures.
+- OAuth grants and active sessions.
 
-The current PDS metrics surface includes:
+## Update Points
 
-- HTTP request totals by method
-- HTTP response totals by status
-- per-endpoint request totals
-- request latency histograms
-- repository count
-- blob count
-- blob storage bytes
-- database size bytes
-- active connections
-- repository commit totals
-- firehose subscriber, event, and sequence metrics
-- rate-limit rejection metrics
-- auth failure metrics
-- OAuth grant and active session metrics
+The metrics system is integrated directly into the runtime:
 
-This is already enough to support alerting, dashboards, and targeted debugging.
-
-## Where The Counters Are Updated
-
-The most important fact about the metrics system is that it is wired into the
-runtime:
-
-- `HttpServer` records request counts, statuses, latency, and active
-  connections
-- `RateLimiter` records rejection types
-- `AuthVerifier` records auth failure reasons
-- `OAuth2` records grant and session activity
-- `SubscribeReposHandler` records firehose and repository commit activity
-
-That integration is what separates a useful metrics system from a decorative
-one.
+- `HttpServer`: request counts, status, latency, and connections.
+- `RateLimiter`: rejection types.
+- `AuthVerifier`: auth failure reasons.
+- `OAuth2`: grants and session activity.
+- `SubscribeReposHandler`: firehose and repository commit activity.
 
 ## Export Surfaces
 
-The PDS exports metrics at:
+- PDS: `GET /metrics` and `GET /admin/metrics`.
+- PLC: `GET /_metrics`.
 
-- `GET /metrics`
-- `GET /admin/metrics` for the authenticated admin view
+PDS metrics explain application behavior, while PLC metrics explain DID directory behavior.
 
-The standalone PLC server exports its own metrics at:
+## Interpretation Guidelines
 
-- `GET /_metrics`
+- Latency requires endpoint context to be actionable.
+- Read blob growth alongside request rates.
+- Group auth failures by reason before drawing conclusions.
+- Pair firehose metrics with sync or relay activity.
 
-Do not merge those mentally. PDS metrics explain application behavior. PLC
-metrics explain DID directory behavior.
+## Limitations
 
-## Reading The Numbers Correctly
-
-Some guidelines matter more than the raw metric names:
-
-- latency without endpoint context is rarely actionable
-- blob growth is more meaningful when read alongside request rates
-- auth failures should be grouped by reason before drawing conclusions
-- firehose metrics matter most when paired with sync or relay work
-
-The "why" here is simple: almost every metric family becomes misleading if you
-read it in isolation.
-
-## What Metrics Do Not Replace
-
-Metrics do not replace:
-
-- component logs for detailed failure context
-- service and repository code as the source of control flow truth
-- targeted manual verification of explorer or browser UI behavior
-
-They are the first diagnostic surface, not the only one.
+Metrics provide the first diagnostic surface but do not replace:
+- Detailed logs for failure context.
+- Code analysis for control flow truth.
+- Manual verification of UI behavior.
 
 ## Related Reading
 

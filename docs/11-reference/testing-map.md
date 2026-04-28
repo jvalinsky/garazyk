@@ -62,7 +62,7 @@ Good contributor workflow:
 2. run the broader suite that protects the integration seam you touched,
 3. only then fall back to the full `AllTests` run.
 
-That preserves iteration speed and makes failures easier to interpret.
+This preserves iteration speed and makes failures easier to interpret.
 
 ## Core Commands
 

@@ -6,7 +6,7 @@ title: Database Migration Strategy
 
 ## Overview
 
-The PDS uses a structured migration strategy to evolve database schemas safely over time. This document covers versioning approaches, compatibility considerations, and migration planning strategies.
+The PDS uses a structured migration strategy to evolve database schemas safely. Proper versioning, compatibility planning, and structured rollout strategies prevent data loss during schema changes.
 
 ## Schema Versioning
 

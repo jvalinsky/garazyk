@@ -6,9 +6,7 @@ title: Firehose Overview
 
 ## Overview
 
-The firehose is Garazyk's `com.atproto.sync.subscribeRepos` stream. It is how
-the server turns repository and identity changes into an ordered stream that
-other consumers can follow.
+The firehose (`com.atproto.sync.subscribeRepos`) turns repository and identity changes into an ordered stream for consumers.
 
 The high-level responsibilities are:
 
@@ -17,8 +15,7 @@ The high-level responsibilities are:
 - replay recent history from a cursor when possible
 - deliver live DAG-CBOR frames for commit and related events
 
-This is a streaming system, not just a socket endpoint. The ordering, replay,
-and queueing rules are the interesting part.
+This is a streaming system; ordering, replay, and queueing rules are critical.
 
 ## How The Main Runtime Exposes It
 
@@ -29,8 +26,7 @@ In the normal server path, the firehose is exposed on the main HTTP port.
   `/xrpc/com.atproto.sync.subscribeRepos`
 - upgraded connections are handed directly to `SubscribeReposHandler`
 
-That is why firehose behavior is tied to the main runtime and metrics surface,
-not to a separate sidecar process.
+This ties firehose behavior to the main runtime and metrics surface, rather than a separate sidecar process.
 
 ## What The Stream Carries
 
@@ -41,12 +37,11 @@ The handler emits more than one kind of event. The important families are:
 - account events for status changes such as takedowns
 - info and error events for cursor and delivery conditions
 
-New contributors often think only in terms of commit events, but the stream is
-broader than that.
+The stream includes more than just commit events.
 
 ## Replay Versus Live Mode
 
-The most important behavioral split is cursor handling:
+Cursor handling defines replay behavior:
 
 - no cursor means the server replays current repository state, then switches to
   live delivery
@@ -56,8 +51,7 @@ The most important behavioral split is cursor handling:
   close
 - an outdated cursor may be adjusted forward and accompanied by an info event
 
-That replay logic is what makes the stream operationally useful instead of
-being a best-effort live feed only.
+This replay logic makes the stream operationally useful.
 
 ## Ordering And Persistence
 
@@ -69,8 +63,7 @@ That gives the firehose two important properties:
 - a monotonically increasing sequence number within the server
 - a persisted replay source for reconnecting consumers
 
-This does not make the stream infinite-history storage. It does make it a real
-sequenced service instead of a transient broadcast loop.
+This makes it a sequenced service, though not infinite-history storage.
 
 ## Delivery Limits Matter
 
@@ -82,15 +75,14 @@ If a connection exceeds the configured pending-send thresholds, the server:
 - detaches the connection
 - closes it rather than letting memory grow without limit
 
-That tradeoff is why backpressure is part of the correctness story, not just an
-optimization detail.
+This tradeoff makes backpressure a correctness requirement, not just an optimization.
 
 ## Format Matters Too
 
 The server emits DAG-CBOR frames, and the client-side `Firehose` implementation
 decodes those frames back into structured event objects.
 
-That means debugging stream issues often crosses three layers:
+Debugging stream issues often involves three layers:
 
 - WebSocket connection behavior
 - event sequencing and replay

@@ -6,28 +6,23 @@ title: Services Overview
 
 ## Overview
 
-The service layer is where Garazyk turns protocol requests into application
-work. New contributors should understand this layer early because it explains
-why the codebase is not organized around one giant controller anymore.
+The service layer translates protocol requests into application logic. Understanding this layer explains why the codebase uses multiple services rather than a single large controller.
 
-`PDSApplication` is the composition root. It configures shared infrastructure,
-builds the core services, wires HTTP routes, and keeps a compatibility facade
-around `PDSController` for older call sites.
+`PDSApplication` acts as the composition root. It configures shared infrastructure, builds core services, wires HTTP routes, and provides a compatibility facade around the legacy `PDSController`.
 
-## Why Services Exist
+## Purpose
 
-The service split keeps three concerns separate:
+The service split separates three concerns:
 
-- handlers parse requests and shape responses
-- services coordinate business logic
-- storage, repository, and database code own persistence details
+- Handlers parse requests and shape responses.
+- Services coordinate business logic.
+- Storage and repository code manage persistence.
 
-That split makes it much easier to test, reason about, and replace one part of
-the stack without rewriting the rest.
+This split simplifies testing and replacement of individual stack components.
 
-## The Current Service Composition
+## Service Composition
 
-At startup, `PDSApplication` builds shared infrastructure first:
+At startup, `PDSApplication` builds shared infrastructure:
 
 - configuration
 - logging
@@ -36,7 +31,7 @@ At startup, `PDSApplication` builds shared infrastructure first:
 - user database pool
 - JWT infrastructure
 
-It then builds the application services and adjacent controllers:
+It then builds application services and controllers:
 
 - account service
 - record service
@@ -50,49 +45,39 @@ It then builds the application services and adjacent controllers:
 
 ### Standalone Servers
 
-In addition to the PDS services, the repository implements standalone servers that fulfill global AT Protocol roles:
+The repository also implements standalone servers for global AT Protocol roles:
 
-- **Syrena (AppView)**: Consumes the global firehose to build read-models for feeds and profiles.
-- **Zuk (Relay)**: Aggregates data from multiple PDS instances and re-broadcasts it via a unified firehose.
-- **Campagnola (PLC)**: A standalone directory server for the `did:plc` method.
+- **Syrena (AppView)**: Consumes the global firehose to build read-models.
+- **Zuk (Relay)**: Aggregates data from multiple PDS instances.
+- **Campagnola (PLC)**: A standalone directory server for `did:plc`.
 
-This order matters because most services depend on the database pools, config,
-or auth infrastructure being ready first.
+Most services depend on the database pools, configuration, and authentication infrastructure.
 
-## The Typical Request Path
+## Request Path
 
-Most HTTP or XRPC work follows the same shape:
+Most HTTP or XRPC work follows this path:
 
-1. route registration in the HTTP builder or XRPC layer
-2. auth and validation in helpers or handlers
-3. service call for the owning business operation
-4. repository, database, or storage work
-5. response shaping back at the handler layer
+1. Register routes in the HTTP builder or XRPC layer.
+2. Perform authentication and validation in helpers.
+3. Call the relevant service for the operation.
+4. Execute repository, database, or storage work.
+5. Shape the response in the handler layer.
 
-That path is more useful to memorize than the exact file layout because it tells
-you where to look when behavior is wrong.
+This sequence identifies where to look when behavior is incorrect.
 
-## `PDSController` Is A Compatibility Layer
+## PDSController Legacy
 
-`PDSController` still exists, but the repo explicitly treats it as a legacy
-facade over `PDSApplication` and the service layer. New code should call the
-services directly unless it is intentionally extending an older compatibility
-surface.
+`PDSController` is a legacy facade over `PDSApplication`. New code should call services directly.
 
-This is one of the most important contributor guidelines in the tree. Many docs
-became confusing because they described `PDSController` as if it were still the
-preferred architecture.
+## Adding a Service
 
-## When To Add A Service
+Add or extend a service when behavior:
 
-Add or extend a service when the behavior:
+- spans multiple handlers or protocols.
+- coordinates multiple persistence concerns.
+- requires a testable boundary independent of HTTP.
 
-- spans multiple handlers or protocols
-- coordinates more than one persistence concern
-- needs a testable boundary that is not tied to HTTP
-
-Do not add a service just to wrap one trivial helper. The point of the service
-layer is to create meaningful seams, not more indirection.
+The service layer creates meaningful seams, not just indirection. Trivial helpers do not require their own service.
 
 ## Related Reading
 

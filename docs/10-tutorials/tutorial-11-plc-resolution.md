@@ -119,9 +119,9 @@ curl -sS http://127.0.0.1:2582/_metrics
 
 ## Summary
 
-Identity resolution is the foundation of the AT Protocol's interoperability. By using `DIDPLCResolver` with robust retry policies and understanding the `PLCServer` internals, you can ensure that your PDS remains connected to the network even during infrastructure outages.
+Identity resolution enables AT Protocol interoperability. `DIDPLCResolver` retry policies and `PLCServer` keep your PDS connected to the network during outages.
 
-Always use `deciduous` to document changes to identity resolution or PLC configuration.
+Use `deciduous` to document changes to identity resolution or PLC configuration.
 
 ## Related
 

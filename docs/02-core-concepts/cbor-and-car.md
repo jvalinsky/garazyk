@@ -14,13 +14,11 @@ portable and verifiable.
 - CAR packages content-addressed blocks into a transport format for sync and
   export
 
-If CIDs explain "what this data is," CBOR and CAR explain "how this data moves
-through the system without losing its identity."
+CBOR and CAR preserve data identity in motion.
 
 ## Why CBOR Exists In This Repo
 
-Garazyk cannot hash arbitrary Objective-C objects directly. It needs a stable
-byte representation first.
+Garazyk requires a stable byte representation to hash Objective-C objects.
 
 That is the job of DAG-CBOR in this tree:
 
@@ -29,8 +27,7 @@ That is the job of DAG-CBOR in this tree:
   converted into DAG-CBOR forms
 - map keys are sorted canonically (byte-length first, then lexicographical byte-order) so the same logical object produces the same bytes.
 
-This is why serialization details are not an implementation footnote. They are
-part of repository correctness.
+Serialization details ensure repository correctness.
 
 ## Why CAR Exists In This Repo
 
@@ -43,8 +40,7 @@ CAR is the transport and archive format for that job:
 - export paths can package a root plus reachable blocks
 - consumers can verify every block against the CID included in the archive
 
-CAR is not "just a binary blob." It is the format that preserves the
-content-addressed structure while data is in motion.
+CAR preserves the content-addressed structure while data is in motion.
 
 ## How Garazyk Uses Both Together
 
@@ -55,9 +51,7 @@ The common flow is:
 3. reference that CID from MST or commit structures
 4. package the relevant blocks into a CAR response when sync needs them
 
-That split is why repository bugs often cross multiple files. A mismatch in
-serialization can surface later as a CID mismatch, a missing proof block, or a
-broken CAR response.
+Repository bugs often cross multiple files. Serialization mismatches cause CID mismatches, missing proof blocks, or broken CAR responses.
 
 ## Implementation Boundaries
 
@@ -78,8 +72,6 @@ Start with the narrowest format question:
 - is the wrong block missing from the CAR, or is the CAR rooted at the wrong
   CID?
 - is a sync consumer missing proof nodes, or is the underlying MST state wrong?
-
-That order is usually faster than debugging the whole repository stack at once.
 
 ## Related Reading
 

@@ -6,14 +6,9 @@ title: IPLD Data Model and Merkle DAGs
 
 ## Overview
 
-IPLD gives a common way to talk about hash-linked data structures without tying
-the discussion to one serialization format or one application protocol. That is
-why it matters to ATProto: repositories are not just bags of records, they are
-graphs of linked blocks.
+IPLD provides a standard for hash-linked data structures independent of serialization formats or protocols. ATProto repositories use IPLD to organize records as graphs of linked blocks.
 
-The IPLD data model starts with ordinary kinds such as maps, lists, strings,
-integers, booleans, bytes, and null. Its crucial addition is the `link` kind:
-data can point to other data by content hash instead of by location.
+The IPLD data model includes standard types like maps, lists, strings, and integers. The `link` kind is the primary addition: data points to other data by content hash instead of location.
 
 ```mermaid
 flowchart LR
@@ -23,32 +18,26 @@ flowchart LR
   CID --> Block["content-addressed block"]
 ```
 
-## What "Merkle DAG" Means Here
+## Merkle DAGs
 
-A Merkle DAG is a directed acyclic graph where edges are content hashes. That
-single idea buys three properties at once:
+A Merkle DAG is a directed acyclic graph where edges are content hashes. This provides three properties:
 
-- integrity: tampering changes the hash
-- deduplication: equal content collapses to one identity
-- traversability: following a link means loading a block with a known CID
+- integrity: tampering changes the hash.
+- deduplication: identical content results in a single identity.
+- traversability: following a link loads a block with a known CID.
 
-In ATProto repositories, commits, MST nodes, and records all participate in
-that pattern.
+ATProto repositories use this pattern for commits, MST nodes, and records.
 
-## Why This Matters More Than A Generic Tree Diagram
+## Content Addressing
 
-The repository is often shown as "commit -> tree nodes -> records," which is
-useful but incomplete. The important thing is not just the shape of the tree.
-The important thing is that every hop is content-addressed.
+The repository structure "commit -> tree nodes -> records" relies on content addressing for every hop:
 
-That means:
+- The commit points to repository state by CID.
+- MST internal links point to child nodes by CID.
+- MST leaf entries point to records by CID.
+- Blobs are linked by CID.
 
-- the commit points to repository state by CID
-- MST internal links point to child nodes by CID
-- MST leaf entries point to records by CID
-- blobs are also linked by CID even though they are stored outside the repo
-
-The graph is the verification boundary.
+The graph defines the verification boundary.
 
 ## ATProto's Mapping Of IPLD Concepts
 

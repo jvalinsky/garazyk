@@ -6,7 +6,7 @@ title: OAuth + DPoP Request Walkthrough
 
 ## Goal
 
-Read this page when you need the real flow for ATProto OAuth with DPoP in this codebase: authorization state, token exchange, nonce challenges, thumbprint binding, and the later bound API request. The goal is to explain where each guarantee is enforced, not to restate the spec.
+Read this page when you need the real flow for ATProto OAuth with DPoP in this codebase: authorization state, token exchange, nonce challenges, thumbprint binding, and the later bound API request. This page explains where each guarantee is enforced.
 
 ## Full Flow
 
@@ -50,7 +50,7 @@ The token exchange enters `Garazyk/Sources/Auth/OAuth2Handler.m`.
 6. A session is created through `Session` with the DPoP thumbprint attached.
 7. The token response returns access and refresh tokens that are now bound to that proof key.
 
-The key point is that the thumbprint is not inferred later. It is captured at issuance time and then enforced on later requests.
+The thumbprint is captured at issuance time and enforced on later requests.
 
 ## Walkthrough: Bound API Request
 

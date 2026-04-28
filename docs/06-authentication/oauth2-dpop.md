@@ -6,7 +6,7 @@ title: OAuth 2.0 with DPoP
 
 ## Overview
 
-Garazyk supports ATProto-style OAuth with DPoP-bound access tokens. The important contributor fact is that this is not one class or one check. The guarantee is split across authorization handling, token issuance, session persistence, and request-time proof verification.
+Garazyk supports ATProto-style OAuth with DPoP-bound access tokens. This guarantee is split across authorization handling, token issuance, session persistence, and request-time proof verification.
 
 ## What The Current Implementation Guarantees
 
@@ -29,7 +29,7 @@ The auth path is easiest to reason about when you separate the layers:
 - `Session` owns persisted session state, refresh, and lookup.
 - Auth helpers enforce request-time token and DPoP requirements.
 
-If you read all OAuth failures as "token parsing bugs," you will miss most of the real causes.
+Treating all OAuth failures as "token parsing bugs" obscures the real causes.
 
 ## Common Failure Modes
 
@@ -43,10 +43,6 @@ When this flow breaks, the usual buckets are:
 - session rotation or refresh state drift
 
 Those are different debugging paths, which is why the deep dives exist.
-
-## Why This Page Stays Short
-
-The old version of this page mixed protocol explanation with long code excerpts. That made it hard to see which part of the runtime actually enforces which guarantee. The deep dives now carry the concrete flows, while this summary page keeps the mental model clean.
 
 ## Related Deep Dives
 

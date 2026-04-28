@@ -10,7 +10,7 @@ title: HTTP Server
 
 ## What This Layer Owns
 
-Treat the HTTP server and its session state machines as the answer to these questions:
+The HTTP server and its session state machines answer these questions:
 
 - can the runtime parse this request at all? (`HttpProtocolSession`)
 - did the request exceed header or body limits?
@@ -48,8 +48,7 @@ Read them together. The server owns connection behavior, while the builder owns 
 
 ## Advanced internals track
 
-If you want the transport and parser walkthrough instead of the short reference
-version of this page, continue to the tutorial subguide:
+For a transport and parser walkthrough, see the tutorial subguide:
 
 - [Subguide: HTTP + WebSocket from Scratch](../10-tutorials/network-from-scratch/)
 - [Part 1: HTTP Transport and Parser](../10-tutorials/network-from-scratch/http-transport-and-parser)

@@ -10,8 +10,7 @@ title: PLC Operation Walkthrough
 PLC operation looks like as data and how it moves through Garazyk's
 validation, storage, and replay path.
 
-The important contributor fact is that a PLC DID is the result of replaying
-signed operations, not the result of editing one mutable DID document.
+A PLC DID is the result of replaying signed operations, not the result of editing one mutable DID document.
 
 ## The Shape Of An Operation
 
@@ -35,7 +34,7 @@ history linkage, and a signature.
 }
 ```
 
-Why the shape matters:
+Shape components:
 
 - `prev` links the operation into an append-only history
 - `rotationKeys` define who may authorize future change
@@ -60,8 +59,7 @@ Around those field extractions, the implementation checks that:
 - rotation keys are valid `did:key` strings
 - services are objects, not arbitrary values
 
-That is why "bad PLC state" usually means "bad history or bad validation" rather
-than "the DID document serializer is broken."
+Bad PLC state usually means bad history or bad validation, not a broken DID document serializer.
 
 ## The Full PLC Path
 
@@ -86,8 +84,7 @@ sequenceDiagram
   Server-->>Client: DID document JSON
 ```
 
-This is the core PLC mental model in one diagram: validate history, store
-history, replay history.
+The PLC model: validate history, store history, replay history.
 
 ## Replay Produces The DID Document
 
@@ -102,20 +99,18 @@ return @{
 };
 ```
 
-That conversion is deliberately late in the process. The source of truth is the
-operation history plus replay rules, not the final JSON object returned to a
-resolver.
+The operation history and replay rules are the source of truth, not the final JSON object returned to a resolver.
 
-## Why This Matters For Contributors
+## Troubleshooting
 
-If a DID document looks wrong, there are only a few productive places to look:
+If a DID document looks wrong, check:
 
 1. the submitted operation shape
 2. the stored history and `prev` chain
 3. auditor validation rules
 4. replay logic that turns history into current state
 
-Starting from the returned document alone usually hides the real bug.
+Debugging the returned document alone hides the bug.
 
 ## Related Reading
 

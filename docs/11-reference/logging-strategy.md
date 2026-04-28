@@ -26,9 +26,7 @@ The application is composed from services that share infrastructure but own
 different failure modes. Without component-aware logging, a slow auth path and
 a slow repository export both collapse into the same stream of messages.
 
-Central logging is what makes it possible to ask a useful question such as
-"is this an HTTP problem, an auth problem, or a database problem?" and get an
-real answer from one runtime.
+Central logging answers questions like "is this an HTTP problem, an auth problem, or a database problem?" from one runtime.
 
 ## Supported Log Dimensions
 
@@ -49,8 +47,7 @@ The standard component tags include `Database`, `Auth`, `HTTP`, `Admin`,
 ## Configuration Flow
 
 `PDSApplication` configures the shared logger from `PDSConfiguration` during
-startup. That is the important mental model. The bare logger defaults are less
-important than the application-configured runtime state.
+startup. The application-configured runtime state matters more than the bare logger defaults.
 
 A few defaults are still worth knowing because older docs often got them wrong:
 
@@ -59,16 +56,15 @@ A few defaults are still worth knowing because older docs often got them wrong:
 - the default format is text
 - async logging is currently disabled by default
 
-That last point matters operationally. If you are expecting background log
-buffering, you need to confirm the configuration rather than assume it.
+If you expect background log buffering, confirm the configuration rather than assuming it.
 
 ## Choosing Text Or JSON
 
 Use text logs when you are iterating locally and reading failures in a terminal.
 Use JSON logs when you need machine parsing or external ingestion.
 
-The right choice is about consumption, not purity. The logger supports both
-because local debugging and operational collection are different jobs.
+The logger supports both
+because local debugging and operational collection require different formats.
 
 ## Correlation IDs And Request Work
 

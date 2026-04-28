@@ -6,7 +6,7 @@ title: Key Rotation
 
 ## Overview
 
-In Garazyk, "key rotation" mainly means PLC rotation keys and the actor-scoped signing material that participates in identity updates. This is not a general scheduler that periodically rolls every secret in the system. It is a narrower set of repo-grounded flows for generating, storing, selecting, and using keys when the server signs PLC operations.
+In Garazyk, key rotation manages PLC rotation keys and the actor-scoped signing material for identity updates. It handles generating, storing, selecting, and using keys when the server signs PLC operations.
 
 ## Full Flow
 
@@ -35,17 +35,7 @@ The live rotation-key path spans a few concrete files:
 - `Garazyk/Sources/Network/XrpcIdentityMethods.m` builds PLC operations, requires `rotationKeys` on update paths, and chooses whether to sign with the actor-specific key or the server-wide key.
 - the PLC validation layer rejects malformed `did:key` material and verifies signature chains before accepting state.
 
-That is the real boundary: load keys, choose the right signer, produce a valid PLC operation, and keep the state consistent with what the directory will later verify.
-
-## What This Page Does Not Mean
-
-This page is not describing:
-
-- automatic time-based rollover for every JWT or OAuth key
-- a background daemon that rotates all account keys on a schedule
-- a generic "best practices" lifecycle independent of the PLC runtime
-
-Those would be different subsystems. The current repo-grounded meaning is identity and PLC update signing.
+The process loads keys, chooses the signer, produces a valid PLC operation, and keeps the state consistent with directory verification.
 
 ## Common Failure Modes
 
@@ -56,7 +46,7 @@ When this area breaks, the usual causes are:
 - the request omits `rotationKeys` or provides invalid `did:key` entries
 - the operation is signed with a key that does not match the declared rotation chain
 
-These failures often look like "PLC rejected my update," but the root cause is usually local key state, not the remote directory.
+These failures often appear as remote PLC rejections, but the root cause is usually local key state.
 
 ## Related Deep Dives
 

@@ -42,7 +42,7 @@ Low-level repository and MST management.
 
 ## Interactive REPL
 
-Kaszlak includes an interactive shell (REPL) for developers. It can be entered by running `kaszlak` without a command or via the `repl` subcommand.
+Kaszlak includes an interactive shell (REPL) for developers. Enter it by running `kaszlak` without a command or via the `repl` subcommand.
 
 ```bash
 ./kaszlak repl

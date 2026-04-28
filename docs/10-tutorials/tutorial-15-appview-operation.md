@@ -18,7 +18,7 @@ Syrena is the AppView engine of the Garazyk ecosystem. While the PDS focuses on 
 
 ---
 
-## Technical Hook: The Dual-Engine Architecture
+## The Dual-Engine Architecture
 
 Syrena's operational stability relies on two core components working in tandem:
 

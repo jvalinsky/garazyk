@@ -31,7 +31,7 @@ That structure is deliberate. It gives contributors a short path from a changed 
 
 The repository uses a custom test runner. Runtime method discovery is part of the story, but it is not the only requirement.
 
-The practical rule contributors must remember is:
+The practical rule is:
 
 > New test classes must be added to `Garazyk/Tests/test_main.m`.
 
@@ -46,7 +46,7 @@ Most test names are descriptive enough to tell you the intended protection level
 - characterization tests document behavior that should not drift accidentally,
 - security tests call out the attack or hardening property they protect.
 
-That naming style is worth preserving because it reduces the amount of suite archaeology new contributors have to do.
+Preserve this naming style to reduce the time new contributors spend searching for tests.
 
 ## How to Choose the Right Suite
 

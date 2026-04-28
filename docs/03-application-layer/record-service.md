@@ -17,8 +17,6 @@ Records are the fundamental unit of data in ATProto. Every post, like, follow, a
 - **Atomic Operations**: Batch writes succeed or fail as a unit
 - **Consistency**: MST updates maintain repository integrity
 
-Understanding the Record Service is essential for implementing any ATProto application, as it's the primary interface for reading and writing user data.
-
 ## Responsibilities
 
 - Record creation and updates (put operations)

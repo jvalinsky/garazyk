@@ -6,7 +6,7 @@ outline: deep
 
 # Diagram Reference
 
-This page provides a comprehensive index of all diagrams used throughout the Garazyk PDS documentation. Each diagram is designed to illustrate key architectural concepts, data flows, and system interactions.
+This page indexes all diagrams in the Garazyk PDS documentation. The diagrams illustrate architectural concepts, data flows, and system interactions.
 
 ## Architecture Diagrams
 

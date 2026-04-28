@@ -6,59 +6,57 @@ title: Service Databases
 
 ## Overview
 
-Service databases hold shared operational state for the whole server. They are the storage layer for data that should not live inside one actor's repository database, such as account metadata, sessions, DID cache, and sequencer state.
+Service databases store shared operational state. They contain data independent of individual actor repositories, including account metadata, sessions, DID cache, and sequencer state.
 
-## What Lives Here
+## Storage Contents
 
-Treat the shared stores as the home for:
+The shared stores contain:
 
-- account and admin-facing operational metadata
-- session and auth-adjacent shared state
-- DID and handle resolution cache entries
-- sequencer and event-persistence state used by sync surfaces
+- account and admin operational metadata.
+- session and authentication state.
+- DID and handle resolution cache entries.
+- sequencer and event-persistence state for sync.
 
-If the data belongs to the process rather than to one DID's repo, it usually belongs here.
+Data belonging to the process, rather than a specific DID's repository, resides here.
 
 ## Key Tables and Entities
 
-The service layer is backed by three distinct SQLite databases to isolate operational metadata from high-volume event logs.
+Three SQLite databases isolate operational metadata from event logs.
 
 ### 1. Main Service Database (`service.db`)
-*   `accounts`: Primary user account registry (DID, handle, email, password hashes, 2FA state).
-*   `oauth_refresh_tokens`: Valid OAuth2 refresh sessions (formerly `refresh_tokens`).
-*   `oauth_clients`, `oauth_authorization_codes`, `oauth_grants`: Full OAuth2/OpenID Connect provider state.
-*   `invite_codes`: PDS registration invite management.
-*   `admin_takedowns`, `admin_audit_log`, `reports`: Trust & Safety operational data.
-*   `labels`: Locally generated or cached assertions about actors/content.
-*   `passkeys`: WebAuthn credential metadata.
-*   `actor_preferences`, `actor_mutes`: Per-account service-side settings.
-*   `conversations`, `messages`, `groups`: Chat and social group metadata.
-*   `video_jobs`: Asynchronous video processing job queue (transcoding, thumbnail generation, state tracking with retry logic). Indexed by `did`, `state`, and `created_at`.
+*   `accounts`: DID, handle, email, password hashes, 2FA state.
+*   `oauth_refresh_tokens`: Valid OAuth2 refresh sessions.
+*   `oauth_clients`, `oauth_authorization_codes`, `oauth_grants`: OAuth2/OpenID Connect state.
+*   `invite_codes`: Registration invite management.
+*   `admin_takedowns`, `admin_audit_log`, `reports`: Trust & Safety data.
+*   `labels`: Cached assertions about actors/content.
+*   `passkeys`: WebAuthn metadata.
+*   `actor_preferences`, `actor_mutes`: Per-account service settings.
+*   `conversations`, `messages`, `groups`: Chat metadata.
+*   `video_jobs`: Video processing queue (transcoding, thumbnail generation, retries).
 
 ### 2. DID Cache Database (`did_cache.db`)
-*   `did_cache`: Local cache of resolved DID documents with expiration tracking.
+*   `did_cache`: Resolved DID documents with expiration tracking.
 
 ### 3. Sequencer Database (`sequencer.db`)
-*   `events`: The canonical PDS sequencer event log for the firehose.
-*   `repo_sequence`: Tracking for repository-specific sequence numbers.
+*   `events`: PDS sequencer event log.
+*   `repo_sequence`: Repository-specific sequence numbers.
 
-## Why The Synthetic Service Store Matters
+## Synthetic Service Store
 
-`ServiceDatabases` uses the synthetic DID `__service__` to access the shared-store path through the same pool abstractions used elsewhere. That choice matters because it keeps shared-store access consistent without pretending it is actor-owned data.
-
-When contributors miss that boundary, they often search actor-store code for bugs that actually live in shared operational storage.
+`ServiceDatabases` uses the synthetic DID `__service__` to access shared stores via standard pool abstractions. This ensures consistent access while distinguishing shared data from actor data. Contributors often confuse shared operational storage with actor-store code.
 
 ## Typical Operations
 
-You usually land in the service databases for:
+Service databases handle:
 
-- account lookup and updates
-- session persistence and token-adjacent state
-- DID cache reads and writes
-- sequencer event persistence for sync consumers
-- video job lifecycle management (create, poll, update state, retry)
+- account lookups and updates.
+- session persistence.
+- DID cache operations.
+- sequencer event persistence.
+- video job management.
 
-These are process-level concerns, not repository-structure concerns.
+These are process-level concerns.
 
 ## Related Deep Dives
 

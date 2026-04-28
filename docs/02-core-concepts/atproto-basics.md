@@ -6,8 +6,7 @@ title: ATProto Basics
 
 ## Overview
 
-AT Protocol can look abstract until you map it onto a running server. Garazyk
-becomes much easier to understand once you keep five ideas straight:
+To understand Garazyk's AT Protocol implementation, remember:
 
 - identity is DID-first
 - handles are aliases, not primary keys
@@ -28,8 +27,7 @@ In Garazyk today, the supported DID methods are:
 - `did:plc`
 - `did:web`
 
-That support boundary matters because a lot of higher-level behavior depends on
-which DID method is in play.
+Higher-level behavior depends on the DID method.
 
 ## Repositories And Records
 
@@ -37,14 +35,13 @@ Each account has a repository. Records are namespaced entries inside that
 repository, typically grouped by collection NSIDs such as
 `app.bsky.feed.post`.
 
-At a practical level, repository work in this tree means:
+Repository work in this tree includes:
 
 - create, update, and delete records
 - materialize repository state through MST and CAR machinery
 - expose sync and firehose views of that state
 
-This is why record code, repository service code, and sync code sit so close to
-one another in the architecture.
+Record code, repository service code, and sync code sit together in the architecture.
 
 ## Blobs Are Adjacent, Not Embedded
 
@@ -53,8 +50,7 @@ blob objects containing CID links. That keeps repositories from turning into
 opaque binary stores and lets the server manage blob storage with a separate
 lifecycle.
 
-If you miss this separation, a lot of repository and storage code starts to
-look more complicated than it really is.
+Separating blobs from records simplifies repository and storage code.
 
 ## XRPC Is The Protocol Surface
 
@@ -65,14 +61,12 @@ ATProto methods are exposed through XRPC namespaces such as:
 - `com.atproto.sync.*`
 - `com.atproto.identity.*`
 
-That means the right way to trace behavior is usually:
+To trace behavior:
 
 1. find the XRPC method
 2. read its auth and validation path
 3. follow the owning service
 4. inspect repository, database, blob, or identity code underneath
-
-This is the most useful contributor workflow to internalize early.
 
 ## Sync And Relay Concepts
 
@@ -83,8 +77,7 @@ primarily as:
 - `subscribeRepos` delivery
 - crawl notifications to configured relays
 
-These are related concepts, but they are not the same subsystem. A relay crawl
-hint is not the same thing as a firehose stream.
+A relay crawl hint differs from a firehose stream.
 
 ## How Garazyk Maps The Model
 
@@ -96,8 +89,7 @@ implementation seams:
 - repository and blob layers own persistence and content addressing
 - identity and PLC code own DID resolution and updates
 
-That mapping is the main reason the docs now emphasize architecture and request
-flow instead of long payload dumps.
+This mapping lets the docs emphasize architecture and request flow over payload dumps.
 
 ## Related Reading
 
