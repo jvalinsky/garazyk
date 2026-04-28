@@ -8,6 +8,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration;
 
+/**
+ * Obtain a fresh admin JWT from the PDS /admin/login endpoint.
+ *
+ * Uses the pdsAdminPassword from the configuration. On success, stores
+ * the returned token in configuration.pdsAdminToken and returns YES.
+ * Returns NO if no password is configured or the login request fails.
+ */
+- (BOOL)refreshPDSAdminToken;
+
 - (NSDictionary *)fetchServiceOverview;
 - (NSDictionary *)searchAccountsWithQuery:(nullable NSString *)query;
 - (NSDictionary *)fetchInviteCodes;
