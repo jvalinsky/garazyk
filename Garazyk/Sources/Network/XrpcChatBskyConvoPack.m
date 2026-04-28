@@ -1,623 +1,534 @@
-#import "Network/XrpcChatBskyConvoPack.h"
+/*!
+ @file XrpcChatBskyConvoPack.m
 
-#import "Debug/PDSLogger.h"
+ @abstract XRPC route pack for chat.bsky.convo.* endpoints.
+ Implements conversation management, messaging, reactions, read state,
+ muting, locking, and event log.
+ */
+
+#import "Network/XrpcChatBskyConvoPack.h"
+#import "Network/XrpcHandler.h"
+#import "Network/XrpcAuthHelper.h"
+#import "Network/XrpcErrorHelper.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/XrpcErrorHelper.h"
-#import "Network/XrpcAuthHelper.h"
-#import "Network/XrpcHandler.h"
-#import "AppView/Services/ChatService.h"
-#import "AppView/Services/ActorService.h"
+#import "Chat/Server/Services/ChatService.h"
+#import "Chat/Server/Config/ChatSchemaManager.h"
 #import "Database/PDSDatabase.h"
-#import "Admin/PDSAdminAuth.h"
-#import "Chat/Server/ChatAuthManager.h"
+#import "Debug/PDSLogger.h"
 
 @implementation XrpcChatBskyConvoPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                    jwtMinter:(JWTMinter *)jwtMinter
-              adminController:(id<PDSAdminController>)adminController {
-    [self registerWithDispatcher:dispatcher appViewDatabase:appViewDatabase authManager:nil jwtMinter:jwtMinter adminController:adminController];
-}
+                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
+                      jwtMinter:(nullable JWTMinter *)jwtMinter
+                adminController:(nullable id<PDSAdminController>)adminController {
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                   authManager:(ChatAuthManager *)authManager {
-    [self registerWithDispatcher:dispatcher appViewDatabase:appViewDatabase authManager:authManager jwtMinter:nil adminController:nil];
-}
-
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                   authManager:(nullable ChatAuthManager *)authManager
-                     jwtMinter:(nullable JWTMinter *)jwtMinter
-               adminController:(nullable id<PDSAdminController>)adminController {
+    // Ensure chat schema tables exist
+    PDSDatabase *db = (PDSDatabase *)appViewDatabase;
+    ChatSchemaManager *schemaManager = [ChatSchemaManager sharedManager];
+    [db executeRawSQL:[schemaManager chatSchemaSQL] error:nil];
 
     ChatService *chatService = [[ChatService alloc] initWithDatabase:appViewDatabase];
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
-    
-    // Helper to get actor DID
-    NSString *(^getActorDid)(HttpRequest *, HttpResponse *) = ^NSString *(HttpRequest *req, HttpResponse *resp) {
-        if (authManager) {
-            return [authManager authenticateRequest:req response:resp];
-        } else {
-            NSString *authHeader = [req headerForKey:@"Authorization"];
-            return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                   jwtMinter:jwtMinter
-                                             adminController:adminController
-                                                     request:req
-                                                    response:resp];
-        }
-    };
 
-    // chat.bsky.convo.getConvoForMembers - Get or create conversation for members
+    // chat.bsky.convo.getConvoForMembers
     [dispatcher registerMethod:@"chat.bsky.convo.getConvoForMembers"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
-
         NSDictionary *body = request.jsonBody;
-        NSArray *memberDids = body[@"members"];
-        if (!memberDids) {
-            memberDids = [request queryParamsForKey:@"members"];
-        }
-
-        if (![memberDids isKindOfClass:[NSArray class]] || memberDids.count < 2) {
-            [XrpcErrorHelper setValidationError:response message:@"members must be an array with at least 2 DIDs"];
-            response.statusCode = HttpStatusBadRequest;
+        NSArray *members = body[@"members"];
+        if (!members || members.count < 2) {
+            [XrpcErrorHelper setValidationError:response message:@"At least two members required"];
             return;
         }
 
         NSError *error = nil;
-        NSDictionary *convo = [chatService getConversationForMembers:memberDids error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+        NSDictionary *convo = [chatService getConversationForMembers:members error:&error];
+        if (!convo) {
+            convo = [chatService createConversationWithMembers:members error:&error];
+        }
+        if (!convo) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to create conversation"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"convo": convo ?: @{}}];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"convo": convo}];
     }];
 
-    // chat.bsky.convo.acceptConvo - Accept pending conversation
+    // chat.bsky.convo.acceptConvo
     [dispatcher registerMethod:@"chat.bsky.convo.acceptConvo"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService acceptConversation:convoId memberDid:actorDID error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to accept conversation"];
             return;
         }
-
         NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
-        response.statusCode = 200;
+        response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"convo": convo ?: @{}}];
     }];
 
-    // chat.bsky.convo.leaveConvo - Leave a conversation
+    // chat.bsky.convo.leaveConvo
     [dispatcher registerMethod:@"chat.bsky.convo.leaveConvo"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService leaveConversation:convoId memberDid:actorDID error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to leave conversation"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{}];
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"convo": convo ?: @{}}];
     }];
 
-    // chat.bsky.convo.listConvoRequests - List pending conversation requests
+    // chat.bsky.convo.listConvoRequests
     [dispatcher registerMethod:@"chat.bsky.convo.listConvoRequests"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSError *error = nil;
-
         NSArray *requests = [chatService listConversationRequestsForActor:actorDID error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
-        }
-
-        response.statusCode = 200;
+        response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"requests": requests ?: @[]}];
     }];
 
-    // chat.bsky.convo.getConvoAvailability - Check if can message actor
+    // chat.bsky.convo.getConvoAvailability
     [dispatcher registerMethod:@"chat.bsky.convo.getConvoAvailability"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *did = [request queryParamForKey:@"did"];
-        if (![did isKindOfClass:[NSString class]] || did.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"did parameter is required"];
+        if (!did || did.length == 0) {
+            [XrpcErrorHelper setValidationError:response message:@"did is required"];
             return;
         }
-
-        // Check if actor exists
-        NSDictionary *actor = [actorService getProfileForActor:did error:nil];
-        if (!actor) {
-            [XrpcErrorHelper setValidationError:response message:@"Actor not found"];
-            return;
-        }
-
-        // For now, assume available if actor exists
-        // In future: check blocks, privacy settings, etc.
-        BOOL available = YES;
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"available": @(available)}];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"available": @YES}];
     }];
 
-    // chat.bsky.convo.addReaction - Add emoji reaction to message
+    // chat.bsky.convo.addReaction
     [dispatcher registerMethod:@"chat.bsky.convo.addReaction"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *messageId = body[@"messageId"];
         NSString *emoji = body[@"emoji"];
-
-        if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
-            return;
-        }
-        if (![emoji isKindOfClass:[NSString class]] || emoji.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"emoji is required"];
+        if (!messageId || !emoji) {
+            [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService addReaction:messageId actorDid:actorDID emoji:emoji error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to add reaction"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"messageId": messageId, @"emoji": emoji, @"actorDid": actorDID}];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"emoji": emoji}];
     }];
 
-    // chat.bsky.convo.removeReaction - Remove emoji reaction from message
+    // chat.bsky.convo.removeReaction
     [dispatcher registerMethod:@"chat.bsky.convo.removeReaction"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *messageId = body[@"messageId"];
         NSString *emoji = body[@"emoji"];
-
-        if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
-            return;
-        }
-        if (![emoji isKindOfClass:[NSString class]] || emoji.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"emoji is required"];
+        if (!messageId || !emoji) {
+            [XrpcErrorHelper setValidationError:response message:@"messageId and emoji are required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService removeReaction:messageId actorDid:actorDID emoji:emoji error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to remove reaction"];
             return;
         }
-
-        response.statusCode = 200;
+        response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
 
-    // chat.bsky.convo.updateRead - Update read state for a message
+    // chat.bsky.convo.updateRead
     [dispatcher registerMethod:@"chat.bsky.convo.updateRead"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
         NSString *messageId = body[@"messageId"];
-
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
-            return;
-        }
-        if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [chatService updateLastReadMessage:convoId memberDid:actorDID messageId:messageId error:&error];
-        if (error || !success) {
+        BOOL success = [chatService updateLastReadMessage:convoId
+                                                memberDid:actorDID
+                                                messageId:messageId ?: @""
+                                                    error:&error];
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{}];
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"convo": convo ?: @{}}];
     }];
 
-    // chat.bsky.convo.updateAllRead - Mark all messages as read
+    // chat.bsky.convo.updateAllRead
     [dispatcher registerMethod:@"chat.bsky.convo.updateAllRead"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
-
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
-        // Get latest message ID for this conversation
-        NSString *query = @"SELECT id FROM messages WHERE convo_id = ? ORDER BY created_at DESC LIMIT 1";
-        NSArray *rows = [(PDSDatabase *)appViewDatabase executeParameterizedQuery:query
-                                                                           params:@[convoId]
-                                                                            error:nil];
-        if (rows.count == 0) {
-            response.statusCode = 200;
-            [response setJsonBody:@{}];
-            return;
-        }
-
-        NSString *latestMessageId = rows[0][@"id"];
+        // Mark all as read by updating last read to current time
         NSError *error = nil;
-        BOOL success = [chatService updateLastReadMessage:convoId memberDid:actorDID messageId:latestMessageId error:&error];
-        if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to mark all as read"];
+        BOOL success = [chatService updateLastReadMessage:convoId
+                                                memberDid:actorDID
+                                                messageId:@""
+                                                    error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to update read state"];
             return;
         }
-
-        response.statusCode = 200;
+        response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
 
-    // chat.bsky.convo.muteConvo - Mute conversation notifications
+    // chat.bsky.convo.muteConvo
     [dispatcher registerMethod:@"chat.bsky.convo.muteConvo"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
-
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService muteConversation:convoId memberDid:actorDID error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to mute conversation"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{}];
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"convo": convo ?: @{}}];
     }];
 
-    // chat.bsky.convo.unmuteConvo - Unmute conversation notifications
+    // chat.bsky.convo.unmuteConvo
     [dispatcher registerMethod:@"chat.bsky.convo.unmuteConvo"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
-
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService unmuteConversation:convoId memberDid:actorDID error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to unmute conversation"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{}];
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"convo": convo ?: @{}}];
     }];
 
-    // chat.bsky.convo.deleteMessageForSelf - Delete message locally (not for others)
-    [dispatcher registerMethod:@"chat.bsky.convo.deleteMessageForSelf"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+    // chat.bsky.convo.sendMessageBatch
+    [dispatcher registerMethod:@"chat.bsky.convo.sendMessageBatch"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
-        NSString *messageId = body[@"messageId"];
-
-        if (![messageId isKindOfClass:[NSString class]] || messageId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+        NSString *convoId = body[@"convoId"];
+        NSArray *messages = body[@"messages"];
+        if (!convoId || !messages) {
+            [XrpcErrorHelper setValidationError:response message:@"convoId and messages are required"];
             return;
         }
 
         NSError *error = nil;
-        BOOL success = [chatService deleteMessageForSelf:messageId memberDid:actorDID error:&error];
-        if (error || !success) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to delete message"];
+        NSArray *sentMessages = [chatService sendMessageBatch:convoId
+                                                    senderDid:actorDID
+                                                     messages:messages
+                                                        error:&error];
+        if (!sentMessages) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message batch"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{}];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"messages": sentMessages}];
     }];
 
-    // chat.bsky.convo.lockConvo - Lock conversation (prevent messages)
+    // chat.bsky.convo.lockConvo
     [dispatcher registerMethod:@"chat.bsky.convo.lockConvo"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
-
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService lockConversation:convoId error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to lock conversation"];
             return;
         }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{}];
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"convo": convo ?: @{}}];
     }];
 
-    // chat.bsky.convo.unlockConvo - Unlock conversation
+    // chat.bsky.convo.unlockConvo
     [dispatcher registerMethod:@"chat.bsky.convo.unlockConvo"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
-
         NSString *convoId = body[@"convoId"];
-
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
+        if (!convoId) {
             [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
             return;
         }
 
         NSError *error = nil;
         BOOL success = [chatService unlockConversation:convoId error:&error];
-        if (error || !success) {
+        if (!success) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to unlock conversation"];
             return;
         }
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"convo": convo ?: @{}}];
+    }];
 
-        response.statusCode = 200;
+    // chat.bsky.convo.deleteMessageForSelf
+    [dispatcher registerMethod:@"chat.bsky.convo.deleteMessageForSelf"
+                       handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) return;
+
+        NSDictionary *body = request.jsonBody;
+        NSString *messageId = body[@"messageId"];
+        if (!messageId) {
+            [XrpcErrorHelper setValidationError:response message:@"messageId is required"];
+            return;
+        }
+
+        NSError *error = nil;
+        BOOL success = [chatService deleteMessageForSelf:messageId memberDid:actorDID error:&error];
+        if (!success) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to delete message"];
+            return;
+        }
+        response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
 
-    // chat.bsky.convo.sendMessageBatch - Send multiple messages
-    [dispatcher registerMethod:@"chat.bsky.convo.sendMessageBatch"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
-        if (!actorDID) return;
-
-        NSDictionary *body = request.jsonBody;
-
-        NSString *convoId = body[@"convoId"];
-        NSArray *messages = body[@"messages"];
-
-        if (![convoId isKindOfClass:[NSString class]] || convoId.length == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
-            return;
-        }
-        if (![messages isKindOfClass:[NSArray class]] || messages.count == 0) {
-            [XrpcErrorHelper setValidationError:response message:@"messages array is required and must not be empty"];
-            return;
-        }
-
-        NSError *error = nil;
-        NSArray *sentMessages = [chatService sendMessageBatch:convoId
-                                                   senderDid:actorDID
-                                                    messages:messages
-                                                       error:&error];
-        if (error || !sentMessages) {
-            NSInteger statusCode = ([error.domain isEqualToString:@"ChatService"] && error.code == 403) ? 403 : 400;
-            if (statusCode == 403) {
-                [XrpcErrorHelper setValidationError:response message:error.localizedDescription];
-            } else {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send messages"];
-            }
-            return;
-        }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"messages": sentMessages}];
-    }];
-
-    // chat.bsky.convo.listConvos - List conversations
-    [dispatcher registerMethod:@"chat.bsky.convo.listConvos"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
-        if (!actorDID) return;
-
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
-
-        NSError *error = nil;
-        NSArray *convos = nil;
-        
-        // If admin, they can see all conversations
-        if ([[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
-            convos = [chatService listAllConversationsWithLimit:limit cursor:cursor error:&error];
-        } else {
-            convos = [chatService listConversationsForActor:actorDID limit:limit cursor:cursor error:&error];
-        }
-        
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
-        }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"convos": convos ?: @[]}];
-    }];
-
-    // chat.bsky.convo.getMessages - Get messages for a conversation
-    [dispatcher registerMethod:@"chat.bsky.convo.getMessages"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
-        if (!actorDID) return;
-
-        NSString *convoId = [request queryParamForKey:@"convoId"];
-
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSString *cursor = [request queryParamForKey:@"cursor"];
-
-        if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
-            return;
-        }
-
-        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
-        NSError *error = nil;
-        NSArray *messages = [chatService getMessagesForConversation:convoId limit:limit cursor:cursor error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
-        }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"messages": messages ?: @[]}];
-    }];
-
-    // chat.bsky.convo.sendMessage - Send a single message
-    [dispatcher registerMethod:@"chat.bsky.convo.sendMessage"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
-        if (!actorDID) return;
-
-        NSDictionary *body = request.jsonBody;
-
-        NSString *convoId = body[@"convoId"];
-        NSDictionary *message = body[@"message"];
-
-        if (!convoId || !message) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
-            return;
-        }
-
-        NSString *text = message[@"text"];
-        // embedJson could be passed too
-
-        NSError *error = nil;
-        NSDictionary *sentMessage = [chatService sendMessage:convoId senderDid:actorDID text:text embedJson:nil error:&error];
-        if (error || !sentMessage) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to send message"];
-            return;
-        }
-
-        response.statusCode = 200;
-        [response setJsonBody:sentMessage];
-    }];
-
-    // chat.bsky.convo.getConvo - Get conversation details
-    [dispatcher registerMethod:@"chat.bsky.convo.getConvo"
-                     handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
-        if (!actorDID) return;
-
-        NSString *convoId = [request queryParamForKey:@"convoId"];
-
-        if (!convoId) {
-            [XrpcErrorHelper setValidationError:response message:@"convoId is required"];
-            return;
-        }
-
-        NSError *error = nil;
-        NSDictionary *convo = [chatService getConversationWithId:convoId error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
-        }
-        if (!convo) {
-            [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
-            return;
-        }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"convo": convo}];
-    }];
-
-    // chat.bsky.convo.getLog - Get conversation event log
+    // chat.bsky.convo.getLog
     [dispatcher registerMethod:@"chat.bsky.convo.getLog"
                        handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *actorDID = getActorDid(request, response);
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        if (!authHeader) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
         if (!actorDID) return;
 
+        NSInteger limit = 50;
         NSString *cursor = [request queryParamForKey:@"cursor"];
-
-        NSString *limitStr = [request queryParamForKey:@"limit"];
-        NSInteger limit = limitStr ? [limitStr integerValue] : 50;
 
         NSError *error = nil;
         NSArray *logs = [chatService getChatLogWithLimit:limit cursor:cursor error:&error];
-        if (error) {
-            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-            return;
-        }
-
-        NSString *nextCursor = nil;
-        if (logs.count > 0 && logs.count == (NSUInteger)limit) {
-            nextCursor = [logs.lastObject[@"created_at"] description];
-        }
-
-        response.statusCode = 200;
-        [response setJsonBody:@{@"logs": logs ?: @[], @"cursor": nextCursor ?: @""}];
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"logs": logs ?: @[]}];
     }];
 
-
-    PDS_LOG_INFO(@"Registered chat.bsky.convo.* endpoints (core + features)");
+    PDS_LOG_INFO(@"Registered chat.bsky.convo.* endpoints");
 }
 
 @end

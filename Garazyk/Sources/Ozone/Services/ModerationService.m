@@ -29,7 +29,7 @@
 
     NSString *eventId = [[NSUUID UUID] UUIDString];
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
-    
+
     NSDictionary *subject = event[@"subject"];
     NSString *subjectDid = subject[@"did"] ?: @"";
     NSString *subjectType = subject[@"$type"] ?: @"com.atproto.admin.defs#repoRef";
@@ -49,6 +49,12 @@
                                                         error:error];
 
     if (!success) return nil;
+
+    // Update subject review state based on event action
+    NSString *newState = [self reviewStateForAction:action];
+    if (newState && subjectDid.length > 0) {
+        [self updateSubjectState:subjectDid subjectType:subjectType reviewState:newState eventId:eventId error:nil];
+    }
 
     // Also record in general audit log
     NSString *auditQuery = @"INSERT INTO admin_audit_log (admin_did, action, subject_type, subject_id, details, created_at) "
@@ -70,10 +76,9 @@
                                           cursor:(nullable NSString *)cursor
                                            error:(NSError **)error {
     if (limit <= 0) limit = 50;
-    
-    // Simplistic implementation: group events by subject
-    NSString *query = @"SELECT subject_did, subject_type, MAX(created_at) as last_at, action "
-                     @"FROM moderation_events GROUP BY subject_did ORDER BY last_at DESC LIMIT ?";
+
+    NSString *query = @"SELECT ms.subject_did, ms.subject_type, ms.review_state, ms.last_event_id, ms.updated_at "
+                     @"FROM moderation_subjects ms ORDER BY ms.updated_at DESC LIMIT ?";
 
     NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
                                                                       params:@[@(limit)]
@@ -84,9 +89,9 @@
     for (NSDictionary *row in rows) {
         [statuses addObject:@{
             @"subject": @{@"did": row[@"subject_did"], @"$type": row[@"subject_type"]},
-            @"reviewState": @"tools.ozone.moderation.defs#reviewClosed",
-            @"lastEvent": @{@"id": @"", @"action": row[@"action"]},
-            @"updatedAt": row[@"last_at"]
+            @"reviewState": row[@"review_state"] ?: @"tools.ozone.moderation.defs#reviewOpen",
+            @"lastEvent": @{@"id": row[@"last_event_id"] ?: @"", @"action": @""},
+            @"updatedAt": row[@"updated_at"]
         }];
     }
 
@@ -176,7 +181,22 @@
 
 - (nullable NSDictionary *)getSubjectStatus:(NSString *)subject
                                        error:(NSError **)error {
-    return @{@"subject": @{@"did": subject}, @"labels": @[]};
+    NSString *query = @"SELECT subject_did, subject_type, review_state, last_event_id, updated_at "
+                     @"FROM moderation_subjects WHERE subject_did = ? LIMIT 1";
+    NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
+                                                                      params:@[subject]
+                                                                       error:error];
+    if (!rows || rows.count == 0) {
+        return @{@"subject": @{@"did": subject}, @"reviewState": @"tools.ozone.moderation.defs#reviewOpen", @"labels": @[]};
+    }
+    NSDictionary *row = rows[0];
+    return @{
+        @"subject": @{@"did": row[@"subject_did"], @"$type": row[@"subject_type"]},
+        @"reviewState": row[@"review_state"] ?: @"tools.ozone.moderation.defs#reviewOpen",
+        @"lastEvent": @{@"id": row[@"last_event_id"] ?: @""},
+        @"updatedAt": row[@"updated_at"],
+        @"labels": @[]
+    };
 }
 
 - (nullable NSArray<NSDictionary *> *)getSubjectStatuses:(NSArray<NSString *> *)subjects
@@ -747,6 +767,54 @@
                                                         cursor:(nullable NSString *)cursor
                                                          error:(NSError **)error {
     return @[];
+}
+
+#pragma mark - State Machine Helpers
+
+- (nullable NSString *)reviewStateForAction:(NSString *)action {
+    // Map event action types to review states per ATProto Ozone spec
+    static NSDictionary<NSString *, NSString *> *stateMap = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        stateMap = @{
+            // Report events open review
+            @"tools.ozone.moderation.defs#modEventReport": @"tools.ozone.moderation.defs#reviewOpen",
+            @"tools.ozone.moderation.defs#modEventAppeal": @"tools.ozone.moderation.defs#reviewOpen",
+            // Acknowledge keeps review open (already open)
+            @"tools.ozone.moderation.defs#modEventAcknowledge": @"tools.ozone.moderation.defs#reviewOpen",
+            // Escalate moves to escalated
+            @"tools.ozone.moderation.defs#modEventEscalate": @"tools.ozone.moderation.defs#reviewEscalated",
+            // Resolve/close closes review
+            @"tools.ozone.moderation.defs#modEventResolve": @"tools.ozone.moderation.defs#reviewClosed",
+            @"tools.ozone.moderation.defs#modEventClose": @"tools.ozone.moderation.defs#reviewClosed",
+            // Takedown
+            @"tools.ozone.moderation.defs#modEventTakedown": @"tools.ozone.moderation.defs#takendown",
+            // Reverse takedown reopens
+            @"tools.ozone.moderation.defs#modEventReverseTakedown": @"tools.ozone.moderation.defs#reviewOpen",
+            // Comment and label don't change state
+            @"tools.ozone.moderation.defs#modEventComment": [NSNull null],
+            @"tools.ozone.moderation.defs#modEventLabel": [NSNull null],
+        };
+    });
+    id result = stateMap[action];
+    return [result isKindOfClass:[NSNull class]] ? nil : result; // NSNull means no state change
+}
+
+- (BOOL)updateSubjectState:(NSString *)subjectDid
+               subjectType:(NSString *)subjectType
+                reviewState:(NSString *)reviewState
+                   eventId:(NSString *)eventId
+                       error:(NSError **)error {
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+    NSString *upsert = @"INSERT INTO moderation_subjects (subject_did, subject_type, review_state, last_event_id, updated_at) "
+                       @"VALUES (?, ?, ?, ?, ?) "
+                       @"ON CONFLICT(subject_did, subject_type) DO UPDATE SET "
+                       @"review_state = excluded.review_state, "
+                       @"last_event_id = excluded.last_event_id, "
+                       @"updated_at = excluded.updated_at";
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:upsert
+                                                              params:@[subjectDid, subjectType, reviewState, eventId, now]
+                                                               error:error];
 }
 
 @end
