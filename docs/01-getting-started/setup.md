@@ -47,6 +47,13 @@ There is an experimental docs site elsewhere in the repo. Ignore it for this con
 
 ### macOS
 
+You **must** install XcodeGen to generate the project structure. If it is missing, the build will fail.
+
+```bash
+xcode-select --install
+brew install cmake xcodegen
+```
+
 - macOS 14 or later
 - Xcode 16.1 or later
 - Xcode Command Line Tools
@@ -55,6 +62,13 @@ There is an experimental docs site elsewhere in the repo. Ignore it for this con
 - Git
 
 ### Linux and GNUstep
+
+You **must** have clang and the GNUstep runtime development libraries installed.
+
+```bash
+sudo apt-get update
+sudo apt-get install clang libblocksruntime-dev cmake libsqlite3-dev libssl-dev gnustep-devel
+```
 
 - recent Linux distribution with GNUstep development packages
 - clang
@@ -79,7 +93,7 @@ brew install cmake xcodegen
 xcodegen generate
 ```
 
-Why this matters:
+This step is required because:
 
 - the repo expects XcodeGen to materialize the current project structure,
 - the documented quality gates use Xcode schemes,
