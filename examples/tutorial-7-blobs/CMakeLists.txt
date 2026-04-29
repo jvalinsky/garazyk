@@ -22,13 +22,12 @@ elseif(UNIX)
     endif()
 endif()
 
-project(AccountsPDS
+project(tutorial-7-blobs
   VERSION 0.1.0
-  DESCRIPTION "Tutorial 2: Account Management"
+  DESCRIPTION "Tutorial 7: Blob Storage"
   LANGUAGES OBJC C
 )
 
-# Enable ARC for Objective-C
 set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -fmodules -fmodules-cache-path=${CMAKE_BINARY_DIR}/ModuleCache")
 
 # Common tutorial utilities
@@ -60,6 +59,7 @@ file(GLOB TUTORIAL_SOURCES "src/*.m")
 # Common utility sources
 set(COMMON_SOURCES
     ${COMMON_DIR}/TutorialBase64URL.m
+    ${COMMON_DIR}/TutorialCIDGenerator.m
     ${COMMON_DIR}/TutorialECDSAUtils.m
     ${COMMON_DIR}/TutorialJWTMinter.m
     ${COMMON_DIR}/TutorialJWTVerifier.m
@@ -67,10 +67,10 @@ set(COMMON_SOURCES
 )
 
 # Create the executable
-add_executable(tutorial-2-accounts
+add_executable(tutorial-7-blobs
     ${TUTORIAL_SOURCES}
     ${COMMON_SOURCES}
 )
 
 # Link frameworks
-target_link_libraries(tutorial-2-accounts ${FRAMEWORKS} objc)
+target_link_libraries(tutorial-7-blobs ${FRAMEWORKS} objc)

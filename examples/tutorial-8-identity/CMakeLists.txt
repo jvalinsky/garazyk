@@ -22,13 +22,12 @@ elseif(UNIX)
     endif()
 endif()
 
-project(AccountsPDS
+project(tutorial-8-identity
   VERSION 0.1.0
-  DESCRIPTION "Tutorial 2: Account Management"
+  DESCRIPTION "Tutorial 8: Identity & DID Resolution"
   LANGUAGES OBJC C
 )
 
-# Enable ARC for Objective-C
 set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -fmodules -fmodules-cache-path=${CMAKE_BINARY_DIR}/ModuleCache")
 
 # Common tutorial utilities
@@ -67,10 +66,10 @@ set(COMMON_SOURCES
 )
 
 # Create the executable
-add_executable(tutorial-2-accounts
+add_executable(tutorial-8-identity
     ${TUTORIAL_SOURCES}
     ${COMMON_SOURCES}
 )
 
 # Link frameworks
-target_link_libraries(tutorial-2-accounts ${FRAMEWORKS} objc)
+target_link_libraries(tutorial-8-identity ${FRAMEWORKS} objc)

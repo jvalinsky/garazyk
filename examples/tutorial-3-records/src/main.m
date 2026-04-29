@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
         RecordRepository *repo = [[RecordRepository alloc] initWithDatabasePath:dbPath];
         RecordService *service = [[RecordService alloc] initWithRepository:repo];
         
-        NSString *did = @"did:plc:tutorial123";
+        NSString *did = @"did:web:localhost:~alice";
         NSString *collection = @"app.bsky.feed.post";
         
         // Test 1: Create a record
