@@ -312,8 +312,16 @@
     }
 
     NSMutableArray *placeholders = [NSMutableArray array];
-    for (NSUInteger i = 0; i < authors.count; i++) {
-        [placeholders addObject:@"?"];
+    NSMutableArray *validatedDIDs = [NSMutableArray array];
+    for (NSString *author in authors) {
+        if ([author hasPrefix:@"did:"] && author.length >= 10 && author.length <= 200) {
+            [placeholders addObject:@"?"];
+            [validatedDIDs addObject:author];
+        }
+    }
+
+    if (validatedDIDs.count == 0) {
+        return [posts copy];
     }
 
     NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid FROM records WHERE did IN (%@) AND collection = ?",

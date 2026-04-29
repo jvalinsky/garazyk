@@ -334,7 +334,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     NSError *error = nil;
     NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
-        NSLog(@"[DEBUG] PLC Lookup failed for URL: %@, status: %ld, error: %@, response: %@", url, (long)status, error, response);
+        PDS_LOG_DEBUG(@"PLC Lookup failed for URL: %@, status: %ld, error: %@, response: %@", url, (long)status, error, response);
         return @{@"error": @"plc_lookup_failed", @"message": error.localizedDescription ?: @"DID lookup failed"};
     }
     return response;
