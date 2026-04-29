@@ -1,1 +1,0 @@
-test/security_test_runner.sh
