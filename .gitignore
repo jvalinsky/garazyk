@@ -143,6 +143,11 @@ examples/tutorial-*/tutorial-*
 # TypeScript build output
 tooling/vscode-objective-j/out/
 
+# objc-jupyter-wasm build artifacts
+objc-jupyter-wasm/lib/
+objc-jupyter-wasm/dist/
+objc-jupyter-wasm/objc_jupyter_wasm/labextension/static/
+
 # Generated docs index
 docs/repo-index/
 
