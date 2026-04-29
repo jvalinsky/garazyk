@@ -640,63 +640,162 @@ static void eval_nslog(Parser *p) {
     Value fmt_val;
     const char *fmt;
     unsigned int fi;
+    Value args[16];
+    int arg_count = 0;
     int arg_idx = 0;
 
     /* Parse format string */
     fmt_val = parse_expression(p);
     if (p->error) return;
 
+    /* Extract the C string from the format value.
+     * For @"..." literals, the id points to the string pool entry
+     * which is a null-terminated C string. */
     fmt = 0;
-    if (fmt_val.is_id) {
-        /* For @"..." string literals, the value is stored as a pointer
-         * to the string data in the token. We use the token text directly. */
-        /* Actually, we need to handle this differently. The @"..." literal
-         * produces an id, but for NSLog we need the C string representation.
-         * For now, let's use a simpler approach: store the string literal
-         * text in a side buffer. */
+    if (fmt_val.is_id && fmt_val.obj_val != 0) {
+        fmt = (const char *)fmt_val.obj_val;
     }
 
-    /* Simplified approach: NSLog(@"format", args...)
-     * We parse the format string token directly and then process arguments.
-     * This requires that we track the format string text from the lexer.
-     */
-
-    /* For now, let's just capture the format string from the current token
-     * if it was a @"..." string literal. We'll need to restructure this. */
-
-    /* Actually, let's take a step back. The way this interpreter works:
-     * 1. We parse NSLog as an identifier
-     * 2. We see the opening paren
-     * 3. The first argument is @"format" which is a TOK_STRING_LITERAL
-     * 4. We parse it as an expression, getting a Value
-     * 5. We need to extract the C string from the Value
-     *
-     * The problem: @"..." creates an id, but we don't have NSString yet.
-     * Solution: For @"..." literals, we store the string data in a
-     * global string pool and the id points to it. The string pool
-     * entries are null-terminated C strings.
-     */
-
-    /* For the initial implementation, let's use a simpler approach:
-     * We parse NSLog specially — we look at the raw token for the
-     * format string, then parse the remaining arguments.
-     */
-
-    /* This is getting complex. Let me simplify: parse NSLog as a
-     * special form directly, consuming tokens from the parser. */
-    (void)fmt;
-    (void)fi;
-    (void)arg_idx;
-
-    /* Skip remaining arguments for now */
-    while (parser_current(p).type != TOK_CLOSE_PAREN && parser_current(p).type != TOK_EOF) {
-        parser_advance(p);
+    /* Parse remaining arguments (comma-separated) */
+    while (parser_current(p).type == TOK_COMMA) {
+        parser_advance(p); /* skip comma */
+        if (arg_count < 16) {
+            args[arg_count] = parse_expression(p);
+            if (p->error) return;
+            arg_count++;
+        } else {
+            /* Skip excess arguments */
+            parse_expression(p);
+            if (p->error) return;
+        }
     }
+
     if (parser_current(p).type == TOK_CLOSE_PAREN) {
         parser_advance(p);
     }
 
-    nslog_append("NSLog called\n", 13);
+    /* Process format string */
+    if (fmt == 0) {
+        nslog_append("(null)", 6);
+        return;
+    }
+
+    fi = 0;
+    while (fmt[fi] != '\0') {
+        if (fmt[fi] == '%' && fmt[fi + 1] != '\0') {
+            fi++;
+            switch (fmt[fi]) {
+                case '%':
+                    nslog_append_char('%');
+                    break;
+                case '@':
+                    /* Object — print as pointer or string */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_id && v.obj_val != 0) {
+                            /* Check if it's a string pool entry (@"..." literal) */
+                            nslog_append((const char *)v.obj_val,
+                                         cstr_len((const char *)v.obj_val));
+                        } else if (v.is_class && v.cls_val != 0) {
+                            const char *name = class_getName(v.cls_val);
+                            nslog_append(name, cstr_len(name));
+                        } else if (v.is_int) {
+                            nslog_append_int(v.int_val);
+                        } else {
+                            nslog_append("(nil)", 5);
+                        }
+                    }
+                    break;
+                case 'd':
+                case 'i':
+                    /* Integer */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_int) {
+                            nslog_append_int(v.int_val);
+                        } else if (v.is_id) {
+                            nslog_append_int((int)(long)v.obj_val);
+                        }
+                    }
+                    break;
+                case 'l':
+                    /* Long — check for %ld */
+                    if (fmt[fi + 1] == 'd' || fmt[fi + 1] == 'i') {
+                        fi++; /* skip 'l' */
+                        /* %ld — same as %d for our purposes */
+                        if (arg_idx < arg_count) {
+                            Value v = args[arg_idx++];
+                            if (v.is_int) {
+                                nslog_append_long((long)v.int_val);
+                            }
+                        }
+                    }
+                    break;
+                case 'u':
+                    /* Unsigned integer */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_int) {
+                            nslog_append_int(v.int_val);
+                        }
+                    }
+                    break;
+                case 'f':
+                    /* Float — we don't have float support yet */
+                    if (arg_idx < arg_count) {
+                        arg_idx++;
+                        nslog_append("(float)", 7);
+                    }
+                    break;
+                case 's':
+                    /* C string */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_id && v.obj_val != 0) {
+                            nslog_append((const char *)v.obj_val,
+                                         cstr_len((const char *)v.obj_val));
+                        }
+                    }
+                    break;
+                case 'p':
+                    /* Pointer */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        nslog_append("0x", 2);
+                        if (v.is_id) {
+                            /* Print hex pointer */
+                            unsigned long ptr = (unsigned long)v.obj_val;
+                            char hex[17];
+                            int hi = 0;
+                            if (ptr == 0) {
+                                nslog_append_char('0');
+                            } else {
+                                while (ptr > 0 && hi < 16) {
+                                    hex[hi++] = "0123456789abcdef"[ptr % 16];
+                                    ptr /= 16;
+                                }
+                                while (hi > 0) {
+                                    hi--;
+                                    nslog_append_char(hex[hi]);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    nslog_append_char('%');
+                    nslog_append_char(fmt[fi]);
+                    break;
+            }
+            fi++;
+        } else {
+            nslog_append_char(fmt[fi]);
+            fi++;
+        }
+    }
+
+    /* NSLog always appends a newline */
+    nslog_append_char('\n');
 }
 
 /* ── Message send evaluation ────────────────────────────────────── */
