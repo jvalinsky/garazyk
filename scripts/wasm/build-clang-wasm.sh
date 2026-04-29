@@ -12,11 +12,11 @@ BUILD_DIR="$WASM_DIR/build-clang"
 echo "=== Building clang.wasm (Objective-C compiler for WASM) ==="
 
 # Check prerequisites
-command -v emcc >/dev/null 2>&1 || {
+if ! command -v emcc >/dev/null 2>&1; then
     echo "ERROR: emcc not found. Source emsdk_env.sh first."
-    echo "  source $EMSDK/emsdk_env.sh"
+    echo "  source \$EMSDK/emsdk_env.sh"
     exit 1
-}
+fi
 
 # Create build directory
 rm -rf "$BUILD_DIR"

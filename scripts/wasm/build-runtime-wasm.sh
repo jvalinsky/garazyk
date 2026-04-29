@@ -12,10 +12,10 @@ RUNTIME_DIR="$PROJECT_ROOT/objc-jupyter-wasm/kernel/runtime"
 echo "=== Building libobjc2.wasm (Objective-C runtime for WASM) ==="
 
 # Check prerequisites
-command -v emcc >/dev/null 2>&1 || {
+if ! command -v emcc >/dev/null 2>&1; then
     echo "ERROR: emcc not found. Source emsdk_env.sh first."
     exit 1
-}
+fi
 
 # Clone libobjc2 if not present
 if [ ! -d "$RUNTIME_DIR/libobjc2" ]; then
