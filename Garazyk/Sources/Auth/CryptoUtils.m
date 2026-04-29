@@ -11,11 +11,13 @@
  */
 
 #import "Auth/CryptoUtils.h"
+#if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonHMAC.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonCryptor.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import <Security/Security.h>
+#endif
 
 @implementation CryptoUtils
 
