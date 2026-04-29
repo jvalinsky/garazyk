@@ -89,6 +89,7 @@
 static NSMutableDictionary *sPendingConsents = nil;
 static NSMutableDictionary *sPasskeyChallenges = nil;
 static dispatch_queue_t sPasskeyChallengeQueue = nil;
+static dispatch_queue_t sAuthGlobalsQueue = nil;
 static const NSTimeInterval kPendingConsentTTLSeconds = 300.0;
 static const NSTimeInterval kPasskeyChallengeTTLSeconds = 300.0;
 static const NSUInteger kMaxPendingConsents = 1024;
@@ -97,6 +98,7 @@ static NSInteger const kClientValidationTimeoutCode = 504;
 static NSCache *sClientMetadataCache = nil;
 static dispatch_once_t sClientCacheOnceToken;
 static dispatch_once_t sPasskeyChallengeOnceToken;
+static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
 @interface OAuth2Handler ()
 - (void)setCorsHeaders:(HttpResponse *)response
@@ -126,6 +128,10 @@ static dispatch_once_t sPasskeyChallengeOnceToken;
       sPasskeyChallenges = [NSMutableDictionary dictionary];
       sPasskeyChallengeQueue = dispatch_queue_create(
           "com.atproto.oauth2.passkey.challenges", DISPATCH_QUEUE_SERIAL);
+    });
+    dispatch_once(&sAuthGlobalsQueueOnceToken, ^{
+      sAuthGlobalsQueue = dispatch_queue_create(
+          "com.atproto.oauth2.globals", DISPATCH_QUEUE_SERIAL);
     });
     self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
     self.oauthServer.jwtMinter = self.minter;
@@ -229,7 +235,10 @@ static dispatch_once_t sPasskeyChallengeOnceToken;
       sClientMetadataCache.countLimit = 1000;
     });
 
-    NSDictionary *cached = [sClientMetadataCache objectForKey:clientID];
+    NSDictionary *cached = nil;
+    @synchronized(sClientMetadataCache) {
+      cached = [sClientMetadataCache objectForKey:clientID];
+    }
     if (cached) {
       PDS_LOG_AUTH_INFO(@"Found cached metadata for client: %@", clientID);
       completion(cached, nil);
@@ -249,9 +258,11 @@ static dispatch_once_t sPasskeyChallengeOnceToken;
                                 NSString *metadataClientID =
                                     validatedClient[@"client_id"];
                                 if ([metadataClientID isEqualToString:clientID]) {
-                                  [sClientMetadataCache
-                                      setObject:validatedClient
-                                         forKey:clientID];
+                                  @synchronized(sClientMetadataCache) {
+                                    [sClientMetadataCache
+                                         setObject:validatedClient
+                                            forKey:clientID];
+                                  }
                                   PDS_LOG_AUTH_INFO(@"Successfully discovered "
                                                     @"and cached client: %@",
                                                     clientID);
