@@ -45,7 +45,7 @@
 
     // In production, would send SMS here
     // For now, return the verification ID (code logged for testing)
-    NSLog(@"[ContactService] Verification code for %@: %@", phoneNumber, code);
+    PDS_LOG_INFO(@"[ContactService] Verification code sent for %@", phoneNumber);
 
     return verificationId;
 }
