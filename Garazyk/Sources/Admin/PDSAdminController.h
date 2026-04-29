@@ -295,7 +295,7 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method initWithServiceDatabases:
 
- @abstract Initializes the admin controller with just service databases.
+  @abstract Initializes the admin controller with service databases.
 
  @param serviceDatabases The service databases for persistence.
  @return An initialized admin controller.
