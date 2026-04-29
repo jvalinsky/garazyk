@@ -16,12 +16,16 @@ echo "  objc-jupyter-wasm Smoke Build"
 echo "=========================================="
 
 echo ""
-echo "[1/2] Building libobjc2-compatible runtime smoke module..."
+echo "[1/3] Building libobjc2-compatible runtime smoke module..."
 bash "$WASM_SCRIPTS/build-runtime-wasm.sh"
 
 echo ""
-echo "[2/2] Building kernel.wasm smoke ABI..."
+echo "[2/3] Building kernel.wasm smoke ABI..."
 bash "$WASM_SCRIPTS/build-kernel-wasm.sh"
+
+echo ""
+echo "[3/3] Building JupyterLite browser smoke site..."
+bash "$WASM_SCRIPTS/build-jupyterlite-smoke.sh"
 
 if [ "${INCLUDE_CLANG:-0}" = "1" ]; then
     echo ""
@@ -38,6 +42,8 @@ echo "Output files:"
 echo "  - $PROJECT_ROOT/objc-jupyter-wasm/compiler/libobjc2.wasm"
 echo "  - $PROJECT_ROOT/objc-jupyter-wasm/kernel/kernel.wasm"
 echo "  - $PROJECT_ROOT/objc-jupyter-wasm/jupyterlite/kernel/kernel.wasm"
+echo "  - $PROJECT_ROOT/objc-jupyter-wasm/dist/jupyterlite-smoke"
 echo ""
 echo "Smoke test:"
 echo "  node objc-jupyter-wasm/tests/kernel-smoke.mjs objc-jupyter-wasm/kernel/kernel.wasm"
+echo "  node objc-jupyter-wasm/tests/browser-smoke.mjs objc-jupyter-wasm/dist/jupyterlite-smoke"
