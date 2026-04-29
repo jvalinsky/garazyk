@@ -1323,18 +1323,20 @@
     NSMutableArray<PDSDatabaseRecord *> *allRecords = [NSMutableArray array];
     const NSUInteger pageSize = 1000;
     NSUInteger offset = 0;
+    const NSUInteger maxIterations = 1000; // Safety: max 1M records
+    NSUInteger iterations = 0;
 
-    while (YES) {
+    while (iterations++ < maxIterations) {
         NSArray<PDSDatabaseRecord *> *page = [store listRecordsForDid:did
-                                                            collection:nil
-                                                                 limit:pageSize
-                                                                offset:offset
-                                                                 error:error];
+                                                                collection:nil
+                                                                     limit:pageSize
+                                                                    offset:offset
+                                                                     error:error];
         if (!page) {
             if (error && !*error) {
                 *error = [NSError errorWithDomain:@"com.atproto.repo"
                                              code:6
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to list repository records"}];
+                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to list repository records"}];
             }
             return nil;
         }
