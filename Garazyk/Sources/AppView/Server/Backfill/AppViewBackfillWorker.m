@@ -236,18 +236,17 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
     [fh synchronizeFile];
     [fh closeFile];
 
-    NSLog(@"[DEBUG] _parseCARAndIndex called for %@", did);
-    NSLog(@"[DEBUG] CAR data length: %lu", (unsigned long)carData.length);
+    PDS_LOG_DEBUG(@"[AppView BackfillWorker] _parseCARAndIndex called for %@", did);
+    PDS_LOG_DEBUG(@"[AppView BackfillWorker] CAR data length: %lu", (unsigned long)carData.length);
 
-CARReader *reader = [CARReader readFromData:carData error:error];
+    CARReader *reader = [CARReader readFromData:carData error:error];
     if (!reader) {
-        NSLog(@"[DEBUG] CARReader failed: %@", *error);
         PDS_LOG_ERROR(@"[AppView BackfillWorker] Failed to read CAR: %@", *error);
         return nil;
     }
 
-    NSLog(@"[DEBUG] CARReader success: blocks=%lu rootCID=%@",
-          (unsigned long)reader.blocks.count, reader.rootCID);
+    PDS_LOG_DEBUG(@"[AppView BackfillWorker] CARReader success: blocks=%lu rootCID=%@",
+              (unsigned long)reader.blocks.count, reader.rootCID);
 
     NSString *lastRev = nil;
     NSMutableArray<NSDictionary *> *records = [NSMutableArray array];
@@ -365,7 +364,7 @@ CARReader *reader = [CARReader readFromData:carData error:error];
         NSString *collection = item[@"collection"];
         NSString *rkey = item[@"rkey"];
         
-        NSLog(@"[DEBUG] Calling indexers for collection=%@", collection);
+        PDS_LOG_DEBUG(@"[AppView BackfillWorker] Calling indexers for collection=%@", collection);
         BOOL wasIndexed = NO;
         for (id<AppViewIndexer> indexer in _indexers) {
             if ([indexer canIndexCollection:collection]) {
