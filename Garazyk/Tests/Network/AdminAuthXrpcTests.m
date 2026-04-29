@@ -138,7 +138,6 @@
     NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:@"SELECT invite_enabled FROM accounts WHERE did = ?"
                                                            params:@[did]
                                                             error:error];
-    [db close];
     if (!rows || rows.count == 0) {
         return nil;
     }
@@ -155,7 +154,6 @@
     NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:@"SELECT COUNT(*) AS disabled_count FROM invite_codes WHERE account_did = ? AND disabled = 1"
                                                            params:@[did]
                                                             error:error];
-    [db close];
     if (!rows || rows.count == 0) {
         return nil;
     }
@@ -179,7 +177,6 @@
                                      @"SELECT subjectType, subjectId, takedownRef, applied FROM admin_takedowns WHERE subjectType = ? AND subjectId = ? ORDER BY createdAt DESC LIMIT 1"
                                                               params:@[subjectType, subjectID]
                                                                error:error];
-    [db close];
     if (!rows || rows.count == 0) {
         return nil;
     }

@@ -28,6 +28,57 @@ static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every
 
 #pragma mark - JWKS Public Key Fetching
 
+- (nullable NSDictionary *)fetchJWKSDictionaryFromURLString:(NSString *)jwksURL {
+    NSURL *endpointURL = [NSURL URLWithString:jwksURL];
+    if (!endpointURL) {
+        return nil;
+    }
+
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:endpointURL
+                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                                       timeoutInterval:10.0];
+
+    __block NSData *data = nil;
+    __block NSError *fetchError = nil;
+    __block NSInteger statusCode = 0;
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+        completionHandler:^(NSData *_Nullable d, NSURLResponse *_Nullable r, NSError *_Nullable e) {
+            data = d;
+            fetchError = e;
+            if ([r isKindOfClass:[NSHTTPURLResponse class]]) {
+                statusCode = [(NSHTTPURLResponse *)r statusCode];
+            }
+            dispatch_semaphore_signal(semaphore);
+        }];
+    [task resume];
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+
+    if (!data || (statusCode != 0 && (statusCode < 200 || statusCode >= 300))) {
+        PDS_LOG_ERROR(@"ChatAuthManager: failed to fetch JWKS from %@: status=%ld error=%@",
+                      jwksURL, (long)statusCode, fetchError);
+        return nil;
+    }
+
+    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    if (![json isKindOfClass:[NSDictionary class]]) {
+        PDS_LOG_ERROR(@"ChatAuthManager: JWKS from %@ was not a JSON object", jwksURL);
+        return nil;
+    }
+
+    return json;
+}
+
+- (nullable NSDictionary *)firstJWKFromJWKSObject:(NSDictionary *)jwks {
+    NSArray *keys = jwks[@"keys"];
+    if ([keys isKindOfClass:[NSArray class]] && keys.count > 0) {
+        NSDictionary *firstKey = keys[0];
+        return [firstKey isKindOfClass:[NSDictionary class]] ? firstKey : nil;
+    }
+
+    return [jwks[@"kty"] isKindOfClass:[NSString class]] ? jwks : nil;
+}
+
 - (nullable NSData *)fetchPublicKeyFromPDS {
     NSString *url = self.pdsUrl;
     if (url.length == 0) {
@@ -48,42 +99,24 @@ static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every
         return cachedKey;
     }
 
-    NSString *jwksURL = [url stringByAppendingPathComponent:@".well-known/jwks.json"];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:jwksURL]
-                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
-                                                       timeoutInterval:10.0];
+    NSArray<NSString *> *jwksURLs = @[
+        [url stringByAppendingPathComponent:@"oauth/jwks"],
+        [url stringByAppendingPathComponent:@".well-known/jwks.json"],
+    ];
 
-    __block NSData *data = nil;
-    __block NSError *fetchError = nil;
-    // Use NSURLSession with semaphore for synchronous execution on server handler threads.
-    // NSURLConnection sendSynchronousRequest: is deprecated.
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
-        completionHandler:^(NSData *_Nullable d, NSURLResponse *_Nullable r, NSError *_Nullable e) {
-            data = d;
-            fetchError = e;
-            dispatch_semaphore_signal(semaphore);
-        }];
-    [task resume];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-
-    if (!data) {
-        PDS_LOG_ERROR(@"ChatAuthManager: failed to fetch JWKS from %@: %@", jwksURL, fetchError);
-        return cachedKey; // Return stale key rather than nil
+    NSDictionary *jwk = nil;
+    for (NSString *jwksURL in jwksURLs) {
+        NSDictionary *jwks = [self fetchJWKSDictionaryFromURLString:jwksURL];
+        jwk = jwks ? [self firstJWKFromJWKSObject:jwks] : nil;
+        if (jwk) {
+            break;
+        }
     }
 
-    NSDictionary *jwks = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-    if (![jwks isKindOfClass:[NSDictionary class]]) {
+    if (!jwk) {
         return cachedKey;
     }
 
-    NSArray *keys = jwks[@"keys"];
-    if (![keys isKindOfClass:[NSArray class]] || keys.count == 0) {
-        return cachedKey;
-    }
-
-    // Use the first key in the JWKS
-    NSDictionary *jwk = keys[0];
     NSData *publicKey = [self publicKeyFromJWK:jwk];
     if (publicKey) {
         dispatch_sync(self.keyCacheQueue, ^{

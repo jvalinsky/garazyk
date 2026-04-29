@@ -73,8 +73,6 @@ static CID *makeTestCID(NSUInteger idx) {
                                 params:@[listCID.bytes, creatorDid, listBlockData, @(listBlockData.length)]
                                   error:&dbError];
     XCTAssertTrue(ok, @"Insert list block failed: %@", dbError);
-
-    [db close];
 }
 
 - (void)insertListItemRecord:(NSString *)creatorDid
@@ -108,8 +106,6 @@ static CID *makeTestCID(NSUInteger idx) {
                                 params:@[itemCID.bytes, creatorDid, itemBlockData, @(itemBlockData.length)]
                                   error:&dbError];
     XCTAssertTrue(ok, @"Insert listitem block failed: %@", dbError);
-
-    [db close];
 }
 
 #pragma mark - getStarterPacksWithMembership

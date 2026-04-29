@@ -5,10 +5,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @class PDSSMTPEmailProvider
- * @abstract An implementation of PDSEmailProvider that sends emails via SMTP.
- * @discussion This currently serves as a skeleton for future expansion into 
- * a full SMTP client or a wrapper around a system SMTP utility.
+ * @abstract SMTP provider configuration holder.
+ * @discussion SMTP delivery is not implemented. Send attempts fail closed with
+ * PDSSMTPEmailProviderErrorNotImplemented so configured deployments do not
+ * report messages as delivered.
  */
+extern NSString * const PDSSMTPEmailProviderErrorDomain;
+
+typedef NS_ENUM(NSInteger, PDSSMTPEmailProviderError) {
+    PDSSMTPEmailProviderErrorNotImplemented = 1,
+};
+
 @interface PDSSMTPEmailProvider : NSObject <PDSEmailProvider>
 
 /** The SMTP server hostname. */

@@ -361,29 +361,81 @@ static BOOL PDSHandleResolverRunningTests(void) {
 
 - (void)resolveHandles:(NSArray<NSString *> *)handles
              completion:(void (^)(NSDictionary<NSString *, NSString *> * _Nullable results, NSError * _Nullable error))completion {
+    if (!completion) {
+        return;
+    }
 
-    NSMutableDictionary<NSString *, NSString *> *results = [NSMutableDictionary dictionary];
-    __block NSUInteger remaining = handles.count;
-    __block NSError *firstError = nil;
+    NSArray<NSString *> *handlesToResolve = [handles copy] ?: @[];
+    NSUInteger handleCount = handlesToResolve.count;
 
-    if (remaining == 0) {
+    if (handleCount == 0) {
         completion(@{}, nil);
         return;
     }
 
-    for (NSString *handle in handles) {
+    NSLock *lock = [[NSLock alloc] init];
+    NSMutableArray *didByIndex = [NSMutableArray arrayWithCapacity:handleCount];
+    NSMutableArray *errorByIndex = [NSMutableArray arrayWithCapacity:handleCount];
+    NSMutableArray<NSNumber *> *completedByIndex = [NSMutableArray arrayWithCapacity:handleCount];
+    for (NSUInteger i = 0; i < handleCount; i++) {
+        [didByIndex addObject:[NSNull null]];
+        [errorByIndex addObject:[NSNull null]];
+        [completedByIndex addObject:@NO];
+    }
+
+    __block NSUInteger remaining = handleCount;
+    __block BOOL didCompleteBatch = NO;
+
+    for (NSUInteger index = 0; index < handleCount; index++) {
+        NSString *handle = handlesToResolve[index];
         [self resolveHandle:handle completion:^(NSString * _Nullable did, NSError * _Nullable error) {
-            @synchronized(results) {
-                if (did) {
-                    results[handle] = did;
-                } else if (!firstError) {
-                    firstError = error;
-                }
+            NSDictionary<NSString *, NSString *> *finalResults = nil;
+            NSError *finalError = nil;
+            BOOL shouldComplete = NO;
+
+            [lock lock];
+            if ([completedByIndex[index] boolValue]) {
+                [lock unlock];
+                return;
+            }
+            completedByIndex[index] = @YES;
+
+            if (did) {
+                didByIndex[index] = did;
+            } else if (error) {
+                errorByIndex[index] = error;
             }
 
-            remaining--;
-            if (remaining == 0) {
-                completion(results.count > 0 ? results : nil, firstError);
+            if (remaining > 0) {
+                remaining--;
+            }
+
+            if (remaining == 0 && !didCompleteBatch) {
+                didCompleteBatch = YES;
+
+                NSMutableDictionary<NSString *, NSString *> *results = [NSMutableDictionary dictionary];
+                NSError *firstError = nil;
+                for (NSUInteger i = 0; i < handleCount; i++) {
+                    id resolvedDID = didByIndex[i];
+                    if (resolvedDID != [NSNull null]) {
+                        results[handlesToResolve[i]] = resolvedDID;
+                        continue;
+                    }
+
+                    id indexedError = errorByIndex[i];
+                    if (!firstError && indexedError != [NSNull null]) {
+                        firstError = indexedError;
+                    }
+                }
+
+                finalResults = results.count > 0 ? [results copy] : nil;
+                finalError = firstError;
+                shouldComplete = YES;
+            }
+            [lock unlock];
+
+            if (shouldComplete) {
+                completion(finalResults, finalError);
             }
         }];
     }
