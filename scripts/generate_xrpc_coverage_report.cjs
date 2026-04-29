@@ -1,1 +1,0 @@
-docs/generate_xrpc_coverage_report.js

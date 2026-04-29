@@ -2,12 +2,12 @@
 # db_dump.sh — Utility to dump PDS database content
 #
 # Usage:
-#   ./scripts/db_dump.sh service [table]
-#   ./scripts/db_dump.sh did:plc:... [table]
+#   ./scripts/ops/db_dump.sh service [table]
+#   ./scripts/ops/db_dump.sh did:plc:... [table]
 #
 # Examples:
-#   ./scripts/db_dump.sh service account
-#   ./scripts/db_dump.sh did:plc:1234 record
+#   ./scripts/ops/db_dump.sh service account
+#   ./scripts/ops/db_dump.sh did:plc:1234 record
 #
 
 set -euo pipefail

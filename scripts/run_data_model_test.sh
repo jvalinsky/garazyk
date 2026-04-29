@@ -1,1 +1,0 @@
-test/run_data_model_test.sh

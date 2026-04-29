@@ -1,1 +1,0 @@
-docs/validate-doc-code-examples.sh

@@ -1,1 +1,0 @@
-test/atproto-compliance-review-simple.sh

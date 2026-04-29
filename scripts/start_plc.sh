@@ -1,1 +1,0 @@
-ops/start_plc.sh

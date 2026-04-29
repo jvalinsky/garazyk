@@ -81,10 +81,10 @@ PORT=3000 ./scripts/simple_test.sh
 **Usage**:
 ```bash
 # Standard startup
-./scripts/start_server.sh
+./scripts/ops/start_server.sh
 
 # Custom configuration
-SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
+SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/ops/start_server.sh
 ```
 
 ## quality_gate.sh
@@ -101,10 +101,10 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
 **Usage**:
 ```bash
 # Run quality checks
-./scripts/quality_gate.sh
+./scripts/build/quality_gate.sh
 
  # Verbose output
- VERBOSE=true ./scripts/quality_gate.sh
+ VERBOSE=true ./scripts/build/quality_gate.sh
  ```text
 
  ### test_social_features.sh (NEW)
@@ -161,10 +161,10 @@ SERVER_BINARY=/path/to/server LOG_FILE=/tmp/server.log ./scripts/start_server.sh
 **Usage**:
 ```bash
 # Run test suite
-./scripts/run-tests.sh
+./scripts/test/run-tests.sh
 
 # Verbose output
-VERBOSE=true ./scripts/run-tests.sh
+VERBOSE=true ./scripts/test/run-tests.sh
 ```
 
 ## Development Workflow

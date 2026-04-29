@@ -1,1 +1,0 @@
-build/run-clang-tidy.sh
