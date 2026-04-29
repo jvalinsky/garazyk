@@ -4,9 +4,12 @@
 #import "PDSBlobConsistencyCheckOperation.h"
 #import "PDSBlobReferenceScanOperation.h"
 #import "Blob/BlobStorage.h"
+#import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
 #import <sqlite3.h>
+
+static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagnostics";
 
 @interface PDSBlobAuditManager ()
 @property (nonatomic, strong, readwrite) NSOperationQueue *auditQueue;
@@ -36,6 +39,13 @@
 
 - (nullable NSString *)startAuditWithType:(NSString *)type dryRun:(BOOL)dryRun {
     NSString *jobId = [[NSUUID UUID] UUIDString];
+    PDSBlobAuditOperation *operation = [self createOperationForType:type
+                                                              jobId:jobId
+                                                             dryRun:dryRun];
+    if (!operation) {
+        PDS_LOG_WARN(@"Unsupported blob audit type requested: %@", type);
+        return nil;
+    }
 
     // Insert job record into database
     NSError *error = nil;
@@ -44,20 +54,12 @@
         return nil;
     }
 
-    // Create and queue operation
-    PDSBlobAuditOperation *operation = [self createOperationForType:type
-                                                              jobId:jobId
-                                                             dryRun:dryRun];
-    if (operation) {
-        dispatch_async(self.queue, ^{
-            self.jobMap[jobId] = operation;
-        });
+    dispatch_async(self.queue, ^{
+        self.jobMap[jobId] = operation;
+    });
 
-        [self.auditQueue addOperation:operation];
-        return jobId;
-    }
-
-    return nil;
+    [self.auditQueue addOperation:operation];
+    return jobId;
 }
 
 - (PDSBlobAuditOperation *)createOperationForType:(NSString *)type
@@ -93,7 +95,7 @@
 }
 
 - (BOOL)insertJobRecord:(NSString *)jobId type:(NSString *)type error:(NSError **)error {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:error];
     if (!db) {
         if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
                                                  code:-1
@@ -105,72 +107,49 @@
                     @"(id, job_type, status, progress, created_at) "
                     @"VALUES (?, ?, ?, ?, ?)";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                         code:sqlite3_extended_errcode(db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-        }
-        return NO;
-    }
-
-    sqlite3_bind_text(stmt, 1, jobId.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, type.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, "pending", -1, SQLITE_STATIC);
-    sqlite3_bind_double(stmt, 4, 0.0);
-    sqlite3_bind_int64(stmt, 5, (long)[[NSDate date] timeIntervalSince1970]);
-
-    BOOL success = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-
-    return success;
+    return [db executeParameterizedUpdate:sql
+                                   params:@[jobId, type, @"pending", @0.0, @([[NSDate date] timeIntervalSince1970])]
+                                    error:error];
 }
 
 - (nullable NSDictionary *)jobStatusForId:(NSString *)jobId {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    NSError *queryError = nil;
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:&queryError];
     if (!db) return nil;
 
     NSString *sql = @"SELECT job_type, status, progress, started_at, completed_at, results, error "
                     @"FROM blob_audit_jobs "
                     @"WHERE id = ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[jobId] error:&queryError];
+    NSDictionary *row = rows.firstObject;
+    if (!row) {
         return nil;
     }
 
-    sqlite3_bind_text(stmt, 1, jobId.UTF8String, -1, SQLITE_TRANSIENT);
+    NSString *jobType = [row[@"job_type"] isKindOfClass:[NSString class]] ? row[@"job_type"] : @"";
+    NSString *status = [row[@"status"] isKindOfClass:[NSString class]] ? row[@"status"] : @"";
+    NSNumber *progress = [row[@"progress"] isKindOfClass:[NSNumber class]] ? row[@"progress"] : @0.0;
+    NSNumber *startedAt = [row[@"started_at"] isKindOfClass:[NSNumber class]] ? row[@"started_at"] : nil;
+    NSNumber *completedAt = [row[@"completed_at"] isKindOfClass:[NSNumber class]] ? row[@"completed_at"] : nil;
+    NSString *resultsJSON = [row[@"results"] isKindOfClass:[NSString class]] ? row[@"results"] : nil;
+    NSString *errorMsg = [row[@"error"] isKindOfClass:[NSString class]] ? row[@"error"] : nil;
 
-    NSDictionary *result = nil;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        NSString *jobType = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
-        NSString *status = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
-        double progress = sqlite3_column_double(stmt, 2);
-        long startedAt = sqlite3_column_int64(stmt, 3);
-        long completedAt = sqlite3_column_int64(stmt, 4);
-        NSString *resultsJSON = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 5)];
-        NSString *errorMsg = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 6)];
-
-        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-        dict[@"jobId"] = jobId;
-        dict[@"job_type"] = jobType;
-        dict[@"status"] = status;
-        dict[@"progress"] = @(progress);
-        if (startedAt > 0) dict[@"startedAt"] = @(startedAt);
-        if (completedAt > 0) dict[@"completedAt"] = @(completedAt);
-        if (resultsJSON) {
-            NSData *data = [resultsJSON dataUsingEncoding:NSUTF8StringEncoding];
-            NSDictionary *parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            if (parsed) dict[@"results"] = parsed;
-        }
-        if (errorMsg) dict[@"error"] = errorMsg;
-
-        result = [dict copy];
+    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+    dict[@"jobId"] = jobId;
+    dict[@"job_type"] = jobType;
+    dict[@"status"] = status;
+    dict[@"progress"] = progress;
+    if (startedAt.longLongValue > 0) dict[@"startedAt"] = startedAt;
+    if (completedAt.longLongValue > 0) dict[@"completedAt"] = completedAt;
+    if (resultsJSON) {
+        NSData *data = [resultsJSON dataUsingEncoding:NSUTF8StringEncoding];
+        id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        if ([parsed isKindOfClass:[NSDictionary class]]) dict[@"results"] = parsed;
     }
+    if (errorMsg) dict[@"error"] = errorMsg;
 
-    sqlite3_finalize(stmt);
-    return result;
+    return [dict copy];
 }
 
 - (BOOL)cancelJobWithId:(NSString *)jobId {
@@ -188,7 +167,8 @@
 }
 
 - (nullable NSArray<NSDictionary *> *)recentJobs:(NSInteger)limit {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    NSError *queryError = nil;
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:&queryError];
     if (!db) return nil;
 
     NSString *sql = @"SELECT id, job_type, status, progress, created_at "
@@ -196,37 +176,38 @@
                     @"ORDER BY created_at DESC "
                     @"LIMIT ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        return nil;
-    }
-
-    sqlite3_bind_int64(stmt, 1, limit);
-
-    NSMutableArray *results = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        NSString *jobId = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 0)];
-        NSString *jobType = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 1)];
-        NSString *status = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, 2)];
-        double progress = sqlite3_column_double(stmt, 3);
-        long createdAt = sqlite3_column_int64(stmt, 4);
-
-        NSDictionary *job = @{
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[@(limit)] error:&queryError];
+    NSMutableArray<NSDictionary *> *results = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        NSString *jobId = [row[@"id"] isKindOfClass:[NSString class]] ? row[@"id"] : nil;
+        NSString *jobType = [row[@"job_type"] isKindOfClass:[NSString class]] ? row[@"job_type"] : nil;
+        NSString *status = [row[@"status"] isKindOfClass:[NSString class]] ? row[@"status"] : nil;
+        NSNumber *progress = [row[@"progress"] isKindOfClass:[NSNumber class]] ? row[@"progress"] : @0.0;
+        NSNumber *createdAt = [row[@"created_at"] isKindOfClass:[NSNumber class]] ? row[@"created_at"] : @0;
+        if (!jobId || !jobType || !status) continue;
+        [results addObject:@{
             @"jobId": jobId,
             @"job_type": jobType,
             @"status": status,
-            @"progress": @(progress),
-            @"createdAt": @(createdAt)
-        };
-        [results addObject:job];
+            @"progress": progress,
+            @"createdAt": createdAt
+        }];
     }
 
-    sqlite3_finalize(stmt);
     return results.count > 0 ? results : nil;
 }
 
 - (BOOL)pruneJobsOlderThan:(NSInteger)olderThanDays error:(NSError **)error {
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    if (olderThanDays < 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSBlobAuditManagerErrorDomain
+                                         code:-2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"olderThanDays must be non-negative"}];
+        }
+        return NO;
+    }
+
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:error];
     if (!db) {
         if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
                                                  code:-1
@@ -234,25 +215,11 @@
         return NO;
     }
 
-    NSTimeInterval cutoff = [NSDate timeIntervalSinceReferenceDate] - (olderThanDays * 24 * 3600);
+    NSTimeInterval cutoff = [[NSDate date] timeIntervalSince1970] - (olderThanDays * 24 * 3600);
 
     NSString *sql = @"DELETE FROM blob_audit_jobs WHERE created_at < ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                         code:sqlite3_extended_errcode(db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-        }
-        return NO;
-    }
-
-    sqlite3_bind_int64(stmt, 1, (long)cutoff);
-    BOOL success = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-
-    return success;
+    return [db executeParameterizedUpdate:sql params:@[@(cutoff)] error:error];
 }
 
 @end
