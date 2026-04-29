@@ -15,6 +15,10 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
     NSUInteger shift = 0;
     for (NSUInteger i = 0; i < maxLength && i < 10; i++) {
         uint8_t byte = bytes[i];
+        if (shift >= 64) {
+            // Would overflow uint64_t
+            return 0;
+        }
         result |= ((uint64_t)(byte & 0x7F)) << shift;
         if ((byte & 0x80) == 0) {
             *value = result;
@@ -23,6 +27,7 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
         shift += 7;
     }
 
+    // Incomplete varint (reached maxLength or 10-byte limit with MSB still set)
     return 0;
 }
 
@@ -87,9 +92,20 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
     }
 
     const uint8_t *bytes = decoded.bytes;
+    NSUInteger decodedLength = decoded.length;
+    if (decodedLength > 128) {
+        // Sanity check: did:key payload should not exceed reasonable bounds
+        if (error) {
+            *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain
+                                         code:5
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Decoded payload exceeds maximum allowed length"}];
+        }
+        return nil;
+    }
+
     uint64_t multicodec = 0;
-    NSUInteger prefixSize = PLCReadVarint(bytes, decoded.length, &multicodec);
-    if (prefixSize == 0 || prefixSize >= decoded.length) {
+    NSUInteger prefixSize = PLCReadVarint(bytes, decodedLength, &multicodec);
+    if (prefixSize == 0 || prefixSize >= decodedLength) {
         if (error) {
             *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain
                                          code:5
@@ -98,7 +114,7 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
         return nil;
     }
 
-    NSData *publicKeyBytes = [decoded subdataWithRange:NSMakeRange(prefixSize, decoded.length - prefixSize)];
+    NSData *publicKeyBytes = [decoded subdataWithRange:NSMakeRange(prefixSize, decodedLength - prefixSize)];
 
     PLCDIDKeyType type;
     if (multicodec == kMulticodecSecp256k1Pub) {
