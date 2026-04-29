@@ -1,14 +1,64 @@
+#!/usr/bin/env python3
+"""Seed configurable demo accounts and records through XRPC.
+
+The script supports two workflows:
+  - create mode: create new accounts with a generated or supplied suffix.
+  - login mode: reuse existing accounts and add more records.
+
+All behavior is controlled through environment variables so CI jobs and manual
+demo sessions can share the same entrypoint without adding a large argument
+parser.
+
+Usage:
+    python3 scripts/dev/seed_demo_via_xrpc.py
+
+    # Custom PDS URL:
+    PDS_URL=http://localhost:2583 python3 scripts/dev/seed_demo_via_xrpc.py
+
+    # Login mode (accounts already exist):
+    DEMO_SEED_MODE=login python3 scripts/dev/seed_demo_via_xrpc.py
+
+Environment variables:
+    PDS_URL              - PDS base URL (default: http://localhost:2583)
+    DEMO_SEED_MODE       - "create" or "login" (default: create)
+    DEMO_HANDLE_DOMAIN   - Handle domain suffix (default: test)
+    DEMO_EMAIL_DOMAIN    - Email domain (default: test.invalid)
+    DEMO_SUFFIX           - Unique suffix for handles (default: random 4-digit)
+    DEMO_PASSWORD         - Account password (default: hunter{suffix})
+    DEMO_ACCOUNT_PREFIXES - Comma-separated account prefixes (default: alice,bob)
+    DEMO_POSTS_PER_ACCOUNT - Posts per account (default: 3)
+    DEMO_CREATE_PROFILES  - Create profile records (default: true)
+"""
+
+from __future__ import annotations
+
 import os
 import random
+import sys
 import time
+from pathlib import Path
 
-import requests
+# Add scripts/ to sys.path so direct execution can import the shared atproto
+# helpers from the repository checkout.
+_scripts_dir = str(Path(__file__).resolve().parent.parent)
+if _scripts_dir not in sys.path:
+    sys.path.insert(0, _scripts_dir)
 
+from lib.atproto import (
+    XrpcClient,
+    XrpcError,
+    create_account_or_login,
+    now_iso,
+    wait_for_server,
+)
+
+# ── Configuration ──────────────────────────────────────────────────────────
 
 BASE_URL = os.environ.get("PDS_URL", "http://localhost:2583").rstrip("/")
 
 
 def env_bool(key: str, default: bool) -> bool:
+    """Read a boolean environment variable using common shell truthy values."""
     raw = os.environ.get(key)
     if raw is None:
         return default
@@ -16,6 +66,7 @@ def env_bool(key: str, default: bool) -> bool:
 
 
 def env_int(key: str, default: int) -> int:
+    """Read an integer environment variable and report invalid values clearly."""
     raw = os.environ.get(key)
     if raw is None or raw.strip() == "":
         return default
@@ -26,6 +77,7 @@ def env_int(key: str, default: int) -> int:
 
 
 def normalize_domain(domain: str) -> str:
+    """Normalize a handle-domain suffix and reject empty values."""
     d = (domain or "").strip()
     while d.startswith("."):
         d = d[1:]
@@ -36,61 +88,15 @@ def normalize_domain(domain: str) -> str:
     return d
 
 
-def wait_for_server(timeout_seconds: int = 20) -> None:
-    deadline = time.time() + timeout_seconds
-    last_error = None
-
-    while time.time() < deadline:
-        try:
-            r = requests.get(f"{BASE_URL}/_health", timeout=1)
-            if r.status_code == 200:
-                return
-            last_error = f"HTTP {r.status_code}"
-        except Exception as e:  # noqa: BLE001
-            last_error = str(e)
-        time.sleep(0.25)
-
-    raise RuntimeError(f"PDS not ready at {BASE_URL} (last error: {last_error})")
-
-
-def create_account(handle: str, email: str, password: str) -> dict:
-    r = requests.post(
-        f"{BASE_URL}/xrpc/com.atproto.server.createAccount",
-        json={"email": email, "handle": handle, "password": password},
-        timeout=20,
-    )
-    if r.status_code != 200:
-        raise RuntimeError(f"createAccount failed ({r.status_code}): {r.text}")
-    return r.json()
-
-
-def create_session(identifier: str, password: str) -> dict:
-    r = requests.post(
-        f"{BASE_URL}/xrpc/com.atproto.server.createSession",
-        json={"identifier": identifier, "password": password},
-        timeout=20,
-    )
-    if r.status_code != 200:
-        raise RuntimeError(f"createSession failed ({r.status_code}): {r.text}")
-    return r.json()
-
-
-def create_record(access_jwt: str, repo_did: str, collection: str, record: dict) -> dict:
-    r = requests.post(
-        f"{BASE_URL}/xrpc/com.atproto.repo.createRecord",
-        headers={"Authorization": f"Bearer {access_jwt}"},
-        json={"repo": repo_did, "collection": collection, "record": record},
-        timeout=20,
-    )
-    if r.status_code != 200:
-        raise RuntimeError(f"createRecord failed ({r.status_code}): {r.text}")
-    return r.json()
-
+# ── Main ──────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    """Create or log in demo accounts and write profile/post records."""
     seed_mode = (os.environ.get("DEMO_SEED_MODE", "create") or "create").strip().lower()
     handle_domain = normalize_domain(os.environ.get("DEMO_HANDLE_DOMAIN", "test"))
     email_domain = (os.environ.get("DEMO_EMAIL_DOMAIN", "test.invalid") or "test.invalid").strip().lstrip("@")
+    # The suffix keeps create-mode reruns from colliding with handles left in a
+    # persistent local PLC directory.
     suffix = (os.environ.get("DEMO_SUFFIX") or "").strip() or str(random.randint(1000, 9999))
     password = (os.environ.get("DEMO_PASSWORD") or "").strip() or f"hunter{suffix}"
     prefixes_raw = os.environ.get("DEMO_ACCOUNT_PREFIXES", "alice,bob") or "alice,bob"
@@ -105,7 +111,7 @@ def main() -> None:
         raise ValueError("DEMO_SEED_MODE must be 'create' or 'login'")
 
     print(f"Waiting for server at {BASE_URL} ...")
-    wait_for_server(timeout_seconds=30)
+    wait_for_server(BASE_URL, timeout=30)
     print("Server is up!")
 
     print("Demo config:")
@@ -116,6 +122,9 @@ def main() -> None:
     print(f"  posts_per_account={posts_per_account}")
     print(f"  create_profiles={create_profiles}")
 
+    client = XrpcClient(BASE_URL)
+    now = now_iso()
+
     sessions: list[dict] = []
     for prefix in prefixes:
         handle = f"{prefix}{suffix}.{handle_domain}"
@@ -123,14 +132,18 @@ def main() -> None:
 
         if seed_mode == "create":
             print(f"Creating account {handle} (this may write to the configured PLC directory)...")
-            session = create_account(handle, email, password)
+            try:
+                session = client.create_account(handle, email, password)
+            except XrpcError as e:
+                raise RuntimeError(f"createAccount failed: {e}") from e
         else:
             print(f"Logging in as {handle} ...")
-            session = create_session(handle, password)
+            try:
+                session = client.create_session(handle, password)
+            except XrpcError as e:
+                raise RuntimeError(f"createSession failed: {e}") from e
 
         sessions.append(session)
-
-    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     for session in sessions:
         handle = session.get("handle", "<unknown>")
@@ -142,28 +155,24 @@ def main() -> None:
         print(f"Seeding records for {handle} ({did})...")
 
         if create_profiles:
-            create_record(
-                access_jwt,
-                did,
-                "app.bsky.actor.profile",
-                {
+            try:
+                client.create_record(did, "app.bsky.actor.profile", {
                     "$type": "app.bsky.actor.profile",
                     "displayName": handle.split(".")[0].capitalize(),
                     "description": "Seeded demo profile",
-                },
-            )
+                }, access_jwt)
+            except XrpcError as e:
+                print(f"  Profile creation failed: {e}")
 
         for i in range(posts_per_account):
-            create_record(
-                access_jwt,
-                did,
-                "app.bsky.feed.post",
-                {
+            try:
+                client.create_record(did, "app.bsky.feed.post", {
                     "$type": "app.bsky.feed.post",
                     "text": f"Demo post #{i+1} from {handle} (Run {suffix})",
                     "createdAt": now,
-                },
-            )
+                }, access_jwt)
+            except XrpcError as e:
+                print(f"  Post #{i+1} failed: {e}")
 
     print("")
     print("Demo accounts:")
