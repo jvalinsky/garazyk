@@ -1,6 +1,14 @@
 #import "PDSSMTPEmailProvider.h"
 #import "Debug/PDSLogger.h"
 
+NSString * const PDSSMTPEmailProviderErrorDomain = @"com.atproto.pds.smtpemailprovider";
+
+static NSError *PDSSMTPEmailProviderUnsupportedError(void) {
+    return [NSError errorWithDomain:PDSSMTPEmailProviderErrorDomain
+                               code:PDSSMTPEmailProviderErrorNotImplemented
+                           userInfo:@{NSLocalizedDescriptionKey: @"SMTP email delivery is not implemented"}];
+}
+
 @implementation PDSSMTPEmailProvider
 
 - (instancetype)initWithHost:(NSString *)host
@@ -24,12 +32,11 @@
             subject:(NSString *)subject
                body:(NSString *)body
               error:(NSError **)error {
-    // SKELETON: In a real implementation, this would use a library like MailCore
-    // or manually handle the SMTP handshake.
-    PDS_LOG_INFO(@"[SMTP] Would send email to: %@, subject: %@ (using host: %@)", to, subject, self.smtpHost);
-    
-    // For now, we return YES and log that a production implementation is needed.
-    return YES;
+    PDS_LOG_WARN(@"[SMTP] Refusing to report email delivery for %@ because SMTP is not implemented (host: %@)", to, self.smtpHost);
+    if (error) {
+        *error = PDSSMTPEmailProviderUnsupportedError();
+    }
+    return NO;
 }
 
 - (BOOL)sendHtmlEmailTo:(NSString *)to
@@ -37,8 +44,11 @@
                htmlBody:(NSString *)htmlBody
                textBody:(NSString *)textBody
                   error:(NSError **)error {
-    PDS_LOG_INFO(@"[SMTP] Would send HTML email to: %@, subject: %@ (using host: %@)", to, subject, self.smtpHost);
-    return YES;
+    PDS_LOG_WARN(@"[SMTP] Refusing to report HTML email delivery for %@ because SMTP is not implemented (host: %@)", to, self.smtpHost);
+    if (error) {
+        *error = PDSSMTPEmailProviderUnsupportedError();
+    }
+    return NO;
 }
 
 @end

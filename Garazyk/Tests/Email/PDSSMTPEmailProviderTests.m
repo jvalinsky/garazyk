@@ -19,7 +19,7 @@
     XCTAssertTrue(provider.useTLS);
 }
 
-- (void)testSendEmailReturnsSuccess {
+- (void)testSendEmailFailsClosed {
     PDSSMTPEmailProvider *provider = [[PDSSMTPEmailProvider alloc] initWithHost:@"smtp.example.com"
                                                                             port:25
                                                                         username:nil
@@ -27,11 +27,13 @@
                                                                           useTLS:NO];
     NSError *error = nil;
     BOOL ok = [provider sendEmailTo:@"user@example.com" subject:@"Test" body:@"Body" error:&error];
-    XCTAssertTrue(ok);
-    XCTAssertNil(error);
+    XCTAssertFalse(ok);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, PDSSMTPEmailProviderErrorDomain);
+    XCTAssertEqual(error.code, PDSSMTPEmailProviderErrorNotImplemented);
 }
 
-- (void)testSendHtmlEmailReturnsSuccess {
+- (void)testSendHtmlEmailFailsClosed {
     PDSSMTPEmailProvider *provider = [[PDSSMTPEmailProvider alloc] initWithHost:@"smtp.example.com"
                                                                             port:25
                                                                         username:nil
@@ -40,12 +42,28 @@
     NSError *error = nil;
     BOOL ok = [provider sendHtmlEmailTo:@"user@example.com"
                                 subject:@"Test"
-                               htmlBody:@"<b>Body</b>"
+                                htmlBody:@"<b>Body</b>"
                                textBody:@"Body"
                                   error:&error];
-    XCTAssertTrue(ok);
-    XCTAssertNil(error);
+    XCTAssertFalse(ok);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, PDSSMTPEmailProviderErrorDomain);
+    XCTAssertEqual(error.code, PDSSMTPEmailProviderErrorNotImplemented);
+}
+
+- (void)testSendMethodsFailClosedWithNilErrorPointer {
+    PDSSMTPEmailProvider *provider = [[PDSSMTPEmailProvider alloc] initWithHost:@"smtp.example.com"
+                                                                            port:25
+                                                                        username:nil
+                                                                        password:nil
+                                                                          useTLS:NO];
+
+    XCTAssertFalse([provider sendEmailTo:@"user@example.com" subject:@"Test" body:@"Body" error:nil]);
+    XCTAssertFalse([provider sendHtmlEmailTo:@"user@example.com"
+                                     subject:@"Test"
+                                    htmlBody:@"<b>Body</b>"
+                                    textBody:@"Body"
+                                       error:nil]);
 }
 
 @end
-

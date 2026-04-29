@@ -128,13 +128,20 @@
         [memberDids addObject:did];
     }
 
-    return @{
+    NSArray *lastMessages = [self getMessagesForConversation:convoId limit:1 cursor:nil error:nil];
+    NSDictionary *lastMessage = lastMessages.count > 0 ? lastMessages[0] : nil;
+
+    NSMutableDictionary *conversation = [@{
         @"id": convoRow[@"id"],
         @"createdAt": convoRow[@"created_at"],
         @"updatedAt": convoRow[@"updated_at"],
         @"members": members,
         @"memberList": [memberDids componentsJoinedByString:@", "]
-    };
+    } mutableCopy];
+    if (lastMessage) {
+        conversation[@"lastMessage"] = lastMessage;
+    }
+    return conversation;
 }
 
 - (nullable NSArray<NSDictionary *> *)listConversationsForActor:(NSString *)actorDid
