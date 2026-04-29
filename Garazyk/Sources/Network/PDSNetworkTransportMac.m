@@ -72,7 +72,7 @@
                 case nw_connection_state_waiting: 
                     pdsState = PDSNetworkConnectionStateWaiting;
                     if (nsError) {
-                        NSLog(@"[Network] Connection waiting: %@", nsError.localizedDescription);
+                        PDS_LOG_WARN(@"[Network] Connection waiting: %@", nsError.localizedDescription);
                     }
                     break;
                 case nw_connection_state_preparing: pdsState = PDSNetworkConnectionStatePreparing; break;
