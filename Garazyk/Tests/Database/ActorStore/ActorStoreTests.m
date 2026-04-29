@@ -1,4 +1,5 @@
 #import <XCTest/XCTest.h>
+#import "Core/ATProtoError.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import <sqlite3.h>
@@ -366,6 +367,72 @@
     XCTAssertNotNil(retrievedBlob, @"Should retrieve blob1");
     XCTAssertEqualObjects(retrievedBlob.mimeType, @"text/plain", @"MIME type should match");
     XCTAssertEqual(retrievedBlob.size, 100, @"Size should match");
+}
+
+- (void)testListBlobsPaginatesWithBase64RawCIDCursor {
+    NSArray<NSString *> *cidStrings = @[@"blobcid1", @"blobcid2", @"blobcid3"];
+    for (NSString *cidString in cidStrings) {
+        PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
+        blob.cid = [cidString dataUsingEncoding:NSUTF8StringEncoding];
+        blob.did = self.testDID;
+        blob.mimeType = @"text/plain";
+        blob.size = 100;
+        blob.createdAt = [NSDate date];
+
+        __autoreleasing NSError *saveError = nil;
+        XCTAssertTrue([self.store saveBlob:blob error:&saveError], @"Failed to save blob %@: %@", cidString, saveError);
+    }
+
+    NSString *cursor = [[@"blobcid1" dataUsingEncoding:NSUTF8StringEncoding] base64EncodedStringWithOptions:0];
+    __autoreleasing NSError *listError = nil;
+    NSArray<PDSDatabaseBlob *> *blobs = [self.store listBlobsForDid:self.testDID limit:10 cursor:cursor error:&listError];
+
+    XCTAssertNil(listError);
+    XCTAssertEqual(blobs.count, 2);
+    XCTAssertEqualObjects(blobs.firstObject.cid, [@"blobcid2" dataUsingEncoding:NSUTF8StringEncoding]);
+    XCTAssertEqualObjects(blobs.lastObject.cid, [@"blobcid3" dataUsingEncoding:NSUTF8StringEncoding]);
+}
+
+- (void)testListBlobsRejectsInvalidCursor {
+    __autoreleasing NSError *error = nil;
+    NSArray<PDSDatabaseBlob *> *blobs = [self.store listBlobsForDid:self.testDID
+                                                              limit:10
+                                                             cursor:@"not-base64!!"
+                                                              error:&error];
+
+    XCTAssertNotNil(blobs);
+    XCTAssertEqual(blobs.count, 0);
+    XCTAssertNotNil(error);
+    XCTAssertEqualObjects(error.domain, ATProtoErrorDomain);
+    XCTAssertEqual(error.code, ATProtoErrorCodeInvalidInput);
+}
+
+- (void)testListBlobsCanRunInsideReadTransaction {
+    PDSDatabaseBlob *blob = [[PDSDatabaseBlob alloc] init];
+    blob.cid = [@"blobcid1" dataUsingEncoding:NSUTF8StringEncoding];
+    blob.did = self.testDID;
+    blob.mimeType = @"text/plain";
+    blob.size = 100;
+    blob.createdAt = [NSDate date];
+
+    __autoreleasing NSError *saveError = nil;
+    XCTAssertTrue([self.store saveBlob:blob error:&saveError], @"Failed to save blob: %@", saveError);
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"list blobs inside actor-store queue"];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        __autoreleasing NSError *readError = nil;
+        [self.store readWithBlock:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+            NSArray<PDSDatabaseBlob *> *blobs = [reader listBlobsForDid:self.testDID
+                                                                  limit:10
+                                                                 cursor:nil
+                                                                  error:innerError];
+            XCTAssertEqual(blobs.count, 1);
+            [expectation fulfill];
+        } error:&readError];
+        XCTAssertNil(readError);
+    });
+
+    [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
 
 - (void)testListBlobsExcludesOtherDids {

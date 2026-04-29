@@ -6,6 +6,7 @@
 
 #import "PDSActorStore+Blob.h"
 #import "PDSActorStoreInternal.h"
+#import "Core/ATProtoError.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Database/PDSDatabase.h"
 
@@ -14,6 +15,17 @@
 
 // Force static linkers to retain this category object file in Linux builds.
 void PDSActorStoreLinkBlobCategory(void) {}
+
+static NSData *PDSActorStoreBlobCursorData(NSString *cursor, NSError **error) {
+    NSData *cursorData = [[NSData alloc] initWithBase64EncodedString:cursor ?: @"" options:0];
+    if (cursorData.length == 0) {
+        if (error) {
+            *error = [ATProtoError invalidInputWithMessage:@"Invalid blob cursor"];
+        }
+        return nil;
+    }
+    return cursorData;
+}
 
 @implementation PDSActorStore (Blob)
 
@@ -96,6 +108,16 @@ void PDSActorStoreLinkBlobCategory(void) {}
                                            error:(NSError **)error {
     __block NSMutableArray<PDSDatabaseBlob *> *blobs = [NSMutableArray array];
     __block NSError *blockError = nil;
+    NSData *decodedCursor = nil;
+    if (cursor) {
+        decodedCursor = PDSActorStoreBlobCursorData(cursor, &blockError);
+        if (!decodedCursor) {
+            if (error && blockError) {
+                *error = blockError;
+            }
+            return blobs;
+        }
+    }
 
     void (^workBlock)(void) = ^{
         NSString *sql;
@@ -116,10 +138,7 @@ void PDSActorStoreLinkBlobCategory(void) {}
         sqlite3_bind_text(stmt, idx++, did.UTF8String, -1, SQLITE_TRANSIENT);
 
         if (cursor) {
-            NSData *cursorData = [[NSData alloc] initWithBase64EncodedString:cursor options:0];
-            if (cursorData) {
-                sqlite3_bind_blob(stmt, idx++, cursorData.bytes, (int)cursorData.length, SQLITE_TRANSIENT);
-            }
+            sqlite3_bind_blob(stmt, idx++, decodedCursor.bytes, (int)decodedCursor.length, SQLITE_TRANSIENT);
         }
 
         sqlite3_bind_int(stmt, idx++, (int)limit);
@@ -129,7 +148,7 @@ void PDSActorStoreLinkBlobCategory(void) {}
         }
     };
 
-    if (dispatch_get_specific("com.atproto.pds.actorstore.queue_key")) {
+    if (dispatch_get_specific(kPDSActorStoreQueueKey)) {
         workBlock();
     } else {
         dispatch_sync(self.transactionQueue, workBlock);

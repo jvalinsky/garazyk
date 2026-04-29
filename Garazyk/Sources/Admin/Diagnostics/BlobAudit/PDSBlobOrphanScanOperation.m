@@ -1,5 +1,6 @@
 #import "PDSBlobOrphanScanOperation.h"
 #import "PDSBlobAuditOperation_Protected.h"
+#import "PDSBlobAuditUtils.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Database/Pool/DatabasePool.h"
@@ -31,7 +32,7 @@
 
     [self updateProgress:0.1 status:[NSString stringWithFormat:@"Scanned %lu files, checking metadata...", (unsigned long)allCIDs.count]];
 
-    NSArray<PDSDatabaseAccount *> *accounts = [self.blobStorage.databasePool getAllAccountsWithError:&error];
+    NSArray<PDSDatabaseAccount *> *accounts = [self.serviceDatabases getAllAccountsWithError:&error];
     if (!accounts) {
         PDS_LOG_ERROR(@"OrphanScan: Failed to list accounts: %@", error);
         [self updateProgress:1.0 status:@"Failed to list accounts"];
@@ -39,6 +40,7 @@
     }
 
     NSUInteger totalAccounts = accounts.count;
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *invalidMetadataCIDs = [NSMutableArray array];
     for (NSUInteger i = 0; i < totalAccounts; i++) {
         if (self.isCancelled) return;
 
@@ -46,9 +48,8 @@
         [self updateProgress:0.1 + (0.8 * ((double)i / (double)totalAccounts))
                       status:[NSString stringWithFormat:@"Checking account %lu/%lu: %@", (unsigned long)i+1, (unsigned long)totalAccounts, account.handle]];
 
+        NSError *readError = nil;
         [self.blobStorage.databasePool readWithDid:account.did block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
-            // Fetch all blobs for this DID
-            // Note: listBlobsForDid might be paginated, so we loop
             NSString *cursor = nil;
             BOOL done = NO;
             while (!done && !self.isCancelled) {
@@ -57,18 +58,33 @@
                     done = YES;
                     continue;
                 }
-                
+
                 for (PDSDatabaseBlob *blob in blobs) {
-                    [orphanCIDs removeObject:blob.cid];
+                    NSString *cidString = PDSBlobAuditCIDStringFromRawBytes(blob.cid);
+                    if (cidString.length > 0) {
+                        [orphanCIDs removeObject:cidString];
+                    } else {
+                        NSString *rawCID = PDSBlobAuditCursorFromRawBytes(blob.cid) ?: @"";
+                        [invalidMetadataCIDs addObject:@{
+                            @"did": account.did ?: @"",
+                            @"cidBase64": rawCID
+                        }];
+                    }
                 }
-                
+
                 if (blobs.count < 1000) {
                     done = YES;
                 } else {
-                    cursor = blobs.lastObject.cid;
+                    cursor = PDSBlobAuditCursorFromRawBytes(blobs.lastObject.cid);
+                    if (!cursor) {
+                        done = YES;
+                    }
                 }
             }
-        } error:nil];
+        } error:&readError];
+        if (readError) {
+            PDS_LOG_ERROR(@"OrphanScan: Failed to read account %@: %@", account.did, readError);
+        }
     }
 
     NSMutableArray *orphanedFiles = [[orphanCIDs allObjects] mutableCopy];
@@ -80,6 +96,7 @@
         @"totalOrphans": @(orphanedFiles.count),
         @"totalSizeMB": @0, // We could sum up sizes but listAllCIDs doesn't provide them easily
         @"scannedFiles": @(allCIDs.count),
+        @"invalidMetadataCIDs": invalidMetadataCIDs,
         @"duration": @(endTime - startTime),
         @"dryRun": @(self.dryRun)
     };

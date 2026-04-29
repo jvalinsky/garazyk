@@ -1,9 +1,9 @@
 #import "PDSBlobAuditOperation.h"
 #import "PDSBlobAuditOperation_Protected.h"
+#import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Blob/BlobStorage.h"
 #import "Debug/PDSLogger.h"
-#import <sqlite3.h>
 
 @interface PDSBlobAuditOperation ()
 @property (nonatomic, copy, readwrite) NSString *jobId;
@@ -59,18 +59,13 @@
 - (void)updateJobProgress:(double)progress status:(nullable NSString *)status {
     if (!self.serviceDatabases) return;
 
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    NSError *dbError = nil;
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:&dbError];
     if (!db) return;
 
     NSString *sql = @"UPDATE blob_audit_jobs SET progress = ? WHERE id = ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) == SQLITE_OK) {
-        sqlite3_bind_double(stmt, 1, progress);
-        sqlite3_bind_text(stmt, 2, self.jobId.UTF8String, -1, SQLITE_TRANSIENT);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
+    [db executeParameterizedUpdate:sql params:@[@(progress), self.jobId] error:nil];
 }
 
 - (BOOL)saveResults:(NSDictionary *)results error:(NSError **)error {
@@ -81,7 +76,7 @@
         return NO;
     }
 
-    sqlite3 *db = [self.serviceDatabases serviceDatabase];
+    PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:error];
     if (!db) {
         if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
                                                  code:-1
@@ -100,31 +95,9 @@
 
     NSString *sql = @"UPDATE blob_audit_jobs SET status = ?, completed_at = ?, results = ? WHERE id = ?";
 
-    sqlite3_stmt *stmt = NULL;
-    if (sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL) != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                         code:sqlite3_extended_errcode(db)
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-        }
-        return NO;
-    }
-
-    sqlite3_bind_text(stmt, 1, "completed", -1, SQLITE_STATIC);
-    sqlite3_bind_int64(stmt, 2, (long)[[NSDate date] timeIntervalSince1970]);
-    sqlite3_bind_text(stmt, 3, resultsJSON.UTF8String, -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 4, self.jobId.UTF8String, -1, SQLITE_TRANSIENT);
-
-    BOOL success = sqlite3_step(stmt) == SQLITE_DONE;
-    sqlite3_finalize(stmt);
-
-    if (!success && error) {
-        *error = [NSError errorWithDomain:@"com.atproto.pds.diagnostics"
-                                     code:sqlite3_extended_errcode(db)
-                                 userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(db)]}];
-    }
-
-    return success;
+    return [db executeParameterizedUpdate:sql
+                                   params:@[@"completed", @([[NSDate date] timeIntervalSince1970]), resultsJSON, self.jobId]
+                                    error:error];
 }
 
 @end

@@ -1,5 +1,6 @@
 #import "PDSBlobConsistencyCheckOperation.h"
 #import "PDSBlobAuditOperation_Protected.h"
+#import "PDSBlobAuditUtils.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Database/Pool/DatabasePool.h"
@@ -16,7 +17,7 @@
     [self updateProgress:0.0 status:@"Starting consistency check..."];
 
     NSError *error = nil;
-    NSArray<PDSDatabaseAccount *> *accounts = [self.blobStorage.databasePool getAllAccountsWithError:&error];
+    NSArray<PDSDatabaseAccount *> *accounts = [self.serviceDatabases getAllAccountsWithError:&error];
     if (!accounts) {
         PDS_LOG_ERROR(@"ConsistencyCheck: Failed to list accounts: %@", error);
         [self updateProgress:1.0 status:@"Failed to list accounts"];
@@ -54,10 +55,8 @@
                         NSData *valData = [record.value dataUsingEncoding:NSUTF8StringEncoding];
                         id json = [NSJSONSerialization JSONObjectWithData:valData options:0 error:nil];
                         if (json) {
-                            NSArray<NSString *> *referencedCIDs = [self findBlobReferencesInJSON:json];
+                            NSSet<NSString *> *referencedCIDs = PDSBlobAuditBlobReferenceCIDsFromJSONObject(json);
                             for (NSString *cidStr in referencedCIDs) {
-                                // 1. Check if metadata exists
-                                NSData *cidData = [cidStr dataUsingEncoding:NSUTF8StringEncoding]; // This is wrong, CID string needs CID parsing
                                 CID *cid = [CID cidFromString:cidStr];
                                 if (!cid) continue;
 
@@ -107,33 +106,6 @@
 
     if (error) {
         PDS_LOG_DB_ERROR(@"Failed to save consistency check results: %@", error);
-    }
-}
-
-- (NSArray<NSString *> *)findBlobReferencesInJSON:(id)json {
-    NSMutableArray *cids = [NSMutableArray array];
-    [self findBlobReferencesInJSON:json results:cids];
-    return cids;
-}
-
-- (void)findBlobReferencesInJSON:(id)json results:(NSMutableArray *)results {
-    if ([json isKindOfClass:[NSDictionary class]]) {
-        NSDictionary *dict = (NSDictionary *)json;
-        if ([dict[@"$type"] isEqualToString:@"blob"]) {
-            id ref = dict[@"ref"];
-            if ([ref isKindOfClass:[NSString class]]) {
-                [results addObject:ref];
-            } else if ([ref isKindOfClass:[NSDictionary class]] && [ref[@"$link"] isKindOfClass:[NSString class]]) {
-                [results addObject:ref[@"$link"]];
-            }
-        }
-        for (id key in dict) {
-            [self findBlobReferencesInJSON:dict[key] results:results];
-        }
-    } else if ([json isKindOfClass:[NSArray class]]) {
-        for (id item in (NSArray *)json) {
-            [self findBlobReferencesInJSON:item results:results];
-        }
     }
 }
 
