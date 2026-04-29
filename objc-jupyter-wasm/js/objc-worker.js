@@ -2,11 +2,41 @@
 
 import { ObjcWasmKernel } from './wasm-loader.js';
 
+/**
+ * Resolve the WASM kernel URL relative to the worker's own location.
+ *
+ * In JupyterLite, the worker is loaded from the extension's static directory:
+ *   <base>/extensions/objc-jupyter-wasm/static/js/objc-worker.js
+ * The WASM files are at:
+ *   <base>/extensions/objc-jupyter-wasm/static/kernel/kernel.wasm
+ *
+ * We use self.location.href (the Worker's runtime URL) instead of
+ * import.meta.url, because webpack 5 replaces import.meta.url with the
+ * build-time file path at compile time, which is wrong at runtime.
+ * self.location.href is always the actual runtime URL of the worker script.
+ */
+function resolveWasmUrl() {
+  try {
+    const workerUrl = self.location.href;
+    // In JupyterLite, the worker chunk is at:
+    //   <base>/extensions/objc-jupyter-wasm/static/822.<hash>.js
+    // The WASM file is at:
+    //   <base>/extensions/objc-jupyter-wasm/static/kernel/kernel.wasm
+    // Strip the filename to get the directory, then append the WASM path.
+    const staticDir = workerUrl.substring(0, workerUrl.lastIndexOf('/'));
+    return staticDir + '/kernel/kernel.wasm';
+  } catch {
+    return './kernel/kernel.wasm';
+  }
+}
+
+const WASM_URL = resolveWasmUrl();
+
 let kernelPromise = null;
 
-function getKernel(wasmUrl) {
+function getKernel() {
   if (!kernelPromise) {
-    kernelPromise = ObjcWasmKernel.create(wasmUrl || './kernel/kernel.wasm');
+    kernelPromise = ObjcWasmKernel.create(WASM_URL);
   }
   return kernelPromise;
 }
@@ -23,7 +53,6 @@ self.onmessage = async event => {
   const {
     id,
     type,
-    wasmUrl,
     code = '',
     cellId = null,
     cursorPos = 0,
@@ -31,7 +60,7 @@ self.onmessage = async event => {
   } = event.data || {};
 
   try {
-    const kernel = await getKernel(wasmUrl);
+    const kernel = await getKernel();
 
     if (type === 'kernel_info_request') {
       postReply(id, 'kernel_info_reply', kernel.kernelInfo());
