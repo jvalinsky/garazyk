@@ -2,6 +2,14 @@
 #import "Blob/PDSCloudStorageBlobProvider.h"
 #import "Core/CID.h"
 
+@interface PDSCloudStorageBlobProvider (Testing)
+- (NSURL *)s3URLForKey:(NSString *)key;
+- (NSString *)buildCanonicalRequest:(NSString *)method
+                                URL:(NSURL *)url
+                            headers:(NSDictionary *)headers
+                           bodyHash:(NSString *)bodyHash;
+@end
+
 @interface CloudStorageBlobProviderTests : XCTestCase
 @end
 
@@ -71,36 +79,98 @@
 
 #pragma mark - Signature V4 Generation Tests
 
-// Note: signRequest: is an internal method, disabled until exposed publicly
-/*
-- (void)testSignatureV4Generation {
+- (void)testCanonicalRequestForAWSVirtualHostedURL {
     PDSCloudStorageBlobProvider *provider = [[PDSCloudStorageBlobProvider alloc]
-        initWithBucket:@"test-bucket"
-               region:@"us-east-1"
+        initWithBucket:@"my-bucket"
+               region:@"us-west-2"
              endpoint:nil
-            keyPrefix:nil
+            keyPrefix:@"blobs/"
         accessKeyId:@"AKIAIOSFODNN7EXAMPLE"
      secretAccessKey:@"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"];
 
     XCTAssertNotNil(provider);
 
-    // Create a test request
-    NSURL *testURL = [NSURL URLWithString:@"https://s3.us-east-1.amazonaws.com/test-bucket/test-object"];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:testURL];
-    request.HTTPMethod = @"PUT";
+    NSURL *url = [provider s3URLForKey:@"blobs/bafytest"];
+    NSString *canonical = [provider buildCanonicalRequest:@"PUT"
+                                                       URL:url
+                                                   headers:@{
+                                                       @"Host": @"stale.example.com",
+                                                       @"x-amz-date": @"20260428T000000Z",
+                                                       @"x-amz-content-sha256": @"HASH"
+                                                   }
+                                                  bodyHash:@"HASH"];
 
-    NSData *testData = [@"test data" dataUsingEncoding:NSUTF8StringEncoding];
-    request.HTTPBody = testData;
-
-    // Sign the request (this tests the internal signing logic)
-    [provider signRequest:request method:@"PUT" path:@"test-object" body:testData];
-
-    // Verify headers were added
-    XCTAssertNotNil([request valueForHTTPHeaderField:@"x-amz-date"]);
-    XCTAssertNotNil([request valueForHTTPHeaderField:@"x-amz-content-sha256"]);
-    XCTAssertNotNil([request valueForHTTPHeaderField:@"Authorization"]);
+    NSString *expected = @"PUT\n"
+                         @"/blobs/bafytest\n"
+                         @"\n"
+                         @"host:my-bucket.s3.us-west-2.amazonaws.com\n"
+                         @"x-amz-content-sha256:HASH\n"
+                         @"x-amz-date:20260428T000000Z\n"
+                         @"\n"
+                         @"host;x-amz-content-sha256;x-amz-date\n"
+                         @"HASH";
+    XCTAssertEqualObjects(canonical, expected);
 }
-*/
+
+- (void)testCanonicalRequestForPathStyleEndpointWithPort {
+    PDSCloudStorageBlobProvider *provider = [[PDSCloudStorageBlobProvider alloc]
+        initWithBucket:@"my-bucket"
+               region:@"us-east-1"
+             endpoint:@"https://minio.example.com:9000"
+            keyPrefix:nil
+        accessKeyId:@"AKIAIOSFODNN7EXAMPLE"
+     secretAccessKey:@"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"];
+
+    NSURL *url = [provider s3URLForKey:@"blobcid"];
+    NSString *canonical = [provider buildCanonicalRequest:@"GET"
+                                                       URL:url
+                                                   headers:@{
+                                                       @"x-amz-date": @"20260428T000000Z",
+                                                       @"x-amz-content-sha256": @"HASH"
+                                                   }
+                                                  bodyHash:@"HASH"];
+
+    NSString *expected = @"GET\n"
+                         @"/my-bucket/blobcid\n"
+                         @"\n"
+                         @"host:minio.example.com:9000\n"
+                         @"x-amz-content-sha256:HASH\n"
+                         @"x-amz-date:20260428T000000Z\n"
+                         @"\n"
+                         @"host;x-amz-content-sha256;x-amz-date\n"
+                         @"HASH";
+    XCTAssertEqualObjects(canonical, expected);
+}
+
+- (void)testCanonicalRequestForEndpointPathPrefix {
+    PDSCloudStorageBlobProvider *provider = [[PDSCloudStorageBlobProvider alloc]
+        initWithBucket:@"my-bucket"
+               region:@"us-east-1"
+             endpoint:@"https://storage.example.com/root"
+            keyPrefix:nil
+        accessKeyId:@"AKIAIOSFODNN7EXAMPLE"
+     secretAccessKey:@"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"];
+
+    NSURL *url = [provider s3URLForKey:@"blobcid"];
+    NSString *canonical = [provider buildCanonicalRequest:@"DELETE"
+                                                       URL:url
+                                                   headers:@{
+                                                       @"x-amz-date": @"20260428T000000Z",
+                                                       @"x-amz-content-sha256": @"HASH"
+                                                   }
+                                                  bodyHash:@"HASH"];
+
+    NSString *expected = @"DELETE\n"
+                         @"/root/my-bucket/blobcid\n"
+                         @"\n"
+                         @"host:storage.example.com\n"
+                         @"x-amz-content-sha256:HASH\n"
+                         @"x-amz-date:20260428T000000Z\n"
+                         @"\n"
+                         @"host;x-amz-content-sha256;x-amz-date\n"
+                         @"HASH";
+    XCTAssertEqualObjects(canonical, expected);
+}
 
 #pragma mark - CID-based Operations Tests
 
@@ -115,12 +185,10 @@
 
     XCTAssertNotNil(provider);
 
-    // Create a test CID
-    CID *testCID = [CID cidFromString:@"bafyreig67flmvqo23inwqxfht6du7tnvwmgw3qdh7tnrwdgqzlmz7lzhi"];
-    XCTAssertNotNil(testCID);
-
     // Test data
     NSData *testData = [@"test blob data" dataUsingEncoding:NSUTF8StringEncoding];
+    CID *testCID = [CID sha256:testData];
+    XCTAssertNotNil(testCID);
 
     // Note: Actual S3 upload would require network access and credentials
     // This test just verifies the interface works correctly
@@ -140,7 +208,7 @@
 
     XCTAssertNotNil(provider);
 
-    CID *testCID = [CID cidFromString:@"bafyreig67flmvqo23inwqxfht6du7tnvwmgw3qdh7tnrwdgqzlmz7lzhi"];
+    CID *testCID = [CID sha256:[@"test blob data" dataUsingEncoding:NSUTF8StringEncoding]];
 
     NSError *error = nil;
     BOOL result = [provider storeBlobData:nil forCID:testCID error:&error];
