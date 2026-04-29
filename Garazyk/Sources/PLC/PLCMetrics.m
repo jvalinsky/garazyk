@@ -17,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSMutableArray<NSNumber *> *latencySamples;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *customGauges;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *customCounters;
+@property (nonatomic, strong) NSObject *metricsLock;
 @end
 
 @implementation PLCMetrics
@@ -45,6 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
         _latencySamples = [NSMutableArray array];
         _customGauges = [NSMutableDictionary dictionary];
         _customCounters = [NSMutableDictionary dictionary];
+        _metricsLock = [[NSObject alloc] init];
     }
     return self;
 }
@@ -79,7 +81,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)recordOperation:(NSString *)operationType {
-    @synchronized(self.operationCounts) {
+    @synchronized(self.metricsLock) {
         NSNumber *current = self.operationCounts[operationType] ?: @0;
         int64_t newValue = current.longLongValue + 1;
         self.operationCounts[operationType] = @(newValue);
@@ -98,7 +100,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)recordResolutionLatency:(NSTimeInterval)latencyMs {
-    @synchronized(self.latencySamples) {
+    @synchronized(self.metricsLock) {
         [self.latencySamples addObject:@(latencyMs)];
         if (self.latencySamples.count > 1000) {
             [self.latencySamples removeObjectAtIndex:0];
@@ -107,13 +109,13 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)setGauge:(NSString *)name value:(int64_t)value {
-    @synchronized(self.customGauges) {
+    @synchronized(self.metricsLock) {
         self.customGauges[name] = @(value);
     }
 }
 
 - (void)incrementCounter:(NSString *)name by:(int64_t)delta {
-    @synchronized(self.customCounters) {
+    @synchronized(self.metricsLock) {
         NSNumber *current = self.customCounters[name] ?: @0;
         self.customCounters[name] = @(current.longLongValue + delta);
     }
@@ -153,80 +155,85 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)renderMetrics {
     NSMutableString *output = [NSMutableString string];
-    
+
+    // Take a consistent snapshot with a single lock to avoid cross-collection inconsistency
+    NSDictionary<NSString *, NSNumber *> *opCountsSnapshot = nil;
+    NSArray<NSNumber *> *latencySnapshot = nil;
+    NSDictionary<NSString *, NSNumber *> *gaugesSnapshot = nil;
+    NSDictionary<NSString *, NSNumber *> *countersSnapshot = nil;
+
+    @synchronized(self.metricsLock) {
+        opCountsSnapshot = [self.operationCounts copy];
+        latencySnapshot = [self.latencySamples copy];
+        gaugesSnapshot = [self.customGauges copy];
+        countersSnapshot = [self.customCounters copy];
+    }
+
     [output appendString:@"# HELP plc_cache_hits_total Total number of cache hits\n"];
     [output appendString:@"# TYPE plc_cache_hits_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_cache_hits_total %lld\n\n", (long long)self.cacheHits]];
-    
+
     [output appendString:@"# HELP plc_cache_misses_total Total number of cache misses\n"];
     [output appendString:@"# TYPE plc_cache_misses_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_cache_misses_total %lld\n\n", (long long)self.cacheMisses]];
-    
+
     [output appendString:@"# HELP plc_memcache_hits_total Total number of memory cache hits\n"];
     [output appendString:@"# TYPE plc_memcache_hits_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_memcache_hits_total %lld\n\n", (long long)self.memcacheHits]];
-    
+
     [output appendString:@"# HELP plc_memcache_misses_total Total number of memory cache misses\n"];
     [output appendString:@"# TYPE plc_memcache_misses_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_memcache_misses_total %lld\n\n", (long long)self.memcacheMisses]];
-    
+
     [output appendString:@"# HELP plc_verification_successes_total Total number of successful verifications\n"];
     [output appendString:@"# TYPE plc_verification_successes_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_verification_successes_total %lld\n\n", (long long)self.verificationSuccesses]];
-    
+
     [output appendString:@"# HELP plc_verification_failures_total Total number of failed verifications\n"];
     [output appendString:@"# TYPE plc_verification_failures_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_verification_failures_total %lld\n\n", (long long)self.verificationFailures]];
-    
+
     [output appendString:@"# HELP plc_http_requests_total Total number of HTTP requests\n"];
     [output appendString:@"# TYPE plc_http_requests_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_http_requests_total %lld\n\n", (long long)self.totalRequests]];
-    
+
     [output appendString:@"# HELP plc_http_errors_total Total number of HTTP errors\n"];
     [output appendString:@"# TYPE plc_http_errors_total counter\n"];
     [output appendString:[NSString stringWithFormat:@"plc_http_errors_total %lld\n\n", (long long)self.totalErrors]];
-    
-    @synchronized(self.operationCounts) {
-        [self.operationCounts enumerateKeysAndObjectsUsingBlock:^(NSString *opType, NSNumber *count, BOOL *stop) {
-            NSString *sanitizedType = [opType stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-            [output appendString:[NSString stringWithFormat:@"# HELP plc_operations_%@_total Total number of %@ operations\n", sanitizedType, opType]];
-            [output appendString:[NSString stringWithFormat:@"# TYPE plc_operations_%@_total counter\n", sanitizedType]];
-            [output appendString:[NSString stringWithFormat:@"plc_operations_%@_total %llu\n\n", sanitizedType, (unsigned long long)count.unsignedLongLongValue]];
-        }];
-    }
-    
+
+    [opCountsSnapshot enumerateKeysAndObjectsUsingBlock:^(NSString *opType, NSNumber *count, BOOL *stop) {
+        NSString *sanitizedType = [opType stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+        [output appendString:[NSString stringWithFormat:@"# HELP plc_operations_%@_total Total number of %@ operations\n", sanitizedType, opType]];
+        [output appendString:[NSString stringWithFormat:@"# TYPE plc_operations_%@_total counter\n", sanitizedType]];
+        [output appendString:[NSString stringWithFormat:@"plc_operations_%@_total %llu\n\n", sanitizedType, (unsigned long long)count.unsignedLongLongValue]];
+    }];
+
     double avgLatency = 0;
-    @synchronized(self.latencySamples) {
-        if (self.latencySamples.count > 0) {
-            double sum = 0;
-            for (NSNumber *latency in self.latencySamples) {
-                sum += latency.doubleValue;
-            }
-            avgLatency = sum / self.latencySamples.count;
+    if (latencySnapshot.count > 0) {
+        double sum = 0;
+        for (NSNumber *latency in latencySnapshot) {
+            sum += latency.doubleValue;
         }
+        avgLatency = sum / latencySnapshot.count;
     }
     [output appendString:@"# HELP plc_resolution_latency_milliseconds Average resolution latency in milliseconds\n"];
     [output appendString:@"# TYPE plc_resolution_latency_milliseconds gauge\n"];
     [output appendString:[NSString stringWithFormat:@"plc_resolution_latency_milliseconds %.2f\n\n", avgLatency]];
-    
-    @synchronized(self.customGauges) {
-        [self.customGauges enumerateKeysAndObjectsUsingBlock:^(NSString *name, NSNumber *value, BOOL *stop) {
-            NSString *sanitized = [name stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-            [output appendString:[NSString stringWithFormat:@"# HELP %@ gauge\n", sanitized]];
-            [output appendString:[NSString stringWithFormat:@"# TYPE %@ gauge\n", sanitized]];
-            [output appendString:[NSString stringWithFormat:@"%@ %lld\n\n", sanitized, (long long)value.longLongValue]];
-        }];
-    }
-    
-    @synchronized(self.customCounters) {
-        [self.customCounters enumerateKeysAndObjectsUsingBlock:^(NSString *name, NSNumber *value, BOOL *stop) {
-            NSString *sanitized = [name stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-            [output appendString:[NSString stringWithFormat:@"# HELP %@ Total\n", sanitized]];
-            [output appendString:[NSString stringWithFormat:@"# TYPE %@ counter\n", sanitized]];
-            [output appendString:[NSString stringWithFormat:@"%@ %lld\n\n", sanitized, (long long)value.longLongValue]];
-        }];
-    }
-    
+
+    [gaugesSnapshot enumerateKeysAndObjectsUsingBlock:^(NSString *name, NSNumber *value, BOOL *stop) {
+        NSString *sanitized = [name stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+        [output appendString:[NSString stringWithFormat:@"# HELP %@ gauge\n", sanitized]];
+        [output appendString:[NSString stringWithFormat:@"# TYPE %@ gauge\n", sanitized]];
+        [output appendString:[NSString stringWithFormat:@"%@ %lld\n\n", sanitized, (long long)value.longLongValue]];
+    }];
+
+    [countersSnapshot enumerateKeysAndObjectsUsingBlock:^(NSString *name, NSNumber *value, BOOL *stop) {
+        NSString *sanitized = [name stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+        [output appendString:[NSString stringWithFormat:@"# HELP %@ Total\n", sanitized]];
+        [output appendString:[NSString stringWithFormat:@"# TYPE %@ counter\n", sanitized]];
+        [output appendString:[NSString stringWithFormat:@"%@ %lld\n\n", sanitized, (long long)value.longLongValue]];
+    }];
+
     return [output copy];
 }
 
