@@ -28,24 +28,36 @@ Browser (JupyterLab UI)
 ## Quick Start
 
 ### Prerequisites
-- Emscripten SDK ≥ 4.0.0
-- LLVM ≥ 22.0 (with ObjC Wasm support)
+- Emscripten SDK ≥ 4.0.0 (`git clone https://github.com/emscripten-core/emsdk.git`)
+- LLVM ≥ 22.0 (with ObjC Wasm support, PR #169043 merged 2026-02-27)
 - Node.js ≥ 18.x
 - CMake ≥ 3.25
+
+### Installation
+
+```bash
+# Install Emscripten SDK
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
+source ./emsdk_env.sh
+
+# Verify
+emcc --version  # Should be ≥ 4.0.0
+```
 
 ### Build
 
 ```bash
-# Source Emscripten
-source $EMSDK/emsdk_env.sh
-
-# Build all WASM components
+# Build all WASM components (requires Emscripten + LLVM)
+cd /Users/jack/Software/garazyk
 bash scripts/build-all.sh
 
 # Or build individually
-bash scripts/wasm/build-clang-wasm.sh
-bash scripts/wasm/build-runtime-wasm.sh
-bash scripts/wasm/build-kernel-wasm.sh
+bash scripts/wasm/build-clang-wasm.sh      # → objc-jupyter-wasm/compiler/clang.wasm (~2-5MB)
+bash scripts/wasm/build-runtime-wasm.sh    # → compiler/libobjc2.wasm + Foundation.wasm
+bash scripts/wasm/build-kernel-wasm.sh    # → kernel/kernel.wasm
 ```
 
 ### Run Demo
