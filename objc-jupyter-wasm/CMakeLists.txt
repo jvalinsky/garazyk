@@ -10,32 +10,19 @@ option(BUILD_OBJC_WASM_COMPILER "Build ObjC→WASM compiler" OFF)
 option(BUILD_OBJC_WASM_RUNTIME "Build ObjC runtime for WASM" OFF)
 option(BUILD_OBJC_WASM_KERNEL "Build Jupyter kernel for WASM" OFF)
 
-# Emscripten toolchain (required for WASM targets)
+# Nix is the authoritative build path for the current WASM smoke slice.
+# The CMake options remain as placeholders for a later native integration, but
+# they should fail clearly instead of trying to add missing subdirectories.
 if(BUILD_OBJC_WASM_COMPILER OR BUILD_OBJC_WASM_RUNTIME OR BUILD_OBJC_WASM_KERNEL)
-  if(NOT DEFINED ENV{EMSDK})
-    message(WARNING "EMSDK not set. Source emsdk/env.sh first.")
-  endif()
-  set(CMAKE_TOOLCHAIN_FILE "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
-      CACHE FILEPATH "Emscripten toolchain")
+  message(FATAL_ERROR
+    "objc-jupyter-wasm CMake WASM targets are not implemented yet. "
+    "Use: nix build ./objc-jupyter-wasm#kernel-wasm"
+  )
 endif()
 
-# Subdirectories
-if(BUILD_OBJC_WASM_COMPILER)
-  add_subdirectory(compiler)
-endif()
-
-if(BUILD_OBJC_WASM_RUNTIME)
-  add_subdirectory(kernel/runtime)
-endif()
-
-if(BUILD_OBJC_WASM_KERNEL)
-  add_subdirectory(kernel)
-endif()
-
-# Build orchestration target
 add_custom_target(objc-jupyter-wasm-all
-  DEPENDS objc-wasm-compiler objc-wasm-runtime objc-wasm-kernel
-  COMMENT "Building all WASM targets for objc-jupyter-wasm"
+  COMMAND ${CMAKE_COMMAND} -E echo "Use Nix for WASM builds: nix build ./objc-jupyter-wasm#kernel-wasm"
+  COMMENT "objc-jupyter-wasm CMake target placeholder"
 )
 
 # Install target for JupyterLite integration
