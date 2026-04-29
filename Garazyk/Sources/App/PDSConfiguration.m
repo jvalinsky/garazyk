@@ -201,6 +201,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _metricsPerAccountLabels = NO;
 
     _blobStorageType = @"disk"; // Default to disk storage
+    _videoMode = @"internal"; // Default to in-PDS video processing
     _s3Bucket = nil;
     _s3Region = nil;
     _s3Endpoint = nil;
@@ -893,6 +894,10 @@ static BOOL PDSConfigRunningUnderTests(void) {
   NSString *envBlobStorageType = [self resolveEnvOverrideForKey:@"PDS_BLOB_STORAGE_TYPE" default:nil];
   if (envBlobStorageType.length > 0)
     _blobStorageType = envBlobStorageType;
+
+  NSString *envVideoMode = [self resolveEnvOverrideForKey:@"PDS_VIDEO_MODE" default:nil];
+  if (envVideoMode.length > 0)
+    _videoMode = envVideoMode;
 
   NSString *envS3Bucket = [self resolveEnvOverrideForKey:@"PDS_S3_BUCKET" default:nil];
   if (envS3Bucket.length > 0)

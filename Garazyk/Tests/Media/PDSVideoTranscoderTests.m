@@ -1,17 +1,18 @@
 #import <XCTest/XCTest.h>
-#import "Media/PDSVideoTranscoder.h"
+#import "Video/VideoTranscoder.h"
+#import "Video/VideoTranscoderBackend.h"
 #import <AVFoundation/AVFoundation.h>
 
-@interface PDSVideoTranscoderTests : XCTestCase
-@property (nonatomic, strong) PDSVideoTranscoder *transcoder;
+@interface ATProtoVideoTranscoderTests : XCTestCase
+@property (nonatomic, strong) ATProtoVideoTranscoder *transcoder;
 @end
 
-@implementation PDSVideoTranscoderTests
+@implementation ATProtoVideoTranscoderTests
 
 - (void)setUp {
     [super setUp];
     // Use fresh instance instead of shared singleton to avoid state leakage
-    self.transcoder = [[PDSVideoTranscoder alloc] init];
+    self.transcoder = [[ATProtoVideoTranscoder alloc] init];
 }
 
 - (void)tearDown {
@@ -22,42 +23,14 @@
 #pragma mark - Error Domain
 
 - (void)testErrorDomain {
-    XCTAssertEqualObjects(PDSVideoTranscoderErrorDomain, @"com.atproto.pds.video.transcoder");
-}
-
-#pragma mark - Preset Mapping
-
-- (void)testPresetForQuality480p {
-    XCTAssertEqualObjects([self.transcoder presetForQuality:PDSVideoTranscoderQuality480p],
-                          AVAssetExportPreset640x480);
-}
-
-- (void)testPresetForQuality720p {
-    XCTAssertEqualObjects([self.transcoder presetForQuality:PDSVideoTranscoderQuality720p],
-                          AVAssetExportPreset1280x720);
-}
-
-- (void)testPresetForQuality1080p {
-    XCTAssertEqualObjects([self.transcoder presetForQuality:PDSVideoTranscoderQuality1080p],
-                          AVAssetExportPreset1920x1080);
-}
-
-- (void)testPresetForQualityHEVC {
-    XCTAssertEqualObjects([self.transcoder presetForQuality:PDSVideoTranscoderQualityHEVC],
-                          AVAssetExportPresetHEVCHighestQuality);
-}
-
-- (void)testPresetForQualityDefault {
-    // Invalid enum value should fall through to default
-    XCTAssertEqualObjects([self.transcoder presetForQuality:(PDSVideoTranscoderQuality)99],
-                          AVAssetExportPresetHighestQuality);
+    XCTAssertEqualObjects(ATProtoVideoTranscoderErrorDomain, @"com.atproto.video.transcoder");
 }
 
 #pragma mark - Singleton
 
 - (void)testSharedTranscoderIsSingleton {
-    PDSVideoTranscoder *a = [PDSVideoTranscoder sharedTranscoder];
-    PDSVideoTranscoder *b = [PDSVideoTranscoder sharedTranscoder];
+    ATProtoVideoTranscoder *a = [ATProtoVideoTranscoder sharedTranscoder];
+    ATProtoVideoTranscoder *b = [ATProtoVideoTranscoder sharedTranscoder];
     XCTAssertEqual(a, b);
 }
 

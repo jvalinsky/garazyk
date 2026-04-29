@@ -25,7 +25,12 @@
 #import "Network/XrpcAppBskyNotificationPack.h"
 #import "Network/XrpcAppBskyProxyMethodPack.h"
 #import "Network/XrpcAppBskyUnspeccedPack.h"
-#import "Network/XrpcAppBskyVideoPack.h"
+#import "Video/VideoXrpcPack.h"
+#import "Video/VideoWorker.h"
+#import "Video/PDSLocalVideoJobStore.h"
+#import "Video/VideoLocalBlobUploader.h"
+#import "Video/VideoPDSAuthProvider.h"
+#import "Blob/PDSBlobProvider.h"
 #import "Network/XrpcChatBskyGroupPack.h"
 #import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcChatBskyConvoPack.h"
@@ -167,11 +172,19 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                  adminController:adminController];
   [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
   [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
-  [XrpcAppBskyVideoPack registerWithDispatcher:dispatcher
-                                 serviceDatabases:serviceDatabases
-                                     appViewDatabase:appViewDatabase
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController];
+  // Register video XRPC endpoints (only in internal mode)
+  NSString *videoMode = [[[NSProcessInfo processInfo] environment] objectForKey:@"PDS_VIDEO_MODE"];
+  BOOL videoInternal = (videoMode == nil || [videoMode isEqualToString:@"internal"]);
+  if (videoInternal) {
+      PDSDatabase *serviceDB = [serviceDatabases serviceDatabaseWithError:nil];
+      id<VideoJobStore> jobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:serviceDB];
+      id<VideoAuthProvider> authProvider = [[VideoPDSAuthProvider alloc] initWithJwtMinter:jwtMinter
+                                                                               adminController:adminController];
+      [ATProtoVideoXrpcPack registerWithDispatcher:dispatcher
+                                           jobStore:jobStore
+                                       authProvider:authProvider
+                                      blobProvider:[ATProtoVideoWorker sharedWorker].blobProvider];
+  }
   // Create and populate search index service
   SearchIndexService *searchIndexService = [[SearchIndexService alloc] initWithDatabase:appViewDatabase];
   [searchIndexService populateIndexIfEmptyWithError:nil];
