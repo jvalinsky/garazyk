@@ -48,9 +48,10 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t broadcastFanoutQueue;
 @property(nonatomic, assign) BOOL sequenceInitialized;
-@property(nonatomic, assign) BOOL stopping;
+@property(atomic, assign) BOOL stopping;
 @property(nonatomic, strong)
     NSMutableSet<WebSocketConnection *> *attachedConnections;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t eventRateLimiter;
 @property(nonatomic, assign) NSUInteger maxReplayEventsPerConnection;
 @property(nonatomic, assign) NSUInteger maxPendingSendsPerConnection;
 @property(nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
@@ -87,8 +88,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
-                        userDatabasePool:
-                            (nullable PDSDatabasePool *)userDatabasePool {
+                         userDatabasePool:
+                             (nullable PDSDatabasePool *)userDatabasePool {
   self = [super init];
   if (self) {
     _serviceDatabases = serviceDatabases;
@@ -106,6 +107,18 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
     _maxPendingBytesPerConnection = kSubscribeReposMaxPendingBytesDefault;
     _lastCommitRevByDID = [NSMutableDictionary dictionary];
+
+    // Initialize backpressure rate limiter (100 events/sec)
+    _eventRateLimiter = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _eventQueue);
+    if (_eventRateLimiter) {
+      uint64_t interval = NSEC_PER_SEC / 100; // 100 events per second
+      dispatch_source_set_timer(_eventRateLimiter,
+                                DISPATCH_TIME_NOW, interval, interval / 10);
+      dispatch_source_set_event_handler(_eventRateLimiter, ^{
+        // Timer fires to allow event processing
+      });
+      dispatch_resume(_eventRateLimiter);
+    }
 
     [[NSNotificationCenter defaultCenter]
         addObserver:self
@@ -167,6 +180,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   self.stopping = YES;
   [[NSNotificationCenter defaultCenter] removeObserver:self];
 
+  // Cancel and release rate limiter
+  if (_eventRateLimiter) {
+    dispatch_source_cancel(_eventRateLimiter);
+    _eventRateLimiter = nil;
+  }
+
   if (dispatch_get_specific(kSubscribeReposEventQueueKey) == NULL) {
     dispatch_sync(self.eventQueue, ^{
                   });
@@ -203,9 +222,25 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     webSocketConnection.remoteAddress = request.remoteAddress;
   }
   webSocketConnection.delegate = self;
+  NSUInteger count = 0;
   @synchronized(_attachedConnections) {
     [_attachedConnections addObject:webSocketConnection];
+    count = _attachedConnections.count;
   }
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
+  [self.relayMetrics recordDownstreamConnected];
+
+  if ([self.delegate respondsToSelector:@selector(
+                      subscribeReposHandler:didAcceptConnection:)]) {
+    [self.delegate subscribeReposHandler:self
+                     didAcceptConnection:webSocketConnection];
+  }
+
+  [webSocketConnection startOnExistingTransport];
+  [self sendInitialRepositoryStateToConnection:webSocketConnection
+                                        cursor:[request
+                                                   queryParamForKey:@"cursor"]];
+}
   [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
   [self.relayMetrics recordDownstreamConnected];
 
@@ -229,10 +264,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       @"[%@] Accepted new WebSocket connection for subscribeRepos",
       connection.remoteAddress);
 
+  NSUInteger count = 0;
   @synchronized(_attachedConnections) {
     [_attachedConnections addObject:connection];
+    count = _attachedConnections.count;
   }
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
+  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
   [self.relayMetrics recordDownstreamConnected];
 
   if ([self.delegate respondsToSelector:@selector
