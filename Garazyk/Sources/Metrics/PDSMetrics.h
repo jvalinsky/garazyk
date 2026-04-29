@@ -3,13 +3,10 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @file PDSMetrics.h
- * @brief Prometheus metrics collection and export for the ATProto PDS server.
- *
- * This class provides centralized metrics collection for the PDS server,
- * supporting HTTP request tracking, repository and blob counting, and
- * Prometheus-compatible format export.
- */
+  @file PDSMetrics.h
+  @brief Prometheus metrics collection and export for the ATProto PDS server.
+  */
+
 
 @interface PDSMetrics : NSObject
 
@@ -67,11 +64,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, readonly) NSTimeInterval serverStartTime;
 
-/**
- * @brief Records an HTTP request with method, endpoint, and status code.
+/*!
+ * @abstract Records an HTTP request with method, endpoint, and status code.
  *
- * This method increments the HTTP request counter and can be used to track
- * detailed request metrics per endpoint and response status.
+ * Increments the HTTP request counter for tracking request metrics per
+ * endpoint and response status.
  *
  * @param method The HTTP method (e.g., "GET", "POST").
  * @param endpoint The API endpoint path (e.g., "/xrpc/com.atproto.server.createSession").
@@ -81,10 +78,10 @@ NS_ASSUME_NONNULL_BEGIN
                               endpoint:(NSString *)endpoint
                                 status:(NSInteger)status;
 
-/**
- * @brief Increments the repository count by one.
+/*!
+ * @abstract Increments the repository count by one.
  *
- * Call this method when a new repository is created on the PDS.
+ * Call when a new repository is created on the PDS.
  */
 - (void)incrementRepositoryCount;
 
