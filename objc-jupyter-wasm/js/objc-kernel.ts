@@ -1,181 +1,156 @@
-// objc-kernel.ts
-// TypeScript JupyterLite Kernel Implementation for Objective-C
+import { BaseKernel } from '@jupyterlite/kernel';
 
-import { IKernel, KernelMessage } from '@jupyterlite/kernel';
-import { WasmLoader } from './wasm-loader';
+type PendingRequest = {
+  resolve: (value: any) => void;
+  reject: (reason: Error) => void;
+  expectedType: string;
+};
 
-export class ObjcKernel implements IKernel {
-    private workers: Map<string, Worker> = new Map();
-    private wasmModules: Map<string, WebAssembly.Instance> = new Map();
-    private executionCount: number = 0;
+export class ObjcKernel extends BaseKernel {
+  private _worker: Worker;
+  private _pending = new Map<number, PendingRequest>();
+  private _nextMessageId = 1;
 
-    constructor() {
-        this.initWasmModules();
+  constructor(options: any) {
+    super(options);
+    this._worker = new Worker(new URL('./objc-worker.js', import.meta.url), {
+      type: 'module'
+    });
+    this._worker.onmessage = event => this._onWorkerMessage(event.data);
+  }
+
+  async kernelInfoRequest(): Promise<any> {
+    return this._request('kernel_info_request', {}, 'kernel_info_reply');
+  }
+
+  async executeRequest(content: { code: string; cell_id?: string }): Promise<any> {
+    const reply = await this._request(
+      'execute_request',
+      {
+        code: content.code,
+        cellId: content.cell_id || null
+      },
+      'execute_reply'
+    );
+
+    if (reply.status === 'ok') {
+      this.publishExecuteResult(
+        {
+          execution_count: reply.execution_count,
+          data: reply.data || {},
+          metadata: reply.metadata || {}
+        },
+        this.parentHeader
+      );
+
+      return {
+        status: 'ok',
+        execution_count: reply.execution_count,
+        payload: [],
+        user_expressions: {}
+      };
     }
 
-    /**
-     * Initialize WASM modules (clang, runtime, kernel)
-     */
-    private async initWasmModules(): Promise<void> {
-        const modules = [
-            { name: 'clang', path: './kernel/clang.wasm' },
-            { name: 'runtime', path: './kernel/libobjc2.wasm' },
-            { name: 'foundation', path: './kernel/Foundation.wasm' },
-            { name: 'kernel', path: './kernel/kernel.wasm' }
-        ];
+    const error = {
+      ename: reply.ename || 'ObjcKernelError',
+      evalue: reply.evalue || 'Objective-C kernel execution failed',
+      traceback: reply.traceback || []
+    };
+    this.publishExecuteError(error, this.parentHeader);
+    return {
+      status: 'error',
+      ...error
+    };
+  }
 
-        for (const mod of modules) {
-            const wasm = await WasmLoader.load(mod.path, this.createWasiImports());
-            this.wasmModules.set(mod.name, wasm);
-        }
+  async completeRequest(content: { code: string; cursor_pos: number }): Promise<any> {
+    return this._request(
+      'complete_request',
+      {
+        code: content.code,
+        cursorPos: content.cursor_pos
+      },
+      'complete_reply'
+    );
+  }
+
+  async inspectRequest(content: {
+    code: string;
+    cursor_pos: number;
+    detail_level: number;
+  }): Promise<any> {
+    return this._request(
+      'inspect_request',
+      {
+        code: content.code,
+        cursorPos: content.cursor_pos,
+        detailLevel: content.detail_level
+      },
+      'inspect_reply'
+    );
+  }
+
+  async isCompleteRequest(content: { code: string }): Promise<any> {
+    const trimmed = content.code.trimEnd();
+    return {
+      status: trimmed.endsWith(';') || trimmed.endsWith('@end') ? 'complete' : 'incomplete',
+      indent: ''
+    };
+  }
+
+  dispose(): void {
+    if (this.isDisposed) {
+      return;
+    }
+    this._worker.terminate();
+    super.dispose();
+  }
+
+  private _request(type: string, payload: Record<string, unknown>, expectedType: string): Promise<any> {
+    const id = this._nextMessageId++;
+    const wasmUrl = './kernel/kernel.wasm';
+
+    return new Promise((resolve, reject) => {
+      this._pending.set(id, {
+        resolve,
+        reject,
+        expectedType
+      });
+      this._worker.postMessage({
+        id,
+        type,
+        wasmUrl,
+        ...payload
+      });
+    });
+  }
+
+  private _onWorkerMessage(message: any): void {
+    const { id, type, content } = message || {};
+
+    if (type === 'stream') {
+      this.stream(content, this.parentHeader);
+      return;
     }
 
-    /**
-     * Create WASI imports for WASM modules
-     */
-    private createWasiImports(): any {
-        const encoder = new TextEncoder();
-        return {
-            wasi_snapshot_preview1: {
-                fd_write: (fd: number, iovs: number, iovs_len: number, nwritten: number) => {
-                    // Capture stdout/stderr
-                    const buffer = WasmLoader.getMemoryBuffer();
-                    let text = '';
-                    for (let i = 0; i < iovs_len; i++) {
-                        const iov = iovs + i * 8;
-                        const ptr = new DataView(buffer).getUint32(iov, true);
-                        const len = new DataView(buffer).getUint32(iov + 4, true);
-                        text += new TextDecoder().decode(new Uint8Array(buffer, ptr, len));
-                    }
-                    
-                    if (fd === 1) {
-                        this.postStream('stdout', text);
-                    } else if (fd === 2) {
-                        this.postStream('stderr', text);
-                    }
-                    return 0;
-                },
-                proc_exit: (code: number) => {
-                    console.log(`WASM exit: ${code}`);
-                }
-            },
-            env: {
-                objc_log: (ptr: number) => {
-                    const str = WasmLoader.readString(ptr);
-                    this.postStream('stderr', `[ObjC] ${str}\n`);
-                }
-            }
-        };
+    const pending = this._pending.get(id);
+    if (!pending) {
+      return;
     }
 
-    /**
-     * Execute code in the kernel
-     */
-    async execute(code: string, cellId: string): Promise<KernelMessage.IExecuteReplyMsg> {
-        this.executionCount++;
-
-        try {
-            const kernel = this.wasmModules.get('kernel');
-            if (!kernel) {
-                return this.createErrorReply('Kernel WASM not loaded');
-            }
-
-            // Call WASM kernel execute
-            const resultPtr = (kernel.exports.execute as Function)(code, cellId);
-            const result = WasmLoader.readString(resultPtr);
-
-            return {
-                header: { msg_type: 'execute_reply' },
-                parent_header: {},
-                metadata: {},
-                content: {
-                    status: 'ok',
-                    execution_count: this.executionCount,
-                    data: {
-                        'text/plain': result
-                    }
-                }
-            };
-        } catch (error) {
-            return this.createErrorReply(error.message);
-        }
+    if (type === 'error') {
+      this._pending.delete(id);
+      pending.reject(new Error(content?.evalue || 'Objective-C worker error'));
+      return;
     }
 
-    /**
-     * Code completion
-     */
-    async complete(code: string, cursorPos: number): Promise<KernelMessage.ICompleteReplyMsg> {
-        const matches: string[] = [];
-        
-        // Basic ObjC keyword completion
-        const keywords = ['@interface', '@implementation', '@end', '@property', '@synthesize',
-            'nil', 'YES', 'NO', 'NSString', 'NSArray', 'NSDictionary'];
-        
-        const partial = code.substring(0, cursorPos).split(/[\s;{}]+/).pop() || '';
-        
-        for (const kw of keywords) {
-            if (kw.startsWith(partial)) {
-                matches.push(kw);
-            }
-        }
-
-        return {
-            header: { msg_type: 'complete_reply' },
-            parent_header: {},
-            metadata: {},
-            content: {
-                status: 'ok',
-                matches,
-                cursor_start: cursorPos - partial.length,
-                cursor_end: cursorPos
-            }
-        };
+    if (type !== pending.expectedType) {
+      this._pending.delete(id);
+      pending.reject(new Error(`Expected ${pending.expectedType}, got ${type}`));
+      return;
     }
 
-    /**
-     * Object inspection
-     */
-    async inspect(code: string, cursorPos: number, detailLevel: number): Promise<KernelMessage.IInspectReplyMsg> {
-        return {
-            header: { msg_type: 'inspect_reply' },
-            parent_header: {},
-            metadata: {},
-            content: {
-                status: 'ok',
-                found: false,
-                data: {}
-            }
-        };
-    }
-
-    /**
-     * Post stream message (stdout/stderr)
-     */
-    private postStream(name: string, text: string): void {
-        const msg: KernelMessage.IStreamMsg = {
-            header: { msg_type: 'stream' },
-            parent_header: {},
-            metadata: {},
-            content: { name, text }
-        };
-        // In JupyterLite, this would be posted to the main thread
-        console.log(`[${name}] ${text}`);
-    }
-
-    /**
-     * Create error reply
-     */
-    private createErrorReply(message: string): KernelMessage.IExecuteReplyMsg {
-        return {
-            header: { msg_type: 'execute_reply' },
-            parent_header: {},
-            metadata: {},
-            content: {
-                status: 'error',
-                ename: 'ObjCError',
-                evalue: message,
-                traceback: []
-            }
-        };
-    }
+    this._pending.delete(id);
+    pending.resolve(content);
+  }
 }
