@@ -12,7 +12,7 @@ echo "  objc-jupyter-wasm Build Orchestrator"
 echo "=========================================="
 
 # Check Emscripten
-if [ ! -v EMSDK ] && [ ! -f "$EMSCRIPTLIB/../emsdk_env.sh" ]; then
+if [ -z "${EMSDK+x}" ] && [ ! -f "$HOME/emsdk/emsdk_env.sh" ]; then
     echo "WARNING: EMSDK not set. Attempting to find emsdk..."
     if [ -d "$HOME/emsdk" ]; then
         source "$HOME/emsdk/emsdk_env.sh"
