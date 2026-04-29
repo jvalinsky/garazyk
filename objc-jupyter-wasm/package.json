@@ -4,15 +4,31 @@
   "private": true,
   "type": "module",
   "description": "Objective-C JupyterLite kernel backed by a WebAssembly smoke ABI",
+  "main": "lib/src/index.js",
+  "types": "lib/src/index.d.ts",
+  "exports": {
+    ".": "./lib/src/index.js"
+  },
   "scripts": {
-    "check:js": "node --check js/wasm-loader.js && node --check js/objc-worker.js && node --check jupyterlite/kernel.js && node --check tests/kernel-smoke.mjs",
+    "build": "npm run build:lib && npm run build:labextension && npm run build:assets",
+    "build:assets": "node scripts/copy-static-assets.mjs",
+    "build:extension": "npm run build",
+    "build:jupyterlite": "node scripts/build-smoke-site.mjs",
+    "build:labextension": "jupyter labextension build .",
+    "build:lib": "tsc -p tsconfig.json",
+    "check:js": "node --check js/wasm-loader.js && node --check js/objc-worker.js && node --check jupyterlite/kernel.js && node --check scripts/copy-static-assets.mjs && node --check scripts/build-smoke-site.mjs && node --check tests/browser-smoke.mjs && node --check tests/browser-smoke-page.mjs && node --check tests/kernel-smoke.mjs",
+    "clean": "rimraf lib dist objc_jupyter_wasm/labextension",
+    "smoke:browser": "node tests/browser-smoke.mjs dist/jupyterlite-smoke",
     "smoke:kernel": "node tests/kernel-smoke.mjs ./result/wasm/kernel.wasm"
   },
   "dependencies": {
     "@jupyterlab/application": "^4.4.0",
-    "@jupyterlite/kernel": "^0.8.0-alpha.1"
+    "@jupyterlite/kernel": "^0.7.4"
   },
   "devDependencies": {
+    "@jupyterlab/builder": "^4.4.0",
+    "playwright": "^1.52.0",
+    "rimraf": "^6.0.1",
     "typescript": "^5.8.0"
   },
   "jupyterlab": {
@@ -20,9 +36,14 @@
     "outputDir": "objc_jupyter_wasm/labextension"
   },
   "files": [
-    "js",
-    "src",
-    "jupyterlite",
+    "install.json",
+    "lib",
     "objc_jupyter_wasm"
-  ]
+  ],
+  "keywords": [
+    "jupyterlite",
+    "objective-c",
+    "webassembly"
+  ],
+  "license": "MIT"
 }

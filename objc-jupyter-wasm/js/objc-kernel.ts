@@ -98,6 +98,29 @@ export class ObjcKernel extends BaseKernel {
     };
   }
 
+  async commInfoRequest(_content: any): Promise<any> {
+    return {
+      status: 'ok',
+      comms: {}
+    };
+  }
+
+  inputReply(_content: any): void {
+    // Frontend input is not used by the browser smoke kernel.
+  }
+
+  async commOpen(_msg: any): Promise<void> {
+    // Comms are intentionally unsupported in the smoke kernel.
+  }
+
+  async commMsg(_msg: any): Promise<void> {
+    // Comms are intentionally unsupported in the smoke kernel.
+  }
+
+  async commClose(_msg: any): Promise<void> {
+    // Comms are intentionally unsupported in the smoke kernel.
+  }
+
   dispose(): void {
     if (this.isDisposed) {
       return;

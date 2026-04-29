@@ -28,7 +28,7 @@ add_custom_target(objc-jupyter-wasm-all
 # Install target for JupyterLite integration
 install(DIRECTORY jupyterlite/
   DESTINATION share/jupyterlite/kernels/objc
-  FILES_MATCHING PATTERN "*.json" PATTERN "*.html" PATTERN "*.js"
+  FILES_MATCHING PATTERN "*.json" PATTERN "*.js"
 )
 
 install(DIRECTORY demo/

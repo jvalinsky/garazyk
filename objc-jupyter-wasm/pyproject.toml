@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling>=1.21.0", "jupyterlab>=4,<5"]
+build-backend = "hatchling.build"
+
+[project]
+name = "objc-jupyter-wasm"
+version = "0.1.0"
+description = "Objective-C JupyterLite kernel backed by a WebAssembly smoke ABI"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Garazyk contributors" }
+]
+keywords = ["jupyterlite", "objective-c", "webassembly"]
+dependencies = [
+  "jupyterlite-core>=0.4,<0.8",
+  "jupyterlab>=4,<5"
+]
+
+[project.urls]
+Repository = "https://github.com/jvalinsky/garazyk"
+
+[tool.hatch.build]
+artifacts = [
+  "objc_jupyter_wasm/labextension"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["objc_jupyter_wasm"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"objc_jupyter_wasm/labextension" = "share/jupyter/labextensions/objc-jupyter-wasm"
+"install.json" = "share/jupyter/labextensions/objc-jupyter-wasm/install.json"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "README.md",
+  "install.json",
+  "package.json",
+  "pyproject.toml",
+  "src",
+  "js",
+  "kernel",
+  "runtime",
+  "scripts",
+  "objc_jupyter_wasm"
+]

@@ -11,9 +11,18 @@
       let
         pkgs = import nixpkgs {
           inherit system;
+        };
+
+        # Relaxed nixpkgs config for WASM cross-compilation derivations only.
+        # Some LLVM/wasm packages are marked broken or unsupported on the host
+        # platform because they only build for wasm32-wasi targets. Scoping
+        # these overrides to the specific callPackage sites avoids masking real
+        # build failures in other packages.
+        pkgsWasm = import nixpkgs {
+          inherit system;
           config = {
             allowBroken = true;
-            allowUnsupportedSystem = true; # wasilibc only builds on wasm platforms
+            allowUnsupportedSystem = true;
           };
         };
 
@@ -54,23 +63,38 @@
 
         packages = {
           # Minimal libobjc2-compatible runtime smoke artifact.
-          libobjc2-wasm = pkgs.callPackage ./nix/libobjc2-wasm.nix {
+          libobjc2-wasm = pkgsWasm.callPackage ./nix/libobjc2-wasm.nix {
             inherit llvmPackages;
             src = runtimeSrc;
           };
 
           # Minimal WASI sysroot with ObjC headers
           wasi-sysroot = pkgs.callPackage ./nix/wasi-sysroot.nix {
-            inherit llvmPackages;
             libobjc2-wasm = self.packages.${system}.libobjc2-wasm;
           };
 
           # Jupyter kernel compiled to WASM
           kernel-wasm = pkgs.callPackage ./nix/kernel-wasm.nix {
             inherit llvmPackages;
-            libobjc2-wasm = self.packages.${system}.libobjc2-wasm;
             src = kernelSrc;
           };
+
+          # Pinned GNUstep libobjc2 source probe for the next runtime layer.
+          libobjc2-real-subset = pkgsWasm.callPackage ./nix/libobjc2-real-subset.nix {
+            inherit llvmPackages;
+          };
+
+          # Static browser smoke site with Nix-built WASM assets.
+          jupyterlite-smoke-site = pkgs.runCommand "objc-jupyter-wasm-jupyterlite-smoke-site" {
+            nativeBuildInputs = [
+              pkgs.nodejs
+            ];
+          } ''
+            node ${self}/scripts/build-smoke-site.mjs \
+              --out $out \
+              --kernel-wasm ${self.packages.${system}.kernel-wasm}/wasm/kernel.wasm \
+              --libobjc2-wasm ${self.packages.${system}.libobjc2-wasm}/wasm/libobjc2.wasm
+          '';
 
           # Meta package: build all WASM artifacts
           default = pkgs.symlinkJoin {
@@ -78,6 +102,7 @@
             paths = with self.packages.${system}; [
               libobjc2-wasm
               kernel-wasm
+              jupyterlite-smoke-site
               wasi-sysroot
             ];
           };
@@ -105,7 +130,39 @@
             node --check ${self}/js/wasm-loader.js
             node --check ${self}/js/objc-worker.js
             node --check ${self}/jupyterlite/kernel.js
+            node --check ${self}/scripts/copy-static-assets.mjs
+            node --check ${self}/scripts/build-smoke-site.mjs
+            node --check ${self}/tests/browser-smoke.mjs
+            node --check ${self}/tests/browser-smoke-page.mjs
             node --check ${self}/tests/kernel-smoke.mjs
+            mkdir -p $out
+            touch $out/passed
+          '';
+
+          smoke-site-assets = pkgs.runCommand "objc-jupyter-wasm-smoke-site-assets" {
+            nativeBuildInputs = [
+              pkgs.nodejs
+            ];
+          } ''
+            cp -R ${self.packages.${system}.jupyterlite-smoke-site} site
+            test -f site/index.html
+            test -f site/browser-smoke-page.mjs
+            test -f site/js/objc-worker.js
+            test -f site/js/wasm-loader.js
+            test -f site/kernel/kernel.wasm
+            test -f site/kernel/libobjc2.wasm
+            test -f site/files/demo/hello.ipynb
+            test -f site/kernelspecs/objective-c/kernel.json
+            mkdir -p $out
+            touch $out/passed
+          '';
+
+          libobjc2-real-subset-smoke = pkgs.runCommand "objc-jupyter-wasm-libobjc2-real-subset-smoke" {
+            nativeBuildInputs = [
+              pkgs.wabt
+            ];
+          } ''
+            wasm-validate ${self.packages.${system}.libobjc2-real-subset}/wasm/libobjc2-real-subset.wasm
             mkdir -p $out
             touch $out/passed
           '';

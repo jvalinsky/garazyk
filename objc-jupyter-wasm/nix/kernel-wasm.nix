@@ -2,7 +2,6 @@
   lib,
   stdenv,
   llvmPackages,
-  libobjc2-wasm,
   src,
 }:
 
@@ -12,6 +11,10 @@
 # functions that JavaScript can load, pass JSON into, and parse JSON replies
 # from. Objective-C compilation and the full runtime are later layers behind the
 # same ABI.
+#
+# Note: libobjc2-wasm is NOT linked here because the kernel is fully
+# freestanding. It will be added as a buildInput when the kernel calls into the
+# runtime (next milestone).
 
 stdenv.mkDerivation {
   pname = "kernel-wasm";
@@ -23,10 +26,6 @@ stdenv.mkDerivation {
     llvmPackages.clang
     llvmPackages.lld
     llvmPackages.llvm
-  ];
-
-  buildInputs = [
-    libobjc2-wasm
   ];
 
   dontConfigure = true;

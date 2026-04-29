@@ -10,6 +10,7 @@ browser via WebAssembly. The current milestone is a validated smoke slice:
 1. A stable C ABI compiled to `kernel.wasm`
 2. A minimal libobjc2-compatible runtime smoke module
 3. A JavaScript/JupyterLite layer that loads WASM, passes JSON requests, and parses JSON replies
+4. A static browser smoke site that exercises the worker and WASM asset path
 
 Full Objective-C compilation, GNUstep Foundation, and stateful browser-side cell
 execution are planned follow-up layers.
@@ -56,14 +57,16 @@ nix build ./objc-jupyter-wasm#kernel-wasm
 script tried to turn a host `clang` binary into WASM, which is not a valid build
 path. `clang.wasm` is tracked as the next compiler layer.
 
-### Run Demo
+### Build The Browser Smoke Site
 
 ```bash
-cd jupyterlite
-python -m http.server 8000
-# Open http://localhost:8000 in browser
-# Select "Objective-C" kernel
+nix build ./objc-jupyter-wasm#jupyterlite-smoke-site
+node objc-jupyter-wasm/tests/browser-smoke.mjs result
 ```
+
+The packaged JupyterLite integration is registered from `src/index.ts`.
+`jupyterlite/kernel.js` remains only as a static-demo helper for direct local
+serving during bring-up.
 
 ## Directory Structure
 
@@ -74,7 +77,8 @@ python -m http.server 8000
 | `runtime/` | Minimal libobjc2-compatible smoke runtime |
 | `js/` | JavaScript/TypeScript kernel layer |
 | `src/` | JupyterLite extension registration |
-| `jupyterlite/` | JupyterLab integration files |
+| `jupyterlite/` | Static demo helper (kernel.js, kernelspec.json) |
+| `objc_jupyter_wasm/` | Python package and labextension install target |
 | `demo/` | Demo notebooks |
 | `scripts/wasm/` | Build scripts for WASM targets |
 | `tests/` | Node smoke harness |
@@ -84,6 +88,8 @@ python -m http.server 8000
 - [x] Stable C ABI loaded from `kernel.wasm`
 - [x] JSON request/reply smoke execution
 - [x] Node smoke harness
+- [x] Browser worker smoke harness
+- [ ] Full JupyterLite notebook execution
 - [ ] Interactive ObjC evaluation in browser
 - [ ] Variable inspection across cells
 - [ ] Code completion
@@ -105,7 +111,8 @@ Nix is the authoritative build path for the current milestone. The flake provide
 
 - **Dev shells** with all WASM tooling pre-configured
 - **Derivations** for `libobjc2-wasm` and `kernel-wasm`
-- **Checks** for WASM validation, JavaScript syntax, and the Node smoke harness
+- **Derivations** for the browser smoke site and pinned libobjc2 source probe
+- **Checks** for WASM validation, JavaScript syntax, smoke-site assets, and the Node smoke harness
 
 ### Quick Start with Nix
 
@@ -120,6 +127,7 @@ nix develop --impure .#wasm-wasi        # WASI cross-compilation
 # Build WASM artifacts
 nix build .#libobjc2-wasm
 nix build .#kernel-wasm
+nix build .#jupyterlite-smoke-site
 
 # Evaluate checks without building
 nix flake check --no-build
@@ -158,6 +166,25 @@ nix flake check
 
 The request-buffer helpers are used by JavaScript to marshal strings into WASM
 memory before calling the JSON ABI.
+
+Requests are validated as small JSON objects. Malformed JSON, missing `code`,
+non-string `code`, and oversized code payloads return structured
+`{"status":"error", ...}` replies while preserving valid JSON output.
+
+### JupyterLite Extension Packaging
+
+The extension has both Node and Python package metadata:
+
+```bash
+cd objc-jupyter-wasm
+npm install
+npm run build
+python -m build
+```
+
+`npm run build` compiles TypeScript, runs the JupyterLab prebuilt-extension
+builder, and copies `kernel.wasm` plus `libobjc2.wasm` into
+`objc_jupyter_wasm/labextension/static/kernel/`.
 
 ### Troubleshooting
 
