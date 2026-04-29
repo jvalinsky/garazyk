@@ -1,16 +1,18 @@
 /*
  * objc_runtime_bridge.c
- * Stable C ABI for the browser-side Objective-C Jupyter kernel smoke slice.
+ * Stable C ABI for the browser-side Objective-C Jupyter kernel.
  *
- * This file is intentionally freestanding: it builds to WebAssembly without a
- * libc, Objective-C compiler support, or libobjc2. Later runtime layers can
- * replace the fake evaluator behind this ABI without changing JavaScript.
+ * This file provides the stable JSON ABI that JavaScript calls into.
+ * The interpreter layer (objc_interpreter.c) evaluates ObjC source
+ * against the real GNUstep libobjc2 runtime.
  *
  * Threading constraint: This ABI is single-threaded. All exported functions
  * share static buffers (request_buffer, response_buffer, etc.) and a global
  * execution_count. Calls must not overlap. The JavaScript worker enforces
  * this by processing messages sequentially.
  */
+
+#include "objc_interpreter.h"
 
 #define OBJC_KERNEL_REQUEST_CAPACITY 4096u
 #define OBJC_KERNEL_RESPONSE_CAPACITY 8192u
@@ -422,6 +424,9 @@ static char *write_error_json(char *buffer, unsigned int capacity, int status) {
     return buffer;
 }
 
+/* Forward declaration for WASM runtime initialization */
+extern void __objc_wasm_init(void);
+
 __attribute__((used))
 int objc_kernel_init(void) {
     execution_count = 0u;
@@ -429,6 +434,14 @@ int objc_kernel_init(void) {
     response_buffer[0] = '\0';
     complete_buffer[0] = '\0';
     inspect_buffer[0] = '\0';
+
+    /* Initialize the ObjC runtime's class table before any
+     * class lookups or allocations. This seeds the table with
+     * the Object root class and prevents division-by-zero in
+     * the hash table lookup. */
+    __objc_wasm_init();
+
+    objc_interp_init();
     return 0;
 }
 
@@ -477,20 +490,54 @@ char *objc_kernel_execute_json(char *request_json) {
     }
 
     execution_count++;
-    response_buffer[0] = '\0';
 
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "{");
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"status\":\"ok\",");
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"execution_count\":");
-    append_uint(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, execution_count);
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, ",\"data\":{\"text/plain\":\"Objective-C WASM smoke executed: ");
-    append_json_escaped_range(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, parsed_code_buffer, code_length);
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"},");
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"metadata\":{},");
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"streams\":[{\"name\":\"stdout\",\"text\":\"Objective-C WASM smoke executed\\n\"}]");
-    append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "}");
+    /* Interpret the ObjC source code */
+    {
+        int interp_result = objc_interp(parsed_code_buffer, code_length);
 
-    return response_buffer;
+        if (interp_result != OBJC_INTERP_OK) {
+            /* Interpreter error */
+            const char *error_msg = objc_interp_get_error();
+            unsigned int error_len = cstr_len(error_msg);
+
+            offset = 0u;
+            response_buffer[0] = '\0';
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "{");
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"status\":\"error\",");
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"execution_count\":");
+            append_uint(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, execution_count);
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, ",\"ename\":\"ObjCRuntimeError\",");
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"evalue\":\"");
+            append_json_escaped_range(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, error_msg, error_len);
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\",\"traceback\":[]}");
+            return response_buffer;
+        }
+
+        /* Success — format response with NSLog output */
+        const char *nslog_output = objc_interp_get_nslog_output();
+        unsigned int nslog_len = objc_interp_get_nslog_length();
+
+        offset = 0u;
+        response_buffer[0] = '\0';
+        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "{");
+        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"status\":\"ok\",");
+        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"execution_count\":");
+        append_uint(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, execution_count);
+        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, ",\"data\":{},");
+        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"metadata\":{},");
+
+        /* Include NSLog output as stream */
+        if (nslog_len > 0u) {
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"streams\":[{\"name\":\"stdout\",\"text\":\"");
+            append_json_escaped_range(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, nslog_output, nslog_len);
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"}]");
+        } else {
+            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"streams\":[]");
+        }
+
+        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "}");
+        return response_buffer;
+    }
 }
 
 __attribute__((used))
