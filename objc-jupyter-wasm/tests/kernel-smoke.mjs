@@ -90,15 +90,23 @@ assert.equal(firstExecute.execution_count, 1);
 // The interpreter captures NSLog output in the streams array
 assert.ok(firstExecute.streams, 'execute reply has streams');
 assert.equal(firstExecute.streams[0].name, 'stdout');
+// NSLog(@"hello smoke") should produce "hello smoke\n"
+assert.match(firstExecute.streams[0].text, /hello smoke/);
 
 const quotedCode = 'NSLog(@"quote \\" and slash \\\\");\nint value = 42;';
 const quotedExecute = execute(quotedCode, 'quoted-cell');
 assert.equal(quotedExecute.status, 'ok');
 assert.equal(quotedExecute.execution_count, 2);
 
+// Test NSLog with format specifiers
+const fmtCode = 'NSLog(@"value = %d", 42);';
+const fmtExecute = execute(fmtCode, 'fmt-cell');
+assert.equal(fmtExecute.status, 'ok');
+assert.match(fmtExecute.streams[0].text, /value = 42/);
+
 const thirdExecute = execute('@interface Smoke\n@end', 'third-cell');
 assert.equal(thirdExecute.status, 'ok');
-assert.equal(thirdExecute.execution_count, 3);
+assert.equal(thirdExecute.execution_count, 4);
 
 const malformedExecute = callJson('objc_kernel_execute_json', '{"code":');
 assert.equal(malformedExecute.status, 'error');
