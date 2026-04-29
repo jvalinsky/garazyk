@@ -260,7 +260,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         dispatch_semaphore_signal(semaphore);
     }];
     
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 15 * NSEC_PER_SEC));
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
     
     if (error) {
         *error = resultError;
@@ -684,7 +684,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         }];
 
     [task resume];
-    dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
 
     if (requestError && error) {
         *error = requestError;
