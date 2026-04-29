@@ -38,11 +38,28 @@ stdenv.mkDerivation {
       -O2 \
       --sysroot=${wasiSysroot} \
       -I${libobjc2WasmFull}/include/objc \
+      -I. \
       -Wall \
       -Wextra \
       -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
       -c objc_runtime_bridge.c \
       -o objc_runtime_bridge.o
+
+    # Compile the interpreter
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interpreter.c \
+      -o objc_interpreter.o
 
     # Link: kernel + libobjc2 runtime + wasi-libc
     ${llvmPackages.lld}/bin/wasm-ld \
@@ -56,6 +73,7 @@ stdenv.mkDerivation {
       --export=objc_kernel_free \
       --export=objc_kernel_request_buffer \
       --export=objc_kernel_request_buffer_size \
+      --export=__objc_wasm_init \
       --export=objc_getClass \
       --export=objc_getMetaClass \
       --export=sel_registerName \
@@ -84,6 +102,7 @@ stdenv.mkDerivation {
       -lc \
       -o kernel.wasm \
       objc_runtime_bridge.o \
+      objc_interpreter.o \
       ${libobjc2WasmFull}/obj/*.o
 
     runHook postBuild
