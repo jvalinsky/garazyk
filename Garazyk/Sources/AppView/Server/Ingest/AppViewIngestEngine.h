@@ -126,6 +126,12 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event;
 /*! Throughput metrics: events/sec per relay URL. */
 @property (nonatomic, readonly) NSDictionary<NSString *, NSNumber *> *throughput;
 
+/*! Heartbeat timeout for relay connections in seconds. Default 10.0. */
+@property (nonatomic, assign) NSTimeInterval relayHeartbeatTimeout;
+
+/*! Maximum lag (seq gap) before backpressure kicks in. Default 50000. */
+@property (nonatomic, assign) int64_t maxLagForBackpressure;
+
 /*!
  @method initWithDatabase:relayURLs:
 
