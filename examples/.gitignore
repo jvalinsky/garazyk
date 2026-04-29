@@ -1,0 +1,37 @@
+# Build artifacts
+build/
+cmake-build-*/
+*.o
+*.obj
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Compiled binaries
+hello-pds
+tutorial-2-accounts
+tutorial-3-records
+tutorial-4-auth
+tutorial-5-firehose
+tutorial-6-deployment
+tutorial-7-blobs
+tutorial-8-identity
+tutorial-9-moderation
+
+# Database files (created at runtime)
+*.db
+*.db-journal
+*.db-wal
+
+# Data directories (created at runtime)
+data/
+
+# Environment files
+.env
