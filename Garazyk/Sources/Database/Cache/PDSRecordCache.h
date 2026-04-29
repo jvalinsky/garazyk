@@ -108,8 +108,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Add a record to the cache.
 
- @discussion Use when you have a record that was just created or
- fetched from database and want to cache it.
+ @discussion Cache a record that was just created or fetched from database.
 
  @param record The parsed record dictionary.
  @param uri The AT URI for the record.
