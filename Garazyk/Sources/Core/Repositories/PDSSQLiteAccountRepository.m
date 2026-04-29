@@ -98,7 +98,7 @@
 - (BOOL)saveAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
     __block BOOL success = NO;
 
-    // We use a transaction to check for existence and then insert/update
+    // Check for existence and then insert/update
     [_servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
         

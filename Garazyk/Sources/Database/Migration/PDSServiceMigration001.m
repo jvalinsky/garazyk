@@ -27,7 +27,7 @@
 
 - (BOOL)applyToDatabase:(PDSDatabase *)database error:(NSError **)error {
     // Migration 1 is special: the main schema already exists via CREATE IF NOT EXISTS
-    // We just need to ensure the schema_version table exists
+    // Ensure the schema_version table exists
     NSString *versionTableSQL = @"CREATE TABLE IF NOT EXISTS schema_version ("
                                  "version INTEGER NOT NULL, "
                                  "description TEXT, "
