@@ -16,7 +16,15 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(mkdir -p build)",
-      "Bash(make 2)"
+      "Bash(make 2)",
+      "Bash(nix search nixpkgs emscripten 2)",
+      "Bash(nix eval nixpkgs#emscripten.version 2)",
+      "Bash(./tutorial-tests 2)",
+      "Bash(nix eval --expr 'let pkgs = import <nixpkgs> {}; in builtins.attrNames (pkgs.lib.filterAttrs (n: _: true) (builtins.intersectAttrs pkgs.llvmPackages_19 pkgs))' 2)",
+      "Bash(./tutorial-tests -XCTest TutorialCIDGeneratorTests 2)",
+      "Bash(./build/tutorial-3-records 2)",
+      "Bash(nix-instantiate --eval --expr 'let pkgs = import <nixpkgs> {}; in builtins.filter (n: builtins.match \"llvmPackages_.*\" n != null) (builtins.attrNames pkgs)' 2)",
+      "Bash(./tutorial-tests -XCTest AccountServiceTests 2)"
     ]
   }
 }
