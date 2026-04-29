@@ -131,7 +131,6 @@ export class ObjcKernel extends BaseKernel {
 
   private _request(type: string, payload: Record<string, unknown>, expectedType: string): Promise<any> {
     const id = this._nextMessageId++;
-    const wasmUrl = './kernel/kernel.wasm';
 
     return new Promise((resolve, reject) => {
       this._pending.set(id, {
@@ -142,7 +141,6 @@ export class ObjcKernel extends BaseKernel {
       this._worker.postMessage({
         id,
         type,
-        wasmUrl,
         ...payload
       });
     });
