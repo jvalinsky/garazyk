@@ -62,26 +62,12 @@
         # ── Packages (Nix derivations) ─────────────────────────────────
 
         packages = {
-          # Minimal libobjc2-compatible runtime smoke artifact.
-          libobjc2-wasm = pkgsWasm.callPackage ./nix/libobjc2-wasm.nix {
-            inherit llvmPackages;
-            src = runtimeSrc;
-          };
-
-          # Minimal WASI sysroot with ObjC headers
-          wasi-sysroot = pkgs.callPackage ./nix/wasi-sysroot.nix {
-            libobjc2-wasm = self.packages.${system}.libobjc2-wasm;
-          };
-
-          # Jupyter kernel compiled to WASM
+          # Jupyter kernel compiled to WASM (linked with libobjc2 runtime)
           kernel-wasm = pkgs.callPackage ./nix/kernel-wasm.nix {
             inherit llvmPackages;
+            wasiSysroot = self.packages.${system}.wasi-libc-sysroot;
+            libobjc2WasmFull = self.packages.${system}.libobjc2-wasm-full;
             src = kernelSrc;
-          };
-
-          # Pinned GNUstep libobjc2 source probe for the next runtime layer.
-          libobjc2-real-subset = pkgsWasm.callPackage ./nix/libobjc2-real-subset.nix {
-            inherit llvmPackages;
           };
 
           # Full GNUstep libobjc2 runtime compiled to WASM (C core + stubs).
@@ -103,18 +89,16 @@
           } ''
             node ${self}/scripts/build-smoke-site.mjs \
               --out $out \
-              --kernel-wasm ${self.packages.${system}.kernel-wasm}/wasm/kernel.wasm \
-              --libobjc2-wasm ${self.packages.${system}.libobjc2-wasm}/wasm/libobjc2.wasm
+              --kernel-wasm ${self.packages.${system}.kernel-wasm}/wasm/kernel.wasm
           '';
 
           # Meta package: build all WASM artifacts
           default = pkgs.symlinkJoin {
             name = "objc-jupyter-wasm-all";
             paths = with self.packages.${system}; [
-              libobjc2-wasm
               kernel-wasm
+              libobjc2-wasm-full
               jupyterlite-smoke-site
-              wasi-sysroot
             ];
           };
         };
@@ -137,7 +121,6 @@
             ];
           } ''
             wasm-validate ${self.packages.${system}.kernel-wasm}/wasm/kernel.wasm
-            wasm-validate ${self.packages.${system}.libobjc2-wasm}/wasm/libobjc2.wasm
             node ${self}/tests/kernel-smoke.mjs ${self.packages.${system}.kernel-wasm}/wasm/kernel.wasm
             mkdir -p $out
             touch $out/passed
@@ -171,19 +154,8 @@
             test -f site/js/objc-worker.js
             test -f site/js/wasm-loader.js
             test -f site/kernel/kernel.wasm
-            test -f site/kernel/libobjc2.wasm
             test -f site/files/demo/hello.ipynb
             test -f site/kernelspecs/objective-c/kernel.json
-            mkdir -p $out
-            touch $out/passed
-          '';
-
-          libobjc2-real-subset-smoke = pkgs.runCommand "objc-jupyter-wasm-libobjc2-real-subset-smoke" {
-            nativeBuildInputs = [
-              pkgs.wabt
-            ];
-          } ''
-            wasm-validate ${self.packages.${system}.libobjc2-real-subset}/wasm/libobjc2-real-subset.wasm
             mkdir -p $out
             touch $out/passed
           '';
