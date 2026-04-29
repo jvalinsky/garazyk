@@ -674,6 +674,91 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     return response;
 }
 
+#pragma mark - Video Operations
+
+- (NSDictionary *)fetchVideoJobsWithState:(NSString *)state limit:(NSUInteger)limit cursor:(nullable NSString *)cursor {
+    NSMutableDictionary *queryItems = [NSMutableDictionary dictionary];
+    if (state.length > 0) {
+        queryItems[@"state"] = state;
+    }
+    if (limit > 0) {
+        queryItems[@"limit"] = [NSString stringWithFormat:@"%lu", (unsigned long)limit];
+    }
+    if (cursor.length > 0) {
+        queryItems[@"cursor"] = cursor;
+    }
+    NSURL *url = [self URLByAppendingPath:@"/admin/api/video/jobs"
+                              queryItems:queryItems
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"GET" body:nil statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"video_jobs_failed", @"message": error.localizedDescription ?: @"Failed to fetch video jobs"};
+    }
+    return response ?: @{@"jobs": @[]};
+}
+
+- (NSDictionary *)fetchVideoJobById:(NSString *)jobId {
+    if (!jobId || jobId.length == 0) {
+        return @{@"error": @"invalid_params", @"message": @"Job ID required"};
+    }
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/app.bsky.video.getJobStatus"
+                              queryItems:@{@"jobId": jobId}
+                                 baseURL:self.configuration.videoBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.videoAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300 || !response) {
+        return @{@"error": @"video_job_failed", @"message": error.localizedDescription ?: @"Failed to fetch video job"};
+    }
+    return response;
+}
+
+- (NSDictionary *)fetchVideoUploadLimits {
+    NSURL *url = [self URLByAppendingPath:@"/xrpc/app.bsky.video.getUploadLimits"
+                              queryItems:nil
+                                 baseURL:self.configuration.videoBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.videoAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300 || !response) {
+        return @{@"error": @"video_limits_failed", @"message": error.localizedDescription ?: @"Failed to fetch video upload limits"};
+    }
+    return response;
+}
+
+- (NSDictionary *)fetchVideoHealth {
+    NSURL *url = [self URLByAppendingPath:@"/_health"
+                              queryItems:nil
+                                 baseURL:self.configuration.videoBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.videoAdminToken statusCode:&status error:&error];
+    if (status < 200 || status >= 300 || !response) {
+        return @{@"status": @"error", @"error": error.localizedDescription ?: @"Unreachable"};
+    }
+    NSMutableDictionary *result = [response mutableCopy];
+    result[@"status"] = @"online";
+    return [result copy];
+}
+
+- (NSDictionary *)retryVideoJobWithId:(NSString *)jobId {
+    if (!jobId || jobId.length == 0) {
+        return @{@"error": @"invalid_params", @"message": @"Job ID required"};
+    }
+    NSURL *url = [self URLByAppendingPath:[NSString stringWithFormat:@"/admin/api/video/jobs/%@/retry", jobId]
+                              queryItems:nil
+                                 baseURL:self.configuration.pdsBaseURL];
+    NSInteger status = 0;
+    NSError *error = nil;
+    NSDictionary *response = [self performPDSRequestWithURL:url method:@"POST" body:nil statusCode:&status error:&error];
+    if (status < 200 || status >= 300) {
+        return @{@"error": @"video_retry_failed", @"message": error.localizedDescription ?: @"Failed to retry video job"};
+    }
+    return response ?: @{};
+}
+
 - (NSDictionary *)fetchBlobsForDID:(NSString *)did limit:(NSUInteger)limit cursor:(nullable NSString *)cursor {
     if (!did || did.length == 0) {
         return @{@"error": @"invalid_params", @"message": @"DID required"};
@@ -1425,7 +1510,8 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
         @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
         @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL, @"xrpcPath": @"/api/relay/health", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
         @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL, @"xrpcPath": @"/admin/ingest/health", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
-        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]}
+        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]},
+        @{@"name": @"video", @"baseURL": self.configuration.videoBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.videoAdminToken ?: [NSNull null]}
     ];
 }
 

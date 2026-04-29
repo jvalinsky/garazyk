@@ -25,7 +25,10 @@
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSDiskBlobProvider.h"
-#import "Media/PDSVideoWorker.h"
+#import "Video/VideoWorker.h"
+#import "Video/PDSLocalVideoJobStore.h"
+#import "Video/VideoLocalBlobUploader.h"
+#import "Video/VideoPDSAuthProvider.h"
 #import "Network/HttpServer.h"
 #import "Network/PDSHttpServerBuilder.h"
 #import "Network/XrpcHandler.h"
@@ -373,6 +376,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                                                               username:_configuration.emailSmtpUsername
                                                               password:_configuration.emailSmtpPassword
                                                                 useTLS:_configuration.emailSmtpUseTLS];
+            PDS_LOG_WARN(@"SMTP email provider is configured, but SMTP delivery is not implemented. Email sends will fail closed.");
         } else if ([_configuration.emailProviderType isEqualToString:@"resend"]) {
             if (_configuration.resendFromAddress.length > 0) {
                 id<PDSSecretsProvider> secretsProvider = nil;
@@ -424,7 +428,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     NSURL *blobURL = [NSURL fileURLWithPath:blobDir];
     PDSDiskBlobProvider *blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
-    [PDSVideoWorker sharedWorker].blobProvider = blobProvider;
+    [ATProtoVideoWorker sharedWorker].blobProvider = blobProvider;
     BlobStorage *blobStorage = [[BlobStorage alloc] initWithDatabasePool:_userDatabasePool provider:blobProvider];
     
     id<PDSBlobRepository> blobRepo = [PDSRepositoryFactory blobRepositoryWithDatabasePool:_userDatabasePool];
@@ -631,10 +635,23 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _running = YES;
     [_relayService start];
 
-    // Start video processing worker
-    [PDSVideoWorker sharedWorker].serviceDatabases = _serviceDatabases;
-    [[PDSVideoWorker sharedWorker] start];
-    PDS_LOG_CORE_INFO(@"Video processing worker started");
+    // Start video processing worker (only in internal mode)
+    if ([_configuration.videoMode isEqualToString:@"internal"]) {
+        PDSDatabase *serviceDB = [_serviceDatabases serviceDatabaseWithError:nil];
+        id<VideoJobStore> jobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:serviceDB];
+        id<VideoBlobUploader> uploader = [[VideoLocalBlobUploader alloc] initWithBlobProvider:[ATProtoVideoWorker sharedWorker].blobProvider];
+        id<VideoAuthProvider> authProvider = [[VideoPDSAuthProvider alloc] initWithJwtMinter:_jwtMinter
+                                                                               adminController:_adminController];
+
+        ATProtoVideoWorker *worker = [ATProtoVideoWorker sharedWorker];
+        worker.jobStore = jobStore;
+        worker.blobUploader = uploader;
+        worker.authProvider = authProvider;
+        [worker start];
+        PDS_LOG_CORE_INFO(@"Video processing worker started (internal mode)");
+    } else {
+        PDS_LOG_CORE_INFO(@"Video processing disabled (external mode — use jelcz side-car)");
+    }
 
     // Start analytics collection for diagnostics dashboard
     [_analyticsCollector startCollecting];
@@ -649,7 +666,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     PDS_LOG_CORE_INFO(@"Stopping PDSApplication...");
     
     // Stop video processing worker
-    [[PDSVideoWorker sharedWorker] stop];
+    [[ATProtoVideoWorker sharedWorker] stop];
 
     // Stop servers
     [_httpServer stop];

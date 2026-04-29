@@ -1,12 +1,9 @@
 #import <XCTest/XCTest.h>
-#import "Media/PDSVideoTranscoder.h"
+#import "Video/VideoTranscoder.h"
+#import "Video/VideoTranscoderBackend.h"
+#import "Media/PDSVideoTranscoderIntegrationTests.h"
 #import <AVFoundation/AVFoundation.h>
-
-/// Base class for video integration tests that need a valid MP4 fixture.
-/// Generates a 1-second black frame MP4 programmatically using AVFoundation.
-@interface VideoIntegrationTestBase : XCTestCase
-@property (nonatomic, strong) NSURL *testVideoURL;
-@end
+#import <string.h>
 
 @implementation VideoIntegrationTestBase
 
@@ -29,7 +26,7 @@
     // Create a 1-second black video using AVAssetWriter
     NSError *error = nil;
     NSDictionary *videoSettings = @{
-        AVVideoCodecKey: AVVideoCodecH264,
+        AVVideoCodecKey: AVVideoCodecTypeH264,
         AVVideoWidthKey: @320,
         AVVideoHeightKey: @240
     };
@@ -66,13 +63,19 @@
     NSInteger frameCount = 24; // 24fps * 1 second
     __block NSInteger currentFrame = 0;
 
-    input.requestMediaDataWhenReadyOnQueue:dispatch_get_main_queue() usingBlock:^{
+    dispatch_queue_t writerQueue = dispatch_queue_create("com.garazyk.tests.video-writer", DISPATCH_QUEUE_SERIAL);
+    [input requestMediaDataWhenReadyOnQueue:writerQueue usingBlock:^{
         while (input.isReadyForMoreMediaData && currentFrame < frameCount) {
             CMTime time = CMTimeMake(currentFrame, 24);
             CVPixelBufferRef pixelBuffer = NULL;
             CVReturn status = CVPixelBufferCreate(kCFAllocatorDefault, 320, 240,
                 kCVPixelFormatType_32ARGB, NULL, &pixelBuffer);
             if (status == kCVReturnSuccess) {
+                CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+                void *baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer);
+                size_t bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer);
+                memset(baseAddress, 0, bytesPerRow * 240);
+                CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
                 [adaptor appendPixelBuffer:pixelBuffer withPresentationTime:time];
                 CVBufferRelease(pixelBuffer);
             }
@@ -105,18 +108,18 @@
 
 #pragma mark - Transcoder Integration Tests
 
-@interface PDSVideoTranscoderIntegrationTests : VideoIntegrationTestBase
+@interface ATProtoVideoTranscoderIntegrationTests : VideoIntegrationTestBase
 @end
 
-@implementation PDSVideoTranscoderIntegrationTests
+@implementation ATProtoVideoTranscoderIntegrationTests
 
 - (void)testTranscodeSyncReturnsData {
     if (!self.testVideoURL) { XCTSkip(@"No test video available"); }
 
-    PDSVideoTranscoder *transcoder = [[PDSVideoTranscoder alloc] init];
+    ATProtoVideoTranscoder *transcoder = [[ATProtoVideoTranscoder alloc] init];
     NSError *error = nil;
     NSData *result = [transcoder transcodeVideoAtURL:self.testVideoURL
-                                          toQuality:PDSVideoTranscoderQuality480p
+                                          toQuality:ATProtoVideoTranscoderQuality480p
                                                error:&error];
     XCTAssertNotNil(result);
     XCTAssertNil(error);
@@ -126,18 +129,18 @@
 - (void)testTranscodeAsyncCompletion {
     if (!self.testVideoURL) { XCTSkip(@"No test video available"); }
 
-    PDSVideoTranscoder *transcoder = [[PDSVideoTranscoder alloc] init];
+    ATProtoVideoTranscoder *transcoder = [[ATProtoVideoTranscoder alloc] init];
     XCTestExpectation *expectation = [self expectationWithDescription:@"Transcode complete"];
 
     [transcoder transcodeVideoAtURL:self.testVideoURL
-                         toQuality:PDSVideoTranscoderQuality480p
+                         toQuality:ATProtoVideoTranscoderQuality480p
                          outputURL:nil
                          progress:nil
                        completion:^(NSURL *outputURL, NSError *error) {
         XCTAssertNil(error);
         XCTAssertNotNil(outputURL);
         if (outputURL) {
-            XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtURL:outputURL]);
+            XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath:outputURL.path]);
             [[NSFileManager defaultManager] removeItemAtURL:outputURL error:nil];
         }
         [expectation fulfill];
@@ -147,11 +150,11 @@
 }
 
 - (void)testTranscodeInvalidURLError {
-    PDSVideoTranscoder *transcoder = [[PDSVideoTranscoder alloc] init];
+    ATProtoVideoTranscoder *transcoder = [[ATProtoVideoTranscoder alloc] init];
     NSURL *invalidURL = [NSURL fileURLWithPath:@"/nonexistent/path/video.mp4"];
     NSError *error = nil;
     NSData *result = [transcoder transcodeVideoAtURL:invalidURL
-                                          toQuality:PDSVideoTranscoderQuality480p
+                                          toQuality:ATProtoVideoTranscoderQuality480p
                                                error:&error];
     XCTAssertNil(result);
     XCTAssertNotNil(error);
@@ -160,12 +163,12 @@
 - (void)testTranscodeProgressCallback {
     if (!self.testVideoURL) { XCTSkip(@"No test video available"); }
 
-    PDSVideoTranscoder *transcoder = [[PDSVideoTranscoder alloc] init];
+    ATProtoVideoTranscoder *transcoder = [[ATProtoVideoTranscoder alloc] init];
     XCTestExpectation *expectation = [self expectationWithDescription:@"Transcode complete"];
     __block BOOL progressCalled = NO;
 
     [transcoder transcodeVideoAtURL:self.testVideoURL
-                         toQuality:PDSVideoTranscoderQuality480p
+                         toQuality:ATProtoVideoTranscoderQuality480p
                          outputURL:nil
                          progress:^(float progress) {
         progressCalled = YES;

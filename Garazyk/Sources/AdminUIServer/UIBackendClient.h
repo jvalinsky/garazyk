@@ -71,6 +71,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)fetchChatMessagesForConvoID:(NSString *)convoID limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 - (NSDictionary *)lockChatConvo:(NSString *)convoID;
 
+// Video Operations
+- (NSDictionary *)fetchVideoJobsWithState:(nullable NSString *)state limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
+- (NSDictionary *)fetchVideoJobById:(NSString *)jobId;
+- (NSDictionary *)fetchVideoUploadLimits;
+- (NSDictionary *)fetchVideoHealth;
+- (NSDictionary *)retryVideoJobWithId:(NSString *)jobId;
+
 // Repo/Record Operations (Data Explorer) - read-only
 - (NSDictionary *)fetchBlobsForDID:(NSString *)did limit:(NSUInteger)limit cursor:(nullable NSString *)cursor;
 - (NSDictionary *)fetchBlobForDID:(NSString *)did cid:(NSString *)cid;

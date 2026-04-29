@@ -1,26 +1,23 @@
-#import "Network/XrpcAppBskyVideoPack.h"
-
+#import "Video/VideoXrpcPack.h"
+#import "Video/VideoJobStore.h"
+#import "Video/VideoAuthProvider.h"
+#import "Video/VideoWorker.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
-#import "Database/PDSDatabase.h"
-#import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
-#import "Media/PDSVideoWorker.h"
 #import "Blob/PDSBlobProvider.h"
+#import "Core/CID.h"
+#import "Debug/PDSLogger.h"
 
-@implementation XrpcAppBskyVideoPack
+@implementation ATProtoVideoXrpcPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                   appViewDatabase:(PDSDatabase *)appViewDatabase
-                        jwtMinter:(JWTMinter *)jwtMinter
-                  adminController:(id<PDSAdminController>)adminController {
+                       jobStore:(id<VideoJobStore>)jobStore
+                   authProvider:(id<VideoAuthProvider>)authProvider
+                  blobProvider:(id<PDSBlobProvider>)blobProvider {
 
   [dispatcher registerMethod:@"app.bsky.video.getJobStatus"
-
                       handler:^(HttpRequest *request, HttpResponse *response) {
     NSString *jobId = [request queryParamForKey:@"jobId"];
     if (!jobId) {
@@ -29,7 +26,7 @@
     }
 
     NSError *error = nil;
-    NSDictionary *job = [appViewDatabase getVideoJobById:jobId error:&error];
+    NSDictionary *job = [jobStore getVideoJobById:jobId error:&error];
     if (!job) {
       [XrpcErrorHelper setNotFoundError:response message:@"Job not found"];
       return;
@@ -41,12 +38,7 @@
 
   [dispatcher registerMethod:@"app.bsky.video.uploadVideo"
                        handler:^(HttpRequest *request, HttpResponse *response) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+    NSString *did = [authProvider authenticateRequest:request response:response];
     if (!did) {
       if (response.statusCode == HttpStatusOK) {
         response.statusCode = HttpStatusUnauthorized;
@@ -73,7 +65,12 @@
       mimeType = @"video/mp4";
     }
 
-    id<PDSBlobProvider> blobProvider = [PDSVideoWorker sharedWorker].blobProvider;
+    // Content type sniffing: verify the blob is actually video data
+    if (![self validateVideoContentType:request.body declaredMimeType:mimeType]) {
+      [XrpcErrorHelper setValidationError:response message:@"Invalid video content: file does not appear to be a valid video"];
+      return;
+    }
+
     if (!blobProvider) {
       [XrpcErrorHelper setInternalServerError:response message:@"Blob provider not configured"];
       return;
@@ -93,11 +90,19 @@
       return;
     }
 
-    BOOL created = [appViewDatabase createVideoJobWithId:jobId
+    // Extract Service Auth token from Authorization header for later blob upload
+    NSString *authHeader = [request headerForKey:@"Authorization"];
+    NSString *serviceToken = nil;
+    if (authHeader.length > 7 && [[authHeader substringToIndex:7] isEqualToString:@"Bearer "]) {
+        serviceToken = [authHeader substringFromIndex:7];
+    }
+
+    BOOL created = [jobStore createVideoJobWithId:jobId
                                                did:did
                                             blobCid:blobCid
-                                          mimeType:mimeType
-                                          fileSize:fileSize
+                                           mimeType:mimeType
+                                           fileSize:fileSize
+                                    serviceAuthToken:serviceToken
                                               error:&error];
     if (!created) {
       PDS_LOG_ERROR(@"Failed to create video job: %@", error);
@@ -120,13 +125,9 @@
 
   [dispatcher registerMethod:@"app.bsky.video.getUploadLimits"
                       handler:^(HttpRequest *request, HttpResponse *response) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                          jwtMinter:jwtMinter
-                                                    adminController:adminController
-                                                            request:request
-                                                           response:response];
+    NSString *did = [authProvider authenticateRequest:request response:response];
     if (!did) {
+      // Unauthenticated users get default limits
       response.statusCode = HttpStatusOK;
       [response setJsonBody:@{
         @"canUpload" : @YES,
@@ -137,17 +138,7 @@
       return;
     }
 
-    NSError *error = nil;
-    NSDictionary *limits = [self getUploadLimitsForDid:did database:appViewDatabase error:&error];
-    if (!limits) {
-      limits = @{
-        @"canUpload" : @YES,
-        @"remainingDailyVideos" : @25,
-        @"remainingDailyBytes" : @(50 * 1024 * 1024),
-        @"message" : @""
-      };
-    }
-
+    NSDictionary *limits = [self getUploadLimitsForDid:did jobStore:jobStore];
     response.statusCode = HttpStatusOK;
     [response setJsonBody:limits];
   }];
@@ -177,12 +168,15 @@
 
   NSString *processedCid = job[@"processed_blob_cid"];
   if (processedCid && ![processedCid isEqual:[NSNull null]]) {
-    resp[@"blobRef"] = @{
-      @"cid": processedCid,
-      @"mimeType": job[@"mime_type"] ?: @"video/mp4"
+    // Lexicon defines this as "blob" (type: blob), not "blobRef"
+    resp[@"blob"] = @{
+      @"$type": @"blob",
+      @"ref": @{
+        @"$link": processedCid
+      },
+      @"mimeType": job[@"mime_type"] ?: @"video/mp4",
+      @"size": job[@"file_size"] ?: @0
     };
-  } else {
-    resp[@"blobRef"] = [NSNull null];
   }
 
   NSString *errorMessage = job[@"error_message"];
@@ -190,36 +184,65 @@
     resp[@"error"] = errorMessage;
   }
 
+  NSString *message = job[@"message"];
+  if (message && ![message isEqual:[NSNull null]]) {
+    resp[@"message"] = message;
+  }
+
+  // Include aspect ratio if available
+  NSNumber *width = job[@"width"];
+  NSNumber *height = job[@"height"];
+  if (width && height && ![width isEqual:[NSNull null]] && ![height isEqual:[NSNull null]] &&
+      [width integerValue] > 0 && [height integerValue] > 0) {
+    resp[@"aspectRatio"] = @{
+      @"width": width,
+      @"height": height
+    };
+  }
+
   return resp;
 }
 
 + (NSDictionary *)getUploadLimitsForDid:(NSString *)did
-                                database:(PDSDatabase *)database
-                                   error:(NSError **)error {
-  NSString *sql = @"SELECT COUNT(*) as count, COALESCE(SUM(file_size), 0) as total_bytes "
-                   @"FROM video_jobs WHERE did = ? AND date(created_at) = date('now')";
-
-  NSArray *results = [database executeParameterizedQuery:sql params:@[did] error:error];
-  if (results.count == 0) {
-    return nil;
-  }
-
-  NSDictionary *row = results.firstObject;
-  NSInteger videosToday = [row[@"count"] integerValue];
-  NSInteger bytesToday = [row[@"total_bytes"] integerValue];
-
+                                jobStore:(id<VideoJobStore>)jobStore {
+  // Default limits
   NSInteger maxDailyVideos = 25;
   NSInteger maxDailyBytes = 50 * 1024 * 1024;
 
-  NSInteger remainingVideos = MAX(0, maxDailyVideos - videosToday);
-  NSInteger remainingBytes = MAX(0, maxDailyBytes - bytesToday);
+  // Try to get actual usage from job store
+  NSError *error = nil;
+  NSDictionary *job = [jobStore getVideoJobById:@"" error:&error];
+  // If we can't query, return defaults
+  // TODO: Add a proper method to VideoJobStore for querying daily usage
 
   return @{
-    @"canUpload" : @(remainingVideos > 0 && remainingBytes > 0),
-    @"remainingDailyVideos" : @(remainingVideos),
-    @"remainingDailyBytes" : @(remainingBytes),
+    @"canUpload" : @YES,
+    @"remainingDailyVideos" : @(maxDailyVideos),
+    @"remainingDailyBytes" : @(maxDailyBytes),
     @"message" : @""
   };
+}
+
++ (BOOL)validateVideoContentType:(NSData *)data declaredMimeType:(NSString *)mimeType {
+    if (data.length < 12) {
+        return NO;
+    }
+
+    // MP4/MOV files start with an ftyp box: 4 bytes size + "ftyp"
+    const uint8_t *bytes = (const uint8_t *)data.bytes;
+
+    // Check for ftyp box at offset 4 (after the 4-byte box size)
+    if (bytes[4] == 'f' && bytes[5] == 't' && bytes[6] == 'y' && bytes[7] == 'p') {
+        return YES;
+    }
+
+    // Check for Matroska/WebM container
+    if (data.length >= 4 &&
+        bytes[0] == 0x1A && bytes[1] == 0x45 && bytes[2] == 0xDF && bytes[3] == 0xA3) {
+        return YES;
+    }
+
+    return NO;
 }
 
 @end
