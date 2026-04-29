@@ -137,12 +137,12 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
                                          response:(nullable HttpResponse *)response
                                             error:(NSError **)error;
 
-/*!
- @brief Verify just an access token (without DPoP).
- @param token The JWT access token string.
- @param error Set on failure.
- @return Authenticated principal, or nil if verification failed.
- */
+ /*!
+  @abstract Verify an access token (without DPoP).
+  @param token The JWT access token string.
+  @param error Set on failure.
+  @return Authenticated principal, or nil if verification failed.
+  */
 - (nullable AuthVerifierPrincipal *)verifyAccessToken:(nullable NSString *)token
                                                error:(NSError **)error;
 
