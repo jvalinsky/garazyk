@@ -323,7 +323,7 @@
     }
     [query appendString:@" ORDER BY rkey DESC LIMIT ?"];
 
-    NSMutableArray *args = [NSMutableArray arrayWithArray:authors];
+    NSMutableArray *args = [NSMutableArray arrayWithArray:validatedDIDs];
     [args addObject:@"app.bsky.feed.post"];
     if (cursor) {
         [args addObject:cursor];
