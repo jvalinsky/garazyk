@@ -42,15 +42,6 @@ const kernelWasm = await resolveArtifact(
     'result/wasm/kernel.wasm'
   ]
 );
-const libobjc2Wasm = await resolveArtifact(
-  'libobjc2-wasm',
-  argValue('--libobjc2-wasm') || process.env.LIBOBJC2_WASM,
-  [
-    'compiler/libobjc2.wasm',
-    'jupyterlite/kernel/libobjc2.wasm',
-    'result/wasm/libobjc2.wasm'
-  ]
-);
 
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(path.join(outputDir, 'js'), { recursive: true });
@@ -66,7 +57,6 @@ await copyFile(
 await copyFile(path.join(projectRoot, 'js/objc-worker.js'), path.join(outputDir, 'js/objc-worker.js'));
 await copyFile(path.join(projectRoot, 'js/wasm-loader.js'), path.join(outputDir, 'js/wasm-loader.js'));
 await copyFile(kernelWasm, path.join(outputDir, 'kernel/kernel.wasm'));
-await copyFile(libobjc2Wasm, path.join(outputDir, 'kernel/libobjc2.wasm'));
 await copyFile(path.join(projectRoot, 'demo/hello.ipynb'), path.join(outputDir, 'files/demo/hello.ipynb'));
 
 const kernelSpec = {

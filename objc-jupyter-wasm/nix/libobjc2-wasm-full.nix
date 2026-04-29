@@ -247,6 +247,11 @@ stdenv.mkDerivation {
 
     echo "Object files: $OBJ_FILES"
 
+    # Create a static library archive from the object files.
+    # Note: llvm-ar from LLVM 21 creates archives that wasm-ld can't read
+    # (section too large error). We output individual .o files instead.
+    # The archive is kept for reference but the kernel links with .o files.
+
     # Link using wasm-ld directly with wasi-libc
     ${llvmPackages.lld}/bin/wasm-ld \
       --no-entry \
@@ -286,9 +291,14 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/wasm $out/include/objc $out/lib
+    mkdir -p $out/wasm $out/include/objc $out/lib $out/obj
     cp libobjc2.wasm $out/wasm/
     cp -r objc/. $out/include/objc/
+
+    # Copy individual object files for direct linking (avoids llvm-ar bug)
+    for obj in $OBJ_FILES; do
+      cp "$obj" $out/obj/
+    done
 
     runHook postInstall
   '';
