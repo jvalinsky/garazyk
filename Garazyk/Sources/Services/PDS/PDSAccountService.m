@@ -609,7 +609,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     
     NSArray *rotationKeys = @[serverRotationKey, rotationKeyMultibase];
     
-    // Step 1: Create unsigned operation (no sig field)
+    // Create unsigned operation (no sig field)
     NSDictionary *unsignedData = @{
         @"type": @"plc_operation",
         @"rotationKeys": rotationKeys,
@@ -626,7 +626,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
         @"prev": [NSNull null]
     };
     
-    // Step 2: Encode unsigned operation as DAG-CBOR and sign
+    // Encode unsigned operation as DAG-CBOR and sign
     NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
     if (!unsignedCBOR) return nil;
     
@@ -641,11 +641,11 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     }
     if (!sig) return nil;
     
-    // Step 3: Create signed operation (with sig field)
+    // Create signed operation (with sig field)
     NSMutableDictionary *signedData = [unsignedData mutableCopy];
     signedData[@"sig"] = [CryptoUtils base64URLEncode:sig];
     
-    // Step 4: Calculate DID from the UNSIGNED operation
+    // Calculate DID from the UNSIGNED operation
     NSString *did = [PLCOperation calculateDIDForData:unsignedData];
     PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for unsigned data: %@", did, unsignedData);
     
