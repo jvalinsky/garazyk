@@ -21,7 +21,15 @@
         },
         "blob": { "type": "blob" },
         "error": { "type": "string" },
-        "message": { "type": "string" }
+        "message": { "type": "string" },
+        "aspectRatio": {
+          "type": "object",
+          "description": "Width and height of the video in pixels.",
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          }
+        }
       }
     }
   }

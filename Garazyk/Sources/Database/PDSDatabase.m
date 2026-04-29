@@ -3422,7 +3422,6 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         job = [self dictionaryFromVideoJobsStatement:stmt];
     }
 
-    sqlite3_finalize(stmt);
     result = job;
     return;
     }];
@@ -3434,25 +3433,27 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
                       blobCid:(NSString *)blobCid
                     mimeType:(NSString *)mimeType
                     fileSize:(NSNumber *)fileSize
+             serviceAuthToken:(nullable NSString *)token
                         error:(NSError **)error {
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
     NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
-    NSString *sql = @"INSERT INTO video_jobs (job_id, did, blob_cid, mime_type, file_size, state, progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)";
-    
+    NSString *sql = @"INSERT INTO video_jobs (job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)";
+
     NSArray *params = @[
         jobId ?: [NSNull null],
         did ?: [NSNull null],
         blobCid ?: [NSNull null],
         mimeType ?: [NSNull null],
         fileSize ?: [NSNull null],
+        token ?: [NSNull null],
         now,
         now
     ];
-    
+
     result = [self executeParameterizedUpdate:sql params:params error:error];
-    
+
     return;
     }];
     return result;
@@ -3573,6 +3574,47 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     ];
 
     result = [self executeParameterizedUpdate:sql params:params error:error];
+    return;
+    }];
+    return result;
+}
+
+- (NSArray<NSDictionary *> *)listVideoJobsWithState:(NSString *)state
+                                               limit:(NSUInteger)limit
+                                              offset:(NSUInteger)offset
+                                               error:(NSError **)error {
+    __block id result = nil;
+    [self safeExecuteSync:^{
+
+    NSString *sql;
+    if (state.length > 0) {
+        sql = @"SELECT * FROM video_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    } else {
+        sql = @"SELECT * FROM video_jobs ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    }
+
+    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
+        result = nil;
+        return;
+    }
+
+    int paramIdx = 1;
+    if (state.length > 0) {
+        sqlite3_bind_text(stmt, paramIdx++, state.UTF8String, -1, SQLITE_STATIC);
+    }
+    sqlite3_bind_int64(stmt, paramIdx++, (sqlite3_int64)limit);
+    sqlite3_bind_int64(stmt, paramIdx++, (sqlite3_int64)offset);
+
+    NSMutableArray<NSDictionary *> *jobs = [NSMutableArray array];
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        NSDictionary *job = [self dictionaryFromVideoJobsStatement:stmt];
+        if (job) [jobs addObject:job];
+    }
+
+    result = jobs;
     return;
     }];
     return result;

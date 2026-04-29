@@ -223,8 +223,6 @@
     }
     XCTAssertTrue(foundFollowPref, @"Stored preferences should contain follow filterablePreference, got: %@", prefsList);
     XCTAssertTrue(foundLikePref, @"Stored preferences should contain like filterablePreference, got: %@", prefsList);
-
-    [db close];
 }
 
 #pragma mark - putActivitySubscription
@@ -300,7 +298,6 @@
         @"post_enabled should be 0 after update");
     XCTAssertEqual([rows.firstObject[@"reply_enabled"] integerValue], 1,
         @"reply_enabled should be 1 after update");
-    [db close];
 }
 
 #pragma mark - listActivitySubscriptions
@@ -405,10 +402,10 @@
         @"jobId should be a non-empty string, got: %@", jobStatus[@"jobId"]);
     XCTAssertEqualObjects(jobStatus[@"did"], self.did1,
         @"jobStatus.did should match requester did");
-    XCTAssertEqualObjects(jobStatus[@"state"], @"JOB_STATE_COMPLETED",
-        @"Stub upload should return JOB_STATE_COMPLETED");
-    XCTAssertEqualObjects(jobStatus[@"progress"], @100,
-        @"progress should be 100 for completed stub");
+    XCTAssertEqualObjects(jobStatus[@"state"], @"JOB_STATE_PENDING",
+        @"Upload should create a pending video processing job");
+    XCTAssertEqualObjects(jobStatus[@"progress"], @0,
+        @"progress should start at 0 for a newly queued job");
 }
 
 #pragma mark - Helpers
