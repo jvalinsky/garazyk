@@ -3,13 +3,10 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @file PDSMetrics.h
- * @brief Prometheus metrics collection and export for the ATProto PDS server.
- *
- * This class provides centralized metrics collection for the PDS server,
- * supporting HTTP request tracking, repository and blob counting, and
- * Prometheus-compatible format export.
- */
+  @file PDSMetrics.h
+  @brief Prometheus metrics collection and export for the ATProto PDS server.
+  */
+
 
 @interface PDSMetrics : NSObject
 
