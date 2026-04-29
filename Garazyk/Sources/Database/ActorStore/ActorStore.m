@@ -1764,7 +1764,43 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     return [CryptoUtils decryptData:data withKey:key];
 }
 
+static BOOL isValidTableName(NSString *name) {
+    static NSSet *validTables = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        validTables = [NSSet setWithObjects:
+            @"actor_status", @"records", @"blocks", @"blobs", @"migrations",
+            @"account", @"repo", @"cid_index", @"collection_index", nil];
+    });
+    return name && [validTables containsObject:name];
+}
+
+static BOOL isValidColumnName(NSString *name) {
+    static NSSet *validColumns = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        validColumns = [NSSet setWithObjects:
+            @"did", @"collection", @"rkey", @"cid", @"value", @"created_at", @"indexed_at",
+            @"takedown_ref", @"blob_data", @"mime_type", @"size", @"height", @"rev", @"handle", nil];
+    });
+    return name && [validColumns containsObject:name];
+}
+
 - (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type {
+    // Validate table and column names against whitelist
+    if (!isValidTableName(tableName)) {
+        PDS_LOG_DB_ERROR(@"Invalid table name: %@", tableName);
+        return NO;
+    }
+    if (!isValidColumnName(columnName)) {
+        PDS_LOG_DB_ERROR(@"Invalid column name: %@", columnName);
+        return NO;
+    }
+    if (!type || type.length == 0) {
+        PDS_LOG_DB_ERROR(@"Invalid column type");
+        return NO;
+    }
+
     // First, check if the table exists
     NSString *tableCheckSql = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type='table' AND name='%@'", tableName];
     sqlite3_stmt *tableStmt;
@@ -1777,7 +1813,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
     }
     
     if (!tableExists) {
-        // Table doesn't exist, so column doesn't need to be added (it's likely a service table in an actor store or vice versa)
+        // Table doesn't exist, so column doesn't need to be added
         return YES;
     }
 
