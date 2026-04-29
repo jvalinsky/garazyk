@@ -177,6 +177,7 @@ if(APPLE)
     find_library(APPKIT AppKit REQUIRED)
     find_library(IMAGEIO ImageIO REQUIRED)
     find_library(COREMEDIA CoreMedia REQUIRED)
+    find_library(COREVIDEO CoreVideo REQUIRED)
     find_library(AVFOUNDATION AVFoundation REQUIRED)
     find_library(COREGRAPHICS CoreGraphics REQUIRED)
     find_library(LOCALAUTH LocalAuthentication REQUIRED)
@@ -207,6 +208,7 @@ if(APPLE)
         ${APPKIT}
         ${IMAGEIO}
         ${COREGRAPHICS}
+        ${COREVIDEO}
         ${SQLite3_LIBRARY}
         ${READLINE_LIBRARY}
         resolv
@@ -341,8 +343,6 @@ file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
   "Garazyk/Sources/Chat/*.c"
   "Garazyk/Sources/Ozone/*.m"
   "Garazyk/Sources/Ozone/*.c"
-  "Garazyk/Sources/Media/*.m"
-  "Garazyk/Sources/Media/*.c"
   "Garazyk/Sources/Federation/*.m"
   "Garazyk/Sources/Federation/*.c"
 )
@@ -444,6 +444,13 @@ pds_filter_common_sources(ATPROTO_SYNC_SOURCES)
 pds_filter_common_sources(ATPROTO_PLC_SOURCES)
 pds_filter_common_sources(ATPROTO_RUNTIME_SOURCES)
 
+# Video service library (side-car compatible)
+file(GLOB_RECURSE ATPROTO_VIDEO_SOURCES
+  "Garazyk/Sources/Video/*.m"
+  "Garazyk/Sources/Video/*.c"
+)
+pds_filter_common_sources(ATPROTO_VIDEO_SOURCES)
+
 set(ATPROTO_ALL_RUNTIME_SOURCES
   ${ATPROTO_CORE_SOURCES}
   ${ATPROTO_STORAGE_SOURCES}
@@ -464,6 +471,7 @@ add_library(ATProtoXRPC STATIC ${ATPROTO_XRPC_SOURCES})
 add_library(ATProtoSync STATIC ${ATPROTO_SYNC_SOURCES})
 add_library(ATProtoPLC STATIC ${ATPROTO_PLC_SOURCES})
 add_library(ATProtoRuntime STATIC ${ATPROTO_RUNTIME_SOURCES})
+add_library(ATProtoVideoService STATIC ${ATPROTO_VIDEO_SOURCES})
 
 set(PDS_MODULE_TARGETS
   ATProtoCore
@@ -474,6 +482,7 @@ set(PDS_MODULE_TARGETS
   ATProtoSync
   ATProtoPLC
   ATProtoRuntime
+  ATProtoVideoService
 )
 
 foreach(target ${PDS_MODULE_TARGETS})
@@ -493,7 +502,11 @@ target_link_libraries(ATProtoTransport PUBLIC ATProtoCore)
 target_link_libraries(ATProtoSync PUBLIC ATProtoStorage ATProtoTransport ATProtoCore)
 target_link_libraries(ATProtoXRPC PUBLIC ATProtoServices ATProtoStorage ATProtoTransport ATProtoSync ATProtoCore)
 target_link_libraries(ATProtoPLC PUBLIC ATProtoTransport ATProtoCore)
-target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore)
+target_link_libraries(ATProtoRuntime PUBLIC ATProtoPLC ATProtoServices ATProtoTransport ATProtoXRPC ATProtoSync ATProtoCore ATProtoVideoService)
+target_link_libraries(ATProtoVideoService PUBLIC ATProtoStorage ATProtoCore ATProtoTransport)
+if(APPLE)
+  target_link_libraries(ATProtoVideoService PUBLIC ${COREMEDIA} ${AVFOUNDATION} ${IMAGEIO} ${CORESERVICES})
+endif()
 
 #=============================
 # Main Executables
@@ -515,6 +528,7 @@ if(APPLE)
   target_link_libraries(kaszlak PRIVATE
     ATProtoAppViewServer
     ATProtoRuntime
+    ATProtoVideoService
     ATProtoServices
     ATProtoTransport
     ATProtoXRPC
@@ -535,6 +549,7 @@ else()
     -Wl,--whole-archive
     ATProtoAppViewServer
     ATProtoRuntime
+    ATProtoVideoService
     ATProtoServices
     ATProtoTransport
     ATProtoXRPC
@@ -733,6 +748,52 @@ target_compile_definitions(syrena PRIVATE
 
 # Without -ObjC, category methods are not linked from static libraries
 set_target_properties(syrena PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
+# Video Processing Service (jelcz)
+add_executable(jelcz
+  Garazyk/Binaries/jelcz/main.m
+)
+
+target_include_directories(jelcz PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(jelcz PRIVATE
+    ATProtoVideoService
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoTransport
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+  )
+else()
+  target_link_libraries(jelcz PRIVATE
+    -Wl,--whole-archive
+    ATProtoVideoService
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoTransport
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+  )
+endif()
+
+target_compile_definitions(jelcz PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(jelcz PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   LINK_FLAGS "-ObjC"
 )

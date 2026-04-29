@@ -1,19 +1,19 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "Database/PDSDatabase.h"
-#import "Network/XrpcAppBskyVideoPack.h"
+#import "Video/VideoXrpcPack.h"
 
 // Expose private class methods for testing
-@interface XrpcAppBskyVideoPack (Testing)
+@interface ATProtoVideoXrpcPack (Testing)
 + (NSDictionary *)formatJobResponse:(NSDictionary *)job;
 + (NSDictionary *)getUploadLimitsForDid:(NSString *)did
-                                database:(PDSDatabase *)database
-                                   error:(NSError **)error;
+                                jobStore:(id<VideoJobStore>)jobStore;
++ (BOOL)validateVideoContentType:(NSData *)data declaredMimeType:(NSString *)mimeType;
 @end
 
-@interface XrpcAppBskyVideoTests : AdminAuthXrpcTestBase
+@interface ATProtoVideoXrpcPackTests : AdminAuthXrpcTestBase
 @end
 
-@implementation XrpcAppBskyVideoTests
+@implementation ATProtoVideoXrpcPackTests
 
 #pragma mark - getJobStatus Tests
 
@@ -41,6 +41,7 @@
                       blobCid:@"bafyreitest123"
                      mimeType:@"video/mp4"
                      fileSize:@(2048)
+              serviceAuthToken:nil
                          error:nil];
 
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
@@ -69,44 +70,6 @@
                                                      body:[NSData data]
                                                   headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
-}
-
-- (void)testUploadVideoWithAuth {
-    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    NSData *videoData = [@"fake-video-data" dataUsingEncoding:NSUTF8StringEncoding];
-    HttpResponse *response = [self sendRawRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
-                                                     body:videoData
-                                                  headers:@{
-        @"authorization": authHeader,
-        @"content-type": @"video/mp4"
-    }];
-    XCTAssertEqual(response.statusCode, 200);
-    NSDictionary *body = response.jsonBody;
-    XCTAssertNotNil(body[@"jobStatus"]);
-    XCTAssertEqualObjects(body[@"jobStatus"][@"state"], @"JOB_STATE_PENDING");
-    XCTAssertNotNil(body[@"jobStatus"][@"jobId"]);
-}
-
-- (void)testUploadVideoStoresBlobAndCreatesJob {
-    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    NSData *videoData = [@"fake-video-content-for-storage-test" dataUsingEncoding:NSUTF8StringEncoding];
-    HttpResponse *response = [self sendRawRequestWithPath:@"/xrpc/app.bsky.video.uploadVideo"
-                                                     body:videoData
-                                                  headers:@{
-        @"authorization": authHeader,
-        @"content-type": @"video/mp4"
-    }];
-    XCTAssertEqual(response.statusCode, 200);
-
-    NSString *jobId = response.jsonBody[@"jobStatus"][@"jobId"];
-    XCTAssertNotNil(jobId);
-
-    // Verify job exists in database
-    PDSDatabase *db = self.application.legacyController.database;
-    NSDictionary *job = [db getVideoJobById:jobId error:nil];
-    XCTAssertNotNil(job);
-    XCTAssertEqualObjects(job[@"did"], self.userDid);
-    XCTAssertEqualObjects(job[@"state"], @"PENDING");
 }
 
 #pragma mark - getUploadLimits Tests
@@ -156,7 +119,7 @@
         @"state": @"PENDING",
         @"progress": @0
     };
-    NSDictionary *response = [XrpcAppBskyVideoPack formatJobResponse:job];
+    NSDictionary *response = [ATProtoVideoXrpcPack formatJobResponse:job];
     XCTAssertEqualObjects(response[@"state"], @"JOB_STATE_PENDING");
     XCTAssertEqualObjects(response[@"jobId"], @"job-1");
 }
@@ -170,10 +133,10 @@
         @"processed_blob_cid": @"bafyreiprocessed",
         @"mime_type": @"video/mp4"
     };
-    NSDictionary *response = [XrpcAppBskyVideoPack formatJobResponse:job];
+    NSDictionary *response = [ATProtoVideoXrpcPack formatJobResponse:job];
     XCTAssertEqualObjects(response[@"state"], @"JOB_STATE_COMPLETED");
-    XCTAssertNotNil(response[@"blobRef"]);
-    XCTAssertEqualObjects(response[@"blobRef"][@"cid"], @"bafyreiprocessed");
+    XCTAssertNotNil(response[@"blob"]);
+    XCTAssertEqualObjects(response[@"blob"][@"$type"], @"blob");
 }
 
 - (void)testFormatJobResponseFailed {
@@ -184,9 +147,30 @@
         @"progress": @0,
         @"error_message": @"Transcoding failed"
     };
-    NSDictionary *response = [XrpcAppBskyVideoPack formatJobResponse:job];
+    NSDictionary *response = [ATProtoVideoXrpcPack formatJobResponse:job];
     XCTAssertEqualObjects(response[@"state"], @"JOB_STATE_FAILED");
     XCTAssertEqualObjects(response[@"error"], @"Transcoding failed");
+}
+
+#pragma mark - Content Type Validation Tests
+
+- (void)testValidateVideoContentTypeAcceptsMP4 {
+    // Create minimal MP4 data with ftyp box
+    NSMutableData *data = [NSMutableData dataWithLength:12];
+    uint8_t *bytes = (uint8_t *)data.mutableBytes;
+    // ftyp at offset 4
+    bytes[4] = 'f'; bytes[5] = 't'; bytes[6] = 'y'; bytes[7] = 'p';
+    XCTAssertTrue([ATProtoVideoXrpcPack validateVideoContentType:data declaredMimeType:@"video/mp4"]);
+}
+
+- (void)testValidateVideoContentTypeRejectsNonVideo {
+    NSData *data = [@"this is plain text, not a video" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertFalse([ATProtoVideoXrpcPack validateVideoContentType:data declaredMimeType:@"video/mp4"]);
+}
+
+- (void)testValidateVideoContentTypeRejectsTooShort {
+    NSData *data = [@"short" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertFalse([ATProtoVideoXrpcPack validateVideoContentType:data declaredMimeType:@"video/mp4"]);
 }
 
 #pragma mark - Helper

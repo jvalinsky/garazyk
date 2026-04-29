@@ -1,7 +1,12 @@
 #import <XCTest/XCTest.h>
-#import "Media/PDSVideoThumbnailGenerator.h"
+#import "Video/VideoThumbnailGenerator.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Core/CID.h"
+#import <CoreGraphics/CoreGraphics.h>
+
+@interface ATProtoVideoThumbnailGenerator (ATProtoVideoThumbnailGeneratorTests)
+- (nullable NSData *)jpegDataFromCGImage:(CGImageRef)image compression:(float)quality;
+@end
 
 /// In-memory blob provider for unit testing.
 @interface MockBlobProvider : NSObject <PDSBlobProvider>
@@ -33,18 +38,27 @@
     return data;
 }
 
+- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+    [self.blobs removeObjectForKey:cid.stringValue];
+    return YES;
+}
+
+- (BOOL)hasBlobDataForCID:(CID *)cid {
+    return self.blobs[cid.stringValue] != nil;
+}
+
 @end
 
-@interface PDSVideoThumbnailGeneratorTests : XCTestCase
-@property (nonatomic, strong) PDSVideoThumbnailGenerator *generator;
+@interface ATProtoVideoThumbnailGeneratorTests : XCTestCase
+@property (nonatomic, strong) ATProtoVideoThumbnailGenerator *generator;
 @property (nonatomic, strong) MockBlobProvider *blobProvider;
 @end
 
-@implementation PDSVideoThumbnailGeneratorTests
+@implementation ATProtoVideoThumbnailGeneratorTests
 
 - (void)setUp {
     [super setUp];
-    self.generator = [[PDSVideoThumbnailGenerator alloc] init];
+    self.generator = [[ATProtoVideoThumbnailGenerator alloc] init];
     self.blobProvider = [[MockBlobProvider alloc] init];
 }
 
@@ -57,14 +71,14 @@
 #pragma mark - Error Domain
 
 - (void)testErrorDomain {
-    XCTAssertEqualObjects(PDSVideoThumbnailErrorDomain, @"com.atproto.pds.video.thumbnail");
+    XCTAssertEqualObjects(ATProtoVideoThumbnailErrorDomain, @"com.atproto.video.thumbnail");
 }
 
 #pragma mark - Singleton
 
 - (void)testSharedGeneratorIsSingleton {
-    PDSVideoThumbnailGenerator *a = [PDSVideoThumbnailGenerator sharedGenerator];
-    PDSVideoThumbnailGenerator *b = [PDSVideoThumbnailGenerator sharedGenerator];
+    ATProtoVideoThumbnailGenerator *a = [ATProtoVideoThumbnailGenerator sharedGenerator];
+    ATProtoVideoThumbnailGenerator *b = [ATProtoVideoThumbnailGenerator sharedGenerator];
     XCTAssertEqual(a, b);
 }
 
@@ -75,7 +89,7 @@
     CID *result = [self.generator storeThumbnailData:[NSData data] forJob:@"job-1" error:&error];
     XCTAssertNil(result);
     XCTAssertNotNil(error);
-    XCTAssertEqual(error.code, PDSVideoThumbnailErrorWriteFailed);
+    XCTAssertEqual(error.code, ATProtoVideoThumbnailErrorWriteFailed);
 }
 
 - (void)testStoreThumbnailWithBlobProvider {
@@ -97,13 +111,21 @@
 
 - (void)testJpegDataFromCGImage {
     // Create a 1x1 pixel CGImage
-    CGSize size = CGSizeMake(1, 1);
-    UIGraphicsBeginImageContext(size);
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGContextSetFillColorWithColor(ctx, [UIColor blackColor].CGColor);
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ctx = CGBitmapContextCreate(NULL,
+                                             1,
+                                             1,
+                                             8,
+                                             4,
+                                             colorSpace,
+                                             (CGBitmapInfo)kCGImageAlphaPremultipliedLast);
+    XCTAssertNotEqual(ctx, NULL);
+    CGContextSetRGBFillColor(ctx, 0.0, 0.0, 0.0, 1.0);
     CGContextFillRect(ctx, CGRectMake(0, 0, 1, 1));
     CGImageRef imageRef = CGBitmapContextCreateImage(ctx);
-    UIGraphicsEndImageContext();
+    CGContextRelease(ctx);
+    CGColorSpaceRelease(colorSpace);
+    XCTAssertNotEqual(imageRef, NULL);
 
     NSData *jpegData = [self.generator jpegDataFromCGImage:imageRef compression:0.8];
     CGImageRelease(imageRef);

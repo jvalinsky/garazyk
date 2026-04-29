@@ -47,12 +47,14 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     NSString *relayURL = UIEnvString(env, @"GARAZYK_UI_RELAY_URL", @"http://127.0.0.1:2584");
     NSString *appViewURL = UIEnvString(env, @"GARAZYK_UI_APPVIEW_URL", @"http://127.0.0.1:3200");
     NSString *chatURL = UIEnvString(env, @"GARAZYK_UI_CHAT_URL", appViewURL);
+    NSString *videoURL = UIEnvString(env, @"GARAZYK_UI_VIDEO_URL", @"http://127.0.0.1:2586");
 
     config.pdsBaseURL = UIURLFromString(pdsURL, @"http://127.0.0.1:2583");
     config.plcBaseURL = UIURLFromString(plcURL, @"http://127.0.0.1:2582");
     config.relayBaseURL = UIURLFromString(relayURL, @"http://127.0.0.1:2584");
     config.appViewBaseURL = UIURLFromString(appViewURL, @"http://127.0.0.1:3200");
     config.chatBaseURL = UIURLFromString(chatURL, @"http://127.0.0.1:3200");
+    config.videoBaseURL = UIURLFromString(videoURL, @"http://127.0.0.1:2586");
 
     config.pdsAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_TOKEN");
     config.pdsAdminPassword = UIEnvOptionalString(env, @"GARAZYK_UI_PDS_PASSWORD");
@@ -60,6 +62,7 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     config.relayAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_RELAY_TOKEN");
     config.appViewAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_APPVIEW_TOKEN");
     config.chatAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_CHAT_TOKEN");
+    config.videoAdminToken = UIEnvOptionalString(env, @"GARAZYK_UI_VIDEO_TOKEN");
 
     // Assets directory: env override, or auto-detect next to binary
     NSString *assetsDir = UIEnvOptionalString(env, @"GARAZYK_UI_ASSETS_DIR");
@@ -88,7 +91,8 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
         @"relayURL": @"relayBaseURL",
         @"appViewURL": @"appViewBaseURL",
         @"appviewURL": @"appViewBaseURL",
-        @"chatURL": @"chatBaseURL"
+        @"chatURL": @"chatBaseURL",
+        @"videoURL": @"videoBaseURL"
     };
 
     for (NSString *key in urlMappings) {
@@ -122,6 +126,9 @@ static NSURL *UIURLFromString(NSString *value, NSString *fallback) {
     }
     if (updates[@"chatToken"] != nil) {
         self.chatAdminToken = updates[@"chatToken"].length > 0 ? updates[@"chatToken"] : nil;
+    }
+    if (updates[@"videoToken"] != nil) {
+        self.videoAdminToken = updates[@"videoToken"].length > 0 ? updates[@"videoToken"] : nil;
     }
 
     return allValid;

@@ -1,14 +1,15 @@
 #import <XCTest/XCTest.h>
-#import "Media/PDSVideoWorker.h"
-#import "Media/PDSVideoTranscoder.h"
-#import "Media/PDSVideoThumbnailGenerator.h"
+#import "Video/VideoWorker.h"
+#import "Video/VideoTranscoder.h"
+#import "Video/VideoThumbnailGenerator.h"
+#import "Video/PDSLocalVideoJobStore.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Core/CID.h"
 #import "Media/PDSVideoTranscoderIntegrationTests.h" // for VideoIntegrationTestBase
 
-@interface PDSVideoWorkerIntegrationTests : VideoIntegrationTestBase
+@interface ATProtoVideoWorkerIntegrationTests : VideoIntegrationTestBase
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong) PDSDiskBlobProvider *blobProvider;
@@ -16,7 +17,7 @@
 @property (nonatomic, strong) NSURL *tempDirURL;
 @end
 
-@implementation PDSVideoWorkerIntegrationTests
+@implementation ATProtoVideoWorkerIntegrationTests
 
 - (void)setUp {
     [super setUp];
@@ -30,14 +31,14 @@
                                               attributes:nil
                                                    error:nil];
 
-    NSURL *dbURL = [self.tempDirURL URLByAppendingPathComponent:@"test.db"];
-    self.database = [[PDSDatabase alloc] init];
-    self.database.databaseURL = dbURL;
-    [self.database open:nil];
-
-    // Create service databases
-    self.serviceDatabases = [[PDSServiceDatabases alloc] init];
-    [self.serviceDatabases setValue:self.database forKey:@"_serviceDatabase"];
+    self.serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:self.tempDirURL.path
+                                                            serviceMaxSize:2
+                                                           didCacheMaxSize:1
+                                                         sequencerMaxSize:1];
+    NSError *dbError = nil;
+    self.database = [self.serviceDatabases serviceDatabaseWithError:&dbError];
+    XCTAssertNotNil(self.database);
+    XCTAssertNil(dbError);
 
     // Create disk blob provider
     self.blobStorageURL = [self.tempDirURL URLByAppendingPathComponent:@"blobs"];
@@ -45,7 +46,7 @@
                              withIntermediateDirectories:YES
                                               attributes:nil
                                                    error:nil];
-    self.blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.blobStorageURL.path];
+    self.blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:self.blobStorageURL];
 }
 
 - (void)tearDown {
@@ -75,12 +76,13 @@
                                  blobCid:inputCid.stringValue
                                 mimeType:@"video/mp4"
                                 fileSize:@(videoData.length)
+                         serviceAuthToken:nil
                                     error:&error];
     XCTAssertNil(error);
 
     // Configure worker
-    PDSVideoWorker *worker = [[PDSVideoWorker alloc] init];
-    worker.serviceDatabases = self.serviceDatabases;
+    ATProtoVideoWorker *worker = [[ATProtoVideoWorker alloc] init];
+    worker.jobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:self.database];
     worker.blobProvider = self.blobProvider;
 
     // Process the job

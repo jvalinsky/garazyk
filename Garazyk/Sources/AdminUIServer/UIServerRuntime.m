@@ -912,6 +912,59 @@ static NSUInteger UISafeLength(id value) {
         [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
     }];
 
+    // Video: Health
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-health" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchVideoHealth];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderVideoHealthPartial:result]];
+    }];
+
+    // Video: Job list
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-jobs" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *state = [request queryParamForKey:@"state"];
+        NSString *cursor = [request queryParamForKey:@"cursor"];
+        if (state.length == 0) state = nil;
+        NSDictionary *result = [weakSelf.backendClient fetchVideoJobsWithState:state limit:25 cursor:cursor];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderVideoJobsPartial:result]];
+    }];
+
+    // Video: Job detail
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-job-detail" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *jobId = [request queryParamForKey:@"jobId"];
+        NSDictionary *result = [weakSelf.backendClient fetchVideoJobById:jobId];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderVideoJobDetailPartial:result]];
+    }];
+
+    // Video: Upload quotas
+    [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-quotas" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSDictionary *result = [weakSelf.backendClient fetchVideoUploadLimits];
+        response.statusCode = 200;
+        response.contentType = @"text/html; charset=utf-8";
+        [response setBodyString:[weakSelf renderVideoQuotasPartial:result]];
+    }];
+
+    // Video: Retry job
+    [self.httpServer addRoute:@"POST" path:@"/admin/actions/video-retry-job" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf ensureAuthorized:request response:response]) return;
+        NSString *jobId = request.jsonBody[@"jobId"] ?: @"";
+        // Retry via PDS admin: incrementVideoJobRetry
+        NSDictionary *result = [weakSelf.backendClient retryVideoJobWithId:jobId];
+        response.statusCode = result[@"error"] ? 400 : 200;
+        response.contentType = @"text/html; charset=utf-8";
+        NSString *msg = result[@"error"] ? (result[@"message"] ?: result[@"error"]) : @"Job queued for retry.";
+        NSString *alertClass = result[@"error"] ? @"alert-destructive" : @"alert-success";
+        [response setBodyString:[NSString stringWithFormat:@"<div class=\"alert %@\">%@</div>", alertClass, UIEscaped(msg)]];
+    }];
+
     // Connections: Update service URLs and tokens
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-connections" handler:^(HttpRequest *request, HttpResponse *response) {
         if (![weakSelf ensureAuthorized:request response:response]) return;
@@ -1142,6 +1195,7 @@ static NSUInteger UISafeLength(id value) {
     "<button class=\"service-segment\" data-tab=\"security\" onclick=\"switchTab('security')\">Security</button>"
     "<button class=\"service-segment\" data-tab=\"mst\" onclick=\"switchTab('mst')\">MST</button>"
     "<button class=\"service-segment\" data-tab=\"chat\" onclick=\"switchTab('chat')\">Chat</button>"
+    "<button class=\"service-segment\" data-tab=\"video\" onclick=\"switchTab('video')\">Video</button>"
     "</nav>"
     "<div class=\"admin-header-right\">"
     "<form method=\"post\" action=\"/admin/logout\" onsubmit=\"fetch('/admin/logout',{method:'POST'}).then(()=>location='/admin/login');return false;\">"
@@ -1308,6 +1362,25 @@ static NSUInteger UISafeLength(id value) {
     "<button class=\"btn btn-primary btn-sm\" onclick=\"loadChatMessages()\">Load Messages</button></div>"
     "<div id=\"chat-messages\" hx-trigger=\"load\"></div>"
     "<div id=\"chat-action-result\"></div></section></div>"
+    /* Video tab */
+    "<div id=\"tab-video\" class=\"tab-pane\" style=\"display:none\">"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Service Health</h3>"
+    "<div id=\"video-health\" hx-get=\"/admin/partials/video-health\" hx-trigger=\"load, every 30s\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Job Queue</h3>"
+    "<div class=\"action-row\">"
+    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('')\">All</button>"
+    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('PENDING')\">Pending</button>"
+    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('PROCESSING')\">Processing</button>"
+    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('COMPLETED')\">Completed</button>"
+    "<button class=\"btn btn-secondary btn-sm\" onclick=\"filterVideoJobs('FAILED')\">Failed</button>"
+    "</div>"
+    "<div id=\"video-jobs\" hx-get=\"/admin/partials/video-jobs\" hx-trigger=\"load, every 10s\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Upload Quotas</h3>"
+    "<div id=\"video-quotas\" hx-get=\"/admin/partials/video-quotas\" hx-trigger=\"load\"></div></section>"
+    "<section class=\"admin-section\"><h3 class=\"admin-section-title\">Job Lookup</h3>"
+    "<div class=\"action-row\"><input id=\"video-job-id\" type=\"text\" placeholder=\"Job ID\" class=\"form-input flex-1\"/>"
+    "<button class=\"btn btn-primary btn-sm\" onclick=\"loadVideoJobDetail()\">Look Up</button></div>"
+    "<div id=\"video-job-detail\"></div></section></div>"
     "</main>"
     "<footer class=\"admin-footer\"><span class=\"version-info\"></span>"
     "<span id=\"footer-status\"></span></footer>"
@@ -1319,6 +1392,18 @@ static NSUInteger UISafeLength(id value) {
     "var pane=document.getElementById('tab-'+name);if(pane)pane.style.display='block';"
     "var btn=document.querySelector('[data-tab=\"'+name+'\"]');if(btn)btn.classList.add('active');"
     "}"
+    "function activeTabPane(){return Array.from(document.querySelectorAll('.tab-pane')).find(p=>getComputedStyle(p).display!=='none')||document;}"
+    "function didFromText(text){const m=(text||'').match(/\\bdid:[a-z0-9]+:[A-Za-z0-9._:%-]+/);return m?m[0]:'';}"
+    "function didFieldHint(el){let hint=[el.id,el.name,el.placeholder,el.getAttribute('aria-label')].filter(Boolean).join(' ');"
+    "const group=el.closest('.form-group');if(group){const label=group.querySelector('label');if(label)hint+=' '+label.textContent;}"
+    "return hint.toLowerCase();}"
+    "function inputExpectsDID(el){if(!el||el.disabled||el.readOnly)return false;"
+    "if(el.tagName==='INPUT'){const type=(el.type||'text').toLowerCase();if(['hidden','checkbox','radio','button','submit','reset','password'].includes(type))return false;}"
+    "else if(el.tagName!=='TEXTAREA'){return false;}return didFieldHint(el).includes('did');}"
+    "function fillVisibleDIDInputs(did){if(!did)return false;const scope=activeTabPane();let filled=false;"
+    "scope.querySelectorAll('input,textarea').forEach(el=>{if(inputExpectsDID(el)){el.value=did;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));filled=true;}});return filled;}"
+    "document.addEventListener('click',function(e){if(e.target.closest('button,a,input,select,textarea,label'))return;"
+    "const node=e.target.closest('td,span,li,code,pre,div');if(!node)return;const did=didFromText(node.textContent);if(did)fillVisibleDIDInputs(did);});"
     "async function disableInvites(){const account=document.getElementById('disable-account').value;"
     "const resp=await fetch('/admin/actions/disable-invites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account})});"
     "document.getElementById('invite-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/invites','#invites');}"
@@ -1433,8 +1518,17 @@ static NSUInteger UISafeLength(id value) {
     "async function lockChatConvo(convoID){if(!confirm('Lock this conversation?'))return;"
     "const resp=await fetch('/admin/actions/lock-chat-convo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({convoID})});"
     "document.getElementById('chat-action-result').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/chat-convos','#chat-convos');}"
+    "function filterVideoJobs(state){"
+    "var url='/admin/partials/video-jobs';if(state)url+='?state='+encodeURIComponent(state);"
+    "htmx.ajax('GET',url,'#video-jobs');}"
+    "function loadVideoJobDetail(){const jobId=document.getElementById('video-job-id').value;"
+    "if(!jobId){alert('Job ID required');return;}"
+    "htmx.ajax('GET','/admin/partials/video-job-detail?jobId='+encodeURIComponent(jobId),'#video-job-detail');}"
+    "async function retryVideoJob(jobId){if(!confirm('Retry this job?'))return;"
+    "const resp=await fetch('/admin/actions/video-retry-job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jobId})});"
+    "document.getElementById('video-job-detail').innerHTML=await resp.text();htmx.ajax('GET','/admin/partials/video-jobs','#video-jobs');}"
     "async function saveConnections(){"
-    "const services=[['pds','pds'],['plc','plc'],['relay','relay'],['appview','appView'],['chat','chat']];"
+    "const services=[['pds','pds'],['plc','plc'],['relay','relay'],['appview','appView'],['chat','chat'],['video','video']];"
     "const body={};"
     "services.forEach(([id,key])=>{body[key+'URL']=document.getElementById('conn-'+id+'-url').value;body[key+'Token']=document.getElementById('conn-'+id+'-token').value;});"
     "const resp=await fetch('/admin/actions/update-connections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});"
@@ -2112,7 +2206,7 @@ static NSUInteger UISafeLength(id value) {
             sender = [NSString stringWithFormat:@"did:plc:…%@", [sender substringFromIndex:sender.length - 8]];
         }
         NSString *text = UISafe(msg[@"text"], @"");
-        NSString *createdAt = UISafe(msg[@"createdAt"], @"");
+        NSString *createdAt = UISafe(msg[@"createdAt"] ?: msg[@"sentAt"], @"");
         [html appendFormat:@"<div class=\"message\"><div class=\"message-header\"><span class=\"message-sender\">%@</span><span class=\"message-time text-xs text-secondary\">%@</span></div><div class=\"message-body\">%@</div></div>",
             UIEscaped(sender), UIEscaped(createdAt), UIEscaped(text)];
     }
@@ -2138,7 +2232,9 @@ static NSUInteger UISafeLength(id value) {
         @"plcURL": UISafe([self.configuration.plcBaseURL absoluteString], @""),
         @"plcToken": UISafe(self.configuration.plcAdminToken, @""),
         @"chatURL": UISafe([self.configuration.chatBaseURL absoluteString], @""),
-        @"chatToken": UISafe(self.configuration.chatAdminToken, @"")
+        @"chatToken": UISafe(self.configuration.chatAdminToken, @""),
+        @"videoURL": UISafe([self.configuration.videoBaseURL absoluteString], @""),
+        @"videoToken": UISafe(self.configuration.videoAdminToken, @"")
     };
     
     [html appendString:@"<div class=\"grid-2\">"];
@@ -2148,7 +2244,8 @@ static NSUInteger UISafeLength(id value) {
         @{@"id": @"appview", @"key": @"appView", @"label": @"APPVIEW"},
         @{@"id": @"relay", @"key": @"relay", @"label": @"RELAY"},
         @{@"id": @"plc", @"key": @"plc", @"label": @"PLC"},
-        @{@"id": @"chat", @"key": @"chat", @"label": @"CHAT"}
+        @{@"id": @"chat", @"key": @"chat", @"label": @"CHAT"},
+        @{@"id": @"video", @"key": @"video", @"label": @"VIDEO"}
     ];
     for (NSDictionary *entry in order) {
         NSString *inputID = entry[@"id"];
@@ -2645,6 +2742,197 @@ static NSUInteger UISafeLength(id value) {
         return @"{}";
     }
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+}
+
+#pragma mark - Video Render Methods
+
+- (NSString *)renderVideoHealthPartial:(NSDictionary *)result {
+    NSString *status = UISafe(result[@"status"], @"unknown");
+    NSString *statusClass = @"status-unknown";
+    if ([status isEqualToString:@"online"]) statusClass = @"status-online";
+    else if ([status isEqualToString:@"offline"]) statusClass = @"status-offline";
+    else if ([status isEqualToString:@"error"]) statusClass = @"status-error";
+
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"cluster-grid\">"];
+    [html appendFormat:@"<div class=\"service-card %@\">", statusClass];
+    [html appendString:@"<div class=\"service-header\">"];
+    [html appendFormat:@"<span class=\"service-name\">VIDEO</span>"];
+    [html appendString:@"<span class=\"status-dot\"></span>"];
+    [html appendString:@"</div>"];
+    [html appendFormat:@"<div class=\"service-url\">%@</div>", UIEscaped([self.configuration.videoBaseURL absoluteString] ?: @"")];
+    if (result[@"latency_ms"]) {
+        [html appendFormat:@"<div class=\"service-meta\">Latency: %@ms</div>", result[@"latency_ms"]];
+    }
+    if (result[@"error"]) {
+        [html appendFormat:@"<div class=\"text-xs text-destructive mt-xs\">%@</div>", UIEscaped(result[@"error"])];
+    }
+    [html appendString:@"</div></div>"];
+    return html;
+}
+
+- (NSString *)renderVideoJobsPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSArray<NSDictionary *> *jobs = [result[@"jobs"] isKindOfClass:[NSArray class]] ? result[@"jobs"] : @[];
+    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Job ID</th><th>DID</th><th>State</th><th>Progress</th><th>MIME</th><th>Size</th><th>Retries</th><th>Created</th><th>Actions</th></tr></thead><tbody>"];
+
+    for (NSDictionary *job in jobs) {
+        NSString *jobId = UISafe(job[@"job_id"], @"");
+        NSString *shortJobId = jobId.length > 8 ? [NSString stringWithFormat:@"%@...", [jobId substringToIndex:8]] : jobId;
+        NSString *did = UISafe(job[@"did"], @"");
+        NSString *shortDid = did;
+        if ([did hasPrefix:@"did:plc:"] && did.length > 20) {
+            shortDid = [NSString stringWithFormat:@"did:plc:...%@", [did substringFromIndex:did.length - 8]];
+        }
+        NSString *state = UISafe(job[@"state"], @"");
+        NSString *stateBadge = @"badge-secondary";
+        if ([state isEqualToString:@"PENDING"]) stateBadge = @"badge-warning";
+        else if ([state isEqualToString:@"PROCESSING"] || [state isEqualToString:@"TRANSCODING"] || [state isEqualToString:@"GENERATING_THUMBNAIL"]) stateBadge = @"badge-info";
+        else if ([state isEqualToString:@"COMPLETED"]) stateBadge = @"badge-success";
+        else if ([state isEqualToString:@"FAILED"]) stateBadge = @"badge-destructive";
+
+        NSNumber *progressNum = [job[@"progress"] isKindOfClass:[NSNumber class]] ? job[@"progress"] : @0;
+        int progress = [progressNum intValue];
+        NSString *progressBar = [NSString stringWithFormat:@"<div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:%d%%\"></div></div><span class=\"text-sm\">%d%%</span>", progress, progress];
+
+        NSString *mimeType = UISafe(job[@"mime_type"], @"-");
+        NSNumber *fileSizeNum = [job[@"file_size"] isKindOfClass:[NSNumber class]] ? job[@"file_size"] : nil;
+        NSString *fileSize = @"-";
+        if (fileSizeNum) {
+            long long bytes = [fileSizeNum longLongValue];
+            if (bytes >= 1048576) fileSize = [NSString stringWithFormat:@"%.1f MB", bytes / 1048576.0];
+            else if (bytes >= 1024) fileSize = [NSString stringWithFormat:@"%.1f KB", bytes / 1024.0];
+            else fileSize = [NSString stringWithFormat:@"%lld B", bytes];
+        }
+        NSNumber *retryCount = [job[@"retry_count"] isKindOfClass:[NSNumber class]] ? job[@"retry_count"] : @0;
+        NSString *createdAt = UISafe(job[@"created_at"], @"-");
+
+        NSString *actions = @"";
+        if ([state isEqualToString:@"FAILED"]) {
+            actions = [NSString stringWithFormat:@"<button class=\"btn btn-secondary btn-sm\" onclick=\"retryVideoJob('%@')\">Retry</button>", UIEscaped(jobId)];
+        }
+
+        [html appendFormat:@"<tr><td class=\"text-mono text-sm\" title=\"%@\">%@</td><td class=\"text-mono text-sm\" title=\"%@\">%@</td><td><span class=\"badge %@\">%@</span></td><td>%@</td><td class=\"text-sm\">%@</td><td class=\"text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td>%@</td></tr>",
+            UIEscaped(jobId), UIEscaped(shortJobId),
+            UIEscaped(did), UIEscaped(shortDid),
+            stateBadge, UIEscaped(state),
+            progressBar,
+            UIEscaped(mimeType),
+            UIEscaped(fileSize),
+            retryCount,
+            UIEscaped(createdAt),
+            actions];
+    }
+
+    if (jobs.count == 0) {
+        [html appendString:@"<tr><td colspan=\"9\" class=\"text-center text-secondary p-lg\">No video jobs found.</td></tr>"];
+    }
+    [html appendString:@"</tbody></table>"];
+
+    NSString *cursor = UIStringFromDict(result, @"cursor");
+    if (cursor.length > 0) {
+        [html appendFormat:@"<div class=\"d-flex justify-between mt-sm\"><button class=\"btn btn-secondary btn-sm\" hx-get=\"/admin/partials/video-jobs?cursor=%@\" hx-target=\"#video-jobs\">Load more</button></div>", UIEscaped(cursor)];
+    }
+    return html;
+}
+
+- (NSString *)renderVideoJobDetailPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+    NSDictionary *jobStatus = [result[@"jobStatus"] isKindOfClass:[NSDictionary class]] ? result[@"jobStatus"] : result;
+    if (!jobStatus || ![jobStatus isKindOfClass:[NSDictionary class]]) {
+        return @"<div class=\"text-secondary text-sm\">No job data returned.</div>";
+    }
+
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
+    [html appendString:@"<table class=\"table\"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>"];
+
+    NSArray *fields = @[
+        @[@"Job ID", @"jobId"],
+        @[@"DID", @"did"],
+        @[@"State", @"state"],
+        @[@"Progress", @"progress"],
+        @[@"Error", @"error"],
+        @[@"Message", @"message"],
+    ];
+
+    for (NSArray *field in fields) {
+        NSString *label = field[0];
+        NSString *key = field[1];
+        id value = jobStatus[key];
+        NSString *display = @"";
+        if ([value isKindOfClass:[NSString class]]) {
+            display = value;
+        } else if ([value isKindOfClass:[NSNumber class]]) {
+            display = [value stringValue];
+        }
+        if (display.length == 0) display = @"-";
+        [html appendFormat:@"<tr><td class=\"text-sm\">%@</td><td class=\"text-mono text-sm\">%@</td></tr>", label, UIEscaped(display)];
+    }
+
+    // Blob info
+    id blob = jobStatus[@"blob"];
+    if ([blob isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *blobDict = blob;
+        [html appendFormat:@"<tr><td class=\"text-sm\">Blob CID</td><td class=\"text-mono text-sm\">%@</td></tr>", UIEscaped(UISafe(blobDict[@"ref"][@"$link"], UISafe(blobDict[@"cid"], @"-")))];
+        NSNumber *blobSize = [blobDict[@"size"] isKindOfClass:[NSNumber class]] ? blobDict[@"size"] : nil;
+        if (blobSize) {
+            long long bytes = [blobSize longLongValue];
+            NSString *sizeStr = bytes >= 1048576 ? [NSString stringWithFormat:@"%.1f MB", bytes / 1048576.0] : [NSString stringWithFormat:@"%lld B", bytes];
+            [html appendFormat:@"<tr><td class=\"text-sm\">Blob Size</td><td class=\"text-sm\">%@</td></tr>", UIEscaped(sizeStr)];
+        }
+    }
+
+    [html appendString:@"</tbody></table>"];
+
+    NSString *state = UISafe(jobStatus[@"state"], @"");
+    if ([state isEqualToString:@"FAILED"]) {
+        NSString *jobId = UISafe(jobStatus[@"jobId"], @"");
+        [html appendFormat:@"<div class=\"mt-sm\"><button class=\"btn btn-secondary btn-sm\" onclick=\"retryVideoJob('%@')\">Retry Job</button></div>", UIEscaped(jobId)];
+    }
+
+    [html appendString:@"</div>"];
+    return html;
+}
+
+- (NSString *)renderVideoQuotasPartial:(NSDictionary *)result {
+    if (result[@"error"]) {
+        return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
+    }
+
+    NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"metric-row\">"];
+
+    id canUpload = result[@"canUpload"];
+    NSString *canUploadStr = @"-";
+    if ([canUpload isKindOfClass:[NSNumber class]]) {
+        canUploadStr = [canUpload boolValue] ? @"Yes" : @"No";
+    } else if ([canUpload isKindOfClass:[NSString class]]) {
+        canUploadStr = canUpload;
+    }
+
+    id remainingVideos = result[@"remainingDailyVideos"];
+    NSString *remainingVideosStr = @"-";
+    if ([remainingVideos isKindOfClass:[NSNumber class]]) {
+        remainingVideosStr = [remainingVideos stringValue];
+    }
+
+    id remainingBytes = result[@"remainingDailyBytes"];
+    NSString *remainingBytesStr = @"-";
+    if ([remainingBytes isKindOfClass:[NSNumber class]]) {
+        long long bytes = [remainingBytes longLongValue];
+        if (bytes >= 1073741824) remainingBytesStr = [NSString stringWithFormat:@"%.1f GB", bytes / 1073741824.0];
+        else if (bytes >= 1048576) remainingBytesStr = [NSString stringWithFormat:@"%.1f MB", bytes / 1048576.0];
+        else remainingBytesStr = [NSString stringWithFormat:@"%lld B", bytes];
+    }
+
+    [html appendFormat:@"<div class=\"metric-card\"><div class=\"metric-value\">%@</div><div class=\"metric-label\">Can Upload</div></div>", UIEscaped(canUploadStr)];
+    [html appendFormat:@"<div class=\"metric-card\"><div class=\"metric-value\">%@</div><div class=\"metric-label\">Remaining Daily Videos</div></div>", UIEscaped(remainingVideosStr)];
+    [html appendFormat:@"<div class=\"metric-card\"><div class=\"metric-value\">%@</div><div class=\"metric-label\">Remaining Daily Bytes</div></div>", UIEscaped(remainingBytesStr)];
+
+    [html appendString:@"</div>"];
+    return html;
 }
 
 @end

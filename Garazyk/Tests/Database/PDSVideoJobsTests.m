@@ -21,9 +21,10 @@
                                                    error:nil];
 
     NSURL *dbURL = [self.tempDirURL URLByAppendingPathComponent:@"test.db"];
-    self.database = [[PDSDatabase alloc] init];
-    self.database.databaseURL = dbURL;
-    [self.database open:nil];
+    self.database = [PDSDatabase databaseAtURL:dbURL];
+    NSError *error = nil;
+    XCTAssertTrue([self.database openWithError:&error]);
+    XCTAssertNil(error);
 }
 
 - (void)tearDown {
@@ -42,6 +43,7 @@
                                                  blobCid:@"bafyreiabc123"
                                                 mimeType:@"video/mp4"
                                                 fileSize:@(1024)
+                                    serviceAuthToken:nil
                                                     error:&error];
     XCTAssertTrue(created);
     XCTAssertNil(error);
@@ -73,6 +75,7 @@
                                   blobCid:@"bafyreiabc123"
                                  mimeType:@"video/mp4"
                                  fileSize:@(2048)
+                                    serviceAuthToken:nil
                                      error:nil];
 
     NSError *error = nil;
@@ -96,6 +99,7 @@
                                   blobCid:@"bafyreiabc123"
                                  mimeType:@"video/mp4"
                                  fileSize:@(4096)
+                                    serviceAuthToken:nil
                                      error:nil];
 
     NSError *error = nil;
@@ -121,6 +125,7 @@
                                   blobCid:@"bafyreiabc123"
                                  mimeType:@"video/mp4"
                                  fileSize:@(8192)
+                                    serviceAuthToken:nil
                                      error:nil];
 
     // Set to FAILED first
@@ -146,6 +151,7 @@
                                   blobCid:@"bafyreiabc123"
                                  mimeType:@"video/mp4"
                                  fileSize:@(8192)
+                                    serviceAuthToken:nil
                                      error:nil];
 
     for (int i = 0; i < 3; i++) {
@@ -170,6 +176,7 @@
                                   blobCid:@"bafyreiabc123"
                                  mimeType:@"video/mp4"
                                  fileSize:@(16384)
+                                    serviceAuthToken:nil
                                      error:nil];
 
     // PENDING -> PROCESSING
@@ -197,6 +204,7 @@
                                   blobCid:@"bafyreiabc123"
                                  mimeType:@"video/mp4"
                                  fileSize:@(2048)
+                                    serviceAuthToken:nil
                                      error:nil];
 
     [self.database updateVideoJobState:@"job-7"

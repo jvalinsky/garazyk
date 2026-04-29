@@ -1,16 +1,16 @@
 #import <XCTest/XCTest.h>
-#import "Media/PDSVideoThumbnailGenerator.h"
+#import "Video/VideoThumbnailGenerator.h"
 #import "Media/PDSVideoTranscoderIntegrationTests.h" // for VideoIntegrationTestBase
 
-@interface PDSVideoThumbnailGeneratorIntegrationTests : VideoIntegrationTestBase
+@interface ATProtoVideoThumbnailGeneratorIntegrationTests : VideoIntegrationTestBase
 @end
 
-@implementation PDSVideoThumbnailGeneratorIntegrationTests
+@implementation ATProtoVideoThumbnailGeneratorIntegrationTests
 
 - (void)testGenerateThumbnailSync {
     if (!self.testVideoURL) { XCTSkip(@"No test video available"); }
 
-    PDSVideoThumbnailGenerator *generator = [[PDSVideoThumbnailGenerator alloc] init];
+    ATProtoVideoThumbnailGenerator *generator = [[ATProtoVideoThumbnailGenerator alloc] init];
     NSError *error = nil;
     NSData *thumbnail = [generator generateThumbnailAtTime:0.5
                                             fromVideoURL:self.testVideoURL
@@ -32,7 +32,7 @@
 - (void)testGenerateThumbnailAsync {
     if (!self.testVideoURL) { XCTSkip(@"No test video available"); }
 
-    PDSVideoThumbnailGenerator *generator = [[PDSVideoThumbnailGenerator alloc] init];
+    ATProtoVideoThumbnailGenerator *generator = [[ATProtoVideoThumbnailGenerator alloc] init];
     XCTestExpectation *expectation = [self expectationWithDescription:@"Thumbnail generated"];
 
     [generator generateThumbnailAtTime:0.5
@@ -52,7 +52,7 @@
 - (void)testGenerateThumbnailInvalidTime {
     if (!self.testVideoURL) { XCTSkip(@"No test video available"); }
 
-    PDSVideoThumbnailGenerator *generator = [[PDSVideoThumbnailGenerator alloc] init];
+    ATProtoVideoThumbnailGenerator *generator = [[ATProtoVideoThumbnailGenerator alloc] init];
     NSError *error = nil;
     // Request a time far beyond the video duration (1 second)
     NSData *thumbnail = [generator generateThumbnailAtTime:999.0
@@ -66,7 +66,7 @@
 }
 
 - (void)testGenerateThumbnailInvalidURL {
-    PDSVideoThumbnailGenerator *generator = [[PDSVideoThumbnailGenerator alloc] init];
+    ATProtoVideoThumbnailGenerator *generator = [[ATProtoVideoThumbnailGenerator alloc] init];
     NSURL *invalidURL = [NSURL fileURLWithPath:@"/nonexistent/path/video.mp4"];
     NSError *error = nil;
     NSData *thumbnail = [generator generateThumbnailAtTime:0.5

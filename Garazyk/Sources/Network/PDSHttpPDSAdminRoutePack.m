@@ -208,6 +208,83 @@ static BOOL PDSAdminRequireDatabases(PDSServiceDatabases *serviceDatabases,
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
     }];
+
+    [server addRoute:@"GET"
+                path:@"/admin/api/video/jobs"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+        if (!PDSAdminAuthorize(request, response)) return;
+        PDSServiceDatabases *databases = capturedServiceDatabases;
+        if (!PDSAdminRequireDatabases(databases, response)) return;
+
+        NSString *stateFilter = [request queryParamForKey:@"state"];
+        if (stateFilter.length == 0) stateFilter = nil;
+
+        NSString *limitStr = [request queryParamForKey:@"limit"];
+        NSUInteger limit = limitStr.length > 0 ? (NSUInteger)limitStr.integerValue : 25;
+        if (limit == 0 || limit > 100) limit = 25;
+
+        NSString *cursorStr = [request queryParamForKey:@"cursor"];
+        NSUInteger offset = cursorStr.length > 0 ? (NSUInteger)cursorStr.integerValue : 0;
+
+        NSError *error = nil;
+        PDSDatabase *db = [databases serviceDatabaseWithError:&error];
+        if (!db) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": error.localizedDescription ?: @"Failed to acquire database"}];
+            return;
+        }
+
+        NSArray<NSDictionary *> *jobs = [db listVideoJobsWithState:stateFilter limit:limit offset:offset error:&error];
+        if (error) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"VideoJobListFailed", @"message": error.localizedDescription ?: @"Failed to list video jobs"}];
+            return;
+        }
+
+        NSString *nextCursor = nil;
+        if (jobs.count >= limit) {
+            nextCursor = [NSString stringWithFormat:@"%lu", (unsigned long)(offset + limit)];
+        }
+
+        NSMutableDictionary *body = [NSMutableDictionary dictionaryWithObject:jobs ?: @[] forKey:@"jobs"];
+        if (nextCursor) body[@"cursor"] = nextCursor;
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:[body copy]];
+    }];
+
+    [server addRoute:@"POST"
+                path:@"/admin/api/video/jobs/:jobId/retry"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+        if (!PDSAdminAuthorize(request, response)) return;
+        PDSServiceDatabases *databases = capturedServiceDatabases;
+        if (!PDSAdminRequireDatabases(databases, response)) return;
+
+        NSString *jobId = PDSAdminPathParameter(request, @"jobId");
+        if (jobId.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Job ID is required"}];
+            return;
+        }
+
+        NSError *error = nil;
+        PDSDatabase *db = [databases serviceDatabaseWithError:&error];
+        if (!db) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"DatabaseUnavailable", @"message": error.localizedDescription ?: @"Failed to acquire database"}];
+            return;
+        }
+
+        BOOL success = [db incrementVideoJobRetry:jobId error:&error];
+        if (!success) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{@"error": @"VideoJobRetryFailed", @"message": error.localizedDescription ?: @"Failed to retry video job"}];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
 }
 
 @end
