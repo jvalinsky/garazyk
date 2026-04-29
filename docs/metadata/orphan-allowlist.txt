@@ -1,2 +1,0 @@
-# Paths allowed to have zero inbound markdown links.
-# Keep this list short.

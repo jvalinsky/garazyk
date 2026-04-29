@@ -60,12 +60,13 @@ demo_data/
 reports/
 *.log
 *.pid
+*.db
+*.db-shm
+*.db-wal
 config.json
 :memory:
 :memory:-shm
 :memory:-wal
-*.db-shm
-*.db-wal
 localdb.sqlite*
 docs/tutorial-site.tar.gz
 
@@ -119,6 +120,13 @@ test_data/
 tmp_atproto/
 tmp_social_app/
 source.tar.gz
+
+# Docs generated artifacts
+docs/git-history.json
+docs/graph-data.json
+docs/migration-mapping.json
+docs/metadata/
+docs/node_modules/
 
 # Cadmus build data
 .cadmus/
