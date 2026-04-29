@@ -2,7 +2,6 @@
   lib,
   runCommand,
   libobjc2-wasm,
-  llvmPackages,
 }:
 
 # Minimal WASI sysroot that includes ObjC headers from libobjc2
@@ -32,11 +31,5 @@ runCommand "wasi-sysroot-objc" {
   # Copy ObjC runtime libraries
   if [ -d ${libobjc2-wasm}/lib ]; then
     cp -r ${libobjc2-wasm}/lib/* $out/lib/
-  fi
-
-  # Copy LLVM libc++ headers (for C++ support if needed)
-  if [ -d ${llvmPackages.libcxx.dev}/include/c++/v1 ]; then
-    mkdir -p $out/include/c++/v1
-    cp -r ${llvmPackages.libcxx.dev}/include/c++/v1/* $out/include/c++/v1/
   fi
 ''

@@ -1,0 +1,4 @@
+include install.json
+include package.json
+include README.md
+recursive-include objc_jupyter_wasm/labextension *
