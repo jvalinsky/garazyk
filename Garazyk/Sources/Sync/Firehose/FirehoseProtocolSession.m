@@ -63,10 +63,12 @@
 }
 
 - (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event {
+  NSUInteger seq;
   @synchronized(self) {
     _sequenceNumber++;
+    seq = _sequenceNumber;
   }
-  // Info events don't strictly require seq in some lexicons, but we increment anyway if it's there
+  event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeInfoEvent:event error:&error];
   if (!data) {
