@@ -275,15 +275,14 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                                           : 100);
     
     _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:_dataDirectory
-                                                         serviceMaxSize:serviceMaxSize
-                                                       didCacheMaxSize:didCacheSize
-                                                     sequencerMaxSize:sequencerSize];
+                                                          serviceMaxSize:serviceMaxSize
+                                                        didCacheMaxSize:didCacheSize
+                                                      sequencerMaxSize:sequencerSize];
     _serviceDatabases.refreshTokenTTLSeconds = _configuration.refreshTokenTtlSeconds;
-    
+     
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
     _userDatabasePool.masterSecret = _configuration.masterSecret;
-    
-    // Initialize JWT Minter
+     
     _jwtMinter = [[JWTMinter alloc] init];
     NSDictionary *pdsEnv = [[NSProcessInfo processInfo] environment];
     NSString *configuredIssuer = _configuration.issuer;
@@ -435,7 +434,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _blobService = [[PDSBlobService alloc] initWithDatabasePool:_userDatabasePool storage:blobStorage];
     _blobService.blobRepository = blobRepo;
     
-    // Initialize Repository Service
+    // Repository Service
     id<PDSBlockRepository> blockRepo = [PDSRepositoryFactory blockRepositoryWithDatabasePool:_userDatabasePool];
     id<PDSRepoRepository> repoRepo = [PDSRepositoryFactory repoRepositoryWithServiceDatabases:_serviceDatabases];
     _repositoryService = [[PDSRepositoryService alloc] initWithDatabasePool:_userDatabasePool];
@@ -447,17 +446,17 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                                                              accountService:_accountService];
     [container registerInstance:_adminController forProtocol:@protocol(PDSAdminController)];
 
-    // Initialize Blob Audit Manager
+    // Blob Audit Manager
     _blobAuditManager = [[PDSBlobAuditManager alloc] initWithBlobStorage:_blobService.blobStorage
-                                                        serviceDatabases:_serviceDatabases];
+                                                         serviceDatabases:_serviceDatabases];
 
-    // H3: Give PDSAdminAuth access to data directory so logout survives restarts
+    // H1: Give PDSAdminAuth access
     [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;
 
-    // H4: Validate admin password format (enforce in production mode)
+    // H2: Validate admin password format
     [self validateAdminPasswordWithConfiguration:_configuration];
 
-    // H5: Warn if X-Admin-Token legacy header is active in production
+    // H3: Warn if X-Admin-Token legacy header is active in production
     NSDictionary *startupEnv = [[NSProcessInfo processInfo] environment];
     BOOL isProductionEnv = [[startupEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"];
     BOOL xAdminTokenDisabled = [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"1"] ||
@@ -465,124 +464,23 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     if (isProductionEnv && !xAdminTokenDisabled) {
         PDS_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is active in production. Set PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1 to disable it.");
     }
-    
-    // Initialize Firehose (subscribeRepos) handler early so it's available for persistence in tests
+
+    // Firehose handler
     if (!_subscribeReposHandler) {
         _subscribeReposHandler = [[SubscribeReposHandler alloc] initWithServiceDatabases:_serviceDatabases userDatabasePool:_userDatabasePool];
     }
 
-    // Initialize Sequencer Analytics Collector for system diagnostics
+    // Sequencer Analytics Collector
     if (!_analyticsCollector) {
         _analyticsCollector = [[PDSSequencerAnalyticsCollector alloc] initWithServiceDatabases:_serviceDatabases
-                                                                              subscribeHandler:_subscribeReposHandler];
+                                                                               subscribeHandler:_subscribeReposHandler];
     }
 }
-
-- (void)loadLexicons {
-    ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
-    NSArray<NSString *> *lexiconPaths = [self lexiconSearchPaths];
-    BOOL loadedAny = NO;
-    
-    for (NSString *path in lexiconPaths) {
-        NSError *loadError = nil;
-        if ([registry loadLexiconsFromDirectory:path error:&loadError]) {
-            loadedAny = YES;
-            PDS_LOG_INFO(@"Loaded lexicons from %@", path);
-        } else if (loadError) {
-            PDS_LOG_WARN(@"Failed to load lexicons from %@: %@", path, loadError);
-        }
-    }
-    
-    if (!loadedAny) {
-        PDS_LOG_WARN(@"No lexicons loaded. Set PDS_LEXICON_PATH or install lexicons under Garazyk/Resources/lexicons.");
-    }
-}
-
-- (NSArray<NSString *> *)lexiconSearchPaths {
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSMutableOrderedSet<NSString *> *paths = [NSMutableOrderedSet orderedSet];
-    
-    // Environment override
-    NSString *overridePath = [NSProcessInfo processInfo].environment[@"PDS_LEXICON_PATH"];
-    if (overridePath.length > 0) {
-        [paths addObject:overridePath];
-    }
-    
-    // Bundle path
-    NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"lexicons" ofType:nil];
-    if (bundlePath.length > 0) {
-        [paths addObject:bundlePath];
-    }
-    
-    // Working directory candidates
-    NSString *cwd = fm.currentDirectoryPath ?: @"";
-    NSArray<NSString *> *candidates = @[
-        @"Garazyk/Resources/lexicons",
-        @"Resources/lexicons",
-        @"lexicons",
-        @"../Garazyk/Resources/lexicons",
-        @"../../Garazyk/Resources/lexicons",
-        @"../../../Garazyk/Resources/lexicons"
-    ];
-    
-    for (NSString *candidate in candidates) {
-        NSString *path = [cwd stringByAppendingPathComponent:candidate];
-        BOOL isDir = NO;
-        if ([fm fileExistsAtPath:path isDirectory:&isDir] && isDir) {
-            [paths addObject:path];
-        }
-    }
-    
-    // Data directory custom lexicons
-    if (_dataDirectory.length > 0) {
-        NSString *customPath = [_dataDirectory stringByAppendingPathComponent:@"lexicons"];
-        BOOL isDir = NO;
-        if ([fm fileExistsAtPath:customPath isDirectory:&isDir] && isDir) {
-            [paths addObject:customPath];
-        }
-    }
-    
-    return paths.array;
-}
-
-#pragma mark - Configuration Validation
-
-- (void)validateAdminPasswordWithConfiguration:(PDSConfiguration *)configuration {
-    NSDictionary *env = [[NSProcessInfo processInfo] environment];
-    NSString *adminPassword = env[@"PDS_ADMIN_PASSWORD"];
-
-    if (!adminPassword || adminPassword.length == 0) {
-        // No admin password set is OK (admin auth may be disabled)
-        return;
-    }
-
-    // Check if password is hashed with pbkdf2 format
-    if (![adminPassword hasPrefix:@"pbkdf2:"]) {
-        // Check if in production mode
-        NSString *envMode = [env[@"PDS_ENV"] lowercaseString];
-        if ([envMode isEqualToString:@"production"]) {
-            // FAIL in production mode - plaintext passwords not allowed
-            PDS_LOG_AUTH_ERROR(@"CRITICAL: Admin password must use pbkdf2 format in production mode. "
-                              @"Plaintext passwords are not permitted for security reasons. "
-                              @"To generate a hashed password, use: scripts/ops/hash_admin_password.sh");
-            // Exit with error rather than silently continuing
-            NSString *errorMsg = @"Admin password must be hashed with pbkdf2 in production mode";
-            fprintf(stderr, "FATAL: %s\n", errorMsg.UTF8String);
-            exit(1);
-        } else {
-            // WARN in development mode - allow but strongly encourage hashing
-            PDS_LOG_AUTH_WARN(@"Admin password is stored as plain text. "
-                             @"For production use, hash it with PBKDF2: pbkdf2:600000:<salt>:<hash>");
-        }
-    }
-}
-
-#pragma mark - Lifecycle
 
 - (BOOL)startWithError:(NSError **)error {
     PDS_LOG_CORE_INFO(@"Starting PDSApplication...");
 
-    // Perform startup readiness checks before accepting traffic
+    // Startup readiness checks
     NSError *readinessError = nil;
     if (![PDSReadinessCheck performReadinessChecksWithConfig:_configuration error:&readinessError]) {
         PDS_LOG_CORE_ERROR(@"Server failed readiness checks: %@", readinessError);
@@ -590,10 +488,10 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         return NO;
     }
 
-    // Initialize XRPC dispatcher
+    // XRPC dispatcher
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
 
-    // Build and configure HTTP server
+    // HTTP server
     PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:_configuration];
     builder.port = self.httpPort;
     builder.dataDirectory = _dataDirectory;
@@ -635,7 +533,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _running = YES;
     [_relayService start];
 
-    // Start video processing worker (only in internal mode)
+    // Video worker
     if ([_configuration.videoMode isEqualToString:@"internal"]) {
         PDSDatabase *serviceDB = [_serviceDatabases serviceDatabaseWithError:nil];
         id<VideoJobStore> jobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:serviceDB];
@@ -668,7 +566,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // Stop video processing worker
     [[ATProtoVideoWorker sharedWorker] stop];
 
-    // Stop servers
+    // Servers
     [_httpServer stop];
     _httpServer = nil;
     
@@ -677,15 +575,15 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     [_relayService stop];
 
-    // Stop analytics collection
+    // Analytics
     [_analyticsCollector stopCollecting];
     _analyticsCollector = nil;
 
-    // Close databases
+    // Databases
     [_userDatabasePool closeAll];
     [_serviceDatabases closeAll];
     
-    // Flush and close logger
+    // Logger
     [[PDSLogger sharedLogger] flush];
     [[PDSLogger sharedLogger] closeLogFile];
     
