@@ -1310,16 +1310,24 @@ static NSDictionary *adminInviteCodeViewFromRow(NSDictionary *row) {
 }
 
 static NSArray<NSDictionary *> *loadAdminInviteCodeViews(PDSServiceDatabases *serviceDatabases,
-                                                         NSString *sort,
-                                                         NSInteger limit,
-                                                         NSInteger offset,
-                                                         NSError **error) {
+                                                          NSString *sort,
+                                                          NSInteger limit,
+                                                          NSInteger offset,
+                                                          NSError **error) {
     PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:error];
     if (!db) {
         return nil;
     }
 
-    NSString *orderBy = [sort isEqualToString:@"usage"] ? @"uses DESC, created_at DESC, code ASC" : @"created_at DESC, code ASC";
+    // Whitelist allowed sort values to prevent SQL injection
+    NSString *orderBy = nil;
+    if ([sort isEqualToString:@"usage"]) {
+        orderBy = @"uses DESC, created_at DESC, code ASC";
+    } else if ([sort isEqualToString:@"created_at"] || [sort isEqualToString:@"code"] || [sort isEqualToString:@"uses"]) {
+        orderBy = [NSString stringWithFormat:@"%@ DESC", sort];
+    } else {
+        orderBy = @"created_at DESC, code ASC";
+    }
     NSString *sql = [NSString stringWithFormat:
                      @"SELECT code, account_did, created_at, uses, max_uses, disabled "
                      @"FROM invite_codes ORDER BY %@ LIMIT ? OFFSET ?", orderBy];
