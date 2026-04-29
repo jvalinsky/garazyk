@@ -184,6 +184,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, strong) NSTimer *checkpointTimer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *lagByRelay;
+@property (nonatomic, assign) int64_t highestSeenSeq;
 @end
 
 @implementation AppViewIngestEngine
@@ -202,6 +203,9 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                                    DISPATCH_QUEUE_SERIAL);
     _checkpointQueue       = dispatch_queue_create("dev.garazyk.appview.ingest.checkpoint",
                                                    DISPATCH_QUEUE_SERIAL);
+    _relayHeartbeatTimeout = 10.0;
+    _maxLagForBackpressure = 50000;
+    _highestSeenSeq        = 0;
     return self;
 }
 
@@ -217,6 +221,8 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
         AppViewRelayConnection *conn = [[AppViewRelayConnection alloc]
             initWithRelayURL:relayURL startingSeq:startSeq owner:self];
+        // Apply heartbeat timeout for dead-peer detection
+        conn.client.firehose.heartbeatTimeout = self.relayHeartbeatTimeout;
         [_connections addObject:conn];
         [conn.client connect];
     }
@@ -225,10 +231,10 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     dispatch_async(dispatch_get_main_queue(), ^{
         NSTimeInterval interval = self.checkpointIntervalMs / 1000.0;
         self.checkpointTimer = [NSTimer scheduledTimerWithTimeInterval:interval
-                                                                target:self
-                                                              selector:@selector(_timerFired)
-                                                              userInfo:nil
-                                                               repeats:YES];
+                                                               target:self
+                                                             selector:@selector(_timerFired)
+                                                             userInfo:nil
+                                                              repeats:YES];
     });
 }
 
@@ -262,6 +268,20 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     });
 }
 
+// Returns YES if backpressure is active (lag exceeds threshold)
+- (BOOL)_shouldApplyBackpressure:(int64_t)incomingSeq fromRelay:(NSString *)relayURL {
+    if (incomingSeq > _highestSeenSeq) {
+        _highestSeenSeq = incomingSeq;
+    }
+    int64_t lag = _highestSeenSeq - self.lastCheckpointSeq;
+    if (lag > self.maxLagForBackpressure) {
+        PDS_LOG_WARN(@"[AppView Ingest] Backpressure: lag=%lld exceeds threshold=%lld for %@",
+                     (long long)lag, (long long)self.maxLagForBackpressure, relayURL);
+        return YES;
+    }
+    return NO;
+}
+
 - (void)_timerFired {
     [self flushCheckpoints];
 }
@@ -279,6 +299,12 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     // Idempotency check
     if ([_database hasEventWithDID:did rev:rev cid:cid]) {
         PDS_LOG_DEBUG(@"[AppView Ingest] Skipping duplicate event did=%@ rev=%@", did, rev);
+        return;
+    }
+
+    // Backpressure check: drop events if lag exceeds threshold
+    if ([self _shouldApplyBackpressure:seq fromRelay:relayURL]) {
+        PDS_LOG_WARN(@"[AppView Ingest] Backpressure active, skipping event seq=%lld from %@", (long long)seq, relayURL);
         return;
     }
 
