@@ -47,7 +47,10 @@ self.onmessage = async event => {
         status: reply.status,
         execution_count: reply.execution_count,
         data: reply.data || {},
-        metadata: reply.metadata || {}
+        metadata: reply.metadata || {},
+        ename: reply.ename,
+        evalue: reply.evalue,
+        traceback: reply.traceback || []
       });
       return;
     }
