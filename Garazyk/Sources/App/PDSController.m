@@ -450,10 +450,15 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   CID *cid = [CID cidWithDigest:digest codec:0x71]; // Use dag-cbor codec
   PDS_LOG_CORE_DEBUG(@"CID created: %@", cid.stringValue);
 
+  if (!cid || !cid.stringValue) {
+    PDS_LOG_CORE_ERROR(@"Failed to create CID for record at at://%@/%@/%@", did, collection, rkey);
+    return nil;
+  }
+
   NSDictionary *result = @{
     @"uri" :
         [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey],
-    @"cid" : cid.stringValue ?: @"bafkreiplaceholder"
+    @"cid" : cid.stringValue
   };
   PDS_LOG_CORE_DEBUG(@"Returning result for URI: %@", result[@"uri"]);
   return result;
