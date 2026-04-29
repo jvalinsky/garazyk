@@ -22,13 +22,12 @@ elseif(UNIX)
     endif()
 endif()
 
-project(AccountsPDS
+project(tutorial-9-moderation
   VERSION 0.1.0
-  DESCRIPTION "Tutorial 2: Account Management"
+  DESCRIPTION "Tutorial 9: Moderation & Ozone"
   LANGUAGES OBJC C
 )
 
-# Enable ARC for Objective-C
 set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-arc -fmodules -fmodules-cache-path=${CMAKE_BINARY_DIR}/ModuleCache")
 
 # Common tutorial utilities
@@ -67,10 +66,10 @@ set(COMMON_SOURCES
 )
 
 # Create the executable
-add_executable(tutorial-2-accounts
+add_executable(tutorial-9-moderation
     ${TUTORIAL_SOURCES}
     ${COMMON_SOURCES}
 )
 
 # Link frameworks
-target_link_libraries(tutorial-2-accounts ${FRAMEWORKS} objc)
+target_link_libraries(tutorial-9-moderation ${FRAMEWORKS} objc)

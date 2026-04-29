@@ -20,24 +20,31 @@
         @"blobs": event.blobs,
         @"time": event.time
     } mutableCopy];
-    
+
     if (event.since) {
         eventDict[@"since"] = event.since;
     }
-    
-    // Encode as JSON (simplified - use DAG-CBOR in production)
+
+    // SIMPLIFICATION: The production PDS uses DAG-CBOR encoding for firehose events.
+    // This tutorial uses JSON for simplicity. The frame format is also simplified:
+    //   Production: [varint header_len][DAG-CBOR header][DAG-CBOR body]
+    //   Tutorial:   [JSON header bytes][JSON body bytes]
+    //
+    // To use real DAG-CBOR, you would need a CBOR encoder (e.g., cbor-x or
+    // a custom encoder) and encode the header/body separately.
+
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:eventDict options:0 error:error];
     if (!jsonData) return nil;
-    
+
     // Build frame: [header][body]
     NSDictionary *header = @{@"op": @1, @"t": @"#commit"};
     NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:error];
     if (!headerData) return nil;
-    
+
     NSMutableData *frame = [NSMutableData data];
     [frame appendData:headerData];
     [frame appendData:jsonData];
-    
+
     return frame;
 }
 

@@ -1,5 +1,5 @@
 #import "RecordService.h"
-#import "SimpleCIDGenerator.h"
+#import "TutorialCIDGenerator.h"
 
 @interface RecordService ()
 @property (nonatomic, strong) RecordRepository *repository;
@@ -10,9 +10,7 @@
 - (instancetype)initWithRepository:(RecordRepository *)repository {
     self = [super init];
     if (!self) return nil;
-    
     self.repository = repository;
-    
     return self;
 }
 
@@ -23,27 +21,27 @@
                                   error:(NSError **)error {
     if (!collection || !rkey || !value || !did) {
         if (error) {
-            *error = [NSError errorWithDomain:@"Record" code:1 
-                userInfo:@{NSLocalizedDescriptionKey: @"Missing required fields"}];
+            *error = [NSError errorWithDomain:@"Record" code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Missing required fields"}];
         }
         return nil;
     }
-    
+
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
-    NSString *cid = [SimpleCIDGenerator generateCIDForJSON:value];
-    
+    NSString *cid = [TutorialCIDGenerator generateCIDForJSON:value];
+
     Record *record = [[Record alloc] init];
     record.uri = uri;
     record.cid = cid;
     record.value = value;
     record.createdAt = [[NSDate date] timeIntervalSince1970];
-    
+
     NSError *dbError = nil;
     if (![self.repository saveRecord:record forDid:did error:&dbError]) {
         if (error) *error = dbError;
         return nil;
     }
-    
+
     return @{
         @"uri": uri,
         @"cid": cid
@@ -55,15 +53,15 @@
                                error:(NSError **)error {
     NSError *dbError = nil;
     Record *record = [self.repository getRecordAtURI:uri forDid:did error:&dbError];
-    
+
     if (!record) {
         if (error) {
-            *error = [NSError errorWithDomain:@"Record" code:2 
-                userInfo:@{NSLocalizedDescriptionKey: @"Record not found"}];
+            *error = [NSError errorWithDomain:@"Record" code:2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Record not found"}];
         }
         return nil;
     }
-    
+
     return @{
         @"uri": record.uri,
         @"cid": record.cid,
@@ -76,16 +74,16 @@
                             limit:(NSUInteger)limit
                             error:(NSError **)error {
     NSError *dbError = nil;
-    NSArray<Record *> *records = [self.repository listRecords:collection 
-                                                       forDid:did 
-                                                        limit:limit 
+    NSArray<Record *> *records = [self.repository listRecords:collection
+                                                       forDid:did
+                                                        limit:limit
                                                         error:&dbError];
-    
+
     if (!records) {
         if (error) *error = dbError;
         return nil;
     }
-    
+
     NSMutableArray *result = [NSMutableArray array];
     for (Record *record in records) {
         [result addObject:@{
@@ -94,7 +92,7 @@
             @"value": record.value
         }];
     }
-    
+
     return result;
 }
 

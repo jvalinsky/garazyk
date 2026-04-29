@@ -28,7 +28,7 @@ endif()
 project(HelloPDS
   VERSION 0.1.0
   DESCRIPTION "Tutorial 1: Hello PDS"
-  LANGUAGES OBJC
+  LANGUAGES OBJC C
 )
 
 # Enable ARC and modules for Objective-C on macOS

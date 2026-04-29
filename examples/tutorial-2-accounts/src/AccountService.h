@@ -1,13 +1,14 @@
 #import <Foundation/Foundation.h>
-#import "Account.h"
-#import "AccountRepository.h"
-#import "SimpleJWTMinter.h"
 
-@interface AccountService : NSObject {
-}
+@class AccountRepository;
+@class TutorialJWTMinter;
+
+NS_ASSUME_NONNULL_BEGIN
+
+@interface AccountService : NSObject
 
 - (instancetype)initWithRepository:(AccountRepository *)repository
-                            minter:(SimpleJWTMinter *)minter;
+                            minter:(TutorialJWTMinter *)minter;
 
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
                                         password:(NSString *)password
@@ -19,3 +20,5 @@
                                      error:(NSError **)error;
 
 @end
+
+NS_ASSUME_NONNULL_END

@@ -3,7 +3,11 @@
 #import <netinet/in.h>
 #import <arpa/inet.h>
 #import <unistd.h>
+#if defined(__APPLE__) && !defined(GNUSTEP)
 #import <CommonCrypto/CommonDigest.h>
+#else
+#import <openssl/sha.h>
+#endif
 #import "WebSocketConnection.h"
 #import "SubscribeReposHandler.h"
 
@@ -168,9 +172,13 @@
     NSString *combined = [wsKey stringByAppendingString:magic];
     NSData *combinedData = [combined dataUsingEncoding:NSUTF8StringEncoding];
     
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
+    unsigned char digest[20]; // SHA-1 = 20 bytes
+#if defined(__APPLE__) && !defined(GNUSTEP)
     CC_SHA1(combinedData.bytes, (CC_LONG)combinedData.length, digest);
-    NSData *digestData = [NSData dataWithBytes:digest length:CC_SHA1_DIGEST_LENGTH];
+#else
+    SHA1(combinedData.bytes, combinedData.length, digest);
+#endif
+    NSData *digestData = [NSData dataWithBytes:digest length:20];
     NSString *acceptKey = [digestData base64EncodedStringWithOptions:0];
     
     // Send upgrade response
