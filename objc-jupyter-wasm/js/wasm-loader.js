@@ -20,8 +20,89 @@ export class ObjcWasmKernel {
     }
 
     const bytes = await response.arrayBuffer();
-    const { instance } = await WebAssembly.instantiate(bytes, {});
+
+    // The kernel is linked with wasi-libc and requires WASI imports.
+    // We provide a minimal WASI implementation that supports the
+    // fd_write syscall (for stdout/stderr capture) and proc_exit.
+    const wasiImports = ObjcWasmKernel._createWasiImports();
+    const { instance } = await WebAssembly.instantiate(bytes, {
+      wasi_snapshot_preview1: wasiImports
+    });
+
+    // Call _start if exported (WASI reactor entry point)
+    if (instance.exports._start) {
+      instance.exports._start();
+    }
+
     return new ObjcWasmKernel(instance);
+  }
+
+  /**
+   * Create a minimal WASI preview1 import object.
+   * Only the syscalls needed by the kernel are implemented:
+   *   - fd_write: capture stdout/stderr to a ring buffer
+   *   - proc_exit: no-op (kernel runs forever)
+   *   - environ_sizes_get / environ_get: no environment
+   *   - fd_fdstat_get: report character device for stdout/stderr
+   *   - random_get: no-op (not used by kernel)
+   */
+  static _createWasiImports() {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    return {
+      // fd_write(fd, iovs_ptr, iovs_count, nwritten_ptr) -> count
+      fd_write(fd, iovs_ptr, iovs_count, nwritten_ptr) {
+        // We don't capture stdout in the WASI layer — the kernel
+        // captures NSLog output via its own ring buffer.
+        return 0;
+      },
+
+      // proc_exit(code) -> !
+      proc_exit(code) {
+        // Kernel should not exit. Ignore.
+      },
+
+      // environ_sizes_get(count_ptr, buf_ptr) -> 0
+      environ_sizes_get(count_ptr, buf_ptr) {
+        return 0;
+      },
+
+      // environ_get(environ_ptr, buf_ptr) -> 0
+      environ_get(environ_ptr, buf_ptr) {
+        return 0;
+      },
+
+      // fd_fdstat_get(fd, stat_ptr) -> errno
+      fd_fdstat_get(fd, stat_ptr) {
+        // Report stdout (1) and stderr (2) as character devices
+        if (fd === 1 || fd === 2) {
+          return 0;
+        }
+        return 8; // EBADF
+      },
+
+      // random_get(buf_ptr, buf_len) -> 0
+      random_get(buf_ptr, buf_len) {
+        return 0;
+      },
+
+      // clock_time_get(clock_id, precision, time_ptr) -> 0
+      clock_time_get(clock_id, precision, time_ptr) {
+        // Return 0 epoch time
+        return 0;
+      },
+
+      // sched_yield() -> 0
+      sched_yield() {
+        return 0;
+      },
+
+      // poll_oneoff(in_ptr, out_ptr, nsubscriptions, nevents_ptr) -> 0
+      poll_oneoff(in_ptr, out_ptr, nsubscriptions, nevents_ptr) {
+        return 0;
+      }
+    };
   }
 
   constructor(instance) {

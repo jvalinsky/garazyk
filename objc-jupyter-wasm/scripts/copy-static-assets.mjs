@@ -58,21 +58,10 @@ const kernelWasm = await resolveArtifact(
   ]
 );
 
-const libobjc2Wasm = await resolveArtifact(
-  'libobjc2-wasm',
-  argValue('--libobjc2-wasm') || process.env.LIBOBJC2_WASM,
-  [
-    'compiler/libobjc2.wasm',
-    'jupyterlite/kernel/libobjc2.wasm',
-    'result/wasm/libobjc2.wasm'
-  ]
-);
-
 await mkdir(path.join(outputDir, 'kernel'), { recursive: true });
 await mkdir(path.join(outputDir, 'js'), { recursive: true });
 
 await copyFile(kernelWasm, path.join(outputDir, 'kernel/kernel.wasm'));
-await copyFile(libobjc2Wasm, path.join(outputDir, 'kernel/libobjc2.wasm'));
 
 const workerSource =
   (await exists(path.join(projectRoot, 'lib/js/objc-worker.js')))
@@ -96,7 +85,6 @@ await writeFile(
   JSON.stringify(
     {
       kernelWasm: 'kernel/kernel.wasm',
-      libobjc2Wasm: 'kernel/libobjc2.wasm',
       worker: 'js/objc-worker.js',
       loader: 'js/wasm-loader.js',
       staticDemoKernel: copiedKernelJs ? 'kernel.js' : null

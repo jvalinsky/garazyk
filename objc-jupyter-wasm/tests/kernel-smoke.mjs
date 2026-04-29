@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import { WASI } from 'node:wasi';
 
 const wasmPath = process.argv[2];
 
@@ -8,7 +9,14 @@ if (!wasmPath) {
 }
 
 const bytes = await readFile(wasmPath);
-const { instance } = await WebAssembly.instantiate(bytes, {});
+
+// The kernel is linked with wasi-libc and requires WASI imports.
+const wasi = new WASI({ version: 'preview1' });
+const { instance } = await WebAssembly.instantiate(bytes, {
+  wasi_snapshot_preview1: wasi.wasiImport
+});
+// Initialize the WASI instance (sets up stdin/stdout/stderr fds)
+wasi.initialize(instance);
 const exports = instance.exports;
 
 for (const name of [
@@ -20,7 +28,13 @@ for (const name of [
   'objc_kernel_inspect_json',
   'objc_kernel_free',
   'objc_kernel_request_buffer',
-  'objc_kernel_request_buffer_size'
+  'objc_kernel_request_buffer_size',
+  // Runtime exports (from libobjc2-wasm-full)
+  'objc_getClass',
+  'sel_registerName',
+  'objc_msgSend',
+  'objc_allocateClassPair',
+  'class_addMethod'
 ]) {
   assert.ok(exports[name], `missing export: ${name}`);
 }
