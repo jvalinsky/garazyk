@@ -14,16 +14,16 @@ cmake-build-*/
 # macOS
 .DS_Store
 
-# Compiled binaries
-hello-pds
-tutorial-2-accounts
-tutorial-3-records
-tutorial-4-auth
-tutorial-5-firehose
-tutorial-6-deployment
-tutorial-7-blobs
-tutorial-8-identity
-tutorial-9-moderation
+# Compiled binaries (match only in build/ directories)
+build/**/hello-pds
+build/**/tutorial-*-accounts
+build/**/tutorial-*-records
+build/**/tutorial-*-auth
+build/**/tutorial-*-firehose
+build/**/tutorial-*-deployment
+build/**/tutorial-*-blobs
+build/**/tutorial-*-identity
+build/**/tutorial-*-moderation
 
 # Database files (created at runtime)
 *.db
