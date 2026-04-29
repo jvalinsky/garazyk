@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 #
 # Name: start_server.sh
-# Description: Start the ATProto PDS server with proper process management
-# Author: Professional Bash Script Example
+# Description: Start one local ATProto PDS server with PID/log management
 # Version: 1.0.0
-# Date: 2024-01-01
+#
+# This lightweight launcher is useful when debugging kaszlak by itself rather
+# than bringing up the full local service graph. It validates the binary,
+# refuses to overwrite a live PID file, redirects output to a stable log file,
+# and removes its PID file during cleanup.
 #
 
 set -euo pipefail
 
-# Configuration
+# Configuration is environment-overridable so the same script can point at a
+# local build, an installed binary, or a test-specific log/PID directory.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
-PROJECT_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || (cd "$SCRIPT_DIR/../.." && pwd))"
+source "$SCRIPT_DIR/../lib/common.sh"
+
+PROJECT_ROOT="$(resolve_project_root "$SCRIPT_DIR")"
 readonly PROJECT_ROOT
 SERVER_BINARY="${SERVER_BINARY:-$PROJECT_ROOT/build/bin/kaszlak}"
 readonly SERVER_BINARY
@@ -23,51 +29,13 @@ readonly PID_FILE
 VERBOSE="${VERBOSE:-false}"
 readonly VERBOSE
 
-# Global variables
+# Populated after the background process starts; cleanup uses it to avoid
+# killing an unrelated PID from an old file.
 SERVER_PID=""
 
-# Color definitions
-if [[ -t 1 ]] && [[ "${NO_COLOR:-false}" != "true" ]]; then
-    readonly RED='\033[0;31m'
-    readonly GREEN='\033[0;32m'
-    readonly YELLOW='\033[1;33m'
-    readonly BLUE='\033[0;34m'
-    readonly PURPLE='\033[0;35m'
-    readonly CYAN='\033[0;36m'
-    readonly WHITE='\033[1;37m'
-    readonly NC='\033[0m' # No Color
-else
-    readonly RED=''
-    readonly GREEN=''
-    readonly YELLOW=''
-    readonly BLUE=''
-    readonly PURPLE=''
-    readonly CYAN=''
-    readonly WHITE=''
-    readonly NC=''
-fi
-
-# Logging functions with colors
-log_debug() {
-    if [[ "$VERBOSE" == "true" ]]; then
-        echo -e "${BLUE}[DEBUG]${NC} $1" >&2
-    fi
-}
-log_info()  { echo -e "${CYAN}[INFO]${NC} $1" >&2; }
-log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1" >&2; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
-
-# Error exit function
-error_exit() {
-    local message="$1"
-    local code="${2:-1}"
-    log_error "$message"
-    cleanup
-    exit "$code"
-}
-
-# Cleanup function
 cleanup() {
+    # Stop only the child this invocation started. Existing services detected
+    # by check_existing_server are left alone.
     log_debug "Cleaning up resources"
 
     # Stop server if running
@@ -81,28 +49,12 @@ cleanup() {
     [[ -f "$PID_FILE" ]] && rm -f "$PID_FILE" 2>/dev/null || true
 }
 
-# Trap signals
 trap cleanup EXIT
 trap 'error_exit "Script interrupted by user" 130' INT TERM
 
-# Dependency check
-check_dependencies() {
-    local deps=("pgrep" "pkill")
-    local missing=()
-
-    for dep in "${deps[@]}"; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            missing+=("$dep")
-        fi
-    done
-
-    if (( ${#missing[@]} > 0 )); then
-        error_exit "Missing dependencies: ${missing[*]}" 3
-    fi
-}
-
-# Validate server binary
 validate_server_binary() {
+    # Fail before changing directories or creating PID files when the caller
+    # points SERVER_BINARY at a missing or non-executable path.
     if [[ ! -f "$SERVER_BINARY" ]]; then
         error_exit "Server binary not found: $SERVER_BINARY" 5
     fi
@@ -114,8 +66,9 @@ validate_server_binary() {
     log_debug "Server binary validated: $SERVER_BINARY"
 }
 
-# Check if server is already running
 check_existing_server() {
+    # PID files are authoritative when they point at a live process. Stale files
+    # are removed so a crashed prior run does not block local debugging.
     if [[ -f "$PID_FILE" ]]; then
         local existing_pid
         existing_pid=$(cat "$PID_FILE" 2>/dev/null || echo "")
@@ -131,8 +84,9 @@ check_existing_server() {
     fi
 }
 
-# Start server
 start_server() {
+    # The server runs from PROJECT_ROOT so relative config/default paths match
+    # the expectations used by local development commands.
     log_info "Starting ATProto PDS server"
 
     # Change to project root
@@ -156,7 +110,6 @@ start_server() {
     log_info "PID file: $PID_FILE"
 }
 
-# Main function
 main() {
     log_info "Starting ATProto PDS server startup script"
 
@@ -171,5 +124,6 @@ main() {
     log_info "Server startup completed successfully"
 }
 
-# Run main function with all arguments
+# Preserve "$@" for future options even though the current script has no custom
+# argument parser.
 main "$@"

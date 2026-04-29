@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Launch the full Garazyk ATProto network, seed accounts and data, and optionally run chat seeding.
+"""Launch and seed a complete local Garazyk ATProto network.
 
-Starts all five services (PLC, PDS, Relay, AppView, UI), waits for health,
-creates accounts and social data, then optionally runs seed_chat.py for chat
-conversations.
+The launcher starts PLC, PDS, Relay, AppView, and the Admin UI from BUILD_DIR,
+waits for each service to pass its readiness check, creates a small social
+graph, configures the Admin UI with a PDS admin token, and optionally delegates
+chat setup to seed_chat.py.
+
+The script is designed for local demos and integration debugging. It owns the
+processes it starts and tears them down on Ctrl+C; --stop is a best-effort
+cleanup path for processes left behind by an interrupted run.
 
 Usage:
     # Full stack with all seeding:
@@ -44,29 +49,37 @@ import sys
 import time
 from pathlib import Path
 
-import requests
+# Add scripts/ to sys.path so this file can be run directly from the repo root
+# without requiring the shared helpers to be installed as a package.
+_scripts_dir = str(Path(__file__).resolve().parent)
+if _scripts_dir not in sys.path:
+    sys.path.insert(0, _scripts_dir)
+
+from lib.atproto import (
+    XrpcClient,
+    XrpcError,
+    create_account_or_login,
+    now_iso,
+    wait_for_http,
+    get_pds_admin_token,
+    SERVICE_PORTS,
+    SERVICE_URLS,
+    PDS_ADMIN_PASSWORD,
+    PDS_MASTER_SECRET,
+    APPVIEW_ADMIN_SECRET,
+    UI_ADMIN_PASSWORD,
+)
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BUILD_DIR = Path(os.environ.get("BUILD_DIR", PROJECT_ROOT / "build" / "bin"))
 
-PLC_PORT = int(os.environ.get("PLC_PORT", "2582"))
-PDS_PORT = int(os.environ.get("PDS_PORT", "2583"))
-RELAY_PORT = int(os.environ.get("RELAY_PORT", "2584"))
-APPVIEW_PORT = int(os.environ.get("APPVIEW_PORT", "3200"))
-UI_PORT = int(os.environ.get("UI_PORT", "2590"))
-
-PLC_URL = f"http://127.0.0.1:{PLC_PORT}"
-PDS_URL = f"http://127.0.0.1:{PDS_PORT}"
-RELAY_URL = f"http://127.0.0.1:{RELAY_PORT}"
-APPVIEW_URL = f"http://127.0.0.1:{APPVIEW_PORT}"
-UI_URL = f"http://127.0.0.1:{UI_PORT}"
-
-PDS_ADMIN_PASSWORD = os.environ.get("PDS_ADMIN_PASSWORD", "admin123")
-UI_ADMIN_PASSWORD = os.environ.get("UI_ADMIN_PASSWORD", "localdev")
-PDS_MASTER_SECRET = os.environ.get("PDS_MASTER_SECRET", "test-master-secret-123")
-APPVIEW_ADMIN_SECRET = os.environ.get("APPVIEW_ADMIN_SECRET", "appview-admin-secret")
+PLC_URL = SERVICE_URLS["plc"]
+PDS_URL = SERVICE_URLS["pds"]
+RELAY_URL = SERVICE_URLS["relay"]
+APPVIEW_URL = SERVICE_URLS["appview"]
+UI_URL = SERVICE_URLS["ui"]
 
 LOG_DIR = PROJECT_ROOT / "logs"
 
@@ -80,17 +93,17 @@ SEED_ACCOUNTS = [
 # Posts per account
 SEED_POSTS = {
     "alice.garazyk.xyz": [
-        "Hello from Alice! 🌟",
+        "Hello from Alice!",
         "Beautiful day in the ATmosphere!",
-        "Just set up my ATProto node 🚀",
+        "Just set up my ATProto node!",
     ],
     "bob.garazyk.xyz": [
         "Hey everyone, Bob here!",
-        "Working on relay code today 🔧",
+        "Working on relay code today",
     ],
     "carol.garazyk.xyz": [
         "Carol checking in!",
-        "Love this decentralized web! 💜",
+        "Love this decentralized web!",
     ],
 }
 
@@ -107,22 +120,8 @@ processes: list[subprocess.Popen] = []
 
 
 def log(tag: str, msg: str) -> None:
+    """Print a tagged status line for the local launcher."""
     print(f"  [{tag}] {msg}")
-
-
-def wait_for_http(url: str, timeout: int = 30, label: str = "") -> bool:
-    """Wait for an HTTP endpoint to return 200."""
-    label = label or url
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            r = requests.get(url, timeout=2)
-            if r.status_code < 500:
-                return True
-        except requests.ConnectionError:
-            pass
-        time.sleep(0.5)
-    return False
 
 
 def start_service(
@@ -131,7 +130,11 @@ def start_service(
     env: dict[str, str] | None = None,
     log_file: str | None = None,
 ) -> subprocess.Popen:
-    """Start a background service process."""
+    """Start a managed background service and redirect output to logs.
+
+    The returned Popen is stored in the global process list so stop_all can
+    terminate services in reverse startup order.
+    """
     full_env = {**os.environ, **(env or {})}
     log_path = LOG_DIR / (log_file or f"{name}.log")
     LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -143,7 +146,12 @@ def start_service(
 
 
 def stop_all() -> None:
-    """Stop all managed service processes."""
+    """Stop managed and stray local service processes.
+
+    Managed Popen objects are terminated first. The final pkill pass catches
+    service processes from previous runs, which is helpful when a launcher was
+    interrupted before it could record every child PID.
+    """
     log("STOP", "Stopping all services...")
     for proc in reversed(processes):
         try:
@@ -162,9 +170,10 @@ def stop_all() -> None:
 # ── Service Starters ─────────────────────────────────────────────────────────
 
 def start_plc() -> subprocess.Popen:
+    """Start the PLC directory service and require its health endpoint."""
     proc = start_service(
         "PLC",
-        [str(BUILD_DIR / "campagnola"), "serve", "--port", str(PLC_PORT)],
+        [str(BUILD_DIR / "campagnola"), "serve", "--port", str(SERVICE_PORTS["plc"])],
         log_file="plc.log",
     )
     if not wait_for_http(f"{PLC_URL}/_health", label="PLC"):
@@ -175,6 +184,7 @@ def start_plc() -> subprocess.Popen:
 
 
 def start_pds() -> subprocess.Popen:
+    """Start the PDS with local PLC and demo secrets configured."""
     proc = start_service(
         "PDS",
         [str(BUILD_DIR / "kaszlak"), "serve"],
@@ -193,9 +203,10 @@ def start_pds() -> subprocess.Popen:
 
 
 def start_relay() -> subprocess.Popen:
+    """Start the relay without upstreams; scenarios wire it explicitly later."""
     proc = start_service(
         "Relay",
-        [str(BUILD_DIR / "zuk"), "serve", "--port", str(RELAY_PORT), "--no-upstream"],
+        [str(BUILD_DIR / "zuk"), "serve", "--port", str(SERVICE_PORTS["relay"]), "--no-upstream"],
         log_file="relay.log",
     )
     if not wait_for_http(f"{RELAY_URL}/api/relay/health", label="Relay"):
@@ -206,11 +217,12 @@ def start_relay() -> subprocess.Popen:
 
 
 def start_appview() -> subprocess.Popen:
+    """Start AppView pointed at the local relay firehose."""
     proc = start_service(
         "AppView",
-        [str(BUILD_DIR / "syrena"), "serve", "--port", str(APPVIEW_PORT)],
+        [str(BUILD_DIR / "syrena"), "serve", "--port", str(SERVICE_PORTS["appview"])],
         env={
-            "APPVIEW_RELAY_URLS": f"ws://127.0.0.1:{RELAY_PORT}/xrpc/com.atproto.sync.subscribeRepos",
+            "APPVIEW_RELAY_URLS": f"ws://127.0.0.1:{SERVICE_PORTS['relay']}/xrpc/com.atproto.sync.subscribeRepos",
             "APPVIEW_ADMIN_SECRET": APPVIEW_ADMIN_SECRET,
         },
         log_file="appview.log",
@@ -224,6 +236,7 @@ def start_appview() -> subprocess.Popen:
 
 
 def start_ui() -> subprocess.Popen:
+    """Start the Admin UI with URLs for all local backend services."""
     proc = start_service(
         "UI",
         [str(BUILD_DIR / "garazyk-ui"), "serve"],
@@ -244,52 +257,15 @@ def start_ui() -> subprocess.Popen:
     return proc
 
 
-# ── XRPC Helpers ─────────────────────────────────────────────────────────────
-
-def create_account(handle: str, email: str, password: str) -> dict:
-    r = requests.post(
-        f"{PDS_URL}/xrpc/com.atproto.server.createAccount",
-        json={"handle": handle, "email": email, "password": password},
-        timeout=15,
-    )
-    if r.status_code == 200:
-        return r.json()
-    # Account might already exist — try login
-    r2 = requests.post(
-        f"{PDS_URL}/xrpc/com.atproto.server.createSession",
-        json={"identifier": handle, "password": password},
-        timeout=15,
-    )
-    if r2.status_code == 200:
-        return r2.json()
-    raise RuntimeError(f"Failed to create/login {handle}: {r.status_code} {r.text[:200]}")
-
-
-def create_record(jwt: str, repo_did: str, collection: str, record: dict) -> dict:
-    r = requests.post(
-        f"{PDS_URL}/xrpc/com.atproto.repo.createRecord",
-        headers={"Authorization": f"Bearer {jwt}"},
-        json={"repo": repo_did, "collection": collection, "record": record},
-        timeout=15,
-    )
-    if r.status_code != 200:
-        raise RuntimeError(f"createRecord failed: {r.status_code} {r.text[:200]}")
-    return r.json()
-
-
-def get_pds_admin_token() -> str:
-    r = requests.post(
-        f"{PDS_URL}/admin/login",
-        json={"password": PDS_ADMIN_PASSWORD},
-        timeout=10,
-    )
-    if r.status_code != 200:
-        raise RuntimeError(f"PDS admin login failed: {r.status_code}")
-    return r.json()["token"]
-
+# ── UI Connection Helpers ───────────────────────────────────────────────────
 
 def set_ui_connections(pds_token: str) -> None:
-    """Set the PDS admin token in the UI server via the connections endpoint."""
+    """Set the PDS admin token in the UI server via the connections endpoint.
+
+    Failure is logged and ignored because the network is still useful for API
+    testing even if the UI cannot persist its admin connection settings.
+    """
+    import requests
     # Login to UI
     s = requests.Session()
     r = s.post(f"{UI_URL}/admin/login", json={"password": UI_ADMIN_PASSWORD}, timeout=10)
@@ -311,18 +287,26 @@ def set_ui_connections(pds_token: str) -> None:
 # ── Seeding ──────────────────────────────────────────────────────────────────
 
 def seed_accounts_and_data() -> dict[str, dict]:
-    """Create accounts, posts, and follow graph. Returns {handle: session_dict}."""
-    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    """Create demo accounts, posts, and follow relationships.
+
+    Returns a mapping of handle to session dict for accounts that were created
+    or logged in successfully. Individual seed failures are logged so one bad
+    record does not prevent the rest of the demo graph from being populated.
+    """
+    client = XrpcClient(PDS_URL)
+    now = now_iso()
     sessions: dict[str, dict] = {}
 
     # Create accounts
     log("SEED", "Creating accounts...")
     for acct in SEED_ACCOUNTS:
         try:
-            session = create_account(acct["handle"], acct["email"], acct["password"])
+            session = create_account_or_login(
+                client, acct["handle"], acct["email"], acct["password"]
+            )
             sessions[acct["handle"]] = session
             log("SEED", f"  {acct['handle']}: {session.get('did', '?')}")
-        except RuntimeError as e:
+        except XrpcError as e:
             log("SEED", f"  FAILED {acct['handle']}: {e}")
 
     # Create posts
@@ -334,13 +318,13 @@ def seed_accounts_and_data() -> dict[str, dict]:
         did = sessions[handle]["did"]
         for text in posts:
             try:
-                create_record(jwt, did, "app.bsky.feed.post", {
+                client.create_record(did, "app.bsky.feed.post", {
                     "$type": "app.bsky.feed.post",
                     "text": text,
                     "createdAt": now,
-                })
+                }, jwt)
                 log("SEED", f"  [{handle}]: {text[:40]}")
-            except RuntimeError as e:
+            except XrpcError as e:
                 log("SEED", f"  Post failed: {e}")
 
     # Create follows
@@ -354,20 +338,20 @@ def seed_accounts_and_data() -> dict[str, dict]:
             if followee_handle not in sessions:
                 continue
             try:
-                create_record(jwt, did, "app.bsky.graph.follow", {
+                client.create_record(did, "app.bsky.graph.follow", {
                     "$type": "app.bsky.graph.follow",
                     "subject": sessions[followee_handle]["did"],
                     "createdAt": now,
-                })
+                }, jwt)
                 log("SEED", f"  {follower_handle.split('.')[0]} -> {followee_handle.split('.')[0]}")
-            except RuntimeError as e:
+            except XrpcError as e:
                 log("SEED", f"  Follow failed: {e}")
 
     return sessions
 
 
 def seed_chat() -> None:
-    """Run seed_chat.py as a subprocess."""
+    """Run seed_chat.py against the PDS URL used by this launcher."""
     chat_script = PROJECT_ROOT / "scripts" / "seed_chat.py"
     if not chat_script.exists():
         log("CHAT", f"seed_chat.py not found at {chat_script}")
@@ -438,7 +422,7 @@ def main() -> None:
             if skip_flag:
                 continue
             print(f"  [ERROR] Binary not found: {path}")
-            print(f"          Build with: xcodebuild -scheme {binary} build")
+            print(f"          Build with: cmake --build build --target {binary}")
             sys.exit(1)
 
     # Kill any existing instances
@@ -475,7 +459,7 @@ def main() -> None:
         # Configure UI with PDS admin token
         if not args.skip_ui:
             try:
-                token = get_pds_admin_token()
+                token = get_pds_admin_token(PDS_URL, PDS_ADMIN_PASSWORD)
                 set_ui_connections(token)
             except RuntimeError as e:
                 log("UI", f"Failed to configure PDS token: {e}")
@@ -499,7 +483,7 @@ def main() -> None:
     if not args.skip_ui:
         print(f"  UI:       {UI_URL}/admin")
     print()
-    print("  Logs:  {}/".format(LOG_DIR))
+    print(f"  Logs:  {LOG_DIR}/")
     print("  Stop:  python3 scripts/seed_network.py --stop")
     print("         (or Ctrl+C)")
     print()
