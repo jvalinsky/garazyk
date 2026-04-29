@@ -19,6 +19,10 @@ services:
       - HOME=/var/lib/atprotopds
       - PDS_DATA_DIR=/var/lib/atprotopds
       - PDS_TRUST_PROXY_HEADERS=1  # CRITICAL: Trust X-Forwarded-For from nginx
+      - PDS_VIDEO_MODE=internal   # "internal" (in-process) or "external" (use jelcz)
+      # For external video mode, set these:
+      # - JELCZ_URL=http://jelcz:2586
+      # - JELCZ_ADMIN_TOKEN=${JELCZ_ADMIN_TOKEN}
     command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"]
     restart: unless-stopped
     logging:
