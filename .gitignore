@@ -134,6 +134,25 @@ docs/node_modules/
 # Build artifacts
 build_output.txt
 buildServer.json
+*.vsix
+*.bak
+
+# Compiled tutorial binaries
+examples/tutorial-*/tutorial-*
+
+# TypeScript build output
+tooling/vscode-objective-j/out/
+
+# Generated docs index
+docs/repo-index/
+
+# Fuzzing generated output
+fuzzing/results/
+fuzzing/regression_results/
+
+# Deciduous scratch/state
+.deciduous/scratch/
+.deciduous/plugin.log
 
 # Generated audit/result JSON artifacts
 Garazyk/audit_results*.json
