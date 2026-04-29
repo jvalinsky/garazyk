@@ -888,6 +888,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                       blobCid:(NSString *)blobCid
                     mimeType:(nullable NSString *)mimeType
                      fileSize:(NSNumber *)fileSize
+              serviceAuthToken:(nullable NSString *)token
                         error:(NSError **)error;
 - (BOOL)updateVideoJobState:(NSString *)jobId
                         state:(NSString *)state
@@ -902,6 +903,17 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 - (BOOL)incrementVideoJobRetry:(NSString *)jobId
                          error:(NSError **)error;
+
+/// List video jobs with optional state filter, ordered by created_at descending.
+/// @param state Optional state filter (PENDING, PROCESSING, COMPLETED, FAILED). Nil = all.
+/// @param limit Maximum number of rows to return.
+/// @param offset Number of rows to skip (for pagination).
+/// @param error On failure, set to an NSError describing the problem.
+/// @return Array of job dictionaries, or nil on error.
+- (nullable NSArray<NSDictionary *> *)listVideoJobsWithState:(nullable NSString *)state
+                                                       limit:(NSUInteger)limit
+                                                      offset:(NSUInteger)offset
+                                                       error:(NSError **)error;
 
 - (BOOL)setAgeAssurance:(nullable NSString *)assurance
               verifiedAt:(nullable NSString *)verifiedAt

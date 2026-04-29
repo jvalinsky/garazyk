@@ -122,7 +122,7 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 
 #pragma mark - Email & Notifications
 
-/*! @abstract Email provider name (`none`, `mock`, or `smtp`). */
+/*! @abstract Email provider name (`none`, `mock`, `smtp`, or `resend`). SMTP is configured but not implemented. */
 @property (nonatomic, readonly) NSString *emailProviderType;
 
 /*! @abstract SMTP server host. */
@@ -164,6 +164,9 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 @property (nonatomic, readonly) BOOL rateLimitEnabled;
 
 #pragma mark - Blob Storage
+
+/*! @abstract Video processing mode: "internal" (in-PDS) or "external" (side-car). Defaults to "internal". */
+@property (nonatomic, readonly) NSString *videoMode;
 
 /*! @abstract Blob storage type ("disk" or "s3"). Defaults to "disk". */
 @property (nonatomic, readonly) NSString *blobStorageType;

@@ -1,10 +1,17 @@
 #import <XCTest/XCTest.h>
-#import "Media/PDSVideoWorker.h"
-#import "Media/PDSVideoTranscoder.h"
-#import "Media/PDSVideoThumbnailGenerator.h"
+#import "Video/VideoWorker.h"
+#import "Video/VideoTranscoder.h"
+#import "Video/VideoThumbnailGenerator.h"
+#import "Video/PDSLocalVideoJobStore.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Blob/PDSBlobProvider.h"
+
+@interface ATProtoVideoWorker (ATProtoVideoWorkerTests)
+- (void)handleJobFailure:(NSString *)jobId error:(NSError *)error;
+- (void)completeJob:(NSString *)jobId;
+- (void)failJob:(NSString *)jobId error:(NSError *)error;
+@end
 
 /// In-memory blob provider for testing.
 @interface MockWorkerBlobProvider : NSObject <PDSBlobProvider>
@@ -36,17 +43,26 @@
     return data;
 }
 
+- (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {
+    [self.blobs removeObjectForKey:cid.stringValue];
+    return YES;
+}
+
+- (BOOL)hasBlobDataForCID:(CID *)cid {
+    return self.blobs[cid.stringValue] != nil;
+}
+
 @end
 
-@interface PDSVideoWorkerTests : XCTestCase
-@property (nonatomic, strong) PDSVideoWorker *worker;
+@interface ATProtoVideoWorkerTests : XCTestCase
+@property (nonatomic, strong) ATProtoVideoWorker *worker;
 @property (nonatomic, strong) PDSDatabase *database;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong) MockWorkerBlobProvider *blobProvider;
 @property (nonatomic, strong) NSURL *tempDirURL;
 @end
 
-@implementation PDSVideoWorkerTests
+@implementation ATProtoVideoWorkerTests
 
 - (void)setUp {
     [super setUp];
@@ -60,19 +76,18 @@
                                               attributes:nil
                                                    error:nil];
 
-    NSURL *dbURL = [self.tempDirURL URLByAppendingPathComponent:@"test.db"];
-    self.database = [[PDSDatabase alloc] init];
-    self.database.databaseURL = dbURL;
-    [self.database open:nil];
-
-    // Create service databases stub that returns our test database
-    self.serviceDatabases = [[PDSServiceDatabases alloc] init];
-    // We need to inject the database — use KVC since serviceDatabase is private
-    [self.serviceDatabases setValue:self.database forKey:@"_serviceDatabase"];
+    self.serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:self.tempDirURL.path
+                                                            serviceMaxSize:2
+                                                           didCacheMaxSize:1
+                                                         sequencerMaxSize:1];
+    NSError *error = nil;
+    self.database = [self.serviceDatabases serviceDatabaseWithError:&error];
+    XCTAssertNotNil(self.database);
+    XCTAssertNil(error);
 
     // Create worker with fresh instance
-    self.worker = [[PDSVideoWorker alloc] init];
-    self.worker.serviceDatabases = self.serviceDatabases;
+    self.worker = [[ATProtoVideoWorker alloc] init];
+    self.worker.jobStore = [[PDSLocalVideoJobStore alloc] initWithDatabase:self.database];
 
     self.blobProvider = [[MockWorkerBlobProvider alloc] init];
     self.worker.blobProvider = self.blobProvider;
@@ -90,15 +105,15 @@
 #pragma mark - Singleton
 
 - (void)testSharedWorkerIsSingleton {
-    PDSVideoWorker *a = [PDSVideoWorker sharedWorker];
-    PDSVideoWorker *b = [PDSVideoWorker sharedWorker];
+    ATProtoVideoWorker *a = [ATProtoVideoWorker sharedWorker];
+    ATProtoVideoWorker *b = [ATProtoVideoWorker sharedWorker];
     XCTAssertEqual(a, b);
 }
 
 #pragma mark - Default Properties
 
 - (void)testDefaultProperties {
-    PDSVideoWorker *fresh = [[PDSVideoWorker alloc] init];
+    ATProtoVideoWorker *fresh = [[ATProtoVideoWorker alloc] init];
     XCTAssertFalse(fresh.isEnabled);
     XCTAssertEqual(fresh.pollInterval, 5.0);
     XCTAssertEqual(fresh.maxConcurrentJobs, 2);
@@ -128,7 +143,8 @@
                                   blobCid:@"bafyreitest"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
 
     // Should not process — worker is disabled
     [self.worker processPendingJobs];
@@ -147,13 +163,15 @@
                                   blobCid:@"bafyreitest1"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
     [self.database createVideoJobWithId:@"job-concurrent-2"
                                      did:@"did:web:test.example.com"
                                   blobCid:@"bafyreitest2"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
 
     // Only one should be picked up (maxConcurrentJobs=1)
     // Note: processPendingJobs dispatches to worker queue, so we can't
@@ -170,7 +188,8 @@
                                   blobCid:@"bafyreitest"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
 
     // Set to FAILED
     [self.database updateVideoJobState:@"job-retry-1"
@@ -179,8 +198,8 @@
                                 message:@"Transcode failed"
                                   error:nil];
 
-    NSError *error = [NSError errorWithDomain:PDSVideoWorkerErrorDomain
-                                         code:PDSVideoWorkerErrorProcessingFailed
+    NSError *error = [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
+                                         code:ATProtoVideoWorkerErrorProcessingFailed
                                      userInfo:@{NSLocalizedDescriptionKey: @"Test failure"}];
     [self.worker handleJobFailure:@"job-retry-1" error:error];
 
@@ -195,7 +214,8 @@
                                   blobCid:@"bafyreitest"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
 
     // Simulate 3 prior retries
     for (int i = 0; i < 3; i++) {
@@ -208,8 +228,8 @@
     }
 
     // Now retry_count = 3, next failure should be permanent
-    NSError *error = [NSError errorWithDomain:PDSVideoWorkerErrorDomain
-                                         code:PDSVideoWorkerErrorProcessingFailed
+    NSError *error = [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
+                                         code:ATProtoVideoWorkerErrorProcessingFailed
                                      userInfo:@{NSLocalizedDescriptionKey: @"Permanent failure"}];
     [self.worker handleJobFailure:@"job-retry-2" error:error];
 
@@ -225,7 +245,8 @@
                                   blobCid:@"bafyreitest"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
 
     [self.worker completeJob:@"job-complete-1"];
 
@@ -240,10 +261,11 @@
                                   blobCid:@"bafyreitest"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
 
-    NSError *error = [NSError errorWithDomain:PDSVideoWorkerErrorDomain
-                                         code:PDSVideoWorkerErrorProcessingFailed
+    NSError *error = [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
+                                         code:ATProtoVideoWorkerErrorProcessingFailed
                                      userInfo:@{NSLocalizedDescriptionKey: @"Something went wrong"}];
     [self.worker failJob:@"job-fail-1" error:error];
 
@@ -260,7 +282,8 @@
                                   blobCid:@"bafyreitest"
                                  mimeType:@"video/mp4"
                                  fileSize:@(1024)
-                                     error:nil];
+                          serviceAuthToken:nil
+                                    error:nil];
 
     [self.worker updateJobProgress:@"job-progress-1" progress:50 message:@"Halfway done"];
 
@@ -274,19 +297,19 @@
 
 - (void)testBlobProviderPropagatesToTranscoderAndGenerator {
     // Save original blob providers to restore later
-    id<PDSBlobProvider> origTranscoderProvider = [PDSVideoTranscoder sharedTranscoder].blobProvider;
-    id<PDSBlobProvider> origGeneratorProvider = [PDSVideoThumbnailGenerator sharedGenerator].blobProvider;
+    id<PDSBlobProvider> origTranscoderProvider = [ATProtoVideoTranscoder sharedTranscoder].blobProvider;
+    id<PDSBlobProvider> origGeneratorProvider = [ATProtoVideoThumbnailGenerator sharedGenerator].blobProvider;
 
     // Set blob provider on worker
     self.worker.blobProvider = self.blobProvider;
 
     // Verify it propagated
-    XCTAssertEqualObjects([PDSVideoTranscoder sharedTranscoder].blobProvider, self.blobProvider);
-    XCTAssertEqualObjects([PDSVideoThumbnailGenerator sharedGenerator].blobProvider, self.blobProvider);
+    XCTAssertEqualObjects([ATProtoVideoTranscoder sharedTranscoder].blobProvider, self.blobProvider);
+    XCTAssertEqualObjects([ATProtoVideoThumbnailGenerator sharedGenerator].blobProvider, self.blobProvider);
 
     // Restore to avoid leaking state
-    [PDSVideoTranscoder sharedTranscoder].blobProvider = origTranscoderProvider;
-    [PDSVideoThumbnailGenerator sharedGenerator].blobProvider = origGeneratorProvider;
+    [ATProtoVideoTranscoder sharedTranscoder].blobProvider = origTranscoderProvider;
+    [ATProtoVideoThumbnailGenerator sharedGenerator].blobProvider = origGeneratorProvider;
 }
 
 @end
