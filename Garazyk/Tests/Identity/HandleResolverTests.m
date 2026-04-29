@@ -89,6 +89,48 @@
 @end
 
 #ifndef GNUSTEP
+
+@interface ControlledBatchHandleResolver : HandleResolver
+@property (nonatomic, copy) NSDictionary<NSString *, NSArray<NSDictionary *> *> *responseSequences;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *callCounts;
+@property (nonatomic, assign) BOOL invokeCallbacksTwice;
+@end
+
+@implementation ControlledBatchHandleResolver
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _callCounts = [NSMutableDictionary dictionary];
+        self.skipSSRFCheck = YES;
+    }
+    return self;
+}
+
+- (void)resolveHandle:(NSString *)handle completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+    __block NSUInteger index = 0;
+    @synchronized (self.callCounts) {
+        index = [self.callCounts[handle] unsignedIntegerValue];
+        self.callCounts[handle] = @(index + 1);
+    }
+
+    NSArray<NSDictionary *> *sequence = self.responseSequences[handle] ?: @[];
+    NSDictionary *response = index < sequence.count ? sequence[index] : sequence.lastObject;
+    NSString *did = response[@"did"];
+    NSError *error = response[@"error"];
+    NSTimeInterval delay = [response[@"delay"] doubleValue];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
+                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        completion(did, error);
+        if (self.invokeCallbacksTwice) {
+            completion(@"did:plc:duplicate-callback", nil);
+        }
+    });
+}
+
+@end
+
 @implementation HandleResolverTests
 
 - (void)setUp {
@@ -511,6 +553,98 @@
         XCTAssertTrue([error.userInfo[NSLocalizedDescriptionKey] containsString:@"Resolution backed off"]);
         [exp2 fulfill];
     }];
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+}
+
+- (NSError *)batchTestErrorWithCode:(NSInteger)code {
+    return [NSError errorWithDomain:@"HandleResolverBatchTests"
+                               code:code
+                           userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"batch error %ld", (long)code]}];
+}
+
+- (void)testResolveHandlesCompletesExactlyOnceWithDuplicateCallbacks {
+    ControlledBatchHandleResolver *resolver = [[ControlledBatchHandleResolver alloc] init];
+    resolver.invokeCallbacksTwice = YES;
+    resolver.responseSequences = @{
+        @"one.example.com": @[@{@"did": @"did:plc:one", @"delay": @0.01}],
+        @"two.example.com": @[@{@"did": @"did:plc:two", @"delay": @0.02}]
+    };
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"batch completion"];
+    expectation.assertForOverFulfill = YES;
+    __block NSUInteger completionCount = 0;
+
+    [resolver resolveHandles:@[@"one.example.com", @"two.example.com"]
+                  completion:^(NSDictionary<NSString *,NSString *> * _Nullable results, NSError * _Nullable error) {
+        completionCount++;
+        XCTAssertEqualObjects(results[@"one.example.com"], @"did:plc:one");
+        XCTAssertEqualObjects(results[@"two.example.com"], @"did:plc:two");
+        XCTAssertNil(error);
+        [expectation fulfill];
+    }];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    XCTAssertEqual(completionCount, 1);
+}
+
+- (void)testResolveHandlesReturnsFirstErrorByInputOrderAfterConcurrentCallbacks {
+    ControlledBatchHandleResolver *resolver = [[ControlledBatchHandleResolver alloc] init];
+    NSError *firstInputError = [self batchTestErrorWithCode:1];
+    NSError *thirdInputError = [self batchTestErrorWithCode:3];
+    resolver.responseSequences = @{
+        @"first.example.com": @[@{@"error": firstInputError, @"delay": @0.05}],
+        @"second.example.com": @[@{@"did": @"did:plc:second", @"delay": @0.01}],
+        @"third.example.com": @[@{@"error": thirdInputError, @"delay": @0.0}]
+    };
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"deterministic batch error"];
+    [resolver resolveHandles:@[@"first.example.com", @"second.example.com", @"third.example.com"]
+                  completion:^(NSDictionary<NSString *,NSString *> * _Nullable results, NSError * _Nullable error) {
+        XCTAssertEqualObjects(results[@"second.example.com"], @"did:plc:second");
+        XCTAssertEqual(error.code, 1);
+        [expectation fulfill];
+    }];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+}
+
+- (void)testResolveHandlesAllFailureReturnsNilResultsAndFirstError {
+    ControlledBatchHandleResolver *resolver = [[ControlledBatchHandleResolver alloc] init];
+    NSError *firstError = [self batchTestErrorWithCode:11];
+    NSError *secondError = [self batchTestErrorWithCode:22];
+    resolver.responseSequences = @{
+        @"first.example.com": @[@{@"error": firstError, @"delay": @0.02}],
+        @"second.example.com": @[@{@"error": secondError, @"delay": @0.0}]
+    };
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"all failure batch"];
+    [resolver resolveHandles:@[@"first.example.com", @"second.example.com"]
+                  completion:^(NSDictionary<NSString *,NSString *> * _Nullable results, NSError * _Nullable error) {
+        XCTAssertNil(results);
+        XCTAssertEqual(error.code, 11);
+        [expectation fulfill];
+    }];
+
+    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+}
+
+- (void)testResolveHandlesDuplicateHandlesUseLaterIndexResult {
+    ControlledBatchHandleResolver *resolver = [[ControlledBatchHandleResolver alloc] init];
+    resolver.responseSequences = @{
+        @"dup.example.com": @[
+            @{@"did": @"did:plc:first", @"delay": @0.0},
+            @{@"did": @"did:plc:second", @"delay": @0.01}
+        ]
+    };
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"duplicate handles"];
+    [resolver resolveHandles:@[@"dup.example.com", @"dup.example.com"]
+                  completion:^(NSDictionary<NSString *,NSString *> * _Nullable results, NSError * _Nullable error) {
+        XCTAssertEqualObjects(results[@"dup.example.com"], @"did:plc:second");
+        XCTAssertNil(error);
+        [expectation fulfill];
+    }];
+
     [self waitForExpectationsWithTimeout:1.0 handler:nil];
 }
 

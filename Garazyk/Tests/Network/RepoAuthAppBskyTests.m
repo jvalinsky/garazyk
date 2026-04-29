@@ -21,7 +21,6 @@ static NSString *const kGraphMuteStatePreferenceType = @"com.atproto.pds.app.bsk
     ActorService *actorService = [[ActorService alloc] initWithDatabase:db];
     NSError *prefsError = nil;
     NSDictionary *prefs = [actorService getPreferencesForActor:did error:&prefsError];
-    [db close];
     XCTAssertNil(prefsError);
 
     NSArray *entries = [prefs[@"preferences"] isKindOfClass:[NSArray class]] ? prefs[@"preferences"] : @[];

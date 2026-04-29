@@ -83,7 +83,7 @@
 
     // 3. Email Settings
     NSInteger emailChoice = [PDSCLIInputHelper promptForChoice:@"Email Provider"
-                                                      choices:@[@"None (Disabled)", @"SMTP", @"Resend API"]
+                                                      choices:@[@"None (Disabled)", @"SMTP (Unsupported)", @"Resend API"]
                                                  defaultIndex:0];
     
     NSMutableDictionary *emailConfig = [NSMutableDictionary dictionary];
@@ -91,6 +91,7 @@
     
     if (emailChoice == 1) {
         emailProvider = @"smtp";
+        printf("\nWarning: SMTP delivery is not implemented yet; configured SMTP sends will fail closed.\n");
         emailConfig[@"host"] = [PDSCLIInputHelper promptForInput:@"SMTP Host" defaultValue:@"smtp.gmail.com"];
         emailConfig[@"port"] = @([[PDSCLIInputHelper promptForInput:@"SMTP Port" defaultValue:@"587"] integerValue]);
         emailConfig[@"username"] = [PDSCLIInputHelper promptForInput:@"SMTP Username" defaultValue:nil];
