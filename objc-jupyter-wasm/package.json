@@ -1,0 +1,28 @@
+{
+  "name": "objc-jupyter-wasm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Objective-C JupyterLite kernel backed by a WebAssembly smoke ABI",
+  "scripts": {
+    "check:js": "node --check js/wasm-loader.js && node --check js/objc-worker.js && node --check jupyterlite/kernel.js && node --check tests/kernel-smoke.mjs",
+    "smoke:kernel": "node tests/kernel-smoke.mjs ./result/wasm/kernel.wasm"
+  },
+  "dependencies": {
+    "@jupyterlab/application": "^4.4.0",
+    "@jupyterlite/kernel": "^0.8.0-alpha.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "objc_jupyter_wasm/labextension"
+  },
+  "files": [
+    "js",
+    "src",
+    "jupyterlite",
+    "objc_jupyter_wasm"
+  ]
+}

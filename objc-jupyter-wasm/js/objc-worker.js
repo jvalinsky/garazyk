@@ -1,90 +1,77 @@
-// objc-worker.js
-// Web Worker entry point for Objective-C Jupyter kernel
+// ES module worker entry point for the Objective-C WASM kernel.
 
-importScripts('./wasm-loader.js');
+import { ObjcWasmKernel } from './wasm-loader.js';
 
-let kernelInstance = null;
-let wasiImports = null;
+let kernelPromise = null;
 
-// Initialize WASI imports
-function createWasiImports() {
-    return {
-        wasi_snapshot_preview1: {
-            fd_write: (fd, iovs, iovs_len, nwritten) => {
-                // Implementation for capturing output
-                return 0;
-            },
-            proc_exit: (code) => {
-                console.log(`WASM exit: ${code}`);
-            }
-        },
-        env: {
-            objc_log: (ptr) => {
-                const str = WasmLoader.readString(ptr);
-                postMessage({ type: 'stream', name: 'stderr', text: `[ObjC] ${str}\n` });
-            }
-        }
-    };
+function getKernel(wasmUrl) {
+  if (!kernelPromise) {
+    kernelPromise = ObjcWasmKernel.create(wasmUrl || './kernel/kernel.wasm');
+  }
+  return kernelPromise;
 }
 
-// Handle messages from main thread
-onmessage = async (e) => {
-    const { type, code, cellId, cursorPos, detailLevel } = e.data;
+function postReply(id, type, content) {
+  self.postMessage({
+    id,
+    type,
+    content
+  });
+}
+
+self.onmessage = async event => {
+  const {
+    id,
+    type,
+    wasmUrl,
+    code = '',
+    cellId = null,
+    cursorPos = 0,
+    detailLevel = 0
+  } = event.data || {};
+
+  try {
+    const kernel = await getKernel(wasmUrl);
+
+    if (type === 'kernel_info_request') {
+      postReply(id, 'kernel_info_reply', kernel.kernelInfo());
+      return;
+    }
 
     if (type === 'execute_request') {
-        try {
-            if (!kernelInstance) {
-                // Load kernel WASM
-                const result = await fetch('./kernel.wasm');
-                const buffer = await result.arrayBuffer();
-                const module = await WebAssembly.compile(buffer);
-                kernelInstance = await WebAssembly.instantiate(module, createWasiImports());
-            }
-
-            // Call execute
-            const executeFn = kernelInstance.exports.execute || kernelInstance.exports.wasm_kernel_execute;
-            if (executeFn) {
-                const result = executeFn(code, cellId);
-                postMessage({
-                    type: 'execute_result',
-                    status: 'ok',
-                    execution_count: e.data.count || 1,
-                    data: {
-                        'text/plain': WasmLoader.readString(result) || 'Executed'
-                    }
-                });
-            } else {
-                postMessage({
-                    type: 'execute_result',
-                    status: 'error',
-                    ename: 'NotImplemented',
-                    evalue: 'Execute function not found in WASM module'
-                });
-            }
-        } catch (error) {
-            postMessage({
-                type: 'execute_result',
-                status: 'error',
-                ename: 'ExecutionError',
-                evalue: error.message,
-                traceback: []
-            });
-        }
+      const reply = kernel.execute(code, cellId);
+      for (const stream of reply.streams || []) {
+        postReply(id, 'stream', stream);
+      }
+      postReply(id, 'execute_reply', {
+        status: reply.status,
+        execution_count: reply.execution_count,
+        data: reply.data || {},
+        metadata: reply.metadata || {}
+      });
+      return;
     }
 
     if (type === 'complete_request') {
-        // Basic completion
-        const partial = code.substring(0, cursorPos).split(/[\s;{}]+/).pop() || '';
-        const keywords = ['@interface', '@implementation', '@end', '@property', 
-            'nil', 'NSString', 'NSArray', 'NSDictionary', 'alloc', 'init'];
-        const matches = keywords.filter(k => k.startsWith(partial));
-        
-        postMessage({
-            type: 'complete_reply',
-            status: 'ok',
-            matches,
-            cursor_start: cursorPos - partial.length,
-            cursor_end: cursorPos
-        });
+      postReply(id, 'complete_reply', kernel.complete(code, cursorPos));
+      return;
     }
+
+    if (type === 'inspect_request') {
+      postReply(id, 'inspect_reply', kernel.inspect(code, cursorPos, detailLevel));
+      return;
+    }
+
+    postReply(id, 'error', {
+      ename: 'UnknownMessage',
+      evalue: `Unknown worker message type: ${type}`,
+      traceback: []
+    });
+  } catch (error) {
+    postReply(id, 'error', {
+      ename: error && error.name ? error.name : 'ObjcKernelError',
+      evalue: error && error.message ? error.message : String(error),
+      traceback: []
+    });
+  }
 };

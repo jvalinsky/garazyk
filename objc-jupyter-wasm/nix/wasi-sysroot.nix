@@ -1,40 +1,42 @@
 {
   lib,
   runCommand,
-  wasilibc,
   libobjc2-wasm,
   llvmPackages,
 }:
 
-# Extended WASI sysroot that includes ObjC headers from libobjc2
-# alongside the standard wasi-libc sysroot.
+# Minimal WASI sysroot that includes ObjC headers from libobjc2
+# This is a lightweight sysroot for cross-compiling ObjC to WASM.
 #
-# This provides a single --sysroot path that contains both
-# the WASI C library and the ObjC runtime headers, simplifying
-# cross-compilation commands.
+# Note: This does NOT include wasi-libc since that's a target package.
+# For full WASI libc support, use emscripten or wasi-sdk directly.
+# This sysroot is primarily for the ObjC runtime headers.
 
 runCommand "wasi-sysroot-objc" {
   passthru = {
-    inherit wasilibc libobjc2-wasm;
+    inherit libobjc2-wasm;
   };
 
   meta = with lib; {
-    description = "Extended WASI sysroot with Objective-C runtime headers";
+    description = "Minimal WASI sysroot with Objective-C runtime headers";
     platforms = platforms.all;
   };
 } ''
-  mkdir -p $out
+  mkdir -p $out/include $out/lib
 
-  # Copy wasi-libc sysroot as base
-  cp -r ${wasilibc.dev}/* $out/
-
-  # Overlay ObjC runtime headers
+  # Copy ObjC runtime headers
   if [ -d ${libobjc2-wasm}/include ]; then
     cp -r ${libobjc2-wasm}/include/* $out/include/
   fi
 
-  # Overlay ObjC runtime libraries
+  # Copy ObjC runtime libraries
   if [ -d ${libobjc2-wasm}/lib ]; then
     cp -r ${libobjc2-wasm}/lib/* $out/lib/
+  fi
+
+  # Copy LLVM libc++ headers (for C++ support if needed)
+  if [ -d ${llvmPackages.libcxx.dev}/include/c++/v1 ]; then
+    mkdir -p $out/include/c++/v1
+    cp -r ${llvmPackages.libcxx.dev}/include/c++/v1/* $out/include/c++/v1/
   fi
 ''

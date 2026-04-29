@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "outDir": "lib",
+    "rootDir": ".",
+    "strict": true,
+    "target": "ES2022"
+  },
+  "include": [
+    "js/**/*.ts",
+    "src/**/*.ts"
+  ]
+}
