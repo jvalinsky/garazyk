@@ -1,0 +1,7 @@
+{
+    "display_name": "Objective-C",
+    "language": "objective-c",
+    "argv": ["./kernel.js", "--kernel"],
+    "env": {},
+    "interrupt_mode": "message"
+}
