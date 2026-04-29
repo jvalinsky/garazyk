@@ -9,7 +9,9 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonCrypto.h>
+#endif
 
 NSString * const BlobStorageErrorDomain = @"com.atproto.blobstorage";
 
