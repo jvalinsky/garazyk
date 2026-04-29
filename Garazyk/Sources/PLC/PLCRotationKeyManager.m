@@ -238,13 +238,26 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
 
 - (void)ensureSecurePermissionsForPath:(NSString *)path isDirectory:(BOOL)isDir {
     if (!path) return;
-    
+
     NSFileManager *fm = [NSFileManager defaultManager];
     if (![fm fileExistsAtPath:path]) return;
-    
+
     short mode = isDir ? 0700 : 0600;
-    NSDictionary *attrs = @{NSFilePosixPermissions: @(mode)};
-    
+    NSDictionary *attrs = nil;
+
+#if defined(__APPLE__)
+    attrs = @{NSFilePosixPermissions: @(mode)};
+#else
+    // Linux: use chmod directly via system call
+    int chmodResult = chmod(path.UTF8String, mode);
+    if (chmodResult != 0) {
+        PDS_LOG_ERROR(@"Failed to set secure permissions (mode %o) on %@: %d", mode, path, errno);
+    } else {
+        PDS_LOG_DEBUG(@"Set secure permissions (mode %o) on %@", mode, path);
+    }
+    return;
+#endif
+
     NSError *error = nil;
     if (![fm setAttributes:attrs ofItemAtPath:path error:&error]) {
         PDS_LOG_ERROR(@"Failed to set secure permissions (mode %o) on %@: %@", mode, path, error);
@@ -265,7 +278,6 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
         return nil;
     }
     
-    // We use a fixed salt for the singleton key encryption
     static uint8_t saltBytes[] = { 0x41, 0x54, 0x50, 0x52, 0x4f, 0x54, 0x4f, 0x5f, 0x50, 0x44, 0x53, 0x5f, 0x4b, 0x45, 0x59, 0x53 };
     NSData *salt = [NSData dataWithBytes:saltBytes length:sizeof(saltBytes)];
     
