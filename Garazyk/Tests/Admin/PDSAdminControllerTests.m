@@ -75,7 +75,6 @@
     BOOL created = [db createAccount:account error:&error];
     XCTAssertTrue(created);
     XCTAssertNil(error);
-    [db close];
 }
 
 - (nullable NSDictionary *)latestTakedownForSubjectType:(NSString *)subjectType subjectID:(NSString *)subjectID {
@@ -88,7 +87,6 @@
                                      @"SELECT subjectType, subjectId, takedownRef, applied FROM admin_takedowns WHERE subjectType = ? AND subjectId = ? ORDER BY createdAt DESC LIMIT 1"
                                                               params:@[subjectType, subjectID]
                                                                error:&error];
-    [db close];
     XCTAssertNil(error);
     return rows.count > 0 ? rows.firstObject : nil;
 }

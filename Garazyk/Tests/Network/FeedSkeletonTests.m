@@ -20,7 +20,6 @@
                                      params:@[uri, did, @"app.bsky.feed.post", rkey, cidStr, @"{}"]
                                        error:&dbError];
     XCTAssertTrue(ok, @"Insert post record failed: %@", dbError);
-    [db close];
 }
 
 #pragma mark - getFeedSkeleton
