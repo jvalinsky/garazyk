@@ -43,6 +43,11 @@ static NSUInteger UISafeLength(id value) {
     return 0;
 }
 
+/// Authorization guard macro: checks auth and returns early if unauthorized.
+/// Returns the result of ensureAuthorized so the caller can use `if (AUTH_GUARD(...)) return;`
+#define AUTH_GUARD(weakSelf, request, response) \
+    if (![weakSelf ensureAuthorized:request response:response]) return
+
 @interface UIServerRuntime ()
 
 @property(nonatomic, strong) HttpServer *httpServer;
@@ -167,18 +172,14 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) {
-            return;
-        }
+        AUTH_GUARD(weakSelf, request, response);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf adminShellHTML]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/overview" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) {
-            return;
-        }
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *overview = [weakSelf.backendClient fetchServiceOverview];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -186,18 +187,14 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/connections" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) {
-            return;
-        }
+        AUTH_GUARD(weakSelf, request, response);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderConnectionsPartial]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/accounts" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) {
-            return;
-        }
+        AUTH_GUARD(weakSelf, request, response);
         NSString *query = [request queryParamForKey:@"q"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient searchAccountsWithQuery:query];
         response.statusCode = 200;
@@ -206,9 +203,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/invites" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) {
-            return;
-        }
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchInviteCodes];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -216,9 +211,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/disable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) {
-            return;
-        }
+        AUTH_GUARD(weakSelf, request, response);
         NSString *account = request.jsonBody[@"account"] ?: [request queryParamForKey:@"account"];
         NSDictionary *result = [weakSelf.backendClient disableInvitesForAccount:account ?: @""];
         if (result[@"error"]) {
@@ -234,7 +227,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-takedown" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSArray *dids = request.jsonBody[@"dids"];
         NSDictionary *result = [weakSelf.backendClient bulkTakedownAccounts:dids ?: @[]];
         response.statusCode = 200;
@@ -243,7 +236,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/bulk-delete" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSArray *dids = request.jsonBody[@"dids"];
         NSDictionary *result = [weakSelf.backendClient bulkDeleteAccounts:dids ?: @[]];
         response.statusCode = 200;
@@ -252,7 +245,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchAppViewMetrics];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -260,7 +253,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-ingest" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchIngestHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -268,7 +261,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/appview-queue" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *status = [request queryParamForKey:@"status"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchBackfillQueueWithStatus:status limit:25 cursor:cursor];
@@ -278,7 +271,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-retry-repo" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient retryBackfillForDID:did ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -288,7 +281,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-cancel-repo" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient cancelBackfillForDID:did ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -298,7 +291,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchRelayMetrics];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -307,7 +300,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PDS: Account detail
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/account-detail" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient fetchAccountInfoForDID:did];
         response.statusCode = 200;
@@ -317,7 +310,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PDS: Server stats
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/pds-stats" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchServerStats];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -326,7 +319,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PDS: Audit log
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/audit-log" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchAuditLogWithCursor:cursor limit:25];
         response.statusCode = 200;
@@ -335,7 +328,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/blobs" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchBlobsForDID:did limit:25 cursor:cursor] : @{@"blobs": @[]};
@@ -345,7 +338,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/enable-invites" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *account = request.jsonBody[@"account"] ?: [request queryParamForKey:@"account"];
         NSDictionary *result = [weakSelf.backendClient enableInvitesForAccount:account ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -357,7 +350,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PDS: Update handle action
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-handle" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: @"";
         NSString *handle = request.jsonBody[@"handle"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient updateAccountHandle:handle forDID:did];
@@ -370,7 +363,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Relay: Upstreams
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-upstreams" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchRelayUpstreams];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -379,7 +372,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Relay: Health check
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/relay-health" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchRelayHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -388,7 +381,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Relay: Request crawl action
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/request-crawl" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *hostname = request.jsonBody[@"hostname"] ?: [request queryParamForKey:@"hostname"];
         NSDictionary *result = [weakSelf.backendClient requestCrawlForHostname:hostname ?: @""];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -400,7 +393,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PLC: DID lookup
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-did" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient lookupDID:did];
         response.statusCode = 200;
@@ -410,7 +403,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PLC: DID log
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-log" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient fetchPLCLogForDID:did];
         response.statusCode = 200;
@@ -420,7 +413,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PLC: Health check
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-health" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchPLCHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -429,7 +422,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PLC: Metrics
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-metrics" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchPLCMetrics];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -438,7 +431,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PLC: List DIDs
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/plc-list" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchPLCList];
         response.statusCode = 200;
@@ -448,7 +441,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PLC: Export action
     [self.httpServer addRoute:@"GET" path:@"/admin/actions/plc-export" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *after = [request queryParamForKey:@"after"];
         NSString *countStr = [request queryParamForKey:@"count"] ?: @"1000";
         NSUInteger count = [countStr integerValue] ?: 1000;
@@ -466,7 +459,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Explorer: Describe repo
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/describe-repo" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient describeRepo:did];
         response.statusCode = 200;
@@ -476,7 +469,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Explorer: List records
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/list-records" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSString *collection = [request queryParamForKey:@"collection"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
@@ -488,7 +481,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Explorer: Get record
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/get-record" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"] ?: @"";
         NSString *collection = [request queryParamForKey:@"collection"] ?: @"";
         NSString *rkey = [request queryParamForKey:@"rkey"] ?: @"";
@@ -525,7 +518,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Moderation statuses
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-statuses" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchOzoneStatusesWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
@@ -534,7 +527,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Moderation events
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-events" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchOzoneEventsWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
@@ -543,7 +536,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Subject status
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-subject" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchSubjectStatusForDID:did];
         response.contentType = @"text/html; charset=utf-8";
@@ -552,7 +545,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Moderation reports
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-reports" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchModerationReportsWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
@@ -561,7 +554,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Scheduled actions
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-scheduled" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchScheduledActionsWithStatuses:nil cursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
@@ -570,7 +563,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Schedule action
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-schedule-action" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *actionSpec = request.jsonBody;
         NSDictionary *result = [weakSelf.backendClient scheduleAction:actionSpec ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -582,7 +575,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Cancel scheduled actions
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-cancel-scheduled" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSArray *subjects = request.jsonBody[@"subjects"] ?: @[];
         NSDictionary *result = [weakSelf.backendClient cancelScheduledActionsForSubjects:subjects];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -594,7 +587,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Verification
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-verification" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient listOzoneVerifications];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneVerificationPartial:result]];
@@ -602,7 +595,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Grant verification
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-grant-verification" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"];
         NSString *displayName = request.jsonBody[@"displayName"] ?: @"";
         if (!did || did.length == 0) {
@@ -622,7 +615,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Revoke verification
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-revoke-verification" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSArray *dids = request.jsonBody[@"dids"] ?: @[];
         NSDictionary *result = [weakSelf.backendClient revokeOzoneVerifications:dids];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -634,7 +627,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Safelinks
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-safelinks" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchSafelinkRules];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneSafelinksPartial:result]];
@@ -642,7 +635,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Add safelink rule
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/add-safelink-rule" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *rule = request.jsonBody ?: @{};
         NSDictionary *result = [weakSelf.backendClient addSafelinkRule:rule];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -654,7 +647,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Remove safelink rule
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/remove-safelink-rule" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *url = request.jsonBody[@"url"] ?: @"";
         NSString *pattern = request.jsonBody[@"pattern"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient removeSafelinkRule:url pattern:pattern];
@@ -667,7 +660,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Settings
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-settings" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient listOzoneSettings];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneSettingsPartial:result]];
@@ -675,7 +668,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Upsert setting
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/upsert-ozone-setting" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *option = request.jsonBody ?: @{};
         NSDictionary *result = [weakSelf.backendClient upsertOzoneSetting:option];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -687,14 +680,14 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Signatures
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-signatures" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneSignaturesPartial:nil]];
     }];
 
     // Ozone: Find related accounts
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-find-related" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient findRelatedAccounts:did];
         response.contentType = @"text/html; charset=utf-8";
@@ -703,7 +696,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Find correlation
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/ozone-find-correlation" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSArray *dids = request.jsonBody[@"dids"] ?: @[];
         NSDictionary *result = [weakSelf.backendClient findSignatureCorrelation:dids];
         response.contentType = @"text/html; charset=utf-8";
@@ -712,7 +705,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Hosting history
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-hosting" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = did && did.length > 0 ? [weakSelf.backendClient fetchHostingHistoryForDID:did] : @{@"entries": @[]};
         response.contentType = @"text/html; charset=utf-8";
@@ -721,7 +714,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Team members
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-team" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchOzoneTeamMembers];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneTeamPartial:result]];
@@ -729,7 +722,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Sets
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-sets" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchOzoneSetsWithCursor:cursor limit:50];
         response.contentType = @"text/html; charset=utf-8";
@@ -738,7 +731,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Templates
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-templates" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchOzoneTemplates];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneTemplatesPartial:result]];
@@ -746,7 +739,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Config
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/ozone-config" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchOzoneConfig];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderOzoneConfigPartial:result]];
@@ -754,7 +747,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Emit moderation event
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/emit-moderation-event" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *event = request.jsonBody;
         NSDictionary *result = [weakSelf.backendClient emitModerationEvent:event];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -766,7 +759,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Delete set
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-ozone-set" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *name = request.jsonBody[@"name"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient deleteOzoneSet:name];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -778,7 +771,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Delete template
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-ozone-template" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *name = request.jsonBody[@"name"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient deleteOzoneTemplate:name];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -790,7 +783,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Remove team member
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/remove-team-member" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient removeOzoneTeamMember:did];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -802,7 +795,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Security: Active sessions
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/sessions" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchActiveSessionsForDID:did];
         response.contentType = @"text/html; charset=utf-8";
@@ -811,7 +804,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Security: App passwords
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/app-passwords" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchAppPasswordsForDID:did];
         response.contentType = @"text/html; charset=utf-8";
@@ -820,7 +813,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Security: Revoke session
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/revoke-session" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: @"";
         NSString *sessionID = request.jsonBody[@"id"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient revokeSessionForDID:did sessionID:sessionID];
@@ -833,7 +826,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Security: Delete app password
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-app-password" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: @"";
         NSString *name = request.jsonBody[@"name"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient deleteAppPasswordForDID:did passwordName:name];
@@ -846,7 +839,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PDS: Delete account
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/delete-account" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient deleteAccount:did];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -858,7 +851,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PDS: Fetch reports
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/pds-reports" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchReportsWithCursor:cursor limit:25];
         response.statusCode = 200;
@@ -868,7 +861,7 @@ static NSUInteger UISafeLength(id value) {
 
     // PDS: Resolve report
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/resolve-pds-report" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *reportID = request.jsonBody[@"reportID"] ?: @"";
         NSString *action = request.jsonBody[@"action"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient resolveReport:reportID action:action];
@@ -881,7 +874,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Chat: Get conversations
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-convos" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchChatConvosWithLimit:25 cursor:cursor];
         response.statusCode = 200;
@@ -891,7 +884,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Chat: Get messages for conversation
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/chat-messages" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *convoID = [request queryParamForKey:@"convoID"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
         NSDictionary *result = [weakSelf.backendClient fetchChatMessagesForConvoID:convoID limit:50 cursor:cursor];
@@ -902,7 +895,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Chat: Lock conversation
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/lock-chat-convo" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *convoID = request.jsonBody[@"convoID"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient lockChatConvo:convoID];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -914,7 +907,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Video: Health
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-health" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchVideoHealth];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -923,7 +916,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Video: Job list
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-jobs" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *state = [request queryParamForKey:@"state"];
         NSString *cursor = [request queryParamForKey:@"cursor"];
         if (state.length == 0) state = nil;
@@ -935,7 +928,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Video: Job detail
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-job-detail" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *jobId = [request queryParamForKey:@"jobId"];
         NSDictionary *result = [weakSelf.backendClient fetchVideoJobById:jobId];
         response.statusCode = 200;
@@ -945,7 +938,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Video: Upload quotas
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/video-quotas" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchVideoUploadLimits];
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -954,7 +947,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Video: Retry job
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/video-retry-job" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *jobId = request.jsonBody[@"jobId"] ?: @"";
         // Retry via PDS admin: incrementVideoJobRetry
         NSDictionary *result = [weakSelf.backendClient retryVideoJobWithId:jobId];
@@ -967,7 +960,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Connections: Update service URLs and tokens
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-connections" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *body = request.jsonBody;
         if (![body isKindOfClass:[NSDictionary class]]) {
             response.statusCode = 400;
@@ -988,7 +981,7 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/test-connection" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *body = request.jsonBody;
         NSString *service = [body[@"service"] isKindOfClass:[NSString class]] ? body[@"service"] : @"";
         NSString *urlString = [body[@"url"] isKindOfClass:[NSString class]] ? body[@"url"] : @"";
@@ -1006,7 +999,7 @@ static NSUInteger UISafeLength(id value) {
 
     // AppView: Rebuild backfill scope
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-rebuild-scope" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient rebuildBackfillScope];
         response.statusCode = result[@"error"] ? 400 : 200;
         response.contentType = @"text/html; charset=utf-8";
@@ -1017,7 +1010,7 @@ static NSUInteger UISafeLength(id value) {
 
     // AppView: Enqueue DIDs for backfill
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/appview-enqueue-dids" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSArray *dids = request.jsonBody[@"dids"];
         NSDictionary *result = [weakSelf.backendClient enqueueBackfillDIDs:dids ?: @[]];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -1029,7 +1022,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Security: Create app password
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/create-app-password" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = request.jsonBody[@"did"] ?: @"";
         NSString *name = request.jsonBody[@"name"] ?: @"";
         NSDictionary *result = [weakSelf.backendClient createAppPasswordForDID:did name:name];
@@ -1042,7 +1035,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Add team member
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/add-ozone-team-member" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *member = request.jsonBody[@"member"];
         NSDictionary *result = [weakSelf.backendClient addOzoneTeamMember:member ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -1054,7 +1047,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Create/update set
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/upsert-ozone-set" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *setSpec = request.jsonBody[@"setSpec"];
         NSDictionary *result = [weakSelf.backendClient upsertOzoneSet:setSpec ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -1066,7 +1059,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Create template
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/create-ozone-template" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *template = request.jsonBody[@"template"];
         NSDictionary *result = [weakSelf.backendClient createOzoneTemplate:template ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -1078,7 +1071,7 @@ static NSUInteger UISafeLength(id value) {
 
     // Ozone: Update config
     [self.httpServer addRoute:@"POST" path:@"/admin/actions/update-ozone-config" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *config = request.jsonBody[@"config"];
         NSDictionary *result = [weakSelf.backendClient updateOzoneConfig:config ?: @{}];
         response.statusCode = result[@"error"] ? 400 : 200;
@@ -1090,7 +1083,7 @@ static NSUInteger UISafeLength(id value) {
 
     // MST Viewer: Accounts list
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-accounts" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSDictionary *result = [weakSelf.backendClient fetchMSTAccounts];
         response.contentType = @"text/html; charset=utf-8";
         [response setBodyString:[weakSelf renderMSTAccountsPartial:result]];
@@ -1098,7 +1091,7 @@ static NSUInteger UISafeLength(id value) {
 
     // MST Viewer: Tree for DID
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-tree" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchMSTTreeForDID:did];
         response.contentType = @"text/html; charset=utf-8";
@@ -1107,7 +1100,7 @@ static NSUInteger UISafeLength(id value) {
 
     // MST Viewer: Stats for DID
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/mst-stats" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSDictionary *result = [weakSelf.backendClient fetchMSTStatsForDID:did];
         response.contentType = @"text/html; charset=utf-8";
@@ -1116,7 +1109,7 @@ static NSUInteger UISafeLength(id value) {
 
     // MST Viewer: Export
     [self.httpServer addRoute:@"GET" path:@"/admin/actions/mst-export" handler:^(HttpRequest *request, HttpResponse *response) {
-        if (![weakSelf ensureAuthorized:request response:response]) return;
+        AUTH_GUARD(weakSelf, request, response);
         NSString *did = [request queryParamForKey:@"did"];
         NSString *format = [request queryParamForKey:@"format"] ?: @"json";
         NSData *data = [weakSelf.backendClient fetchMSTExportForDID:did format:format];
@@ -1956,6 +1949,15 @@ static NSUInteger UISafeLength(id value) {
     if (![fm fileExistsAtPath:filePath isDirectory:&isDir] || isDir) {
         response.statusCode = 404;
         [response setBodyString:@"Not Found"];
+        return;
+    }
+
+    // Validate file size before loading into memory (10MB limit)
+    NSError *attrError = nil;
+    NSDictionary *attrs = [fm attributesOfItemAtPath:filePath error:&attrError];
+    if (!attrs || attrs.fileSize > 10 * 1024 * 1024) {
+        response.statusCode = 413;
+        [response setBodyString:@"File Too Large"];
         return;
     }
 
