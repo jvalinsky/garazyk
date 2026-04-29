@@ -4,10 +4,15 @@ Objective-C Jupyter Kernel running in the browser via WebAssembly.
 
 ## Overview
 
-This subproject enables interactive Objective-C programming directly in the browser by compiling:
-1. An Objective-C compiler (clang) to WebAssembly
-2. The GNUstep Objective-C runtime (libobjc2) to WASM
-3. A Jupyter kernel protocol handler to WASM
+This subproject is bringing up an Objective-C Jupyter kernel that runs in the
+browser via WebAssembly. The current milestone is a validated smoke slice:
+
+1. A stable C ABI compiled to `kernel.wasm`
+2. A minimal libobjc2-compatible runtime smoke module
+3. A JavaScript/JupyterLite layer that loads WASM, passes JSON requests, and parses JSON replies
+
+Full Objective-C compilation, GNUstep Foundation, and stateful browser-side cell
+execution are planned follow-up layers.
 
 Based on research:
 - LLVM PR #169043 (merged 2026-02-27): Adds ObjC Wasm support
@@ -19,46 +24,37 @@ Based on research:
 ```
 Browser (JupyterLab UI)
   └── Web Worker (Kernel)
-        ├── clang.wasm          (ObjC compiler)
-        ├── libobjc2.wasm       (ObjC runtime)
-        ├── Foundation.wasm     (Minimal Foundation)
-        └── kernel.wasm         (Jupyter kernel protocol)
+        ├── kernel.wasm         (stable smoke ABI)
+        ├── libobjc2.wasm       (runtime-shaped smoke artifact)
+        └── clang.wasm          (future ObjC compiler layer)
 ```
 
 ## Quick Start
 
 ### Prerequisites
-- Emscripten SDK ≥ 4.0.0 (`git clone https://github.com/emscripten-core/emsdk.git`)
-- LLVM ≥ 22.0 (with ObjC Wasm support, PR #169043 merged 2026-02-27)
-- Node.js ≥ 18.x
-- CMake ≥ 3.25
-
-### Installation
-
-```bash
-# Install Emscripten SDK
-git clone https://github.com/emscripten-core/emsdk.git
-cd emsdk
-./emsdk install latest
-./emsdk activate latest
-source ./emsdk_env.sh
-
-# Verify
-emcc --version  # Should be ≥ 4.0.0
-```
+- Nix
+- Node.js >= 18.x for the smoke harness
 
 ### Build
 
 ```bash
-# Build all WASM components (requires Emscripten + LLVM)
 cd /Users/jack/Software/garazyk
+
+# Build the current smoke slice
 bash scripts/build-all.sh
 
 # Or build individually
-bash scripts/wasm/build-clang-wasm.sh      # → objc-jupyter-wasm/compiler/clang.wasm (~2-5MB)
-bash scripts/wasm/build-runtime-wasm.sh    # → compiler/libobjc2.wasm + Foundation.wasm
-bash scripts/wasm/build-kernel-wasm.sh    # → kernel/kernel.wasm
+bash scripts/wasm/build-runtime-wasm.sh
+bash scripts/wasm/build-kernel-wasm.sh
+
+# Direct Nix builds
+nix build ./objc-jupyter-wasm#libobjc2-wasm
+nix build ./objc-jupyter-wasm#kernel-wasm
 ```
+
+`scripts/wasm/build-clang-wasm.sh` is intentionally a blocker for now. The old
+script tried to turn a host `clang` binary into WASM, which is not a valid build
+path. `clang.wasm` is tracked as the next compiler layer.
 
 ### Run Demo
 
@@ -73,16 +69,21 @@ python -m http.server 8000
 
 | Path | Purpose |
 |------|---------|
-| `compiler/` | Clang/LLVM compiled to WASM |
+| `compiler/` | Built runtime/compiler artifacts copied by helper scripts |
 | `kernel/` | ObjC Jupyter kernel implementation |
-| `kernel/runtime/` | libobjc2 WASM port |
+| `runtime/` | Minimal libobjc2-compatible smoke runtime |
 | `js/` | JavaScript/TypeScript kernel layer |
+| `src/` | JupyterLite extension registration |
 | `jupyterlite/` | JupyterLab integration files |
 | `demo/` | Demo notebooks |
 | `scripts/wasm/` | Build scripts for WASM targets |
+| `tests/` | Node smoke harness |
 
 ## Features
 
+- [x] Stable C ABI loaded from `kernel.wasm`
+- [x] JSON request/reply smoke execution
+- [x] Node smoke harness
 - [ ] Interactive ObjC evaluation in browser
 - [ ] Variable inspection across cells
 - [ ] Code completion
@@ -97,3 +98,69 @@ python -m http.server 8000
 - xeus-wasm: https://github.com/jupyter-xeus/xeus-wasm
 - c2wasm: https://github.com/divsmith/c2wasm
 - WasmPatch: https://github.com/everettjf/WasmPatch
+
+## Nix Build
+
+Nix is the authoritative build path for the current milestone. The flake provides:
+
+- **Dev shells** with all WASM tooling pre-configured
+- **Derivations** for `libobjc2-wasm` and `kernel-wasm`
+- **Checks** for WASM validation, JavaScript syntax, and the Node smoke harness
+
+### Quick Start with Nix
+
+```bash
+# Enter default dev shell (all tools)
+nix develop --impure path:.
+
+# Or use a specific shell:
+nix develop --impure .#wasm-emscripten  # Emscripten for browser builds
+nix develop --impure .#wasm-wasi        # WASI cross-compilation
+
+# Build WASM artifacts
+nix build .#libobjc2-wasm
+nix build .#kernel-wasm
+
+# Evaluate checks without building
+nix flake check --no-build
+
+# Run the full checks
+nix flake check
+```
+
+### Dev Shells
+
+| Shell | Purpose | Tools |
+|-------|---------|-------|
+| `default` | All WASM tools | emscripten, clang, wabt, binaryen, wasmtime, zig |
+| `wasm-emscripten` | Future browser compiler builds | emscripten |
+| `wasm-wasi` | WASI cross-compilation | clang 21, lld, wasm tools |
+
+### LLVM Version Notes
+
+- **nixpkgs-unstable** ships LLVM 21 as the latest
+- **LLVM PR #169043** (ObjC WASM codegen) requires LLVM 22+
+- **Emscripten 5.0.6** bundles LLVM 22 — use this for ObjC `.m` files
+- **WASI path** (clang `--target=wasm32-wasi`) works for C files with LLVM 21
+
+### Current ABI
+
+`kernel.wasm` exports:
+
+- `objc_kernel_init()`
+- `objc_kernel_info_json()`
+- `objc_kernel_execute_json(char *request_json)`
+- `objc_kernel_complete_json(char *request_json)`
+- `objc_kernel_inspect_json(char *request_json)`
+- `objc_kernel_free(char *)`
+- `objc_kernel_request_buffer()`
+- `objc_kernel_request_buffer_size()`
+
+The request-buffer helpers are used by JavaScript to marshal strings into WASM
+memory before calling the JSON ABI.
+
+### Troubleshooting
+
+**"invalid thread model 'single'"**: wasilibc cannot be built on host platforms. Use the `wasm-emscripten` shell instead, which bundles a complete WASM toolchain.
+
+**LLVM version mismatch**: Emscripten 5.0.6 expects LLVM 22. The nixpkgs emscripten package bundles the correct LLVM version automatically.
