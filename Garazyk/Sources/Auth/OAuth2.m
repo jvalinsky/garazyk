@@ -32,8 +32,10 @@
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Identity/HandleResolver.h"
+#if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
+#endif
 
 NSString * const OAuth2ScopeAtproto = @"atproto";
 NSString * const OAuth2ScopeTransitionGeneric = @"transition:generic";
@@ -830,7 +832,15 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         }
     }
 
-    NSString *handle = account.handle ?: @"handle.placeholder";
+    if (!account.handle) {
+        PDS_LOG_ERROR(@"OAuth2", @"Account handle is nil, cannot proceed with token exchange");
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                              code:OAuth2ErrorInvalidRequest
+                                          userInfo:@{NSLocalizedDescriptionKey: @"Account handle is required"}];
+        completion(nil, error);
+        return;
+    }
+    NSString *handle = account.handle;
     NSString *scope = codeData[@"scope"] ?: OAuth2ScopeAtproto;
 
     // AT Protocol spec: atproto scope is required for all sessions
