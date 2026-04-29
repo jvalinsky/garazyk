@@ -1,1 +1,0 @@
-build/quality_gate.sh

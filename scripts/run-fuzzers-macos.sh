@@ -1,1 +1,0 @@
-test/run-fuzzers-macos.sh

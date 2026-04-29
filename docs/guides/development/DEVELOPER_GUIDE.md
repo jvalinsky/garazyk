@@ -217,14 +217,14 @@ Fuzzer binaries will be at `./build/fuzzing/`.
 
 **Run all unit tests:**
 ```bash
-./scripts/run-tests.sh
+./scripts/test/run-tests.sh
 # or manually:
 ./build/tests/AllTests
 ```
 
 **Run integration tests:**
 ```bash
-./scripts/simple_test.sh
+./scripts/test/test-pds-integration.sh
 ```
 
 **Run fuzzers:**
@@ -250,10 +250,10 @@ All shell scripts follow the bash scripting standards documented in `docs/guides
 - Validate all inputs and dependencies
 
 #### Available Scripts
-- `scripts/start_server.sh`: Production server startup with proper process management
-- `scripts/run-tests.sh`: Test suite execution with validation
+- `scripts/ops/start_server.sh`: Production server startup with proper process management
+- `scripts/test/run-tests.sh`: Test suite execution with validation
 - `scripts/simple_test.sh`: AT Proto integration testing
-- `scripts/quality_gate.sh`: Code quality and static analysis
+- `scripts/build/quality_gate.sh`: Code quality and static analysis
 
 #### Script Development Workflow
 1. Follow the professional bash scripting skill guidelines

@@ -1,1 +1,0 @@
-build/wipe_and_regen.sh
