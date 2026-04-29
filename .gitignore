@@ -146,7 +146,7 @@ tooling/vscode-objective-j/out/
 # objc-jupyter-wasm build artifacts
 objc-jupyter-wasm/lib/
 objc-jupyter-wasm/dist/
-objc-jupyter-wasm/objc_jupyter_wasm/labextension/static/
+objc-jupyter-wasm/objc_jupyter_wasm/labextension/
 
 # Generated docs index
 docs/repo-index/
