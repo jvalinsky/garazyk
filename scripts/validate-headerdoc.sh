@@ -1,1 +1,0 @@
-build/validate-headerdoc.sh

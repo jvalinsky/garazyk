@@ -1,12 +1,14 @@
 # Build directories
 build/
 build-*/
-build-linux/
-build-linux-ci/
-build_verify/
-build_local/
 DerivedData/
 node_modules/
+
+# CMake in-source configure artifacts
+CMakeFiles/
+__cmake_systeminformation/
+cmake_install.cmake
+CMakeCache.txt
 
 # Submodules
 vendor/secp256k1/
@@ -19,6 +21,8 @@ vendor/secp256k1/
 *~
 *.tmp
 *.temp
+.claude/settings.local.json
+.ruff_cache/
 
 #tmp_*
 
@@ -62,7 +66,15 @@ config.json
 :memory:-wal
 *.db-shm
 *.db-wal
+localdb.sqlite*
 docs/tutorial-site.tar.gz
+
+# Python virtual environments
+search_venv/
+*.egg-info/
+
+# Runtime cache directories
+cache/
 
 # Runtime service databases
 did_cache/
@@ -75,16 +87,10 @@ docker/local-network/staging/
 # Temp files
 health.html
 plan_*.txt
+scratchpad_*.md
 
-# IDE and AI
-.DS_Store
-.idea/
-*.swp
-*.swo
-*~
-*.tmp
-*.temp
-.claude/settings.local.json
+# CTest artifacts
+Testing/
 
 # Research and Reference (local copies)
 reference/
@@ -93,7 +99,6 @@ vendor/reference/
 Garazyk/Tests/Blob/debug_blob_test.txt
 
 com.apple.DeveloperTools/
-build-dd/
 
 # Coverage files
 *.profdata
@@ -140,4 +145,3 @@ tooling/test-audit-validator/.artifacts/
 # Deciduous database (local)
 .deciduous/
 plc/
-build_test/

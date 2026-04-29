@@ -1,1 +1,0 @@
-docs/check-doc-patterns.sh

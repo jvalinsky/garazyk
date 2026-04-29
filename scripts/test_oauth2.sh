@@ -1,1 +1,0 @@
-test/test_oauth2.sh

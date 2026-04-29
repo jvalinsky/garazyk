@@ -1,1 +1,0 @@
-test/test_social_features.sh

@@ -1,1 +1,0 @@
-test/test_page_load.sh

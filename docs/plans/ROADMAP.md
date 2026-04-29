@@ -61,7 +61,7 @@ The project has reached **Phase 10**, achieving AT Protocol specification compli
 - [x] `GET /{did}/data`
 
 #### Phase 10: E2E Verification
-- [x] Native integration test suite (`scripts/run_e2e.sh`)
+- [x] Native integration test suite (`scripts/test/run_e2e.sh`)
 - [x] Confirmed PDS+PLC interoperability
 
 #### Phase 6 (AGENTS.md): Professional Script Development - COMPLETED
