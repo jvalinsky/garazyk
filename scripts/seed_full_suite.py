@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed PDS with demo accounts and 10+ records per account via XRPC.
+"""Seed full-suite demo data through public XRPC endpoints.
 
 Creates 3 accounts (alice.test, bob.test, carol.test) with:
   - 1 profile (app.bsky.actor.profile)
@@ -10,181 +10,90 @@ Creates 3 accounts (alice.test, bob.test, carol.test) with:
   - 1 feed generator (app.bsky.feed.generator)
   - Extensive DM conversations between each account pair (20+ messages each)
 
+The seeder intentionally uses the same XRPC surface that clients use instead
+of direct database writes. That keeps the demo data representative and catches
+endpoint, auth, and validation regressions during full-stack smoke tests.
+
 Usage:
     python3 scripts/seed_full_suite.py
     PDS_URL=http://127.0.0.1:2583 python3 scripts/seed_full_suite.py
+    PDS_URL=http://127.0.0.1:2583 CHAT_URL=http://127.0.0.1:2585 python3 scripts/seed_full_suite.py
 """
 
 from __future__ import annotations
 
 import os
-import random
 import sys
 import time
+from pathlib import Path
 
-import requests
+# Add scripts/ to sys.path so the shared atproto helper package is available
+# when the script is invoked from the repository checkout.
+_scripts_dir = str(Path(__file__).resolve().parent)
+if _scripts_dir not in sys.path:
+    sys.path.insert(0, _scripts_dir)
+
+from lib.atproto import (
+    XrpcClient,
+    XrpcError,
+    create_account_or_login,
+    create_record_idempotent,
+    get_convo_for_members,
+    send_message,
+    now_iso,
+    wait_for_server,
+    DEFAULT_ACCOUNTS,
+    DEFAULT_POSTS_TEMPLATES,
+)
 
 # ── Configuration ──────────────────────────────────────────────────────
 
 BASE_URL = os.environ.get("PDS_URL", "http://127.0.0.1:2583").rstrip("/")
-
-# Accounts to seed
-ACCOUNTS = [
-    {"handle": "alice.test", "email": "alice@test.local", "password": "alicepass"},
-    {"handle": "bob.test",   "email": "bob@test.local",   "password": "bobpass"},
-    {"handle": "carol.test", "email": "carol@test.local", "password": "carolpass"},
-]
-
-# Post templates
-POSTS_TEMPLATES = [
-    "Hello from {handle}! Excited to be on the ATProto network! 🎉",
-    "Just set up my PDS instance. Decentralization rocks! 🚀",
-    "Working on some cool features today. #atproto #coding",
-    "Beautiful day to build something new! ☀",
-    "The future of social is decentralized. Here we go! 💜",
-    "Just learned about MST (Merkle Search Tree) — fascinating tech!",
-    "Shoutout to the Bluesky team for the protocol design! 👏",
-    "Testing out the firehose relay functionality today.",
-    "Record indexing is working great with the new backfill logic.",
-    "Admin UI makes managing the PDS so much easier! ⚙",
-]
-
-# ── Helpers ────────────────────────────────────────────────────────────
-
-def log(tag: str, msg: str) -> None:
-    print(f"  [{tag}] {msg}")
-
-
-def wait_for_server(timeout: int = 20) -> None:
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            r = requests.get(f"{BASE_URL}/_health", timeout=1)
-            if r.status_code == 200:
-                return
-        except requests.ConnectionError:
-            pass
-        time.sleep(0.25)
-    raise RuntimeError(f"PDS not ready at {BASE_URL}")
-
-
-def create_account(handle: str, email: str, password: str) -> dict:
-    r = requests.post(
-        f"{BASE_URL}/xrpc/com.atproto.server.createAccount",
-        json={"handle": handle, "email": email, "password": password},
-        timeout=15,
-    )
-    if r.status_code == 200:
-        return r.json()
-
-    # Account might already exist — try login
-    r2 = requests.post(
-        f"{BASE_URL}/xrpc/com.atproto.server.createSession",
-        json={"identifier": handle, "password": password},
-        timeout=15,
-    )
-    if r2.status_code == 200:
-        return r2.json()
-
-    raise RuntimeError(f"Failed to create/login {handle}: {r.status_code} {r.text[:200]}")
-
-
-def create_record(access_jwt: str, repo_did: str, collection: str, record: dict) -> dict:
-    r = requests.post(
-        f"{BASE_URL}/xrpc/com.atproto.repo.createRecord",
-        headers={"Authorization": f"Bearer {access_jwt}"},
-        json={"repo": repo_did, "collection": collection, "record": record},
-        timeout=15,
-    )
-    if r.status_code == 200:
-        return r.json()
-
-    # Record might already exist (e.g., profile "self" rkey)
-    if r.status_code == 400 and "already exists" in r.text.lower():
-        return {}
-    raise RuntimeError(f"createRecord failed: {r.status_code} {r.text[:200]}")
-
-
-def get_profile_did(handle: str) -> str | None:
-    r = requests.get(
-        f"{BASE_URL}/xrpc/com.atproto.identity.resolveHandle",
-        params={"handle": handle},
-        timeout=10,
-    )
-    if r.status_code == 200:
-        return r.json().get("did")
-    return None
-
-
-def now_iso() -> str:
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def get_convo_for_members(jwt: str, member_dids: list[str]) -> dict:
-    r = requests.post(
-        f"{BASE_URL}/xrpc/chat.bsky.convo.getConvoForMembers",
-        headers={"Authorization": f"Bearer {jwt}", "Content-Type": "application/json"},
-        json={"members": member_dids},
-        timeout=10,
-    )
-    if r.status_code != 200:
-        raise RuntimeError(f"getConvoForMembers failed: {r.status_code} {r.text[:200]}")
-    return r.json()
-
-
-def send_message(jwt: str, convo_id: str, text: str) -> dict:
-    r = requests.post(
-        f"{BASE_URL}/xrpc/chat.bsky.convo.sendMessage",
-        headers={"Authorization": f"Bearer {jwt}", "Content-Type": "application/json"},
-        json={
-            "convoId": convo_id,
-            "message": {
-                "$type": "chat.bsky.convo.def#messageRef",
-                "text": text,
-                "createdAt": now_iso(),
-            },
-        },
-        timeout=10,
-    )
-    if r.status_code != 200:
-        raise RuntimeError(f"sendMessage failed: {r.status_code} {r.text[:200]}")
-    return r.json()
-
+CHAT_URL = os.environ.get("CHAT_URL", BASE_URL).rstrip("/")
 
 # ── Main ──────────────────────────────────────────────────────────────
 
 def main() -> None:
+    """Create demo accounts, repo records, and chat conversations."""
     print()
     print("  ╔════════════════════════════════════════════════════╗")
     print("  ║     Seeding Full Suite Demo Data               ║")
     print("  ╚════════════════════════════════════════════════════╝")
     print()
 
-    log("SETUP", f"Target PDS: {BASE_URL}")
-    wait_for_server()
-    log("SETUP", "PDS is healthy")
+    print(f"  [SETUP] Target PDS: {BASE_URL}")
+    wait_for_server(BASE_URL)
+    print("  [SETUP] PDS is healthy")
+    print(f"  [SETUP] Target Chat: {CHAT_URL}")
+    if CHAT_URL != BASE_URL:
+        wait_for_server(CHAT_URL)
+        print("  [SETUP] Chat is healthy")
 
-    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    pds_client = XrpcClient(BASE_URL)
+    chat_client = XrpcClient(CHAT_URL)
+
+    now = now_iso()
     sessions: list[dict] = []
-    dids: dict[str, str] = {}  # handle -> did
+    dids: dict[str, str] = {}  # handle -> did, used to build follows and chat memberships
 
     # ── Create Accounts ──────────────────────────────────────────────
 
-    log("ACCT", "Creating accounts...")
-    for acct in ACCOUNTS:
+    print("  [ACCT] Creating accounts...")
+    for acct in DEFAULT_ACCOUNTS:
         try:
-            session = create_account(acct["handle"], acct["email"], acct["password"])
+            session = create_account_or_login(
+                pds_client, acct["handle"], acct["email"], acct["password"]
+            )
             sessions.append(session)
             dids[acct["handle"]] = session["did"]
-            log("ACCT", f"  {acct['handle']}: {session['did']}")
-        except RuntimeError as e:
-            log("ACCT", f"  FAILED {acct['handle']}: {e}")
+            print(f"  [ACCT]   {acct['handle']}: {session['did']}")
+        except XrpcError as e:
+            print(f"  [ACCT]   FAILED {acct['handle']}: {e}")
             sys.exit(1)
 
     # ── Create Records Per Account ──────────────────────────────────
 
-    for acct in ACCOUNTS:
+    for acct in DEFAULT_ACCOUNTS:
         handle = acct["handle"]
         if handle not in dids:
             continue
@@ -192,92 +101,95 @@ def main() -> None:
         did = dids[handle]
         jwt = next((s["accessJwt"] for s in sessions if s["did"] == did), None)
         if not jwt:
-            log("SEED", f"  No JWT for {handle}, skipping records")
+            print(f"  [SEED]   No JWT for {handle}, skipping records")
             continue
 
-        log("SEED", f"Seeding records for {handle} ({did})...")
+        print(f"  [SEED] Seeding records for {handle} ({did})...")
 
-        # 1. Profile (app.bsky.actor.profile)
+        # Profiles give AppView/UI smoke tests stable display-name data to
+        # verify after relay backfill.
         try:
-            create_record(jwt, did, "app.bsky.actor.profile", {
+            create_record_idempotent(pds_client, did, "app.bsky.actor.profile", {
                 "$type": "app.bsky.actor.profile",
                 "displayName": handle.split(".")[0].capitalize(),
                 "description": f"Demo account for {handle}. Seeded for full suite demo.",
                 "createdAt": now,
-            })
-            log("SEED", f"  ✓ Profile created")
-        except RuntimeError as e:
-            log("SEED", f"  ✗ Profile failed: {e}")
+            }, jwt)
+            print(f"  [SEED]   ✓ Profile created")
+        except XrpcError as e:
+            print(f"  [SEED]   ✗ Profile failed: {e}")
 
-        # 2. Posts (app.bsky.feed.post) — 5 posts
+        # Posts provide feed, author-feed, and notification source material.
+        # We keep their URIs for future like/reply expansion.
         post_uris = []
         for i in range(5):
             try:
-                result = create_record(jwt, did, "app.bsky.feed.post", {
+                result = create_record_idempotent(pds_client, did, "app.bsky.feed.post", {
                     "$type": "app.bsky.feed.post",
-                    "text": POSTS_TEMPLATES[i].format(handle=handle.split(".")[0]),
+                    "text": DEFAULT_POSTS_TEMPLATES[i].format(handle=handle.split(".")[0]),
                     "createdAt": now,
-                })
+                }, jwt)
                 if result and "uri" in result:
                     post_uris.append(result["uri"])
-                log("SEED", f"  ✓ Post #{i+1}")
-            except RuntimeError as e:
-                log("SEED", f"  ✗ Post #{i+1} failed: {e}")
+                print(f"  [SEED]   ✓ Post #{i+1}")
+            except XrpcError as e:
+                print(f"  [SEED]   ✗ Post #{i+1} failed: {e}")
 
-        # 3. Follows (app.bsky.graph.follow) — follow other accounts
+        # Follow records create a non-trivial social graph for timeline and
+        # graph endpoint checks.
         other_handles = [h for h in dids if h != handle]
         for target_handle in other_handles[:2]:  # Follow up to 2 others
             target_did = dids[target_handle]
             try:
-                create_record(jwt, did, "app.bsky.graph.follow", {
+                create_record_idempotent(pds_client, did, "app.bsky.graph.follow", {
                     "$type": "app.bsky.graph.follow",
                     "subject": target_did,
                     "createdAt": now,
-                })
-                log("SEED", f"  ✓ Followed {target_handle.split('.')[0]}")
-            except RuntimeError as e:
-                log("SEED", f"  ✗ Follow failed: {e}")
+                }, jwt)
+                print(f"  [SEED]   ✓ Followed {target_handle.split('.')[0]}")
+            except XrpcError as e:
+                print(f"  [SEED]   ✗ Follow failed: {e}")
 
-        # 4. Likes (app.bsky.feed.like) — like some posts
-        # Collect posts from other accounts to like
+        # Placeholder for likes. The surrounding control flow is left intact so
+        # post URI collection can be expanded without restructuring the seeder.
         for target_handle in other_handles:
             target_did = dids[target_handle]
-            # We can't easily know post URIs without querying, so skip likes for simplicity
-            # In a real scenario, you'd query getAuthorFeed for the target
             pass
 
-        # 5. List (app.bsky.graph.list) — create a mutable list
+        # Lists cover graph collection records beyond simple follows.
         try:
-            create_record(jwt, did, "app.bsky.graph.list", {
+            create_record_idempotent(pds_client, did, "app.bsky.graph.list", {
                 "$type": "app.bsky.graph.list",
                 "name": f"{handle.split('.')[0]}'s Follows",
                 "purpose": "app.bsky.graph.defs#curatelist",
                 "description": "A list of interesting accounts",
                 "createdAt": now,
-            })
-            log("SEED", f"  ✓ List created")
-        except RuntimeError as e:
-            log("SEED", f"  ✗ List failed: {e}")
+            }, jwt)
+            print(f"  [SEED]   ✓ List created")
+        except XrpcError as e:
+            print(f"  [SEED]   ✗ List failed: {e}")
 
-        # 6. Feed Generator (app.bsky.feed.generator) — requires 'did' field
+        # Feed generators exercise a record type that requires the actor DID in
+        # the payload, not just in the repo parameter.
         try:
-            create_record(jwt, did, "app.bsky.feed.generator", {
+            create_record_idempotent(pds_client, did, "app.bsky.feed.generator", {
                 "$type": "app.bsky.feed.generator",
                 "did": did,
                 "displayName": f"{handle.split('.')[0]}'s Feed",
                 "description": "A demo feed generator",
                 "createdAt": now,
-            })
-            log("SEED", f"  ✓ Feed generator created")
-        except RuntimeError as e:
-            log("SEED", f"  ✗ Feed generator failed: {e}")
+            }, jwt)
+            print(f"  [SEED]   ✓ Feed generator created")
+        except XrpcError as e:
+            print(f"  [SEED]   ✗ Feed generator failed: {e}")
 
-        log("SEED", f"  Done with {handle}")
+        print(f"  [SEED]   Done with {handle}")
 
     # ── Chat Conversations ──────────────────────────────────────────
 
-    # Each pair of accounts gets a long back-and-forth conversation.
-    # Keys are (handle_a, handle_b) tuples with a < b for determinism.
+    # Each account pair gets a long back-and-forth conversation so the Admin UI
+    # and chat APIs have realistic scrollable content. Keys are sorted tuples
+    # for deterministic output across runs.
     CONVERSATIONS: dict[tuple[str, str], list[tuple[str, str]]] = {
         ("alice.test", "bob.test"): [
             ("alice.test", "Hey Bob! Have you had a chance to look at the ATProto spec?"),
@@ -396,7 +308,7 @@ def main() -> None:
         ],
     }
 
-    log("CHAT", "Seeding DM conversations...")
+    print("  [CHAT] Seeding DM conversations...")
     handles = list(dids.keys())
     chat_count = 0
 
@@ -405,22 +317,22 @@ def main() -> None:
             continue
         name1 = h1.split(".")[0].capitalize()
         name2 = h2.split(".")[0].capitalize()
-        log("CHAT", f"  {name1} <-> {name2} ({len(messages)} messages)")
+        print(f"  [CHAT]   {name1} <-> {name2} ({len(messages)} messages)")
 
         jwt1 = next((s["accessJwt"] for s in sessions if s["did"] == dids[h1]), None)
         if not jwt1:
-            log("CHAT", f"    No JWT for {h1}, skipping")
+            print(f"  [CHAT]     No JWT for {h1}, skipping")
             continue
 
         try:
-            convo = get_convo_for_members(jwt1, [dids[h1], dids[h2]])
+            convo = get_convo_for_members(chat_client, jwt1, [dids[h1], dids[h2]])
             convo_data = convo.get("convo", convo)
             convo_id = convo_data.get("id", "")
             if not convo_id:
-                log("CHAT", f"    No convo ID returned, skipping")
+                print(f"  [CHAT]     No convo ID returned, skipping")
                 continue
-        except RuntimeError as e:
-            log("CHAT", f"    Failed to create convo: {e}")
+        except XrpcError as e:
+            print(f"  [CHAT]     Failed to create convo: {e}")
             continue
 
         for sender_handle, text in messages:
@@ -428,23 +340,23 @@ def main() -> None:
             if not jwt:
                 continue
             try:
-                send_message(jwt, convo_id, text)
+                send_message(chat_client, jwt, convo_id, text)
                 chat_count += 1
-            except RuntimeError as e:
-                log("CHAT", f"    Send failed: {e}")
+            except XrpcError as e:
+                print(f"  [CHAT]     Send failed: {e}")
                 break
             time.sleep(0.05)
 
-        log("CHAT", f"    ✓ {len(messages)} messages sent")
+        print(f"  [CHAT]     ✓ {len(messages)} messages sent")
 
     # Group chat with all 3 accounts
     if len(handles) >= 3:
-        log("CHAT", f"  Group: {', '.join(h.split('.')[0].capitalize() for h in handles[:3])}")
+        print(f"  [CHAT]   Group: {', '.join(h.split('.')[0].capitalize() for h in handles[:3])}")
         jwt0 = next((s["accessJwt"] for s in sessions if s["did"] == dids[handles[0]]), None)
         if jwt0:
             try:
                 group_dids = [dids[h] for h in handles[:3]]
-                convo = get_convo_for_members(jwt0, group_dids)
+                convo = get_convo_for_members(chat_client, jwt0, group_dids)
                 convo_data = convo.get("convo", convo)
                 group_convo_id = convo_data.get("id", "")
 
@@ -463,7 +375,7 @@ def main() -> None:
                     (handles[1], "I can help with that. I've been reading the labeler spec."),
                     (handles[0], "Great. Let's sync again tomorrow morning. Same time?"),
                     (handles[2], "Works for me!"),
-                    (handles[1], "See you all then. 👋"),
+                    (handles[1], "See you all then."),
                 ]
 
                 for sender_handle, text in group_messages:
@@ -471,26 +383,26 @@ def main() -> None:
                     if not jwt:
                         continue
                     try:
-                        send_message(jwt, group_convo_id, text)
+                        send_message(chat_client, jwt, group_convo_id, text)
                         chat_count += 1
-                    except RuntimeError as e:
-                        log("CHAT", f"    Send failed: {e}")
+                    except XrpcError as e:
+                        print(f"  [CHAT]     Send failed: {e}")
                         break
                     time.sleep(0.05)
 
-                log("CHAT", f"    ✓ {len(group_messages)} group messages sent")
-            except RuntimeError as e:
-                log("CHAT", f"    Group chat failed: {e}")
+                print(f"  [CHAT]     ✓ {len(group_messages)} group messages sent")
+            except XrpcError as e:
+                print(f"  [CHAT]     Group chat failed: {e}")
 
-    log("CHAT", f"  Total chat messages sent: {chat_count}")
+    print(f"  [CHAT]   Total chat messages sent: {chat_count}")
 
     # ── Summary ──────────────────────────────────────────────────
 
     print()
-    log("DONE", "Seeding complete!")
+    print("  [DONE] Seeding complete!")
     print()
     print("  Demo Accounts:")
-    for acct in ACCOUNTS:
+    for acct in DEFAULT_ACCOUNTS:
         handle = acct["handle"]
         did = dids.get(handle, "?")
         print(f"  - {handle}  password={acct['password']}  did={did}")
@@ -501,6 +413,7 @@ def main() -> None:
     print(f"  Group chat: 1 (15 messages)")
     print()
     print(f"  PDS: {BASE_URL}")
+    print(f"  Chat: {CHAT_URL}")
     print(f"  Admin UI: http://127.0.0.1:2590/admin")
     print()
 

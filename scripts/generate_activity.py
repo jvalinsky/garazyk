@@ -1,1 +1,0 @@
-dev/generate_activity.py
