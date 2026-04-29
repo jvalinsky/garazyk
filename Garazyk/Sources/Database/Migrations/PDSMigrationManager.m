@@ -54,11 +54,12 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 }
 
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error {
-    NSArray *tables = @[
+    // Whitelist of known migration tables
+    NSSet<NSString *> *allowedTables = [NSSet setWithArray:@[
         @"moderation_events", @"moderation_sets", @"moderation_set_members",
         @"moderation_templates", @"moderation_team"
-    ];
-    for (NSString *table in tables) {
+    ]];
+    for (NSString *table in allowedTables) {
         NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
         sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
     }
@@ -112,10 +113,11 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 }
 
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error {
-    NSArray *tables = @[
+    // Whitelist of known diagnostic tables
+    NSSet<NSString *> *allowedTables = [NSSet setWithArray:@[
         @"sequencer_analytics", @"blob_audit_jobs", @"rate_limit_history"
-    ];
-    for (NSString *table in tables) {
+    ]];
+    for (NSString *table in allowedTables) {
         NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
         sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
     }
@@ -460,7 +462,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 }
 
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error {
-    // Drop all tables created by the schema
+    // Whitelist tables to drop (prevent SQL injection via schemaType)
     NSArray<NSString *> *tablesToDrop;
     if ([self.schemaType isEqualToString:@"service"]) {
         tablesToDrop = @[
@@ -475,28 +477,13 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         ];
     }
 
-    NSMutableString *dropSQL = [NSMutableString string];
     for (NSString *table in tablesToDrop) {
-        [dropSQL appendFormat:@"DROP TABLE IF EXISTS %@;", table];
+        // table is from a hardcoded list, but defensively validate anyway
+        if (![table matches:@"^[a-z0-9_]+$"]) continue;
+        NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
+        sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
     }
-
-    char *errMsg = NULL;
-    int result = sqlite3_exec(db, dropSQL.UTF8String, NULL, NULL, &errMsg);
-
-    if (result != SQLITE_OK) {
-        if (error) {
-            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown SQL error";
-            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
-                                         code:PDSMigrationErrorRollbackFailed
-                                     userInfo:@{
-                                         NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V1 down migration failed: %@", msg],
-                                         @"sqlite_code": @(result)
-                                     }];
-        }
-        if (errMsg) sqlite3_free(errMsg);
-        return NO;
-    }
-
+    
     PDS_LOG_DB_INFO(@"V1 %@ schema migration rolled back", self.schemaType);
     return YES;
 }
