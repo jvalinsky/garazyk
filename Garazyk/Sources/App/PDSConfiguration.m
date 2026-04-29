@@ -300,6 +300,19 @@ static BOOL PDSConfigRunningUnderTests(void) {
     return NO;
   }
 
+  // Validate file size (reject configs over 10MB)
+  if (data.length > 10 * 1024 * 1024) {
+    if (error) {
+      *error = [NSError
+          errorWithDomain:PDSConfigErrorDomain
+                     code:PDSConfigErrorFileNotFound
+                 userInfo:@{
+                   NSLocalizedDescriptionKey : @"Config file exceeds 10MB limit"
+                 }];
+    }
+    return NO;
+  }
+
   NSError *parseError = nil;
   NSDictionary *yamlConfig =
       [NSJSONSerialization JSONObjectWithData:data options:0 error:&parseError];

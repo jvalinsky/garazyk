@@ -61,7 +61,7 @@ static dispatch_once_t gKeychainOnce = 0;
                                                     attributes:nil
                                                          error:&dirError];
         if (dirError) {
-            NSLog(@"SecItemLinuxStore: Failed to create .pds directory: %@", dirError);
+            PDS_LOG_ERROR(@"SecItemLinuxStore: Failed to create .pds directory: %@", dirError);
             return;
         }
     }
@@ -69,7 +69,7 @@ static dispatch_once_t gKeychainOnce = 0;
     // Open database
     int rc = sqlite3_open([dbPath UTF8String], &gKeychainDB);
     if (rc != SQLITE_OK) {
-        NSLog(@"SecItemLinuxStore: Failed to open keychain database: %s", sqlite3_errmsg(gKeychainDB));
+        PDS_LOG_ERROR(@"SecItemLinuxStore: Failed to open keychain database: %s", sqlite3_errmsg(gKeychainDB));
         return;
     }
 
@@ -95,7 +95,7 @@ static dispatch_once_t gKeychainOnce = 0;
     char *errMsg = NULL;
     int rc = sqlite3_exec(gKeychainDB, sql, NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
-        NSLog(@"SecItemLinuxStore: Failed to create schema: %s", errMsg);
+        PDS_LOG_ERROR(@"SecItemLinuxStore: Failed to create schema: %s", errMsg);
         sqlite3_free(errMsg);
     }
 }

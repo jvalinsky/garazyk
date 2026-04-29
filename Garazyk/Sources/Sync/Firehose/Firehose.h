@@ -186,7 +186,7 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
  */
 @interface FirehoseInfoEvent : NSObject
 
-/*! The kind of info message (e.g., "OutdatedCursor", "HandshakeComplete"). */
+/*! The kind of info message (e.g., OutdatedCursor, HandshakeComplete). */
 @property (nonatomic, copy) NSString *kind;
 
 /*! The message content. */
