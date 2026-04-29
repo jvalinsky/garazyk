@@ -68,8 +68,8 @@ macOS integration for the ATProto PDS CLI tool: background service operation, se
 | `Garazyk/Sources/Debug/PDSPerformanceTracer.h/m` | Performance instrumentation |
 | `Garazyk/Resources/LaunchDaemons/com.atproto.pds.plist` | LaunchDaemon config |
 | `Garazyk/Resources/LaunchAgents/com.atproto.pds.user.plist` | LaunchAgent config |
-| `scripts/install.sh` | Main installer |
-| `scripts/uninstall.sh` | Cleanup script |
+| `scripts/ops/install.sh` | Main installer |
+| `scripts/ops/uninstall.sh` | Cleanup script |
 | `scripts/distribute/homebrew-atproto-pds.rb` | Homebrew formula |
 | `.github/workflows/release.yml` | Release workflow |
 

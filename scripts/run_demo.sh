@@ -1,1 +1,0 @@
-dev/run_demo.sh
