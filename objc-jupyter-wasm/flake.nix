@@ -24,14 +24,10 @@
         # The wasi-sdk path works without LLVM 22 since libobjc2 is C.
         llvmPackages = pkgs.llvmPackages_21;
 
-        # Emscripten with our LLVM packages (overrides the default set)
-        emscriptenPkg = pkgs.emscripten.override {
-          inherit llvmPackages;
-        };
-
-        # ── WASI cross-compilation ─────────────────────────────────────
-        # pkgsCross.wasi32 provides wasm32-unknown-wasi stdenv
-        wasiPkgs = pkgs.pkgsCross.wasi32;
+        # Emscripten from nixpkgs (wired to LLVM 21 by default)
+        # Note: Emscripten 5.0.6 expects LLVM 22, but nixpkgs uses LLVM 21.
+        # This may cause version check warnings. Use pkgs.emscripten directly.
+        emscriptenPkg = pkgs.emscripten;
 
         # ── WASM tooling ────────────────────────────────────────────────
         wasmTools = with pkgs; [
@@ -50,23 +46,22 @@
         ];
 
         # ── Source paths ───────────────────────────────────────────────
-        kernelSrc = "${self}/kernel";
-        jsSrc = "${self}/js";
-        jupyterliteSrc = "${self}/jupyterlite";
+        kernelSrc = ./kernel;
+        runtimeSrc = ./runtime;
 
       in {
         # ── Packages (Nix derivations) ─────────────────────────────────
 
         packages = {
-          # libobjc2 compiled to WASM via wasi32 cross-stdenv
+          # Minimal libobjc2-compatible runtime smoke artifact.
           libobjc2-wasm = pkgs.callPackage ./nix/libobjc2-wasm.nix {
             inherit llvmPackages;
+            src = runtimeSrc;
           };
 
-          # Extended WASI sysroot with ObjC headers overlaid
+          # Minimal WASI sysroot with ObjC headers
           wasi-sysroot = pkgs.callPackage ./nix/wasi-sysroot.nix {
             inherit llvmPackages;
-            wasilibc = pkgs.wasilibc;
             libobjc2-wasm = self.packages.${system}.libobjc2-wasm;
           };
 
@@ -86,6 +81,34 @@
               wasi-sysroot
             ];
           };
+        };
+
+        checks = {
+          kernel-smoke = pkgs.runCommand "objc-jupyter-wasm-kernel-smoke" {
+            nativeBuildInputs = [
+              pkgs.nodejs
+              pkgs.wabt
+            ];
+          } ''
+            wasm-validate ${self.packages.${system}.kernel-wasm}/wasm/kernel.wasm
+            wasm-validate ${self.packages.${system}.libobjc2-wasm}/wasm/libobjc2.wasm
+            node ${self}/tests/kernel-smoke.mjs ${self.packages.${system}.kernel-wasm}/wasm/kernel.wasm
+            mkdir -p $out
+            touch $out/passed
+          '';
+
+          js-syntax = pkgs.runCommand "objc-jupyter-wasm-js-syntax" {
+            nativeBuildInputs = [
+              pkgs.nodejs
+            ];
+          } ''
+            node --check ${self}/js/wasm-loader.js
+            node --check ${self}/js/objc-worker.js
+            node --check ${self}/jupyterlite/kernel.js
+            node --check ${self}/tests/kernel-smoke.mjs
+            mkdir -p $out
+            touch $out/passed
+          '';
         };
 
         # ── Dev Shells ─────────────────────────────────────────────────
@@ -130,12 +153,6 @@
               llvmPackages.llvm
             ];
 
-            # WASI sysroot from cross-compiled wasilibc
-            # Note: wasilibc is built for wasm32-wasi, not the host.
-            # Use pkgsCross.wasi32.buildPackages for cross-compilation tools.
-            # For now, we set up the environment for manual WASI builds.
-            WASI_SYSROOT = "${wasiPkgs.buildPackages.wasilibc.dev or "${pkgs.wasilibc.dev}"}";
-
             # ObjC-specific flags
             OBJC_CFLAGS = "-fobjc-runtime=gnustep-2.2 -fwasm-exceptions";
 
@@ -145,16 +162,15 @@
               echo "  clang:       $(clang --version | head -1)"
               echo ""
               echo "Usage:"
-              echo "  # C to WASM (basic):"
+              echo "  # C to WASM (freestanding, no libc):"
               echo "  clang --target=wasm32-wasi -o out.wasm source.c"
-              echo "  # C to WASM (with wasi-libc sysroot):"
-              echo "  clang --target=wasm32-wasi --sysroot=/path/to/wasi-sysroot -o out.wasm source.c"
               echo "  # ObjC to WASM (needs LLVM 22+):"
               echo "  clang --target=wasm32-wasi $OBJC_CFLAGS -o out.wasm source.m"
               echo "  # Run:"
               echo "  wasmtime out.wasm"
               echo ""
-              echo "Note: For full WASI libc support, use emscripten or wasi-sdk."
+              echo "Note: For WASI libc support, use emscripten shell:"
+              echo "  nix develop .#wasm-emscripten"
             '';
           };
 
