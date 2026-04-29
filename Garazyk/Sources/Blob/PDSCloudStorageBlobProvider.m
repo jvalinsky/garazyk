@@ -80,7 +80,6 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     // Sign request with AWS Signature V4
     [self signRequest:request
              method:@"PUT"
-               path:objectKey
               body:data];
 
     // Execute request synchronously (for simplicity; async pattern could be added)
@@ -134,7 +133,6 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     // Sign request
     [self signRequest:request
              method:@"GET"
-               path:objectKey
               body:nil];
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -192,7 +190,6 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     // Sign request
     [self signRequest:request
              method:@"DELETE"
-               path:objectKey
               body:nil];
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -240,7 +237,6 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
     [self signRequest:request
              method:@"HEAD"
-               path:objectKey
               body:nil];
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -276,7 +272,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
 - (NSURL *)s3URLForKey:(NSString *)key {
     NSString *encodedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:
-        [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"]];
+        [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~/"]];
 
     NSString *urlString;
     if (self.endpoint) {
@@ -296,7 +292,6 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
 - (void)signRequest:(NSMutableURLRequest *)request
               method:(NSString *)method
-                path:(NSString *)path
                body:(nullable NSData *)body {
     NSDate *now = [NSDate date];
     NSString *timestamp = [self iso8601Timestamp:now];
@@ -304,6 +299,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
     // Add x-amz-date header
     [request setValue:timestamp forHTTPHeaderField:@"x-amz-date"];
+    [request setValue:[self hostHeaderForURL:request.URL] forHTTPHeaderField:@"Host"];
 
     // Calculate body hash
     NSString *bodyHash = [self sha256HexString:body ?: [NSData data]];
@@ -311,8 +307,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
     // Build canonical request
     NSString *canonicalRequest = [self buildCanonicalRequest:method
-                                                        path:path
-                                                       query:request.URL.query ?: @""
+                                                         URL:request.URL
                                                      headers:request.allHTTPHeaderFields
                                                    bodyHash:bodyHash];
 
@@ -334,19 +329,20 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 }
 
 - (NSString *)buildCanonicalRequest:(NSString *)method
-                               path:(NSString *)path
-                              query:(NSString *)query
+                                URL:(NSURL *)url
                             headers:(NSDictionary *)headers
-                          bodyHash:(NSString *)bodyHash {
+                           bodyHash:(NSString *)bodyHash {
     // Canonical request format for AWS Signature V4
     NSMutableArray *lines = [NSMutableArray array];
     [lines addObject:method];
 
     // Canonical URI
-    NSString *uri = [NSString stringWithFormat:@"/%@/%@", self.bucket, path];
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    NSString *uri = components.percentEncodedPath.length > 0 ? components.percentEncodedPath : @"/";
     [lines addObject:uri];
 
     // Canonical query string
+    NSString *query = components.percentEncodedQuery ?: @"";
     [lines addObject:query.length > 0 ? query : @""];
 
     // Canonical headers (sorted)
@@ -361,11 +357,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
         }
     }
 
-    // Ensure host header
-    if (!canonicalHeaders[@"host"]) {
-        canonicalHeaders[@"host"] = [self hostHeaderForURL:[NSURL URLWithString:
-            [NSString stringWithFormat:@"https://s3.%@.amazonaws.com", self.region]]];
-    }
+    canonicalHeaders[@"host"] = [self hostHeaderForURL:url];
 
     NSArray *sortedKeys = [canonicalHeaders.allKeys sortedArrayUsingSelector:@selector(compare:)];
     for (NSString *key in sortedKeys) {
