@@ -1,1 +1,0 @@
-test/test_apply_writes.sh

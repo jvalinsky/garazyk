@@ -1,1 +1,0 @@
-build/migrate_errors.sh

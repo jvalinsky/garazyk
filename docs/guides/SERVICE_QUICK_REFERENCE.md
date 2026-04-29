@@ -93,7 +93,7 @@ grep -i error logs/*.log
 ./scripts/services-control.sh follow all
 
 # Terminal 3: Run tests, etc.
-./scripts/run-tests.sh
+./scripts/test/run-tests.sh
 
 # When done
 ./scripts/services-control.sh stop all

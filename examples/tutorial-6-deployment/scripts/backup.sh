@@ -20,14 +20,14 @@ RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
 
 # Find the backup script
 BACKUP_SCRIPT=""
-if [ -f "$PROJECT_DIR/../../../scripts/backup_pds.sh" ]; then
-    BACKUP_SCRIPT="$PROJECT_DIR/../../../scripts/backup_pds.sh"
+if [ -f "$PROJECT_DIR/../../../scripts/ops/backup_pds.sh" ]; then
+    BACKUP_SCRIPT="$PROJECT_DIR/../../../scripts/ops/backup_pds.sh"
 elif [ -f "/usr/local/bin/backup_pds.sh" ]; then
     BACKUP_SCRIPT="/usr/local/bin/backup_pds.sh"
 else
     echo "ERROR: backup_pds.sh not found"
     echo "Expected locations:"
-    echo "  - $PROJECT_DIR/../../../scripts/backup_pds.sh"
+    echo "  - $PROJECT_DIR/../../../scripts/ops/backup_pds.sh"
     echo "  - /usr/local/bin/backup_pds.sh"
     exit 1
 fi

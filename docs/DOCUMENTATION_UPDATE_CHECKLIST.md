@@ -144,7 +144,7 @@ Check if these need updates:
 
 ```bash
 # Build documentation site
-./scripts/build-docs.sh
+./scripts/build/build-docs.sh
 
 # Verify no build errors
 # Check generated site in _site/ directory
@@ -335,7 +335,7 @@ For critical fixes that need immediate documentation updates:
 ## Resources
 
 - **Documentation source**: `docs/` directory
-- **Build script**: `scripts/build-docs.sh`
+- **Build script**: `scripts/build/build-docs.sh`
 - **Link checker**: `scripts/test-doc-links.py`
 - **Example validator**: `scripts/verify-doc-examples.sh` (if exists)
 - **Style guide**: Follow this checklist for consistency

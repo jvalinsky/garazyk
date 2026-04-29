@@ -110,7 +110,7 @@ If automatic dependency resolution fails, ensure `sqlite` and `openssl` are inst
 ### Startup Scripts
 Production-ready startup is handled by:
 ```bash
-./scripts/start_server.sh
+./scripts/ops/start_server.sh
 ```
 Use `VERBOSE=true` for detailed startup logging.
 
@@ -125,9 +125,9 @@ The PDS uses SQLite. The server automatically initializes and migrates the schem
 
 ### Automated Tests
 Run the following scripts to verify system health:
-- `./scripts/run-tests.sh`: Executes the unit test suite.
-- `./scripts/quality_gate.sh`: Runs linting and static analysis.
-- `./scripts/test_endpoints.sh`: Verifies XRPC endpoint responsiveness.
+- `./scripts/test/run-tests.sh`: Executes the unit test suite.
+- `./scripts/build/quality_gate.sh`: Runs linting and static analysis.
+- `./scripts/test/test_endpoints.sh`: Verifies XRPC endpoint responsiveness.
 
 ### Manual Health Checks
 - **Health Endpoint**: `curl -s http://localhost:2583/xrpc/com.atproto.server.describeServer`

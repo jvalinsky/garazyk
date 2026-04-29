@@ -1,1 +1,0 @@
-docs/validate-doc-diagrams.sh

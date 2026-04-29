@@ -1564,7 +1564,7 @@ Expected: All tests pass
 
 ```bash
 # If you have linting setup
-# ./scripts/quality_gate.sh
+# ./scripts/build/quality_gate.sh
 ```
 
 **Step 4: Final commit**

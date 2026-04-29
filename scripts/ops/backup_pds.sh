@@ -5,10 +5,10 @@
 # Suitable for cron scheduling.
 #
 # Usage:
-#   ./scripts/backup_pds.sh [--data-dir /var/lib/atprotopds/data] [--backup-dir /var/backups/atprotopds]
+#   ./scripts/ops/backup_pds.sh [--data-dir /var/lib/atprotopds/data] [--backup-dir /var/backups/atprotopds]
 #
 # Cron example (daily at 3am):
-#   0 3 * * * /opt/atprotopds/scripts/backup_pds.sh >> /var/log/atprotopds/backup.log 2>&1
+#   0 3 * * * /opt/atprotopds/scripts/ops/backup_pds.sh >> /var/log/atprotopds/backup.log 2>&1
 
 set -euo pipefail
 

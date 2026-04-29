@@ -17,10 +17,10 @@ title: GNUstep Linux Support Plan
 **Files:**
 - Create: `CMakeLists.txt`
 - Create: `.github/workflows/linux.yml`
-- Create: `scripts/setup_linux.sh`
+- Create: `scripts/ops/setup_linux.sh`
 
 **Step 1: Create Linux setup script**
-Create `scripts/setup_linux.sh` to install dependencies on Ubuntu/Debian:
+Create `scripts/ops/setup_linux.sh` to install dependencies on Ubuntu/Debian:
 ```bash
 #!/bin/bash
 sudo apt-get update
@@ -41,7 +41,7 @@ Create `.github/workflows/linux.yml` that runs the setup script and `cmake . && 
 
 **Step 4: Commit**
 ```bash
-git add CMakeLists.txt .github/workflows/linux.yml scripts/setup_linux.sh
+git add CMakeLists.txt .github/workflows/linux.yml scripts/ops/setup_linux.sh
 git commit -m "build: add initial CMake setup for GNUstep"
 ```
 

@@ -1,1 +1,0 @@
-ops/uninstall.sh

@@ -36,7 +36,7 @@ title: "P0 Security Hardening: Refresh Tokens and XRPC DPoP Implementation Plan"
 ## Task 1: Fix backup_pds.sh Duplicate Script Body
 
 **Files:**
-- Modify: `scripts/backup_pds.sh:165-269` (delete duplicate content)
+- Modify: `scripts/ops/backup_pds.sh:165-269` (delete duplicate content)
 
 **Step 1: Delete duplicate script body**
 
@@ -44,18 +44,18 @@ Remove lines 165-269 (the duplicate section that starts with `if ! command -v sq
 
 **Step 2: Verify script integrity**
 
-Run: `shellcheck scripts/backup_pds.sh`
+Run: `shellcheck scripts/ops/backup_pds.sh`
 Expected: Pass with no warnings
 
 **Step 3: Test script**
 
-Run: `bash -n scripts/backup_pds.sh`
+Run: `bash -n scripts/ops/backup_pds.sh`
 Expected: No syntax errors
 
 **Step 4: Commit**
 
 ```bash
-git add scripts/backup_pds.sh
+git add scripts/ops/backup_pds.sh
 git commit -m "fix(backup): remove duplicated script body in backup_pds.sh"
 ```
 
@@ -408,7 +408,7 @@ mkdir -p /tmp/test_pds/actor_stores/did_123
 touch /tmp/test_pds/service/service.db
 
 cd /Users/jack/Software/objpds
-./scripts/backup_pds.sh --data-dir /tmp/test_pds --backup-dir /tmp/test_backups
+./scripts/ops/backup_pds.sh --data-dir /tmp/test_pds --backup-dir /tmp/test_backups
 ```
 
 Expected: Backup completes without errors, archive created

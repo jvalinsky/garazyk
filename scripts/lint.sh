@@ -1,1 +1,0 @@
-build/lint.sh

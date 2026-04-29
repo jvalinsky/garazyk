@@ -314,7 +314,7 @@ Add to `Tests/Blob/BlobStorageTests.m`:
 
 ```bash
 # 1. Start the server
-./scripts/start_server.sh
+./scripts/ops/start_server.sh
 
 # 2. Create an account to get auth token
 curl -X POST http://localhost:2583/xrpc/com.atproto.server.createAccount \

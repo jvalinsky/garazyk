@@ -1,1 +1,0 @@
-dev/run_demo_live_plc_directory.sh

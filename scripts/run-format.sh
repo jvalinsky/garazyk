@@ -1,1 +1,0 @@
-build/run-format.sh

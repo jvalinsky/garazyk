@@ -1,1 +1,0 @@
-docs/xrpc_coverage_scope.txt

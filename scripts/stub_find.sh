@@ -1,1 +1,0 @@
-archive/stub_find.sh

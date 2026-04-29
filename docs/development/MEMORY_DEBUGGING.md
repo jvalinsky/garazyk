@@ -49,7 +49,7 @@ Static analysis can find potential issues before the code even runs.
 
 ### Usage
 ```bash
-./scripts/run-scan-build.sh
+./scripts/build/run-scan-build.sh
 ```
 
 ## Tips for Objective-C Memory Management

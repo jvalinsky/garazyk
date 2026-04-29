@@ -1,1 +1,0 @@
-ops/setup_linux.sh

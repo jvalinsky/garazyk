@@ -1,1 +1,0 @@
-ops/verify_plc.sh
