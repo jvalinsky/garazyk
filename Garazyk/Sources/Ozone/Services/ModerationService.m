@@ -432,18 +432,37 @@
 - (BOOL)updateCommunicationTemplate:(NSString *)templateId
                            newName:(nullable NSString *)name
                           newText:(nullable NSString *)text
-                        updatedBy:(NSString *)adminDid
-                              error:(NSError **)error {
+                         updatedBy:(NSString *)adminDid
+                               error:(NSError **)error {
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
     NSMutableArray *updates = [NSMutableArray array];
     NSMutableArray *params = [NSMutableArray array];
+
+    static NSSet<NSString *> *allowedColumns = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        allowedColumns = [NSSet setWithObjects:@"name", @"text", @"updated_at", nil];
+    });
+
     if (name) { [updates addObject:@"name = ?"]; [params addObject:name]; }
     if (text) { [updates addObject:@"text = ?"]; [params addObject:text]; }
     if (updates.count == 0) return YES;
-    
+
+    for (NSString *update in updates) {
+        NSString *column = [[update componentsSeparatedByString:@" ="] firstObject];
+        if (![allowedColumns containsObject:column]) {
+            if (error) {
+                *error = [NSError errorWithDomain:@"OzoneModerationServiceErrorDomain"
+                                             code:1001
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid column: %@", column]}];
+            }
+            return NO;
+        }
+    }
+
     [updates addObject:@"updated_at = ?"]; [params addObject:now];
     [params addObject:templateId];
-    
+
     NSString *sql = [NSString stringWithFormat:@"UPDATE moderation_templates SET %@ WHERE id = ?", [updates componentsJoinedByString:@", "]];
     return [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:params error:error];
 }
