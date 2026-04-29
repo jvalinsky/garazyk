@@ -55,19 +55,20 @@
 }
 
 - (BOOL)editGroup:(NSString *)groupUri
-        newName:(nullable NSString *)name
-  newDescription:(nullable NSString *)description
-      newPrivacy:(nullable NSString *)privacy
-           error:(NSError **)error {
+         newName:(nullable NSString *)name
+   newDescription:(nullable NSString *)description
+       newPrivacy:(nullable NSString *)privacy
+            error:(NSError **)error {
     if (!groupUri) {
         if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
+                                              userInfo:@{NSLocalizedDescriptionKey: @"Group URI is required"}];
         return NO;
     }
 
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
 
-    // Build dynamic update query
+    // Whitelist of allowed column names for dynamic update
+    NSSet<NSString *> *allowedColumns = [NSSet setWithArray:@[@"name", @"description", @"privacy"]];
     NSMutableArray *updates = [NSMutableArray array];
     NSMutableArray *params = [NSMutableArray array];
 
@@ -80,6 +81,13 @@
         [params addObject:description];
     }
     if (privacy) {
+        // Validate privacy value against allowed values
+        NSSet<NSString *> *allowedPrivacy = [NSSet setWithArray:@[@"public", @"private", @"restricted"]];
+        if (![allowedPrivacy containsObject:privacy]) {
+            if (error) *error = [NSError errorWithDomain:@"GroupService" code:400
+                                                  userInfo:@{NSLocalizedDescriptionKey: @"Invalid privacy value"}];
+            return NO;
+        }
         [updates addObject:@"privacy = ?"];
         [params addObject:privacy];
     }
