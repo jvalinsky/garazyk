@@ -116,8 +116,10 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         return;
     }
 
-    NSError *error = nil;
-    NSInteger availableSlots = self.maxConcurrentJobs - self.processingJobIds.count;
+    NSInteger availableSlots = 0;
+    @synchronized(self.processingJobIds) {
+        availableSlots = self.maxConcurrentJobs - self.processingJobIds.count;
+    }
     NSArray<NSDictionary *> *pendingJobs = [self.jobStore queryPendingJobsWithLimit:availableSlots
                                                                               error:&error];
 
