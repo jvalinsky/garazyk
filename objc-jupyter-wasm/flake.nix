@@ -84,6 +84,17 @@
             inherit llvmPackages;
           };
 
+          # Full GNUstep libobjc2 runtime compiled to WASM (C core + stubs).
+          libobjc2-wasm-full = pkgsWasm.callPackage ./nix/libobjc2-wasm-full.nix {
+            inherit llvmPackages;
+            wasiSysroot = self.packages.${system}.wasi-libc-sysroot;
+          };
+
+          # WASI libc sysroot built from source with LLVM 21
+          wasi-libc-sysroot = pkgs.callPackage ./nix/wasi-libc-sysroot.nix {
+            inherit llvmPackages;
+          };
+
           # Static browser smoke site with Nix-built WASM assets.
           jupyterlite-smoke-site = pkgs.runCommand "objc-jupyter-wasm-jupyterlite-smoke-site" {
             nativeBuildInputs = [
@@ -109,6 +120,16 @@
         };
 
         checks = {
+          libobjc2-wasm-full-smoke = pkgs.runCommand "objc-jupyter-wasm-libobjc2-wasm-full-smoke" {
+            nativeBuildInputs = [
+              pkgs.wabt
+            ];
+          } ''
+            wasm-validate ${self.packages.${system}.libobjc2-wasm-full}/wasm/libobjc2.wasm
+            mkdir -p $out
+            touch $out/passed
+          '';
+
           kernel-smoke = pkgs.runCommand "objc-jupyter-wasm-kernel-smoke" {
             nativeBuildInputs = [
               pkgs.nodejs
