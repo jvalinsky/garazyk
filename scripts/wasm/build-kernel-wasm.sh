@@ -12,10 +12,10 @@ WASM_DIR="$PROJECT_ROOT/objc-jupyter-wasm/compiler"
 echo "=== Building kernel.wasm (Objective-C Jupyter kernel) ==="
 
 # Check prerequisites
-command -v emcc >/dev/null 2>&1 || {
+if ! command -v emcc >/dev/null 2>&1; then
     echo "ERROR: emcc not found. Source emsdk_env.sh first."
     exit 1
-}
+fi
 
 if [ ! -f "$WASM_DIR/libobjc2.wasm" ]; then
     echo "ERROR: libobjc2.wasm not found. Run build-runtime-wasm.sh first."
