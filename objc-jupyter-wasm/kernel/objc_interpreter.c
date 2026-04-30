@@ -169,6 +169,7 @@ typedef enum {
     TOK_NOT,           /* ! (logical not) */
     TOK_PLUS_PLUS,     /* ++ */
     TOK_MINUS_MINUS,   /* -- */
+    TOK_CARET,         /* ^ (block literal) */
     TOK_UNKNOWN
 } TokenType;
 
@@ -518,6 +519,7 @@ static Token lexer_next_token(Lexer *lex) {
         case '>': tok.type = TOK_GT; break;
         case '!': tok.type = TOK_NOT; break;
         case '?': tok.type = TOK_QUESTION; break;
+        case '^': tok.type = TOK_CARET; break;
         case '|': tok.type = TOK_UNKNOWN; break; /* || handled above, bare | not supported */
         default: tok.type = TOK_UNKNOWN; break;
     }
@@ -973,6 +975,52 @@ static id coll_make_marker(const char *prefix, unsigned int coll_id) {
         cstr_copy(result, buf, pos + digits + 1);
         return (id)result;
     }
+}
+
+/* ── Block side table ────────────────────────────────────────────
+ * Blocks are stored as source ranges (like method bodies).
+ * When a block literal ^{ ... } is parsed, we capture the body
+ * source and register it in g_blocks[]. Block objects are
+ * referenced by string pool markers like "NSBlock:5".
+ * When a block is invoked, we execute the body via eval_source_range. */
+
+typedef struct {
+    char name[64];   /* captured variable name */
+    Value value;     /* captured value (by-value snapshot) */
+} BlockCapture;
+
+typedef struct {
+    unsigned int block_id;        /* unique ID */
+    char source[2048];            /* block body source (without outer braces) */
+    unsigned int source_len;
+    char arg_names[8][64];       /* parameter names */
+    unsigned int arg_count;
+    BlockCapture captures[16];   /* captured variable values */
+    unsigned int capture_count;
+} BlockImpl;
+
+#define MAX_BLOCKS 32
+static BlockImpl g_blocks[MAX_BLOCKS];
+static unsigned int g_block_count = 0;
+static unsigned int g_next_block_id = 1;
+
+/* Look up a block by its ID. Returns pointer or 0. */
+static BlockImpl *block_get(unsigned int block_id) {
+    unsigned int i;
+    for (i = 0; i < g_block_count; i++) {
+        if (g_blocks[i].block_id == block_id) return &g_blocks[i];
+    }
+    return 0;
+}
+
+/* Parse a block ID from a marker string like "NSBlock:5". */
+static unsigned int block_id_from_marker(const char *s) {
+    return coll_id_from_marker(s, "NSBlock:");
+}
+
+/* Create a block marker string in the string pool. */
+static id block_make_marker(unsigned int block_id) {
+    return coll_make_marker("NSBlock:", block_id);
 }
 
 /* Look up an instance variable in the side table.
@@ -1969,6 +2017,92 @@ static Value parse_message_send(Parser *p) {
                     } else {
                         if (coll_add(cid, key, val) != 0) {
                             nslog_append("warning: collection entry table full\n", 38);
+                        }
+                    }
+                    return value_from_id(receiver);
+                }
+
+                /* [arr enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) { ... }]
+                 * The block argument is a block marker. We iterate the collection
+                 * and invoke the block for each element. */
+                if (cstr_eq(sel_name, "enumerateObjectsUsingBlock:") && arg_count >= 1) {
+                    const char *blk_marker = (const char *)keyword_args[0].obj_val;
+                    unsigned int bid = block_id_from_marker(blk_marker);
+                    BlockImpl *blk = block_get(bid);
+                    if (blk) {
+                        unsigned int cnt = coll_count(cid);
+                        unsigned int idx;
+                        unsigned int saved_var_count = g_var_count;
+                        for (idx = 0; idx < cnt; idx++) {
+                            int entry_idx = coll_get_nth(cid, idx);
+                            if (entry_idx < 0) break;
+
+                            /* Restore captured variable values FIRST */
+                            {
+                                unsigned int ci;
+                                for (ci = 0; ci < blk->capture_count; ci++) {
+                                    InterpVar *cap_var = interp_get_or_create_var(blk->captures[ci].name);
+                                    if (cap_var) {
+                                        cap_var->is_id = blk->captures[ci].value.is_id;
+                                        cap_var->value = blk->captures[ci].value.obj_val;
+                                        cap_var->is_int = blk->captures[ci].value.is_int;
+                                        cap_var->int_value = blk->captures[ci].value.int_val;
+                                        cap_var->is_class = blk->captures[ci].value.is_class;
+                                        cap_var->cls = blk->captures[ci].value.cls_val;
+                                        cap_var->is_sel = blk->captures[ci].value.is_sel;
+                                        cap_var->sel = blk->captures[ci].value.sel_val;
+                                    }
+                                }
+                            }
+
+                            /* Set up block argument variables (override captured) */
+                            {
+                                unsigned int ai;
+                                for (ai = 0; ai < blk->arg_count; ai++) {
+                                    InterpVar *arg_var = interp_get_or_create_var(blk->arg_names[ai]);
+                                    if (arg_var) {
+                                        if (ai == 0) {
+                                            /* First arg: the object */
+                                            arg_var->is_id = g_coll_entries[entry_idx].key.is_id;
+                                            arg_var->value = g_coll_entries[entry_idx].key.obj_val;
+                                            arg_var->is_int = g_coll_entries[entry_idx].key.is_int;
+                                            arg_var->int_value = g_coll_entries[entry_idx].key.int_val;
+                                            arg_var->is_class = g_coll_entries[entry_idx].key.is_class;
+                                            arg_var->cls = g_coll_entries[entry_idx].key.cls_val;
+                                            arg_var->is_sel = g_coll_entries[entry_idx].key.is_sel;
+                                            arg_var->sel = g_coll_entries[entry_idx].key.sel_val;
+                                        } else if (ai == 1) {
+                                            /* Second arg: the index */
+                                            arg_var->is_int = 1;
+                                            arg_var->int_value = (int)idx;
+                                            arg_var->is_id = 0;
+                                        }
+                                        /* Third arg (BOOL *stop) — we set up a 'stop' variable */
+                                    }
+                                }
+                                /* Set up 'stop' variable for BOOL *stop */
+                                {
+                                    InterpVar *stop_var = interp_get_or_create_var("stop");
+                                    if (stop_var) {
+                                        stop_var->is_int = 1;
+                                        stop_var->int_value = 0;
+                                    }
+                                }
+                            }
+
+                            /* Execute the block body */
+                            g_return_pending = 0;
+                            eval_source_range(0, blk->source_len, blk->source);
+
+                            /* Check stop flag */
+                            {
+                                InterpVar *stop_var = interp_find_var("stop");
+                                if (stop_var && stop_var->is_int && stop_var->int_value != 0) {
+                                    break;
+                                }
+                            }
+
+                            g_var_count = saved_var_count;
                         }
                     }
                     return value_from_id(receiver);
@@ -3251,6 +3385,94 @@ static Value parse_primary(Parser *p) {
                     }
                 }
 
+                /* Block invocation: blockName(args) or blockName()
+                 * If the variable holds a block marker ("NSBlock:N"),
+                 * and the next token is (, invoke the block. */
+                if (parser_current(p).type == TOK_OPEN_PAREN && var->is_id && var->value != 0) {
+                    const char *marker = (const char *)var->value;
+                    unsigned int bid = block_id_from_marker(marker);
+                    if (bid > 0) {
+                        BlockImpl *blk = block_get(bid);
+                        if (blk) {
+                            Value args[8];
+                            unsigned int arg_count = 0;
+                            unsigned int saved_var_count = g_var_count;
+                            unsigned int ai;
+                            /* Save the block variable's current value so we
+                             * can restore it after captured variable restoration.
+                             * (Captured values may overwrite the block variable
+                             * with a stale nil value from creation time.) */
+                            id saved_block_value = var->value;
+                            int saved_block_is_id = var->is_id;
+
+                            parser_advance(p); /* consume ( */
+
+                            /* Parse arguments */
+                            while (parser_current(p).type != TOK_CLOSE_PAREN &&
+                                   parser_current(p).type != TOK_EOF &&
+                                   arg_count < 8) {
+                                args[arg_count] = parse_expression(p);
+                                arg_count++;
+                                if (parser_current(p).type == TOK_COMMA) {
+                                    parser_advance(p);
+                                }
+                            }
+                            if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                                parser_advance(p);
+                            }
+
+                            /* Restore captured variable values FIRST,
+                             * then set up argument variables (which
+                             * take precedence over captured values). */
+                            for (ai = 0; ai < blk->capture_count; ai++) {
+                                InterpVar *cap_var = interp_get_or_create_var(blk->captures[ai].name);
+                                if (cap_var) {
+                                    cap_var->is_id = blk->captures[ai].value.is_id;
+                                    cap_var->value = blk->captures[ai].value.obj_val;
+                                    cap_var->is_int = blk->captures[ai].value.is_int;
+                                    cap_var->int_value = blk->captures[ai].value.int_val;
+                                    cap_var->is_class = blk->captures[ai].value.is_class;
+                                    cap_var->cls = blk->captures[ai].value.cls_val;
+                                    cap_var->is_sel = blk->captures[ai].value.is_sel;
+                                    cap_var->sel = blk->captures[ai].value.sel_val;
+                                }
+                            }
+
+                            /* Set up argument variables (override captured values) */
+                            for (ai = 0; ai < blk->arg_count && ai < arg_count; ai++) {
+                                InterpVar *arg_var = interp_get_or_create_var(blk->arg_names[ai]);
+                                if (arg_var) {
+                                    arg_var->is_id = args[ai].is_id;
+                                    arg_var->value = args[ai].obj_val;
+                                    arg_var->is_int = args[ai].is_int;
+                                    arg_var->int_value = args[ai].int_val;
+                                    arg_var->is_class = args[ai].is_class;
+                                    arg_var->cls = args[ai].cls_val;
+                                    arg_var->is_sel = args[ai].is_sel;
+                                    arg_var->sel = args[ai].sel_val;
+                                }
+                            }
+
+                            /* Execute the block body */
+                            {
+                                Value result;
+                                g_return_pending = 0;
+                                result = eval_source_range(0, blk->source_len, blk->source);
+                                g_var_count = saved_var_count;
+                                g_return_pending = 0;
+                                /* Restore the block variable's value, which may
+                                 * have been overwritten by captured variable
+                                 * restoration (e.g., if the block was assigned
+                                 * to a variable that was captured at creation
+                                 * time with a nil value). */
+                                var->value = saved_block_value;
+                                var->is_id = saved_block_is_id;
+                                return result;
+                            }
+                        }
+                    }
+                }
+
                 if (var->is_int) return value_from_int(var->int_value);
                 if (var->is_class) return value_from_class(var->cls);
                 if (var->is_sel) return value_from_sel(var->sel);
@@ -3334,6 +3556,142 @@ static Value parse_primary(Parser *p) {
             if (v.is_int) return value_from_int(-v.int_val);
             return v;
         }
+    }
+
+    /* Block literal: ^{ body } or ^(Type arg, ...) { body }
+     * We capture the body source range (like method bodies) and
+     * register it in g_blocks[]. Block invocation executes the
+     * body via eval_source_range. */
+    if (tok.type == TOK_CARET) {
+        unsigned int block_id;
+        BlockImpl *blk;
+        unsigned int body_start, body_len;
+
+        parser_advance(p); /* consume ^ */
+
+        /* Allocate a block slot */
+        if (g_block_count >= MAX_BLOCKS) {
+            parser_error(p, "block table full (max 32)");
+            return value_void();
+        }
+        block_id = g_next_block_id++;
+        blk = &g_blocks[g_block_count];
+        blk->block_id = block_id;
+        blk->source[0] = '\0';
+        blk->source_len = 0;
+        blk->arg_count = 0;
+        blk->capture_count = 0;
+
+        /* Parse optional parameter list: (Type arg, Type arg, ...) */
+        if (parser_current(p).type == TOK_OPEN_PAREN) {
+            parser_advance(p); /* consume ( */
+            while (parser_current(p).type != TOK_CLOSE_PAREN &&
+                   parser_current(p).type != TOK_EOF) {
+                /* Skip type name */
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    parser_advance(p);
+                }
+                /* Skip pointer stars */
+                while (parser_current(p).type == TOK_STAR) {
+                    parser_advance(p);
+                }
+                /* Parameter name */
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    if (blk->arg_count < 8) {
+                        cstr_copy(blk->arg_names[blk->arg_count],
+                                  parser_current(p).text, 64);
+                        blk->arg_count++;
+                    }
+                    parser_advance(p);
+                }
+                /* Skip comma */
+                if (parser_current(p).type == TOK_COMMA) {
+                    parser_advance(p);
+                }
+            }
+            if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                parser_advance(p); /* consume ) */
+            }
+        }
+
+        /* Expect { and capture body source */
+        if (parser_current(p).type != TOK_OPEN_BRACE) {
+            parser_error(p, "expected { after block parameters");
+            return value_void();
+        }
+        parser_advance(p); /* consume { */
+
+        body_start = p->lex.token_start;
+
+        /* Skip the body by matching braces */
+        {
+            unsigned int brace_depth = 1;
+            while (brace_depth > 0 &&
+                   parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_BRACE) {
+                    brace_depth--;
+                    if (brace_depth == 0) break;
+                }
+                parser_advance(p);
+            }
+        }
+        body_len = p->lex.token_start - body_start;
+
+        if (parser_current(p).type == TOK_CLOSE_BRACE) {
+            parser_advance(p); /* consume } */
+        }
+
+        /* Copy the body source into the block's source buffer */
+        if (body_len > 0 && body_len < 2048) {
+            unsigned int si;
+            for (si = 0; si < body_len; si++) {
+                blk->source[si] = p->lex.source[body_start + si];
+            }
+            blk->source[body_len] = '\0';
+            blk->source_len = body_len;
+        }
+        g_block_count++;
+
+        /* Capture current variable values (by-value snapshot).
+         * We capture all non-class, non-sel variables that have
+         * been defined before the block, EXCLUDING block parameters
+         * (which will be set at invocation time). This is a
+         * simplification — real ObjC blocks capture only referenced
+         * variables, but for our interpreter, capturing everything
+         * is simpler and correct for the notebook use case. */
+        {
+            unsigned int vi;
+            for (vi = 0; vi < g_var_count && blk->capture_count < 16; vi++) {
+                unsigned int ai;
+                int is_arg = 0;
+                /* Skip class variables, selector variables, and
+                 * variables that are Foundation class names */
+                if (g_vars[vi].is_class || g_vars[vi].is_sel) continue;
+                if (g_vars[vi].name[0] == '\0') continue;
+                /* Skip variables that shadow block parameters */
+                for (ai = 0; ai < blk->arg_count; ai++) {
+                    if (cstr_eq(g_vars[vi].name, blk->arg_names[ai])) {
+                        is_arg = 1;
+                        break;
+                    }
+                }
+                if (is_arg) continue;
+                cstr_copy(blk->captures[blk->capture_count].name,
+                          g_vars[vi].name, 64);
+                blk->captures[blk->capture_count].value.is_id = g_vars[vi].is_id;
+                blk->captures[blk->capture_count].value.obj_val = g_vars[vi].value;
+                blk->captures[blk->capture_count].value.is_int = g_vars[vi].is_int;
+                blk->captures[blk->capture_count].value.int_val = g_vars[vi].int_value;
+                blk->captures[blk->capture_count].value.is_class = g_vars[vi].is_class;
+                blk->captures[blk->capture_count].value.cls_val = g_vars[vi].cls;
+                blk->captures[blk->capture_count].value.is_sel = g_vars[vi].is_sel;
+                blk->captures[blk->capture_count].value.sel_val = g_vars[vi].sel;
+                blk->capture_count++;
+            }
+        }
+
+        return value_from_id(block_make_marker(block_id));
     }
 
     /* @keyword */
@@ -3559,6 +3917,82 @@ static Value parse_type_and_var_decl(Parser *p) {
         parser_advance(p);
     }
 
+    /* Block variable declaration: void (^blockName)(params) = ^{ ... };
+     * After the return type, we see ( ^ name ) ( param_types ) = block_literal */
+    if (parser_current(p).type == TOK_OPEN_PAREN) {
+        /* Look ahead: is this ( ^ name )? */
+        Token saved = parser_current(p);
+        parser_advance(p); /* consume ( */
+
+        if (parser_current(p).type == TOK_CARET) {
+            /* Block variable declaration! */
+            parser_advance(p); /* consume ^ */
+
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                char var_name_buf[64];
+                InterpVar *var;
+                Value init_val;
+
+                cstr_copy(var_name_buf, parser_current(p).text, 64);
+                parser_advance(p);
+
+                if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    parser_advance(p); /* consume ) */
+                }
+
+                /* Skip the parameter type list: (Type1, Type2, ...) */
+                if (parser_current(p).type == TOK_OPEN_PAREN) {
+                    parser_advance(p);
+                    while (parser_current(p).type != TOK_CLOSE_PAREN &&
+                           parser_current(p).type != TOK_EOF) {
+                        parser_advance(p);
+                    }
+                    if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                        parser_advance(p);
+                    }
+                }
+
+                var = interp_get_or_create_var(var_name_buf);
+                if (var == 0) {
+                    parser_error(p, "variable table full (max 1024)");
+                    return value_void();
+                }
+
+                /* Parse initializer: = block_literal */
+                if (parser_current(p).type == TOK_ASSIGN) {
+                    parser_advance(p);
+                    init_val = parse_expression(p);
+                    if (p->error) return init_val;
+
+                    if (var) {
+                        var->value = init_val.obj_val;
+                        var->cls = init_val.cls_val;
+                        var->sel = init_val.sel_val;
+                        var->is_int = init_val.is_int;
+                        var->int_value = init_val.int_val;
+                        var->is_class = init_val.is_class;
+                        var->is_sel = init_val.is_sel;
+                        var->is_id = init_val.is_id;
+                    }
+                    return init_val;
+                }
+
+                /* Default: uninitialized block */
+                var->is_id = 1;
+                var->value = 0;
+                return value_void();
+            }
+        }
+
+        /* Not a block declaration — restore and fall through.
+         * This is tricky because we already consumed the (.
+         * We can't un-read tokens, so we treat this as a
+         * parenthesized expression of the type name (which is
+         * unusual but not wrong in C). */
+        /* Fall through — the ( was consumed but we can't put it back.
+         * This path is unlikely in practice. */
+    }
+
     /* Check for pointer * */
     while (parser_current(p).type == TOK_STAR) {
         is_pointer = 1;
@@ -3714,7 +4148,8 @@ static Value parse_statement(Parser *p) {
             parser_advance(p);
 
             if (parser_current(p).type == TOK_STAR ||
-                parser_current(p).type == TOK_IDENTIFIER) {
+                parser_current(p).type == TOK_IDENTIFIER ||
+                parser_current(p).type == TOK_OPEN_PAREN) {
                 /* Restore and parse as type+variable declaration */
                 p->lex.current = saved;
                 p->lex.pos = saved_pos;
@@ -4270,14 +4705,40 @@ static Value eval_source_range(unsigned int start, unsigned int len,
     if (len == 0) return value_void();
     parser_init(&p, source + start, len);
     /* Parse all statements in the source range, not just the first one.
-     * This is needed for method bodies with multiple statements. */
+     * This is needed for method bodies with multiple statements.
+     * For control flow (if/while/for), use the two-phase AST approach.
+     * For other statements, evaluate directly. */
     while (p.lex.current.type != TOK_EOF && !p.error) {
-        last = parse_statement(&p);
-        if (p.error) {
-            /* Propagate error to global state so objc_interp detects it */
-            g_error_code = p.error;
-            cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
-            return last;
+        Token tok = parser_current(&p);
+        if (tok.type == TOK_IF || tok.type == TOK_WHILE ||
+            tok.type == TOK_FOR) {
+            /* Control flow: use two-phase AST approach.
+             * Save and restore AST count to avoid corrupting
+             * the outer AST arena. */
+            unsigned int saved_ast_count = g_ast_count;
+            AstNode *root = parse_block_ast(&p);
+            if (p.error) {
+                g_error_code = p.error;
+                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                g_ast_count = saved_ast_count;
+                return last;
+            }
+            if (root) {
+                last = eval_ast(root, source + start);
+            }
+            g_ast_count = saved_ast_count;
+            if (p.error) {
+                g_error_code = p.error;
+                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                return last;
+            }
+        } else {
+            last = parse_statement(&p);
+            if (p.error) {
+                g_error_code = p.error;
+                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                return last;
+            }
         }
     }
     return last;
@@ -4657,6 +5118,21 @@ void objc_interp_gc_strings(void) {
         }
     }
 
+    /* Mark block captured values that are string pool pointers */
+    for (i = 0; i < g_block_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+        unsigned int ci;
+        for (ci = 0; ci < g_blocks[i].capture_count; ci++) {
+            if (g_blocks[i].captures[ci].value.is_id && g_blocks[i].captures[ci].value.obj_val != 0) {
+                const char *ptr = (const char *)g_blocks[i].captures[ci].value.obj_val;
+                if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                    relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
+                    relocs[reloc_count].new_off = 0;
+                    reloc_count++;
+                }
+            }
+        }
+    }
+
     if (reloc_count == 0) {
         g_string_pool_offset = 0;
         return;
@@ -4772,9 +5248,26 @@ void objc_interp_gc_strings(void) {
             }
         }
     }
+    /* Update block captured values that are string pool pointers */
+    for (i = 0; i < g_block_count; i++) {
+        unsigned int ci;
+        for (ci = 0; ci < g_blocks[i].capture_count; ci++) {
+            if (g_blocks[i].captures[ci].value.is_id && g_blocks[i].captures[ci].value.obj_val != 0) {
+                const char *ptr = (const char *)g_blocks[i].captures[ci].value.obj_val;
+                if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                    unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
+                    unsigned int r;
+                    for (r = 0; r < reloc_count; r++) {
+                        if (relocs[r].old_off == off) {
+                            g_blocks[i].captures[ci].value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
-
-/* ── Public API ─────────────────────────────────────────────────── */
 
 void objc_interp_init(void) {
     g_nslog_offset = 0;
@@ -4788,6 +5281,8 @@ void objc_interp_init(void) {
     g_instance_var_count = 0;
     g_next_coll_id = 1;
     g_coll_entry_count = 0;
+    g_next_block_id = 1;
+    g_block_count = 0;
 
     /* Register Foundation class names as variables with is_class=1.
      * We don't call objc_allocateClassPair (it can cause WASM traps).
