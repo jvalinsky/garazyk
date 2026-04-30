@@ -280,7 +280,8 @@
       "Bash(node /Users/jack/Software/garazyk/objc-jupyter-wasm/tests/kernel-smoke.mjs /tmp/objc-jupyter-wasm-kernel-result/wasm/kernel.wasm 2)",
       "Bash(nix build .#kernel-wasm --out-link /tmp/objc-jupyter-wasm-kernel-result 2)",
       "Bash(deciduous link 799 796)",
-      "Bash(deciduous link 799 800)"
+      "Bash(deciduous link 799 800)",
+      "Bash(deciduous status 2)"
     ]
   }
 }
