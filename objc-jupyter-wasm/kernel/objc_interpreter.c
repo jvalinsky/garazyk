@@ -45,6 +45,16 @@ static int cstr_eq(const char *a, const char *b) {
     return a[i] == b[i];
 }
 
+static int cstr_eq_n(const char *a, const char *b, unsigned int n) {
+    unsigned int i = 0;
+    if (a == 0 || b == 0) return 0;
+    while (i < n && a[i] != '\0' && b[i] != '\0') {
+        if (a[i] != b[i]) return 0;
+        i++;
+    }
+    return i == n;
+}
+
 static int cstr_starts(const char *s, const char *prefix) {
     unsigned int i = 0;
     if (s == 0 || prefix == 0) return 0;
@@ -726,6 +736,12 @@ static Value value_void(void) {
 static int g_return_pending = 0;
 static Value g_return_value;
 
+/* String pool for string literals and Foundation object encoding.
+ * Shared between parse_primary (string literals) and parse_message_send
+ * (Foundation stubs like NSNumber, stringByAppendingString). */
+static char g_string_pool[4096];
+static unsigned int g_string_pool_offset = 0;
+
 /* Method implementation context — stored for interpreter method dispatch */
 typedef struct {
     char source[2048]; /* method body source (without outer braces) */
@@ -1118,13 +1134,70 @@ static Value parse_message_send(Parser *p) {
     {
         SEL sel = sel_registerName(sel_name);
         id receiver = 0;
+        const char *target_class_name = 0; /* for Foundation name-based dispatch */
 
         if (target.is_id) receiver = target.obj_val;
         else if (target.is_class) receiver = (id)target.cls_val;
         else if (target.is_int) receiver = (id)(long)target.int_val;
 
+        /* Determine target class name for Foundation dispatch.
+         * Foundation classes are not registered in the runtime (to avoid
+         * WASM traps from objc_allocateClassPair), so we dispatch by name.
+         * We look up the variable name from g_vars[].
+         * IMPORTANT: We can't call object_getClass on non-ObjC pointers
+         * (like C strings from the string pool) — it causes WASM traps.
+         * So we only call it for class targets, not id targets. */
+        if (target.is_class && target.cls_val) {
+            /* Check if it's a real class first */
+            const char *name = class_getName(target.cls_val);
+            if (name && name[0] != '\0') {
+                target_class_name = name;
+            }
+            /* Look up in variable table for Foundation class name */
+            {
+                unsigned int vi;
+                for (vi = 0; vi < g_var_count; vi++) {
+                    if (g_vars[vi].is_class && g_vars[vi].cls == target.cls_val) {
+                        target_class_name = g_vars[vi].name;
+                        break;
+                    }
+                }
+            }
+        }
+        /* For id targets, we don't call object_getClass because the
+         * pointer might not be a valid ObjC object. Instead, we
+         * dispatch by selector name alone for Foundation methods. */
+
+        /* Helper: check if target is a Foundation class */
+        #define IS_FOUNDATION_CLASS(name) \
+            (target_class_name && cstr_eq(target_class_name, name))
+
         /* Built-in: [ClassName alloc] → class_createInstance */
         if (target.is_class && cstr_eq(sel_name, "alloc")) {
+            /* Check if this is a Foundation class (sentinel pointer) */
+            if (target_class_name && (
+                cstr_eq(target_class_name, "NSObject") ||
+                cstr_eq(target_class_name, "NSString") ||
+                cstr_eq(target_class_name, "NSNumber") ||
+                cstr_eq(target_class_name, "NSArray") ||
+                cstr_eq(target_class_name, "NSMutableArray") ||
+                cstr_eq(target_class_name, "NSDictionary") ||
+                cstr_eq(target_class_name, "NSMutableDictionary") ||
+                cstr_eq(target_class_name, "NSSet") ||
+                cstr_eq(target_class_name, "NSData")
+            )) {
+                /* Foundation class alloc — return a marker string.
+                 * We can't use class_createInstance on sentinel pointers. */
+                char *buf;
+                unsigned int name_len;
+                if (40 > 4096 - g_string_pool_offset) g_string_pool_offset = 0;
+                buf = g_string_pool + g_string_pool_offset;
+                cstr_copy(buf, "FDObj:", 4096 - g_string_pool_offset);
+                name_len = cstr_len(target_class_name);
+                cstr_copy(buf + 6, target_class_name, 4096 - g_string_pool_offset - 6);
+                g_string_pool_offset += 6 + name_len + 1;
+                return value_from_id((id)buf);
+            }
             id instance = (id)0;
             instance = class_createInstance(target.cls_val, 0);
             if (instance == 0) {
@@ -1138,6 +1211,28 @@ static Value parse_message_send(Parser *p) {
 
         /* Built-in: [ClassName new] → [[ClassName alloc] init] */
         if (target.is_class && cstr_eq(sel_name, "new")) {
+            /* Same Foundation class check as alloc */
+            if (target_class_name && (
+                cstr_eq(target_class_name, "NSObject") ||
+                cstr_eq(target_class_name, "NSString") ||
+                cstr_eq(target_class_name, "NSNumber") ||
+                cstr_eq(target_class_name, "NSArray") ||
+                cstr_eq(target_class_name, "NSMutableArray") ||
+                cstr_eq(target_class_name, "NSDictionary") ||
+                cstr_eq(target_class_name, "NSMutableDictionary") ||
+                cstr_eq(target_class_name, "NSSet") ||
+                cstr_eq(target_class_name, "NSData")
+            )) {
+                char *buf;
+                unsigned int name_len;
+                if (40 > 4096 - g_string_pool_offset) g_string_pool_offset = 0;
+                buf = g_string_pool + g_string_pool_offset;
+                cstr_copy(buf, "FDObj:", 4096 - g_string_pool_offset);
+                name_len = cstr_len(target_class_name);
+                cstr_copy(buf + 6, target_class_name, 4096 - g_string_pool_offset - 6);
+                g_string_pool_offset += 6 + name_len + 1;
+                return value_from_id((id)buf);
+            }
             id instance = class_createInstance(target.cls_val, 0);
             return value_from_id(instance);
         }
@@ -1154,6 +1249,228 @@ static Value parse_message_send(Parser *p) {
             return value_from_class(cls);
         }
 
+        /* ── Foundation built-in dispatch ────────────────────────────── */
+
+        /* NSObject: [obj description] → class name */
+        if (cstr_eq(sel_name, "description") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            /* Check if it's a Foundation class object (FDObj:ClassName) */
+            if (cstr_eq_n(s, "FDObj:", 6)) {
+                nslog_append("<", 1);
+                nslog_append(s + 6, cstr_len(s + 6));
+                nslog_append(">", 1);
+            } else if (target_class_name) {
+                nslog_append("<", 1);
+                nslog_append(target_class_name, cstr_len(target_class_name));
+                nslog_append(">", 1);
+            } else {
+                /* For real ObjC objects, try object_getClass */
+                Class cls = object_getClass(receiver);
+                if (cls) {
+                    const char *name = class_getName(cls);
+                    if (name) {
+                        nslog_append("<", 1);
+                        nslog_append(name, cstr_len(name));
+                        nslog_append(">", 1);
+                    }
+                }
+            }
+            return value_from_id(receiver);
+        }
+
+        /* NSObject: [obj isEqual:other] → 1 if same pointer */
+        if (cstr_eq(sel_name, "isEqual:") && target.is_id && arg_count >= 1) {
+            int equal = (receiver == args[0]) ? 1 : 0;
+            return value_from_int(equal);
+        }
+
+        /* NSObject: [obj hash] → pointer as int */
+        if (cstr_eq(sel_name, "hash") && target.is_id && receiver != 0) {
+            return value_from_int((int)(long)receiver);
+        }
+
+        /* NSObject: [obj respondsToSelector:sel] → check if method exists */
+        if (cstr_eq(sel_name, "respondsToSelector:") && target.is_id && arg_count >= 1) {
+            if (keyword_args[0].is_sel) {
+                unsigned int mi;
+                for (mi = 0; mi < g_method_count; mi++) {
+                    if (g_methods[mi].selector == keyword_args[0].sel_val) {
+                        return value_from_int(1);
+                    }
+                }
+            }
+            return value_from_int(0);
+        }
+
+        /* NSObject: [obj performSelector:sel] → dispatch selector */
+        if (cstr_eq(sel_name, "performSelector:") && target.is_id && arg_count >= 1) {
+            if (keyword_args[0].is_sel) {
+                SEL perf_sel = keyword_args[0].sel_val;
+                unsigned int mi;
+                int found = 0;
+                for (mi = 0; mi < g_method_count; mi++) {
+                    if (g_methods[mi].selector == perf_sel && g_methods[mi].source_len > 0 &&
+                        !g_methods[mi].is_class_method) {
+                        found = 1;
+                        break;
+                    }
+                }
+                if (found) {
+                    unsigned int saved_var_count = g_var_count;
+                    Value return_val;
+                    InterpVar *self_var = interp_get_or_create_var("self");
+                    if (self_var) { self_var->is_id = 1; self_var->value = receiver; }
+                    {
+                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
+                        if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
+                    }
+                    g_return_pending = 0;
+                    objc_interp(g_methods[mi].source, g_methods[mi].source_len);
+                    return_val = g_return_value;
+                    g_var_count = saved_var_count;
+                    g_return_pending = 0;
+                    return return_val;
+                }
+            }
+            return value_from_id(receiver);
+        }
+
+        /* NSString: [NSString stringWithFormat:@"..." args...] */
+        if (IS_FOUNDATION_CLASS("NSString") && target.is_class && cstr_eq(sel_name, "stringWithFormat:") && arg_count >= 1) {
+            return keyword_args[0];
+        }
+
+        /* NSString: [str length] → string length */
+        if (cstr_eq(sel_name, "length") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            return value_from_int((int)cstr_len(s));
+        }
+
+        /* NSString: [str intValue] → parse as integer */
+        if (cstr_eq(sel_name, "intValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            int val = 0;
+            unsigned int i = 0;
+            while (s[i] && (s[i] < '0' || s[i] > '9') && s[i] != '-') i++;
+            if (s[i] == '-') { i++; while (s[i] >= '0' && s[i] <= '9') val = val * 10 - (s[i++] - '0'); }
+            else { while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0'); }
+            return value_from_int(val);
+        }
+
+        /* NSString: [str UTF8String] → return self (already C string) */
+        if (cstr_eq(sel_name, "UTF8String") && target.is_id && receiver != 0) {
+            return value_from_id(receiver);
+        }
+
+        /* NSString: [str stringByAppendingString:other] → concatenate */
+        if (cstr_eq(sel_name, "stringByAppendingString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *a = (const char *)receiver;
+            const char *b = (const char *)args[0];
+            unsigned int alen = cstr_len(a);
+            unsigned int blen = cstr_len(b);
+            char *result;
+            if (alen + blen + 1 > 4096 - g_string_pool_offset) {
+                g_string_pool_offset = 0;
+            }
+            result = g_string_pool + g_string_pool_offset;
+            cstr_copy(result, a, 4096 - g_string_pool_offset);
+            cstr_copy(result + alen, b, 4096 - g_string_pool_offset - alen);
+            g_string_pool_offset += alen + blen + 1;
+            return value_from_id((id)result);
+        }
+
+        /* NSString: [str isEqualToString:other] → string compare */
+        if (cstr_eq(sel_name, "isEqualToString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *a = (const char *)receiver;
+            const char *b = (const char *)args[0];
+            return value_from_int(cstr_eq(a, b) ? 1 : 0);
+        }
+
+        /* NSNumber: [NSNumber numberWithInt:n] → wrap int as id */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithInt:") && arg_count >= 1) {
+            /* Store the int value in a string pool buffer.
+             * Encoding: "NSNumber:<int_value>" */
+            if (keyword_args[0].is_int) {
+                char *buf;
+                int v = keyword_args[0].int_val;
+                int neg = v < 0;
+                unsigned int pos = 9; /* after "NSNumber:" */
+                if (30 > 4096 - g_string_pool_offset) g_string_pool_offset = 0;
+                buf = g_string_pool + g_string_pool_offset;
+                cstr_copy(buf, "NSNumber:", 10);
+                if (neg) { v = -v; buf[pos++] = '-'; }
+                if (v == 0) { buf[pos++] = '0'; }
+                else {
+                    char tmp[12];
+                    int ti = 0;
+                    while (v > 0) { tmp[ti++] = '0' + (v % 10); v /= 10; }
+                    while (ti > 0) buf[pos++] = tmp[--ti];
+                }
+                buf[pos] = '\0';
+                g_string_pool_offset += pos + 1;
+                return value_from_id((id)buf);
+            }
+            return value_from_id(args[0]);
+        }
+
+        /* NSNumber: [num intValue] → unwrap int from NSNumber encoding */
+        if (cstr_eq(sel_name, "intValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                int val = 0;
+                unsigned int i = 9;
+                int neg = 0;
+                if (s[i] == '-') { neg = 1; i++; }
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                return value_from_int(neg ? -val : val);
+            }
+            return value_from_int(0);
+        }
+
+        /* NSNumber: [num boolValue] → 1 if non-zero */
+        if (cstr_eq(sel_name, "boolValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                int val = 0;
+                unsigned int i = 9;
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                return value_from_int(val ? 1 : 0);
+            }
+            return value_from_int(0);
+        }
+
+        /* NSNumber: [num description] → numeric string */
+        if (cstr_eq(sel_name, "description") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                nslog_append(s + 9, cstr_len(s + 9));
+            }
+            return value_from_id(receiver);
+        }
+
+        /* NSArray: [NSArray arrayWithObjects:obj1, obj2, nil] → not supported in our subset.
+         * We provide a minimal array via a global variable approach. */
+        if (IS_FOUNDATION_CLASS("NSArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
+            /* Return an empty array marker */
+            return value_from_id((id)"NSArray:empty");
+        }
+
+        /* NSArray: [arr count] → 0 (stub) */
+        if (cstr_eq(sel_name, "count") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSArray:", 8)) {
+                /* Parse count from "NSArray:count:..." */
+                if (cstr_eq_n(s, "NSArray:count:", 13)) {
+                    int val = 0;
+                    unsigned int i = 13;
+                    while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                    return value_from_int(val);
+                }
+                return value_from_int(0);
+            }
+            return value_from_int(0);
+        }
+
         /* Check if this selector matches an interpreter-registered method.
          * Interpreter methods are executed directly in the interpreter to
          * avoid WASM calling convention issues with variadic IMP dispatch.
@@ -1163,23 +1480,38 @@ static Value parse_message_send(Parser *p) {
          * must be true (or target.is_class for alloc-init chain). */
         {
             unsigned int mi;
+            int found = 0;
             for (mi = 0; mi < g_method_count; mi++) {
-                if (g_methods[mi].selector == sel && g_methods[mi].source_len > 0) {
-                    /* Check class match */
-                    if (g_methods[mi].class_ptr == (Class)0 ||
-                        g_methods[mi].class_ptr == (target.is_class ? target.cls_val : object_getClass(receiver))) {
-                        /* Check class method vs instance method */
-                        if (g_methods[mi].is_class_method && target.is_class) {
-                            break; /* class method, called on class */
-                        }
-                        if (!g_methods[mi].is_class_method && (target.is_id || target.is_int)) {
-                            break; /* instance method, called on instance */
-                        }
+                if (g_methods[mi].selector != sel || g_methods[mi].source_len == 0) continue;
+
+                /* Check class match */
+                if (g_methods[mi].class_ptr != (Class)0) {
+                    /* Method has a class restriction */
+                    if (target.is_class && g_methods[mi].class_ptr == target.cls_val) {
+                        /* OK — class method target matches */
+                    } else if (target.is_id && receiver != 0 &&
+                               (const char *)receiver >= g_string_pool &&
+                               (const char *)receiver < g_string_pool + 4096) {
+                        /* Receiver is a C string from the string pool — skip class check */
+                    } else if (target.is_id && receiver != 0) {
+                        /* Receiver might be a valid ObjC object — check class */
+                        Class recv_cls = object_getClass(receiver);
+                        if (g_methods[mi].class_ptr != recv_cls) continue;
+                    } else {
+                        continue; /* class mismatch */
                     }
+                }
+
+                /* Check class method vs instance method */
+                if (g_methods[mi].is_class_method && target.is_class) {
+                    found = 1; break; /* class method, called on class */
+                }
+                if (!g_methods[mi].is_class_method && (target.is_id || target.is_int)) {
+                    found = 1; break; /* instance method, called on instance */
                 }
             }
 
-            if (mi < g_method_count) {
+            if (found && mi < g_method_count) {
                 /* Found an interpreter method — execute it directly */
                 unsigned int saved_var_count = g_var_count;
                 Value return_val;
@@ -1255,12 +1587,13 @@ static Value parse_message_send(Parser *p) {
          * built-ins or interpreter-registered methods above. */
         {
             const char *cls_name = "unknown";
-            if (target.is_id && receiver != 0) {
-                Class cls = object_getClass(receiver);
-                if (cls) cls_name = class_getName(cls);
-            } else if (target.is_class && target.cls_val) {
+            if (target.is_class && target.cls_val) {
                 cls_name = class_getName(target.cls_val);
+            } else if (target_class_name) {
+                cls_name = target_class_name;
             }
+            /* Don't call object_getClass on id targets — the pointer
+             * might be a C string from the string pool, which would crash. */
             nslog_append("-", 1);
             nslog_append("[", 1);
             nslog_append(cls_name, cstr_len(cls_name));
@@ -1729,21 +2062,22 @@ static Value parse_primary(Parser *p) {
 
     /* String literal @"..." */
     if (tok.type == TOK_STRING_LITERAL) {
-        /* Store the string in a global pool and return as id */
-        /* For now, we just return the string text as a value */
+        /* Store the string in a global pool and return as id.
+         * The token text includes the @ prefix for @"..." literals.
+         * We skip it when storing in the pool. */
         parser_advance(p);
-        /* We'll store @"..." strings in a simple pool */
         {
-            static char string_pool[4096];
-            static unsigned int string_pool_offset = 0;
-            unsigned int len = cstr_len(tok.text);
+            const char *text = tok.text;
+            unsigned int skip_at = (text[0] == '@') ? 1 : 0;
+            const char *content = text + skip_at;
+            unsigned int len = cstr_len(content);
             char *str_ptr;
-            if (string_pool_offset + len + 2 > 4096) {
-                string_pool_offset = 0;
+            if (g_string_pool_offset + len + 2 > 4096) {
+                g_string_pool_offset = 0;
             }
-            str_ptr = string_pool + string_pool_offset;
-            cstr_copy(str_ptr, tok.text, 4096 - string_pool_offset);
-            string_pool_offset += len + 1;
+            str_ptr = g_string_pool + g_string_pool_offset;
+            cstr_copy(str_ptr, content, 4096 - g_string_pool_offset);
+            g_string_pool_offset += len + 1;
             return value_from_id((id)str_ptr);
         }
     }
@@ -2366,6 +2700,17 @@ static Value parse_statement(Parser *p) {
             cstr_eq(tok.text, "float") || cstr_eq(tok.text, "double")
         );
         int is_class_type = (!is_builtin_type && objc_lookUpClass(tok.text) != 0);
+        /* Also check variable table for Foundation class names (which are
+         * registered as variables with is_class=1, not in the runtime). */
+        if (!is_class_type && !is_builtin_type) {
+            unsigned int vi;
+            for (vi = 0; vi < g_var_count; vi++) {
+                if (cstr_eq(g_vars[vi].name, tok.text) && g_vars[vi].is_class) {
+                    is_class_type = 1;
+                    break;
+                }
+            }
+        }
 
         if (is_builtin_type || is_class_type) {
             /* Look ahead to see if next token is * or an identifier */
@@ -2872,9 +3217,17 @@ static void format_value(Value v, char *buf, unsigned int capacity) {
         fmt_append_str(buf, capacity, &offset, "(SEL) ");
         fmt_append_str(buf, capacity, &offset, name);
     } else if (v.is_id && v.obj_val != 0) {
-        /* Object — show class name and pointer */
-        Class cls = object_getClass(v.obj_val);
-        const char *name = cls ? class_getName(cls) : "unknown";
+        /* Object — try to show class name and pointer.
+         * But object_getClass can crash on non-ObjC pointers (C strings),
+         * so we check if the pointer looks like a valid ObjC object first.
+         * Heuristic: if the pointer is in the string pool range, it's a C string. */
+        Class cls = (Class)0;
+        /* Only call object_getClass if the pointer is NOT in the string pool */
+        if ((const char *)v.obj_val < g_string_pool ||
+            (const char *)v.obj_val >= g_string_pool + 4096) {
+            cls = object_getClass(v.obj_val);
+        }
+        const char *name = cls ? class_getName(cls) : "id";
         fmt_append_str(buf, capacity, &offset, "<");
         fmt_append_str(buf, capacity, &offset, name);
         fmt_append_str(buf, capacity, &offset, ": 0x");
@@ -2896,6 +3249,30 @@ void objc_interp_init(void) {
     g_result_buffer[0] = '\0';
     g_var_count = 0;
     g_method_count = 0;
+
+    /* Register Foundation class names as variables with is_class=1.
+     * We don't call objc_allocateClassPair (it can cause WASM traps).
+     * Instead, we store a sentinel class pointer and dispatch by name
+     * in parse_message_send. The sentinel is (Class)1 — any non-null
+     * value that won't collide with real class pointers. */
+    {
+        static const char * const foundation_classes[] = {
+            "NSObject", "NSString", "NSNumber",
+            "NSArray", "NSMutableArray", "NSDictionary",
+            "NSMutableDictionary", "NSSet", "NSData"
+        };
+        unsigned int i;
+        for (i = 0; i < sizeof(foundation_classes) / sizeof(foundation_classes[0]); i++) {
+            InterpVar *var = interp_get_or_create_var(foundation_classes[i]);
+            if (var) {
+                var->is_class = 1;
+                var->cls = (Class)(long)(i + 1); /* sentinel: 1..9 */
+                var->is_id = 0;
+                var->is_int = 0;
+                var->is_sel = 0;
+            }
+        }
+    }
 }
 
 int objc_interp(const char *source, unsigned int length) {
