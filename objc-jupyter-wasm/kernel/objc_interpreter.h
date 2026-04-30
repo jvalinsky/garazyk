@@ -24,7 +24,7 @@
 #define OBJC_INTERPRETER_H
 
 /* Maximum number of local variables per execution context */
-#define OBJC_INTERP_MAX_VARS 256
+#define OBJC_INTERP_MAX_VARS 1024
 
 /* Maximum NSLog ring buffer size */
 #define OBJC_INTERP_NSLOG_BUFFER_SIZE 262144
