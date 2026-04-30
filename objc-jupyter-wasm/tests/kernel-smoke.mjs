@@ -871,5 +871,32 @@ const gcGarbageCell = `NSString *temp = @"${gcGarbageA}"; temp = @"${gcGarbageB}
   console.log('  expr: unary minus — PASS');
 }
 
+// ── Method return values (regression test for stale bug) ────
+
+{
+  // Int return from method
+  const defCalc = execute('@interface CalcRet\n- (int)add:(int)a to:(int)b;\n@end\n\n@implementation CalcRet\n- (int)add:(int)a to:(int)b {\n    return a + b;\n}\n@end', 'calc-def');
+  assert.equal(defCalc.status, 'ok');
+
+  const useCalc = execute('CalcRet *cr = [[CalcRet alloc] init]; int r = [cr add:3 to:4]; NSLog(@"3+4=%d", r);', 'calc-use');
+  assert.equal(useCalc.status, 'ok');
+  assert.match(hostStreamText(), /3\+4=7/);
+
+  // NSLog inside method body
+  const defLog = execute('@interface MethodLog\n- (void)logInside;\n@end\n\n@implementation MethodLog\n- (void)logInside {\n    NSLog(@"inside method body");\n}\n@end', 'log-def');
+  assert.equal(defLog.status, 'ok');
+
+  const useLog = execute('MethodLog *ml = [[MethodLog alloc] init]; [ml logInside];', 'log-use');
+  assert.equal(useLog.status, 'ok');
+  assert.match(hostStreamText(), /inside method body/);
+
+  // Expression result of method call
+  const exprResult = execute('CalcRet *cr2 = [[CalcRet alloc] init]; [cr2 add:10 to:20];', 'expr-result');
+  assert.equal(exprResult.status, 'ok');
+  assert.equal(exprResult.data['text/plain'], '30');
+
+  console.log('  method: return values and NSLog — PASS');
+}
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
