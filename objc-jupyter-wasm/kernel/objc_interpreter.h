@@ -27,7 +27,7 @@
 #define OBJC_INTERP_MAX_VARS 256
 
 /* Maximum NSLog ring buffer size */
-#define OBJC_INTERP_NSLOG_BUFFER_SIZE 4096
+#define OBJC_INTERP_NSLOG_BUFFER_SIZE 262144
 
 /* Maximum interpreter error message length */
 #define OBJC_INTERP_ERROR_SIZE 512
@@ -43,6 +43,7 @@
 #define OBJC_INTERP_SYNTAX_ERROR 1
 #define OBJC_INTERP_RUNTIME_ERROR 2
 #define OBJC_INTERP_MEMORY_ERROR 3
+#define OBJC_INTERP_INTERRUPTED 4
 
 /**
  * Initialize the interpreter. Must be called once before any
