@@ -28,9 +28,9 @@
 
         # ── LLVM / Emscripten ──────────────────────────────────────────
         # nixpkgs-unstable ships LLVM 21 as the latest.
-        # LLVM PR #169043 (ObjC WASM codegen) landed in LLVM 22.
-        # We use llvmPackages_21 (closest available) and note the gap.
-        # The wasi-sdk path works without LLVM 22 since libobjc2 is C.
+        # Objective-C WebAssembly codegen is still in-flight upstream.
+        # Keep the current C/WASI smoke path on LLVM 21, and target
+        # wasm32-unknown-emscripten for compiled Objective-C cells later.
         llvmPackages = pkgs.llvmPackages_21;
 
         # Emscripten from nixpkgs (wired to LLVM 21 by default)
@@ -75,6 +75,9 @@
             inherit llvmPackages;
             wasiSysroot = self.packages.${system}.wasi-libc-sysroot;
           };
+
+          # Backward-compatible alias for older scripts and notes.
+          libobjc2-wasm = self.packages.${system}.libobjc2-wasm-full;
 
           # WASI libc sysroot built from source with LLVM 21
           wasi-libc-sysroot = pkgs.callPackage ./nix/wasi-libc-sysroot.nix {
@@ -151,9 +154,12 @@
             cp -R ${self.packages.${system}.jupyterlite-smoke-site} site
             test -f site/index.html
             test -f site/browser-smoke-page.mjs
+            test -f site/runtime-manifest.json
             test -f site/js/objc-worker.js
             test -f site/js/wasm-loader.js
             test -f site/kernel/kernel.wasm
+            ls site/kernel/kernel.*.wasm >/dev/null
+            grep -Eq 'kernel\\.[0-9a-f]{64}\\.wasm' site/runtime-manifest.json
             test -f site/files/demo/hello.ipynb
             test -f site/kernelspecs/objective-c/kernel.json
             mkdir -p $out
@@ -188,7 +194,7 @@
               echo ""
               echo "Build commands:"
               echo "  bash scripts/build-all.sh"
-              echo "  nix build .#libobjc2-wasm"
+              echo "  nix build .#libobjc2-wasm-full"
               echo "  nix build .#kernel-wasm"
             '';
           };
@@ -214,8 +220,8 @@
               echo "Usage:"
               echo "  # C to WASM (freestanding, no libc):"
               echo "  clang --target=wasm32-wasi -o out.wasm source.c"
-              echo "  # ObjC to WASM (needs LLVM 22+):"
-              echo "  clang --target=wasm32-wasi $OBJC_CFLAGS -o out.wasm source.m"
+              echo "  # Objective-C cells later target wasm32-unknown-emscripten,"
+              echo "  # not this raw WASI smoke path."
               echo "  # Run:"
               echo "  wasmtime out.wasm"
               echo ""

@@ -16,7 +16,7 @@ if ! command -v nix >/dev/null 2>&1; then
     exit 1
 fi
 
-nix build "$PROJECT_ROOT/objc-jupyter-wasm#libobjc2-wasm" --out-link "$OUT_LINK"
+nix build "$PROJECT_ROOT/objc-jupyter-wasm#libobjc2-wasm-full" --out-link "$OUT_LINK"
 
 mkdir -p "$WASM_DIR" "$JUPYTER_KERNEL_DIR"
 cp "$OUT_LINK/wasm/libobjc2.wasm" "$WASM_DIR/libobjc2.wasm"
