@@ -12,9 +12,12 @@
 #include "runtime.h"
 #include "slot.h"
 
+#include <string.h>
+
 /* Runtime functions exported from the WASM module but not declared
  * in the headers we include (they're in NSObject.h normally). */
 extern Class object_getClass(id);
+extern id objc_lookUpClass(const char *name);
 
 /* objc_lookUpClass is declared in runtime.h with return type id,
  * which is compatible with Class. We use it to check if a class
@@ -752,6 +755,16 @@ static Value g_return_value;
 #define OBJC_INTERP_STRING_POOL_SIZE 65536
 static char g_string_pool[OBJC_INTERP_STRING_POOL_SIZE];
 static unsigned int g_string_pool_offset = 0;
+static unsigned int g_parse_depth = 0;
+
+#define MAX_STRING_POOL_MARKS 4096
+
+typedef struct {
+    unsigned int old_off;
+    unsigned int new_off;
+} RelocEntry;
+
+#define MAX_PARSE_DEPTH 64
 
 /* Allocate `size` bytes from the string pool.
  * Returns pointer to the start of the allocation, or 0 if the pool is full.
@@ -827,13 +840,13 @@ static Value *instance_var_get(id object, const char *prop_name) {
 
 /* Store an instance variable in the side table.
  * Overwrites existing entry for (object, prop_name), or adds new. */
-static void instance_var_set(id object, const char *prop_name, Value val) {
+static int instance_var_set(id object, const char *prop_name, Value val) {
     unsigned int i;
     for (i = 0; i < g_instance_var_count; i++) {
         if (g_instance_vars[i].object == object &&
             cstr_eq(g_instance_vars[i].prop_name, prop_name)) {
             g_instance_vars[i].value = val;
-            return;
+            return 0;
         }
     }
     /* Add new entry */
@@ -842,7 +855,9 @@ static void instance_var_set(id object, const char *prop_name, Value val) {
         cstr_copy(g_instance_vars[g_instance_var_count].prop_name, prop_name, 64);
         g_instance_vars[g_instance_var_count].value = val;
         g_instance_var_count++;
+        return 0;
     }
+    return -1;
 }
 
 /* Check if a variable name is a synthesized ivar name.
@@ -872,11 +887,17 @@ static Value synthesized_ivar_get(id self, const char *var_name) {
 }
 
 /* Write a synthesized ivar value to the side table. */
-static void synthesized_ivar_set(id self, const char *var_name, Value val) {
+static int synthesized_ivar_set(id self, const char *var_name, Value val) {
     int pi = find_synthesized_ivar(var_name);
     if (pi >= 0) {
-        instance_var_set(self, g_properties[pi].name, val);
+        if (instance_var_set(self, g_properties[pi].name, val) != 0) {
+            g_error_code = OBJC_INTERP_RESOURCE_ERROR;
+            cstr_copy(g_error_buffer, "instance variable table full (max 256)", OBJC_INTERP_ERROR_SIZE);
+            interp_emit_stream("warning: instance variable table full (max 256)\n", cstr_len("warning: instance variable table full (max 256)\n"));
+            return -1;
+        }
     }
+    return 0;
 }
 
 /* ── AST nodes for control flow ──────────────────────────────────── */
@@ -988,10 +1009,12 @@ static AstNode *ast_make_block(void) {
     return n;
 }
 
-static void ast_block_add(AstNode *block, AstNode *child) {
+static int ast_block_add(AstNode *block, AstNode *child) {
     if (block && block->type == AST_BLOCK && block->block.count < 128) {
         block->block.children[block->block.count++] = child;
+        return 0;
     }
+    return -1;
 }
 
 static AstNode *ast_make_source(AstNodeType type, unsigned int start, unsigned int len) {
@@ -1006,6 +1029,17 @@ static AstNode *ast_make_source(AstNodeType type, unsigned int start, unsigned i
 /* ── Forward declarations ───────────────────────────────────────── */
 
 static Value parse_expression(Parser *p);
+static Value parse_expression_safe(Parser *p) {
+    Value result;
+    if (g_parse_depth >= MAX_PARSE_DEPTH) {
+        parser_error(p, "expression too deeply nested (max 64 levels)");
+        return value_void();
+    }
+    g_parse_depth++;
+    result = parse_expression(p);
+    g_parse_depth--;
+    return result;
+}
 static Value parse_statement(Parser *p);
 static Value parse_block(Parser *p);
 static int is_truthy(Value v);
@@ -1030,7 +1064,7 @@ static void eval_nslog(Parser *p) {
     int arg_idx = 0;
 
     /* Parse format string */
-    fmt_val = parse_expression(p);
+    fmt_val = parse_expression_safe(p);
     if (p->error) return;
 
     /* Extract the C string from the format value.
@@ -1045,12 +1079,12 @@ static void eval_nslog(Parser *p) {
     while (parser_current(p).type == TOK_COMMA) {
         parser_advance(p); /* skip comma */
         if (arg_count < 16) {
-            args[arg_count] = parse_expression(p);
+            args[arg_count] = parse_expression_safe(p);
             if (p->error) return;
             arg_count++;
         } else {
             /* Skip excess arguments */
-            parse_expression(p);
+            parse_expression_safe(p);
             if (p->error) return;
         }
     }
@@ -1210,7 +1244,7 @@ static Value parse_message_send(Parser *p) {
     Value result;
 
     /* Parse target */
-    target = parse_expression(p);
+    target = parse_expression_safe(p);
     if (p->error) return value_void();
 
     /* Build selector name from the message pattern */
@@ -1247,7 +1281,7 @@ static Value parse_message_send(Parser *p) {
 
                 /* Parse argument */
                 if (arg_count < 16) {
-                    Value arg = parse_expression(p);
+                    Value arg = parse_expression_safe(p);
                     if (p->error) return value_void();
                     keyword_args[arg_count] = arg;
                     if (arg.is_int) {
@@ -1745,7 +1779,9 @@ static Value parse_message_send(Parser *p) {
                                 ivar_val.is_sel = ivar_var->is_sel;
                                 ivar_val.is_id = ivar_var->is_id;
                                 ivar_val.is_void = 0;
-                                instance_var_set(receiver, g_properties[pi].name, ivar_val);
+                                if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
+                                    parser_error(p, "instance variable table full (max 256)");
+                                }
                             }
                         }
                     }
@@ -1835,7 +1871,9 @@ static Value parse_message_send(Parser *p) {
                                 } else {
                                     val = keyword_args[0];
                                 }
-                                instance_var_set(receiver, g_properties[pi].name, val);
+                                if (instance_var_set(receiver, g_properties[pi].name, val) != 0) {
+                                    parser_error(p, "instance variable table full (max 256)");
+                                }
                             }
                             result = value_from_id(receiver);
                             return result;
@@ -1956,6 +1994,14 @@ static Value parse_interface(Parser *p) {
 
             /* Parse type and property name */
             if (parser_current(p).type == TOK_IDENTIFIER) {
+                if (g_property_count >= 64) {
+                    parser_error(p, "property table full (max 64 properties)");
+                    /* skip until semicolon or close paren */
+                    while (parser_current(p).type != TOK_SEMICOLON && parser_current(p).type != TOK_CLOSE_PAREN && parser_current(p).type != TOK_EOF) {
+                        parser_advance(p);
+                    }
+                    continue;
+                }
                 PropertyDecl *prop = &g_properties[g_property_count];
                 cstr_copy(prop->type_name, parser_current(p).text, 64);
                 prop->is_int = cstr_eq(prop->type_name, "int") ||
@@ -2414,6 +2460,8 @@ static Value parse_implementation(Parser *p) {
                         }
                     }
                     g_method_count++;
+                } else if (g_method_count >= MAX_METHODS) {
+                    parser_error(p, "method table full (max 64 methods)");
                 }
             }
         } else {
@@ -2447,7 +2495,7 @@ static Value parse_primary(Parser *p) {
             unsigned int len = cstr_len(content);
             char *str_ptr = string_pool_alloc(len + 1);
             if (str_ptr == 0) {
-                parser_error(p, "string pool full");
+                parser_error(p, "string pool exhausted — restart kernel");
                 return value_void();
             }
             cstr_copy(str_ptr, content, len + 1);
@@ -2470,14 +2518,27 @@ static Value parse_primary(Parser *p) {
     /* Message send [target selector:arg ...] */
     if (tok.type == TOK_OPEN_BRACKET) {
         parser_advance(p);
-        return parse_message_send(p);
+        /* Depth check: each nested [ ] message send counts as one level.
+         * parse_message_send will also call parse_expression_safe for
+         * the target, but we count here too so that [[...]] nesting
+         * increments depth by 2 per level (primary + safe wrapper). */
+        if (g_parse_depth >= MAX_PARSE_DEPTH) {
+            parser_error(p, "expression too deeply nested (max 64 levels)");
+            return value_void();
+        }
+        g_parse_depth++;
+        {
+            Value result = parse_message_send(p);
+            g_parse_depth--;
+            return result;
+        }
     }
 
     /* Parenthesized expression */
     if (tok.type == TOK_OPEN_PAREN) {
         parser_advance(p);
         {
-            Value v = parse_expression(p);
+            Value v = parse_expression_safe(p);
             if (p->error) return v;
             parser_expect(p, TOK_CLOSE_PAREN);
             return v;
@@ -2565,7 +2626,7 @@ static Value parse_primary(Parser *p) {
                     if (parser_current(p).type == TOK_ASSIGN) {
                         parser_advance(p);
                         {
-                            Value val = parse_expression(p);
+                            Value val = parse_expression_safe(p);
                             if (p->error) return val;
 
                             /* Build setter selector: setProperty: */
@@ -2682,7 +2743,9 @@ static Value parse_primary(Parser *p) {
                                                     ivar_val.is_sel = ivar_var->is_sel;
                                                     ivar_val.is_id = ivar_var->is_id;
                                                     ivar_val.is_void = 0;
-                                                    instance_var_set(receiver, g_properties[pi].name, ivar_val);
+                                                    if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
+                                    parser_error(p, "instance variable table full (max 256)");
+                                }
                                                 }
                                             }
                                         }
@@ -2697,7 +2760,9 @@ static Value parse_primary(Parser *p) {
                                         if (g_properties[pi].synthesized &&
                                             cstr_eq(prop_name, g_properties[pi].name)) {
                                             /* Store in side table */
-                                            instance_var_set(receiver, g_properties[pi].name, val);
+                                            if (instance_var_set(receiver, g_properties[pi].name, val) != 0) {
+                                    parser_error(p, "instance variable table full (max 256)");
+                                }
                                             break;
                                         }
                                     }
@@ -2789,7 +2854,9 @@ static Value parse_primary(Parser *p) {
                                             ivar_val.is_sel = ivar_var->is_sel;
                                             ivar_val.is_id = ivar_var->is_id;
                                             ivar_val.is_void = 0;
-                                            instance_var_set(receiver, g_properties[pi].name, ivar_val);
+                                            if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
+                                    parser_error(p, "instance variable table full (max 256)");
+                                }
                                         }
                                     }
                                 }
@@ -3103,6 +3170,10 @@ static Value parse_type_and_var_decl(Parser *p) {
         parser_advance(p);
 
         var = interp_get_or_create_var(var_name_buf);
+        if (var == 0) {
+            parser_error(p, "variable table full (max 1024)");
+            return value_void();
+        }
 
         /* Parse initializer */
         if (parser_current(p).type == TOK_ASSIGN) {
@@ -3118,6 +3189,7 @@ static Value parse_type_and_var_decl(Parser *p) {
                 var->int_value = init_val.int_val;
                 var->is_class = init_val.is_class;
                 var->is_sel = init_val.is_sel;
+                var->is_id = init_val.is_id;
             }
             return init_val;
         }
@@ -3338,14 +3410,27 @@ static Value parse_block(Parser *p) {
  * Returns an AST_BLOCK node containing all children. */
 static AstNode *parse_block_ast(Parser *p) {
     AstNode *block = ast_make_block();
-    if (!block) return 0;
+    if (!block) {
+        if (!p->error) {
+            parser_error(p, "AST node limit reached (max 1024)");
+        }
+        return 0;
+    }
 
     while (parser_current(p).type != TOK_EOF &&
            parser_current(p).type != TOK_CLOSE_BRACE) {
         AstNode *child = parse_statement_ast(p);
-        if (!child) return 0;
+        if (!child) {
+            if (!p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+            }
+            return 0;
+        }
         if (p->error) return 0;
-        ast_block_add(block, child);
+        if (ast_block_add(block, child) != 0) {
+            parser_error(p, "block too large (max 128 statements)");
+            return 0;
+        }
         if (g_return_pending || g_break_pending || g_continue_pending) return block;
     }
     return block;
@@ -3378,6 +3463,10 @@ static AstNode *parse_statement_ast(Parser *p) {
             }
             condition = ast_make_source(AST_EXPR_STMT, cond_start,
                                        p->lex.token_start - cond_start);
+            if (!condition && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
         }
         parser_expect(p, TOK_CLOSE_PAREN);
         if (p->error) return 0;
@@ -3406,7 +3495,14 @@ static AstNode *parse_statement_ast(Parser *p) {
             if (!else_branch) return 0;
         }
 
-        return ast_make_if(condition, then_branch, else_branch);
+        {
+            AstNode *node = ast_make_if(condition, then_branch, else_branch);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
     }
 
     /* while statement */
@@ -3442,7 +3538,14 @@ static AstNode *parse_statement_ast(Parser *p) {
         }
         if (!body) return 0;
 
-        return ast_make_while(condition, body);
+        {
+            AstNode *node = ast_make_while(condition, body);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
     }
 
     /* for statement */
@@ -3516,7 +3619,12 @@ static AstNode *parse_statement_ast(Parser *p) {
 
                 /* Build AST_FOR_IN node */
                 node = ast_alloc();
-                if (!node) return 0;
+                if (!node) {
+                    if (!p->error) {
+                        parser_error(p, "AST node limit reached (max 1024)");
+                    }
+                    return 0;
+                }
                 node->type = AST_FOR_IN;
                 cstr_copy(node->for_in.var_name, for_in_var, 64);
                 node->for_in.collection_start = coll_start_outer;
@@ -3547,6 +3655,10 @@ static AstNode *parse_statement_ast(Parser *p) {
             }
             init = ast_make_source(AST_EXPR_STMT, init_start,
                                    p->lex.token_start - init_start);
+            if (!init && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
             if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
         }
 
@@ -3562,6 +3674,10 @@ static AstNode *parse_statement_ast(Parser *p) {
             }
             condition = ast_make_source(AST_EXPR_STMT, cond_start,
                                        p->lex.token_start - cond_start);
+            if (!condition && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
             if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
         }
 
@@ -3577,6 +3693,10 @@ static AstNode *parse_statement_ast(Parser *p) {
             }
             increment = ast_make_source(AST_EXPR_STMT, incr_start,
                                        p->lex.token_start - incr_start);
+            if (!increment && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
             if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
         }
 
@@ -3590,7 +3710,14 @@ static AstNode *parse_statement_ast(Parser *p) {
         }
         if (!body) return 0;
 
-        return ast_make_for(init, condition, increment, body);
+        {
+            AstNode *node = ast_make_for(init, condition, increment, body);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
         }
     }
 
@@ -3600,7 +3727,12 @@ static AstNode *parse_statement_ast(Parser *p) {
         if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
         {
             AstNode *n = ast_alloc();
-            if (!n) return 0;
+            if (!n) {
+                if (!p->error) {
+                    parser_error(p, "AST node limit reached (max 1024)");
+                }
+                return 0;
+            }
             n->type = AST_BREAK;
             return n;
         }
@@ -3612,7 +3744,12 @@ static AstNode *parse_statement_ast(Parser *p) {
         if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
         {
             AstNode *n = ast_alloc();
-            if (!n) return 0;
+            if (!n) {
+                if (!p->error) {
+                    parser_error(p, "AST node limit reached (max 1024)");
+                }
+                return 0;
+            }
             n->type = AST_CONTINUE;
             return n;
         }
@@ -3629,7 +3766,14 @@ static AstNode *parse_statement_ast(Parser *p) {
             if (p->error) return 0;
         }
         if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
-        return ast_make_source(AST_RETURN, start, p->lex.token_start - start);
+        {
+            AstNode *node = ast_make_source(AST_RETURN, start, p->lex.token_start - start);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
     }
 
     /* @interface / @implementation — execute immediately (no AST) */
@@ -3639,7 +3783,14 @@ static AstNode *parse_statement_ast(Parser *p) {
         unsigned int start = p->lex.token_start;
         parse_statement(p); /* execute immediately */
         if (p->error) return 0;
-        return ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
+        {
+            AstNode *node = ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
     }
 
     /* Type declaration or expression statement → source range.
@@ -3665,7 +3816,14 @@ static AstNode *parse_statement_ast(Parser *p) {
             }
             parser_advance(p);
         }
-        return ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
+        {
+            AstNode *node = ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
     }
 }
 
@@ -3677,13 +3835,19 @@ static Value eval_source_range(unsigned int start, unsigned int len,
                                const char *source) {
     Parser p;
     Value last = value_void();
+    g_parse_depth = 0;
     if (len == 0) return value_void();
     parser_init(&p, source + start, len);
     /* Parse all statements in the source range, not just the first one.
      * This is needed for method bodies with multiple statements. */
     while (p.lex.current.type != TOK_EOF && !p.error) {
         last = parse_statement(&p);
-        if (p.error) return last;
+        if (p.error) {
+            /* Propagate error to global state so objc_interp detects it */
+            g_error_code = p.error;
+            cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+            return last;
+        }
     }
     return last;
 }
@@ -3815,13 +3979,17 @@ static Value eval_ast(AstNode *node, const char *source) {
                     /* Store single character as a string in the pool */
                     {
                         char *ch_ptr = string_pool_alloc(2);
-                        if (ch_ptr != 0) {
-                            ch_ptr[0] = coll_str[ci];
-                            ch_ptr[1] = '\0';
-                            var->is_id = 1;
-                            var->value = (id)ch_ptr;
-                            var->is_int = 0;
+                        if (ch_ptr == 0) {
+                            g_error_code = OBJC_INTERP_RESOURCE_ERROR;
+                            cstr_copy(g_error_buffer, "string pool exhausted — restart kernel", OBJC_INTERP_ERROR_SIZE);
+                            interp_emit_stream("warning: string pool exhausted — restart kernel\n", cstr_len("warning: string pool exhausted — restart kernel\n"));
+                            break;
                         }
+                        ch_ptr[0] = coll_str[ci];
+                        ch_ptr[1] = '\0';
+                        var->is_id = 1;
+                        var->value = (id)ch_ptr;
+                        var->is_int = 0;
                     }
                 }
                 g_break_pending = 0;
@@ -3991,6 +4159,135 @@ static void format_value(Value v, char *buf, unsigned int capacity) {
     /* void values produce an empty string — no display */
 }
 
+void objc_interp_gc_strings(void) {
+    static RelocEntry relocs[MAX_STRING_POOL_MARKS];
+    unsigned int reloc_count = 0;
+    unsigned int new_offset = 0;
+    unsigned int i;
+    unsigned int pool_limit = g_string_pool_offset;
+    unsigned long pool_start = (unsigned long)g_string_pool;
+    unsigned long pool_end = pool_start + (unsigned long)pool_limit;
+
+    /* Phase 1: Mark — collect live strings from persistent roots. */
+    for (i = 0; i < g_var_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+        if (g_vars[i].is_id && g_vars[i].value != 0) {
+            const char *ptr = (const char *)g_vars[i].value;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
+                relocs[reloc_count].new_off = 0;
+                reloc_count++;
+            }
+        }
+    }
+    for (i = 0; i < g_instance_var_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+        /* Mark the object key (FDObj: marker) if it's in the string pool */
+        {
+            const char *obj_ptr = (const char *)g_instance_vars[i].object;
+            if ((unsigned long)obj_ptr >= pool_start && (unsigned long)obj_ptr < pool_end) {
+                relocs[reloc_count].old_off = (unsigned int)((unsigned long)obj_ptr - pool_start);
+                relocs[reloc_count].new_off = 0;
+                reloc_count++;
+            }
+        }
+        /* Mark the value if it's an id-typed string pool pointer */
+        if (g_instance_vars[i].value.is_id && g_instance_vars[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_instance_vars[i].value.obj_val;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
+                relocs[reloc_count].new_off = 0;
+                reloc_count++;
+            }
+        }
+    }
+
+    if (reloc_count == 0) {
+        g_string_pool_offset = 0;
+        return;
+    }
+
+    /* Sort by old offset so compaction runs in ascending order. */
+    {
+        unsigned int j;
+        for (i = 1; i < reloc_count; i++) {
+            RelocEntry tmp = relocs[i];
+            j = i;
+            while (j > 0 && relocs[j - 1].old_off > tmp.old_off) {
+                relocs[j] = relocs[j - 1];
+                j--;
+            }
+            relocs[j] = tmp;
+        }
+    }
+
+    /* Phase 2: Compact — move only unique live strings. */
+    for (i = 0; i < reloc_count; i++) {
+        unsigned int old = relocs[i].old_off;
+        if (i > 0 && relocs[i - 1].old_off == old) {
+            relocs[i].new_off = relocs[i - 1].new_off;
+            continue;
+        }
+
+        {
+            unsigned int len = cstr_len(g_string_pool + old) + 1;
+            if (old != new_offset) {
+                memmove(g_string_pool + new_offset, g_string_pool + old, len);
+            }
+            relocs[i].new_off = new_offset;
+            new_offset += len;
+        }
+    }
+    g_string_pool_offset = new_offset;
+
+    /* Phase 3: Update — rewrite all root pointers to their new offsets.
+     * This includes variable values, instance var values, AND instance var
+     * object keys (since FDObj: markers live in the string pool). */
+    for (i = 0; i < g_var_count; i++) {
+        if (g_vars[i].is_id && g_vars[i].value != 0) {
+            const char *ptr = (const char *)g_vars[i].value;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
+                unsigned int r;
+                for (r = 0; r < reloc_count; r++) {
+                    if (relocs[r].old_off == off) {
+                        g_vars[i].value = (id)(g_string_pool + relocs[r].new_off);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    for (i = 0; i < g_instance_var_count; i++) {
+        /* Update the object key if it's a string pool pointer (FDObj: marker) */
+        {
+            const char *obj_ptr = (const char *)g_instance_vars[i].object;
+            if ((unsigned long)obj_ptr >= pool_start && (unsigned long)obj_ptr < pool_end) {
+                unsigned int off = (unsigned int)((unsigned long)obj_ptr - pool_start);
+                unsigned int r;
+                for (r = 0; r < reloc_count; r++) {
+                    if (relocs[r].old_off == off) {
+                        g_instance_vars[i].object = (id)(g_string_pool + relocs[r].new_off);
+                        break;
+                    }
+                }
+            }
+        }
+        /* Update the value if it's an id-typed string pool pointer */
+        if (g_instance_vars[i].value.is_id && g_instance_vars[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_instance_vars[i].value.obj_val;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
+                unsigned int r;
+                for (r = 0; r < reloc_count; r++) {
+                    if (relocs[r].old_off == off) {
+                        g_instance_vars[i].value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /* ── Public API ─────────────────────────────────────────────────── */
 
 void objc_interp_init(void) {
@@ -4042,6 +4339,7 @@ int objc_interp(const char *source, unsigned int length) {
     g_break_pending = 0;
     g_continue_pending = 0;
     g_ast_count = 0;
+    g_parse_depth = 0;
 
     /* Don't reset variable table — it persists across cells */
 
@@ -4083,10 +4381,16 @@ int objc_interp(const char *source, unsigned int length) {
                 return p.error;
             }
 
+            if (g_error_code != OBJC_INTERP_OK) {
+                return g_error_code;
+            }
+
             /* Format the last expression result for REPL display */
             format_value(last, g_result_buffer, 512);
         }
     }
+
+    objc_interp_gc_strings();
 
     return OBJC_INTERP_OK;
 }
