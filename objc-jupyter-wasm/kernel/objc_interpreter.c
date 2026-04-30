@@ -341,6 +341,28 @@ static Token lexer_next_token(Lexer *lex) {
         /* Check for reserved keywords */
         if (cstr_eq(tok.text, "return")) {
             tok.type = TOK_RETURN;
+        } else if (cstr_eq(tok.text, "if")) {
+            tok.type = TOK_IF;
+        } else if (cstr_eq(tok.text, "else")) {
+            tok.type = TOK_ELSE;
+        } else if (cstr_eq(tok.text, "while")) {
+            tok.type = TOK_WHILE;
+        } else if (cstr_eq(tok.text, "for")) {
+            tok.type = TOK_FOR;
+        } else if (cstr_eq(tok.text, "do")) {
+            tok.type = TOK_DO;
+        } else if (cstr_eq(tok.text, "break")) {
+            tok.type = TOK_BREAK;
+        } else if (cstr_eq(tok.text, "continue")) {
+            tok.type = TOK_CONTINUE;
+        } else if (cstr_eq(tok.text, "YES") || cstr_eq(tok.text, "TRUE")) {
+            /* Boolean true → integer 1 */
+            tok.text[0] = '1'; tok.text[1] = '\0';
+            tok.type = TOK_INT_LITERAL;
+        } else if (cstr_eq(tok.text, "NO") || cstr_eq(tok.text, "FALSE")) {
+            /* Boolean false → integer 0 */
+            tok.text[0] = '0'; tok.text[1] = '\0';
+            tok.type = TOK_INT_LITERAL;
         }
         return tok;
     }
@@ -376,6 +398,30 @@ static Token lexer_next_token(Lexer *lex) {
             lexer_next(lex);
             tok.text[0] = '!'; tok.text[1] = '='; tok.text[2] = '\0';
             tok.type = TOK_NEQ;
+            return tok;
+        }
+        if (ch == '&' && next == '&') {
+            lexer_next(lex);
+            tok.text[0] = '&'; tok.text[1] = '&'; tok.text[2] = '\0';
+            tok.type = TOK_AND;
+            return tok;
+        }
+        if (ch == '|' && next == '|') {
+            lexer_next(lex);
+            tok.text[0] = '|'; tok.text[1] = '|'; tok.text[2] = '\0';
+            tok.type = TOK_OR;
+            return tok;
+        }
+        if (ch == '+' && next == '+') {
+            lexer_next(lex);
+            tok.text[0] = '+'; tok.text[1] = '+'; tok.text[2] = '\0';
+            tok.type = TOK_PLUS_PLUS;
+            return tok;
+        }
+        if (ch == '-' && next == '-') {
+            lexer_next(lex);
+            tok.text[0] = '-'; tok.text[1] = '-'; tok.text[2] = '\0';
+            tok.type = TOK_MINUS_MINUS;
             return tok;
         }
         if (ch == '<' && next == '=') {
@@ -431,6 +477,8 @@ static Token lexer_next_token(Lexer *lex) {
         case '%': tok.type = TOK_PERCENT; break;
         case '<': tok.type = TOK_LT; break;
         case '>': tok.type = TOK_GT; break;
+        case '!': tok.type = TOK_NOT; break;
+        case '|': tok.type = TOK_UNKNOWN; break; /* || handled above, bare | not supported */
         default: tok.type = TOK_UNKNOWN; break;
     }
 
@@ -693,11 +741,131 @@ typedef struct {
 static MethodImpl g_methods[MAX_METHODS];
 static unsigned int g_method_count = 0;
 
+/* ── AST nodes for control flow ──────────────────────────────────── */
+
+/* The interpreter is a single-pass parser/evaluator for expressions,
+ * but control flow (if/while/for) requires re-evaluating conditions
+ * and loop bodies. We use a small AST for control flow nodes only.
+ * Expression statements are stored as source ranges and re-parsed
+ * when executed (same technique as method body capture). */
+
+typedef enum {
+    AST_IF,
+    AST_WHILE,
+    AST_FOR,
+    AST_BLOCK,
+    AST_EXPR_STMT,
+    AST_VAR_DECL,
+    AST_RETURN,
+    AST_BREAK,
+    AST_CONTINUE
+} AstNodeType;
+
+typedef struct AstNode AstNode;
+
+struct AstNode {
+    AstNodeType type;
+    union {
+        struct { /* AST_IF */
+            AstNode *condition;
+            AstNode *then_branch;
+            AstNode *else_branch;
+        } if_stmt;
+        struct { /* AST_WHILE */
+            AstNode *condition;
+            AstNode *body;
+        } while_stmt;
+        struct { /* AST_FOR */
+            AstNode *init;
+            AstNode *condition;
+            AstNode *increment;
+            AstNode *body;
+        } for_stmt;
+        struct { /* AST_BLOCK */
+            AstNode *children[128];
+            unsigned int count;
+        } block;
+        struct { /* AST_EXPR_STMT, AST_VAR_DECL, AST_RETURN */
+            unsigned int source_start;
+            unsigned int source_len;
+        } source_range;
+    };
+};
+
+#define MAX_AST_NODES 1024
+static AstNode g_ast_arena[MAX_AST_NODES];
+static unsigned int g_ast_count = 0;
+
+/* Break/continue flags — checked by loop evaluation */
+static int g_break_pending = 0;
+static int g_continue_pending = 0;
+
+static AstNode *ast_alloc(void) {
+    if (g_ast_count >= MAX_AST_NODES) return 0;
+    return &g_ast_arena[g_ast_count++];
+}
+
+static AstNode *ast_make_if(AstNode *condition, AstNode *then_branch, AstNode *else_branch) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_IF;
+    n->if_stmt.condition = condition;
+    n->if_stmt.then_branch = then_branch;
+    n->if_stmt.else_branch = else_branch;
+    return n;
+}
+
+static AstNode *ast_make_while(AstNode *condition, AstNode *body) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_WHILE;
+    n->while_stmt.condition = condition;
+    n->while_stmt.body = body;
+    return n;
+}
+
+static AstNode *ast_make_for(AstNode *init, AstNode *condition, AstNode *increment, AstNode *body) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_FOR;
+    n->for_stmt.init = init;
+    n->for_stmt.condition = condition;
+    n->for_stmt.increment = increment;
+    n->for_stmt.body = body;
+    return n;
+}
+
+static AstNode *ast_make_block(void) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_BLOCK;
+    n->block.count = 0;
+    return n;
+}
+
+static void ast_block_add(AstNode *block, AstNode *child) {
+    if (block && block->type == AST_BLOCK && block->block.count < 128) {
+        block->block.children[block->block.count++] = child;
+    }
+}
+
+static AstNode *ast_make_source(AstNodeType type, unsigned int start, unsigned int len) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = type;
+    n->source_range.source_start = start;
+    n->source_range.source_len = len;
+    return n;
+}
+
 /* ── Forward declarations ───────────────────────────────────────── */
 
 static Value parse_expression(Parser *p);
 static Value parse_statement(Parser *p);
 static Value parse_block(Parser *p);
+static int is_truthy(Value v);
+static AstNode *parse_statement_ast(Parser *p);
+static Value eval_ast(AstNode *node, const char *source);
 
 /* ── NSLog format string evaluation ─────────────────────────────── */
 
@@ -1605,6 +1773,21 @@ static Value parse_primary(Parser *p) {
             InterpVar *var = interp_find_var(tok.text);
             if (var) {
                 parser_advance(p);
+
+                /* Post-increment/decrement: i++, i-- */
+                if (parser_current(p).type == TOK_PLUS_PLUS && var->is_int) {
+                    int old_val = var->int_value;
+                    var->int_value++;
+                    parser_advance(p);
+                    return value_from_int(old_val);
+                }
+                if (parser_current(p).type == TOK_MINUS_MINUS && var->is_int) {
+                    int old_val = var->int_value;
+                    var->int_value--;
+                    parser_advance(p);
+                    return value_from_int(old_val);
+                }
+
                 if (var->is_int) return value_from_int(var->int_value);
                 if (var->is_class) return value_from_class(var->cls);
                 if (var->is_sel) return value_from_sel(var->sel);
@@ -1630,6 +1813,33 @@ static Value parse_primary(Parser *p) {
         return value_void();
     }
 
+    /* Pre-increment/decrement: ++i, --i */
+    if (tok.type == TOK_PLUS_PLUS || tok.type == TOK_MINUS_MINUS) {
+        int is_increment = (tok.type == TOK_PLUS_PLUS);
+        parser_advance(p);
+        {
+            /* The next token must be an identifier (variable name) */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                InterpVar *var = interp_find_var(parser_current(p).text);
+                if (var && var->is_int) {
+                    if (is_increment) var->int_value++;
+                    else var->int_value--;
+                    parser_advance(p);
+                    return value_from_int(var->int_value);
+                }
+            }
+            /* Fall back to parsing as primary expression */
+            {
+                Value v = parse_primary(p);
+                if (v.is_int) {
+                    if (is_increment) v.int_val++;
+                    else v.int_val--;
+                }
+                return v;
+            }
+        }
+    }
+
     /* Minus (unary) */
     if (tok.type == TOK_MINUS) {
         parser_advance(p);
@@ -1637,6 +1847,15 @@ static Value parse_primary(Parser *p) {
             Value v = parse_primary(p);
             if (v.is_int) return value_from_int(-v.int_val);
             return v;
+        }
+    }
+
+    /* Logical NOT */
+    if (tok.type == TOK_NOT) {
+        parser_advance(p);
+        {
+            Value v = parse_primary(p);
+            return value_from_int(is_truthy(v) ? 0 : 1);
         }
     }
 
@@ -1755,8 +1974,52 @@ static Value parse_comparison(Parser *p) {
     return left;
 }
 
+/* ── Truthiness helper ──────────────────────────────────────────── */
+
+static int is_truthy(Value v) {
+    if (v.is_int) return v.int_val != 0;
+    if (v.is_id) return v.obj_val != 0;
+    if (v.is_class) return v.cls_val != 0;
+    if (v.is_void) return 0;
+    return 0;
+}
+
+/* ── Logical operators ───────────────────────────────────────────── */
+
+static Value parse_logical_and(Parser *p) {
+    Value left = parse_comparison(p);
+    if (p->error) return left;
+
+    while (parser_current(p).type == TOK_AND) {
+        parser_advance(p);
+        {
+            Value right = parse_comparison(p);
+            if (p->error) return right;
+            left = value_from_int(is_truthy(left) && is_truthy(right) ? 1 : 0);
+        }
+    }
+
+    return left;
+}
+
+static Value parse_logical_or(Parser *p) {
+    Value left = parse_logical_and(p);
+    if (p->error) return left;
+
+    while (parser_current(p).type == TOK_OR) {
+        parser_advance(p);
+        {
+            Value right = parse_logical_and(p);
+            if (p->error) return right;
+            left = value_from_int(is_truthy(left) || is_truthy(right) ? 1 : 0);
+        }
+    }
+
+    return left;
+}
+
 static Value parse_assignment(Parser *p) {
-    Value target = parse_comparison(p);
+    Value target = parse_logical_or(p);
     if (p->error) return target;
 
     if (parser_current(p).type == TOK_ASSIGN) {
@@ -2004,6 +2267,338 @@ static Value parse_block(Parser *p) {
     return last;
 }
 
+/* ── AST-based statement parser (for control flow) ─────────────── */
+
+/* Parse a block of statements into AST nodes.
+ * Returns an AST_BLOCK node containing all children. */
+static AstNode *parse_block_ast(Parser *p) {
+    AstNode *block = ast_make_block();
+    if (!block) return 0;
+
+    while (parser_current(p).type != TOK_EOF &&
+           parser_current(p).type != TOK_CLOSE_BRACE) {
+        AstNode *child = parse_statement_ast(p);
+        if (!child) return 0;
+        if (p->error) return 0;
+        ast_block_add(block, child);
+        if (g_return_pending || g_break_pending || g_continue_pending) return block;
+    }
+    return block;
+}
+
+/* Parse a single statement into an AST node.
+ * Control flow (if/while/for) → true AST nodes
+ * Everything else → source range nodes (re-parsed on evaluation) */
+static AstNode *parse_statement_ast(Parser *p) {
+    Token tok = parser_current(p);
+
+    /* if statement */
+    if (tok.type == TOK_IF) {
+        AstNode *condition, *then_branch, *else_branch;
+        parser_advance(p);
+        parser_expect(p, TOK_OPEN_PAREN);
+        if (p->error) return 0;
+
+        /* Parse condition as a source range */
+        {
+            unsigned int cond_start = p->lex.token_start;
+            parse_expression(p);
+            if (p->error) return 0;
+            condition = ast_make_source(AST_EXPR_STMT, cond_start,
+                                       p->lex.token_start - cond_start);
+        }
+        parser_expect(p, TOK_CLOSE_PAREN);
+        if (p->error) return 0;
+
+        /* Parse then-branch */
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            parser_advance(p);
+            then_branch = parse_block_ast(p);
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        } else {
+            then_branch = parse_statement_ast(p);
+        }
+        if (!then_branch) return 0;
+
+        /* Parse optional else-branch */
+        else_branch = 0;
+        if (parser_current(p).type == TOK_ELSE) {
+            parser_advance(p);
+            if (parser_current(p).type == TOK_OPEN_BRACE) {
+                parser_advance(p);
+                else_branch = parse_block_ast(p);
+                if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+            } else {
+                else_branch = parse_statement_ast(p);
+            }
+            if (!else_branch) return 0;
+        }
+
+        return ast_make_if(condition, then_branch, else_branch);
+    }
+
+    /* while statement */
+    if (tok.type == TOK_WHILE) {
+        AstNode *condition, *body;
+        parser_advance(p);
+        parser_expect(p, TOK_OPEN_PAREN);
+        if (p->error) return 0;
+
+        {
+            unsigned int cond_start = p->lex.token_start;
+            parse_expression(p);
+            if (p->error) return 0;
+            condition = ast_make_source(AST_EXPR_STMT, cond_start,
+                                        p->lex.token_start - cond_start);
+        }
+        parser_expect(p, TOK_CLOSE_PAREN);
+        if (p->error) return 0;
+
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            parser_advance(p);
+            body = parse_block_ast(p);
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        } else {
+            body = parse_statement_ast(p);
+        }
+        if (!body) return 0;
+
+        return ast_make_while(condition, body);
+    }
+
+    /* for statement */
+    if (tok.type == TOK_FOR) {
+        AstNode *init, *condition, *increment, *body;
+        parser_advance(p);
+        parser_expect(p, TOK_OPEN_PAREN);
+        if (p->error) return 0;
+
+        /* Init: parse as source range */
+        {
+            unsigned int init_start = p->lex.token_start;
+            if (parser_current(p).type != TOK_SEMICOLON) {
+                parse_statement(p); /* evaluate init immediately */
+                if (p->error) return 0;
+            }
+            init = ast_make_source(AST_EXPR_STMT, init_start,
+                                   p->lex.token_start - init_start);
+            if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+        }
+
+        /* Condition: parse as source range */
+        {
+            unsigned int cond_start = p->lex.token_start;
+            if (parser_current(p).type != TOK_SEMICOLON) {
+                parse_expression(p);
+                if (p->error) return 0;
+            }
+            condition = ast_make_source(AST_EXPR_STMT, cond_start,
+                                       p->lex.token_start - cond_start);
+            if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+        }
+
+        /* Increment: parse as source range */
+        {
+            unsigned int incr_start = p->lex.token_start;
+            if (parser_current(p).type != TOK_CLOSE_PAREN) {
+                parse_expression(p);
+                if (p->error) return 0;
+            }
+            increment = ast_make_source(AST_EXPR_STMT, incr_start,
+                                       p->lex.token_start - incr_start);
+            if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+        }
+
+        /* Body */
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            parser_advance(p);
+            body = parse_block_ast(p);
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        } else {
+            body = parse_statement_ast(p);
+        }
+        if (!body) return 0;
+
+        return ast_make_for(init, condition, increment, body);
+    }
+
+    /* break statement */
+    if (tok.type == TOK_BREAK) {
+        parser_advance(p);
+        if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+        {
+            AstNode *n = ast_alloc();
+            if (!n) return 0;
+            n->type = AST_BREAK;
+            return n;
+        }
+    }
+
+    /* continue statement */
+    if (tok.type == TOK_CONTINUE) {
+        parser_advance(p);
+        if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+        {
+            AstNode *n = ast_alloc();
+            if (!n) return 0;
+            n->type = AST_CONTINUE;
+            return n;
+        }
+    }
+
+    /* return statement → source range */
+    if (tok.type == TOK_RETURN) {
+        unsigned int start = p->lex.token_start;
+        parser_advance(p);
+        if (parser_current(p).type != TOK_SEMICOLON &&
+            parser_current(p).type != TOK_CLOSE_BRACE &&
+            parser_current(p).type != TOK_EOF) {
+            parse_expression(p);
+            if (p->error) return 0;
+        }
+        if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+        return ast_make_source(AST_RETURN, start, p->lex.token_start - start);
+    }
+
+    /* @interface / @implementation — execute immediately (no AST) */
+    if (tok.type == TOK_AT_KEYWORD &&
+        (cstr_eq(tok.text, "@interface") || cstr_eq(tok.text, "@implementation") ||
+         cstr_eq(tok.text, "@class") || cstr_eq(tok.text, "@protocol"))) {
+        unsigned int start = p->lex.token_start;
+        parse_statement(p); /* execute immediately */
+        if (p->error) return 0;
+        return ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
+    }
+
+    /* Type declaration or expression statement → source range */
+    {
+        unsigned int start = p->lex.token_start;
+        parse_statement(p); /* parse and evaluate to advance the parser */
+        if (p->error) return 0;
+        return ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
+    }
+}
+
+/* ── AST evaluation ─────────────────────────────────────────────── */
+
+/* Evaluate a source range by re-parsing it.
+ * This creates a temporary parser over the source substring. */
+static Value eval_source_range(unsigned int start, unsigned int len,
+                               const char *source) {
+    Parser p;
+    if (len == 0) return value_void();
+    parser_init(&p, source + start, len);
+    {
+        Value v = parse_statement(&p);
+        return v;
+    }
+}
+
+/* Evaluate an AST node. source is the original full source string. */
+static Value eval_ast(AstNode *node, const char *source) {
+    Value last = value_void();
+    if (!node) return last;
+
+    switch (node->type) {
+    case AST_IF: {
+        Value cond = eval_ast(node->if_stmt.condition, source);
+        if (is_truthy(cond)) {
+            last = eval_ast(node->if_stmt.then_branch, source);
+        } else if (node->if_stmt.else_branch) {
+            last = eval_ast(node->if_stmt.else_branch, source);
+        }
+        break;
+    }
+
+    case AST_WHILE: {
+        while (1) {
+            Value cond = eval_ast(node->while_stmt.condition, source);
+            if (!is_truthy(cond)) break;
+            g_break_pending = 0;
+            g_continue_pending = 0;
+            eval_ast(node->while_stmt.body, source);
+            if (g_break_pending) {
+                g_break_pending = 0;
+                break;
+            }
+            if (g_continue_pending) {
+                g_continue_pending = 0;
+                continue; /* re-evaluate condition */
+            }
+            if (g_return_pending) return last;
+            if (interp_should_interrupt()) return last;
+        }
+        break;
+    }
+
+    case AST_FOR: {
+        /* Init is already evaluated during parsing (for side effects).
+         * But we need to re-evaluate it for loop correctness — actually,
+         * the init only runs once, so we evaluate it here. */
+        eval_ast(node->for_stmt.init, source);
+
+        while (1) {
+            /* Check condition (empty condition = always true) */
+            if (node->for_stmt.condition->source_range.source_len > 0) {
+                Value cond = eval_ast(node->for_stmt.condition, source);
+                if (!is_truthy(cond)) break;
+            }
+
+            g_break_pending = 0;
+            g_continue_pending = 0;
+            eval_ast(node->for_stmt.body, source);
+
+            if (g_break_pending) {
+                g_break_pending = 0;
+                break;
+            }
+            if (g_continue_pending) {
+                g_continue_pending = 0;
+                /* Skip to increment */
+            }
+            if (g_return_pending) return last;
+            if (interp_should_interrupt()) return last;
+
+            /* Increment */
+            eval_ast(node->for_stmt.increment, source);
+        }
+        break;
+    }
+
+    case AST_BLOCK: {
+        unsigned int i;
+        for (i = 0; i < node->block.count; i++) {
+            last = eval_ast(node->block.children[i], source);
+            if (g_return_pending || g_break_pending || g_continue_pending)
+                return last;
+        }
+        break;
+    }
+
+    case AST_EXPR_STMT:
+    case AST_VAR_DECL:
+        last = eval_source_range(node->source_range.source_start,
+                                 node->source_range.source_len, source);
+        break;
+
+    case AST_RETURN:
+        last = eval_source_range(node->source_range.source_start,
+                                 node->source_range.source_len, source);
+        g_return_pending = 1;
+        break;
+
+    case AST_BREAK:
+        g_break_pending = 1;
+        break;
+
+    case AST_CONTINUE:
+        g_continue_pending = 1;
+        break;
+    }
+
+    return last;
+}
+
 /* ── Value formatting for REPL display ─────────────────────────── */
 
 static void fmt_append_char(char *buf, unsigned int capacity, unsigned int *offset, char ch) {
@@ -2112,14 +2707,19 @@ int objc_interp(const char *source, unsigned int length) {
     g_error_buffer[0] = '\0';
     g_result_buffer[0] = '\0';
     g_return_pending = 0;
+    g_break_pending = 0;
+    g_continue_pending = 0;
+    g_ast_count = 0;
 
     /* Don't reset variable table — it persists across cells */
 
     parser_init(&p, source, length);
 
-    /* Parse and evaluate all statements */
+    /* Two-phase execution: parse into AST, then evaluate.
+     * This enables control flow (if/while/for) to re-evaluate
+     * conditions and loop bodies. */
     {
-        Value last = parse_block(&p);
+        AstNode *root = parse_block_ast(&p);
 
         if (p.error) {
             if (cstr_eq(p.error_msg, "Execution interrupted")) {
@@ -2131,8 +2731,29 @@ int objc_interp(const char *source, unsigned int length) {
             return p.error;
         }
 
-        /* Format the last expression result for REPL display */
-        format_value(last, g_result_buffer, 512);
+        if (!root) {
+            g_error_code = OBJC_INTERP_MEMORY_ERROR;
+            cstr_copy(g_error_buffer, "AST allocation failed", OBJC_INTERP_ERROR_SIZE);
+            return OBJC_INTERP_MEMORY_ERROR;
+        }
+
+        /* Evaluate the AST */
+        {
+            Value last = eval_ast(root, source);
+
+            if (p.error) {
+                if (cstr_eq(p.error_msg, "Execution interrupted")) {
+                    g_error_code = OBJC_INTERP_INTERRUPTED;
+                } else {
+                    g_error_code = p.error;
+                }
+                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                return p.error;
+            }
+
+            /* Format the last expression result for REPL display */
+            format_value(last, g_result_buffer, 512);
+        }
     }
 
     return OBJC_INTERP_OK;
