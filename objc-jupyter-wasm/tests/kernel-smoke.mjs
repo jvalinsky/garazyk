@@ -898,5 +898,90 @@ const gcGarbageCell = `NSString *temp = @"${gcGarbageA}"; temp = @"${gcGarbageB}
   console.log('  method: return values and NSLog — PASS');
 }
 
+// ── Phase 10: Foundation collections ──────────────────────────
+
+{
+  // NSMutableArray: basic operations
+  const arr1 = execute('NSMutableArray *arr = [NSMutableArray array]; NSLog(@"empty=%d", [arr count]); [arr addObject:@"hello"]; [arr addObject:@"world"]; NSLog(@"count=%d", [arr count]); NSLog(@"[0]=%@", [arr objectAtIndex:0]); NSLog(@"last=%@", [arr lastObject]);', 'arr-basic');
+  assert.equal(arr1.status, 'ok');
+  assert.match(hostStreamText(), /empty=0/);
+  assert.match(hostStreamText(), /count=2/);
+  assert.match(hostStreamText(), /\[0\]=hello/);
+  assert.match(hostStreamText(), /last=world/);
+
+  // NSMutableArray: removeLastObject, removeAllObjects
+  const arr2 = execute('NSMutableArray *arr2 = [NSMutableArray array]; [arr2 addObject:@"a"]; [arr2 addObject:@"b"]; [arr2 addObject:@"c"]; [arr2 removeLastObject]; NSLog(@"after remove: count=%d last=%@", [arr2 count], [arr2 lastObject]); [arr2 removeAllObjects]; NSLog(@"after clear: count=%d", [arr2 count]);', 'arr-remove');
+  assert.equal(arr2.status, 'ok');
+  assert.match(hostStreamText(), /after remove: count=2 last=b/);
+  assert.match(hostStreamText(), /after clear: count=0/);
+
+  // NSMutableDictionary: setObject:forKey: and objectForKey:
+  const dict1 = execute('NSMutableDictionary *dict = [NSMutableDictionary dictionary]; [dict setObject:@"value1" forKey:@"key1"]; [dict setObject:@"value2" forKey:@"key2"]; NSLog(@"count=%d", [dict count]); NSLog(@"key1=%@", [dict objectForKey:@"key1"]); NSLog(@"missing=%@", [dict objectForKey:@"nope"]);', 'dict-basic');
+  assert.equal(dict1.status, 'ok');
+  assert.match(hostStreamText(), /count=2/);
+  assert.match(hostStreamText(), /key1=value1/);
+  assert.match(hostStreamText(), /missing=\(nil\)/);
+
+  // NSMutableDictionary: removeObjectForKey:
+  const dict2 = execute('NSMutableDictionary *d = [NSMutableDictionary dictionary]; [d setObject:@"v" forKey:@"k"]; NSLog(@"before=%d", [d count]); [d removeObjectForKey:@"k"]; NSLog(@"after=%d", [d count]);', 'dict-remove');
+  assert.equal(dict2.status, 'ok');
+  assert.match(hostStreamText(), /before=1/);
+  assert.match(hostStreamText(), /after=0/);
+
+  // NSMutableDictionary: setValue:forKey: and valueForKey:
+  const dict3 = execute('NSMutableDictionary *d = [NSMutableDictionary dictionary]; [d setValue:@"hello" forKey:@"greeting"]; NSLog(@"greeting=%@", [d valueForKey:@"greeting"]);', 'dict-kv');
+  assert.equal(dict3.status, 'ok');
+  assert.match(hostStreamText(), /greeting=hello/);
+
+  // for-in over NSMutableArray
+  const forinArr = execute('NSMutableArray *arr = [NSMutableArray array]; [arr addObject:@"x"]; [arr addObject:@"y"]; [arr addObject:@"z"]; for (NSString *s in arr) { NSLog(@"item=%@", s); }', 'forin-arr');
+  assert.equal(forinArr.status, 'ok');
+  assert.match(hostStreamText(), /item=x/);
+  assert.match(hostStreamText(), /item=y/);
+  assert.match(hostStreamText(), /item=z/);
+
+  // for-in over NSMutableDictionary (iterates keys)
+  const forinDict = execute('NSMutableDictionary *d = [NSMutableDictionary dictionary]; [d setObject:@"apple" forKey:@"fruit"]; [d setObject:@"carrot" forKey:@"veg"]; for (NSString *k in d) { NSLog(@"%@=%@", k, [d objectForKey:k]); }', 'forin-dict');
+  assert.equal(forinDict.status, 'ok');
+  assert.match(hostStreamText(), /fruit=apple/);
+  assert.match(hostStreamText(), /veg=carrot/);
+
+  // NSSet: setWithArray: and containsObject:
+  const set1 = execute('NSMutableArray *src = [NSMutableArray array]; [src addObject:@"a"]; [src addObject:@"b"]; [src addObject:@"a"]; NSSet *set = [NSSet setWithArray:src]; NSLog(@"set count=%d", [set count]); NSLog(@"has a=%d", [set containsObject:@"a"]); NSLog(@"has c=%d", [set containsObject:@"c"]);', 'set-basic');
+  assert.equal(set1.status, 'ok');
+  assert.match(hostStreamText(), /set count=2/);
+  assert.match(hostStreamText(), /has a=1/);
+  assert.match(hostStreamText(), /has c=0/);
+
+  // allKeys and allValues
+  const keysVals = execute('NSMutableDictionary *d = [NSMutableDictionary dictionary]; [d setObject:@"1" forKey:@"a"]; [d setObject:@"2" forKey:@"b"]; NSArray *keys = [d allKeys]; NSArray *vals = [d allValues]; NSLog(@"keys=%d vals=%d", [keys count], [vals count]);', 'keys-vals');
+  assert.equal(keysVals.status, 'ok');
+  assert.match(hostStreamText(), /keys=2 vals=2/);
+
+  // alloc/init for collections
+  const allocInit = execute('NSMutableArray *arr = [[NSMutableArray alloc] init]; [arr addObject:@"item"]; NSLog(@"alloc-init: count=%d %@", [arr count], [arr objectAtIndex:0]);', 'alloc-init');
+  assert.equal(allocInit.status, 'ok');
+  assert.match(hostStreamText(), /alloc-init: count=1 item/);
+
+  // NSNumber as dict key
+  const numKey = execute('NSMutableDictionary *d = [NSMutableDictionary dictionary]; NSNumber *key = [NSNumber numberWithInt:42]; [d setObject:@"found" forKey:key]; NSLog(@"numkey=%@", [d objectForKey:key]);', 'numkey');
+  assert.equal(numKey.status, 'ok');
+  assert.match(hostStreamText(), /numkey=found/);
+
+  // Cross-cell persistence
+  const crossCell1 = execute('NSMutableDictionary *globalDict = [NSMutableDictionary dictionary]; [globalDict setObject:@"persistent" forKey:@"data"];', 'cross1');
+  assert.equal(crossCell1.status, 'ok');
+  const crossCell2 = execute('NSLog(@"data=%@", [globalDict objectForKey:@"data"]);', 'cross2');
+  assert.equal(crossCell2.status, 'ok');
+  assert.match(hostStreamText(), /data=persistent/);
+
+  // count as expression result
+  const countExpr = execute('NSMutableArray *a = [NSMutableArray array]; [a addObject:@"x"]; [a addObject:@"y"]; [a count];', 'count-expr');
+  assert.equal(countExpr.status, 'ok');
+  assert.equal(countExpr.data['text/plain'], '2');
+
+  console.log('  collections: NSMutableArray, NSMutableDictionary, NSSet — PASS');
+}
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');

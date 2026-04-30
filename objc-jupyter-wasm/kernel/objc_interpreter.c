@@ -848,6 +848,133 @@ typedef struct {
 static InstanceVar g_instance_vars[MAX_INSTANCE_VARS];
 static unsigned int g_instance_var_count = 0;
 
+/* ── Collection side table ────────────────────────────────────────
+ * Foundation collections (NSDictionary, NSMutableDictionary, NSMutableArray,
+ * NSSet) are stored in a side table. Each collection gets a unique ID
+ * and is referenced by a string pool marker like "NSDict:5" or "NSMutArr:12".
+ * The collection data (key-value pairs, elements) is stored in
+ * g_coll_entries[] with the collection ID as the lookup key. */
+
+typedef struct {
+    unsigned int coll_id;     /* which collection this entry belongs to */
+    Value key;                /* key (for dicts) or element (for arrays/sets) */
+    Value value;              /* value (for dicts only) */
+} CollEntry;
+
+#define MAX_COLLECTIONS 64
+#define MAX_COLL_ENTRIES 512
+
+static unsigned int g_next_coll_id = 1;
+static CollEntry g_coll_entries[MAX_COLL_ENTRIES];
+static unsigned int g_coll_entry_count = 0;
+
+/* Count entries for a given collection ID. */
+static unsigned int coll_count(unsigned int coll_id) {
+    unsigned int i, count = 0;
+    for (i = 0; i < g_coll_entry_count; i++) {
+        if (g_coll_entries[i].coll_id == coll_id) count++;
+    }
+    return count;
+}
+
+/* Add an entry to a collection. Returns 0 on success, -1 if table full. */
+static int coll_add(unsigned int coll_id, Value key, Value value) {
+    if (g_coll_entry_count >= MAX_COLL_ENTRIES) return -1;
+    if (coll_id >= g_next_coll_id + MAX_COLLECTIONS) return -1;
+    g_coll_entries[g_coll_entry_count].coll_id = coll_id;
+    g_coll_entries[g_coll_entry_count].key = key;
+    g_coll_entries[g_coll_entry_count].value = value;
+    g_coll_entry_count++;
+    return 0;
+}
+
+/* Find an entry in a collection by key (for dicts/sets). Returns index or -1. */
+static int coll_find_by_key(unsigned int coll_id, Value *key) {
+    unsigned int i;
+    for (i = 0; i < g_coll_entry_count; i++) {
+        if (g_coll_entries[i].coll_id != coll_id) continue;
+        /* Compare keys: int by value, id by string content (not pointer) */
+        if (key->is_int && g_coll_entries[i].key.is_int &&
+            key->int_val == g_coll_entries[i].key.int_val) return (int)i;
+        if (key->is_id && g_coll_entries[i].key.is_id &&
+            key->obj_val != 0 && g_coll_entries[i].key.obj_val != 0) {
+            /* String content comparison — two different @"key" literals
+             * may have different string pool pointers but same content. */
+            if (cstr_eq((const char *)key->obj_val, (const char *)g_coll_entries[i].key.obj_val))
+                return (int)i;
+        }
+    }
+    return -1;
+}
+
+/* Remove an entry at index. */
+static void coll_remove_at(unsigned int idx) {
+    unsigned int i;
+    for (i = (unsigned int)idx; i < g_coll_entry_count - 1; i++) {
+        g_coll_entries[i] = g_coll_entries[i + 1];
+    }
+    g_coll_entry_count--;
+}
+
+/* Remove all entries for a collection ID. */
+static void coll_remove_all(unsigned int coll_id) {
+    unsigned int i = 0;
+    while (i < g_coll_entry_count) {
+        if (g_coll_entries[i].coll_id == coll_id) {
+            coll_remove_at(i);
+        } else {
+            i++;
+        }
+    }
+}
+
+/* Get the Nth entry for a collection (for array indexing). Returns index or -1. */
+static int coll_get_nth(unsigned int coll_id, unsigned int n) {
+    unsigned int i, count = 0;
+    for (i = 0; i < g_coll_entry_count; i++) {
+        if (g_coll_entries[i].coll_id == coll_id) {
+            if (count == n) return (int)i;
+            count++;
+        }
+    }
+    return -1;
+}
+
+/* Parse a collection ID from a marker string like "NSDict:5" or "NSMutArr:12".
+ * Returns the ID, or 0 if not a valid collection marker. */
+static unsigned int coll_id_from_marker(const char *s, const char *prefix) {
+    unsigned int prefix_len = cstr_len(prefix);
+    unsigned int id = 0;
+    unsigned int i;
+    if (!cstr_eq_n(s, prefix, prefix_len)) return 0;
+    for (i = prefix_len; s[i] >= '0' && s[i] <= '9'; i++) {
+        id = id * 10 + (unsigned int)(s[i] - '0');
+    }
+    return id;
+}
+
+/* Create a collection marker string in the string pool. */
+static id coll_make_marker(const char *prefix, unsigned int coll_id) {
+    char buf[64];
+    unsigned int pos = cstr_len(prefix);
+    unsigned int tmp = coll_id;
+    unsigned int digits;
+    cstr_copy(buf, prefix, 64);
+    /* Count digits */
+    digits = 0;
+    if (tmp == 0) digits = 1;
+    else { unsigned int t = tmp; while (t > 0) { digits++; t /= 10; } }
+    /* Write digits */
+    { unsigned int t = tmp; unsigned int d = digits; do { d--; buf[pos + d] = '0' + (t % 10); t /= 10; } while (t > 0); }
+    buf[pos + digits] = '\0';
+    {
+        char *result = string_pool_alloc(pos + digits + 1);
+        if (result == 0) return (id)"";
+        cstr_copy(result, buf, pos + digits + 1);
+        return (id)result;
+    }
+}
+
 /* Look up an instance variable in the side table.
  * Returns pointer to the value (mutable), or 0 if not found. */
 static Value *instance_var_get(id object, const char *prop_name) {
@@ -1401,6 +1528,29 @@ static Value parse_message_send(Parser *p) {
 
         /* Built-in: [obj init] → return self (standard NSObject pattern) */
         if (cstr_eq(sel_name, "init") && target.is_id && receiver != 0) {
+            /* Check if receiver is an FDObj: marker for a collection class.
+             * If so, create a proper collection marker instead of returning
+             * the FDObj: marker. */
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "FDObj:", 6)) {
+                const char *cls_name = s + 6;
+                unsigned int cid = g_next_coll_id++;
+                if (cstr_eq(cls_name, "NSMutableArray")) {
+                    return value_from_id(coll_make_marker("NSMutArr:", cid));
+                }
+                if (cstr_eq(cls_name, "NSMutableDictionary")) {
+                    return value_from_id(coll_make_marker("NSMutDict:", cid));
+                }
+                if (cstr_eq(cls_name, "NSArray")) {
+                    return value_from_id(coll_make_marker("NSArr:", cid));
+                }
+                if (cstr_eq(cls_name, "NSDictionary")) {
+                    return value_from_id(coll_make_marker("NSDict:", cid));
+                }
+                if (cstr_eq(cls_name, "NSSet")) {
+                    return value_from_id(coll_make_marker("NSSet:", cid));
+                }
+            }
             return value_from_id(receiver);
         }
 
@@ -1610,27 +1760,220 @@ static Value parse_message_send(Parser *p) {
             return value_from_id(receiver);
         }
 
-        /* NSArray: [NSArray arrayWithObjects:obj1, obj2, nil] → not supported in our subset.
-         * We provide a minimal array via a global variable approach. */
+        /* ── Foundation collection dispatch ──────────────────────── */
+
+        /* NSArray: [NSArray array] → empty immutable array */
         if (IS_FOUNDATION_CLASS("NSArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
-            /* Return an empty array marker */
-            return value_from_id((id)"NSArray:empty");
+            unsigned int cid = g_next_coll_id++;
+            return value_from_id(coll_make_marker("NSArr:", cid));
         }
 
-        /* NSArray: [arr count] → parse from NSArray encoding */
-        if (cstr_eq(sel_name, "count") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
-            if (cstr_eq_n(s, "NSArray:", 8)) {
-                /* Parse count from "NSArray:count:..." */
-                if (cstr_eq_n(s, "NSArray:count:", 13)) {
-                    int val = 0;
-                    unsigned int i = 13;
-                    while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
-                    return value_from_int(val);
+        /* NSMutableArray: [NSMutableArray arrayWithCapacity:n] → empty mutable array */
+        if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "arrayWithCapacity:") && arg_count >= 1) {
+            unsigned int cid = g_next_coll_id++;
+            return value_from_id(coll_make_marker("NSMutArr:", cid));
+        }
+
+        /* NSMutableArray: [NSMutableArray array] → empty mutable array */
+        if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
+            unsigned int cid = g_next_coll_id++;
+            return value_from_id(coll_make_marker("NSMutArr:", cid));
+        }
+
+        /* NSDictionary: [NSDictionary dictionary] → empty immutable dict */
+        if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
+            unsigned int cid = g_next_coll_id++;
+            return value_from_id(coll_make_marker("NSDict:", cid));
+        }
+
+        /* NSMutableDictionary: [NSMutableDictionary dictionaryWithCapacity:n] → empty mutable dict */
+        if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithCapacity:") && arg_count >= 1) {
+            unsigned int cid = g_next_coll_id++;
+            return value_from_id(coll_make_marker("NSMutDict:", cid));
+        }
+
+        /* NSMutableDictionary: [NSMutableDictionary dictionary] → empty mutable dict */
+        if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
+            unsigned int cid = g_next_coll_id++;
+            return value_from_id(coll_make_marker("NSMutDict:", cid));
+        }
+
+        /* NSSet: [NSSet setWithArray:arr] → set from array */
+        if (IS_FOUNDATION_CLASS("NSSet") && target.is_class && cstr_eq(sel_name, "setWithArray:") && arg_count >= 1) {
+            unsigned int cid = g_next_coll_id++;
+            const char *arr_s = (const char *)keyword_args[0].obj_val;
+            unsigned int arr_cid = coll_id_from_marker(arr_s, "NSArr:");
+            if (arr_cid == 0) arr_cid = coll_id_from_marker(arr_s, "NSMutArr:");
+            if (arr_cid > 0) {
+                /* Copy unique elements from array to set */
+                unsigned int i;
+                for (i = 0; i < g_coll_entry_count; i++) {
+                    if (g_coll_entries[i].coll_id == arr_cid) {
+                        /* Check if already in set */
+                        int existing = coll_find_by_key(cid, &g_coll_entries[i].key);
+                        if (existing < 0) {
+                            coll_add(cid, g_coll_entries[i].key, g_coll_entries[i].value);
+                        }
+                    }
                 }
-                return value_from_int(0);
             }
-            /* Not an NSArray — fall through to property/method dispatch */
+            return value_from_id(coll_make_marker("NSSet:", cid));
+        }
+
+        /* ── Instance method dispatch on collection objects ────── */
+
+        {
+            unsigned int cid = 0;
+            const char *s = (const char *)receiver;
+
+            /* Try to identify the collection type and ID */
+            if (target.is_id && receiver != 0) {
+                cid = coll_id_from_marker(s, "NSArr:");
+                if (cid == 0) cid = coll_id_from_marker(s, "NSMutArr:");
+                if (cid == 0) cid = coll_id_from_marker(s, "NSDict:");
+                if (cid == 0) cid = coll_id_from_marker(s, "NSMutDict:");
+                if (cid == 0) cid = coll_id_from_marker(s, "NSSet:");
+            }
+
+            if (cid > 0) {
+                /* [coll count] → number of entries */
+                if (cstr_eq(sel_name, "count")) {
+                    return value_from_int((int)coll_count(cid));
+                }
+
+                /* [arr objectAtIndex:i] → element at index */
+                if (cstr_eq(sel_name, "objectAtIndex:") && arg_count >= 1 && keyword_args[0].is_int) {
+                    int idx = coll_get_nth(cid, (unsigned int)keyword_args[0].int_val);
+                    if (idx >= 0) {
+                        return g_coll_entries[idx].key;
+                    }
+                    return value_from_id((id)"(nil)");
+                }
+
+                /* [mutArr addObject:obj] → append element */
+                if (cstr_eq(sel_name, "addObject:") && arg_count >= 1) {
+                    Value elem = keyword_args[0];
+                    Value dummy = value_void();
+                    if (coll_add(cid, elem, dummy) != 0) {
+                        nslog_append("warning: collection entry table full\n", 38);
+                    }
+                    return value_from_id(receiver);
+                }
+
+                /* [mutArr removeLastObject] → remove last element */
+                if (cstr_eq(sel_name, "removeLastObject")) {
+                    unsigned int cnt = coll_count(cid);
+                    if (cnt > 0) {
+                        int idx = coll_get_nth(cid, cnt - 1);
+                        if (idx >= 0) coll_remove_at((unsigned int)idx);
+                    }
+                    return value_from_id(receiver);
+                }
+
+                /* [dict objectForKey:key] → value for key */
+                if (cstr_eq(sel_name, "objectForKey:") && arg_count >= 1) {
+                    int idx = coll_find_by_key(cid, &keyword_args[0]);
+                    if (idx >= 0) return g_coll_entries[idx].value;
+                    return value_from_id((id)"(nil)");
+                }
+
+                /* [mutDict setObject:obj forKey:key] → set key-value */
+                if (cstr_eq(sel_name, "setObject:forKey:") && arg_count >= 2) {
+                    Value val = keyword_args[0];  /* first arg after setObject: */
+                    Value key = keyword_args[1];   /* second arg after forKey: */
+                    int idx = coll_find_by_key(cid, &key);
+                    if (idx >= 0) {
+                        g_coll_entries[idx].value = val;
+                    } else {
+                        if (coll_add(cid, key, val) != 0) {
+                            nslog_append("warning: collection entry table full\n", 38);
+                        }
+                    }
+                    return value_from_id(receiver);
+                }
+
+                /* [mutDict removeObjectForKey:key] → remove entry */
+                if (cstr_eq(sel_name, "removeObjectForKey:") && arg_count >= 1) {
+                    int idx = coll_find_by_key(cid, &keyword_args[0]);
+                    if (idx >= 0) coll_remove_at((unsigned int)idx);
+                    return value_from_id(receiver);
+                }
+
+                /* [dict allKeys] → array of keys */
+                if (cstr_eq(sel_name, "allKeys")) {
+                    unsigned int new_cid = g_next_coll_id++;
+                    unsigned int i;
+                    for (i = 0; i < g_coll_entry_count; i++) {
+                        if (g_coll_entries[i].coll_id == cid) {
+                            Value dummy = value_void();
+                            coll_add(new_cid, g_coll_entries[i].key, dummy);
+                        }
+                    }
+                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                }
+
+                /* [set containsObject:obj] → BOOL */
+                if (cstr_eq(sel_name, "containsObject:") && arg_count >= 1) {
+                    int idx = coll_find_by_key(cid, &keyword_args[0]);
+                    return value_from_int(idx >= 0 ? 1 : 0);
+                }
+
+                /* [dict setObject:forKey: — alternate keyword arg parsing
+                 * The selector "setObject:forKey:" has two keyword parts.
+                 * keyword_args[0] is the object, keyword_args[1] is the key.
+                 * This is already handled above. */
+
+                /* [mutColl removeAllObjects] → remove all entries */
+                if (cstr_eq(sel_name, "removeAllObjects")) {
+                    coll_remove_all(cid);
+                    return value_from_id(receiver);
+                }
+
+                /* [dict allValues] → array of values */
+                if (cstr_eq(sel_name, "allValues")) {
+                    unsigned int new_cid = g_next_coll_id++;
+                    unsigned int i;
+                    for (i = 0; i < g_coll_entry_count; i++) {
+                        if (g_coll_entries[i].coll_id == cid) {
+                            Value dummy = value_void();
+                            coll_add(new_cid, g_coll_entries[i].value, dummy);
+                        }
+                    }
+                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                }
+
+                /* [arr lastObject] → last element or nil */
+                if (cstr_eq(sel_name, "lastObject")) {
+                    unsigned int cnt = coll_count(cid);
+                    if (cnt > 0) {
+                        int idx = coll_get_nth(cid, cnt - 1);
+                        if (idx >= 0) return g_coll_entries[idx].key;
+                    }
+                    return value_from_id((id)"(nil)");
+                }
+
+                /* [dict valueForKey:key] → same as objectForKey: */
+                if (cstr_eq(sel_name, "valueForKey:") && arg_count >= 1) {
+                    int idx = coll_find_by_key(cid, &keyword_args[0]);
+                    if (idx >= 0) return g_coll_entries[idx].value;
+                    return value_from_id((id)"(nil)");
+                }
+
+                /* [mutDict setValue:val forKey:key] → same as setObject:forKey: */
+                if (cstr_eq(sel_name, "setValue:forKey:") && arg_count >= 2) {
+                    Value val = keyword_args[0];
+                    Value key = keyword_args[1];
+                    int idx = coll_find_by_key(cid, &key);
+                    if (idx >= 0) {
+                        g_coll_entries[idx].value = val;
+                    } else {
+                        if (coll_add(cid, key, val) != 0) {
+                            nslog_append("warning: collection entry table full\n", 38);
+                        }
+                    }
+                    return value_from_id(receiver);
+                }
+            }
         }
 
         /* Check if this selector matches an interpreter-registered method.
@@ -4014,48 +4357,55 @@ static Value eval_ast(AstNode *node, const char *source) {
     case AST_FOR_IN: {
         /* for (type var in collection) { body }
          * Evaluate the collection expression, then iterate.
-         * For NSArray: iterate by index using [arr count] and [arr objectAtIndex:i].
-         * For NSString: iterate by character.
-         * For NSDictionary: iterate by key (not yet supported). */
+         * For NSArray/NSMutableArray: iterate by index, yield elements.
+         * For NSDictionary/NSMutableDictionary: iterate by keys.
+         * For NSSet: iterate by elements.
+         * For NSString: iterate by character. */
         Value coll = eval_source_range(node->for_in.collection_start,
                                        node->for_in.collection_len, source);
         const char *coll_str = (const char *)coll.obj_val;
-        int is_nsarray = (coll.is_id && coll_str != 0 &&
-                          cstr_eq_n(coll_str, "NSArray:", 8));
-        int is_nsstring = (coll.is_id && coll_str != 0 &&
-                           !cstr_eq_n(coll_str, "NSArray:", 8) &&
-                           !cstr_eq_n(coll_str, "NSNumber:", 9) &&
-                           !cstr_eq_n(coll_str, "FDObj:", 6));
+        unsigned int cid = 0;
+        int is_nsstring = 0;
 
-        if (is_nsarray) {
-            /* NSArray: iterate by count */
-            int count = 0;
-            const char *s = coll_str;
-            if (cstr_eq_n(s, "NSArray:count:", 13)) {
-                unsigned int i = 13;
-                while (s[i] >= '0' && s[i] <= '9') count = count * 10 + (s[i++] - '0');
+        if (coll.is_id && coll_str != 0) {
+            cid = coll_id_from_marker(coll_str, "NSArr:");
+            if (cid == 0) cid = coll_id_from_marker(coll_str, "NSMutArr:");
+            if (cid == 0) cid = coll_id_from_marker(coll_str, "NSDict:");
+            if (cid == 0) cid = coll_id_from_marker(coll_str, "NSMutDict:");
+            if (cid == 0) cid = coll_id_from_marker(coll_str, "NSSet:");
+            if (cid == 0) {
+                /* Not a collection marker — check if it's a string */
+                is_nsstring = (!cstr_eq_n(coll_str, "NSNumber:", 9) &&
+                               !cstr_eq_n(coll_str, "FDObj:", 6));
             }
-            /* Iterate */
-            {
-                int idx;
-                for (idx = 0; idx < count; idx++) {
-                    InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
-                    if (var) {
-                        /* Return the element at this index.
-                         * For our simple array encoding, we just
-                         * return the index as an int for now. */
-                        var->is_int = 1;
-                        var->int_value = idx;
-                        var->is_id = 0;
-                    }
-                    g_break_pending = 0;
-                    g_continue_pending = 0;
-                    eval_ast(node->for_in.body, source);
-                    if (g_break_pending) { g_break_pending = 0; break; }
-                    if (g_continue_pending) { g_continue_pending = 0; continue; }
-                    if (g_return_pending) return last;
-                    if (interp_should_interrupt()) return last;
+        }
+
+        if (cid > 0) {
+            /* Collection iteration using side table */
+            unsigned int cnt = coll_count(cid);
+            unsigned int idx;
+            for (idx = 0; idx < cnt; idx++) {
+                int entry_idx = coll_get_nth(cid, idx);
+                if (entry_idx < 0) break;
+                InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
+                if (var) {
+                    /* For dicts, yield the key; for arrays/sets, yield the element */
+                    var->is_id = g_coll_entries[entry_idx].key.is_id;
+                    var->value = g_coll_entries[entry_idx].key.obj_val;
+                    var->is_int = g_coll_entries[entry_idx].key.is_int;
+                    var->int_value = g_coll_entries[entry_idx].key.int_val;
+                    var->is_class = g_coll_entries[entry_idx].key.is_class;
+                    var->cls = g_coll_entries[entry_idx].key.cls_val;
+                    var->is_sel = g_coll_entries[entry_idx].key.is_sel;
+                    var->sel = g_coll_entries[entry_idx].key.sel_val;
                 }
+                g_break_pending = 0;
+                g_continue_pending = 0;
+                eval_ast(node->for_in.body, source);
+                if (g_break_pending) { g_break_pending = 0; break; }
+                if (g_continue_pending) { g_continue_pending = 0; continue; }
+                if (g_return_pending) return last;
+                if (interp_should_interrupt()) return last;
             }
         } else if (is_nsstring) {
             /* NSString: iterate by character */
@@ -4287,6 +4637,25 @@ void objc_interp_gc_strings(void) {
             }
         }
     }
+    /* Mark collection entry keys and values that are string pool pointers */
+    for (i = 0; i < g_coll_entry_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+        if (g_coll_entries[i].key.is_id && g_coll_entries[i].key.obj_val != 0) {
+            const char *ptr = (const char *)g_coll_entries[i].key.obj_val;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
+                relocs[reloc_count].new_off = 0;
+                reloc_count++;
+            }
+        }
+        if (g_coll_entries[i].value.is_id && g_coll_entries[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_coll_entries[i].value.obj_val;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
+                relocs[reloc_count].new_off = 0;
+                reloc_count++;
+            }
+        }
+    }
 
     if (reloc_count == 0) {
         g_string_pool_offset = 0;
@@ -4374,6 +4743,35 @@ void objc_interp_gc_strings(void) {
             }
         }
     }
+    /* Update collection entry keys and values that are string pool pointers */
+    for (i = 0; i < g_coll_entry_count; i++) {
+        if (g_coll_entries[i].key.is_id && g_coll_entries[i].key.obj_val != 0) {
+            const char *ptr = (const char *)g_coll_entries[i].key.obj_val;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
+                unsigned int r;
+                for (r = 0; r < reloc_count; r++) {
+                    if (relocs[r].old_off == off) {
+                        g_coll_entries[i].key.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                        break;
+                    }
+                }
+            }
+        }
+        if (g_coll_entries[i].value.is_id && g_coll_entries[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_coll_entries[i].value.obj_val;
+            if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
+                unsigned int r;
+                for (r = 0; r < reloc_count; r++) {
+                    if (relocs[r].old_off == off) {
+                        g_coll_entries[i].value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 /* ── Public API ─────────────────────────────────────────────────── */
@@ -4388,6 +4786,8 @@ void objc_interp_init(void) {
     g_method_count = 0;
     g_property_count = 0;
     g_instance_var_count = 0;
+    g_next_coll_id = 1;
+    g_coll_entry_count = 0;
 
     /* Register Foundation class names as variables with is_class=1.
      * We don't call objc_allocateClassPair (it can cause WASM traps).
