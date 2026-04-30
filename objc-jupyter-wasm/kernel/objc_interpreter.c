@@ -749,8 +749,24 @@ static Value g_return_value;
 /* String pool for string literals and Foundation object encoding.
  * Shared between parse_primary (string literals) and parse_message_send
  * (Foundation stubs like NSNumber, stringByAppendingString). */
-static char g_string_pool[4096];
+#define OBJC_INTERP_STRING_POOL_SIZE 65536
+static char g_string_pool[OBJC_INTERP_STRING_POOL_SIZE];
 static unsigned int g_string_pool_offset = 0;
+
+/* Allocate `size` bytes from the string pool.
+ * Returns pointer to the start of the allocation, or 0 if the pool is full.
+ * The pool is append-only — strings persist for the lifetime of the kernel.
+ * This is safe because the interpreter never frees string pool entries. */
+static char *string_pool_alloc(unsigned int size) {
+    if (g_string_pool_offset + size > OBJC_INTERP_STRING_POOL_SIZE) {
+        return 0; /* pool full — caller must handle */
+    }
+    {
+        char *ptr = g_string_pool + g_string_pool_offset;
+        g_string_pool_offset += size;
+        return ptr;
+    }
+}
 
 /* Method implementation context — stored for interpreter method dispatch */
 typedef struct {
@@ -771,6 +787,7 @@ static unsigned int g_method_count = 0;
  * used by @synthesize to auto-generate getter/setter methods. */
 typedef struct {
     char name[64];       /* property name */
+    char ivar_name[64];  /* ivar name from @synthesize (e.g., _count from @synthesize count = _count) */
     char type_name[64];  /* type: int, id, Class, SEL, etc. */
     char class_name[64]; /* which class this property belongs to */
     int is_int;          /* 1 if type is int */
@@ -825,6 +842,40 @@ static void instance_var_set(id object, const char *prop_name, Value val) {
         cstr_copy(g_instance_vars[g_instance_var_count].prop_name, prop_name, 64);
         g_instance_vars[g_instance_var_count].value = val;
         g_instance_var_count++;
+    }
+}
+
+/* Check if a variable name is a synthesized ivar name.
+ * Returns the property index if found, or -1 if not.
+ * This is used to redirect ivar access in method bodies to the side table. */
+static int find_synthesized_ivar(const char *var_name) {
+    unsigned int pi;
+    for (pi = 0; pi < g_property_count; pi++) {
+        if (g_properties[pi].synthesized &&
+            g_properties[pi].ivar_name[0] != '\0' &&
+            cstr_eq(var_name, g_properties[pi].ivar_name)) {
+            return (int)pi;
+        }
+    }
+    return -1;
+}
+
+/* Read a synthesized ivar value from the side table.
+ * Returns the value, or value_void() if not found. */
+static Value synthesized_ivar_get(id self, const char *var_name) {
+    int pi = find_synthesized_ivar(var_name);
+    if (pi >= 0) {
+        Value *val = instance_var_get(self, g_properties[pi].name);
+        if (val) return *val;
+    }
+    return value_void();
+}
+
+/* Write a synthesized ivar value to the side table. */
+static void synthesized_ivar_set(id self, const char *var_name, Value val) {
+    int pi = find_synthesized_ivar(var_name);
+    if (pi >= 0) {
+        instance_var_set(self, g_properties[pi].name, val);
     }
 }
 
@@ -1031,7 +1082,19 @@ static void eval_nslog(Parser *p) {
                             nslog_append((const char *)v.obj_val,
                                          cstr_len((const char *)v.obj_val));
                         } else if (v.is_class && v.cls_val != 0) {
-                            const char *name = class_getName(v.cls_val);
+                            /* Look up class name from variable table
+                             * (class_getName crashes on sentinel pointers) */
+                            const char *name = 0;
+                            {
+                                unsigned int vi;
+                                for (vi = 0; vi < g_var_count; vi++) {
+                                    if (g_vars[vi].is_class && g_vars[vi].cls == v.cls_val) {
+                                        name = g_vars[vi].name;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (name == 0) name = "Class";
                             nslog_append(name, cstr_len(name));
                         } else if (v.is_int) {
                             nslog_append_int(v.int_val);
@@ -1227,12 +1290,9 @@ static Value parse_message_send(Parser *p) {
          * (like C strings from the string pool) — it causes WASM traps.
          * So we only call it for class targets, not id targets. */
         if (target.is_class && target.cls_val) {
-            /* Check if it's a real class first */
-            const char *name = class_getName(target.cls_val);
-            if (name && name[0] != '\0') {
-                target_class_name = name;
-            }
-            /* Look up in variable table for Foundation class name */
+            /* Look up class name from variable table.
+             * We can't call class_getName on sentinel pointers (crashes in WASM).
+             * Sentinel pointers: Foundation classes (1-9), custom classes (100+). */
             {
                 unsigned int vi;
                 for (vi = 0; vi < g_var_count; vi++) {
@@ -1251,69 +1311,35 @@ static Value parse_message_send(Parser *p) {
         #define IS_FOUNDATION_CLASS(name) \
             (target_class_name && cstr_eq(target_class_name, name))
 
-        /* Built-in: [ClassName alloc] → class_createInstance */
+        /* Built-in: [ClassName alloc] → return FDObj: marker for all classes.
+         * In WASM, class_createInstance crashes on sentinel pointers,
+         * so we use the FDObj: marker approach for ALL classes (not just
+         * Foundation). Custom classes get sentinel pointers >= 100. */
         if (target.is_class && cstr_eq(sel_name, "alloc")) {
-            /* Check if this is a Foundation class (sentinel pointer) */
-            if (target_class_name && (
-                cstr_eq(target_class_name, "NSObject") ||
-                cstr_eq(target_class_name, "NSString") ||
-                cstr_eq(target_class_name, "NSNumber") ||
-                cstr_eq(target_class_name, "NSArray") ||
-                cstr_eq(target_class_name, "NSMutableArray") ||
-                cstr_eq(target_class_name, "NSDictionary") ||
-                cstr_eq(target_class_name, "NSMutableDictionary") ||
-                cstr_eq(target_class_name, "NSSet") ||
-                cstr_eq(target_class_name, "NSData")
-            )) {
-                /* Foundation class alloc — return a marker string.
-                 * We can't use class_createInstance on sentinel pointers. */
-                char *buf;
-                unsigned int name_len;
-                if (40 > 4096 - g_string_pool_offset) g_string_pool_offset = 0;
-                buf = g_string_pool + g_string_pool_offset;
-                cstr_copy(buf, "FDObj:", 4096 - g_string_pool_offset);
-                name_len = cstr_len(target_class_name);
-                cstr_copy(buf + 6, target_class_name, 4096 - g_string_pool_offset - 6);
-                g_string_pool_offset += 6 + name_len + 1;
+            if (target_class_name) {
+                unsigned int name_len = cstr_len(target_class_name);
+                unsigned int needed = 6 + name_len + 1;
+                char *buf = string_pool_alloc(needed);
+                if (buf == 0) return value_from_id((id)"FDObj:overflow");
+                cstr_copy(buf, "FDObj:", needed);
+                cstr_copy(buf + 6, target_class_name, needed - 6);
                 return value_from_id((id)buf);
             }
-            id instance = (id)0;
-            instance = class_createInstance(target.cls_val, 0);
-            if (instance == 0) {
-                nslog_append("[alloc] failed for class ", 27);
-                nslog_append(class_getName(target.cls_val),
-                             cstr_len(class_getName(target.cls_val)));
-                nslog_append("\n", 1);
-            }
-            return value_from_id(instance);
+            return value_from_id((id)0);
         }
 
-        /* Built-in: [ClassName new] → [[ClassName alloc] init] */
+        /* Built-in: [ClassName new] → same as alloc (returns FDObj: marker) */
         if (target.is_class && cstr_eq(sel_name, "new")) {
-            /* Same Foundation class check as alloc */
-            if (target_class_name && (
-                cstr_eq(target_class_name, "NSObject") ||
-                cstr_eq(target_class_name, "NSString") ||
-                cstr_eq(target_class_name, "NSNumber") ||
-                cstr_eq(target_class_name, "NSArray") ||
-                cstr_eq(target_class_name, "NSMutableArray") ||
-                cstr_eq(target_class_name, "NSDictionary") ||
-                cstr_eq(target_class_name, "NSMutableDictionary") ||
-                cstr_eq(target_class_name, "NSSet") ||
-                cstr_eq(target_class_name, "NSData")
-            )) {
-                char *buf;
-                unsigned int name_len;
-                if (40 > 4096 - g_string_pool_offset) g_string_pool_offset = 0;
-                buf = g_string_pool + g_string_pool_offset;
-                cstr_copy(buf, "FDObj:", 4096 - g_string_pool_offset);
-                name_len = cstr_len(target_class_name);
-                cstr_copy(buf + 6, target_class_name, 4096 - g_string_pool_offset - 6);
-                g_string_pool_offset += 6 + name_len + 1;
+            if (target_class_name) {
+                unsigned int name_len = cstr_len(target_class_name);
+                unsigned int needed = 6 + name_len + 1;
+                char *buf = string_pool_alloc(needed);
+                if (buf == 0) return value_from_id((id)"FDObj:overflow");
+                cstr_copy(buf, "FDObj:", needed);
+                cstr_copy(buf + 6, target_class_name, needed - 6);
                 return value_from_id((id)buf);
             }
-            id instance = class_createInstance(target.cls_val, 0);
-            return value_from_id(instance);
+            return value_from_id((id)0);
         }
 
         /* Built-in: [obj init] → return self (standard NSObject pattern) */
@@ -1451,13 +1477,11 @@ static Value parse_message_send(Parser *p) {
             unsigned int alen = cstr_len(a);
             unsigned int blen = cstr_len(b);
             char *result;
-            if (alen + blen + 1 > 4096 - g_string_pool_offset) {
-                g_string_pool_offset = 0;
-            }
-            result = g_string_pool + g_string_pool_offset;
-            cstr_copy(result, a, 4096 - g_string_pool_offset);
-            cstr_copy(result + alen, b, 4096 - g_string_pool_offset - alen);
-            g_string_pool_offset += alen + blen + 1;
+            unsigned int needed = alen + blen + 1;
+            result = string_pool_alloc(needed);
+            if (result == 0) return value_from_id(receiver);
+            cstr_copy(result, a, needed);
+            cstr_copy(result + alen, b, needed - alen);
             return value_from_id((id)result);
         }
 
@@ -1477,9 +1501,9 @@ static Value parse_message_send(Parser *p) {
                 int v = keyword_args[0].int_val;
                 int neg = v < 0;
                 unsigned int pos = 9; /* after "NSNumber:" */
-                if (30 > 4096 - g_string_pool_offset) g_string_pool_offset = 0;
-                buf = g_string_pool + g_string_pool_offset;
-                cstr_copy(buf, "NSNumber:", 10);
+                buf = string_pool_alloc(30);
+                if (buf == 0) return value_from_int(keyword_args[0].int_val);
+                cstr_copy(buf, "NSNumber:", 30);
                 if (neg) { v = -v; buf[pos++] = '-'; }
                 if (v == 0) { buf[pos++] = '0'; }
                 else {
@@ -1489,7 +1513,6 @@ static Value parse_message_send(Parser *p) {
                     while (ti > 0) buf[pos++] = tmp[--ti];
                 }
                 buf[pos] = '\0';
-                g_string_pool_offset += pos + 1;
                 return value_from_id((id)buf);
             }
             return value_from_id(args[0]);
@@ -1572,9 +1595,23 @@ static Value parse_message_send(Parser *p) {
                     if (target.is_class && g_methods[mi].class_ptr == target.cls_val) {
                         /* OK — class method target matches */
                     } else if (target.is_id && receiver != 0 &&
-                               (const char *)receiver >= g_string_pool &&
-                               (const char *)receiver < g_string_pool + 4096) {
-                        /* Receiver is a C string from the string pool — skip class check */
+                               cstr_starts((const char *)receiver, "FDObj:")) {
+                        /* Receiver is an FDObj: marker — check class by name.
+                         * Extract class name from FDObj:ClassName and look up
+                         * the class pointer in the variable table. */
+                        const char *recv_class_name = (const char *)receiver + 6;
+                        Class recv_cls = 0;
+                        {
+                            unsigned int vi;
+                            for (vi = 0; vi < g_var_count; vi++) {
+                                if (g_vars[vi].is_class &&
+                                    cstr_eq(g_vars[vi].name, recv_class_name)) {
+                                    recv_cls = g_vars[vi].cls;
+                                    break;
+                                }
+                            }
+                        }
+                        if (recv_cls != g_methods[mi].class_ptr) continue;
                     } else if (target.is_id && receiver != 0) {
                         /* Receiver might be a valid ObjC object — check class.
                          * If object_getClass returns 0 (e.g., WASM runtime
@@ -1603,10 +1640,11 @@ static Value parse_message_send(Parser *p) {
                 unsigned int saved_scope_base = g_var_scope_base;
                 Value return_val;
 
-                /* Set scope base so method-local variables don't shadow
-                 * or overwrite top-level variables. interp_find_var
-                 * will only search indices >= g_var_scope_base. */
-                g_var_scope_base = saved_var_count;
+                /* Set scope base to 0 so methods can access global variables
+                 * (including ivars declared in @implementation bodies).
+                 * Method-local variables are still isolated because we
+                 * restore g_var_count after the method returns. */
+                g_var_scope_base = 0;
 
                 /* Set up self and _cmd as NEW variables in the method scope */
                 {
@@ -1647,6 +1685,39 @@ static Value parse_message_send(Parser *p) {
                     }
                 }
 
+                /* Inject synthesized ivar values as variables so method
+                 * bodies can access them (e.g., _count in increment). */
+                {
+                    unsigned int pi;
+                    for (pi = 0; pi < g_property_count; pi++) {
+                        if (g_properties[pi].synthesized &&
+                            g_properties[pi].ivar_name[0] != '\0') {
+                            InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
+                            if (ivar_var) {
+                                Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                                if (stored) {
+                                    ivar_var->is_id = stored->is_id;
+                                    ivar_var->value = stored->obj_val;
+                                    ivar_var->is_int = stored->is_int;
+                                    ivar_var->int_value = stored->int_val;
+                                    ivar_var->is_class = stored->is_class;
+                                    ivar_var->cls = stored->cls_val;
+                                    ivar_var->is_sel = stored->is_sel;
+                                    ivar_var->sel = stored->sel_val;
+                                } else {
+                                    /* No value yet — default to 0 */
+                                    ivar_var->is_int = g_properties[pi].is_int;
+                                    ivar_var->int_value = 0;
+                                    ivar_var->is_id = !g_properties[pi].is_int;
+                                    ivar_var->value = 0;
+                                    ivar_var->is_class = 0;
+                                    ivar_var->is_sel = 0;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 /* Execute the method body.
                  * Use eval_source_range instead of objc_interp to avoid
                  * destroying the caller's AST (objc_interp resets g_ast_count). */
@@ -1654,6 +1725,30 @@ static Value parse_message_send(Parser *p) {
                 {
                     Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
                     (void)v;
+                }
+
+                /* Write back synthesized ivar values to the side table */
+                {
+                    unsigned int pi;
+                    for (pi = 0; pi < g_property_count; pi++) {
+                        if (g_properties[pi].synthesized &&
+                            g_properties[pi].ivar_name[0] != '\0') {
+                            InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                            if (ivar_var) {
+                                Value ivar_val;
+                                ivar_val.obj_val = ivar_var->value;
+                                ivar_val.cls_val = ivar_var->cls;
+                                ivar_val.sel_val = ivar_var->sel;
+                                ivar_val.int_val = ivar_var->int_value;
+                                ivar_val.is_int = ivar_var->is_int;
+                                ivar_val.is_class = ivar_var->is_class;
+                                ivar_val.is_sel = ivar_var->is_sel;
+                                ivar_val.is_id = ivar_var->is_id;
+                                ivar_val.is_void = 0;
+                                instance_var_set(receiver, g_properties[pi].name, ivar_val);
+                            }
+                        }
+                    }
                 }
 
                 /* Determine return value */
@@ -1757,9 +1852,7 @@ static Value parse_message_send(Parser *p) {
          * built-ins or interpreter-registered methods above. */
         {
             const char *cls_name = "unknown";
-            if (target.is_class && target.cls_val) {
-                cls_name = class_getName(target.cls_val);
-            } else if (target_class_name) {
+            if (target_class_name) {
                 cls_name = target_class_name;
             }
             /* Don't call object_getClass on id targets — the pointer
@@ -1817,11 +1910,14 @@ static Value parse_interface(Parser *p) {
         }
     }
 
-    /* Allocate the class pair */
-    new_class = objc_allocateClassPair(super_class, class_name, 0);
-    if (new_class == 0) {
-        parser_error(p, "Failed to allocate class pair");
-        return value_void();
+    /* Allocate the class pair.
+     * In WASM, objc_allocateClassPair causes memory access out of bounds,
+     * so we use sentinel class pointers (like Foundation classes).
+     * Custom classes get pointers starting at 100 to avoid collisions
+     * with Foundation sentinels (1-9). */
+    {
+        static unsigned int custom_class_id = 100;
+        new_class = (Class)(unsigned long)custom_class_id++;
     }
 
     /* Parse instance variables { ... } */
@@ -1925,8 +2021,11 @@ static Value parse_interface(Parser *p) {
         parser_advance(p);
     }
 
-    /* Register the class */
-    objc_registerClassPair(new_class);
+    /* Register the class.
+     * In WASM, objc_registerClassPair crashes on sentinel pointers,
+     * so we skip it — our interpreter dispatches by name, not by
+     * the runtime class table. */
+    /* objc_registerClassPair(new_class); */
 
     /* Track the class in the variable table so it can be found by name */
     {
@@ -2089,11 +2188,24 @@ static Value parse_implementation(Parser *p) {
                     cstr_copy(prop_name, parser_current(p).text, 64);
                     parser_advance(p);
 
-                    /* Skip = _ivar (we use the side table, not ivar names) */
+                    /* Parse = _ivar — store the ivar name for method body access */
                     if (parser_current(p).type == TOK_ASSIGN) {
                         parser_advance(p);
                         if (parser_current(p).type == TOK_IDENTIFIER) {
+                            char ivar_name[64];
+                            cstr_copy(ivar_name, parser_current(p).text, 64);
                             parser_advance(p);
+                            /* Store ivar name in the property declaration */
+                            {
+                                unsigned int pi;
+                                for (pi = 0; pi < g_property_count; pi++) {
+                                    if (cstr_eq(g_properties[pi].name, prop_name) &&
+                                        cstr_eq(g_properties[pi].class_name, class_name)) {
+                                        cstr_copy(g_properties[pi].ivar_name, ivar_name, 64);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -2276,10 +2388,12 @@ static Value parse_implementation(Parser *p) {
                 }
             }
 
-            /* Store the method and register it with the class */
+            /* Store the method — skip class_addMethod in WASM (crashes on
+             * sentinel pointers). Our interpreter dispatches by selector
+             * match in g_methods[], not through the runtime. */
             {
                 SEL sel = sel_registerName(sel_name);
-                class_addMethod(cls, sel, (void *)method_impl_trampoline, type_encoding);
+                /* class_addMethod(cls, sel, (void *)method_impl_trampoline, type_encoding); */
 
                 /* Store method body and argument names for trampoline execution */
                 if (g_method_count < MAX_METHODS && body_len > 0) {
@@ -2331,13 +2445,12 @@ static Value parse_primary(Parser *p) {
             unsigned int skip_at = (text[0] == '@') ? 1 : 0;
             const char *content = text + skip_at;
             unsigned int len = cstr_len(content);
-            char *str_ptr;
-            if (g_string_pool_offset + len + 2 > 4096) {
-                g_string_pool_offset = 0;
+            char *str_ptr = string_pool_alloc(len + 1);
+            if (str_ptr == 0) {
+                parser_error(p, "string pool full");
+                return value_void();
             }
-            str_ptr = g_string_pool + g_string_pool_offset;
-            cstr_copy(str_ptr, content, 4096 - g_string_pool_offset);
-            g_string_pool_offset += len + 1;
+            cstr_copy(str_ptr, content, len + 1);
             return value_from_id((id)str_ptr);
         }
     }
@@ -2489,7 +2602,7 @@ static Value parse_primary(Parser *p) {
                                     /* Execute setter method body */
                                     unsigned int saved_var_count = g_var_count;
                                     unsigned int saved_scope_base = g_var_scope_base;
-                                    g_var_scope_base = saved_var_count;
+                                    g_var_scope_base = 0; /* allow access to global vars */
                                     InterpVar *self_var = interp_get_or_create_var("self");
                                     if (self_var) {
                                         self_var->is_id = 1;
@@ -2516,10 +2629,63 @@ static Value parse_primary(Parser *p) {
                                             arg_var->sel = val.sel_val;
                                         }
                                     }
+                                    /* Inject synthesized ivar values */
+                                    {
+                                        unsigned int pi;
+                                        for (pi = 0; pi < g_property_count; pi++) {
+                                            if (g_properties[pi].synthesized &&
+                                                g_properties[pi].ivar_name[0] != '\0') {
+                                                InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
+                                                if (ivar_var) {
+                                                    Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                                                    if (stored) {
+                                                        ivar_var->is_id = stored->is_id;
+                                                        ivar_var->value = stored->obj_val;
+                                                        ivar_var->is_int = stored->is_int;
+                                                        ivar_var->int_value = stored->int_val;
+                                                        ivar_var->is_class = stored->is_class;
+                                                        ivar_var->cls = stored->cls_val;
+                                                        ivar_var->is_sel = stored->is_sel;
+                                                        ivar_var->sel = stored->sel_val;
+                                                    } else {
+                                                        ivar_var->is_int = g_properties[pi].is_int;
+                                                        ivar_var->int_value = 0;
+                                                        ivar_var->is_id = !g_properties[pi].is_int;
+                                                        ivar_var->value = 0;
+                                                        ivar_var->is_class = 0;
+                                                        ivar_var->is_sel = 0;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                     g_return_pending = 0;
                                     {
                                         Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
                                         (void)v;
+                                    }
+                                    /* Write back synthesized ivar values */
+                                    {
+                                        unsigned int pi;
+                                        for (pi = 0; pi < g_property_count; pi++) {
+                                            if (g_properties[pi].synthesized &&
+                                                g_properties[pi].ivar_name[0] != '\0') {
+                                                InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                                                if (ivar_var) {
+                                                    Value ivar_val;
+                                                    ivar_val.obj_val = ivar_var->value;
+                                                    ivar_val.cls_val = ivar_var->cls;
+                                                    ivar_val.sel_val = ivar_var->sel;
+                                                    ivar_val.int_val = ivar_var->int_value;
+                                                    ivar_val.is_int = ivar_var->is_int;
+                                                    ivar_val.is_class = ivar_var->is_class;
+                                                    ivar_val.is_sel = ivar_var->is_sel;
+                                                    ivar_val.is_id = ivar_var->is_id;
+                                                    ivar_val.is_void = 0;
+                                                    instance_var_set(receiver, g_properties[pi].name, ivar_val);
+                                                }
+                                            }
+                                        }
                                     }
                                     g_var_count = saved_var_count;
                                     g_var_scope_base = saved_scope_base;
@@ -2557,7 +2723,7 @@ static Value parse_primary(Parser *p) {
                             unsigned int saved_var_count = g_var_count;
                             unsigned int saved_scope_base = g_var_scope_base;
                             Value return_val;
-                            g_var_scope_base = saved_var_count;
+                            g_var_scope_base = 0; /* allow access to global vars */
                             InterpVar *self_var = interp_get_or_create_var("self");
                             if (self_var) {
                                 self_var->is_id = 1;
@@ -2570,10 +2736,63 @@ static Value parse_primary(Parser *p) {
                                     cmd_var->sel = prop_sel;
                                 }
                             }
+                            /* Inject synthesized ivar values */
+                            {
+                                unsigned int pi;
+                                for (pi = 0; pi < g_property_count; pi++) {
+                                    if (g_properties[pi].synthesized &&
+                                        g_properties[pi].ivar_name[0] != '\0') {
+                                        InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
+                                        if (ivar_var) {
+                                            Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                                            if (stored) {
+                                                ivar_var->is_id = stored->is_id;
+                                                ivar_var->value = stored->obj_val;
+                                                ivar_var->is_int = stored->is_int;
+                                                ivar_var->int_value = stored->int_val;
+                                                ivar_var->is_class = stored->is_class;
+                                                ivar_var->cls = stored->cls_val;
+                                                ivar_var->is_sel = stored->is_sel;
+                                                ivar_var->sel = stored->sel_val;
+                                            } else {
+                                                ivar_var->is_int = g_properties[pi].is_int;
+                                                ivar_var->int_value = 0;
+                                                ivar_var->is_id = !g_properties[pi].is_int;
+                                                ivar_var->value = 0;
+                                                ivar_var->is_class = 0;
+                                                ivar_var->is_sel = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             g_return_pending = 0;
                             {
                                 Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
                                 (void)v;
+                            }
+                            /* Write back synthesized ivar values */
+                            {
+                                unsigned int pi;
+                                for (pi = 0; pi < g_property_count; pi++) {
+                                    if (g_properties[pi].synthesized &&
+                                        g_properties[pi].ivar_name[0] != '\0') {
+                                        InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                                        if (ivar_var) {
+                                            Value ivar_val;
+                                            ivar_val.obj_val = ivar_var->value;
+                                            ivar_val.cls_val = ivar_var->cls;
+                                            ivar_val.sel_val = ivar_var->sel;
+                                            ivar_val.int_val = ivar_var->int_value;
+                                            ivar_val.is_int = ivar_var->is_int;
+                                            ivar_val.is_class = ivar_var->is_class;
+                                            ivar_val.is_sel = ivar_var->is_sel;
+                                            ivar_val.is_id = ivar_var->is_id;
+                                            ivar_val.is_void = 0;
+                                            instance_var_set(receiver, g_properties[pi].name, ivar_val);
+                                        }
+                                    }
+                                }
                             }
                             return_val = g_return_value;
                             g_var_count = saved_var_count;
@@ -3262,8 +3481,8 @@ static AstNode *parse_statement_ast(Parser *p) {
 
             if (is_for_in) {
                 /* for-in loop: for (type var in collection) { body } */
-                unsigned int coll_start = p->lex.token_start;
-                unsigned int coll_len;
+                unsigned int coll_start_outer;
+                unsigned int coll_len_outer = 0;
                 AstNode *body;
                 AstNode *node;
 
@@ -3279,7 +3498,8 @@ static AstNode *parse_statement_ast(Parser *p) {
                         else if (parser_current(p).type == TOK_CLOSE_PAREN) pd--;
                         parser_advance(p);
                     }
-                    coll_len = p->lex.token_start - coll_start;
+                    coll_len_outer = p->lex.token_start - coll_start;
+                    coll_start_outer = coll_start;
                 }
 
                 if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
@@ -3299,8 +3519,8 @@ static AstNode *parse_statement_ast(Parser *p) {
                 if (!node) return 0;
                 node->type = AST_FOR_IN;
                 cstr_copy(node->for_in.var_name, for_in_var, 64);
-                node->for_in.collection_start = coll_start;
-                node->for_in.collection_len = coll_len;
+                node->for_in.collection_start = coll_start_outer;
+                node->for_in.collection_len = coll_len_outer;
                 node->for_in.body = body;
                 return node;
             }
@@ -3593,15 +3813,15 @@ static Value eval_ast(AstNode *node, const char *source) {
                 InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
                 if (var) {
                     /* Store single character as a string in the pool */
-                    if (g_string_pool_offset + 2 > 4096) g_string_pool_offset = 0;
                     {
-                        char *ch_ptr = g_string_pool + g_string_pool_offset;
-                        ch_ptr[0] = coll_str[ci];
-                        ch_ptr[1] = '\0';
-                        g_string_pool_offset += 2;
-                        var->is_id = 1;
-                        var->value = (id)ch_ptr;
-                        var->is_int = 0;
+                        char *ch_ptr = string_pool_alloc(2);
+                        if (ch_ptr != 0) {
+                            ch_ptr[0] = coll_str[ci];
+                            ch_ptr[1] = '\0';
+                            var->is_id = 1;
+                            var->value = (id)ch_ptr;
+                            var->is_int = 0;
+                        }
                     }
                 }
                 g_break_pending = 0;
@@ -3717,8 +3937,20 @@ static void format_value(Value v, char *buf, unsigned int capacity) {
         }
         fmt_append_uint(buf, capacity, &offset, (unsigned int)val);
     } else if (v.is_class && v.cls_val != 0) {
-        const char *name = class_getName(v.cls_val);
-        fmt_append_str(buf, capacity, &offset, name);
+        /* Look up class name from variable table (class_getName
+         * crashes on sentinel pointers in WASM) */
+        const char *name = 0;
+        {
+            unsigned int vi;
+            for (vi = 0; vi < g_var_count; vi++) {
+                if (g_vars[vi].is_class && g_vars[vi].cls == v.cls_val) {
+                    name = g_vars[vi].name;
+                    break;
+                }
+            }
+        }
+        if (name) fmt_append_str(buf, capacity, &offset, name);
+        else fmt_append_str(buf, capacity, &offset, "Class");
     } else if (v.is_sel && v.sel_val != 0) {
         const char *name = sel_getName(v.sel_val);
         fmt_append_str(buf, capacity, &offset, "(SEL) ");
@@ -3726,15 +3958,28 @@ static void format_value(Value v, char *buf, unsigned int capacity) {
     } else if (v.is_id && v.obj_val != 0) {
         /* Object — try to show class name and pointer.
          * But object_getClass can crash on non-ObjC pointers (C strings),
-         * so we check if the pointer looks like a valid ObjC object first.
-         * Heuristic: if the pointer is in the string pool range, it's a C string. */
+         * so we check if the pointer looks like a Foundation stub or C string first. */
         Class cls = (Class)0;
-        /* Only call object_getClass if the pointer is NOT in the string pool */
-        if ((const char *)v.obj_val < g_string_pool ||
-            (const char *)v.obj_val >= g_string_pool + 4096) {
+        const char *str_val = (const char *)v.obj_val;
+        if (!cstr_starts(str_val, "FDObj:") &&
+            str_val != 0 &&
+            (str_val < g_string_pool || str_val >= g_string_pool + OBJC_INTERP_STRING_POOL_SIZE)) {
             cls = object_getClass(v.obj_val);
         }
-        const char *name = cls ? class_getName(cls) : "id";
+        const char *name = "id";
+        if (cstr_starts(str_val, "FDObj:")) {
+            name = str_val + 6; /* Show class name from FDObj: marker */
+        } else if (cls) {
+            /* Look up class name from variable table (class_getName
+             * crashes on sentinel pointers in WASM) */
+            unsigned int vi;
+            for (vi = 0; vi < g_var_count; vi++) {
+                if (g_vars[vi].is_class && g_vars[vi].cls == cls) {
+                    name = g_vars[vi].name;
+                    break;
+                }
+            }
+        }
         fmt_append_str(buf, capacity, &offset, "<");
         fmt_append_str(buf, capacity, &offset, name);
         fmt_append_str(buf, capacity, &offset, ": 0x");
