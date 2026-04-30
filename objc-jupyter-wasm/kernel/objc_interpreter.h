@@ -44,6 +44,7 @@
 #define OBJC_INTERP_RUNTIME_ERROR 2
 #define OBJC_INTERP_MEMORY_ERROR 3
 #define OBJC_INTERP_INTERRUPTED 4
+#define OBJC_INTERP_RESOURCE_ERROR 5  /* Resource limit exceeded (table full, pool exhausted) */
 
 /**
  * Initialize the interpreter. Must be called once before any
@@ -98,5 +99,12 @@ const char *objc_interp_get_result(void);
  * Does NOT clear registered classes or selectors (they persist across cells).
  */
 void objc_interp_reset(void);
+
+/**
+ * Perform garbage collection on the string pool.
+ * Reclaims unreachable string pool entries. Called automatically
+ * between cell executions.
+ */
+void objc_interp_gc_strings(void);
 
 #endif /* OBJC_INTERPRETER_H */
