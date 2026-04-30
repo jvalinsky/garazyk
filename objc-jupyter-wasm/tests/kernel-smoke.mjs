@@ -470,5 +470,108 @@ const forIncTest = execute([
 assert.equal(forIncTest.status, 'ok');
 assert.match(hostStreamText(), /for-inc=5/);
 
+// ── Nested message send tests ─────────────────────────────────────
+
+// [[Foo alloc] init] pattern
+const nestedMsgTest = execute([
+  '@interface Point : Object',
+  '- (int)x;',
+  '@end',
+  '@implementation Point',
+  '- (int)x { return 42; }',
+  '@end',
+  'Point *p = [[Point alloc] init];',
+  'int val = [p x];',
+  'NSLog(@"nested-x=%d", val);'
+].join('\n'), 'nested-msg-cell');
+assert.equal(nestedMsgTest.status, 'ok');
+assert.match(hostStreamText(), /nested-x=42/);
+
+// ── Class method tests ─────────────────────────────────────────────
+
+// +new class method
+const newTest = execute([
+  '@interface Widget : Object',
+  '- (int)value;',
+  '@end',
+  '@implementation Widget',
+  '- (int)value { return 99; }',
+  '@end',
+  'Widget *w = [Widget new];',
+  'NSLog(@"new-value=%d", [w value]);'
+].join('\n'), 'new-method-cell');
+assert.equal(newTest.status, 'ok');
+assert.match(hostStreamText(), /new-value=99/);
+
+// + class method (shared instance pattern)
+const classMethodTest = execute([
+  '@interface Singleton : Object',
+  '+ (int)sharedValue;',
+  '@end',
+  '@implementation Singleton',
+  '+ (int)sharedValue { return 42; }',
+  '@end',
+  'int sv = [Singleton sharedValue];',
+  'NSLog(@"shared=%d", sv);'
+].join('\n'), 'class-method-cell');
+assert.equal(classMethodTest.status, 'ok');
+assert.match(hostStreamText(), /shared=42/);
+
+// ── Compound assignment tests ──────────────────────────────────────
+
+// += operator
+const plusAssignTest = execute('int x = 10; x += 5; NSLog(@"x=%d", x);', 'plus-assign-cell');
+assert.equal(plusAssignTest.status, 'ok');
+assert.match(hostStreamText(), /x=15/);
+
+// -= operator
+const minusAssignTest = execute('int y = 20; y -= 7; NSLog(@"y=%d", y);', 'minus-assign-cell');
+assert.equal(minusAssignTest.status, 'ok');
+assert.match(hostStreamText(), /y=13/);
+
+// += in for loop
+const forPlusAssignTest = execute([
+  'int sum = 0;',
+  'for (int i = 1; i <= 5; i++) { sum += i; }',
+  'NSLog(@"sum=%d", sum);'
+].join('\n'), 'for-plus-assign-cell');
+assert.equal(forPlusAssignTest.status, 'ok');
+assert.match(hostStreamText(), /sum=15/);
+
+// ── Dot syntax tests ──────────────────────────────────────────────
+
+// Dot getter
+const dotGetterTest = execute([
+  '@interface Counter : Object',
+  '- (int)count;',
+  '@end',
+  '@implementation Counter',
+  '- (int)count { return 7; }',
+  '@end',
+  'Counter *c = [[Counter alloc] init];',
+  'int n = c.count;',
+  'NSLog(@"dot-count=%d", n);'
+].join('\n'), 'dot-getter-cell');
+assert.equal(dotGetterTest.status, 'ok');
+assert.match(hostStreamText(), /dot-count=7/);
+
+// Dot setter (simple, unique names)
+const dotSetterTest = execute([
+  '@interface Box : Object',
+  '- (int)boxval;',
+  '- (void)setBoxval:(int)v;',
+  '@end',
+  '@implementation Box',
+  'int _boxval_store;',
+  '- (int)boxval { return _boxval_store; }',
+  '- (void)setBoxval:(int)v { _boxval_store = v; }',
+  '@end',
+  'Box *b = [[Box alloc] init];',
+  'b.boxval = 42;',
+  'NSLog(@"dot-set=%d", b.boxval);'
+].join('\n'), 'dot-setter-cell');
+assert.equal(dotSetterTest.status, 'ok');
+assert.match(hostStreamText(), /dot-set=42/);
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
