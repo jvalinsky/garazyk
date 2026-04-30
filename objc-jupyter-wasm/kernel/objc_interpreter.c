@@ -12,6 +12,20 @@
 #include "runtime.h"
 #include "slot.h"
 
+/* Runtime functions exported from the WASM module but not declared
+ * in the headers we include (they're in NSObject.h normally). */
+extern Class object_getClass(id);
+
+/* objc_lookUpClass is declared in runtime.h with return type id,
+ * which is compatible with Class. We use it to check if a class
+ * name is registered in the runtime. */
+
+/* Browser / Node host imports for streaming and cooperative interrupts. */
+extern void objc_kernel_host_stream(int kind, const char *ptr, unsigned int len)
+    __attribute__((import_module("objc_kernel_host"), import_name("stream")));
+extern int objc_kernel_host_should_interrupt(void)
+    __attribute__((import_module("objc_kernel_host"), import_name("should_interrupt")));
+
 /* ── String helpers (freestanding, no libc) ─────────────────────── */
 
 static unsigned int cstr_len(const char *s) {
@@ -62,6 +76,17 @@ static char g_error_buffer[OBJC_INTERP_ERROR_SIZE];
 static int g_error_code = OBJC_INTERP_OK;
 static char g_result_buffer[512];
 
+static int interp_should_interrupt(void) {
+    return objc_kernel_host_should_interrupt() != 0;
+}
+
+static void interp_emit_stream(const char *ptr, unsigned int len) {
+    if (ptr == 0 || len == 0u) {
+        return;
+    }
+    objc_kernel_host_stream(1, ptr, len);
+}
+
 /* Variable table: name → value (as id) */
 typedef struct {
     char name[64];
@@ -83,8 +108,8 @@ static unsigned int g_var_count = 0;
 typedef enum {
     TOK_EOF = 0,
     TOK_IDENTIFIER,
-    TOK_AT_KEYWORD,     /* @interface, @implementation, @end, @"string" */
-    TOK_STRING_LITERAL, /* @"..." or "..." */
+    TOK_AT_KEYWORD,     /* @interface, @implementation, @end, @\"string\" */
+    TOK_STRING_LITERAL, /* @\"...\" or \"...\" */
     TOK_INT_LITERAL,
     TOK_OPEN_BRACKET,   /* [ */
     TOK_CLOSE_BRACKET,  /* ] */
@@ -112,6 +137,19 @@ typedef enum {
     TOK_GE,            /* >= */
     TOK_PLUS_ASSIGN,   /* += */
     TOK_MINUS_ASSIGN,  /* -= */
+    TOK_RETURN,        /* return keyword */
+    TOK_IF,            /* if keyword */
+    TOK_ELSE,          /* else keyword */
+    TOK_WHILE,         /* while keyword */
+    TOK_FOR,           /* for keyword */
+    TOK_DO,            /* do keyword */
+    TOK_BREAK,         /* break keyword */
+    TOK_CONTINUE,      /* continue keyword */
+    TOK_AND,           /* && */
+    TOK_OR,            /* || */
+    TOK_NOT,           /* ! (logical not) */
+    TOK_PLUS_PLUS,     /* ++ */
+    TOK_MINUS_MINUS,   /* -- */
     TOK_UNKNOWN
 } TokenType;
 
@@ -127,7 +165,8 @@ typedef struct {
 typedef struct {
     const char *source;
     unsigned int source_len;
-    unsigned int pos;
+    unsigned int pos;       /* position after current token */
+    unsigned int token_start; /* position where current token began */
     unsigned int line;
     unsigned int column;
     Token current;
@@ -137,6 +176,7 @@ static void lexer_init(Lexer *lex, const char *source, unsigned int length) {
     lex->source = source;
     lex->source_len = length;
     lex->pos = 0;
+    lex->token_start = 0;
     lex->line = 1;
     lex->column = 1;
     lex->current.type = TOK_EOF;
@@ -209,6 +249,7 @@ static Token lexer_next_token(Lexer *lex) {
     unsigned int i = 0;
 
     lexer_skip_whitespace_and_comments(lex);
+    lex->token_start = lex->pos; /* remember where this token begins */
     tok.line = lex->line;
     tok.column = lex->column;
     tok.text[0] = '\0';
@@ -297,6 +338,10 @@ static Token lexer_next_token(Lexer *lex) {
         }
         tok.text[i] = '\0';
         tok.type = TOK_IDENTIFIER;
+        /* Check for reserved keywords */
+        if (cstr_eq(tok.text, "return")) {
+            tok.type = TOK_RETURN;
+        }
         return tok;
     }
 
@@ -466,6 +511,7 @@ static InterpVar *interp_get_or_create_var(const char *name) {
 
 static void nslog_append(const char *text, unsigned int len) {
     unsigned int i;
+    interp_emit_stream(text, len);
     for (i = 0; i < len && g_nslog_offset + 1 < OBJC_INTERP_NSLOG_BUFFER_SIZE; i++) {
         g_nslog_buffer[g_nslog_offset++] = text[i];
     }
@@ -473,6 +519,9 @@ static void nslog_append(const char *text, unsigned int len) {
 }
 
 static void nslog_append_char(char ch) {
+    char chunk[1];
+    chunk[0] = ch;
+    interp_emit_stream(chunk, 1u);
     if (g_nslog_offset + 1 < OBJC_INTERP_NSLOG_BUFFER_SIZE) {
         g_nslog_buffer[g_nslog_offset++] = ch;
         g_nslog_buffer[g_nslog_offset] = '\0';
@@ -622,6 +671,27 @@ static Value value_void(void) {
     v.is_void = 1;
     return v;
 }
+
+/* ── Method dispatch state ─────────────────────────────────────── */
+
+/* Return value flag — set by return statement, checked by method dispatch */
+static int g_return_pending = 0;
+static Value g_return_value;
+
+/* Method implementation context — stored for interpreter method dispatch */
+typedef struct {
+    char source[2048]; /* method body source (without outer braces) */
+    unsigned int source_len;
+    Class class_ptr;
+    SEL selector;
+    int is_class_method;
+    char arg_names[8][64]; /* argument names (up to 8 keyword args) */
+    unsigned int arg_count; /* number of keyword arguments */
+} MethodImpl;
+
+#define MAX_METHODS 64
+static MethodImpl g_methods[MAX_METHODS];
+static unsigned int g_method_count = 0;
 
 /* ── Forward declarations ───────────────────────────────────────── */
 
@@ -808,7 +878,8 @@ static Value parse_message_send(Parser *p) {
     char sel_name[256];
     unsigned int sel_len;
     id args[16];
-    int arg_count;
+    Value keyword_args[16]; /* preserve Value types for interpreter method dispatch */
+    unsigned int arg_count;
     Value result;
 
     /* Parse target */
@@ -831,10 +902,8 @@ static Value parse_message_send(Parser *p) {
             cstr_copy(part_buf, parser_current(p).text, OBJC_INTERP_MAX_TOKEN);
             part_len = cstr_len(part_buf);
 
-            /* Append selector component */
-            if (sel_len > 0) {
-                if (sel_len + 1 < 256) sel_name[sel_len++] = ':';
-            }
+            /* Append selector component (no extra colon — the colon
+             * after each keyword part is added below at line 904) */
             cstr_copy(sel_name + sel_len, part_buf, 256 - sel_len);
             sel_len += part_len;
 
@@ -853,6 +922,7 @@ static Value parse_message_send(Parser *p) {
                 if (arg_count < 16) {
                     Value arg = parse_expression(p);
                     if (p->error) return value_void();
+                    keyword_args[arg_count] = arg;
                     if (arg.is_int) {
                         args[arg_count] = (id)(long)arg.int_val;
                     } else if (arg.is_class) {
@@ -879,24 +949,138 @@ static Value parse_message_send(Parser *p) {
     {
         SEL sel = sel_registerName(sel_name);
         id receiver = 0;
-        struct objc_slot *slot;
 
         if (target.is_id) receiver = target.obj_val;
         else if (target.is_class) receiver = (id)target.cls_val;
         else if (target.is_int) receiver = (id)(long)target.int_val;
 
-        /* Use objc_msg_lookup_sender for portability (objc_msgSend is
-         * not available on WASM — message.h guards it with arch checks).
-         * The slot contains the IMP (method implementation pointer). */
-        slot = objc_msg_lookup_sender(&receiver, sel, 0);
-        if (slot && slot->method) {
-            typedef id (*MsgSendIMP)(id, SEL, ...);
-            MsgSendIMP imp = (MsgSendIMP)slot->method;
-            result = value_from_id(imp(receiver, sel));
-        } else {
-            result = value_from_id(0);
+        /* Built-in: [ClassName alloc] → class_createInstance */
+        if (target.is_class && cstr_eq(sel_name, "alloc")) {
+            id instance = (id)0;
+            instance = class_createInstance(target.cls_val, 0);
+            if (instance == 0) {
+                nslog_append("[alloc] failed for class ", 27);
+                nslog_append(class_getName(target.cls_val),
+                             cstr_len(class_getName(target.cls_val)));
+                nslog_append("\n", 1);
+            }
+            return value_from_id(instance);
         }
-        return result;
+
+        /* Built-in: [obj init] → return self (standard NSObject pattern) */
+        if (cstr_eq(sel_name, "init") && target.is_id && receiver != 0) {
+            return value_from_id(receiver);
+        }
+
+        /* Built-in: [obj class] → return the object's class */
+        if (cstr_eq(sel_name, "class") && target.is_id && receiver != 0) {
+            Class cls = (Class)0;
+            cls = object_getClass(receiver);
+            return value_from_class(cls);
+        }
+
+        /* Check if this selector matches an interpreter-registered method.
+         * Interpreter methods are executed directly in the interpreter to
+         * avoid WASM calling convention issues with variadic IMP dispatch. */
+        {
+            unsigned int mi;
+            for (mi = 0; mi < g_method_count; mi++) {
+                if (g_methods[mi].selector == sel && g_methods[mi].source_len > 0) {
+                    break;
+                }
+            }
+
+            if (mi < g_method_count) {
+                /* Found an interpreter method — execute it directly */
+                unsigned int saved_var_count = g_var_count;
+                Value return_val;
+
+                /* Set up self and _cmd */
+                {
+                    InterpVar *var;
+                    var = interp_get_or_create_var("self");
+                    if (var) {
+                        var->is_id = 1;
+                        var->value = receiver;
+                        var->is_int = 0;
+                        var->is_class = 0;
+                        var->is_sel = 0;
+                    }
+                    var = interp_get_or_create_var("_cmd");
+                    if (var) {
+                        var->is_sel = 1;
+                        var->sel = sel;
+                        var->is_int = 0;
+                        var->is_class = 0;
+                        var->is_id = 0;
+                    }
+                }
+
+                /* Set up keyword argument variables from parsed args */
+                {
+                    unsigned int ai;
+                    for (ai = 0; ai < g_methods[mi].arg_count && ai < 8 && ai < arg_count; ai++) {
+                        InterpVar *var = interp_get_or_create_var(g_methods[mi].arg_names[ai]);
+                        if (var) {
+                            var->is_id = keyword_args[ai].is_id;
+                            var->value = keyword_args[ai].obj_val;
+                            var->is_int = keyword_args[ai].is_int;
+                            var->int_value = keyword_args[ai].int_val;
+                            var->is_class = keyword_args[ai].is_class;
+                            var->cls = keyword_args[ai].cls_val;
+                            var->is_sel = keyword_args[ai].is_sel;
+                            var->sel = keyword_args[ai].sel_val;
+                        }
+                    }
+                }
+
+                /* Execute the method body */
+                g_return_pending = 0;
+                {
+                    int interp_result = objc_interp(g_methods[mi].source, g_methods[mi].source_len);
+                    (void)interp_result;
+                }
+
+                /* Determine return value */
+                if (g_return_pending) {
+                    if (g_return_value.is_id) return_val = value_from_id(g_return_value.obj_val);
+                    else if (g_return_value.is_class) return_val = value_from_class(g_return_value.cls_val);
+                    else if (g_return_value.is_int) return_val = g_return_value;
+                    else return_val = value_from_id(receiver);
+                } else {
+                    return_val = value_from_id(receiver);
+                }
+
+                /* Clean up method-local variables */
+                g_var_count = saved_var_count;
+                g_return_pending = 0;
+
+                return return_val;
+            }
+        }
+
+        /* Fall through: no built-in or interpreter method matched.
+         * Runtime IMP dispatch is not used because WASM enforces exact
+         * function signatures — variadic IMP calls cause signature
+         * mismatch traps. All supported methods must be handled as
+         * built-ins or interpreter-registered methods above. */
+        {
+            const char *cls_name = "unknown";
+            if (target.is_id && receiver != 0) {
+                Class cls = object_getClass(receiver);
+                if (cls) cls_name = class_getName(cls);
+            } else if (target.is_class && target.cls_val) {
+                cls_name = class_getName(target.cls_val);
+            }
+            nslog_append("-", 1);
+            nslog_append("[", 1);
+            nslog_append(cls_name, cstr_len(cls_name));
+            nslog_append(" ", 1);
+            nslog_append(sel_name, cstr_len(sel_name));
+            nslog_append("] does not respond to selector\n", 31);
+            result = value_from_id(0);
+            return result;
+        }
     }
 }
 
@@ -1020,29 +1204,110 @@ static Value parse_interface(Parser *p) {
     return value_from_class(new_class);
 }
 
-/* Method implementation context — stored for method callbacks */
-typedef struct {
-    char source[2048]; /* method body source */
-    unsigned int source_len;
-    Class class_ptr;
-    SEL selector;
-    int is_class_method;
-} MethodImpl;
-
-#define MAX_METHODS 64
-static MethodImpl g_methods[MAX_METHODS];
-static unsigned int g_method_count = 0;
-
 /* Method implementation function — called by objc_msgSend */
-static id method_impl_trampoline(id self, SEL _cmd) {
-    /* For now, NSLog the call and return self */
+static id method_impl_trampoline(id self, SEL _cmd, ...) {
     const char *sel_name = sel_getName(_cmd);
-    nslog_append("-[", 2);
-    nslog_append(class_getName(object_getClass(self)), cstr_len(class_getName(object_getClass(self))));
-    nslog_append(" ", 1);
-    nslog_append(sel_name, cstr_len(sel_name));
-    nslog_append("] called\n", 9);
-    return self;
+    unsigned int i;
+
+    /* Find the MethodImpl for this selector */
+    for (i = 0; i < g_method_count; i++) {
+        if (g_methods[i].selector == _cmd && g_methods[i].source_len > 0) {
+            break;
+        }
+    }
+
+    if (i >= g_method_count || g_methods[i].source_len == 0) {
+        /* No stored body — return self as default */
+        return self;
+    }
+
+    /* Save current variable count so we can clean up method-local vars */
+    unsigned int saved_var_count = g_var_count;
+
+    /* Set up self and _cmd as interpreter variables */
+    {
+        InterpVar *var;
+
+        var = interp_get_or_create_var("self");
+        if (var) {
+            var->is_id = 1;
+            var->value = self;
+            var->is_int = 0;
+            var->is_class = 0;
+            var->is_sel = 0;
+        }
+
+        var = interp_get_or_create_var("_cmd");
+        if (var) {
+            var->is_sel = 1;
+            var->sel = _cmd;
+            var->is_int = 0;
+            var->is_class = 0;
+            var->is_id = 0;
+        }
+    }
+
+    /* Set up keyword argument variables from the variadic args.
+     * The IMP signature is id(id, SEL, ...) — keyword args follow
+     * self and _cmd on the stack. We access them via va_list. */
+    {
+        /* Count colons in selector to determine arg count */
+        unsigned int sel_colons = 0;
+        unsigned int si;
+        for (si = 0; sel_name[si] != '\0'; si++) {
+            if (sel_name[si] == ':') sel_colons++;
+        }
+
+        if (sel_colons > 0 && g_methods[i].arg_count > 0) {
+            /* Access variadic arguments */
+            __builtin_va_list ap;
+            __builtin_va_start(ap, _cmd);
+
+            unsigned int ai;
+            for (ai = 0; ai < sel_colons && ai < g_methods[i].arg_count && ai < 8; ai++) {
+                id arg_val = __builtin_va_arg(ap, id);
+                InterpVar *var = interp_get_or_create_var(g_methods[i].arg_names[ai]);
+                if (var) {
+                    var->is_id = 1;
+                    var->value = arg_val;
+                    var->is_int = 0;
+                    var->is_class = 0;
+                    var->is_sel = 0;
+                }
+            }
+
+            __builtin_va_end(ap);
+        }
+    }
+
+    /* Execute the method body */
+    g_return_pending = 0;
+    {
+        int result = objc_interp(g_methods[i].source, g_methods[i].source_len);
+        (void)result; /* errors are captured in g_error_buffer */
+    }
+
+    /* Determine return value */
+    {
+        id return_val;
+
+        if (g_return_pending) {
+            /* Explicit return statement */
+            if (g_return_value.is_id) return_val = g_return_value.obj_val;
+            else if (g_return_value.is_class) return_val = (id)g_return_value.cls_val;
+            else if (g_return_value.is_int) return_val = (id)(long)g_return_value.int_val;
+            else return_val = self;
+        } else {
+            /* No explicit return — default to self */
+            return_val = self;
+        }
+
+        /* Clean up method-local variables (remove any added after saved count) */
+        g_var_count = saved_var_count;
+        g_return_pending = 0;
+
+        return return_val;
+    }
 }
 
 /* Parse @implementation Name methodDefs @end */
@@ -1082,6 +1347,10 @@ static Value parse_implementation(Parser *p) {
             char sel_name[256];
             unsigned int sel_len = 0;
             char type_encoding[64];
+            char arg_names[8][64];
+            unsigned int arg_count = 0;
+            unsigned int body_start = 0;
+            unsigned int body_len = 0;
 
             parser_advance(p); /* skip - or + */
 
@@ -1107,12 +1376,23 @@ static Value parse_implementation(Parser *p) {
                 parser_advance(p);
             }
 
-            /* Parse keyword arguments */
-            while (parser_current(p).type == TOK_COLON) {
+            /* Parse keyword arguments — capture argument names.
+             * Pattern: selectorPart: (type) argName selectorPart: (type) argName ...
+             * The first selector part was already consumed above. */
+            arg_count = 0;
+
+            /* If the first part already has a colon (consumed above as part
+             * of the initial identifier), handle the first keyword arg. */
+            if (sel_len > 0 && sel_name[sel_len - 1] == ':') {
+                /* Already have a trailing colon from the initial selector */
+            } else if (parser_current(p).type == TOK_COLON) {
                 parser_advance(p); /* skip : */
                 sel_name[sel_len++] = ':';
                 sel_name[sel_len] = '\0';
+            }
 
+            /* Now loop: parse (type) argName, then check for next keyword part */
+            while (sel_len > 0 && sel_name[sel_len - 1] == ':') {
                 /* Skip argument type in parens */
                 if (parser_current(p).type == TOK_OPEN_PAREN) {
                     int depth = 1;
@@ -1124,17 +1404,48 @@ static Value parse_implementation(Parser *p) {
                     }
                 }
 
-                /* Skip argument name */
-                if (parser_current(p).type == TOK_IDENTIFIER) {
+                /* Capture argument name */
+                if (parser_current(p).type == TOK_IDENTIFIER && arg_count < 8) {
+                    cstr_copy(arg_names[arg_count], parser_current(p).text, 64);
+                    arg_count++;
                     parser_advance(p);
                 }
+
+                /* Check for next keyword selector part: identifier followed by : */
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    /* Look ahead: is the next token a colon? */
+                    Token saved = p->lex.current;
+                    unsigned int saved_pos = p->lex.pos;
+                    unsigned int saved_token_start = p->lex.token_start;
+                    parser_advance(p);
+
+                    if (parser_current(p).type == TOK_COLON) {
+                        /* This is a keyword selector part.
+                         * We've already advanced past the identifier and
+                         * loaded the colon as current. Now skip the colon
+                         * and add both parts to the selector. */
+                        cstr_copy(sel_name + sel_len, saved.text, 256 - sel_len);
+                        sel_len += cstr_len(saved.text);
+                        parser_advance(p); /* skip : (load next token) */
+                        sel_name[sel_len++] = ':';
+                        sel_name[sel_len] = '\0';
+                        continue; /* loop to parse this arg's type and name */
+                    }
+
+                    /* Not a keyword part — restore */
+                    p->lex.current = saved;
+                    p->lex.pos = saved_pos;
+                    p->lex.token_start = saved_token_start;
+                }
+
+                break; /* No more keyword parts */
             }
 
-            /* Parse method body { ... } */
+            /* Parse method body { ... } — capture the source */
             if (parser_current(p).type == TOK_OPEN_BRACE) {
                 int brace_depth = 1;
-                unsigned int body_start = p->lex.pos;
-                parser_advance(p);
+                parser_advance(p); /* skip opening { */
+                body_start = p->lex.token_start; /* start of first body token */
 
                 while (brace_depth > 0 && parser_current(p).type != TOK_EOF) {
                     if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
@@ -1145,15 +1456,39 @@ static Value parse_implementation(Parser *p) {
                     parser_advance(p);
                 }
 
+                /* body_len: from body_start to the start of the closing } */
+                body_len = p->lex.token_start - body_start;
+
                 if (parser_current(p).type == TOK_CLOSE_BRACE) {
                     parser_advance(p);
                 }
             }
 
-            /* Add the method to the class */
+            /* Store the method and register it with the class */
             {
                 SEL sel = sel_registerName(sel_name);
                 class_addMethod(cls, sel, (void *)method_impl_trampoline, type_encoding);
+
+                /* Store method body and argument names for trampoline execution */
+                if (g_method_count < MAX_METHODS && body_len > 0) {
+                    MethodImpl *mi = &g_methods[g_method_count];
+                    unsigned int copy_len = body_len;
+                    if (copy_len >= 2048) copy_len = 2047;
+                    /* Copy body source (content between the braces) */
+                    cstr_copy(mi->source, p->lex.source + body_start, 2048);
+                    mi->source_len = copy_len;
+                    mi->class_ptr = cls;
+                    mi->selector = sel;
+                    mi->is_class_method = is_class_method;
+                    mi->arg_count = arg_count;
+                    {
+                        unsigned int ai;
+                        for (ai = 0; ai < arg_count && ai < 8; ai++) {
+                            cstr_copy(mi->arg_names[ai], arg_names[ai], 64);
+                        }
+                    }
+                    g_method_count++;
+                }
             }
         } else {
             parser_advance(p);
@@ -1291,6 +1626,7 @@ static Value parse_primary(Parser *p) {
         }
 
         parser_advance(p);
+        parser_error(p, "Unsupported @keyword");
         return value_void();
     }
 
@@ -1340,6 +1676,7 @@ static Value parse_primary(Parser *p) {
     }
 
     parser_advance(p);
+    parser_error(p, "Unexpected token");
     return value_void();
 }
 
@@ -1514,6 +1851,28 @@ static Value parse_type_and_var_decl(Parser *p) {
 static Value parse_statement(Parser *p) {
     Token tok = parser_current(p);
 
+    /* return statement: return [expr]; */
+    if (tok.type == TOK_RETURN) {
+        parser_advance(p);
+
+        /* Parse optional return value */
+        if (parser_current(p).type != TOK_SEMICOLON &&
+            parser_current(p).type != TOK_CLOSE_BRACE &&
+            parser_current(p).type != TOK_EOF) {
+            g_return_value = parse_expression(p);
+            if (p->error) return g_return_value;
+        } else {
+            g_return_value = value_void();
+        }
+
+        if (parser_current(p).type == TOK_SEMICOLON) {
+            parser_advance(p);
+        }
+
+        g_return_pending = 1;
+        return g_return_value;
+    }
+
     /* @interface */
     if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@interface")) {
         parser_advance(p);
@@ -1549,16 +1908,22 @@ static Value parse_statement(Parser *p) {
         return value_void();
     }
 
-    /* Type declaration: int, void, id, Class, SEL, or class name */
+    /* Type declaration: int, void, id, Class, SEL, or registered class name */
     if (tok.type == TOK_IDENTIFIER) {
         /* Check if this is a type name followed by a variable name.
-         * We only check built-in types here — not runtime classes,
-         * because objc_getClass may crash if the class table is empty. */
-        if (cstr_eq(tok.text, "int") || cstr_eq(tok.text, "void") ||
+         * Built-in types are always recognized. Registered class names
+         * (from @implementation) are also recognized as types when
+         * followed by * (pointer) or another identifier. */
+        int is_builtin_type = (
+            cstr_eq(tok.text, "int") || cstr_eq(tok.text, "void") ||
             cstr_eq(tok.text, "id") || cstr_eq(tok.text, "Class") ||
             cstr_eq(tok.text, "SEL") || cstr_eq(tok.text, "BOOL") ||
             cstr_eq(tok.text, "long") || cstr_eq(tok.text, "char") ||
-            cstr_eq(tok.text, "float") || cstr_eq(tok.text, "double")) {
+            cstr_eq(tok.text, "float") || cstr_eq(tok.text, "double")
+        );
+        int is_class_type = (!is_builtin_type && objc_lookUpClass(tok.text) != 0);
+
+        if (is_builtin_type || is_class_type) {
             /* Look ahead to see if next token is * or an identifier */
             Token saved = p->lex.current;
             unsigned int saved_pos = p->lex.pos;
@@ -1628,10 +1993,101 @@ static Value parse_block(Parser *p) {
     Value last = value_void();
     while (parser_current(p).type != TOK_EOF &&
            parser_current(p).type != TOK_CLOSE_BRACE) {
+        if (interp_should_interrupt()) {
+            parser_error(p, "Execution interrupted");
+            return last;
+        }
         last = parse_statement(p);
         if (p->error) return last;
+        if (g_return_pending) return last;
     }
     return last;
+}
+
+/* ── Value formatting for REPL display ─────────────────────────── */
+
+static void fmt_append_char(char *buf, unsigned int capacity, unsigned int *offset, char ch) {
+    if (*offset + 1u < capacity) {
+        buf[*offset] = ch;
+        *offset += 1u;
+        buf[*offset] = '\0';
+    }
+}
+
+static void fmt_append_str(char *buf, unsigned int capacity, unsigned int *offset, const char *str) {
+    unsigned int i = 0u;
+    if (str == 0) return;
+    while (str[i] != '\0') {
+        fmt_append_char(buf, capacity, offset, str[i]);
+        i++;
+    }
+}
+
+static void fmt_append_uint(char *buf, unsigned int capacity, unsigned int *offset, unsigned int val) {
+    char digits[12];
+    int di = 0;
+    if (val == 0u) {
+        fmt_append_char(buf, capacity, offset, '0');
+        return;
+    }
+    while (val > 0u && di < 11) {
+        digits[di++] = '0' + (char)(val % 10u);
+        val /= 10u;
+    }
+    while (di > 0) {
+        di--;
+        fmt_append_char(buf, capacity, offset, digits[di]);
+    }
+}
+
+static void fmt_append_hex(char *buf, unsigned int capacity, unsigned int *offset, unsigned long ptr) {
+    char hex[17];
+    int hi = 0;
+    if (ptr == 0) {
+        fmt_append_char(buf, capacity, offset, '0');
+        return;
+    }
+    while (ptr > 0 && hi < 16) {
+        hex[hi++] = "0123456789abcdef"[ptr % 16];
+        ptr /= 16;
+    }
+    while (hi > 0) {
+        hi--;
+        fmt_append_char(buf, capacity, offset, hex[hi]);
+    }
+}
+
+static void format_value(Value v, char *buf, unsigned int capacity) {
+    unsigned int offset = 0;
+    buf[0] = '\0';
+
+    if (v.is_int) {
+        int val = v.int_val;
+        if (val < 0) {
+            fmt_append_char(buf, capacity, &offset, '-');
+            val = -val;
+        }
+        fmt_append_uint(buf, capacity, &offset, (unsigned int)val);
+    } else if (v.is_class && v.cls_val != 0) {
+        const char *name = class_getName(v.cls_val);
+        fmt_append_str(buf, capacity, &offset, name);
+    } else if (v.is_sel && v.sel_val != 0) {
+        const char *name = sel_getName(v.sel_val);
+        fmt_append_str(buf, capacity, &offset, "(SEL) ");
+        fmt_append_str(buf, capacity, &offset, name);
+    } else if (v.is_id && v.obj_val != 0) {
+        /* Object — show class name and pointer */
+        Class cls = object_getClass(v.obj_val);
+        const char *name = cls ? class_getName(cls) : "unknown";
+        fmt_append_str(buf, capacity, &offset, "<");
+        fmt_append_str(buf, capacity, &offset, name);
+        fmt_append_str(buf, capacity, &offset, ": 0x");
+        fmt_append_hex(buf, capacity, &offset, (unsigned long)v.obj_val);
+        fmt_append_str(buf, capacity, &offset, ">");
+    } else if (v.is_id && v.obj_val == 0) {
+        fmt_append_str(buf, capacity, &offset, "nil");
+    }
+    /* void values produce an empty string — no display */
 }
 
 /* ── Public API ─────────────────────────────────────────────────── */
@@ -1655,18 +2111,28 @@ int objc_interp(const char *source, unsigned int length) {
     g_error_code = OBJC_INTERP_OK;
     g_error_buffer[0] = '\0';
     g_result_buffer[0] = '\0';
+    g_return_pending = 0;
 
     /* Don't reset variable table — it persists across cells */
 
     parser_init(&p, source, length);
 
     /* Parse and evaluate all statements */
-    parse_block(&p);
+    {
+        Value last = parse_block(&p);
 
-    if (p.error) {
-        g_error_code = p.error;
-        cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
-        return p.error;
+        if (p.error) {
+            if (cstr_eq(p.error_msg, "Execution interrupted")) {
+                g_error_code = OBJC_INTERP_INTERRUPTED;
+            } else {
+                g_error_code = p.error;
+            }
+            cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+            return p.error;
+        }
+
+        /* Format the last expression result for REPL display */
+        format_value(last, g_result_buffer, 512);
     }
 
     return OBJC_INTERP_OK;

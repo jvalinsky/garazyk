@@ -64,18 +64,21 @@ stdenv.mkDerivation {
     # Link: kernel + libobjc2 runtime + wasi-libc
     ${llvmPackages.lld}/bin/wasm-ld \
       --no-entry \
+      --allow-undefined \
       --export-memory \
       --export=objc_kernel_init \
+      --export=objc_kernel_max_request_bytes \
+      --export=objc_kernel_max_response_bytes \
+      --export=objc_kernel_alloc \
+      --export=objc_kernel_free \
       --export=objc_kernel_info_json \
       --export=objc_kernel_execute_json \
       --export=objc_kernel_complete_json \
       --export=objc_kernel_inspect_json \
-      --export=objc_kernel_free \
-      --export=objc_kernel_request_buffer \
-      --export=objc_kernel_request_buffer_size \
       --export=__objc_wasm_init \
       --export=objc_getClass \
       --export=objc_getMetaClass \
+      --export=objc_lookUpClass \
       --export=sel_registerName \
       --export=sel_getName \
       --export=class_getName \

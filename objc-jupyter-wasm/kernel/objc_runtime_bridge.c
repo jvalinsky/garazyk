@@ -1,22 +1,21 @@
 /*
  * objc_runtime_bridge.c
- * Stable C ABI for the browser-side Objective-C Jupyter kernel.
+ * Stable transport v2 C ABI for the browser-side Objective-C Jupyter kernel.
  *
- * This file provides the stable JSON ABI that JavaScript calls into.
- * The interpreter layer (objc_interpreter.c) evaluates ObjC source
- * against the real GNUstep libobjc2 runtime.
- *
- * Threading constraint: This ABI is single-threaded. All exported functions
- * share static buffers (request_buffer, response_buffer, etc.) and a global
- * execution_count. Calls must not overlap. The JavaScript worker enforces
- * this by processing messages sequentially.
+ * JavaScript passes explicit request pointers and byte lengths into the module
+ * and receives allocated response buffers plus explicit lengths back. Domain
+ * failures remain JSON payloads; transport failures return integer status codes.
  */
 
 #include "objc_interpreter.h"
 
-#define OBJC_KERNEL_REQUEST_CAPACITY 4096u
-#define OBJC_KERNEL_RESPONSE_CAPACITY 8192u
-#define OBJC_KERNEL_CODE_CAPACITY 2048u
+#include <stdint.h>
+#include <stdlib.h>
+
+#define OBJC_KERNEL_MAX_REQUEST_BYTES 65536u
+#define OBJC_KERNEL_MAX_RESPONSE_BYTES 1048576u
+#define OBJC_KERNEL_SMALL_RESPONSE_BYTES 8192u
+#define OBJC_KERNEL_MAX_CODE_BYTES 65536u
 
 #define OBJC_JSON_OK 0
 #define OBJC_JSON_INVALID 1
@@ -24,12 +23,25 @@
 #define OBJC_JSON_CODE_NOT_STRING 3
 #define OBJC_JSON_CODE_TOO_LARGE 4
 
-static char request_buffer[OBJC_KERNEL_REQUEST_CAPACITY];
-static char response_buffer[OBJC_KERNEL_RESPONSE_CAPACITY];
-static char complete_buffer[2048u];
-static char inspect_buffer[2048u];
-static char parsed_code_buffer[OBJC_KERNEL_CODE_CAPACITY];
+#define OBJC_KERNEL_TRANSPORT_OK 0
+#define OBJC_KERNEL_TRANSPORT_INVALID_ARGUMENT 1
+#define OBJC_KERNEL_TRANSPORT_REQUEST_TOO_LARGE 2
+#define OBJC_KERNEL_TRANSPORT_RESPONSE_TOO_LARGE 3
+#define OBJC_KERNEL_TRANSPORT_OOM 4
+#define OBJC_KERNEL_TRANSPORT_INTERNAL_ERROR 5
+
+typedef struct {
+    char *buffer;
+    unsigned int capacity;
+    unsigned int offset;
+    int overflow;
+} JsonBuilder;
+
+static char parsed_code_buffer[OBJC_KERNEL_MAX_CODE_BYTES];
 static unsigned int execution_count = 0u;
+
+/* Forward declaration for WASM runtime initialization */
+extern void __objc_wasm_init(void);
 
 static unsigned int cstr_len(const char *value) {
     unsigned int length = 0u;
@@ -42,32 +54,68 @@ static unsigned int cstr_len(const char *value) {
     return length;
 }
 
-static void append_char(char *buffer, unsigned int capacity, unsigned int *offset, char value) {
-    if (*offset + 1u >= capacity) {
-        return;
+static int cstr_eq(const char *a, const char *b) {
+    unsigned int i = 0u;
+    if (a == 0 || b == 0) {
+        return a == b;
     }
-    buffer[*offset] = value;
-    *offset += 1u;
-    buffer[*offset] = '\0';
+    while (a[i] != '\0' && b[i] != '\0') {
+        if (a[i] != b[i]) {
+            return 0;
+        }
+        i++;
+    }
+    return a[i] == b[i];
 }
 
-static void append_literal(char *buffer, unsigned int capacity, unsigned int *offset, const char *value) {
+static void copy_bytes(char *dst, const unsigned char *src, unsigned int length) {
+    unsigned int i = 0u;
+    while (i < length) {
+        dst[i] = (char)src[i];
+        i++;
+    }
+}
+
+static void builder_init(JsonBuilder *builder, char *buffer, unsigned int capacity) {
+    builder->buffer = buffer;
+    builder->capacity = capacity;
+    builder->offset = 0u;
+    builder->overflow = 0;
+    if (capacity > 0u) {
+        buffer[0] = '\0';
+    }
+}
+
+static void builder_append_char(JsonBuilder *builder, char value) {
+    if (builder->overflow) {
+        return;
+    }
+    if (builder->offset + 1u >= builder->capacity) {
+        builder->overflow = 1;
+        return;
+    }
+    builder->buffer[builder->offset] = value;
+    builder->offset += 1u;
+    builder->buffer[builder->offset] = '\0';
+}
+
+static void builder_append_literal(JsonBuilder *builder, const char *value) {
     unsigned int i = 0u;
     if (value == 0) {
         return;
     }
     while (value[i] != '\0') {
-        append_char(buffer, capacity, offset, value[i]);
+        builder_append_char(builder, value[i]);
         i++;
     }
 }
 
-static void append_uint(char *buffer, unsigned int capacity, unsigned int *offset, unsigned int value) {
+static void builder_append_uint(JsonBuilder *builder, unsigned int value) {
     char digits[10u];
     unsigned int digit_count = 0u;
 
     if (value == 0u) {
-        append_char(buffer, capacity, offset, '0');
+        builder_append_char(builder, '0');
         return;
     }
 
@@ -79,14 +127,12 @@ static void append_uint(char *buffer, unsigned int capacity, unsigned int *offse
 
     while (digit_count > 0u) {
         digit_count--;
-        append_char(buffer, capacity, offset, digits[digit_count]);
+        builder_append_char(builder, digits[digit_count]);
     }
 }
 
-static void append_json_escaped_range(
-    char *buffer,
-    unsigned int capacity,
-    unsigned int *offset,
+static void builder_append_json_escaped_range(
+    JsonBuilder *builder,
     const char *value,
     unsigned int value_length
 ) {
@@ -94,18 +140,18 @@ static void append_json_escaped_range(
     while (value != 0 && i < value_length && value[i] != '\0') {
         char ch = value[i];
         if (ch == '"' || ch == '\\') {
-            append_char(buffer, capacity, offset, '\\');
-            append_char(buffer, capacity, offset, ch);
+            builder_append_char(builder, '\\');
+            builder_append_char(builder, ch);
         } else if (ch == '\n') {
-            append_literal(buffer, capacity, offset, "\\n");
+            builder_append_literal(builder, "\\n");
         } else if (ch == '\r') {
-            append_literal(buffer, capacity, offset, "\\r");
+            builder_append_literal(builder, "\\r");
         } else if (ch == '\t') {
-            append_literal(buffer, capacity, offset, "\\t");
+            builder_append_literal(builder, "\\t");
         } else if ((unsigned char)ch < 32u) {
-            append_char(buffer, capacity, offset, ' ');
+            builder_append_char(builder, ' ');
         } else {
-            append_char(buffer, capacity, offset, ch);
+            builder_append_char(builder, ch);
         }
         i++;
     }
@@ -310,10 +356,6 @@ static int parse_kernel_request_code(const char *json, char *code, unsigned int 
         return OBJC_JSON_INVALID;
     }
 
-    if (cstr_len(json) >= (OBJC_KERNEL_REQUEST_CAPACITY - 1u)) {
-        return OBJC_JSON_CODE_TOO_LARGE;
-    }
-
     skip_space(&cursor);
     if (*cursor != '{') {
         return OBJC_JSON_INVALID;
@@ -403,37 +445,305 @@ static const char *json_error_value(int status) {
         return "Kernel request field code must be a JSON string.";
     }
     if (status == OBJC_JSON_CODE_TOO_LARGE) {
-        return "Kernel request exceeds the WASM smoke request limit.";
+        return "Kernel request code exceeds the WASM transport limit.";
     }
-    return "Kernel request is not valid JSON for the smoke ABI.";
+    return "Kernel request is not valid JSON for the Objective-C transport.";
 }
 
-static char *write_error_json(char *buffer, unsigned int capacity, int status) {
-    unsigned int offset = 0u;
-    buffer[0] = '\0';
-    append_literal(buffer, capacity, &offset, "{");
-    append_literal(buffer, capacity, &offset, "\"status\":\"error\",");
-    append_literal(buffer, capacity, &offset, "\"ename\":\"");
-    append_literal(buffer, capacity, &offset, json_error_name(status));
-    append_literal(buffer, capacity, &offset, "\",");
-    append_literal(buffer, capacity, &offset, "\"evalue\":\"");
-    append_literal(buffer, capacity, &offset, json_error_value(status));
-    append_literal(buffer, capacity, &offset, "\",");
-    append_literal(buffer, capacity, &offset, "\"traceback\":[]");
-    append_literal(buffer, capacity, &offset, "}");
-    return buffer;
+static int validate_output_args(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
+    if (out_ptr_ptr == 0 || out_len_ptr == 0) {
+        return OBJC_KERNEL_TRANSPORT_INVALID_ARGUMENT;
+    }
+    *out_ptr_ptr = 0u;
+    *out_len_ptr = 0u;
+    return OBJC_KERNEL_TRANSPORT_OK;
 }
 
-/* Forward declaration for WASM runtime initialization */
-extern void __objc_wasm_init(void);
+static char *copy_request_json(const unsigned char *request_bytes, unsigned int request_len, int *transport_status) {
+    char *request_json;
+    if (request_len > OBJC_KERNEL_MAX_REQUEST_BYTES) {
+        *transport_status = OBJC_KERNEL_TRANSPORT_REQUEST_TOO_LARGE;
+        return 0;
+    }
+    if (request_bytes == 0 && request_len > 0u) {
+        *transport_status = OBJC_KERNEL_TRANSPORT_INVALID_ARGUMENT;
+        return 0;
+    }
+
+    request_json = (char *)malloc((size_t)request_len + 1u);
+    if (request_json == 0) {
+        *transport_status = OBJC_KERNEL_TRANSPORT_OOM;
+        return 0;
+    }
+    if (request_len > 0u) {
+        copy_bytes(request_json, request_bytes, request_len);
+    }
+    request_json[request_len] = '\0';
+    *transport_status = OBJC_KERNEL_TRANSPORT_OK;
+    return request_json;
+}
+
+static int finalize_response_buffer(
+    char *response_buffer,
+    JsonBuilder *builder,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr
+) {
+    if (builder->overflow || builder->offset > OBJC_KERNEL_MAX_RESPONSE_BYTES) {
+        free(response_buffer);
+        return OBJC_KERNEL_TRANSPORT_RESPONSE_TOO_LARGE;
+    }
+    *out_ptr_ptr = (unsigned int)(uintptr_t)response_buffer;
+    *out_len_ptr = builder->offset;
+    return OBJC_KERNEL_TRANSPORT_OK;
+}
+
+static int allocate_response(JsonBuilder *builder, unsigned int capacity, char **response_buffer_ptr) {
+    char *response_buffer = (char *)malloc((size_t)capacity + 1u);
+    if (response_buffer == 0) {
+        return OBJC_KERNEL_TRANSPORT_OOM;
+    }
+    builder_init(builder, response_buffer, capacity + 1u);
+    *response_buffer_ptr = response_buffer;
+    return OBJC_KERNEL_TRANSPORT_OK;
+}
+
+static int write_domain_error_json(
+    const char *ename,
+    const char *evalue,
+    unsigned int execution_count_value,
+    int include_execution_count,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr
+) {
+    JsonBuilder builder;
+    char *response_buffer = 0;
+    int status = allocate_response(&builder, OBJC_KERNEL_SMALL_RESPONSE_BYTES, &response_buffer);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+
+    builder_append_literal(&builder, "{");
+    builder_append_literal(&builder, "\"status\":\"error\",");
+    if (include_execution_count) {
+        builder_append_literal(&builder, "\"execution_count\":");
+        builder_append_uint(&builder, execution_count_value);
+        builder_append_literal(&builder, ",");
+    }
+    builder_append_literal(&builder, "\"ename\":\"");
+    builder_append_literal(&builder, ename);
+    builder_append_literal(&builder, "\",");
+    builder_append_literal(&builder, "\"evalue\":\"");
+    builder_append_json_escaped_range(&builder, evalue, cstr_len(evalue));
+    builder_append_literal(&builder, "\",\"traceback\":[]}");
+
+    return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
+}
+
+static int build_kernel_info_response(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
+    JsonBuilder builder;
+    char *response_buffer = 0;
+    int status = allocate_response(&builder, OBJC_KERNEL_SMALL_RESPONSE_BYTES, &response_buffer);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+
+    builder_append_literal(&builder, "{");
+    builder_append_literal(&builder, "\"protocol_version\":\"5.3\",");
+    builder_append_literal(&builder, "\"implementation\":\"objc-jupyter-wasm\",");
+    builder_append_literal(&builder, "\"implementation_version\":\"0.1.0\",");
+    builder_append_literal(&builder, "\"language_info\":{");
+    builder_append_literal(&builder, "\"name\":\"objective-c\",");
+    builder_append_literal(&builder, "\"version\":\"2.2\",");
+    builder_append_literal(&builder, "\"mimetype\":\"text/x-objective-c\",");
+    builder_append_literal(&builder, "\"file_extension\":\".m\",");
+    builder_append_literal(&builder, "\"pygments_lexer\":\"objective-c\",");
+    builder_append_literal(&builder, "\"codemirror_mode\":\"clike\"");
+    builder_append_literal(&builder, "},");
+    builder_append_literal(&builder, "\"help_links\":[],");
+    builder_append_literal(&builder, "\"banner\":\"Objective-C WASM smoke kernel\"");
+    builder_append_literal(&builder, "}");
+
+    return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
+}
+
+static int build_execute_response(
+    const char *code,
+    unsigned int code_length,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr
+) {
+    JsonBuilder builder;
+    char *response_buffer = 0;
+    int status;
+    int interp_result;
+
+    execution_count++;
+    interp_result = objc_interp(code, code_length);
+
+    if (interp_result != OBJC_INTERP_OK) {
+        const char *error_msg = objc_interp_get_error();
+        const char *ename = "ObjCRuntimeError";
+        if (objc_interp_get_error_code() == OBJC_INTERP_INTERRUPTED) {
+            ename = "Interrupted";
+        }
+        return write_domain_error_json(
+            ename,
+            error_msg,
+            execution_count,
+            1,
+            out_ptr_ptr,
+            out_len_ptr
+        );
+    }
+
+    status = allocate_response(&builder, OBJC_KERNEL_MAX_RESPONSE_BYTES, &response_buffer);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+
+    builder_append_literal(&builder, "{");
+    builder_append_literal(&builder, "\"status\":\"ok\",");
+    builder_append_literal(&builder, "\"execution_count\":");
+    builder_append_uint(&builder, execution_count);
+    builder_append_literal(&builder, ",");
+
+    {
+        const char *result_str = objc_interp_get_result();
+        unsigned int result_len = cstr_len(result_str);
+        if (result_len > 0u) {
+            builder_append_literal(&builder, "\"data\":{\"text/plain\":\"");
+            builder_append_json_escaped_range(&builder, result_str, result_len);
+            builder_append_literal(&builder, "\"},");
+        } else {
+            builder_append_literal(&builder, "\"data\":{},");
+        }
+    }
+
+    builder_append_literal(&builder, "\"metadata\":{}");
+    builder_append_literal(&builder, "}");
+
+    return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
+}
+
+static int build_complete_response(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
+    JsonBuilder builder;
+    char *response_buffer = 0;
+    int status = allocate_response(&builder, OBJC_KERNEL_SMALL_RESPONSE_BYTES, &response_buffer);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+
+    builder_append_literal(&builder, "{");
+    builder_append_literal(&builder, "\"status\":\"ok\",");
+    builder_append_literal(&builder, "\"matches\":[");
+    builder_append_literal(&builder, "\"@interface\",\"@implementation\",\"@end\",\"@class\",\"@protocol\",");
+    builder_append_literal(&builder, "\"NSLog\",\"NSString\",\"NSObject\",\"NSArray\",\"NSDictionary\",\"NSData\",\"NSNumber\",");
+    builder_append_literal(&builder, "\"int\",\"id\",\"Class\",\"SEL\",\"BOOL\",\"void\",");
+    builder_append_literal(&builder, "\"alloc\",\"init\",\"class\",\"sel_registerName\",\"objc_getClass\"");
+    builder_append_literal(&builder, "],");
+    builder_append_literal(&builder, "\"cursor_start\":0,\"cursor_end\":0,\"metadata\":{}");
+    builder_append_literal(&builder, "}");
+
+    return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
+}
+
+static int build_inspect_response(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
+    JsonBuilder builder;
+    char *response_buffer = 0;
+    int status = allocate_response(&builder, OBJC_KERNEL_SMALL_RESPONSE_BYTES, &response_buffer);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+
+    builder_append_literal(&builder, "{");
+    builder_append_literal(&builder, "\"status\":\"ok\",\"found\":false,\"data\":{},\"metadata\":{}");
+    builder_append_literal(&builder, "}");
+
+    return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
+}
+
+static int handle_request_with_code(
+    const unsigned char *request_bytes,
+    unsigned int request_len,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr,
+    int (*handler)(const char *code, unsigned int code_length, unsigned int *out_ptr_ptr, unsigned int *out_len_ptr)
+) {
+    char *request_json = 0;
+    unsigned int code_length = 0u;
+    int parse_status;
+    int transport_status;
+
+    request_json = copy_request_json(request_bytes, request_len, &transport_status);
+    if (transport_status != OBJC_KERNEL_TRANSPORT_OK) {
+        return transport_status;
+    }
+
+    parse_status = parse_kernel_request_code(
+        request_json,
+        parsed_code_buffer,
+        OBJC_KERNEL_MAX_CODE_BYTES,
+        &code_length
+    );
+    free(request_json);
+
+    if (parse_status != OBJC_JSON_OK) {
+        return write_domain_error_json(
+            json_error_name(parse_status),
+            json_error_value(parse_status),
+            0u,
+            0,
+            out_ptr_ptr,
+            out_len_ptr
+        );
+    }
+
+    return handler(parsed_code_buffer, code_length, out_ptr_ptr, out_len_ptr);
+}
+
+static int handle_request_without_code(
+    const unsigned char *request_bytes,
+    unsigned int request_len,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr,
+    int (*handler)(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr)
+) {
+    char *request_json = 0;
+    int parse_status;
+    int transport_status;
+    unsigned int code_length = 0u;
+
+    request_json = copy_request_json(request_bytes, request_len, &transport_status);
+    if (transport_status != OBJC_KERNEL_TRANSPORT_OK) {
+        return transport_status;
+    }
+
+    parse_status = parse_kernel_request_code(
+        request_json,
+        parsed_code_buffer,
+        OBJC_KERNEL_MAX_CODE_BYTES,
+        &code_length
+    );
+    free(request_json);
+
+    if (parse_status != OBJC_JSON_OK) {
+        return write_domain_error_json(
+            json_error_name(parse_status),
+            json_error_value(parse_status),
+            0u,
+            0,
+            out_ptr_ptr,
+            out_len_ptr
+        );
+    }
+
+    return handler(out_ptr_ptr, out_len_ptr);
+}
 
 __attribute__((used))
 int objc_kernel_init(void) {
     execution_count = 0u;
-    request_buffer[0] = '\0';
-    response_buffer[0] = '\0';
-    complete_buffer[0] = '\0';
-    inspect_buffer[0] = '\0';
 
     /* Initialize the ObjC runtime's class table before any
      * class lookups or allocations. This seeds the table with
@@ -446,151 +756,93 @@ int objc_kernel_init(void) {
 }
 
 __attribute__((used))
-char *objc_kernel_request_buffer(void) {
-    request_buffer[0] = '\0';
-    return request_buffer;
+unsigned int objc_kernel_max_request_bytes(void) {
+    return OBJC_KERNEL_MAX_REQUEST_BYTES;
 }
 
 __attribute__((used))
-int objc_kernel_request_buffer_size(void) {
-    return (int)OBJC_KERNEL_REQUEST_CAPACITY;
+unsigned int objc_kernel_max_response_bytes(void) {
+    return OBJC_KERNEL_MAX_RESPONSE_BYTES;
 }
 
 __attribute__((used))
-char *objc_kernel_info_json(void) {
-    return "{"
-        "\"protocol_version\":\"5.3\","
-        "\"implementation\":\"objc-jupyter-wasm\","
-        "\"implementation_version\":\"0.1.0\","
-        "\"language_info\":{"
-            "\"name\":\"objective-c\","
-            "\"version\":\"2.2\","
-            "\"mimetype\":\"text/x-objective-c\","
-            "\"file_extension\":\".m\","
-            "\"pygments_lexer\":\"objective-c\","
-            "\"codemirror_mode\":\"clike\""
-        "},"
-        "\"banner\":\"Objective-C WASM smoke kernel\""
-    "}";
+void *objc_kernel_alloc(unsigned int size) {
+    unsigned int alloc_size = size == 0u ? 1u : size;
+    return malloc((size_t)alloc_size);
 }
 
 __attribute__((used))
-char *objc_kernel_execute_json(char *request_json) {
-    unsigned int offset = 0u;
-    unsigned int code_length = 0u;
-    int status = parse_kernel_request_code(
-        request_json,
-        parsed_code_buffer,
-        OBJC_KERNEL_CODE_CAPACITY,
-        &code_length
+void objc_kernel_free(void *value) {
+    if (value != 0) {
+        free(value);
+    }
+}
+
+__attribute__((used))
+int objc_kernel_info_json(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
+    int status = validate_output_args(out_ptr_ptr, out_len_ptr);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+    return build_kernel_info_response(out_ptr_ptr, out_len_ptr);
+}
+
+__attribute__((used))
+int objc_kernel_execute_json(
+    const unsigned char *request_bytes,
+    unsigned int request_len,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr
+) {
+    int status = validate_output_args(out_ptr_ptr, out_len_ptr);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+    return handle_request_with_code(
+        request_bytes,
+        request_len,
+        out_ptr_ptr,
+        out_len_ptr,
+        build_execute_response
     );
-
-    if (status != OBJC_JSON_OK) {
-        return write_error_json(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, status);
-    }
-
-    execution_count++;
-
-    /* Interpret the ObjC source code */
-    {
-        int interp_result = objc_interp(parsed_code_buffer, code_length);
-
-        if (interp_result != OBJC_INTERP_OK) {
-            /* Interpreter error */
-            const char *error_msg = objc_interp_get_error();
-            unsigned int error_len = cstr_len(error_msg);
-
-            offset = 0u;
-            response_buffer[0] = '\0';
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "{");
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"status\":\"error\",");
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"execution_count\":");
-            append_uint(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, execution_count);
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, ",\"ename\":\"ObjCRuntimeError\",");
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"evalue\":\"");
-            append_json_escaped_range(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, error_msg, error_len);
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\",\"traceback\":[]}");
-            return response_buffer;
-        }
-
-        /* Success — format response with NSLog output */
-        const char *nslog_output = objc_interp_get_nslog_output();
-        unsigned int nslog_len = objc_interp_get_nslog_length();
-
-        offset = 0u;
-        response_buffer[0] = '\0';
-        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "{");
-        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"status\":\"ok\",");
-        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"execution_count\":");
-        append_uint(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, execution_count);
-        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, ",\"data\":{},");
-        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"metadata\":{},");
-
-        /* Include NSLog output as stream */
-        if (nslog_len > 0u) {
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"streams\":[{\"name\":\"stdout\",\"text\":\"");
-            append_json_escaped_range(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, nslog_output, nslog_len);
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"}]");
-        } else {
-            append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "\"streams\":[]");
-        }
-
-        append_literal(response_buffer, OBJC_KERNEL_RESPONSE_CAPACITY, &offset, "}");
-        return response_buffer;
-    }
 }
 
 __attribute__((used))
-char *objc_kernel_complete_json(char *request_json) {
-    unsigned int offset = 0u;
-    unsigned int code_length = 0u;
-    int status = parse_kernel_request_code(
-        request_json,
-        parsed_code_buffer,
-        OBJC_KERNEL_CODE_CAPACITY,
-        &code_length
+int objc_kernel_complete_json(
+    const unsigned char *request_bytes,
+    unsigned int request_len,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr
+) {
+    int status = validate_output_args(out_ptr_ptr, out_len_ptr);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+    return handle_request_without_code(
+        request_bytes,
+        request_len,
+        out_ptr_ptr,
+        out_len_ptr,
+        build_complete_response
     );
-    (void)code_length;
-
-    if (status != OBJC_JSON_OK) {
-        return write_error_json(complete_buffer, 2048u, status);
-    }
-
-    complete_buffer[0] = '\0';
-
-    append_literal(complete_buffer, 2048u, &offset, "{");
-    append_literal(complete_buffer, 2048u, &offset, "\"status\":\"ok\",");
-    append_literal(complete_buffer, 2048u, &offset, "\"matches\":[\"@interface\",\"@implementation\",\"@end\",\"NSString\",\"NSArray\",\"NSDictionary\"],");
-    append_literal(complete_buffer, 2048u, &offset, "\"cursor_start\":0,\"cursor_end\":0,\"metadata\":{}");
-    append_literal(complete_buffer, 2048u, &offset, "}");
-    return complete_buffer;
 }
 
 __attribute__((used))
-char *objc_kernel_inspect_json(char *request_json) {
-    unsigned int offset = 0u;
-    unsigned int code_length = 0u;
-    int status = parse_kernel_request_code(
-        request_json,
-        parsed_code_buffer,
-        OBJC_KERNEL_CODE_CAPACITY,
-        &code_length
+int objc_kernel_inspect_json(
+    const unsigned char *request_bytes,
+    unsigned int request_len,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr
+) {
+    int status = validate_output_args(out_ptr_ptr, out_len_ptr);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+    return handle_request_without_code(
+        request_bytes,
+        request_len,
+        out_ptr_ptr,
+        out_len_ptr,
+        build_inspect_response
     );
-    (void)code_length;
-
-    if (status != OBJC_JSON_OK) {
-        return write_error_json(inspect_buffer, 2048u, status);
-    }
-
-    inspect_buffer[0] = '\0';
-
-    append_literal(inspect_buffer, 2048u, &offset, "{");
-    append_literal(inspect_buffer, 2048u, &offset, "\"status\":\"ok\",\"found\":false,\"data\":{},\"metadata\":{}");
-    append_literal(inspect_buffer, 2048u, &offset, "}");
-    return inspect_buffer;
-}
-
-__attribute__((used))
-void objc_kernel_free(char *value) {
-    (void)value;
 }

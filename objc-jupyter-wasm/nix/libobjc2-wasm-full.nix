@@ -172,30 +172,46 @@ stdenv.mkDerivation {
 
     /* selector_table.cc stubs — simple linear-search selector registration.
        The real selector_table.cc uses C++ robin-map for O(1) lookup.
-       This C implementation uses a simple array with linear search. */
+       This C implementation uses a simple array with linear search.
+       IMPORTANT: selector names must be copied into persistent storage
+       because callers often pass stack-local buffers. */
     #define MAX_SELECTORS 4096
-    static struct {
-      const char *name;
-      SEL sel;
-    } g_selector_registry[MAX_SELECTORS];
+    static char g_selector_names[MAX_SELECTORS][256];
+    static unsigned int g_selector_name_lens[MAX_SELECTORS];
+    static SEL g_selector_ptrs[MAX_SELECTORS];
     static unsigned int g_selector_count = 0;
+
+    static int __sel_strcmp(const char *a, unsigned int a_len,
+                            const char *b) {
+      unsigned int i;
+      for (i = 0; i < a_len && b[i]; i++) {
+        if (a[i] != b[i]) return 1;
+      }
+      if (i < a_len || b[i] != '\0') return 1;
+      return 0;
+    }
 
     SEL sel_registerName(const char *name) {
       unsigned int i;
+      unsigned int name_len = 0;
       if (name == 0) return 0;
+      while (name[name_len] && name_len < 255) name_len++;
       for (i = 0; i < g_selector_count; i++) {
-        if (g_selector_registry[i].name != 0 &&
-            __builtin_strcmp(g_selector_registry[i].name, name) == 0) {
-          return g_selector_registry[i].sel;
+        if (__sel_strcmp(g_selector_names[i], g_selector_name_lens[i], name) == 0) {
+          return g_selector_ptrs[i];
         }
       }
       if (g_selector_count >= MAX_SELECTORS) return 0;
-      /* The SEL is just a pointer to the name string in the registry.
-         This is a simplified model — the real runtime uses typed selectors. */
-      g_selector_registry[g_selector_count].name = name;
-      g_selector_registry[g_selector_count].sel = (SEL)name;
+      /* Copy name into persistent storage */
+      for (i = 0; i < name_len; i++) {
+        g_selector_names[g_selector_count][i] = name[i];
+      }
+      g_selector_names[g_selector_count][name_len] = '\0';
+      g_selector_name_lens[g_selector_count] = name_len;
+      /* SEL points to the persistent copy */
+      g_selector_ptrs[g_selector_count] = (SEL)&g_selector_names[g_selector_count];
       g_selector_count++;
-      return (SEL)name;
+      return g_selector_ptrs[g_selector_count - 1];
     }
 
     const char *sel_getName(SEL sel) {
