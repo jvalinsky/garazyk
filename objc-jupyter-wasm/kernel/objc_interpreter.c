@@ -866,6 +866,7 @@ static Value parse_block(Parser *p);
 static int is_truthy(Value v);
 static AstNode *parse_statement_ast(Parser *p);
 static Value eval_ast(AstNode *node, const char *source);
+static Value parse_type_and_var_decl(Parser *p);
 
 /* ── NSLog format string evaluation ─────────────────────────────── */
 
@@ -1135,6 +1136,12 @@ static Value parse_message_send(Parser *p) {
             return value_from_id(instance);
         }
 
+        /* Built-in: [ClassName new] → [[ClassName alloc] init] */
+        if (target.is_class && cstr_eq(sel_name, "new")) {
+            id instance = class_createInstance(target.cls_val, 0);
+            return value_from_id(instance);
+        }
+
         /* Built-in: [obj init] → return self (standard NSObject pattern) */
         if (cstr_eq(sel_name, "init") && target.is_id && receiver != 0) {
             return value_from_id(receiver);
@@ -1149,12 +1156,26 @@ static Value parse_message_send(Parser *p) {
 
         /* Check if this selector matches an interpreter-registered method.
          * Interpreter methods are executed directly in the interpreter to
-         * avoid WASM calling convention issues with variadic IMP dispatch. */
+         * avoid WASM calling convention issues with variadic IMP dispatch.
+         * Match by: selector + class_ptr + is_class_method.
+         * For class methods, target.is_class must be true and the method's
+         * is_class_method must be 1. For instance methods, target.is_id
+         * must be true (or target.is_class for alloc-init chain). */
         {
             unsigned int mi;
             for (mi = 0; mi < g_method_count; mi++) {
                 if (g_methods[mi].selector == sel && g_methods[mi].source_len > 0) {
-                    break;
+                    /* Check class match */
+                    if (g_methods[mi].class_ptr == (Class)0 ||
+                        g_methods[mi].class_ptr == (target.is_class ? target.cls_val : object_getClass(receiver))) {
+                        /* Check class method vs instance method */
+                        if (g_methods[mi].is_class_method && target.is_class) {
+                            break; /* class method, called on class */
+                        }
+                        if (!g_methods[mi].is_class_method && (target.is_id || target.is_int)) {
+                            break; /* instance method, called on instance */
+                        }
+                    }
                 }
             }
 
@@ -1509,6 +1530,36 @@ static Value parse_implementation(Parser *p) {
            !cstr_eq(parser_current(p).text, "@end")) {
         if (parser_current(p).type == TOK_EOF) break;
 
+        /* Variable declaration inside @implementation (e.g., int _ivar;) */
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            Token saved = p->lex.current;
+            unsigned int saved_pos = p->lex.pos;
+            Token next;
+
+            /* Check if this looks like a type declaration */
+            {
+                int is_builtin = (
+                    cstr_eq(parser_current(p).text, "int") ||
+                    cstr_eq(parser_current(p).text, "void") ||
+                    cstr_eq(parser_current(p).text, "id") ||
+                    cstr_eq(parser_current(p).text, "Class") ||
+                    cstr_eq(parser_current(p).text, "SEL") ||
+                    cstr_eq(parser_current(p).text, "BOOL") ||
+                    cstr_eq(parser_current(p).text, "long") ||
+                    cstr_eq(parser_current(p).text, "char") ||
+                    cstr_eq(parser_current(p).text, "float") ||
+                    cstr_eq(parser_current(p).text, "double")
+                );
+
+                if (is_builtin) {
+                    /* Parse as type+variable declaration */
+                    Value v = parse_type_and_var_decl(p);
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    continue;
+                }
+            }
+        }
+
         /* Method definition: - (returntype)selector:argtype argname { body } */
         if (parser_current(p).type == TOK_MINUS || parser_current(p).type == TOK_PLUS) {
             int is_class_method = (parser_current(p).type == TOK_PLUS);
@@ -1786,6 +1837,136 @@ static Value parse_primary(Parser *p) {
                     var->int_value--;
                     parser_advance(p);
                     return value_from_int(old_val);
+                }
+
+                /* Dot syntax: obj.property → [obj property]
+                 *             obj.property = value → [obj setProperty:value] */
+                if (parser_current(p).type == TOK_DOT && !var->is_int) {
+                    char prop_name[64];
+                    char setter_name[128];
+                    parser_advance(p); /* consume . */
+
+                    if (parser_current(p).type != TOK_IDENTIFIER) {
+                        parser_error(p, "Expected property name after '.'");
+                        return value_void();
+                    }
+
+                    cstr_copy(prop_name, parser_current(p).text, 64);
+                    parser_advance(p);
+
+                    /* Check for setter: obj.prop = value */
+                    if (parser_current(p).type == TOK_ASSIGN) {
+                        parser_advance(p);
+                        {
+                            Value val = parse_expression(p);
+                            if (p->error) return val;
+
+                            /* Build setter selector: setProperty: */
+                            setter_name[0] = 's';
+                            setter_name[1] = 'e';
+                            setter_name[2] = 't';
+                            {
+                                unsigned int pi = 0;
+                                unsigned int si = 3;
+                                /* Capitalize first letter of property */
+                                if (prop_name[0] >= 'a' && prop_name[0] <= 'z') {
+                                    setter_name[si++] = prop_name[0] - 'a' + 'A';
+                                    pi = 1;
+                                }
+                                while (prop_name[pi] && si < 126) {
+                                    setter_name[si++] = prop_name[pi++];
+                                }
+                                setter_name[si++] = ':';
+                                setter_name[si] = '\0';
+                            }
+
+                            /* Dispatch setter as message send */
+                            {
+                                SEL setter_sel = sel_registerName(setter_name);
+                                id receiver = var->is_id ? var->value : (id)var->cls;
+                                unsigned int mi;
+                                for (mi = 0; mi < g_method_count; mi++) {
+                                    if (g_methods[mi].selector == setter_sel && g_methods[mi].source_len > 0 &&
+                                        !g_methods[mi].is_class_method) {
+                                        break;
+                                    }
+                                }
+                                if (mi < g_method_count) {
+                                    /* Execute setter method body */
+                                    unsigned int saved_var_count = g_var_count;
+                                    InterpVar *self_var = interp_get_or_create_var("self");
+                                    if (self_var) {
+                                        self_var->is_id = 1;
+                                        self_var->value = receiver;
+                                    }
+                                    {
+                                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
+                                        if (cmd_var) {
+                                            cmd_var->is_sel = 1;
+                                            cmd_var->sel = setter_sel;
+                                        }
+                                    }
+                                    /* Set first arg variable */
+                                    if (g_methods[mi].arg_count > 0) {
+                                        InterpVar *arg_var = interp_get_or_create_var(g_methods[mi].arg_names[0]);
+                                        if (arg_var) {
+                                            arg_var->is_id = val.is_id;
+                                            arg_var->value = val.obj_val;
+                                            arg_var->is_int = val.is_int;
+                                            arg_var->int_value = val.int_val;
+                                            arg_var->is_class = val.is_class;
+                                            arg_var->cls = val.cls_val;
+                                            arg_var->is_sel = val.is_sel;
+                                            arg_var->sel = val.sel_val;
+                                        }
+                                    }
+                                    g_return_pending = 0;
+                                    objc_interp(g_methods[mi].source, g_methods[mi].source_len);
+                                    g_var_count = saved_var_count;
+                                    g_return_pending = 0;
+                                }
+                                return val;
+                            }
+                        }
+                    }
+
+                    /* Getter: obj.property → [obj property] */
+                    {
+                        SEL prop_sel = sel_registerName(prop_name);
+                        id receiver = var->is_id ? var->value : (id)var->cls;
+                        unsigned int mi;
+                        for (mi = 0; mi < g_method_count; mi++) {
+                            if (g_methods[mi].selector == prop_sel && g_methods[mi].source_len > 0 &&
+                                !g_methods[mi].is_class_method) {
+                                break;
+                            }
+                        }
+                        if (mi < g_method_count) {
+                            /* Execute getter method body */
+                            unsigned int saved_var_count = g_var_count;
+                            Value return_val;
+                            InterpVar *self_var = interp_get_or_create_var("self");
+                            if (self_var) {
+                                self_var->is_id = 1;
+                                self_var->value = receiver;
+                            }
+                            {
+                                InterpVar *cmd_var = interp_get_or_create_var("_cmd");
+                                if (cmd_var) {
+                                    cmd_var->is_sel = 1;
+                                    cmd_var->sel = prop_sel;
+                                }
+                            }
+                            g_return_pending = 0;
+                            objc_interp(g_methods[mi].source, g_methods[mi].source_len);
+                            return_val = g_return_value;
+                            g_var_count = saved_var_count;
+                            g_return_pending = 0;
+                            return return_val;
+                        }
+                        /* No interpreter method found — return void */
+                        return value_void();
+                    }
                 }
 
                 if (var->is_int) return value_from_int(var->int_value);
@@ -2233,6 +2414,26 @@ static Value parse_statement(Parser *p) {
                     var->is_sel = val.is_sel;
                     if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
                     return val;
+                }
+
+                /* Compound assignment: +=, -= */
+                if (parser_current(p).type == TOK_PLUS_ASSIGN && var->is_int) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_int) var->int_value += val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_int(var->int_value);
+                }
+                if (parser_current(p).type == TOK_MINUS_ASSIGN && var->is_int) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_int) var->int_value -= val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_int(var->int_value);
                 }
 
                 /* Not an assignment — restore and parse as expression */
