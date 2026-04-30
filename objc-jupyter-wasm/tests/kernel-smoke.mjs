@@ -662,5 +662,77 @@ const isEqualTest = execute([
 assert.equal(isEqualTest.status, 'ok');
 assert.match(hostStreamText(), /same=1/);
 
+// ── Phase 8: @property + @synthesize ──────────────────────────
+
+// @property with auto-synthesized getter/setter
+const propTest = execute([
+  '@interface Counter : NSObject',
+  '@property (nonatomic, assign) int count;',
+  '- (void)increment;',
+  '@end',
+  '',
+  '@implementation Counter',
+  '@synthesize count = _count;',
+  '- (void)increment {',
+  '  _count = _count + 1;',
+  '}',
+  '@end',
+  '',
+  'Counter *c = [[Counter alloc] init];',
+  '[c setCount:5];',
+  'int val = [c count];',
+  'NSLog(@"prop-count=%d", val);',
+  '[c increment];',
+  'val = [c count];',
+  'NSLog(@"prop-inc=%d", val);'
+].join('\n'), 'property-cell');
+assert.equal(propTest.status, 'ok');
+assert.match(hostStreamText(), /prop-count=5/);
+assert.match(hostStreamText(), /prop-inc=6/);
+
+// @property without explicit ivar (defaults to _prop)
+const propDefaultTest = execute([
+  '@interface Widget : NSObject',
+  '@property (nonatomic, assign) int size;',
+  '@end',
+  '',
+  '@implementation Widget',
+  '@synthesize size;',
+  '@end',
+  '',
+  'Widget *w = [[Widget alloc] init];',
+  '[w setSize:42];',
+  'int s = [w size];',
+  'NSLog(@"widget-size=%d", s);'
+].join('\n'), 'property-default-cell');
+assert.equal(propDefaultTest.status, 'ok');
+assert.match(hostStreamText(), /widget-size=42/);
+
+// ── Phase 8: for-in loops ─────────────────────────────────────
+
+// for-in over NSString (character iteration)
+const forInStrTest = execute([
+  'NSString *s = @"ABC";',
+  'int count = 0;',
+  'for (id ch in s) {',
+  '  count = count + 1;',
+  '}',
+  'NSLog(@"forin-str-count=%d", count);'
+].join('\n'), 'forin-str-cell');
+assert.equal(forInStrTest.status, 'ok');
+assert.match(hostStreamText(), /forin-str-count=3/);
+
+// for-in with character access
+const forInCharTest = execute([
+  'NSString *s = @"HELLO";',
+  'NSString *result = @"";',
+  'for (id ch in s) {',
+  '  result = [result stringByAppendingString:ch];',
+  '}',
+  'NSLog(@"forin-chars=%@", result);'
+].join('\n'), 'forin-char-cell');
+assert.equal(forInCharTest.status, 'ok');
+assert.match(hostStreamText(), /forin-chars=HELLO/);
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
