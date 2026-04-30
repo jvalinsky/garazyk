@@ -2,77 +2,127 @@
 
 import { ObjcWasmKernel } from './wasm-loader.js';
 
-/**
- * Resolve the WASM kernel URL relative to the worker's own location.
- *
- * In JupyterLite, the worker is loaded from the extension's static directory:
- *   <base>/extensions/objc-jupyter-wasm/static/js/objc-worker.js
- * The WASM files are at:
- *   <base>/extensions/objc-jupyter-wasm/static/kernel/kernel.wasm
- *
- * We use self.location.href (the Worker's runtime URL) instead of
- * import.meta.url, because webpack 5 replaces import.meta.url with the
- * build-time file path at compile time, which is wrong at runtime.
- * self.location.href is always the actual runtime URL of the worker script.
- */
-function resolveWasmUrl() {
+function defaultRuntimeManifest() {
   try {
-    const workerUrl = self.location.href;
-    // In JupyterLite, the worker chunk is at:
-    //   <base>/extensions/objc-jupyter-wasm/static/822.<hash>.js
-    // The WASM file is at:
-    //   <base>/extensions/objc-jupyter-wasm/static/kernel/kernel.wasm
-    // Strip the filename to get the directory, then append the WASM path.
-    const staticDir = workerUrl.substring(0, workerUrl.lastIndexOf('/'));
-    return staticDir + '/kernel/kernel.wasm';
+    const workerUrl = new URL(self.location.href);
+    const workerDir = workerUrl.href.substring(0, workerUrl.href.lastIndexOf('/') + 1);
+    return {
+      kernelWasmUrl: new URL('../kernel/kernel.wasm', workerDir).toString(),
+      runtimeVersion: 'auto',
+      sha256: '',
+      maxRequestBytes: 64 * 1024,
+      maxResponseBytes: 1024 * 1024,
+      softTimeoutMs: 30_000,
+      hardTimeoutMs: 35_000
+    };
   } catch {
-    return './kernel/kernel.wasm';
+    return {
+      kernelWasmUrl: './kernel/kernel.wasm',
+      runtimeVersion: 'auto',
+      sha256: '',
+      maxRequestBytes: 64 * 1024,
+      maxResponseBytes: 1024 * 1024,
+      softTimeoutMs: 30_000,
+      hardTimeoutMs: 35_000
+    };
   }
 }
 
-const WASM_URL = resolveWasmUrl();
-
+let runtimeManifest = defaultRuntimeManifest();
 let kernelPromise = null;
+let interruptBuffer = null;
 
-function getKernel() {
-  if (!kernelPromise) {
-    kernelPromise = ObjcWasmKernel.create(WASM_URL);
+function normalizeRuntimeManifest(nextManifest) {
+  if (!nextManifest || typeof nextManifest !== 'object') {
+    return runtimeManifest;
   }
-  return kernelPromise;
+
+  return {
+    ...runtimeManifest,
+    ...nextManifest
+  };
 }
 
-function postReply(id, type, content) {
+function resetKernel(nextManifest = null, nextInterruptBuffer = null) {
+  if (nextManifest) {
+    runtimeManifest = normalizeRuntimeManifest(nextManifest);
+  }
+  if (nextInterruptBuffer !== undefined) {
+    interruptBuffer = nextInterruptBuffer;
+  }
+  kernelPromise = null;
+}
+
+function postReply(id, generation, type, content) {
   self.postMessage({
     id,
+    generation,
     type,
     content
   });
 }
 
+function getKernel(activeId, activeGeneration) {
+  if (!kernelPromise) {
+    kernelPromise = ObjcWasmKernel.create(runtimeManifest, {
+      onStream(stream) {
+        postReply(activeId, activeGeneration, 'stream', stream);
+      }
+    }).then(kernel => {
+      kernel.setInterruptBuffer(interruptBuffer);
+      return kernel;
+    }).catch(error => {
+      kernelPromise = null;
+      throw error;
+    });
+  }
+  return kernelPromise;
+}
+
 self.onmessage = async event => {
   const {
     id,
+    generation = 0,
     type,
     code = '',
     cellId = null,
     cursorPos = 0,
-    detailLevel = 0
+    detailLevel = 0,
+    runtimeManifest: explicitRuntimeManifest,
+    interruptBuffer: explicitInterruptBuffer
   } = event.data || {};
 
+  if (explicitRuntimeManifest) {
+    runtimeManifest = normalizeRuntimeManifest(explicitRuntimeManifest);
+  }
+  if (explicitInterruptBuffer !== undefined) {
+    interruptBuffer = explicitInterruptBuffer;
+  }
+
   try {
-    const kernel = await getKernel();
+    if (type === 'reset_request') {
+      resetKernel(explicitRuntimeManifest || null, explicitInterruptBuffer);
+      postReply(id, generation, 'reset_reply', { status: 'ok' });
+      return;
+    }
+
+    const kernel = await getKernel(id, generation);
+    kernel.setInterruptBuffer(interruptBuffer);
+    kernel.setStreamListener(stream => {
+      postReply(id, generation, 'stream', stream);
+    });
 
     if (type === 'kernel_info_request') {
-      postReply(id, 'kernel_info_reply', kernel.kernelInfo());
+      postReply(id, generation, 'kernel_info_reply', kernel.kernelInfo());
       return;
     }
 
     if (type === 'execute_request') {
       const reply = kernel.execute(code, cellId);
       for (const stream of reply.streams || []) {
-        postReply(id, 'stream', stream);
+        postReply(id, generation, 'stream', stream);
       }
-      postReply(id, 'execute_reply', {
+      postReply(id, generation, 'execute_reply', {
         status: reply.status,
         execution_count: reply.execution_count,
         data: reply.data || {},
@@ -85,22 +135,31 @@ self.onmessage = async event => {
     }
 
     if (type === 'complete_request') {
-      postReply(id, 'complete_reply', kernel.complete(code, cursorPos));
+      postReply(id, generation, 'complete_reply', kernel.complete(code, cursorPos));
       return;
     }
 
     if (type === 'inspect_request') {
-      postReply(id, 'inspect_reply', kernel.inspect(code, cursorPos, detailLevel));
+      postReply(id, generation, 'inspect_reply', kernel.inspect(code, cursorPos, detailLevel));
       return;
     }
 
-    postReply(id, 'error', {
+    postReply(id, generation, 'error', {
       ename: 'UnknownMessage',
       evalue: `Unknown worker message type: ${type}`,
       traceback: []
     });
   } catch (error) {
-    postReply(id, 'error', {
+    if (
+      error &&
+      (error.name === 'WasiProcExitError' ||
+        error.name === 'RuntimeError' ||
+        error.name === 'CompileError')
+    ) {
+      resetKernel();
+    }
+
+    postReply(id, generation, 'error', {
       ename: error && error.name ? error.name : 'ObjcKernelError',
       evalue: error && error.message ? error.message : String(error),
       traceback: []

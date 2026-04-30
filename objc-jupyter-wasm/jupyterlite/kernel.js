@@ -7,9 +7,44 @@ import { ObjcWasmKernel } from '../js/wasm-loader.js';
 
 let kernelPromise = null;
 
+const DEFAULT_RUNTIME_MANIFEST = {
+  kernelWasmUrl: new URL('./kernel/kernel.wasm', import.meta.url).toString(),
+  runtimeVersion: 'demo-fallback',
+  sha256: '',
+  maxRequestBytes: 64 * 1024,
+  maxResponseBytes: 1024 * 1024,
+  softTimeoutMs: 30_000,
+  hardTimeoutMs: 35_000
+};
+
+async function loadRuntimeManifest() {
+  const manifestUrl = new URL('./runtime-manifest.json', import.meta.url).toString();
+
+  try {
+    const response = await fetch(manifestUrl, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const manifest = await response.json();
+    return {
+      ...DEFAULT_RUNTIME_MANIFEST,
+      ...manifest,
+      kernelWasmUrl: new URL(manifest.kernelWasmUrl, manifestUrl).toString()
+    };
+  } catch {
+    return DEFAULT_RUNTIME_MANIFEST;
+  }
+}
+
 async function kernel() {
   if (!kernelPromise) {
-    kernelPromise = ObjcWasmKernel.create('./kernel/kernel.wasm');
+    kernelPromise = loadRuntimeManifest()
+      .then(runtimeManifest => ObjcWasmKernel.create(runtimeManifest))
+      .catch(error => {
+        kernelPromise = null;
+        throw error;
+      });
   }
   return kernelPromise;
 }

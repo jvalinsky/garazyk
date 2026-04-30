@@ -22,18 +22,43 @@
     "smoke:kernel": "node tests/kernel-smoke.mjs ./result/wasm/kernel.wasm"
   },
   "dependencies": {
-    "@jupyterlab/application": "^4.4.0",
-    "@jupyterlite/kernel": "^0.7.4"
+    "@jupyterlab/application": "^4.4.5",
+    "@jupyterlab/coreutils": "^6.4.5",
+    "@jupyterlab/observables": "^5.4.5",
+    "@jupyterlab/services": "^7.4.5",
+    "@jupyterlite/kernel": "^0.6.4"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^4.4.0",
+    "@jupyterlab/builder": "^4.4.5",
     "playwright": "^1.52.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.0"
   },
   "jupyterlab": {
     "extension": true,
-    "outputDir": "objc_jupyter_wasm/labextension"
+    "outputDir": "objc_jupyter_wasm/labextension",
+    "sharedPackages": {
+      "@jupyterlite/kernel": {
+        "requiredVersion": "~0.6.4",
+        "import": false,
+        "singleton": true
+      },
+      "@jupyterlab/services": {
+        "requiredVersion": "~7.4.5",
+        "import": false,
+        "singleton": true
+      },
+      "@jupyterlab/coreutils": {
+        "requiredVersion": "~6.4.5",
+        "import": false,
+        "singleton": true
+      },
+      "@jupyterlab/observables": {
+        "requiredVersion": "~5.4.5",
+        "import": false,
+        "singleton": true
+      }
+    }
   },
   "files": [
     "install.json",

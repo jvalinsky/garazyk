@@ -1,5 +1,5 @@
 const submittedCode = 'NSLog(@"hello browser smoke");';
-const wasmUrl = new URL('./kernel/kernel.wasm', import.meta.url).toString();
+const runtimeManifestUrl = new URL('./runtime-manifest.json', import.meta.url).toString();
 const worker = new Worker(new URL('./js/objc-worker.js', import.meta.url), {
   type: 'module'
 });
@@ -7,6 +7,20 @@ const worker = new Worker(new URL('./js/objc-worker.js', import.meta.url), {
 const pending = new Map();
 let nextMessageId = 1;
 const streams = [];
+let runtimeManifest = null;
+
+async function loadRuntimeManifest() {
+  const response = await fetch(runtimeManifestUrl, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch runtime manifest: ${response.status}`);
+  }
+
+  const manifest = await response.json();
+  return {
+    ...manifest,
+    kernelWasmUrl: new URL(manifest.kernelWasmUrl, runtimeManifestUrl).toString()
+  };
+}
 
 function setText(testId, value) {
   document.querySelector(`[data-testid="${testId}"]`).textContent = value;
@@ -23,7 +37,7 @@ function request(type, payload, expectedType) {
     worker.postMessage({
       id,
       type,
-      wasmUrl,
+      runtimeManifest,
       ...payload
     });
   });
@@ -60,6 +74,7 @@ worker.onmessage = event => {
 };
 
 try {
+  runtimeManifest = await loadRuntimeManifest();
   const kernelSpec = {
     name: 'objective-c',
     display_name: 'Objective-C',
@@ -83,6 +98,8 @@ try {
 
   window.__objcSmokeResult = {
     kernelSpec,
+    runtimeManifest,
+    runtimeManifestUrl,
     info,
     execute,
     streams,
