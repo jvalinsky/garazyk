@@ -321,5 +321,154 @@ const nslogMethodUseExecute = execute(nslogMethodUseCode, 'nslog-method-use-cell
 assert.equal(nslogMethodUseExecute.status, 'ok');
 assert.match(hostStreamText(), /hello from method/);
 
+// ── Logical operator tests ────────────────────────────────────────
+
+const andTest = execute('int x = 1 && 1; NSLog(@"1 && 1 = %d", x);', 'and-test-cell');
+assert.equal(andTest.status, 'ok');
+assert.match(hostStreamText(), /1 && 1 = 1/);
+
+const andFalseTest = execute('int y = 1 && 0; NSLog(@"1 && 0 = %d", y);', 'and-false-test');
+assert.equal(andFalseTest.status, 'ok');
+assert.match(hostStreamText(), /1 && 0 = 0/);
+
+const orTest = execute('int z = 0 || 1; NSLog(@"0 || 1 = %d", z);', 'or-test-cell');
+assert.equal(orTest.status, 'ok');
+assert.match(hostStreamText(), /0 || 1 = 1/);
+
+const orFalseTest = execute('int w = 0 || 0; NSLog(@"0 || 0 = %d", w);', 'or-false-test');
+assert.equal(orFalseTest.status, 'ok');
+assert.match(hostStreamText(), /0 || 0 = 0/);
+
+const notTest = execute('int a = !0; int b = !1; NSLog(@"!0=%d !1=%d", a, b);', 'not-test-cell');
+assert.equal(notTest.status, 'ok');
+assert.match(hostStreamText(), /!0=1 !1=0/);
+
+const boolLiteralTest = execute('int c = YES && NO; NSLog(@"YES&&NO=%d", c);', 'bool-literal-test');
+assert.equal(boolLiteralTest.status, 'ok');
+assert.match(hostStreamText(), /YES&&NO=0/);
+
+const combinedTest = execute('int d = (1 > 0) && (2 < 3); NSLog(@"(1>0)&&(2<3)=%d", d);', 'combined-test');
+assert.equal(combinedTest.status, 'ok');
+assert.match(hostStreamText(), /\(1>0\)&&\(2<3\)=1/);
+
+// ── Control flow tests ────────────────────────────────────────────
+
+// if (true) { body }
+const ifTrueTest = execute('if (1) { NSLog(@"if-true"); }', 'if-true-cell');
+assert.equal(ifTrueTest.status, 'ok');
+assert.match(hostStreamText(), /if-true/);
+
+// if (false) { skip } else { else-branch }
+const ifElseTest = execute('if (0) { NSLog(@"skip"); } else { NSLog(@"else-branch"); }', 'if-else-cell');
+assert.equal(ifElseTest.status, 'ok');
+assert.match(hostStreamText(), /else-branch/);
+
+// if with logical condition
+const ifLogicTest = execute('int x = 5; if (x > 0 && x < 10) { NSLog(@"in-range"); }', 'if-logic-cell');
+assert.equal(ifLogicTest.status, 'ok');
+assert.match(hostStreamText(), /in-range/);
+
+// else if chain
+const elseIfTest = execute([
+  'int n = 2;',
+  'if (n == 1) { NSLog(@"one"); }',
+  'else if (n == 2) { NSLog(@"two"); }',
+  'else { NSLog(@"other"); }'
+].join('\n'), 'else-if-cell');
+assert.equal(elseIfTest.status, 'ok');
+assert.match(hostStreamText(), /two/);
+
+// while loop
+const whileTest = execute([
+  'int i = 0;',
+  'while (i < 5) { i = i + 1; }',
+  'NSLog(@"while-i=%d", i);'
+].join('\n'), 'while-cell');
+assert.equal(whileTest.status, 'ok');
+assert.match(hostStreamText(), /while-i=5/);
+
+// for loop — sum 1..10
+const forTest = execute([
+  'int sum = 0;',
+  'for (int i = 1; i <= 10; i = i + 1) { sum = sum + i; }',
+  'NSLog(@"for-sum=%d", sum);'
+].join('\n'), 'for-cell');
+assert.equal(forTest.status, 'ok');
+assert.match(hostStreamText(), /for-sum=55/);
+
+// break in while loop
+const breakTest = execute([
+  'int i = 0;',
+  'while (1) {',
+  '  if (i >= 3) { break; }',
+  '  i = i + 1;',
+  '}',
+  'NSLog(@"break-i=%d", i);'
+].join('\n'), 'break-cell');
+assert.equal(breakTest.status, 'ok');
+assert.match(hostStreamText(), /break-i=3/);
+
+// continue in for loop — sum odd numbers 1..9
+const continueTest = execute([
+  'int sum = 0;',
+  'for (int i = 1; i <= 10; i = i + 1) {',
+  '  if (i % 2 == 0) { continue; }',
+  '  sum = sum + i;',
+  '}',
+  'NSLog(@"odd-sum=%d", sum);'
+].join('\n'), 'continue-cell');
+assert.equal(continueTest.status, 'ok');
+assert.match(hostStreamText(), /odd-sum=25/);
+
+// nested loops
+const nestedTest = execute([
+  'int count = 0;',
+  'for (int i = 0; i < 3; i = i + 1) {',
+  '  for (int j = 0; j < 3; j = j + 1) {',
+  '    count = count + 1;',
+  '  }',
+  '}',
+  'NSLog(@"nested=%d", count);'
+].join('\n'), 'nested-cell');
+assert.equal(nestedTest.status, 'ok');
+assert.match(hostStreamText(), /nested=9/);
+
+// YES/NO in condition
+const boolCondTest = execute('if (YES) { NSLog(@"yes-true"); } if (!NO) { NSLog(@"no-false"); }', 'bool-cond-cell');
+assert.equal(boolCondTest.status, 'ok');
+assert.match(hostStreamText(), /yes-true/);
+assert.match(hostStreamText(), /no-false/);
+
+// ── Increment/decrement tests ─────────────────────────────────────
+
+// Post-increment
+const postIncTest = execute('int x = 5; int y = x++; NSLog(@"x=%d y=%d", x, y);', 'post-inc-cell');
+assert.equal(postIncTest.status, 'ok');
+assert.match(hostStreamText(), /x=6 y=5/);
+
+// Pre-increment
+const preIncTest = execute('int a = 5; int b = ++a; NSLog(@"a=%d b=%d", a, b);', 'pre-inc-cell');
+assert.equal(preIncTest.status, 'ok');
+assert.match(hostStreamText(), /a=6 b=6/);
+
+// Post-decrement
+const postDecTest = execute('int m = 10; int n = m--; NSLog(@"m=%d n=%d", m, n);', 'post-dec-cell');
+assert.equal(postDecTest.status, 'ok');
+assert.match(hostStreamText(), /m=9 n=10/);
+
+// Pre-decrement
+const preDecTest = execute('int p = 10; int q = --p; NSLog(@"p=%d q=%d", p, q);', 'pre-dec-cell');
+assert.equal(preDecTest.status, 'ok');
+assert.match(hostStreamText(), /p=9 q=9/);
+
+// i++ in for loop
+const forIncTest = execute([
+  'int count = 0;',
+  'for (int i = 0; i < 5; i++) { count++; }',
+  'NSLog(@"for-inc=%d", count);'
+].join('\n'), 'for-inc-cell');
+assert.equal(forIncTest.status, 'ok');
+assert.match(hostStreamText(), /for-inc=5/);
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
