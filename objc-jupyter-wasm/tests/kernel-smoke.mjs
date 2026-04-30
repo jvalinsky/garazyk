@@ -573,5 +573,94 @@ const dotSetterTest = execute([
 assert.equal(dotSetterTest.status, 'ok');
 assert.match(hostStreamText(), /dot-set=42/);
 
+// ── Foundation stub tests ─────────────────────────────────────────
+
+// NSString length
+const strLenTest = execute([
+  'NSString *s = @"hello";',
+  'int len = [s length];',
+  'NSLog(@"len=%d", len);'
+].join('\n'), 'str-len-cell');
+assert.equal(strLenTest.status, 'ok');
+assert.match(hostStreamText(), /len=5/);
+
+// NSString intValue
+const strIntTest = execute([
+  'NSString *s = @"42";',
+  'int val = [s intValue];',
+  'NSLog(@"intval=%d", val);'
+].join('\n'), 'str-int-cell');
+assert.equal(strIntTest.status, 'ok');
+assert.match(hostStreamText(), /intval=42/);
+
+// NSString stringByAppendingString
+const strCatTest = execute([
+  'NSString *a = @"hello";',
+  'NSString *b = @" world";',
+  'NSString *c = [a stringByAppendingString:b];',
+  'NSLog(@"cat=%@", c);'
+].join('\n'), 'str-cat-cell');
+assert.equal(strCatTest.status, 'ok');
+assert.match(hostStreamText(), /cat=hello world/);
+
+// NSString isEqualToString
+const strEqTest = execute([
+  'NSString *a = @"foo";',
+  'NSString *b = @"foo";',
+  'NSString *c = @"bar";',
+  'int eq1 = [a isEqualToString:b];',
+  'int eq2 = [a isEqualToString:c];',
+  'NSLog(@"eq1=%d eq2=%d", eq1, eq2);'
+].join('\n'), 'str-eq-cell');
+assert.equal(strEqTest.status, 'ok');
+assert.match(hostStreamText(), /eq1=1 eq2=0/);
+
+// NSNumber numberWithInt / intValue
+const numTest = execute([
+  'NSNumber *n = [NSNumber numberWithInt:42];',
+  'int val = [n intValue];',
+  'NSLog(@"numval=%d", val);'
+].join('\n'), 'num-int-cell');
+assert.equal(numTest.status, 'ok');
+assert.match(hostStreamText(), /numval=42/);
+
+// NSNumber numberWithInt negative
+const numNegTest = execute([
+  'NSNumber *n = [NSNumber numberWithInt:-7];',
+  'int val = [n intValue];',
+  'NSLog(@"numneg=%d", val);'
+].join('\n'), 'num-neg-cell');
+assert.equal(numNegTest.status, 'ok');
+assert.match(hostStreamText(), /numneg=-7/);
+
+// NSNumber boolValue
+const numBoolTest = execute([
+  'NSNumber *yes = [NSNumber numberWithInt:1];',
+  'NSNumber *no = [NSNumber numberWithInt:0];',
+  'int bv1 = [yes boolValue];',
+  'int bv2 = [no boolValue];',
+  'NSLog(@"bool1=%d bool2=%d", bv1, bv2);'
+].join('\n'), 'num-bool-cell');
+assert.equal(numBoolTest.status, 'ok');
+assert.match(hostStreamText(), /bool1=1 bool2=0/);
+
+// NSObject description
+const descTest = execute([
+  'NSObject *obj = [[NSObject alloc] init];',
+  '[obj description];',
+  'NSLog(@"desc-done");'
+].join('\n'), 'desc-cell');
+assert.equal(descTest.status, 'ok');
+assert.match(hostStreamText(), /<NSObject>/);
+
+// NSObject isEqual
+const isEqualTest = execute([
+  'NSObject *a = [[NSObject alloc] init];',
+  'int same = [a isEqual:a];',
+  'NSLog(@"same=%d", same);'
+].join('\n'), 'isequal-cell');
+assert.equal(isEqualTest.status, 'ok');
+assert.match(hostStreamText(), /same=1/);
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
