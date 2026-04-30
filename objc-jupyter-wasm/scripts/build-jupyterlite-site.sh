@@ -5,11 +5,11 @@ set -euo pipefail
 #
 # Prerequisites:
 #   - npm install (for TypeScript compilation and labextension build)
-#   - kernel.wasm and libobjc2.wasm built (via Nix or scripts/build-all.sh)
+#   - kernel.wasm built (via Nix or scripts/build-all.sh)
 #   - jupyterlab and jupyterlite-core pip-installed
 #
 # Usage:
-#   bash scripts/build-jupyterlite-site.sh [--kernel-wasm PATH] [--libobjc2-wasm PATH]
+#   bash scripts/build-jupyterlite-site.sh [--kernel-wasm PATH]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -30,10 +30,6 @@ echo "[3/5] Copying WASM assets into labextension..."
 ASSET_ARGS=()
 if [ "${1:-}" = "--kernel-wasm" ] && [ -n "${2:-}" ]; then
     ASSET_ARGS+=(--kernel-wasm "$2")
-    shift 2
-fi
-if [ "${1:-}" = "--libobjc2-wasm" ] && [ -n "${2:-}" ]; then
-    ASSET_ARGS+=(--libobjc2-wasm "$2")
     shift 2
 fi
 node "$PROJECT_ROOT/scripts/copy-static-assets.mjs" "${ASSET_ARGS[@]}"
