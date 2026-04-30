@@ -74,11 +74,13 @@ try {
   assert.equal(await page.locator('[data-testid="execute-status"]').textContent(), 'ok');
 
   const stream = await page.locator('[data-testid="stream-output"]').textContent();
-  assert.match(stream || '', /Objective-C WASM smoke executed/);
+  assert.match(stream || '', /hello browser smoke/);
 
   const result = await page.locator('[data-testid="result-output"]').textContent();
-  assert.match(result || '', /NSLog/);
-  assert.match(result || '', /hello browser smoke/);
+  assert.equal(result || '', '');
+  const smokeResult = await page.evaluate(() => window.__objcSmokeResult);
+  assert.match(smokeResult.runtimeManifest.sha256, /^[0-9a-f]{64}$/);
+  assert.match(smokeResult.runtimeManifest.kernelWasmUrl, /kernel\/kernel\.[0-9a-f]{64}\.wasm$/);
   assert.deepEqual(consoleErrors, []);
 
   await browser.close();

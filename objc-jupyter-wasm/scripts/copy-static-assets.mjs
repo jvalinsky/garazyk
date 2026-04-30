@@ -1,8 +1,15 @@
-import { access, copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const DEFAULT_RUNTIME_MANIFEST = {
+  maxRequestBytes: 64 * 1024,
+  maxResponseBytes: 1024 * 1024,
+  softTimeoutMs: 30_000,
+  hardTimeoutMs: 35_000
+};
 
 function argValue(name) {
   const index = process.argv.indexOf(name);
@@ -32,13 +39,38 @@ async function resolveArtifact(label, explicitPath, candidates) {
   throw new Error(`Could not find ${label}. Build the WASM packages first or pass --${label}.`);
 }
 
-async function copyIfPresent(source, destination) {
-  if (!(await exists(source))) {
-    return false;
-  }
-  await mkdir(path.dirname(destination), { recursive: true });
-  await copyFile(source, destination);
-  return true;
+async function writeRuntimeAssets(kernelWasmPath, outputPath) {
+  const bytes = await readFile(kernelWasmPath);
+  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  const hashedKernelRelativePath = `./kernel/kernel.${sha256}.wasm`;
+  const stableKernelRelativePath = './kernel/kernel.wasm';
+  const runtimeManifest = {
+    kernelWasmUrl: hashedKernelRelativePath,
+    runtimeVersion: `sha256-${sha256.slice(0, 12)}`,
+    sha256,
+    ...DEFAULT_RUNTIME_MANIFEST
+  };
+
+  await mkdir(path.join(outputPath, 'kernel'), { recursive: true });
+  await writeFile(path.join(outputPath, hashedKernelRelativePath), bytes);
+  await writeFile(path.join(outputPath, stableKernelRelativePath), bytes);
+  await writeFile(
+    path.join(outputPath, 'runtime-manifest.json'),
+    JSON.stringify(runtimeManifest, null, 2)
+  );
+  await writeFile(
+    path.join(outputPath, 'asset-manifest.json'),
+    JSON.stringify(
+      {
+        runtimeManifest: './runtime-manifest.json',
+        kernelWasm: hashedKernelRelativePath,
+        stableKernelWasm: stableKernelRelativePath,
+        assetOwnership: 'webpack owns worker and loader chunks; this script copies runtime WASM only'
+      },
+      null,
+      2
+    )
+  );
 }
 
 const outputDir = path.resolve(
@@ -58,40 +90,7 @@ const kernelWasm = await resolveArtifact(
   ]
 );
 
-await mkdir(path.join(outputDir, 'kernel'), { recursive: true });
-await mkdir(path.join(outputDir, 'js'), { recursive: true });
-
-await copyFile(kernelWasm, path.join(outputDir, 'kernel/kernel.wasm'));
-
-const workerSource =
-  (await exists(path.join(projectRoot, 'lib/js/objc-worker.js')))
-    ? path.join(projectRoot, 'lib/js/objc-worker.js')
-    : path.join(projectRoot, 'js/objc-worker.js');
-const loaderSource =
-  (await exists(path.join(projectRoot, 'lib/js/wasm-loader.js')))
-    ? path.join(projectRoot, 'lib/js/wasm-loader.js')
-    : path.join(projectRoot, 'js/wasm-loader.js');
-
-await copyFile(workerSource, path.join(outputDir, 'js/objc-worker.js'));
-await copyFile(loaderSource, path.join(outputDir, 'js/wasm-loader.js'));
-
-const copiedKernelJs = await copyIfPresent(
-  path.join(projectRoot, 'jupyterlite/kernel.js'),
-  path.join(outputDir, 'kernel.js')
-);
-
-await writeFile(
-  path.join(outputDir, 'asset-manifest.json'),
-  JSON.stringify(
-    {
-      kernelWasm: 'kernel/kernel.wasm',
-      worker: 'js/objc-worker.js',
-      loader: 'js/wasm-loader.js',
-      staticDemoKernel: copiedKernelJs ? 'kernel.js' : null
-    },
-    null,
-    2
-  )
-);
+await mkdir(outputDir, { recursive: true });
+await writeRuntimeAssets(kernelWasm, outputDir);
 
 console.log(`objc-jupyter-wasm static assets copied to ${outputDir}`);
