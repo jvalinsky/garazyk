@@ -818,5 +818,58 @@ const gcGarbageCell = `NSString *temp = @"${gcGarbageA}"; temp = @"${gcGarbageB}
   console.log('  gc: instance var survives GC — PASS');
 }
 
+// ── Phase 11: Expression completeness ──────────────────────────
+
+// Ternary operator
+{
+  const ternary1 = execute('int x = 5; int y = x > 3 ? 10 : 20; NSLog(@"ternary=%d", y);', 'ternary-1');
+  assert.equal(ternary1.status, 'ok');
+  assert.match(hostStreamText(), /ternary=10/);
+
+  const ternary2 = execute('int z = 1 ? 100 : 200; NSLog(@"ternary_true=%d", z);', 'ternary-2');
+  assert.equal(ternary2.status, 'ok');
+  assert.match(hostStreamText(), /ternary_true=100/);
+
+  const ternary3 = execute('int w = 0 ? 100 : 200; NSLog(@"ternary_false=%d", w);', 'ternary-3');
+  assert.equal(ternary3.status, 'ok');
+  assert.match(hostStreamText(), /ternary_false=200/);
+
+  console.log('  expr: ternary operator — PASS');
+}
+
+// Compound assignment: *=, /=, %=
+{
+  const compound1 = execute('int v = 10; v *= 3; NSLog(@"v*3=%d", v);', 'compound-mul');
+  assert.equal(compound1.status, 'ok');
+  assert.match(hostStreamText(), /v\*3=30/);
+
+  const compound2 = execute('v /= 2; NSLog(@"v/2=%d", v);', 'compound-div');
+  assert.equal(compound2.status, 'ok');
+  assert.match(hostStreamText(), /v\/2=15/);
+
+  const compound3 = execute('v %= 7; NSLog(@"v%mod=%d", v);', 'compound-mod');
+  assert.equal(compound3.status, 'ok');
+  assert.match(hostStreamText(), /v%mod=1/);
+
+  console.log('  expr: compound assignment (*=, /=, %=) — PASS');
+}
+
+// Unary minus
+{
+  const unary1 = execute('int neg = -42; NSLog(@"neg=%d", neg);', 'unary-minus-1');
+  assert.equal(unary1.status, 'ok');
+  assert.match(hostStreamText(), /neg=-42/);
+
+  const unary2 = execute('int d = 10 - -5; NSLog(@"double=%d", d);', 'unary-minus-2');
+  assert.equal(unary2.status, 'ok');
+  assert.match(hostStreamText(), /double=15/);
+
+  const unary3 = execute('int e = -(-3); NSLog(@"negneg=%d", e);', 'unary-minus-3');
+  assert.equal(unary3.status, 'ok');
+  assert.match(hostStreamText(), /negneg=3/);
+
+  console.log('  expr: unary minus — PASS');
+}
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');

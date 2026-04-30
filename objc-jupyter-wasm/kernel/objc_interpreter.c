@@ -151,6 +151,10 @@ typedef enum {
     TOK_GE,            /* >= */
     TOK_PLUS_ASSIGN,   /* += */
     TOK_MINUS_ASSIGN,  /* -= */
+    TOK_STAR_ASSIGN,   /* *= */
+    TOK_SLASH_ASSIGN,  /* /= */
+    TOK_PERCENT_ASSIGN,/* %= */
+    TOK_QUESTION,      /* ? (ternary) */
     TOK_RETURN,        /* return keyword */
     TOK_IF,            /* if keyword */
     TOK_ELSE,          /* else keyword */
@@ -471,6 +475,24 @@ static Token lexer_next_token(Lexer *lex) {
             tok.type = TOK_ARROW;
             return tok;
         }
+        if (ch == '*' && next == '=') {
+            lexer_next(lex);
+            tok.text[0] = '*'; tok.text[1] = '='; tok.text[2] = '\0';
+            tok.type = TOK_STAR_ASSIGN;
+            return tok;
+        }
+        if (ch == '/' && next == '=') {
+            lexer_next(lex);
+            tok.text[0] = '/'; tok.text[1] = '='; tok.text[2] = '\0';
+            tok.type = TOK_SLASH_ASSIGN;
+            return tok;
+        }
+        if (ch == '%' && next == '=') {
+            lexer_next(lex);
+            tok.text[0] = '%'; tok.text[1] = '='; tok.text[2] = '\0';
+            tok.type = TOK_PERCENT_ASSIGN;
+            return tok;
+        }
     }
 
     /* Single-character tokens */
@@ -495,6 +517,7 @@ static Token lexer_next_token(Lexer *lex) {
         case '<': tok.type = TOK_LT; break;
         case '>': tok.type = TOK_GT; break;
         case '!': tok.type = TOK_NOT; break;
+        case '?': tok.type = TOK_QUESTION; break;
         case '|': tok.type = TOK_UNKNOWN; break; /* || handled above, bare | not supported */
         default: tok.type = TOK_UNKNOWN; break;
     }
@@ -2960,6 +2983,16 @@ static Value parse_primary(Parser *p) {
         }
     }
 
+    /* Unary minus */
+    if (tok.type == TOK_MINUS) {
+        parser_advance(p);
+        {
+            Value v = parse_primary(p);
+            if (v.is_int) return value_from_int(-v.int_val);
+            return v;
+        }
+    }
+
     /* @keyword */
     if (tok.type == TOK_AT_KEYWORD) {
         if (cstr_eq(tok.text, "@interface")) {
@@ -3119,8 +3152,36 @@ static Value parse_logical_or(Parser *p) {
     return left;
 }
 
+/* Ternary conditional: cond ? true_expr : false_expr
+ * Right-associative, lowest precedence above assignment. */
+static Value parse_ternary(Parser *p) {
+    Value cond = parse_logical_or(p);
+    if (p->error) return cond;
+
+    if (parser_current(p).type == TOK_QUESTION) {
+        parser_advance(p);
+        {
+            Value true_val = parse_ternary(p); /* right-associative */
+            if (p->error) return true_val;
+            if (parser_current(p).type != TOK_COLON) {
+                p->error = 1;
+                cstr_copy(g_error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
+                return cond;
+            }
+            parser_advance(p); /* skip : */
+            {
+                Value false_val = parse_ternary(p); /* right-associative */
+                if (p->error) return false_val;
+                return is_truthy(cond) ? true_val : false_val;
+            }
+        }
+    }
+
+    return cond;
+}
+
 static Value parse_assignment(Parser *p) {
-    Value target = parse_logical_or(p);
+    Value target = parse_ternary(p);
     if (p->error) return target;
 
     if (parser_current(p).type == TOK_ASSIGN) {
@@ -3352,7 +3413,7 @@ static Value parse_statement(Parser *p) {
                     return val;
                 }
 
-                /* Compound assignment: +=, -= */
+                /* Compound assignment: +=, -=, *=, /=, %= */
                 if (parser_current(p).type == TOK_PLUS_ASSIGN && var->is_int) {
                     Value val;
                     parser_advance(p);
@@ -3368,6 +3429,33 @@ static Value parse_statement(Parser *p) {
                     val = parse_expression(p);
                     if (p->error) return val;
                     if (val.is_int) var->int_value -= val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_int(var->int_value);
+                }
+                if (parser_current(p).type == TOK_STAR_ASSIGN && var->is_int) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_int) var->int_value *= val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_int(var->int_value);
+                }
+                if (parser_current(p).type == TOK_SLASH_ASSIGN && var->is_int) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_int && val.int_val != 0) var->int_value /= val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_int(var->int_value);
+                }
+                if (parser_current(p).type == TOK_PERCENT_ASSIGN && var->is_int) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_int && val.int_val != 0) var->int_value %= val.int_val;
                     if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
                     return value_from_int(var->int_value);
                 }
