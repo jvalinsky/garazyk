@@ -112,6 +112,7 @@ typedef struct {
 
 static InterpVar g_vars[OBJC_INTERP_MAX_VARS];
 static unsigned int g_var_count = 0;
+static unsigned int g_var_scope_base = 0; /* base index for variable scoping during method execution */
 
 /* ── Token types ────────────────────────────────────────────────── */
 
@@ -154,7 +155,8 @@ typedef enum {
     TOK_FOR,           /* for keyword */
     TOK_DO,            /* do keyword */
     TOK_BREAK,         /* break keyword */
-    TOK_CONTINUE,      /* continue keyword */
+    TOK_CONTINUE,     /* continue keyword */
+    TOK_IN,            /* in keyword (for-in) */
     TOK_AND,           /* && */
     TOK_OR,            /* || */
     TOK_NOT,           /* ! (logical not) */
@@ -365,6 +367,8 @@ static Token lexer_next_token(Lexer *lex) {
             tok.type = TOK_BREAK;
         } else if (cstr_eq(tok.text, "continue")) {
             tok.type = TOK_CONTINUE;
+        } else if (cstr_eq(tok.text, "in")) {
+            tok.type = TOK_IN;
         } else if (cstr_eq(tok.text, "YES") || cstr_eq(tok.text, "TRUE")) {
             /* Boolean true → integer 1 */
             tok.text[0] = '1'; tok.text[1] = '\0';
@@ -535,10 +539,16 @@ static void parser_error(Parser *p, const char *msg) {
 /* ── Variable table ─────────────────────────────────────────────── */
 
 static InterpVar *interp_find_var(const char *name) {
+    /* Search backwards — most recently created variable first.
+     * This implements variable shadowing: a method-local variable
+     * with the same name as a top-level variable takes precedence.
+     * g_var_scope_base limits the search to the current scope
+     * (set during method execution to isolate method-local variables). */
     unsigned int i;
-    for (i = 0; i < g_var_count; i++) {
-        if (cstr_eq(g_vars[i].name, name)) {
-            return &g_vars[i];
+    if (g_var_count == 0) return 0;
+    for (i = g_var_count; i > g_var_scope_base; i--) {
+        if (cstr_eq(g_vars[i - 1].name, name)) {
+            return &g_vars[i - 1];
         }
     }
     return 0;
@@ -757,6 +767,67 @@ typedef struct {
 static MethodImpl g_methods[MAX_METHODS];
 static unsigned int g_method_count = 0;
 
+/* Property declarations — stored during @interface parsing,
+ * used by @synthesize to auto-generate getter/setter methods. */
+typedef struct {
+    char name[64];       /* property name */
+    char type_name[64];  /* type: int, id, Class, SEL, etc. */
+    char class_name[64]; /* which class this property belongs to */
+    int is_int;          /* 1 if type is int */
+    int synthesized;     /* 1 if @synthesize was seen — enables property dispatch */
+} PropertyDecl;
+
+static PropertyDecl g_properties[64];
+static unsigned int g_property_count = 0;
+
+/* Instance variable side table — per-object property storage.
+ * Maps (object pointer, property name) → stored value.
+ * This is the interpreter's equivalent of objc_setAssociatedObject:
+ * real ObjC runtimes use associated objects for dynamic property
+ * storage; we use a simple linear-scan table. */
+typedef struct {
+    id object;          /* object pointer (receiver) */
+    char prop_name[64]; /* property name */
+    Value value;        /* stored value */
+} InstanceVar;
+
+#define MAX_INSTANCE_VARS 256
+static InstanceVar g_instance_vars[MAX_INSTANCE_VARS];
+static unsigned int g_instance_var_count = 0;
+
+/* Look up an instance variable in the side table.
+ * Returns pointer to the value (mutable), or 0 if not found. */
+static Value *instance_var_get(id object, const char *prop_name) {
+    unsigned int i;
+    for (i = 0; i < g_instance_var_count; i++) {
+        if (g_instance_vars[i].object == object &&
+            cstr_eq(g_instance_vars[i].prop_name, prop_name)) {
+            return &g_instance_vars[i].value;
+        }
+    }
+    return 0;
+}
+
+/* Store an instance variable in the side table.
+ * Overwrites existing entry for (object, prop_name), or adds new. */
+static void instance_var_set(id object, const char *prop_name, Value val) {
+    unsigned int i;
+    for (i = 0; i < g_instance_var_count; i++) {
+        if (g_instance_vars[i].object == object &&
+            cstr_eq(g_instance_vars[i].prop_name, prop_name)) {
+            g_instance_vars[i].value = val;
+            return;
+        }
+    }
+    /* Add new entry */
+    if (g_instance_var_count < MAX_INSTANCE_VARS) {
+        g_instance_vars[g_instance_var_count].object = object;
+        cstr_copy(g_instance_vars[g_instance_var_count].prop_name, prop_name, 64);
+        g_instance_vars[g_instance_var_count].value = val;
+        g_instance_var_count++;
+    }
+}
+
 /* ── AST nodes for control flow ──────────────────────────────────── */
 
 /* The interpreter is a single-pass parser/evaluator for expressions,
@@ -769,6 +840,7 @@ typedef enum {
     AST_IF,
     AST_WHILE,
     AST_FOR,
+    AST_FOR_IN,
     AST_BLOCK,
     AST_EXPR_STMT,
     AST_VAR_DECL,
@@ -797,6 +869,12 @@ struct AstNode {
             AstNode *increment;
             AstNode *body;
         } for_stmt;
+        struct { /* AST_FOR_IN */
+            char var_name[64];   /* iteration variable name */
+            unsigned int collection_start; /* source range for collection expr */
+            unsigned int collection_len;
+            AstNode *body;
+        } for_in;
         struct { /* AST_BLOCK */
             AstNode *children[128];
             unsigned int count;
@@ -881,6 +959,7 @@ static Value parse_statement(Parser *p);
 static Value parse_block(Parser *p);
 static int is_truthy(Value v);
 static AstNode *parse_statement_ast(Parser *p);
+static Value eval_source_range(unsigned int start, unsigned int len, const char *source);
 static Value eval_ast(AstNode *node, const char *source);
 static Value parse_type_and_var_decl(Parser *p);
 
@@ -1325,7 +1404,10 @@ static Value parse_message_send(Parser *p) {
                         if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
                     }
                     g_return_pending = 0;
-                    objc_interp(g_methods[mi].source, g_methods[mi].source_len);
+                    {
+                        Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
+                        (void)v;
+                    }
                     return_val = g_return_value;
                     g_var_count = saved_var_count;
                     g_return_pending = 0;
@@ -1455,7 +1537,7 @@ static Value parse_message_send(Parser *p) {
             return value_from_id((id)"NSArray:empty");
         }
 
-        /* NSArray: [arr count] → 0 (stub) */
+        /* NSArray: [arr count] → parse from NSArray encoding */
         if (cstr_eq(sel_name, "count") && target.is_id && receiver != 0) {
             const char *s = (const char *)receiver;
             if (cstr_eq_n(s, "NSArray:", 8)) {
@@ -1468,7 +1550,7 @@ static Value parse_message_send(Parser *p) {
                 }
                 return value_from_int(0);
             }
-            return value_from_int(0);
+            /* Not an NSArray — fall through to property/method dispatch */
         }
 
         /* Check if this selector matches an interpreter-registered method.
@@ -1494,9 +1576,13 @@ static Value parse_message_send(Parser *p) {
                                (const char *)receiver < g_string_pool + 4096) {
                         /* Receiver is a C string from the string pool — skip class check */
                     } else if (target.is_id && receiver != 0) {
-                        /* Receiver might be a valid ObjC object — check class */
+                        /* Receiver might be a valid ObjC object — check class.
+                         * If object_getClass returns 0 (e.g., WASM runtime
+                         * doesn't track dynamically allocated classes), we
+                         * still try the method — the selector match is
+                         * usually sufficient for our interpreter. */
                         Class recv_cls = object_getClass(receiver);
-                        if (g_methods[mi].class_ptr != recv_cls) continue;
+                        if (recv_cls != 0 && g_methods[mi].class_ptr != recv_cls) continue;
                     } else {
                         continue; /* class mismatch */
                     }
@@ -1514,9 +1600,15 @@ static Value parse_message_send(Parser *p) {
             if (found && mi < g_method_count) {
                 /* Found an interpreter method — execute it directly */
                 unsigned int saved_var_count = g_var_count;
+                unsigned int saved_scope_base = g_var_scope_base;
                 Value return_val;
 
-                /* Set up self and _cmd */
+                /* Set scope base so method-local variables don't shadow
+                 * or overwrite top-level variables. interp_find_var
+                 * will only search indices >= g_var_scope_base. */
+                g_var_scope_base = saved_var_count;
+
+                /* Set up self and _cmd as NEW variables in the method scope */
                 {
                     InterpVar *var;
                     var = interp_get_or_create_var("self");
@@ -1555,11 +1647,13 @@ static Value parse_message_send(Parser *p) {
                     }
                 }
 
-                /* Execute the method body */
+                /* Execute the method body.
+                 * Use eval_source_range instead of objc_interp to avoid
+                 * destroying the caller's AST (objc_interp resets g_ast_count). */
                 g_return_pending = 0;
                 {
-                    int interp_result = objc_interp(g_methods[mi].source, g_methods[mi].source_len);
-                    (void)interp_result;
+                    Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
+                    (void)v;
                 }
 
                 /* Determine return value */
@@ -1572,15 +1666,91 @@ static Value parse_message_send(Parser *p) {
                     return_val = value_from_id(receiver);
                 }
 
-                /* Clean up method-local variables */
+                /* Clean up method-local variables and restore scope */
                 g_var_count = saved_var_count;
+                g_var_scope_base = saved_scope_base;
                 g_return_pending = 0;
 
                 return return_val;
             }
         }
 
-        /* Fall through: no built-in or interpreter method matched.
+        /* ── Property dispatch (via instance variable side table) ──────
+         * Synthesized properties are stored per-instance in g_instance_vars[].
+         * This dispatch runs AFTER interpreter methods, so user-defined
+         * methods override synthesized properties. */
+        {
+            /* Check if this selector matches a synthesized property getter.
+             * A getter has the same selector name as the property. */
+            unsigned int pi;
+            for (pi = 0; pi < g_property_count; pi++) {
+                if (g_properties[pi].synthesized &&
+                    cstr_eq(sel_name, g_properties[pi].name)) {
+                    /* It's a getter — look up in side table */
+                    if (target.is_id && receiver != 0) {
+                        Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                        if (stored) {
+                            result = *stored;
+                            return result;
+                        }
+                    }
+                    /* No value stored yet — return default (0 for int, nil for id) */
+                    if (g_properties[pi].is_int) {
+                        result = value_from_int(0);
+                    } else {
+                        result = value_from_id(0);
+                    }
+                    return result;
+                }
+            }
+
+            /* Check if this selector matches a synthesized property setter.
+             * A setter has selector "set<PropName>:" — we check by building
+             * the expected setter selector from each property name. */
+            if (cstr_eq_n(sel_name, "set", 3) && sel_name[cstr_len(sel_name) - 1] == ':') {
+                /* Extract property name from "setPropName:" → "propName"
+                 * (lowercase first letter of PropName) */
+                char prop_from_setter[64];
+                unsigned int si = 3; /* skip "set" */
+                unsigned int pi2 = 0;
+                unsigned int sel_len = cstr_len(sel_name);
+                /* The last char is ':', so the property name is from index 3 to sel_len-1 */
+                if (si < sel_len - 1) {
+                    /* Lowercase first letter */
+                    if (sel_name[si] >= 'A' && sel_name[si] <= 'Z') {
+                        prop_from_setter[pi2++] = sel_name[si] - 'A' + 'a';
+                    } else {
+                        prop_from_setter[pi2++] = sel_name[si];
+                    }
+                    si++;
+                    while (si < sel_len - 1 && pi2 < 63) {
+                        prop_from_setter[pi2++] = sel_name[si++];
+                    }
+                    prop_from_setter[pi2] = '\0';
+
+                    /* Find matching property */
+                    for (pi = 0; pi < g_property_count; pi++) {
+                        if (g_properties[pi].synthesized &&
+                            cstr_eq(prop_from_setter, g_properties[pi].name)) {
+                            /* It's a setter — store in side table */
+                            if (target.is_id && receiver != 0 && arg_count >= 1) {
+                                Value val;
+                                if (g_properties[pi].is_int) {
+                                    val = value_from_int(keyword_args[0].is_int ? keyword_args[0].int_val : 0);
+                                } else {
+                                    val = keyword_args[0];
+                                }
+                                instance_var_set(receiver, g_properties[pi].name, val);
+                            }
+                            result = value_from_id(receiver);
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Fall through: no built-in, interpreter method, or property matched.
          * Runtime IMP dispatch is not used because WASM enforces exact
          * function signatures — variadic IMP calls cause signature
          * mismatch traps. All supported methods must be handled as
@@ -1671,6 +1841,50 @@ static Value parse_interface(Parser *p) {
     while (parser_current(p).type != TOK_AT_KEYWORD ||
            !cstr_eq(parser_current(p).text, "@end")) {
         if (parser_current(p).type == TOK_EOF) break;
+
+        /* @property (attributes) type name; */
+        if (parser_current(p).type == TOK_AT_KEYWORD &&
+            cstr_eq(parser_current(p).text, "@property")) {
+            parser_advance(p);
+
+            /* Skip attributes in parens: (nonatomic, assign, strong, weak, copy, readonly, readwrite) */
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                int depth = 1;
+                parser_advance(p);
+                while (depth > 0 && parser_current(p).type != TOK_EOF) {
+                    if (parser_current(p).type == TOK_OPEN_PAREN) depth++;
+                    else if (parser_current(p).type == TOK_CLOSE_PAREN) depth--;
+                    parser_advance(p);
+                }
+            }
+
+            /* Parse type and property name */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                PropertyDecl *prop = &g_properties[g_property_count];
+                cstr_copy(prop->type_name, parser_current(p).text, 64);
+                prop->is_int = cstr_eq(prop->type_name, "int") ||
+                               cstr_eq(prop->type_name, "BOOL") ||
+                               cstr_eq(prop->type_name, "long") ||
+                               cstr_eq(prop->type_name, "char");
+                cstr_copy(prop->class_name, class_name, 64);
+                parser_advance(p);
+
+                /* Skip pointer * */
+                while (parser_current(p).type == TOK_STAR) {
+                    parser_advance(p);
+                }
+
+                /* Property name */
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    cstr_copy(prop->name, parser_current(p).text, 64);
+                    parser_advance(p);
+                    g_property_count++;
+                }
+            }
+
+            if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+            continue;
+        }
 
         /* Parse method declaration: - (returntype)selector:argtype argname ... */
         if (parser_current(p).type == TOK_MINUS || parser_current(p).type == TOK_PLUS) {
@@ -1805,8 +2019,8 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     /* Execute the method body */
     g_return_pending = 0;
     {
-        int result = objc_interp(g_methods[i].source, g_methods[i].source_len);
-        (void)result; /* errors are captured in g_error_buffer */
+        Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source);
+        (void)v; /* errors are captured in g_error_buffer */
     }
 
     /* Determine return value */
@@ -1862,6 +2076,52 @@ static Value parse_implementation(Parser *p) {
     while (parser_current(p).type != TOK_AT_KEYWORD ||
            !cstr_eq(parser_current(p).text, "@end")) {
         if (parser_current(p).type == TOK_EOF) break;
+
+        /* @synthesize prop = _ivar; or @synthesize prop; */
+        if (parser_current(p).type == TOK_AT_KEYWORD &&
+            cstr_eq(parser_current(p).text, "@synthesize")) {
+            parser_advance(p);
+
+            while (parser_current(p).type != TOK_SEMICOLON &&
+                   parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    char prop_name[64];
+                    cstr_copy(prop_name, parser_current(p).text, 64);
+                    parser_advance(p);
+
+                    /* Skip = _ivar (we use the side table, not ivar names) */
+                    if (parser_current(p).type == TOK_ASSIGN) {
+                        parser_advance(p);
+                        if (parser_current(p).type == TOK_IDENTIFIER) {
+                            parser_advance(p);
+                        }
+                    }
+
+                    /* Mark the property as synthesized — enables
+                     * property dispatch via the instance variable
+                     * side table in parse_message_send. */
+                    {
+                        unsigned int pi;
+                        for (pi = 0; pi < g_property_count; pi++) {
+                            if (cstr_eq(g_properties[pi].name, prop_name) &&
+                                cstr_eq(g_properties[pi].class_name, class_name)) {
+                                g_properties[pi].synthesized = 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    /* Skip comma between multiple synthesize declarations */
+                    if (parser_current(p).type == TOK_COMMA) {
+                        parser_advance(p);
+                    }
+                } else {
+                    parser_advance(p);
+                }
+            }
+            if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+            continue;
+        }
 
         /* Variable declaration inside @implementation (e.g., int _ivar;) */
         if (parser_current(p).type == TOK_IDENTIFIER) {
@@ -2228,6 +2488,8 @@ static Value parse_primary(Parser *p) {
                                 if (mi < g_method_count) {
                                     /* Execute setter method body */
                                     unsigned int saved_var_count = g_var_count;
+                                    unsigned int saved_scope_base = g_var_scope_base;
+                                    g_var_scope_base = saved_var_count;
                                     InterpVar *self_var = interp_get_or_create_var("self");
                                     if (self_var) {
                                         self_var->is_id = 1;
@@ -2255,9 +2517,24 @@ static Value parse_primary(Parser *p) {
                                         }
                                     }
                                     g_return_pending = 0;
-                                    objc_interp(g_methods[mi].source, g_methods[mi].source_len);
+                                    {
+                                        Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
+                                        (void)v;
+                                    }
                                     g_var_count = saved_var_count;
+                                    g_var_scope_base = saved_scope_base;
                                     g_return_pending = 0;
+                                } else {
+                                    /* No method found — check for @synthesize property */
+                                    unsigned int pi;
+                                    for (pi = 0; pi < g_property_count; pi++) {
+                                        if (g_properties[pi].synthesized &&
+                                            cstr_eq(prop_name, g_properties[pi].name)) {
+                                            /* Store in side table */
+                                            instance_var_set(receiver, g_properties[pi].name, val);
+                                            break;
+                                        }
+                                    }
                                 }
                                 return val;
                             }
@@ -2278,7 +2555,9 @@ static Value parse_primary(Parser *p) {
                         if (mi < g_method_count) {
                             /* Execute getter method body */
                             unsigned int saved_var_count = g_var_count;
+                            unsigned int saved_scope_base = g_var_scope_base;
                             Value return_val;
+                            g_var_scope_base = saved_var_count;
                             InterpVar *self_var = interp_get_or_create_var("self");
                             if (self_var) {
                                 self_var->is_id = 1;
@@ -2292,13 +2571,30 @@ static Value parse_primary(Parser *p) {
                                 }
                             }
                             g_return_pending = 0;
-                            objc_interp(g_methods[mi].source, g_methods[mi].source_len);
+                            {
+                                Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
+                                (void)v;
+                            }
                             return_val = g_return_value;
                             g_var_count = saved_var_count;
+                            g_var_scope_base = saved_scope_base;
                             g_return_pending = 0;
                             return return_val;
                         }
-                        /* No interpreter method found — return void */
+                        /* No interpreter method found — check @synthesize property */
+                        {
+                            unsigned int pi;
+                            for (pi = 0; pi < g_property_count; pi++) {
+                                if (g_properties[pi].synthesized &&
+                                    cstr_eq(prop_name, g_properties[pi].name)) {
+                                    /* Read from side table */
+                                    Value *val = instance_var_get(receiver, g_properties[pi].name);
+                                    if (val) return *val;
+                                    return value_void();
+                                }
+                            }
+                        }
+                        /* No method or property found — return void */
                         return value_void();
                     }
                 }
@@ -2324,7 +2620,11 @@ static Value parse_primary(Parser *p) {
         }
 
         parser_advance(p);
-        parser_error(p, "Unsupported @keyword");
+        if (tok.type == TOK_AT_KEYWORD) {
+            parser_error(p, "Unsupported @keyword");
+        } else {
+            parser_error(p, "Unknown identifier");
+        }
         return value_void();
     }
 
@@ -2845,11 +3145,18 @@ static AstNode *parse_statement_ast(Parser *p) {
         parser_expect(p, TOK_OPEN_PAREN);
         if (p->error) return 0;
 
-        /* Parse condition as a source range */
+        /* Parse condition as a source range — skip tokens, don't evaluate */
         {
             unsigned int cond_start = p->lex.token_start;
-            parse_expression(p);
-            if (p->error) return 0;
+            int paren_depth = 1; /* we're inside the ( already */
+            while (parser_current(p).type != TOK_EOF && paren_depth > 0) {
+                if (parser_current(p).type == TOK_OPEN_PAREN) paren_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    paren_depth--;
+                    if (paren_depth == 0) break;
+                }
+                parser_advance(p);
+            }
             condition = ast_make_source(AST_EXPR_STMT, cond_start,
                                        p->lex.token_start - cond_start);
         }
@@ -2892,8 +3199,15 @@ static AstNode *parse_statement_ast(Parser *p) {
 
         {
             unsigned int cond_start = p->lex.token_start;
-            parse_expression(p);
-            if (p->error) return 0;
+            int paren_depth = 1;
+            while (parser_current(p).type != TOK_EOF && paren_depth > 0) {
+                if (parser_current(p).type == TOK_OPEN_PAREN) paren_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    paren_depth--;
+                    if (paren_depth == 0) break;
+                }
+                parser_advance(p);
+            }
             condition = ast_make_source(AST_EXPR_STMT, cond_start,
                                         p->lex.token_start - cond_start);
         }
@@ -2914,41 +3228,132 @@ static AstNode *parse_statement_ast(Parser *p) {
 
     /* for statement */
     if (tok.type == TOK_FOR) {
-        AstNode *init, *condition, *increment, *body;
         parser_advance(p);
         parser_expect(p, TOK_OPEN_PAREN);
         if (p->error) return 0;
 
-        /* Init: parse as source range */
+        /* Check for for-in: type var in collection
+         * We look ahead: if we see IDENT IDENT TOK_IN, it's for-in.
+         * Otherwise, it's a standard for loop. */
+        {
+            Token saved = p->lex.current;
+            unsigned int saved_pos = p->lex.pos;
+            unsigned int saved_token_start = p->lex.token_start;
+            int is_for_in = 0;
+            char for_in_var[64];
+            for_in_var[0] = '\0';
+
+            /* Try to match: type var in ... */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                /* Could be a type name or just 'id' */
+                parser_advance(p);
+                if (parser_current(p).type == TOK_STAR) {
+                    /* Skip pointer: id *var */
+                    parser_advance(p);
+                }
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    cstr_copy(for_in_var, parser_current(p).text, 64);
+                    parser_advance(p);
+                    if (parser_current(p).type == TOK_IN) {
+                        is_for_in = 1;
+                    }
+                }
+            }
+
+            if (is_for_in) {
+                /* for-in loop: for (type var in collection) { body } */
+                unsigned int coll_start = p->lex.token_start;
+                unsigned int coll_len;
+                AstNode *body;
+                AstNode *node;
+
+                parser_advance(p); /* skip 'in' */
+
+                /* Parse collection expression (skip tokens up to close paren) */
+                {
+                    unsigned int coll_start = p->lex.token_start;
+                    int pd = 0;
+                    while (parser_current(p).type != TOK_EOF) {
+                        if (parser_current(p).type == TOK_CLOSE_PAREN && pd == 0) break;
+                        if (parser_current(p).type == TOK_OPEN_PAREN) pd++;
+                        else if (parser_current(p).type == TOK_CLOSE_PAREN) pd--;
+                        parser_advance(p);
+                    }
+                    coll_len = p->lex.token_start - coll_start;
+                }
+
+                if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+
+                /* Body */
+                if (parser_current(p).type == TOK_OPEN_BRACE) {
+                    parser_advance(p);
+                    body = parse_block_ast(p);
+                    if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+                } else {
+                    body = parse_statement_ast(p);
+                }
+                if (!body) return 0;
+
+                /* Build AST_FOR_IN node */
+                node = ast_alloc();
+                if (!node) return 0;
+                node->type = AST_FOR_IN;
+                cstr_copy(node->for_in.var_name, for_in_var, 64);
+                node->for_in.collection_start = coll_start;
+                node->for_in.collection_len = coll_len;
+                node->for_in.body = body;
+                return node;
+            }
+
+            /* Not for-in — restore and parse as standard for */
+            p->lex.current = saved;
+            p->lex.pos = saved_pos;
+            p->lex.token_start = saved_token_start;
+        }
+
+        /* Standard for loop: for (init; cond; incr) { body } */
+        {
+            AstNode *init, *condition, *increment, *body;
+
+        /* Init: capture as source range (skip tokens, don't evaluate) */
         {
             unsigned int init_start = p->lex.token_start;
-            if (parser_current(p).type != TOK_SEMICOLON) {
-                parse_statement(p); /* evaluate init immediately */
-                if (p->error) return 0;
+            int pd = 0;
+            while (parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_SEMICOLON && pd == 0) break;
+                if (parser_current(p).type == TOK_OPEN_PAREN) pd++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) pd--;
+                parser_advance(p);
             }
             init = ast_make_source(AST_EXPR_STMT, init_start,
                                    p->lex.token_start - init_start);
             if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
         }
 
-        /* Condition: parse as source range */
+        /* Condition: capture as source range (skip tokens, don't evaluate) */
         {
             unsigned int cond_start = p->lex.token_start;
-            if (parser_current(p).type != TOK_SEMICOLON) {
-                parse_expression(p);
-                if (p->error) return 0;
+            int pd = 0;
+            while (parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_SEMICOLON && pd == 0) break;
+                if (parser_current(p).type == TOK_OPEN_PAREN) pd++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) pd--;
+                parser_advance(p);
             }
             condition = ast_make_source(AST_EXPR_STMT, cond_start,
                                        p->lex.token_start - cond_start);
             if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
         }
 
-        /* Increment: parse as source range */
+        /* Increment: capture as source range (skip tokens, don't evaluate) */
         {
             unsigned int incr_start = p->lex.token_start;
-            if (parser_current(p).type != TOK_CLOSE_PAREN) {
-                parse_expression(p);
-                if (p->error) return 0;
+            int pd = 0;
+            while (parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_CLOSE_PAREN && pd == 0) break;
+                if (parser_current(p).type == TOK_OPEN_PAREN) pd++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) pd--;
+                parser_advance(p);
             }
             increment = ast_make_source(AST_EXPR_STMT, incr_start,
                                        p->lex.token_start - incr_start);
@@ -2966,6 +3371,7 @@ static AstNode *parse_statement_ast(Parser *p) {
         if (!body) return 0;
 
         return ast_make_for(init, condition, increment, body);
+        }
     }
 
     /* break statement */
@@ -3016,11 +3422,29 @@ static AstNode *parse_statement_ast(Parser *p) {
         return ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
     }
 
-    /* Type declaration or expression statement → source range */
+    /* Type declaration or expression statement → source range.
+     * We only advance the parser to find the statement boundaries;
+     * actual evaluation happens in eval_ast → eval_source_range.
+     * This avoids the double-execution bug where parse_statement
+     * evaluates the code during AST construction AND eval_source_range
+     * evaluates it again during evaluation. */
     {
         unsigned int start = p->lex.token_start;
-        parse_statement(p); /* parse and evaluate to advance the parser */
-        if (p->error) return 0;
+        int brace_depth = 0;
+        /* Skip tokens until we find the statement-ending semicolon.
+         * We need to track brace depth to handle nested blocks. */
+        while (parser_current(p).type != TOK_EOF) {
+            if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+            else if (parser_current(p).type == TOK_CLOSE_BRACE) {
+                brace_depth--;
+                if (brace_depth < 0) break; /* end of enclosing block */
+            }
+            else if (parser_current(p).type == TOK_SEMICOLON && brace_depth == 0) {
+                parser_advance(p);
+                break;
+            }
+            parser_advance(p);
+        }
         return ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
     }
 }
@@ -3032,12 +3456,16 @@ static AstNode *parse_statement_ast(Parser *p) {
 static Value eval_source_range(unsigned int start, unsigned int len,
                                const char *source) {
     Parser p;
+    Value last = value_void();
     if (len == 0) return value_void();
     parser_init(&p, source + start, len);
-    {
-        Value v = parse_statement(&p);
-        return v;
+    /* Parse all statements in the source range, not just the first one.
+     * This is needed for method bodies with multiple statements. */
+    while (p.lex.current.type != TOK_EOF && !p.error) {
+        last = parse_statement(&p);
+        if (p.error) return last;
     }
+    return last;
 }
 
 /* Evaluate an AST node. source is the original full source string. */
@@ -3107,6 +3535,85 @@ static Value eval_ast(AstNode *node, const char *source) {
 
             /* Increment */
             eval_ast(node->for_stmt.increment, source);
+        }
+        break;
+    }
+
+    case AST_FOR_IN: {
+        /* for (type var in collection) { body }
+         * Evaluate the collection expression, then iterate.
+         * For NSArray: iterate by index using [arr count] and [arr objectAtIndex:i].
+         * For NSString: iterate by character.
+         * For NSDictionary: iterate by key (not yet supported). */
+        Value coll = eval_source_range(node->for_in.collection_start,
+                                       node->for_in.collection_len, source);
+        const char *coll_str = (const char *)coll.obj_val;
+        int is_nsarray = (coll.is_id && coll_str != 0 &&
+                          cstr_eq_n(coll_str, "NSArray:", 8));
+        int is_nsstring = (coll.is_id && coll_str != 0 &&
+                           !cstr_eq_n(coll_str, "NSArray:", 8) &&
+                           !cstr_eq_n(coll_str, "NSNumber:", 9) &&
+                           !cstr_eq_n(coll_str, "FDObj:", 6));
+
+        if (is_nsarray) {
+            /* NSArray: iterate by count */
+            int count = 0;
+            const char *s = coll_str;
+            if (cstr_eq_n(s, "NSArray:count:", 13)) {
+                unsigned int i = 13;
+                while (s[i] >= '0' && s[i] <= '9') count = count * 10 + (s[i++] - '0');
+            }
+            /* Iterate */
+            {
+                int idx;
+                for (idx = 0; idx < count; idx++) {
+                    InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
+                    if (var) {
+                        /* Return the element at this index.
+                         * For our simple array encoding, we just
+                         * return the index as an int for now. */
+                        var->is_int = 1;
+                        var->int_value = idx;
+                        var->is_id = 0;
+                    }
+                    g_break_pending = 0;
+                    g_continue_pending = 0;
+                    eval_ast(node->for_in.body, source);
+                    if (g_break_pending) { g_break_pending = 0; break; }
+                    if (g_continue_pending) { g_continue_pending = 0; continue; }
+                    if (g_return_pending) return last;
+                    if (interp_should_interrupt()) return last;
+                }
+            }
+        } else if (is_nsstring) {
+            /* NSString: iterate by character */
+            unsigned int len = (unsigned int)cstr_len(coll_str);
+            unsigned int ci;
+            for (ci = 0; ci < len; ci++) {
+                InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
+                if (var) {
+                    /* Store single character as a string in the pool */
+                    if (g_string_pool_offset + 2 > 4096) g_string_pool_offset = 0;
+                    {
+                        char *ch_ptr = g_string_pool + g_string_pool_offset;
+                        ch_ptr[0] = coll_str[ci];
+                        ch_ptr[1] = '\0';
+                        g_string_pool_offset += 2;
+                        var->is_id = 1;
+                        var->value = (id)ch_ptr;
+                        var->is_int = 0;
+                    }
+                }
+                g_break_pending = 0;
+                g_continue_pending = 0;
+                eval_ast(node->for_in.body, source);
+                if (g_break_pending) { g_break_pending = 0; break; }
+                if (g_continue_pending) { g_continue_pending = 0; continue; }
+                if (g_return_pending) return last;
+                if (interp_should_interrupt()) return last;
+            }
+        } else {
+            /* Unknown collection type — just skip */
         }
         break;
     }
@@ -3249,6 +3756,8 @@ void objc_interp_init(void) {
     g_result_buffer[0] = '\0';
     g_var_count = 0;
     g_method_count = 0;
+    g_property_count = 0;
+    g_instance_var_count = 0;
 
     /* Register Foundation class names as variables with is_class=1.
      * We don't call objc_allocateClassPair (it can cause WASM traps).
