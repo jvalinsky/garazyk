@@ -941,7 +941,8 @@ static const char *type_keywords[] = {
     "int", "float", "double", "id", "Class", "SEL", "BOOL", "void",
     "long", "char", "unsigned", "signed", "NSString", "NSNumber",
     "NSArray", "NSMutableArray", "NSDictionary", "NSMutableDictionary",
-    "NSSet", "NSData", "NSObject"
+    "NSSet", "NSData", "NSObject",
+    "switch", "case", "default", "break", "continue", "return"
 };
 #define TYPE_KEYWORD_COUNT (sizeof(type_keywords) / sizeof(type_keywords[0]))
 
