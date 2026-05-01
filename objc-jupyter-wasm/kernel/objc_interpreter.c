@@ -1298,7 +1298,8 @@ typedef enum {
     AST_RETURN,
     AST_BREAK,
     AST_CONTINUE,
-    AST_SWITCH
+    AST_SWITCH,
+    AST_DO_WHILE
 } AstNodeType;
 
 typedef struct AstNode AstNode;
@@ -1336,6 +1337,10 @@ struct AstNode {
             int has_default;
             AstNode *default_body;
         } switch_stmt;
+        struct { /* AST_DO_WHILE */
+            AstNode *condition;
+            AstNode *body;
+        } do_while_stmt;
         struct { /* AST_BLOCK */
             AstNode *children[128];
             unsigned int count;
@@ -1376,6 +1381,15 @@ static AstNode *ast_make_while(AstNode *condition, AstNode *body) {
     n->type = AST_WHILE;
     n->while_stmt.condition = condition;
     n->while_stmt.body = body;
+    return n;
+}
+
+static AstNode *ast_make_do_while(AstNode *body, AstNode *condition) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_DO_WHILE;
+    n->do_while_stmt.body = body;
+    n->do_while_stmt.condition = condition;
     return n;
 }
 
@@ -5789,6 +5803,54 @@ static AstNode *parse_statement_ast(Parser *p) {
         }
     }
 
+    /* do-while statement */
+    if (tok.type == TOK_DO) {
+        AstNode *body, *condition;
+        parser_advance(p); /* consume 'do' */
+
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            parser_advance(p);
+            body = parse_block_ast(p);
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        } else {
+            body = parse_statement_ast(p);
+        }
+        if (!body) return 0;
+
+        parser_expect(p, TOK_WHILE);
+        if (p->error) return 0;
+        parser_expect(p, TOK_OPEN_PAREN);
+        if (p->error) return 0;
+
+        {
+            unsigned int cond_start = p->lex.token_start;
+            int paren_depth = 1;
+            while (parser_current(p).type != TOK_EOF && paren_depth > 0) {
+                if (parser_current(p).type == TOK_OPEN_PAREN) paren_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    paren_depth--;
+                    if (paren_depth == 0) break;
+                }
+                parser_advance(p);
+            }
+            condition = ast_make_source(AST_EXPR_STMT, cond_start,
+                                        p->lex.token_start - cond_start);
+        }
+        parser_expect(p, TOK_CLOSE_PAREN);
+        if (p->error) return 0;
+        parser_expect(p, TOK_SEMICOLON);
+        if (p->error) return 0;
+
+        {
+            AstNode *node = ast_make_do_while(body, condition);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
+    }
+
     /* for statement */
     if (tok.type == TOK_FOR) {
         parser_advance(p);
@@ -6214,7 +6276,8 @@ static Value eval_source_range(unsigned int start, unsigned int len,
     while (p.lex.current.type != TOK_EOF && !p.error) {
         Token tok = parser_current(&p);
         if (tok.type == TOK_IF || tok.type == TOK_WHILE ||
-            tok.type == TOK_FOR || tok.type == TOK_SWITCH) {
+            tok.type == TOK_FOR || tok.type == TOK_SWITCH ||
+            tok.type == TOK_DO) {
             /* Control flow: use two-phase AST approach.
              * Save and restore AST count to avoid corrupting
              * the outer AST arena. */
@@ -6278,6 +6341,29 @@ static Value eval_ast(AstNode *node, const char *source) {
             if (g_return_pending) return last;
             if (interp_should_interrupt()) return last;
         }
+        break;
+    }
+
+    case AST_DO_WHILE: {
+        do {
+            g_break_pending = 0;
+            g_continue_pending = 0;
+            eval_ast(node->do_while_stmt.body, source);
+            if (g_break_pending) {
+                g_break_pending = 0;
+                break;
+            }
+            if (g_continue_pending) {
+                g_continue_pending = 0;
+                /* skip to condition check */
+            }
+            if (g_return_pending) return last;
+            if (interp_should_interrupt()) return last;
+            {
+                Value cond = eval_ast(node->do_while_stmt.condition, source);
+                if (!is_truthy(cond)) break;
+            }
+        } while (1);
         break;
     }
 
