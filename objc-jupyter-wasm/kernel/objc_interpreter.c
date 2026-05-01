@@ -6454,29 +6454,43 @@ static Value eval_ast(AstNode *node, const char *source) {
             }
         }
 
-        /* Execute from matched case (fall-through) or from default */
-        if (matched_case >= 0) {
-            unsigned int ci;
-            for (ci = (unsigned int)matched_case; ci < node->switch_stmt.case_count; ci++) {
-                g_break_pending = 0;
-                eval_ast(node->switch_stmt.case_bodies[ci], source);
-                if (g_break_pending) {
+        /* Execute from matched case (fall-through) or from default.
+         * A break inside a switch exits the switch (not the enclosing loop).
+         * We use a local flag to track switch-break separately from
+         * g_break_pending (which would exit the enclosing for/while). */
+        {
+            int switch_break = 0;
+            if (matched_case >= 0) {
+                unsigned int ci;
+                for (ci = (unsigned int)matched_case; ci < node->switch_stmt.case_count; ci++) {
                     g_break_pending = 0;
-                    break;
+                    eval_ast(node->switch_stmt.case_bodies[ci], source);
+                    if (g_break_pending) {
+                        switch_break = 1;
+                        g_break_pending = 0; /* consume the break — it exits switch, not loop */
+                        break;
+                    }
+                    if (g_return_pending) return last;
                 }
-                if (g_return_pending) return last;
-            }
-            /* Fall through to default if no break */
-            if (!g_break_pending && !g_return_pending &&
-                node->switch_stmt.has_default && node->switch_stmt.default_body) {
+                /* Fall through to default if no break */
+                if (!switch_break && !g_return_pending &&
+                    node->switch_stmt.has_default && node->switch_stmt.default_body) {
+                    g_break_pending = 0;
+                    eval_ast(node->switch_stmt.default_body, source);
+                    if (g_break_pending) {
+                        switch_break = 1;
+                        g_break_pending = 0; /* consume break */
+                    }
+                }
+            } else if (node->switch_stmt.has_default && node->switch_stmt.default_body) {
                 g_break_pending = 0;
                 eval_ast(node->switch_stmt.default_body, source);
-                if (g_break_pending) g_break_pending = 0;
+                if (g_break_pending) {
+                    switch_break = 1;
+                    g_break_pending = 0; /* consume break */
+                }
             }
-        } else if (node->switch_stmt.has_default && node->switch_stmt.default_body) {
-            g_break_pending = 0;
-            eval_ast(node->switch_stmt.default_body, source);
-            if (g_break_pending) g_break_pending = 0;
+            (void)switch_break; /* break was consumed — enclosing loop continues */
         }
         break;
     }
