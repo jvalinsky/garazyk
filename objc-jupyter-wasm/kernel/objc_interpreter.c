@@ -1062,6 +1062,20 @@ static void coll_remove_all(unsigned int coll_id) {
 /* Insert an entry at a logical position within a collection.
  * Shifts existing entries at that position and later to make room.
  * Returns 0 on success, -1 if table full or position invalid. */
+static int coll_insert_at(unsigned int coll_id, unsigned int pos, Value key, Value value);
+
+/* Get the Nth entry for a collection (for array indexing). Returns index or -1. */
+static int coll_get_nth(unsigned int coll_id, unsigned int n) {
+    unsigned int i, count = 0;
+    for (i = 0; i < g_coll_entry_count; i++) {
+        if (g_coll_entries[i].coll_id == coll_id) {
+            if (count == n) return (int)i;
+            count++;
+        }
+    }
+    return -1;
+}
+
 static int coll_insert_at(unsigned int coll_id, unsigned int pos, Value key, Value value) {
     int nth = coll_get_nth(coll_id, pos);
     if (nth < 0) return -1;
@@ -1078,20 +1092,6 @@ static int coll_insert_at(unsigned int coll_id, unsigned int pos, Value key, Val
     g_coll_entries[(unsigned int)nth].value = value;
     g_coll_entry_count++;
     return 0;
-}
-    }
-}
-
-/* Get the Nth entry for a collection (for array indexing). Returns index or -1. */
-static int coll_get_nth(unsigned int coll_id, unsigned int n) {
-    unsigned int i, count = 0;
-    for (i = 0; i < g_coll_entry_count; i++) {
-        if (g_coll_entries[i].coll_id == coll_id) {
-            if (count == n) return (int)i;
-            count++;
-        }
-    }
-    return -1;
 }
 
 /* Parse a collection ID from a marker string like "NSDict:5" or "NSMutArr:12".
