@@ -1782,6 +1782,24 @@ static Value parse_message_send(Parser *p) {
 
         /* NSObject: [obj isEqual:other] → 1 if same pointer */
         if (cstr_eq(sel_name, "isEqual:") && target.is_id && arg_count >= 1) {
+            /* NSData: compare by content (not pointer) */
+            if (receiver != 0 && cstr_eq_n((const char *)receiver, "NSData:", 7)) {
+                const char *other = (const char *)args[0];
+                if (other && cstr_eq_n(other, "NSData:", 7)) {
+                    return value_from_int(cstr_eq((const char *)receiver, other) ? 1 : 0);
+                }
+                return value_from_int(0);
+            }
+            /* NSNumber: compare by value (not pointer) */
+            if (receiver != 0 && (cstr_eq_n((const char *)receiver, "NSNumber:", 9) ||
+                                  cstr_eq_n((const char *)receiver, "NSFloat:", 8))) {
+                const char *other = (const char *)args[0];
+                if (other && (cstr_eq_n(other, "NSNumber:", 9) || cstr_eq_n(other, "NSFloat:", 8))) {
+                    return value_from_int(cstr_eq((const char *)receiver, other) ? 1 : 0);
+                }
+                return value_from_int(0);
+            }
+            /* Default: pointer comparison */
             int equal = (receiver == args[0]) ? 1 : 0;
             return value_from_int(equal);
         }
@@ -1848,6 +1866,11 @@ static Value parse_message_send(Parser *p) {
         /* NSString: [str length] → string length */
         if (cstr_eq(sel_name, "length") && target.is_id && receiver != 0) {
             const char *s = (const char *)receiver;
+            /* NSData: length = hex_len / 2 */
+            if (cstr_eq_n(s, "NSData:", 7)) {
+                int hex_len = (int)cstr_len(s + 7);
+                return value_from_int(hex_len / 2);
+            }
             return value_from_int((int)cstr_len(s));
         }
 
@@ -1987,6 +2010,126 @@ static Value parse_message_send(Parser *p) {
             return value_from_id((id)result);
         }
 
+        /* NSString: [str stringByReplacingOccurrencesOfString:find withString:replace]
+         * Replace all occurrences of find with replace. */
+        if (cstr_eq(sel_name, "stringByReplacingOccurrencesOfString:withString:") && target.is_id && receiver != 0 && arg_count >= 2) {
+            const char *src = (const char *)receiver;
+            const char *find = (const char *)keyword_args[0].obj_val;
+            const char *repl = (const char *)keyword_args[1].obj_val;
+            int src_len = (int)cstr_len(src);
+            int find_len = (int)cstr_len(find);
+            int repl_len = (int)cstr_len(repl);
+            if (find_len == 0) return value_from_id(receiver);
+            {
+                /* Two passes: count matches to size the buffer, then build */
+                int match_count = 0;
+                int si;
+                for (si = 0; si <= src_len - find_len; ) {
+                    if (cstr_starts(src + si, find)) {
+                        match_count++;
+                        si += find_len;
+                    } else {
+                        si++;
+                    }
+                }
+                unsigned int needed = (unsigned int)(src_len + match_count * (repl_len - find_len)) + 1;
+                char *result = string_pool_alloc(needed);
+                if (result == 0) return value_from_id(receiver);
+                {
+                    int ri = 0;
+                    si = 0;
+                    while (si < src_len) {
+                        if (si <= src_len - find_len && cstr_starts(src + si, find)) {
+                            int j;
+                            for (j = 0; j < repl_len && ri < (int)needed - 1; j++)
+                                result[ri++] = repl[j];
+                            si += find_len;
+                        } else {
+                            result[ri++] = src[si++];
+                        }
+                    }
+                    result[ri] = '\0';
+                }
+                return value_from_id((id)result);
+            }
+        }
+
+        /* NSString: [str componentsSeparatedByString:sep] → NSArray of components */
+        if (cstr_eq(sel_name, "componentsSeparatedByString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *src = (const char *)receiver;
+            const char *sep = (const char *)keyword_args[0].obj_val;
+            int src_len = (int)cstr_len(src);
+            int sep_len = (int)cstr_len(sep);
+            unsigned int new_cid = g_next_coll_id++;
+            Value dummy = value_void();
+            if (sep_len == 0) {
+                /* Empty separator: each char is a component */
+                int i;
+                for (i = 0; i < src_len; i++) {
+                    char *comp = string_pool_alloc(2);
+                    if (comp) { comp[0] = src[i]; comp[1] = '\0'; }
+                    if (comp) coll_add(new_cid, value_from_id((id)comp), dummy);
+                }
+            } else {
+                int start = 0;
+                int si;
+                for (si = 0; si <= src_len; ) {
+                    if (si <= src_len - sep_len && cstr_starts(src + si, sep)) {
+                        /* Component from start to si */
+                        int comp_len = si - start;
+                        char *comp = string_pool_alloc((unsigned int)comp_len + 1);
+                        if (comp) {
+                            int j;
+                            for (j = 0; j < comp_len; j++) comp[j] = src[start + j];
+                            comp[comp_len] = '\0';
+                            coll_add(new_cid, value_from_id((id)comp), dummy);
+                        }
+                        si += sep_len;
+                        start = si;
+                    } else {
+                        si++;
+                    }
+                }
+                /* Last component */
+                {
+                    int comp_len = src_len - start;
+                    char *comp = string_pool_alloc((unsigned int)comp_len + 1);
+                    if (comp) {
+                        int j;
+                        for (j = 0; j < comp_len; j++) comp[j] = src[start + j];
+                        comp[comp_len] = '\0';
+                        coll_add(new_cid, value_from_id((id)comp), dummy);
+                    }
+                }
+            }
+            return value_from_id(coll_make_marker("NSArr:", new_cid));
+        }
+
+        /* NSString: [str stringByTrimmingWhitespace] → trim leading/trailing whitespace
+         * Convenience method (not a real ObjC API — that uses
+         * stringByTrimmingCharactersInSet: which needs NSCharacterSet). */
+        if (cstr_eq(sel_name, "stringByTrimmingWhitespace") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            int slen = (int)cstr_len(s);
+            int start = 0, end = slen;
+            while (start < end && (s[start] == ' ' || s[start] == '\t' || s[start] == '\n' || s[start] == '\r'))
+                start++;
+            while (end > start && (s[end-1] == ' ' || s[end-1] == '\t' || s[end-1] == '\n' || s[end-1] == '\r'))
+                end--;
+            {
+                int comp_len = end - start;
+                unsigned int needed = (unsigned int)comp_len + 1;
+                char *result = string_pool_alloc(needed);
+                if (result == 0) return value_from_id(receiver);
+                {
+                    int i;
+                    for (i = 0; i < comp_len; i++) result[i] = s[start + i];
+                    result[comp_len] = '\0';
+                }
+                return value_from_id((id)result);
+            }
+        }
+
         /* NSNumber: [NSNumber numberWithInt:n] → wrap int as id */
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithInt:") && arg_count >= 1) {
             /* Store the int value in a string pool buffer.
@@ -2042,8 +2185,31 @@ static Value parse_message_send(Parser *p) {
         /* NSNumber: [num description] → numeric string */
         if (cstr_eq(sel_name, "description") && target.is_id && receiver != 0) {
             const char *s = (const char *)receiver;
+            /* NSData: display as <hex bytes> */
+            if (cstr_eq_n(s, "NSData:", 7)) {
+                const char *hex = s + 7;
+                int hex_len = (int)cstr_len(hex);
+                unsigned int needed = 2 + (unsigned int)hex_len + (unsigned int)(hex_len / 8) + 1;
+                char *result = string_pool_alloc(needed);
+                if (result) {
+                    int ri = 0, i;
+                    result[ri++] = '<';
+                    for (i = 0; i < hex_len; i++) {
+                        if (i > 0 && i % 8 == 0) result[ri++] = ' ';
+                        result[ri++] = hex[i];
+                    }
+                    result[ri++] = '>';
+                    result[ri] = '\0';
+                    return value_from_id((id)result);
+                }
+            }
+            /* NSNumber: display numeric value */
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 nslog_append(s + 9, cstr_len(s + 9));
+            }
+            /* NSFloat: display float value */
+            if (cstr_eq_n(s, "NSFloat:", 8)) {
+                nslog_append(s + 8, cstr_len(s + 8));
             }
             return value_from_id(receiver);
         }
@@ -2162,6 +2328,162 @@ static Value parse_message_send(Parser *p) {
             return value_from_float(0.0);
         }
 
+        /* NSNumber: [NSNumber numberWithBool:b] → wrap bool as NSNumber */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithBool:") && arg_count >= 1) {
+            int v = keyword_args[0].is_int ? (keyword_args[0].int_val ? 1 : 0) : 0;
+            char *buf = string_pool_alloc(14);
+            if (buf == 0) return value_from_int(v);
+            cstr_copy(buf, "NSNumber:", 14);
+            buf[9] = '0' + v;
+            buf[10] = '\0';
+            return value_from_id((id)buf);
+        }
+
+        /* NSNumber: [num stringValue] → numeric string representation */
+        if (cstr_eq(sel_name, "stringValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                unsigned int vlen = (unsigned int)cstr_len(s + 9);
+                char *result = string_pool_alloc(vlen + 1);
+                if (result == 0) return value_from_id(receiver);
+                cstr_copy(result, s + 9, vlen + 1);
+                return value_from_id((id)result);
+            }
+            if (cstr_eq_n(s, "NSFloat:", 8)) {
+                unsigned int vlen = (unsigned int)cstr_len(s + 8);
+                char *result = string_pool_alloc(vlen + 1);
+                if (result == 0) return value_from_id(receiver);
+                cstr_copy(result, s + 8, vlen + 1);
+                return value_from_id((id)result);
+            }
+            return value_from_id(receiver);
+        }
+
+        /* NSNumber: [num longValue] → alias for intValue */
+        if (cstr_eq(sel_name, "longValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                int val = 0;
+                unsigned int i = 9;
+                int neg = 0;
+                if (s[i] == '-') { neg = 1; i++; }
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                return value_from_int(neg ? -val : val);
+            }
+            return value_from_int(0);
+        }
+
+        /* ── NSData dispatch ──────────────────────────────────────── */
+
+        /* NSData: [NSData data] → empty data */
+        if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "data") && arg_count == 0) {
+            char *buf = string_pool_alloc(8);
+            if (buf == 0) return value_from_id((id)"NSData:");
+            cstr_copy(buf, "NSData:", 8);
+            return value_from_id((id)buf);
+        }
+
+        /* NSData: [NSData dataWithBytes:ptr length:len] → create from string bytes
+         * Since we don't have real byte pointers, we accept a string (treating
+         * each char as a byte) and encode as "NSData:<hex>". */
+        if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "dataWithBytes:length:") && arg_count >= 2) {
+            const char *bytes = (const char *)keyword_args[0].obj_val;
+            int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
+            if (len < 0) len = 0;
+            {
+                int blen = (int)cstr_len(bytes);
+                if (len > blen) len = blen;
+                /* Hex encoding: 2 chars per byte + "NSData:" prefix */
+                unsigned int needed = 7 + (unsigned int)len * 2 + 1;
+                char *buf = string_pool_alloc(needed);
+                if (buf == 0) return value_from_id((id)"NSData:");
+                cstr_copy(buf, "NSData:", needed);
+                {
+                    static const char hex_chars[] = "0123456789abcdef";
+                    int i;
+                    for (i = 0; i < len; i++) {
+                        unsigned char c = (unsigned char)bytes[i];
+                        buf[7 + i * 2] = hex_chars[(c >> 4) & 0x0f];
+                        buf[7 + i * 2 + 1] = hex_chars[c & 0x0f];
+                    }
+                    buf[7 + len * 2] = '\0';
+                }
+                return value_from_id((id)buf);
+            }
+        }
+
+        /* NSData instance methods — check for NSData: prefix on receiver */
+        if (target.is_id && receiver != 0 && cstr_eq_n((const char *)receiver, "NSData:", 7)) {
+            const char *s = (const char *)receiver;
+
+            /* [data bytes] → decode hex back to raw bytes (as string) */
+            if (cstr_eq(sel_name, "bytes")) {
+                const char *hex = s + 7;
+                int hex_len = (int)cstr_len(hex);
+                int byte_len = hex_len / 2;
+                char *result = string_pool_alloc((unsigned int)byte_len + 1);
+                if (result == 0) return value_from_id(receiver);
+                {
+                    static const char hex_vals[] = "0123456789abcdef";
+                    int i;
+                    for (i = 0; i < byte_len; i++) {
+                        char hi = hex[i * 2];
+                        char lo = hex[i * 2 + 1];
+                        int hi_val = 0, lo_val = 0, j;
+                        for (j = 0; j < 16; j++) {
+                            if (hi == hex_vals[j] || hi == hex_vals[j] - 32) hi_val = j;
+                            if (lo == hex_vals[j] || lo == hex_vals[j] - 32) lo_val = j;
+                        }
+                        result[i] = (char)((hi_val << 4) | lo_val);
+                    }
+                    result[byte_len] = '\0';
+                }
+                return value_from_id((id)result);
+            }
+
+            /* [data description] → display as <hex bytes> */
+            if (cstr_eq(sel_name, "description")) {
+                const char *hex = s + 7;
+                int hex_len = (int)cstr_len(hex);
+                /* Format: <xxxx xxxx ...> with spaces every 8 hex chars */
+                unsigned int needed = 2 + (unsigned int)hex_len + (unsigned int)(hex_len / 8) + 1;
+                char *result = string_pool_alloc(needed);
+                if (result == 0) return value_from_id(receiver);
+                {
+                    int ri = 0;
+                    int i;
+                    result[ri++] = '<';
+                    for (i = 0; i < hex_len; i++) {
+                        if (i > 0 && i % 8 == 0) result[ri++] = ' ';
+                        result[ri++] = hex[i];
+                    }
+                    result[ri++] = '>';
+                    result[ri] = '\0';
+                }
+                return value_from_id((id)result);
+            }
+
+            /* [data isEqual:other] → compare data */
+            if (cstr_eq(sel_name, "isEqual:") && arg_count >= 1) {
+                const char *other = (const char *)keyword_args[0].obj_val;
+                if (other && cstr_eq_n(other, "NSData:", 7)) {
+                    return value_from_int(cstr_eq(s, other) ? 1 : 0);
+                }
+                return value_from_int(0);
+            }
+
+            /* [data isEqualToData:other] → compare data */
+            if (cstr_eq(sel_name, "isEqualToData:") && arg_count >= 1) {
+                const char *other = (const char *)keyword_args[0].obj_val;
+                if (other && cstr_eq_n(other, "NSData:", 7)) {
+                    return value_from_int(cstr_eq(s, other) ? 1 : 0);
+                }
+                return value_from_int(0);
+            }
+
+            /* [data subdataWithRange:] — needs NSRange, deferred */
+        }
+
         /* ── Foundation collection dispatch ──────────────────────── */
 
         /* NSArray: [NSArray array] → empty immutable array */
@@ -2198,6 +2520,13 @@ static Value parse_message_send(Parser *p) {
         if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
             unsigned int cid = g_next_coll_id++;
             return value_from_id(coll_make_marker("NSMutDict:", cid));
+        }
+
+        /* NSDictionary: [NSDictionary dictionaryWithObject:obj forKey:key] → dict with one entry */
+        if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithObject:forKey:") && arg_count >= 2) {
+            unsigned int cid = g_next_coll_id++;
+            coll_add(cid, keyword_args[1], keyword_args[0]); /* key, value */
+            return value_from_id(coll_make_marker("NSDict:", cid));
         }
 
         /* NSSet: [NSSet setWithArray:arr] → set from array */
@@ -2342,6 +2671,43 @@ static Value parse_message_send(Parser *p) {
                         }
                     }
                     return value_from_id(coll_make_marker("NSArr:", new_cid));
+                }
+
+                /* [dict isEqualToDictionary:other] → compare dicts */
+                if (cstr_eq(sel_name, "isEqualToDictionary:") && arg_count >= 1) {
+                    const char *other_s = (const char *)keyword_args[0].obj_val;
+                    unsigned int other_cid = coll_id_from_marker(other_s, "NSDict:");
+                    if (other_cid == 0) other_cid = coll_id_from_marker(other_s, "NSMutDict:");
+                    if (other_cid == 0) return value_from_int(0);
+                    {
+                        unsigned int my_count = coll_count(cid);
+                        unsigned int other_count = coll_count(other_cid);
+                        if (my_count != other_count) return value_from_int(0);
+                        /* Check all keys in self exist in other with same value */
+                        unsigned int i;
+                        for (i = 0; i < g_coll_entry_count; i++) {
+                            if (g_coll_entries[i].coll_id == cid) {
+                                int other_idx = coll_find_by_key(other_cid, &g_coll_entries[i].key);
+                                if (other_idx < 0) return value_from_int(0);
+                                /* Compare values — both are Values, check fields */
+                                if (g_coll_entries[i].value.is_int != g_coll_entries[other_idx].value.is_int ||
+                                    g_coll_entries[i].value.is_id != g_coll_entries[other_idx].value.is_id ||
+                                    g_coll_entries[i].value.is_float != g_coll_entries[other_idx].value.is_float)
+                                    return value_from_int(0);
+                                if (g_coll_entries[i].value.is_int && g_coll_entries[i].value.int_val != g_coll_entries[other_idx].value.int_val)
+                                    return value_from_int(0);
+                                if (g_coll_entries[i].value.is_float && g_coll_entries[i].value.float_val != g_coll_entries[other_idx].value.float_val)
+                                    return value_from_int(0);
+                                if (g_coll_entries[i].value.is_id) {
+                                    const char *a = (const char *)g_coll_entries[i].value.obj_val;
+                                    const char *b = (const char *)g_coll_entries[other_idx].value.obj_val;
+                                    if (a == 0 || b == 0) { if (a != b) return value_from_int(0); }
+                                    else if (!cstr_eq(a, b)) return value_from_int(0);
+                                }
+                            }
+                        }
+                        return value_from_int(1);
+                    }
                 }
 
                 /* [arr lastObject] → last element or nil */
