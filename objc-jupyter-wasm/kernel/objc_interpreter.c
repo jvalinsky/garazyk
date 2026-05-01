@@ -4778,6 +4778,44 @@ static Value parse_primary(Parser *p) {
 
         parser_advance(p);
         if (tok.type == TOK_AT_KEYWORD) {
+            /* @selector() expression */
+            if (cstr_eq(tok.text, "@selector")) {
+                /* We already consumed @selector. Now expect (name) or (name:withArg:) */
+                if (parser_current(p).type == TOK_OPEN_PAREN) {
+                    parser_advance(p);
+                    /* Build selector name from identifiers and colons */
+                    {
+                        char sel_name[256];
+                        unsigned int sel_len = 0;
+                        sel_name[0] = '\0';
+                        while (parser_current(p).type != TOK_CLOSE_PAREN &&
+                               parser_current(p).type != TOK_EOF) {
+                            Token ct = parser_current(p);
+                            if (ct.type == TOK_IDENTIFIER || ct.type == TOK_AT_KEYWORD) {
+                                unsigned int tl = cstr_len(ct.text);
+                                if (sel_len + tl + 1 < 256) {
+                                    cstr_copy(sel_name + sel_len, ct.text, tl + 1);
+                                    sel_len += tl;
+                                }
+                            } else if (ct.type == TOK_COLON) {
+                                if (sel_len + 1 < 256) {
+                                    sel_name[sel_len++] = ':';
+                                    sel_name[sel_len] = '\0';
+                                }
+                            } else {
+                                break;
+                            }
+                            parser_advance(p);
+                        }
+                        parser_expect(p, TOK_CLOSE_PAREN);
+                        if (!p->error) {
+                            SEL sel = sel_registerName(sel_name);
+                            return value_from_sel(sel);
+                        }
+                    }
+                }
+                return value_void();
+            }
             parser_error(p, "Unsupported @keyword");
         } else {
             parser_error(p, "Unknown identifier");
