@@ -5984,16 +5984,19 @@ static AstNode *parse_statement_ast(Parser *p) {
         parser_advance(p); /* consume ( */
 
         /* Capture switch expression as source range */
-        node->switch_stmt.expr_start = (unsigned int)(p->lex.pos - p->lex.source);
+        node->switch_stmt.expr_start = p->lex.pos;
         {
             int depth = 1;
             while (depth > 0 && parser_current(p).type != TOK_EOF) {
                 if (parser_current(p).type == TOK_OPEN_PAREN) depth++;
-                else if (parser_current(p).type == TOK_CLOSE_PAREN) depth--;
-                if (depth > 0) parser_advance(p);
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    depth--;
+                    if (depth == 0) break; /* don't advance past the closing ) */
+                }
+                parser_advance(p);
             }
         }
-        node->switch_stmt.expr_len = (unsigned int)(p->lex.pos - p->lex.source) - node->switch_stmt.expr_start;
+        node->switch_stmt.expr_len = p->lex.pos - node->switch_stmt.expr_start;
 
         if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
 
