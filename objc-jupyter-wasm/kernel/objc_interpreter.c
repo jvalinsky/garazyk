@@ -108,6 +108,8 @@ typedef struct {
     SEL sel;        /* if this is a SEL-typed variable */
     int is_int;
     int int_value;
+    int is_float;
+    double float_value;
     int is_class;   /* 1 if this holds a Class */
     int is_sel;     /* 1 if this holds a SEL */
     int is_id;      /* 1 if this holds an id */
@@ -125,6 +127,7 @@ typedef enum {
     TOK_AT_KEYWORD,     /* @interface, @implementation, @end, @\"string\" */
     TOK_STRING_LITERAL, /* @\"...\" or \"...\" */
     TOK_INT_LITERAL,
+    TOK_FLOAT_LITERAL,
     TOK_OPEN_BRACKET,   /* [ */
     TOK_CLOSE_BRACKET,  /* ] */
     TOK_OPEN_BRACE,     /* { */
@@ -389,7 +392,7 @@ static Token lexer_next_token(Lexer *lex) {
         return tok;
     }
 
-    /* Integer literal */
+    /* Integer / float literal */
     if (is_digit(ch)) {
         while (lex->pos < lex->source_len && is_digit(lexer_peek(lex))) {
             if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
@@ -397,6 +400,24 @@ static Token lexer_next_token(Lexer *lex) {
             } else {
                 lexer_next(lex);
             }
+        }
+        /* Check for decimal point → float literal */
+        if (lex->pos < lex->source_len && lexer_peek(lex) == '.') {
+            if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
+                tok.text[i++] = lexer_next(lex); /* consume . */
+            } else {
+                lexer_next(lex);
+            }
+            while (lex->pos < lex->source_len && is_digit(lexer_peek(lex))) {
+                if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
+                    tok.text[i++] = lexer_next(lex);
+                } else {
+                    lexer_next(lex);
+                }
+            }
+            tok.text[i] = '\0';
+            tok.type = TOK_FLOAT_LITERAL;
+            return tok;
         }
         tok.text[i] = '\0';
         tok.type = TOK_INT_LITERAL;
@@ -590,6 +611,8 @@ static InterpVar *interp_create_var(const char *name) {
     g_vars[g_var_count].sel = 0;
     g_vars[g_var_count].is_int = 0;
     g_vars[g_var_count].int_value = 0;
+    g_vars[g_var_count].is_float = 0;
+    g_vars[g_var_count].float_value = 0.0;
     g_vars[g_var_count].is_class = 0;
     g_vars[g_var_count].is_sel = 0;
     g_vars[g_var_count].is_id = 0;
@@ -691,7 +714,9 @@ typedef struct {
     Class cls_val;
     SEL sel_val;
     int int_val;
+    double float_val;
     int is_int;
+    int is_float;
     int is_class;
     int is_sel;
     int is_id;
@@ -704,7 +729,9 @@ static Value value_from_id(id obj) {
     v.cls_val = 0;
     v.sel_val = 0;
     v.int_val = 0;
+    v.float_val = 0.0;
     v.is_int = 0;
+    v.is_float = 0;
     v.is_class = 0;
     v.is_sel = 0;
     v.is_id = 1;
@@ -718,7 +745,9 @@ static Value value_from_class(Class cls) {
     v.cls_val = cls;
     v.sel_val = 0;
     v.int_val = 0;
+    v.float_val = 0.0;
     v.is_int = 0;
+    v.is_float = 0;
     v.is_class = 1;
     v.is_sel = 0;
     v.is_id = 0;
@@ -732,7 +761,25 @@ static Value value_from_int(int n) {
     v.cls_val = 0;
     v.sel_val = 0;
     v.int_val = n;
+    v.float_val = 0.0;
     v.is_int = 1;
+    v.is_float = 0;
+    v.is_class = 0;
+    v.is_sel = 0;
+    v.is_id = 0;
+    v.is_void = 0;
+    return v;
+}
+
+static Value value_from_float(double f) {
+    Value v;
+    v.obj_val = 0;
+    v.cls_val = 0;
+    v.sel_val = 0;
+    v.int_val = 0;
+    v.float_val = f;
+    v.is_int = 0;
+    v.is_float = 1;
     v.is_class = 0;
     v.is_sel = 0;
     v.is_id = 0;
@@ -746,7 +793,9 @@ static Value value_from_sel(SEL s) {
     v.cls_val = 0;
     v.sel_val = s;
     v.int_val = 0;
+    v.float_val = 0.0;
     v.is_int = 0;
+    v.is_float = 0;
     v.is_class = 0;
     v.is_sel = 1;
     v.is_id = 0;
@@ -760,7 +809,9 @@ static Value value_void(void) {
     v.cls_val = 0;
     v.sel_val = 0;
     v.int_val = 0;
+    v.float_val = 0.0;
     v.is_int = 0;
+    v.is_float = 0;
     v.is_class = 0;
     v.is_sel = 0;
     v.is_id = 0;
@@ -1388,10 +1439,60 @@ static void eval_nslog(Parser *p) {
                     }
                     break;
                 case 'f':
-                    /* Float — we don't have float support yet */
+                    /* Float/double */
                     if (arg_idx < arg_count) {
-                        arg_idx++;
-                        nslog_append("(float)", 7);
+                        Value v = args[arg_idx++];
+                        if (v.is_float) {
+                            /* Simple %f: 6 decimal places */
+                            char fbuf[64];
+                            int fi = 0;
+                            double fv = v.float_val;
+                            int negative = 0;
+                            if (fv < 0.0) { negative = 1; fv = -fv; }
+                            /* Integer part */
+                            unsigned long ipart = (unsigned long)fv;
+                            double fpart = fv - (double)ipart;
+                            if (negative) fbuf[fi++] = '-';
+                            /* Convert integer part */
+                            if (ipart == 0) {
+                                fbuf[fi++] = '0';
+                            } else {
+                                char ibuf[20];
+                                int ii = 0;
+                                while (ipart > 0) { ibuf[ii++] = '0' + (ipart % 10); ipart /= 10; }
+                                while (ii > 0) fbuf[fi++] = ibuf[--ii];
+                            }
+                            fbuf[fi++] = '.';
+                            /* 6 decimal places */
+                            for (int d = 0; d < 6; d++) {
+                                fpart *= 10.0;
+                                int digit = (int)fpart;
+                                fbuf[fi++] = '0' + digit;
+                                fpart -= digit;
+                            }
+                            /* Trim trailing zeros */
+                            while (fi > 1 && fbuf[fi-1] == '0') fi--;
+                            if (fbuf[fi-1] == '.') fi++; /* keep one decimal place */
+                            fbuf[fi] = '\0';
+                            nslog_append(fbuf, fi);
+                        } else if (v.is_int) {
+                            /* %f with int argument: promote to double */
+                            char fbuf[32];
+                            int fi = 0;
+                            int iv = v.int_val;
+                            if (iv < 0) { fbuf[fi++] = '-'; iv = -iv; }
+                            if (iv == 0) { fbuf[fi++] = '0'; }
+                            else {
+                                char ibuf[20];
+                                int ii = 0;
+                                while (iv > 0) { ibuf[ii++] = '0' + (iv % 10); iv /= 10; }
+                                while (ii > 0) fbuf[fi++] = ibuf[--ii];
+                            }
+                            fbuf[fi++] = '.'; fbuf[fi++] = '0'; fbuf[fi++] = '0';
+                            fbuf[fi++] = '0'; fbuf[fi++] = '0'; fbuf[fi++] = '0';
+                            fbuf[fi++] = '0'; fbuf[fi] = '\0';
+                            nslog_append(fbuf, fi);
+                        }
                     }
                     break;
                 case 's':
@@ -1844,6 +1945,120 @@ static Value parse_message_send(Parser *p) {
             return value_from_id(receiver);
         }
 
+        /* NSNumber: [NSNumber numberWithFloat:f] → wrap float as id */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithFloat:") && arg_count >= 1) {
+            if (keyword_args[0].is_float) {
+                char *buf = string_pool_alloc(64);
+                if (buf == 0) return value_from_float(keyword_args[0].float_val);
+                cstr_copy(buf, "NSFloat:", 64);
+                {
+                    double fv = keyword_args[0].float_val;
+                    int neg = fv < 0.0;
+                    unsigned int pos = 8;
+                    if (neg) { fv = -fv; buf[pos++] = '-'; }
+                    unsigned long ipart = (unsigned long)fv;
+                    double fpart = fv - (double)ipart;
+                    if (ipart == 0) { buf[pos++] = '0'; }
+                    else {
+                        char tmp[20]; int ti = 0;
+                        while (ipart > 0) { tmp[ti++] = '0' + (ipart % 10); ipart /= 10; }
+                        while (ti > 0) buf[pos++] = tmp[--ti];
+                    }
+                    buf[pos++] = '.';
+                    for (int d = 0; d < 6 && pos < 60; d++) {
+                        fpart *= 10.0; int digit = (int)fpart;
+                        buf[pos++] = '0' + digit; fpart -= digit;
+                    }
+                    /* Trim trailing zeros */
+                    while (pos > 0 && buf[pos-1] == '0') pos--;
+                    if (buf[pos-1] == '.') pos++; /* keep at least one decimal */
+                    buf[pos] = '\0';
+                }
+                return value_from_id((id)buf);
+            }
+            return value_from_id(args[0]);
+        }
+
+        /* NSNumber: [NSNumber numberWithDouble:d] → wrap double as id */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithDouble:") && arg_count >= 1) {
+            /* Same encoding as numberWithFloat */
+            if (keyword_args[0].is_float) {
+                char *buf = string_pool_alloc(64);
+                if (buf == 0) return value_from_float(keyword_args[0].float_val);
+                cstr_copy(buf, "NSFloat:", 64);
+                {
+                    double fv = keyword_args[0].float_val;
+                    int neg = fv < 0.0;
+                    unsigned int pos = 8;
+                    if (neg) { fv = -fv; buf[pos++] = '-'; }
+                    unsigned long ipart = (unsigned long)fv;
+                    double fpart = fv - (double)ipart;
+                    if (ipart == 0) { buf[pos++] = '0'; }
+                    else {
+                        char tmp[20]; int ti = 0;
+                        while (ipart > 0) { tmp[ti++] = '0' + (ipart % 10); ipart /= 10; }
+                        while (ti > 0) buf[pos++] = tmp[--ti];
+                    }
+                    buf[pos++] = '.';
+                    for (int d = 0; d < 6 && pos < 60; d++) {
+                        fpart *= 10.0; int digit = (int)fpart;
+                        buf[pos++] = '0' + digit; fpart -= digit;
+                    }
+                    while (pos > 0 && buf[pos-1] == '0') pos--;
+                    if (buf[pos-1] == '.') pos++;
+                    buf[pos] = '\0';
+                }
+                return value_from_id((id)buf);
+            }
+            return value_from_id(args[0]);
+        }
+
+        /* NSNumber: [num floatValue] → unwrap float from NSFloat encoding */
+        if (cstr_eq(sel_name, "floatValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSFloat:", 8)) {
+                double val = 0.0;
+                unsigned int i = 8;
+                int neg = 0;
+                if (s[i] == '-') { neg = 1; i++; }
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10.0 + (s[i++] - '0');
+                if (s[i] == '.') {
+                    double frac = 0.1;
+                    i++;
+                    while (s[i] >= '0' && s[i] <= '9') {
+                        val += (s[i] - '0') * frac;
+                        frac *= 0.1;
+                        i++;
+                    }
+                }
+                return value_from_float(neg ? -val : val);
+            }
+            return value_from_float(0.0);
+        }
+
+        /* NSNumber: [num doubleValue] → unwrap double from NSFloat encoding */
+        if (cstr_eq(sel_name, "doubleValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSFloat:", 8)) {
+                double val = 0.0;
+                unsigned int i = 8;
+                int neg = 0;
+                if (s[i] == '-') { neg = 1; i++; }
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10.0 + (s[i++] - '0');
+                if (s[i] == '.') {
+                    double frac = 0.1;
+                    i++;
+                    while (s[i] >= '0' && s[i] <= '9') {
+                        val += (s[i] - '0') * frac;
+                        frac *= 0.1;
+                        i++;
+                    }
+                }
+                return value_from_float(neg ? -val : val);
+            }
+            return value_from_float(0.0);
+        }
+
         /* ── Foundation collection dispatch ──────────────────────── */
 
         /* NSArray: [NSArray array] → empty immutable array */
@@ -2083,6 +2298,8 @@ static Value parse_message_send(Parser *p) {
                                         cap_var->value = blk->captures[ci].value.obj_val;
                                         cap_var->is_int = blk->captures[ci].value.is_int;
                                         cap_var->int_value = blk->captures[ci].value.int_val;
+                                        cap_var->is_float = blk->captures[ci].value.is_float;
+                                        cap_var->float_value = blk->captures[ci].value.float_val;
                                         cap_var->is_class = blk->captures[ci].value.is_class;
                                         cap_var->cls = blk->captures[ci].value.cls_val;
                                         cap_var->is_sel = blk->captures[ci].value.is_sel;
@@ -2275,6 +2492,8 @@ static Value parse_message_send(Parser *p) {
                                     ivar_var->value = stored->obj_val;
                                     ivar_var->is_int = stored->is_int;
                                     ivar_var->int_value = stored->int_val;
+                                    ivar_var->is_float = stored->is_float;
+                                    ivar_var->float_value = stored->float_val;
                                     ivar_var->is_class = stored->is_class;
                                     ivar_var->cls = stored->cls_val;
                                     ivar_var->is_sel = stored->is_sel;
@@ -2317,6 +2536,8 @@ static Value parse_message_send(Parser *p) {
                                 ivar_val.sel_val = ivar_var->sel;
                                 ivar_val.int_val = ivar_var->int_value;
                                 ivar_val.is_int = ivar_var->is_int;
+                                ivar_val.float_val = ivar_var->float_value;
+                                ivar_val.is_float = ivar_var->is_float;
                                 ivar_val.is_class = ivar_var->is_class;
                                 ivar_val.is_sel = ivar_var->is_sel;
                                 ivar_val.is_id = ivar_var->is_id;
@@ -2428,6 +2649,8 @@ static Value parse_message_send(Parser *p) {
                                         ivar_var->is_int = val.is_int;
                                         ivar_var->value = val.obj_val;
                                         ivar_var->is_id = val.is_id;
+                                        ivar_var->is_float = val.is_float;
+                                        ivar_var->float_value = val.float_val;
                                         ivar_var->cls = val.cls_val;
                                         ivar_var->is_class = val.is_class;
                                         ivar_var->sel = val.sel_val;
@@ -3064,6 +3287,17 @@ static Value parse_implementation(Parser *p) {
 static Value parse_primary(Parser *p) {
     Token tok = parser_current(p);
 
+    /* Unary minus — handle before other primaries */
+    if (tok.type == TOK_MINUS) {
+        parser_advance(p);
+        {
+            Value v = parse_primary(p);
+            if (v.is_int) return value_from_int(-v.int_val);
+            if (v.is_float) return value_from_float(-v.float_val);
+            return v;
+        }
+    }
+
     /* String literal @"..." */
     if (tok.type == TOK_STRING_LITERAL) {
         /* Store the string in a global pool and return as id.
@@ -3095,6 +3329,28 @@ static Value parse_primary(Parser *p) {
         }
         parser_advance(p);
         return value_from_int(val);
+    }
+
+    /* Float literal */
+    if (tok.type == TOK_FLOAT_LITERAL) {
+        double val = 0.0;
+        double frac = 0.1;
+        unsigned int i = 0;
+        /* Parse integer part */
+        while (tok.text[i] != '\0' && tok.text[i] != '.') {
+            val = val * 10.0 + (tok.text[i] - '0');
+            i++;
+        }
+        /* Skip decimal point */
+        if (tok.text[i] == '.') i++;
+        /* Parse fractional part */
+        while (tok.text[i] != '\0') {
+            val += (tok.text[i] - '0') * frac;
+            frac *= 0.1;
+            i++;
+        }
+        parser_advance(p);
+        return value_from_float(val);
     }
 
     /* Message send [target selector:arg ...] */
@@ -3266,6 +3522,8 @@ static Value parse_primary(Parser *p) {
                                             arg_var->value = val.obj_val;
                                             arg_var->is_int = val.is_int;
                                             arg_var->int_value = val.int_val;
+                                            arg_var->is_float = val.is_float;
+                                            arg_var->float_value = val.float_val;
                                             arg_var->is_class = val.is_class;
                                             arg_var->cls = val.cls_val;
                                             arg_var->is_sel = val.is_sel;
@@ -3287,6 +3545,8 @@ static Value parse_primary(Parser *p) {
                                                         ivar_var->value = stored->obj_val;
                                                         ivar_var->is_int = stored->is_int;
                                                         ivar_var->int_value = stored->int_val;
+                                                        ivar_var->is_float = stored->is_float;
+                                                        ivar_var->float_value = stored->float_val;
                                                         ivar_var->is_class = stored->is_class;
                                                         ivar_var->cls = stored->cls_val;
                                                         ivar_var->is_sel = stored->is_sel;
@@ -3323,6 +3583,8 @@ static Value parse_primary(Parser *p) {
                                                     ivar_val.sel_val = ivar_var->sel;
                                                     ivar_val.int_val = ivar_var->int_value;
                                                     ivar_val.is_int = ivar_var->is_int;
+                                                    ivar_val.float_val = ivar_var->float_value;
+                                                    ivar_val.is_float = ivar_var->is_float;
                                                     ivar_val.is_class = ivar_var->is_class;
                                                     ivar_val.is_sel = ivar_var->is_sel;
                                                     ivar_val.is_id = ivar_var->is_id;
@@ -3356,6 +3618,8 @@ static Value parse_primary(Parser *p) {
                                                     ivar_var->is_int = val.is_int;
                                                     ivar_var->value = val.obj_val;
                                                     ivar_var->is_id = val.is_id;
+                                                    ivar_var->is_float = val.is_float;
+                                                    ivar_var->float_value = val.float_val;
                                                     ivar_var->cls = val.cls_val;
                                                     ivar_var->is_class = val.is_class;
                                                     ivar_var->sel = val.sel_val;
@@ -3431,6 +3695,8 @@ static Value parse_primary(Parser *p) {
                                             if (ivar_var) {
                                                 ivar_var->int_value = new_val.is_int ? new_val.int_val : 0;
                                                 ivar_var->is_int = new_val.is_int;
+                                                ivar_var->float_value = new_val.is_float ? new_val.float_val : 0.0;
+                                                ivar_var->is_float = new_val.is_float;
                                                 ivar_var->value = new_val.obj_val;
                                                 ivar_var->is_id = new_val.is_id;
                                                 ivar_var->cls = new_val.cls_val;
@@ -3492,6 +3758,8 @@ static Value parse_primary(Parser *p) {
                                                 ivar_var->value = stored->obj_val;
                                                 ivar_var->is_int = stored->is_int;
                                                 ivar_var->int_value = stored->int_val;
+                                                ivar_var->is_float = stored->is_float;
+                                                ivar_var->float_value = stored->float_val;
                                                 ivar_var->is_class = stored->is_class;
                                                 ivar_var->cls = stored->cls_val;
                                                 ivar_var->is_sel = stored->is_sel;
@@ -3528,6 +3796,8 @@ static Value parse_primary(Parser *p) {
                                             ivar_val.sel_val = ivar_var->sel;
                                             ivar_val.int_val = ivar_var->int_value;
                                             ivar_val.is_int = ivar_var->is_int;
+                                            ivar_val.float_val = ivar_var->float_value;
+                                            ivar_val.is_float = ivar_var->is_float;
                                             ivar_val.is_class = ivar_var->is_class;
                                             ivar_val.is_sel = ivar_var->is_sel;
                                             ivar_val.is_id = ivar_var->is_id;
@@ -3610,6 +3880,8 @@ static Value parse_primary(Parser *p) {
                                     cap_var->value = blk->captures[ai].value.obj_val;
                                     cap_var->is_int = blk->captures[ai].value.is_int;
                                     cap_var->int_value = blk->captures[ai].value.int_val;
+                                    cap_var->is_float = blk->captures[ai].value.is_float;
+                                    cap_var->float_value = blk->captures[ai].value.float_val;
                                     cap_var->is_class = blk->captures[ai].value.is_class;
                                     cap_var->cls = blk->captures[ai].value.cls_val;
                                     cap_var->is_sel = blk->captures[ai].value.is_sel;
@@ -3652,6 +3924,7 @@ static Value parse_primary(Parser *p) {
                     }
                 }
 
+                if (var->is_float) return value_from_float(var->float_value);
                 if (var->is_int) return value_from_int(var->int_value);
                 if (var->is_class) return value_from_class(var->cls);
                 if (var->is_sel) return value_from_sel(var->sel);
@@ -3724,16 +3997,6 @@ static Value parse_primary(Parser *p) {
         {
             Value v = parse_primary(p);
             return value_from_int(is_truthy(v) ? 0 : 1);
-        }
-    }
-
-    /* Unary minus */
-    if (tok.type == TOK_MINUS) {
-        parser_advance(p);
-        {
-            Value v = parse_primary(p);
-            if (v.is_int) return value_from_int(-v.int_val);
-            return v;
         }
     }
 
@@ -3862,6 +4125,8 @@ static Value parse_primary(Parser *p) {
                 blk->captures[blk->capture_count].value.obj_val = g_vars[vi].value;
                 blk->captures[blk->capture_count].value.is_int = g_vars[vi].is_int;
                 blk->captures[blk->capture_count].value.int_val = g_vars[vi].int_value;
+                blk->captures[blk->capture_count].value.is_float = g_vars[vi].is_float;
+                blk->captures[blk->capture_count].value.float_val = g_vars[vi].float_value;
                 blk->captures[blk->capture_count].value.is_class = g_vars[vi].is_class;
                 blk->captures[blk->capture_count].value.cls_val = g_vars[vi].cls;
                 blk->captures[blk->capture_count].value.is_sel = g_vars[vi].is_sel;
@@ -3929,6 +4194,13 @@ static Value parse_multiplicative(Parser *p) {
                 if (op == TOK_STAR) left.int_val *= right.int_val;
                 else if (op == TOK_SLASH && right.int_val != 0) left.int_val /= right.int_val;
                 else if (op == TOK_PERCENT && right.int_val != 0) left.int_val %= right.int_val;
+            } else if ((left.is_float || left.is_int) && (right.is_float || right.is_int)) {
+                /* Promote to float arithmetic */
+                double lv = left.is_float ? left.float_val : (double)left.int_val;
+                double rv = right.is_float ? right.float_val : (double)right.int_val;
+                if (op == TOK_STAR) { left.float_val = lv * rv; left.is_float = 1; left.is_int = 0; }
+                else if (op == TOK_SLASH && rv != 0.0) { left.float_val = lv / rv; left.is_float = 1; left.is_int = 0; }
+                /* % not supported for floats — skip */
             }
         }
     }
@@ -3950,6 +4222,12 @@ static Value parse_additive(Parser *p) {
             if (left.is_int && right.is_int) {
                 if (op == TOK_PLUS) left.int_val += right.int_val;
                 else if (op == TOK_MINUS) left.int_val -= right.int_val;
+            } else if ((left.is_float || left.is_int) && (right.is_float || right.is_int)) {
+                /* Promote to float arithmetic */
+                double lv = left.is_float ? left.float_val : (double)left.int_val;
+                double rv = right.is_float ? right.float_val : (double)right.int_val;
+                if (op == TOK_PLUS) { left.float_val = lv + rv; left.is_float = 1; left.is_int = 0; }
+                else if (op == TOK_MINUS) { left.float_val = lv - rv; left.is_float = 1; left.is_int = 0; }
             }
         }
     }
@@ -3980,6 +4258,17 @@ static Value parse_comparison(Parser *p) {
                 else if (op == TOK_GE) result = left.int_val >= right.int_val;
                 else if (op == TOK_EQ) result = left.int_val == right.int_val;
                 else if (op == TOK_NEQ) result = left.int_val != right.int_val;
+                left = value_from_int(result);
+            } else if ((left.is_float || left.is_int) && (right.is_float || right.is_int)) {
+                double lv = left.is_float ? left.float_val : (double)left.int_val;
+                double rv = right.is_float ? right.float_val : (double)right.int_val;
+                int result = 0;
+                if (op == TOK_LT) result = lv < rv;
+                else if (op == TOK_GT) result = lv > rv;
+                else if (op == TOK_LE) result = lv <= rv;
+                else if (op == TOK_GE) result = lv >= rv;
+                else if (op == TOK_EQ) result = lv == rv;
+                else if (op == TOK_NEQ) result = lv != rv;
                 left = value_from_int(result);
             }
         }
@@ -4149,6 +4438,8 @@ static Value parse_type_and_var_decl(Parser *p) {
                         var->sel = init_val.sel_val;
                         var->is_int = init_val.is_int;
                         var->int_value = init_val.int_val;
+                        var->is_float = init_val.is_float;
+                        var->float_value = init_val.float_val;
                         var->is_class = init_val.is_class;
                         var->is_sel = init_val.is_sel;
                         var->is_id = init_val.is_id;
@@ -4204,6 +4495,8 @@ static Value parse_type_and_var_decl(Parser *p) {
                 var->sel = init_val.sel_val;
                 var->is_int = init_val.is_int;
                 var->int_value = init_val.int_val;
+                var->is_float = init_val.is_float;
+                var->float_value = init_val.float_val;
                 var->is_class = init_val.is_class;
                 var->is_sel = init_val.is_sel;
                 var->is_id = init_val.is_id;
@@ -4216,6 +4509,9 @@ static Value parse_type_and_var_decl(Parser *p) {
             if (cstr_eq(type_name, "int")) {
                 var->is_int = 1;
                 var->int_value = 0;
+            } else if (cstr_eq(type_name, "float") || cstr_eq(type_name, "double")) {
+                var->is_float = 1;
+                var->float_value = 0.0;
             } else if (cstr_eq(type_name, "Class") || cstr_eq(type_name, "Class")) {
                 var->is_class = 1;
                 var->cls = 0;
@@ -4364,6 +4660,8 @@ static Value parse_statement(Parser *p) {
                     var->sel = val.sel_val;
                     var->is_int = val.is_int;
                     var->int_value = val.int_val;
+                    var->is_float = val.is_float;
+                    var->float_value = val.float_val;
                     var->is_class = val.is_class;
                     var->is_sel = val.is_sel;
                     if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
@@ -4415,6 +4713,48 @@ static Value parse_statement(Parser *p) {
                     if (val.is_int && val.int_val != 0) var->int_value %= val.int_val;
                     if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
                     return value_from_int(var->int_value);
+                }
+
+                /* Float compound assignment: +=, -=, *=, /= */
+                if (parser_current(p).type == TOK_PLUS_ASSIGN && var->is_float) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_float) var->float_value += val.float_val;
+                    else if (val.is_int) var->float_value += val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_float(var->float_value);
+                }
+                if (parser_current(p).type == TOK_MINUS_ASSIGN && var->is_float) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_float) var->float_value -= val.float_val;
+                    else if (val.is_int) var->float_value -= val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_float(var->float_value);
+                }
+                if (parser_current(p).type == TOK_STAR_ASSIGN && var->is_float) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_float) var->float_value *= val.float_val;
+                    else if (val.is_int) var->float_value *= val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_float(var->float_value);
+                }
+                if (parser_current(p).type == TOK_SLASH_ASSIGN && var->is_float) {
+                    Value val;
+                    parser_advance(p);
+                    val = parse_expression(p);
+                    if (p->error) return val;
+                    if (val.is_float && val.float_val != 0.0) var->float_value /= val.float_val;
+                    else if (val.is_int && val.int_val != 0) var->float_value /= val.int_val;
+                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                    return value_from_float(var->float_value);
                 }
 
                 /* Not an assignment — restore and parse as expression */
@@ -5182,6 +5522,40 @@ static void format_value(Value v, char *buf, unsigned int capacity) {
             val = -val;
         }
         fmt_append_uint(buf, capacity, &offset, (unsigned int)val);
+    } else if (v.is_float) {
+        /* Format float with up to 6 decimal places, trimming trailing zeros */
+        double fv = v.float_val;
+        int negative = 0;
+        if (fv < 0.0) { negative = 1; fv = -fv; }
+        if (negative) fmt_append_char(buf, capacity, &offset, '-');
+        unsigned long ipart = (unsigned long)fv;
+        double fpart = fv - (double)ipart;
+        /* Integer part */
+        if (ipart == 0) {
+            fmt_append_char(buf, capacity, &offset, '0');
+        } else {
+            char ibuf[20];
+            int ii = 0;
+            while (ipart > 0) { ibuf[ii++] = '0' + (ipart % 10); ipart /= 10; }
+            while (ii > 0) fmt_append_char(buf, capacity, &offset, ibuf[--ii]);
+        }
+        fmt_append_char(buf, capacity, &offset, '.');
+        /* Fractional part: up to 6 digits, trim trailing zeros */
+        char fbuf[7];
+        int fi = 0;
+        int last_nonzero = 0;
+        for (int d = 0; d < 6; d++) {
+            fpart *= 10.0;
+            int digit = (int)fpart;
+            fbuf[fi++] = '0' + digit;
+            if (digit != 0) last_nonzero = fi;
+            fpart -= digit;
+        }
+        /* If all zeros, show at least one */
+        if (last_nonzero == 0) last_nonzero = 1;
+        for (int d = 0; d < last_nonzero; d++) {
+            fmt_append_char(buf, capacity, &offset, fbuf[d]);
+        }
     } else if (v.is_class && v.cls_val != 0) {
         /* Look up class name from variable table (class_getName
          * crashes on sentinel pointers in WASM) */
