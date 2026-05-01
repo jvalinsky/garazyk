@@ -4,7 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface PLCMetrics ()
+@interface PLCMetrics () {
+    dispatch_queue_t _metricsQueue;
+}
 @property (nonatomic, assign) int64_t cacheHits;
 @property (nonatomic, assign) int64_t cacheMisses;
 @property (nonatomic, assign) int64_t memcacheHits;
@@ -17,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSMutableArray<NSNumber *> *latencySamples;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *customGauges;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *customCounters;
-@property (nonatomic, strong) NSObject *metricsLock;
 @end
 
 @implementation PLCMetrics
@@ -46,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
         _latencySamples = [NSMutableArray array];
         _customGauges = [NSMutableDictionary dictionary];
         _customCounters = [NSMutableDictionary dictionary];
-        _metricsLock = [[NSObject alloc] init];
+        _metricsQueue = dispatch_queue_create("com.atproto.plc.metrics", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -81,11 +82,11 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)recordOperation:(NSString *)operationType {
-    @synchronized(self.metricsLock) {
+    dispatch_sync(_metricsQueue, ^{
         NSNumber *current = self.operationCounts[operationType] ?: @0;
         int64_t newValue = current.longLongValue + 1;
         self.operationCounts[operationType] = @(newValue);
-    }
+    });
     PDS_LOG_CORE_DEBUG(@"PLC operation: %@", operationType ?: @"");
 }
 
@@ -100,25 +101,25 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)recordResolutionLatency:(NSTimeInterval)latencyMs {
-    @synchronized(self.metricsLock) {
+    dispatch_sync(_metricsQueue, ^{
         [self.latencySamples addObject:@(latencyMs)];
         if (self.latencySamples.count > 1000) {
             [self.latencySamples removeObjectAtIndex:0];
         }
-    }
+    });
 }
 
 - (void)setGauge:(NSString *)name value:(int64_t)value {
-    @synchronized(self.metricsLock) {
+    dispatch_sync(_metricsQueue, ^{
         self.customGauges[name] = @(value);
-    }
+    });
 }
 
 - (void)incrementCounter:(NSString *)name by:(int64_t)delta {
-    @synchronized(self.metricsLock) {
+    dispatch_sync(_metricsQueue, ^{
         NSNumber *current = self.customCounters[name] ?: @0;
         self.customCounters[name] = @(current.longLongValue + delta);
-    }
+    });
 }
 
 - (int64_t)cacheHits {
@@ -157,17 +158,17 @@ NS_ASSUME_NONNULL_BEGIN
     NSMutableString *output = [NSMutableString string];
 
     // Take a consistent snapshot with a single lock to avoid cross-collection inconsistency
-    NSDictionary<NSString *, NSNumber *> *opCountsSnapshot = nil;
-    NSArray<NSNumber *> *latencySnapshot = nil;
-    NSDictionary<NSString *, NSNumber *> *gaugesSnapshot = nil;
-    NSDictionary<NSString *, NSNumber *> *countersSnapshot = nil;
+    __block NSDictionary<NSString *, NSNumber *> *opCountsSnapshot = nil;
+    __block NSArray<NSNumber *> *latencySnapshot = nil;
+    __block NSDictionary<NSString *, NSNumber *> *gaugesSnapshot = nil;
+    __block NSDictionary<NSString *, NSNumber *> *countersSnapshot = nil;
 
-    @synchronized(self.metricsLock) {
+    dispatch_sync(_metricsQueue, ^{
         opCountsSnapshot = [self.operationCounts copy];
         latencySnapshot = [self.latencySamples copy];
         gaugesSnapshot = [self.customGauges copy];
         countersSnapshot = [self.customCounters copy];
-    }
+    });
 
     [output appendString:@"# HELP plc_cache_hits_total Total number of cache hits\n"];
     [output appendString:@"# TYPE plc_cache_hits_total counter\n"];

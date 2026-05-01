@@ -1,7 +1,9 @@
 #import "Sync/Firehose/FirehoseProtocolSession.h"
 #import "Debug/PDSLogger.h"
 
-@interface FirehoseProtocolSession ()
+@interface FirehoseProtocolSession () {
+    dispatch_queue_t _sequenceQueue;
+}
 @property(nonatomic, strong, readwrite) EventFormatter *eventFormatter;
 @property(nonatomic, assign, readwrite) NSUInteger sequenceNumber;
 @end
@@ -13,16 +15,17 @@
   if (self) {
     _sequenceNumber = sequenceNumber;
     _eventFormatter = [[EventFormatter alloc] init];
+    _sequenceQueue = dispatch_queue_create("com.atproto.firehose.sequence", DISPATCH_QUEUE_SERIAL);
   }
   return self;
 }
 
 - (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event {
   NSUInteger seq;
-  @synchronized(self) {
+  dispatch_sync(_sequenceQueue, ^{
     _sequenceNumber++;
     seq = _sequenceNumber;
-  }
+  });
   event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeCommitEvent:event error:&error];
@@ -34,10 +37,10 @@
 
 - (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event {
   NSUInteger seq;
-  @synchronized(self) {
+  dispatch_sync(_sequenceQueue, ^{
     _sequenceNumber++;
     seq = _sequenceNumber;
-  }
+  });
   event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeIdentityEvent:event error:&error];
@@ -49,10 +52,10 @@
 
 - (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event {
   NSUInteger seq;
-  @synchronized(self) {
+  dispatch_sync(_sequenceQueue, ^{
     _sequenceNumber++;
     seq = _sequenceNumber;
-  }
+  });
   event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeAccountEvent:event error:&error];
@@ -64,10 +67,10 @@
 
 - (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event {
   NSUInteger seq;
-  @synchronized(self) {
+  dispatch_sync(_sequenceQueue, ^{
     _sequenceNumber++;
     seq = _sequenceNumber;
-  }
+  });
   event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeInfoEvent:event error:&error];
@@ -87,10 +90,12 @@
 }
 
 - (NSUInteger)nextSequenceNumber {
-  @synchronized(self) {
+  __block NSUInteger seq;
+  dispatch_sync(_sequenceQueue, ^{
     _sequenceNumber++;
-    return _sequenceNumber;
-  }
+    seq = _sequenceNumber;
+  });
+  return seq;
 }
 
 @end
