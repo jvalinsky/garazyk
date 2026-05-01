@@ -320,6 +320,24 @@ static int skip_json_number(const char **cursor) {
     return OBJC_JSON_OK;
 }
 
+static int parse_json_uint(const char **cursor, unsigned int *value) {
+    const char *source = *cursor;
+    unsigned int result = 0u;
+
+    if (!is_digit(*source)) {
+        return OBJC_JSON_INVALID;
+    }
+
+    while (is_digit(*source)) {
+        result = result * 10u + (unsigned int)(*source - '0');
+        source++;
+    }
+
+    *value = result;
+    *cursor = source;
+    return OBJC_JSON_OK;
+}
+
 static int skip_json_value(const char **cursor) {
     unsigned int ignored_length = 0u;
     skip_space(cursor);
@@ -397,6 +415,114 @@ static int parse_kernel_request_code(const char *json, char *code, unsigned int 
                 return status;
             }
             found_code = 1;
+        } else {
+            status = skip_json_value(&cursor);
+            if (status != OBJC_JSON_OK) {
+                return status;
+            }
+        }
+
+        skip_space(&cursor);
+        if (*cursor == '}') {
+            cursor++;
+            skip_space(&cursor);
+            if (*cursor != '\0') {
+                return OBJC_JSON_INVALID;
+            }
+            return found_code ? OBJC_JSON_OK : OBJC_JSON_MISSING_CODE;
+        }
+
+        if (*cursor != ',') {
+            return OBJC_JSON_INVALID;
+        }
+        cursor++;
+        skip_space(&cursor);
+    }
+
+    return OBJC_JSON_INVALID;
+}
+
+static int parse_kernel_request_complete(
+    const char *json,
+    char *code,
+    unsigned int code_capacity,
+    unsigned int *code_length,
+    unsigned int *cursor_pos
+) {
+    const char *cursor = json;
+    int found_code = 0;
+    int found_cursor = 0;
+
+    *code_length = 0u;
+    *cursor_pos = 0u;
+    if (code_capacity > 0u) {
+        code[0] = '\0';
+    }
+
+    if (json == 0) {
+        return OBJC_JSON_INVALID;
+    }
+
+    skip_space(&cursor);
+    if (*cursor != '{') {
+        return OBJC_JSON_INVALID;
+    }
+    cursor++;
+    skip_space(&cursor);
+
+    if (*cursor == '}') {
+        cursor++;
+        skip_space(&cursor);
+        return *cursor == '\0' ? OBJC_JSON_MISSING_CODE : OBJC_JSON_INVALID;
+    }
+
+    while (*cursor != '\0') {
+        char key[32];
+        unsigned int key_length = 0u;
+        int status = parse_json_string(&cursor, key, 32u, &key_length);
+        (void)key_length;
+        if (status != OBJC_JSON_OK) {
+            return status;
+        }
+
+        skip_space(&cursor);
+        if (*cursor != ':') {
+            return OBJC_JSON_INVALID;
+        }
+        cursor++;
+        skip_space(&cursor);
+
+        if (match_literal(key, "code")) {
+            if (*cursor != '"') {
+                if (*cursor == '\0' || *cursor == ',' || *cursor == '}') {
+                    return OBJC_JSON_INVALID;
+                }
+                return OBJC_JSON_CODE_NOT_STRING;
+            }
+            status = parse_json_string(&cursor, code, code_capacity, code_length);
+            if (status != OBJC_JSON_OK) {
+                return status;
+            }
+            found_code = 1;
+        } else if (match_literal(key, "cursorPos") || match_literal(key, "cursor_pos")) {
+            if (*cursor == '-' || is_digit(*cursor)) {
+                /* Parse as integer — cursor_pos is always non-negative */
+                if (*cursor == '-') {
+                    skip_json_number(&cursor);
+                    *cursor_pos = 0u;
+                } else {
+                    status = parse_json_uint(&cursor, cursor_pos);
+                    if (status != OBJC_JSON_OK) {
+                        return status;
+                    }
+                }
+            } else {
+                status = skip_json_value(&cursor);
+                if (status != OBJC_JSON_OK) {
+                    return status;
+                }
+            }
+            found_cursor = 1;
         } else {
             status = skip_json_value(&cursor);
             if (status != OBJC_JSON_OK) {
@@ -626,6 +752,330 @@ static int build_execute_response(
     return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
 }
 
+/* ── Context-aware tab completion ─────────────────────────────── */
+
+typedef struct {
+    const char *class_name;
+    const char *selector;
+} FoundationSelector;
+
+static const FoundationSelector foundation_selectors[] = {
+    /* NSObject */
+    {"NSObject", "alloc"},
+    {"NSObject", "init"},
+    {"NSObject", "new"},
+    {"NSObject", "class"},
+    {"NSObject", "description"},
+    {"NSObject", "isEqual:"},
+    {"NSObject", "hash"},
+    {"NSObject", "respondsToSelector:"},
+    {"NSObject", "performSelector:"},
+
+    /* NSString */
+    {"NSString", "length"},
+    {"NSString", "intValue"},
+    {"NSString", "UTF8String"},
+    {"NSString", "stringByAppendingString:"},
+    {"NSString", "isEqualToString:"},
+    {"NSString", "substringFromIndex:"},
+    {"NSString", "substringToIndex:"},
+    {"NSString", "characterAtIndex:"},
+    {"NSString", "hasPrefix:"},
+    {"NSString", "hasSuffix:"},
+    {"NSString", "uppercaseString"},
+    {"NSString", "lowercaseString"},
+    {"NSString", "stringByReplacingOccurrencesOfString:withString:"},
+    {"NSString", "componentsSeparatedByString:"},
+    {"NSString", "stringByTrimmingWhitespace"},
+    {"NSString", "stringWithFormat:"},
+
+    /* NSNumber */
+    {"NSNumber", "numberWithInt:"},
+    {"NSNumber", "numberWithFloat:"},
+    {"NSNumber", "numberWithDouble:"},
+    {"NSNumber", "numberWithBool:"},
+    {"NSNumber", "intValue"},
+    {"NSNumber", "boolValue"},
+    {"NSNumber", "floatValue"},
+    {"NSNumber", "doubleValue"},
+    {"NSNumber", "stringValue"},
+    {"NSNumber", "longValue"},
+    {"NSNumber", "description"},
+
+    /* NSArray */
+    {"NSArray", "array"},
+    {"NSArray", "count"},
+    {"NSArray", "objectAtIndex:"},
+    {"NSArray", "lastObject"},
+
+    /* NSMutableArray */
+    {"NSMutableArray", "arrayWithCapacity:"},
+    {"NSMutableArray", "array"},
+    {"NSMutableArray", "addObject:"},
+    {"NSMutableArray", "removeLastObject"},
+    {"NSMutableArray", "removeAllObjects"},
+
+    /* NSDictionary */
+    {"NSDictionary", "dictionary"},
+    {"NSDictionary", "dictionaryWithObject:forKey:"},
+    {"NSDictionary", "objectForKey:"},
+    {"NSDictionary", "valueForKey:"},
+    {"NSDictionary", "allKeys"},
+    {"NSDictionary", "allValues"},
+    {"NSDictionary", "isEqualToDictionary:"},
+    {"NSDictionary", "count"},
+
+    /* NSMutableDictionary */
+    {"NSMutableDictionary", "dictionaryWithCapacity:"},
+    {"NSMutableDictionary", "dictionary"},
+    {"NSMutableDictionary", "setObject:forKey:"},
+    {"NSMutableDictionary", "setValue:forKey:"},
+    {"NSMutableDictionary", "removeObjectForKey:"},
+    {"NSMutableDictionary", "removeAllObjects"},
+
+    /* NSSet */
+    {"NSSet", "setWithArray:"},
+    {"NSSet", "containsObject:"},
+    {"NSSet", "count"},
+
+    /* NSData */
+    {"NSData", "data"},
+    {"NSData", "dataWithBytes:length:"},
+    {"NSData", "length"},
+    {"NSData", "bytes"},
+    {"NSData", "description"},
+    {"NSData", "isEqual:"},
+    {"NSData", "isEqualToData:"},
+};
+#define FOUNDATION_SELECTOR_COUNT (sizeof(foundation_selectors) / sizeof(foundation_selectors[0]))
+
+static const char *foundation_class_names[] = {
+    "NSObject", "NSString", "NSNumber",
+    "NSArray", "NSMutableArray", "NSDictionary",
+    "NSMutableDictionary", "NSSet", "NSData"
+};
+#define FOUNDATION_CLASS_COUNT (sizeof(foundation_class_names) / sizeof(foundation_class_names[0]))
+
+static const char *at_keywords[] = {
+    "@interface", "@implementation", "@end", "@class",
+    "@protocol", "@property", "@synthesize", "@dynamic"
+};
+#define AT_KEYWORD_COUNT (sizeof(at_keywords) / sizeof(at_keywords[0]))
+
+static const char *type_keywords[] = {
+    "int", "float", "double", "id", "Class", "SEL", "BOOL", "void",
+    "long", "char", "unsigned", "signed", "NSString", "NSNumber",
+    "NSArray", "NSMutableArray", "NSDictionary", "NSMutableDictionary",
+    "NSSet", "NSData", "NSObject"
+};
+#define TYPE_KEYWORD_COUNT (sizeof(type_keywords) / sizeof(type_keywords[0]))
+
+/* Check if a string starts with a prefix */
+static int cstr_starts(const char *str, const char *prefix) {
+    unsigned int i = 0u;
+    if (str == 0 || prefix == 0) return 0;
+    while (prefix[i] != '\0') {
+        if (str[i] != prefix[i]) return 0;
+        i++;
+    }
+    return 1;
+}
+
+/* Check if character is an identifier character */
+static int is_ident_char(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') || c == '_';
+}
+
+/* Build context-aware completion response */
+static int build_complete_response_contextual(
+    const char *code,
+    unsigned int code_length,
+    unsigned int cursor_pos,
+    unsigned int *out_ptr_ptr,
+    unsigned int *out_len_ptr
+) {
+    JsonBuilder builder;
+    char *response_buffer = 0;
+    int status = allocate_response(&builder, OBJC_KERNEL_SMALL_RESPONSE_BYTES, &response_buffer);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+
+    /* Find the word being completed — scan backwards from cursor_pos */
+    unsigned int word_start = cursor_pos;
+    unsigned int word_len = 0;
+    int is_at_keyword = 0;
+
+    if (cursor_pos > 0 && cursor_pos <= code_length) {
+        word_start = cursor_pos;
+        while (word_start > 0 && is_ident_char(code[word_start - 1])) {
+            word_start--;
+        }
+        word_len = cursor_pos - word_start;
+
+        /* Check for @ prefix */
+        if (word_start > 0 && code[word_start - 1] == '@') {
+            is_at_keyword = 1;
+            word_start--;
+            word_len++;
+        }
+    }
+
+    /* Extract the prefix to match */
+    char prefix[256];
+    unsigned int prefix_len = word_len < 255 ? word_len : 255;
+    unsigned int pi;
+    for (pi = 0; pi < prefix_len; pi++) {
+        prefix[pi] = code[word_start + pi];
+    }
+    prefix[prefix_len] = '\0';
+
+    /* Detect context: is the cursor inside a message send? */
+    int in_message_send = 0;
+    unsigned int bracket_depth = 0;
+    {
+        int i;
+        for (i = (int)cursor_pos - 1; i >= 0; i--) {
+            if (code[i] == ']') {
+                bracket_depth++;
+            } else if (code[i] == '[') {
+                if (bracket_depth == 0) {
+                    in_message_send = 1;
+                    break;
+                }
+                bracket_depth--;
+            }
+        }
+    }
+
+    /* Build matches array */
+    unsigned int match_count = 0u;
+    #define MAX_COMPLETE_MATCHES 64
+    const char *matches[MAX_COMPLETE_MATCHES];
+
+    if (is_at_keyword && prefix_len > 0) {
+        /* @-keyword completion */
+        unsigned int ki;
+        for (ki = 0; ki < AT_KEYWORD_COUNT && match_count < MAX_COMPLETE_MATCHES; ki++) {
+            if (cstr_starts(at_keywords[ki], prefix)) {
+                matches[match_count++] = at_keywords[ki];
+            }
+        }
+    } else if (in_message_send && prefix_len > 0) {
+        /* Selector completion — match against Foundation selectors */
+        unsigned int si;
+        for (si = 0; si < FOUNDATION_SELECTOR_COUNT && match_count < MAX_COMPLETE_MATCHES; si++) {
+            if (cstr_starts(foundation_selectors[si].selector, prefix)) {
+                matches[match_count++] = foundation_selectors[si].selector;
+            }
+        }
+        /* Also match type keywords and variable names */
+        {
+            unsigned int ti;
+            for (ti = 0; ti < TYPE_KEYWORD_COUNT && match_count < MAX_COMPLETE_MATCHES; ti++) {
+                if (cstr_starts(type_keywords[ti], prefix)) {
+                    /* Check if already in matches */
+                    unsigned int mi;
+                    int dup = 0;
+                    for (mi = 0; mi < match_count; mi++) {
+                        if (cstr_eq(matches[mi], type_keywords[ti])) { dup = 1; break; }
+                    }
+                    if (!dup) matches[match_count++] = type_keywords[ti];
+                }
+            }
+        }
+        {
+            unsigned int vi;
+            unsigned int var_count = objc_interp_get_var_count();
+            for (vi = 0; vi < var_count && match_count < MAX_COMPLETE_MATCHES; vi++) {
+                const char *name = objc_interp_get_var_name(vi);
+                if (name && cstr_starts(name, prefix)) {
+                    unsigned int mi;
+                    int dup = 0;
+                    for (mi = 0; mi < match_count; mi++) {
+                        if (cstr_eq(matches[mi], name)) { dup = 1; break; }
+                    }
+                    if (!dup) matches[match_count++] = name;
+                }
+            }
+        }
+    } else if (prefix_len > 0) {
+        /* General completion — class names, type keywords, variables */
+        unsigned int ci;
+        for (ci = 0; ci < FOUNDATION_CLASS_COUNT && match_count < MAX_COMPLETE_MATCHES; ci++) {
+            if (cstr_starts(foundation_class_names[ci], prefix)) {
+                matches[match_count++] = foundation_class_names[ci];
+            }
+        }
+        {
+            unsigned int ti;
+            for (ti = 0; ti < TYPE_KEYWORD_COUNT && match_count < MAX_COMPLETE_MATCHES; ti++) {
+                if (cstr_starts(type_keywords[ti], prefix)) {
+                    unsigned int mi;
+                    int dup = 0;
+                    for (mi = 0; mi < match_count; mi++) {
+                        if (cstr_eq(matches[mi], type_keywords[ti])) { dup = 1; break; }
+                    }
+                    if (!dup) matches[match_count++] = type_keywords[ti];
+                }
+            }
+        }
+        {
+            unsigned int vi;
+            unsigned int var_count = objc_interp_get_var_count();
+            for (vi = 0; vi < var_count && match_count < MAX_COMPLETE_MATCHES; vi++) {
+                const char *name = objc_interp_get_var_name(vi);
+                if (name && cstr_starts(name, prefix)) {
+                    unsigned int mi;
+                    int dup = 0;
+                    for (mi = 0; mi < match_count; mi++) {
+                        if (cstr_eq(matches[mi], name)) { dup = 1; break; }
+                    }
+                    if (!dup) matches[match_count++] = name;
+                }
+            }
+        }
+    } else {
+        /* No prefix — return all class names and type keywords */
+        unsigned int ci;
+        for (ci = 0; ci < FOUNDATION_CLASS_COUNT && match_count < MAX_COMPLETE_MATCHES; ci++) {
+            matches[match_count++] = foundation_class_names[ci];
+        }
+        {
+            unsigned int ti;
+            for (ti = 0; ti < TYPE_KEYWORD_COUNT && match_count < MAX_COMPLETE_MATCHES; ti++) {
+                matches[match_count++] = type_keywords[ti];
+            }
+        }
+    }
+
+    /* Build JSON response */
+    builder_append_literal(&builder, "{");
+    builder_append_literal(&builder, "\"status\":\"ok\",");
+    builder_append_literal(&builder, "\"matches\":[");
+
+    {
+        unsigned int mi;
+        for (mi = 0; mi < match_count; mi++) {
+            if (mi > 0) builder_append_char(&builder, ',');
+            builder_append_char(&builder, '\"');
+            builder_append_json_escaped_range(&builder, matches[mi], cstr_len(matches[mi]));
+            builder_append_char(&builder, '\"');
+        }
+    }
+
+    builder_append_literal(&builder, "],");
+    builder_append_literal(&builder, "\"cursor_start\":");
+    builder_append_uint(&builder, word_start);
+    builder_append_literal(&builder, ",\"cursor_end\":");
+    builder_append_uint(&builder, cursor_pos);
+    builder_append_literal(&builder, ",\"metadata\":{}");
+    builder_append_literal(&builder, "}");
+
+    return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
+}
+
 static int build_complete_response(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
     JsonBuilder builder;
     char *response_buffer = 0;
@@ -814,16 +1264,48 @@ int objc_kernel_complete_json(
     unsigned int *out_ptr_ptr,
     unsigned int *out_len_ptr
 ) {
+    char *request_json = 0;
+    unsigned int code_length = 0u;
+    unsigned int cursor_pos = 0u;
+    int parse_status;
+    int transport_status;
+
     int status = validate_output_args(out_ptr_ptr, out_len_ptr);
     if (status != OBJC_KERNEL_TRANSPORT_OK) {
         return status;
     }
-    return handle_request_without_code(
-        request_bytes,
-        request_len,
+
+    request_json = copy_request_json(request_bytes, request_len, &transport_status);
+    if (transport_status != OBJC_KERNEL_TRANSPORT_OK) {
+        return transport_status;
+    }
+
+    parse_status = parse_kernel_request_complete(
+        request_json,
+        parsed_code_buffer,
+        OBJC_KERNEL_MAX_CODE_BYTES,
+        &code_length,
+        &cursor_pos
+    );
+    free(request_json);
+
+    if (parse_status != OBJC_JSON_OK) {
+        return write_domain_error_json(
+            json_error_name(parse_status),
+            json_error_value(parse_status),
+            0u,
+            0,
+            out_ptr_ptr,
+            out_len_ptr
+        );
+    }
+
+    return build_complete_response_contextual(
+        parsed_code_buffer,
+        code_length,
+        cursor_pos,
         out_ptr_ptr,
-        out_len_ptr,
-        build_complete_response
+        out_len_ptr
     );
 }
 

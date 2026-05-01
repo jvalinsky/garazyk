@@ -6589,3 +6589,19 @@ void objc_interp_reset(void) {
     /* Don't reset g_var_count — variables persist across cells */
     /* Don't reset g_method_count — methods persist across cells */
 }
+
+/* ── Variable table accessors for tab completion ──────────────── */
+
+unsigned int objc_interp_get_var_count(void) {
+    return g_var_count;
+}
+
+const char *objc_interp_get_var_name(unsigned int index) {
+    if (index >= g_var_count) return 0;
+    return g_vars[index].name;
+}
+
+int objc_interp_get_var_is_class(unsigned int index) {
+    if (index >= g_var_count) return 0;
+    return g_vars[index].is_class;
+}
