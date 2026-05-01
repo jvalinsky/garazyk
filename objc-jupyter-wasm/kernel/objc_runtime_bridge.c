@@ -884,6 +884,10 @@ static const FoundationSelector foundation_selectors[] = {
     {"NSMutableArray", "array"},
     {"NSMutableArray", "addObject:"},
     {"NSMutableArray", "removeLastObject"},
+    {"NSMutableArray", "removeObjectAtIndex:"},
+    {"NSMutableArray", "replaceObjectAtIndex:withObject:"},
+    {"NSMutableArray", "insertObject:atIndex:"},
+    {"NSMutableArray", "indexOfObject:"},
     {"NSMutableArray", "removeAllObjects"},
 
     /* NSDictionary */
