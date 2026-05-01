@@ -87,6 +87,15 @@ static unsigned int g_nslog_offset = 0;
 
 static char g_error_buffer[OBJC_INTERP_ERROR_SIZE];
 static int g_error_code = OBJC_INTERP_OK;
+static unsigned int g_error_line = 0;
+static unsigned int g_error_column = 0;
+
+static void set_error_from_parser(Parser *p) {
+    g_error_code = p->error;
+    cstr_copy(g_error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
+    g_error_line = p->lex.line;
+    g_error_column = p->lex.column;
+}
 static char g_result_buffer[512];
 
 static int interp_should_interrupt(void) {
@@ -585,7 +594,68 @@ static int parser_expect(Parser *p, TokenType type) {
 
 static void parser_error(Parser *p, const char *msg) {
     p->error = OBJC_INTERP_SYNTAX_ERROR;
-    cstr_copy(p->error_msg, msg, OBJC_INTERP_ERROR_SIZE);
+    /* Format: "line N, column M: <message>" */
+    {
+        char buf[OBJC_INTERP_ERROR_SIZE];
+        unsigned int pos = 0;
+        const char *prefix = "line ";
+        unsigned int pi = 0;
+        while (prefix[pi] != '\0' && pos < OBJC_INTERP_ERROR_SIZE - 1) {
+            buf[pos++] = prefix[pi++];
+        }
+        /* Write line number */
+        {
+            unsigned int line = p->lex.line;
+            char digits[10];
+            int dcount = 0;
+            if (line == 0) line = 1;
+            while (line > 0 && dcount < 10) {
+                digits[dcount++] = '0' + (line % 10);
+                line /= 10;
+            }
+            if (dcount == 0) digits[dcount++] = '0';
+            while (dcount > 0 && pos < OBJC_INTERP_ERROR_SIZE - 1) {
+                buf[pos++] = digits[--dcount];
+            }
+        }
+        if (pos < OBJC_INTERP_ERROR_SIZE - 2) {
+            buf[pos++] = ',';
+            buf[pos++] = ' ';
+        }
+        const char *col_prefix = "column ";
+        pi = 0;
+        while (col_prefix[pi] != '\0' && pos < OBJC_INTERP_ERROR_SIZE - 1) {
+            buf[pos++] = col_prefix[pi++];
+        }
+        /* Write column number */
+        {
+            unsigned int col = p->lex.column;
+            char digits[10];
+            int dcount = 0;
+            if (col == 0) col = 1;
+            while (col > 0 && dcount < 10) {
+                digits[dcount++] = '0' + (col % 10);
+                col /= 10;
+            }
+            if (dcount == 0) digits[dcount++] = '0';
+            while (dcount > 0 && pos < OBJC_INTERP_ERROR_SIZE - 1) {
+                buf[pos++] = digits[--dcount];
+            }
+        }
+        if (pos < OBJC_INTERP_ERROR_SIZE - 2) {
+            buf[pos++] = ':';
+            buf[pos++] = ' ';
+        }
+        /* Append the original message */
+        {
+            unsigned int mi = 0;
+            while (msg[mi] != '\0' && pos < OBJC_INTERP_ERROR_SIZE - 1) {
+                buf[pos++] = msg[mi++];
+            }
+        }
+        buf[pos] = '\0';
+        cstr_copy(p->error_msg, buf, OBJC_INTERP_ERROR_SIZE);
+    }
 }
 
 /* ── Variable table ─────────────────────────────────────────────── */
@@ -5866,8 +5936,7 @@ static Value eval_source_range(unsigned int start, unsigned int len,
             unsigned int saved_ast_count = g_ast_count;
             AstNode *root = parse_block_ast(&p);
             if (p.error) {
-                g_error_code = p.error;
-                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                set_error_from_parser(&p);
                 g_ast_count = saved_ast_count;
                 return last;
             }
@@ -5876,15 +5945,13 @@ static Value eval_source_range(unsigned int start, unsigned int len,
             }
             g_ast_count = saved_ast_count;
             if (p.error) {
-                g_error_code = p.error;
-                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                set_error_from_parser(&p);
                 return last;
             }
         } else {
             last = parse_statement(&p);
             if (p.error) {
-                g_error_code = p.error;
-                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                set_error_from_parser(&p);
                 return last;
             }
         }
@@ -6456,6 +6523,8 @@ void objc_interp_init(void) {
     g_nslog_buffer[0] = '\0';
     g_error_code = OBJC_INTERP_OK;
     g_error_buffer[0] = '\0';
+    g_error_line = 0;
+    g_error_column = 0;
     g_result_buffer[0] = '\0';
     g_var_count = 0;
     g_method_count = 0;
@@ -6499,6 +6568,8 @@ int objc_interp(const char *source, unsigned int length) {
     g_nslog_buffer[0] = '\0';
     g_error_code = OBJC_INTERP_OK;
     g_error_buffer[0] = '\0';
+    g_error_line = 0;
+    g_error_column = 0;
     g_result_buffer[0] = '\0';
     g_return_pending = 0;
     g_break_pending = 0;
@@ -6523,6 +6594,8 @@ int objc_interp(const char *source, unsigned int length) {
                 g_error_code = p.error;
             }
             cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+            g_error_line = p.lex.line;
+            g_error_column = p.lex.column;
             return p.error;
         }
 
@@ -6543,6 +6616,8 @@ int objc_interp(const char *source, unsigned int length) {
                     g_error_code = p.error;
                 }
                 cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                g_error_line = p.lex.line;
+                g_error_column = p.lex.column;
                 return p.error;
             }
 
@@ -6585,6 +6660,8 @@ void objc_interp_reset(void) {
     g_nslog_buffer[0] = '\0';
     g_error_code = OBJC_INTERP_OK;
     g_error_buffer[0] = '\0';
+    g_error_line = 0;
+    g_error_column = 0;
     g_result_buffer[0] = '\0';
     /* Don't reset g_var_count — variables persist across cells */
     /* Don't reset g_method_count — methods persist across cells */
@@ -6604,4 +6681,12 @@ const char *objc_interp_get_var_name(unsigned int index) {
 int objc_interp_get_var_is_class(unsigned int index) {
     if (index >= g_var_count) return 0;
     return g_vars[index].is_class;
+}
+
+unsigned int objc_interp_get_error_line(void) {
+    return g_error_line;
+}
+
+unsigned int objc_interp_get_error_column(void) {
+    return g_error_column;
 }

@@ -710,17 +710,88 @@ static int build_execute_response(
     if (interp_result != OBJC_INTERP_OK) {
         const char *error_msg = objc_interp_get_error();
         const char *ename = "ObjCRuntimeError";
+        unsigned int error_line = objc_interp_get_error_line();
+        unsigned int error_col = objc_interp_get_error_column();
+
         if (objc_interp_get_error_code() == OBJC_INTERP_INTERRUPTED) {
             ename = "Interrupted";
         }
-        return write_domain_error_json(
-            ename,
-            error_msg,
-            execution_count,
-            1,
-            out_ptr_ptr,
-            out_len_ptr
-        );
+
+        /* Build error response with traceback */
+        {
+            JsonBuilder tb;
+            char *tb_buffer = 0;
+            int tb_status = allocate_response(&tb, OBJC_KERNEL_MAX_RESPONSE_BYTES, &tb_buffer);
+            if (tb_status != OBJC_KERNEL_TRANSPORT_OK) {
+                return tb_status;
+            }
+
+            builder_append_literal(&tb, "{\"status\":\"error\",");
+            builder_append_literal(&tb, "\"execution_count\":");
+            builder_append_uint(&tb, execution_count);
+            builder_append_literal(&tb, ",");
+            builder_append_literal(&tb, "\"ename\":\"");
+            builder_append_literal(&tb, ename);
+            builder_append_literal(&tb, "\",");
+            builder_append_literal(&tb, "\"evalue\":\"");
+            builder_append_json_escaped_range(&tb, error_msg, cstr_len(error_msg));
+            builder_append_literal(&tb, "\",");
+            builder_append_literal(&tb, "\"traceback\":[");
+
+            /* Traceback entry 1: Cell header */
+            builder_append_literal(&tb, "\"  Cell In[");
+            builder_append_uint(&tb, execution_count);
+            builder_append_literal(&tb, "], line ");
+            builder_append_uint(&tb, error_line > 0 ? error_line : 1);
+            builder_append_char(&tb, '"');
+
+            /* Traceback entry 2: Source line */
+            if (error_line > 0 && code != 0 && code_length > 0) {
+                /* Find the start of the error line */
+                unsigned int line = 1;
+                unsigned int line_start = 0;
+                unsigned int i;
+                for (i = 0; i < code_length && line < error_line; i++) {
+                    if (code[i] == '\n') {
+                        line++;
+                        line_start = i + 1;
+                    }
+                }
+                /* Find end of line */
+                {
+                    unsigned int line_end = line_start;
+                    while (line_end < code_length && code[line_end] != '\n') {
+                        line_end++;
+                    }
+                    /* Trim leading whitespace for display */
+                    while (line_start < line_end && code[line_start] == ' ') {
+                        line_start++;
+                    }
+                    builder_append_literal(&tb, ",\"    ");
+                    builder_append_json_escaped_range(&tb, code + line_start, line_end - line_start);
+                    builder_append_char(&tb, '"');
+
+                    /* Traceback entry 3: Caret pointing to error column */
+                    if (error_col > 0) {
+                        unsigned int caret_pos = 4; /* "    " indent */
+                        unsigned int ci;
+                        for (ci = line_start; ci < line_start + (error_col - 1) && ci < line_end; ci++) {
+                            caret_pos++;
+                        }
+                        /* Adjust for trimmed whitespace */
+                        builder_append_literal(&tb, ",\"");
+                        for (ci = 0; ci < caret_pos; ci++) {
+                            builder_append_char(&tb, ' ');
+                        }
+                        builder_append_literal(&tb, "^\"");
+                    }
+                }
+            }
+
+            builder_append_literal(&tb, "]}");
+
+            return finalize_response_buffer(tb_buffer, &tb, out_ptr_ptr, out_len_ptr);
+        }
     }
 
     status = allocate_response(&builder, OBJC_KERNEL_MAX_RESPONSE_BYTES, &response_buffer);
