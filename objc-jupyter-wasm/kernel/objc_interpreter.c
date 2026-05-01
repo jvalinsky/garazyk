@@ -89,6 +89,7 @@ static char g_error_buffer[OBJC_INTERP_ERROR_SIZE];
 static int g_error_code = OBJC_INTERP_OK;
 static unsigned int g_error_line = 0;
 static unsigned int g_error_column = 0;
+static int g_interp_initialized = 0;
 
 /* Forward declaration — Parser struct defined below */
 struct Parser;
@@ -105,6 +106,14 @@ static void interp_emit_stream(const char *ptr, unsigned int len) {
         return;
     }
     objc_kernel_host_stream(1, ptr, len);
+}
+
+static void interp_set_resource_error(const char *msg) {
+    g_error_code = OBJC_INTERP_RESOURCE_ERROR;
+    cstr_copy(g_error_buffer, msg, OBJC_INTERP_ERROR_SIZE);
+    interp_emit_stream("Error: ", 7);
+    interp_emit_stream(msg, cstr_len(msg));
+    interp_emit_stream("\n", 1);
 }
 
 /* Variable table: name → value (as id) */
@@ -194,6 +203,7 @@ typedef struct {
     char text[OBJC_INTERP_MAX_TOKEN];
     unsigned int line;
     unsigned int column;
+    int truncated;
 } Token;
 
 /* ── Lexer ──────────────────────────────────────────────────────── */
@@ -220,6 +230,7 @@ static void lexer_init(Lexer *lex, const char *source, unsigned int length) {
     lex->column = 1;
     lex->current.type = TOK_EOF;
     lex->current.text[0] = '\0';
+    lex->current.truncated = 0;
 }
 
 static char lexer_peek(Lexer *lex) {
@@ -291,6 +302,7 @@ static Token lexer_next_token(Lexer *lex) {
     lex->token_start = lex->pos; /* remember where this token begins */
     tok.line = lex->line;
     tok.column = lex->column;
+    tok.truncated = 0;
     tok.text[0] = '\0';
     tok.type = TOK_EOF;
 
@@ -329,8 +341,7 @@ static Token lexer_next_token(Lexer *lex) {
             }
             if (lex->pos < lex->source_len) lexer_next(lex); /* skip closing " */
             tok.text[i] = '\0';
-            /* Truncation is silent but recorded in was_truncated flag */
-            (void)was_truncated;
+            tok.truncated = was_truncated;
             tok.type = TOK_STRING_LITERAL;
             return tok;
         }
@@ -370,8 +381,7 @@ static Token lexer_next_token(Lexer *lex) {
         }
         if (lex->pos < lex->source_len) lexer_next(lex); /* skip closing " */
         tok.text[i] = '\0';
-        /* Truncation is silent but recorded in was_truncated flag */
-        (void)was_truncated;
+        tok.truncated = was_truncated;
         tok.type = TOK_STRING_LITERAL;
         return tok;
     }
@@ -426,6 +436,27 @@ static Token lexer_next_token(Lexer *lex) {
 
     /* Integer / float literal */
     if (is_digit(ch)) {
+        if (ch == '0' && lex->pos + 1 < lex->source_len &&
+            (lex->source[lex->pos + 1] == 'x' || lex->source[lex->pos + 1] == 'X')) {
+            tok.text[i++] = lexer_next(lex); /* 0 */
+            tok.text[i++] = lexer_next(lex); /* x/X */
+            while (lex->pos < lex->source_len) {
+                char hc = lexer_peek(lex);
+                int is_hex = (hc >= '0' && hc <= '9') ||
+                             (hc >= 'a' && hc <= 'f') ||
+                             (hc >= 'A' && hc <= 'F');
+                if (!is_hex) break;
+                if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
+                    tok.text[i++] = lexer_next(lex);
+                } else {
+                    lexer_next(lex);
+                    tok.truncated = 1;
+                }
+            }
+            tok.text[i] = '\0';
+            tok.type = TOK_INT_LITERAL;
+            return tok;
+        }
         while (lex->pos < lex->source_len && is_digit(lexer_peek(lex))) {
             if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
                 tok.text[i++] = lexer_next(lex);
@@ -933,6 +964,23 @@ static void interp_set_var_from_value(InterpVar *var, Value v) {
     var->sel = v.sel_val;
 }
 
+static Value value_from_interp_var(const InterpVar *var) {
+    Value v = value_void();
+    if (var == 0) return v;
+    v.obj_val = var->value;
+    v.cls_val = var->cls;
+    v.sel_val = var->sel;
+    v.int_val = var->int_value;
+    v.float_val = var->float_value;
+    v.is_int = var->is_int;
+    v.is_float = var->is_float;
+    v.is_class = var->is_class;
+    v.is_sel = var->is_sel;
+    v.is_id = var->is_id;
+    v.is_void = 0;
+    return v;
+}
+
 /* ── Method dispatch state ─────────────────────────────────────── */
 
 /* Return value flag — set by return statement, checked by method dispatch */
@@ -1268,8 +1316,15 @@ static int instance_var_set(id object, const char *prop_name, Value val) {
  * objects), returns 1 (always match) since Foundation classes don't
  * have user-defined properties. */
 static int property_matches_class(id receiver, unsigned int pi) {
-    const char *s = (const char *)receiver;
-    if (receiver != 0 && cstr_starts(s, "FDObj:")) {
+    const char *s;
+    unsigned long addr;
+    unsigned long pool_start = (unsigned long)g_string_pool;
+    unsigned long pool_end = pool_start + OBJC_INTERP_STRING_POOL_SIZE;
+    if (receiver == 0) return 0;
+    addr = (unsigned long)receiver;
+    if (addr < pool_start || addr >= pool_end) return 0;
+    s = (const char *)receiver;
+    if (cstr_starts(s, "FDObj:")) {
         const char *recv_class = s + 6;
         if (g_properties[pi].class_name[0] != '\0' &&
             !cstr_eq(recv_class, g_properties[pi].class_name)) {
@@ -1491,6 +1546,160 @@ static AstNode *parse_statement_ast(Parser *p);
 static Value eval_source_range(unsigned int start, unsigned int len, const char *source);
 static Value eval_ast(AstNode *node, const char *source);
 static Value parse_type_and_var_decl(Parser *p);
+
+static int is_string_pool_pointer(id value) {
+    unsigned long addr = (unsigned long)value;
+    unsigned long pool_start = (unsigned long)g_string_pool;
+    unsigned long pool_end = pool_start + OBJC_INTERP_STRING_POOL_SIZE;
+    return value != 0 && addr >= pool_start && addr < pool_end;
+}
+
+static Class class_for_fdobj_marker(id receiver) {
+    const char *s = (const char *)receiver;
+    unsigned int vi;
+    if (!is_string_pool_pointer(receiver) || !cstr_starts(s, "FDObj:")) return (Class)0;
+    for (vi = 0; vi < g_var_count; vi++) {
+        if (g_vars[vi].is_class && cstr_eq(g_vars[vi].name, s + 6)) {
+            return g_vars[vi].cls;
+        }
+    }
+    return (Class)0;
+}
+
+static int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
+                                      id receiver, int instance_only) {
+    if (method == 0 || method->selector != sel || method->source_len == 0) return 0;
+
+    if (method->class_ptr != (Class)0) {
+        if (target.is_class && method->class_ptr == target.cls_val) {
+            /* class target matches */
+        } else if (target.is_id && is_string_pool_pointer(receiver) &&
+                   cstr_starts((const char *)receiver, "FDObj:")) {
+            if (class_for_fdobj_marker(receiver) != method->class_ptr) return 0;
+        } else if (target.is_id && receiver != 0) {
+            const char *ptr = (const char *)receiver;
+            Class recv_cls;
+            if (ptr >= g_string_pool && ptr < g_string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
+                return 0;
+            }
+            recv_cls = object_getClass(receiver);
+            if (recv_cls != 0 && method->class_ptr != recv_cls) return 0;
+        } else {
+            return 0;
+        }
+    }
+
+    if (instance_only) {
+        return !method->is_class_method && (target.is_id || target.is_int);
+    }
+    if (method->is_class_method && target.is_class) return 1;
+    if (!method->is_class_method && (target.is_id || target.is_int)) return 1;
+    return 0;
+}
+
+static unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
+                                            int instance_only) {
+    unsigned int mi;
+    for (mi = 0; mi < g_method_count; mi++) {
+        if (interpreter_method_matches(&g_methods[mi], sel, target, receiver, instance_only)) {
+            return mi;
+        }
+    }
+    return g_method_count;
+}
+
+static int bind_method_var(const char *name, Value value) {
+    InterpVar *var = interp_get_or_create_var(name);
+    if (var == 0) return -1;
+    interp_set_var_from_value(var, value);
+    return 0;
+}
+
+static void inject_synthesized_ivars(id receiver) {
+    unsigned int pi;
+    for (pi = 0; pi < g_property_count; pi++) {
+        if (g_properties[pi].synthesized &&
+            g_properties[pi].ivar_name[0] != '\0' &&
+            property_matches_class(receiver, pi)) {
+            InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
+            if (ivar_var) {
+                Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                if (stored) {
+                    interp_set_var_from_value(ivar_var, *stored);
+                } else {
+                    interp_set_var_from_value(ivar_var,
+                        g_properties[pi].is_int ? value_from_int(0) : value_from_id(0));
+                }
+            }
+        }
+    }
+}
+
+static void write_back_synthesized_ivars(Parser *p, id receiver) {
+    unsigned int pi;
+    for (pi = 0; pi < g_property_count; pi++) {
+        if (g_properties[pi].synthesized &&
+            g_properties[pi].ivar_name[0] != '\0' &&
+            property_matches_class(receiver, pi)) {
+            InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+            if (ivar_var) {
+                Value ivar_val = value_from_interp_var(ivar_var);
+                if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
+                    parser_error(p, "instance variable table full (max 256)");
+                    return;
+                }
+            }
+        }
+    }
+}
+
+static Value execute_interpreter_method(Parser *p, MethodImpl *method, SEL sel,
+                                        id receiver, const Value *args,
+                                        unsigned int arg_count,
+                                        int return_receiver_on_void) {
+    unsigned int saved_var_count = g_var_count;
+    unsigned int saved_scope_base = g_var_scope_base;
+    Value return_val = return_receiver_on_void ? value_from_id(receiver) : value_void();
+    unsigned int ai;
+
+    g_var_scope_base = g_var_count;
+    g_return_pending = 0;
+    g_return_value = value_void();
+
+    if (bind_method_var("self", value_from_id(receiver)) != 0 ||
+        bind_method_var("_cmd", value_from_sel(sel)) != 0) {
+        parser_error(p, "variable table full (max 1024)");
+        goto done;
+    }
+
+    for (ai = 0; ai < method->arg_count && ai < 8 && ai < arg_count; ai++) {
+        if (bind_method_var(method->arg_names[ai], args[ai]) != 0) {
+            parser_error(p, "variable table full (max 1024)");
+            goto done;
+        }
+    }
+
+    inject_synthesized_ivars(receiver);
+
+    {
+        Value ignored = eval_source_range(0, method->source_len, method->source);
+        (void)ignored;
+    }
+
+    if (!p->error) {
+        write_back_synthesized_ivars(p, receiver);
+    }
+
+    if (!p->error && g_return_pending) {
+        return_val = g_return_value;
+    }
+
+done:
+    g_var_count = saved_var_count;
+    g_var_scope_base = saved_scope_base;
+    g_return_pending = 0;
+    return return_val;
+}
 
 /* ── NSLog format string evaluation ─────────────────────────────── */
 
@@ -1768,6 +1977,12 @@ static void eval_nslog(Parser *p) {
 /* Format values into a string pool entry, similar to NSLog but without
  * the trailing newline and host stream output. Returns the string pool
  * pointer as an id value. */
+static void format_warn_missing_argument(char spec) {
+    nslog_append("warning: missing argument for format specifier %", 48);
+    nslog_append(&spec, 1);
+    nslog_append("\n", 1);
+}
+
 static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
     char buf[1024];
     unsigned int pos = 0;
@@ -1839,6 +2054,8 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                             const char *nil_s = "(nil)";
                             while (*nil_s && pos < sizeof(buf)-1) buf[pos++] = *nil_s++;
                         }
+                    } else {
+                        format_warn_missing_argument('@');
                     }
                     break;
                 case 'd': case 'i':
@@ -1863,6 +2080,8 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                             if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
                             while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
                         }
+                    } else {
+                        format_warn_missing_argument(fmt[fi]);
                     }
                     break;
                 case 'l':
@@ -1880,6 +2099,8 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                                 if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
                                 while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
                             }
+                        } else {
+                            format_warn_missing_argument(fmt[fi]);
                         }
                     }
                     break;
@@ -1894,10 +2115,14 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                             else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
                             while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
                         }
+                    } else {
+                        format_warn_missing_argument('u');
                     }
                     break;
                 case 'f': {
-                    if (arg_idx < arg_count && pos < sizeof(buf) - 10) {
+                    if (arg_idx >= arg_count) {
+                        format_warn_missing_argument('f');
+                    } else if (pos < sizeof(buf) - 10) {
                         Value v = args[arg_idx++];
                         double fv = v.is_float ? v.float_val : (v.is_int ? (double)v.int_val : 0.0);
                         int neg = fv < 0.0;
@@ -1930,6 +2155,8 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                             const char *s = (const char *)v.obj_val;
                             while (*s && pos < sizeof(buf)-1) buf[pos++] = *s++;
                         }
+                    } else {
+                        format_warn_missing_argument('s');
                     }
                     break;
                 case 'p':
@@ -1946,6 +2173,8 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                                 while (hi > 0 && pos < sizeof(buf)-1) buf[pos++] = hex[--hi];
                             }
                         }
+                    } else if (arg_idx >= arg_count) {
+                        format_warn_missing_argument('p');
                     }
                     break;
                 default:
@@ -2048,6 +2277,10 @@ static Value parse_message_send(Parser *p) {
         SEL sel = sel_registerName(sel_name);
         id receiver = 0;
         const char *target_class_name = 0; /* for Foundation name-based dispatch */
+        if (sel == 0) {
+            parser_error(p, "selector table full (max 4096 selectors)");
+            return value_void();
+        }
 
         if (target.is_id) receiver = target.obj_val;
         else if (target.is_class) receiver = (id)target.cls_val;
@@ -2526,8 +2759,18 @@ static Value parse_message_send(Parser *p) {
                 int i;
                 for (i = 0; i < src_len; i++) {
                     char *comp = string_pool_alloc(2);
-                    if (comp) { comp[0] = src[i]; comp[1] = '\0'; }
-                    if (comp) coll_add(new_cid, value_from_id((id)comp), dummy);
+                    if (comp == 0) {
+                        coll_remove_all(new_cid);
+                        interp_set_resource_error("string pool exhausted while splitting string");
+                        return value_void();
+                    }
+                    comp[0] = src[i];
+                    comp[1] = '\0';
+                    if (coll_add(new_cid, value_from_id((id)comp), dummy) != 0) {
+                        coll_remove_all(new_cid);
+                        interp_set_resource_error("collection entry table full while splitting string");
+                        return value_void();
+                    }
                 }
             } else {
                 int start = 0;
@@ -2537,11 +2780,20 @@ static Value parse_message_send(Parser *p) {
                         /* Component from start to si */
                         int comp_len = si - start;
                         char *comp = string_pool_alloc((unsigned int)comp_len + 1);
-                        if (comp) {
+                        if (comp == 0) {
+                            coll_remove_all(new_cid);
+                            interp_set_resource_error("string pool exhausted while splitting string");
+                            return value_void();
+                        }
+                        {
                             int j;
                             for (j = 0; j < comp_len; j++) comp[j] = src[start + j];
                             comp[comp_len] = '\0';
-                            coll_add(new_cid, value_from_id((id)comp), dummy);
+                        }
+                        if (coll_add(new_cid, value_from_id((id)comp), dummy) != 0) {
+                            coll_remove_all(new_cid);
+                            interp_set_resource_error("collection entry table full while splitting string");
+                            return value_void();
                         }
                         si += sep_len;
                         start = si;
@@ -2553,11 +2805,20 @@ static Value parse_message_send(Parser *p) {
                 {
                     int comp_len = src_len - start;
                     char *comp = string_pool_alloc((unsigned int)comp_len + 1);
-                    if (comp) {
+                    if (comp == 0) {
+                        coll_remove_all(new_cid);
+                        interp_set_resource_error("string pool exhausted while splitting string");
+                        return value_void();
+                    }
+                    {
                         int j;
                         for (j = 0; j < comp_len; j++) comp[j] = src[start + j];
                         comp[comp_len] = '\0';
-                        coll_add(new_cid, value_from_id((id)comp), dummy);
+                    }
+                    if (coll_add(new_cid, value_from_id((id)comp), dummy) != 0) {
+                        coll_remove_all(new_cid);
+                        interp_set_resource_error("collection entry table full while splitting string");
+                        return value_void();
                     }
                 }
             }
@@ -3385,203 +3646,10 @@ static Value parse_message_send(Parser *p) {
          * is_class_method must be 1. For instance methods, target.is_id
          * must be true (or target.is_class for alloc-init chain). */
         {
-            unsigned int mi;
-            int found = 0;
-            for (mi = 0; mi < g_method_count; mi++) {
-                if (g_methods[mi].selector != sel || g_methods[mi].source_len == 0) continue;
-
-                /* Check class match */
-                if (g_methods[mi].class_ptr != (Class)0) {
-                    /* Method has a class restriction */
-                    if (target.is_class && g_methods[mi].class_ptr == target.cls_val) {
-                        /* OK — class method target matches */
-                    } else if (target.is_id && receiver != 0 &&
-                               cstr_starts((const char *)receiver, "FDObj:")) {
-                        /* Receiver is an FDObj: marker — check class by name.
-                         * Extract class name from FDObj:ClassName and look up
-                         * the class pointer in the variable table. */
-                        const char *recv_class_name = (const char *)receiver + 6;
-                        Class recv_cls = 0;
-                        {
-                            unsigned int vi;
-                            for (vi = 0; vi < g_var_count; vi++) {
-                                if (g_vars[vi].is_class &&
-                                    cstr_eq(g_vars[vi].name, recv_class_name)) {
-                                    recv_cls = g_vars[vi].cls;
-                                    break;
-                                }
-                            }
-                        }
-                        if (recv_cls != g_methods[mi].class_ptr) continue;
-                    } else if (target.is_id && receiver != 0) {
-                        /* Receiver might be a valid ObjC object — check class.
-                         * Guard against non-ObjC pointers (string pool, etc.)
-                         * by checking if the pointer is in the string pool range. */
-                        const char *ptr = (const char *)receiver;
-                        if (ptr >= g_string_pool && ptr < g_string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
-                            /* String pool pointer — not a valid ObjC object.
-                             * Skip this method (class mismatch). */
-                            continue;
-                        }
-                        Class recv_cls = object_getClass(receiver);
-                        if (recv_cls != 0 && g_methods[mi].class_ptr != recv_cls) continue;
-                    } else {
-                        continue; /* class mismatch */
-                    }
-                }
-
-                /* Check class method vs instance method */
-                if (g_methods[mi].is_class_method && target.is_class) {
-                    found = 1; break; /* class method, called on class */
-                }
-                if (!g_methods[mi].is_class_method && (target.is_id || target.is_int)) {
-                    found = 1; break; /* instance method, called on instance */
-                }
-            }
-
-            if (found && mi < g_method_count) {
-                /* Found an interpreter method — execute it directly */
-                unsigned int saved_var_count = g_var_count;
-                unsigned int saved_scope_base = g_var_scope_base;
-                Value return_val;
-
-                /* Limit scope to method-local variables only (self, _cmd, args, synthesized ivars).
-                 * This prevents cross-call and cross-class variable contamination.
-                 * Previously set to 0, allowing methods to see any variable in g_vars[],
-                 * which caused stale variables from prior calls to be found instead of
-                 * creating fresh ones. For example, on the second call to a method,
-                 * interp_get_or_create_var would find the stale variable from the first call. */
-                g_var_scope_base = g_var_count;
-
-                /* Set up self and _cmd as NEW variables in the method scope */
-                {
-                    InterpVar *var;
-                    var = interp_get_or_create_var("self");
-                    if (var) {
-                        var->is_id = 1;
-                        var->value = receiver;
-                        var->is_int = 0;
-                        var->is_class = 0;
-                        var->is_sel = 0;
-                    }
-                    var = interp_get_or_create_var("_cmd");
-                    if (var) {
-                        var->is_sel = 1;
-                        var->sel = sel;
-                        var->is_int = 0;
-                        var->is_class = 0;
-                        var->is_id = 0;
-                    }
-                }
-
-                /* Set up keyword argument variables from parsed args */
-                {
-                    unsigned int ai;
-                    for (ai = 0; ai < g_methods[mi].arg_count && ai < 8 && ai < arg_count; ai++) {
-                        InterpVar *var = interp_get_or_create_var(g_methods[mi].arg_names[ai]);
-                        if (var) {
-                            var->is_id = keyword_args[ai].is_id;
-                            var->value = keyword_args[ai].obj_val;
-                            var->is_int = keyword_args[ai].is_int;
-                            var->int_value = keyword_args[ai].int_val;
-                            var->is_class = keyword_args[ai].is_class;
-                            var->cls = keyword_args[ai].cls_val;
-                            var->is_sel = keyword_args[ai].is_sel;
-                            var->sel = keyword_args[ai].sel_val;
-                        }
-                    }
-                }
-
-                /* Inject synthesized ivar values as variables so method
-                 * bodies can access them (e.g., _count in increment). */
-                {
-                    unsigned int pi;
-                    for (pi = 0; pi < g_property_count; pi++) {
-                        if (g_properties[pi].synthesized &&
-                            g_properties[pi].ivar_name[0] != '\0' &&
-                            property_matches_class(receiver, pi)) {
-                            InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
-                            if (ivar_var) {
-                                Value *stored = instance_var_get(receiver, g_properties[pi].name);
-                                if (stored) {
-                                    ivar_var->is_id = stored->is_id;
-                                    ivar_var->value = stored->obj_val;
-                                    ivar_var->is_int = stored->is_int;
-                                    ivar_var->int_value = stored->int_val;
-                                    ivar_var->is_float = stored->is_float;
-                                    ivar_var->float_value = stored->float_val;
-                                    ivar_var->is_class = stored->is_class;
-                                    ivar_var->cls = stored->cls_val;
-                                    ivar_var->is_sel = stored->is_sel;
-                                    ivar_var->sel = stored->sel_val;
-                                } else {
-                                    /* No value yet — default to 0 */
-                                    ivar_var->is_int = g_properties[pi].is_int;
-                                    ivar_var->int_value = 0;
-                                    ivar_var->is_id = !g_properties[pi].is_int;
-                                    ivar_var->value = 0;
-                                    ivar_var->is_class = 0;
-                                    ivar_var->is_sel = 0;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                /* Execute the method body.
-                 * Use eval_source_range instead of objc_interp to avoid
-                 * destroying the caller's AST (objc_interp resets g_ast_count). */
-                g_return_pending = 0;
-                {
-                    Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
-                    (void)v;
-                }
-
-                /* Write back synthesized ivar values to the side table */
-                {
-                    unsigned int pi;
-                    for (pi = 0; pi < g_property_count; pi++) {
-                        if (g_properties[pi].synthesized &&
-                            g_properties[pi].ivar_name[0] != '\0' &&
-                            property_matches_class(receiver, pi)) {
-                            InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
-                            if (ivar_var) {
-                                Value ivar_val;
-                                ivar_val.obj_val = ivar_var->value;
-                                ivar_val.cls_val = ivar_var->cls;
-                                ivar_val.sel_val = ivar_var->sel;
-                                ivar_val.int_val = ivar_var->int_value;
-                                ivar_val.is_int = ivar_var->is_int;
-                                ivar_val.float_val = ivar_var->float_value;
-                                ivar_val.is_float = ivar_var->is_float;
-                                ivar_val.is_class = ivar_var->is_class;
-                                ivar_val.is_sel = ivar_var->is_sel;
-                                ivar_val.is_id = ivar_var->is_id;
-                                ivar_val.is_void = 0;
-                                if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
-                                    parser_error(p, "instance variable table full (max 256)");
-                                }
-                            }
-                        }
-                    }
-                }
-
-                /* Determine return value */
-                if (g_return_pending) {
-                    if (g_return_value.is_id) return_val = value_from_id(g_return_value.obj_val);
-                    else if (g_return_value.is_class) return_val = value_from_class(g_return_value.cls_val);
-                    else if (g_return_value.is_int) return_val = g_return_value;
-                    else return_val = value_from_id(receiver);
-                } else {
-                    return_val = value_from_id(receiver);
-                }
-
-                /* Clean up method-local variables and restore scope */
-                g_var_count = saved_var_count;
-                g_var_scope_base = saved_scope_base;
-                g_return_pending = 0;
-
-                return return_val;
+            unsigned int mi = find_interpreter_method(sel, target, receiver, 0);
+            if (mi < g_method_count) {
+                return execute_interpreter_method(p, &g_methods[mi], sel, receiver,
+                                                  keyword_args, arg_count, 1);
             }
         }
 
@@ -3661,16 +3729,7 @@ static Value parse_message_send(Parser *p) {
                                 if (g_properties[pi].ivar_name[0] != '\0') {
                                     InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
                                     if (ivar_var) {
-                                        ivar_var->int_value = val.is_int ? val.int_val : 0;
-                                        ivar_var->is_int = val.is_int;
-                                        ivar_var->value = val.obj_val;
-                                        ivar_var->is_id = val.is_id;
-                                        ivar_var->is_float = val.is_float;
-                                        ivar_var->float_value = val.float_val;
-                                        ivar_var->cls = val.cls_val;
-                                        ivar_var->is_class = val.is_class;
-                                        ivar_var->sel = val.sel_val;
-                                        ivar_var->is_sel = val.is_sel;
+                                        interp_set_var_from_value(ivar_var, val);
                                     }
                                 }
                             }
@@ -3754,6 +3813,10 @@ static Value parse_interface(Parser *p) {
      * with Foundation sentinels (1-9). */
     {
         static unsigned int custom_class_id = 100;
+        if (custom_class_id >= 100 + OBJC_INTERP_MAX_CLASSES) {
+            parser_error(p, "class table full (max 128 classes)");
+            return value_void();
+        }
         new_class = (Class)(unsigned long)custom_class_id++;
     }
 
@@ -3884,7 +3947,7 @@ static Value parse_interface(Parser *p) {
     return value_from_class(new_class);
 }
 
-/* Method implementation function — called by objc_msgSend */
+/* Method implementation function retained for runtime compatibility. */
 static id method_impl_trampoline(id self, SEL _cmd, ...) {
     const char *sel_name = sel_getName(_cmd);
     unsigned int i;
@@ -4238,6 +4301,10 @@ static Value parse_implementation(Parser *p) {
              * match in g_methods[], not through the runtime. */
             {
                 SEL sel = sel_registerName(sel_name);
+                if (sel == 0) {
+                    parser_error(p, "selector table full (max 4096 selectors)");
+                    return value_void();
+                }
                 /* class_addMethod(cls, sel, (void *)method_impl_trampoline, type_encoding); */
 
                 /* Store method body and argument names for trampoline execution */
@@ -4303,12 +4370,72 @@ static Value parse_implementation(Parser *p) {
 
 /* ── Expression parser ──────────────────────────────────────────── */
 
+static int hex_digit_value(char ch) {
+    if (ch >= '0' && ch <= '9') return ch - '0';
+    if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+    if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+    return -1;
+}
+
+static int parse_integer_literal_magnitude(const char *text, unsigned long limit,
+                                           unsigned long *out) {
+    unsigned int i = 0;
+    unsigned int base = 10;
+    unsigned long val = 0;
+    int saw_digit = 0;
+
+    if (text == 0 || out == 0) return -1;
+    if (text[0] == '0' && (text[1] == 'x' || text[1] == 'X')) {
+        base = 16;
+        i = 2;
+    }
+
+    while (text[i] != '\0') {
+        int digit = (base == 16) ? hex_digit_value(text[i]) :
+                    ((text[i] >= '0' && text[i] <= '9') ? text[i] - '0' : -1);
+        if (digit < 0 || (unsigned int)digit >= base) return -1;
+        saw_digit = 1;
+        if (val > (limit - (unsigned long)digit) / base) return -2;
+        val = val * base + (unsigned long)digit;
+        i++;
+    }
+
+    if (!saw_digit) return -1;
+    *out = val;
+    return 0;
+}
+
+static Value parse_negated_integer_literal(Parser *p) {
+    Token lit = parser_current(p);
+    unsigned long mag = 0;
+    int status;
+    if (lit.truncated) {
+        parser_error(p, "integer literal too long");
+        return value_void();
+    }
+    status = parse_integer_literal_magnitude(lit.text, 2147483648ul, &mag);
+    if (status == -2) {
+        parser_error(p, "integer literal overflow");
+        return value_void();
+    }
+    if (status != 0) {
+        parser_error(p, "invalid integer literal");
+        return value_void();
+    }
+    parser_advance(p);
+    if (mag == 2147483648ul) return value_from_int(-2147483647 - 1);
+    return value_from_int(-(int)mag);
+}
+
 static Value parse_primary(Parser *p) {
     Token tok = parser_current(p);
 
     /* Unary minus — handle before other primaries */
     if (tok.type == TOK_MINUS) {
         parser_advance(p);
+        if (parser_current(p).type == TOK_INT_LITERAL) {
+            return parse_negated_integer_literal(p);
+        }
         {
             Value v = parse_primary(p);
             if (v.is_int) return value_from_int(-v.int_val);
@@ -4322,6 +4449,10 @@ static Value parse_primary(Parser *p) {
         /* Store the string in a global pool and return as id.
          * The token text includes the @ prefix for @"..." literals.
          * We skip it when storing in the pool. */
+        if (tok.truncated) {
+            parser_error(p, "string literal too long (max 255 bytes)");
+            return value_void();
+        }
         parser_advance(p);
         {
             const char *text = tok.text;
@@ -4369,6 +4500,10 @@ static Value parse_primary(Parser *p) {
                 parser_expect(p, TOK_CLOSE_PAREN);
                 if (!p->error) {
                     SEL sel = sel_registerName(sel_name);
+                    if (sel == 0) {
+                        parser_error(p, "selector table full (max 4096 selectors)");
+                        return value_void();
+                    }
                     return value_from_sel(sel);
                 }
             }
@@ -4378,17 +4513,20 @@ static Value parse_primary(Parser *p) {
 
     /* Integer literal */
     if (tok.type == TOK_INT_LITERAL) {
-        long val = 0;
-        unsigned int i = 0;
-        while (tok.text[i] != '\0') {
-            int digit = tok.text[i] - '0';
-            /* Check for overflow before multiplying */
-            if (val > 214748364L || (val == 214748364L && digit > 7)) {
-                val = 2147483647L;
-                break;
-            }
-            val = val * 10 + digit;
-            i++;
+        unsigned long val = 0;
+        int status;
+        if (tok.truncated) {
+            parser_error(p, "integer literal too long");
+            return value_void();
+        }
+        status = parse_integer_literal_magnitude(tok.text, 2147483647ul, &val);
+        if (status == -2) {
+            parser_error(p, "integer literal overflow");
+            return value_void();
+        }
+        if (status != 0) {
+            parser_error(p, "invalid integer literal");
+            return value_void();
         }
         parser_advance(p);
         return value_from_int((int)val);
@@ -4465,6 +4603,10 @@ static Value parse_primary(Parser *p) {
                 parser_advance(p);
                 if (parser_current(p).type == TOK_STRING_LITERAL) {
                     SEL sel = sel_registerName(parser_current(p).text);
+                    if (sel == 0) {
+                        parser_error(p, "selector table full (max 4096 selectors)");
+                        return value_void();
+                    }
                     parser_advance(p);
                     parser_expect(p, TOK_CLOSE_PAREN);
                     return value_from_sel(sel);
@@ -4553,115 +4695,18 @@ static Value parse_primary(Parser *p) {
                             {
                                 SEL setter_sel = sel_registerName(setter_name);
                                 id receiver = var->is_id ? var->value : (id)var->cls;
+                                Value method_target = value_from_id(receiver);
                                 unsigned int mi;
-                                for (mi = 0; mi < g_method_count; mi++) {
-                                    if (g_methods[mi].selector == setter_sel && g_methods[mi].source_len > 0 &&
-                                        !g_methods[mi].is_class_method) {
-                                        break;
-                                    }
+                                if (setter_sel == 0) {
+                                    parser_error(p, "selector table full (max 4096 selectors)");
+                                    return value_void();
                                 }
+                                mi = find_interpreter_method(setter_sel, method_target, receiver, 1);
                                 if (mi < g_method_count) {
-                                    /* Execute setter method body */
-                                    unsigned int saved_var_count = g_var_count;
-                                    unsigned int saved_scope_base = g_var_scope_base;
-                                    g_var_scope_base = 0; /* allow access to global vars */
-                                    InterpVar *self_var = interp_get_or_create_var("self");
-                                    if (self_var) {
-                                        self_var->is_id = 1;
-                                        self_var->value = receiver;
-                                    }
-                                    {
-                                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
-                                        if (cmd_var) {
-                                            cmd_var->is_sel = 1;
-                                            cmd_var->sel = setter_sel;
-                                        }
-                                    }
-                                    /* Set first arg variable */
-                                    if (g_methods[mi].arg_count > 0) {
-                                        InterpVar *arg_var = interp_get_or_create_var(g_methods[mi].arg_names[0]);
-                                        if (arg_var) {
-                                            arg_var->is_id = val.is_id;
-                                            arg_var->value = val.obj_val;
-                                            arg_var->is_int = val.is_int;
-                                            arg_var->int_value = val.int_val;
-                                            arg_var->is_float = val.is_float;
-                                            arg_var->float_value = val.float_val;
-                                            arg_var->is_class = val.is_class;
-                                            arg_var->cls = val.cls_val;
-                                            arg_var->is_sel = val.is_sel;
-                                            arg_var->sel = val.sel_val;
-                                        }
-                                    }
-                                    /* Inject synthesized ivar values */
-                                    {
-                                        unsigned int pi;
-                                        for (pi = 0; pi < g_property_count; pi++) {
-                                            if (g_properties[pi].synthesized &&
-                                                g_properties[pi].ivar_name[0] != '\0' &&
-                                                property_matches_class(receiver, pi)) {
-                                                InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
-                                                if (ivar_var) {
-                                                    Value *stored = instance_var_get(receiver, g_properties[pi].name);
-                                                    if (stored) {
-                                                        ivar_var->is_id = stored->is_id;
-                                                        ivar_var->value = stored->obj_val;
-                                                        ivar_var->is_int = stored->is_int;
-                                                        ivar_var->int_value = stored->int_val;
-                                                        ivar_var->is_float = stored->is_float;
-                                                        ivar_var->float_value = stored->float_val;
-                                                        ivar_var->is_class = stored->is_class;
-                                                        ivar_var->cls = stored->cls_val;
-                                                        ivar_var->is_sel = stored->is_sel;
-                                                        ivar_var->sel = stored->sel_val;
-                                                    } else {
-                                                        ivar_var->is_int = g_properties[pi].is_int;
-                                                        ivar_var->int_value = 0;
-                                                        ivar_var->is_id = !g_properties[pi].is_int;
-                                                        ivar_var->value = 0;
-                                                        ivar_var->is_class = 0;
-                                                        ivar_var->is_sel = 0;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    g_return_pending = 0;
-                                    {
-                                        Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
-                                        (void)v;
-                                    }
-                                    /* Write back synthesized ivar values */
-                                    {
-                                        unsigned int pi;
-                                        for (pi = 0; pi < g_property_count; pi++) {
-                                            if (g_properties[pi].synthesized &&
-                                                g_properties[pi].ivar_name[0] != '\0' &&
-                                                property_matches_class(receiver, pi)) {
-                                                InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
-                                                if (ivar_var) {
-                                                    Value ivar_val;
-                                                    ivar_val.obj_val = ivar_var->value;
-                                                    ivar_val.cls_val = ivar_var->cls;
-                                                    ivar_val.sel_val = ivar_var->sel;
-                                                    ivar_val.int_val = ivar_var->int_value;
-                                                    ivar_val.is_int = ivar_var->is_int;
-                                                    ivar_val.float_val = ivar_var->float_value;
-                                                    ivar_val.is_float = ivar_var->is_float;
-                                                    ivar_val.is_class = ivar_var->is_class;
-                                                    ivar_val.is_sel = ivar_var->is_sel;
-                                                    ivar_val.is_id = ivar_var->is_id;
-                                                    ivar_val.is_void = 0;
-                                                    if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
-                                    parser_error(p, "instance variable table full (max 256)");
-                                }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    g_var_count = saved_var_count;
-                                    g_var_scope_base = saved_scope_base;
-                                    g_return_pending = 0;
+                                    Value setter_args[1];
+                                    setter_args[0] = val;
+                                    (void)execute_interpreter_method(p, &g_methods[mi], setter_sel,
+                                                                     receiver, setter_args, 1, 0);
                                 } else {
                                     /* No method found — check for @synthesize property */
                                     unsigned int pi;
@@ -4677,16 +4722,7 @@ static Value parse_primary(Parser *p) {
                                             if (g_properties[pi].ivar_name[0] != '\0') {
                                                 InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
                                                 if (ivar_var) {
-                                                    ivar_var->int_value = val.is_int ? val.int_val : 0;
-                                                    ivar_var->is_int = val.is_int;
-                                                    ivar_var->value = val.obj_val;
-                                                    ivar_var->is_id = val.is_id;
-                                                    ivar_var->is_float = val.is_float;
-                                                    ivar_var->float_value = val.float_val;
-                                                    ivar_var->cls = val.cls_val;
-                                                    ivar_var->is_class = val.is_class;
-                                                    ivar_var->sel = val.sel_val;
-                                                    ivar_var->is_sel = val.is_sel;
+                                                    interp_set_var_from_value(ivar_var, val);
                                                 }
                                             }
                                             break;
@@ -4756,16 +4792,7 @@ static Value parse_primary(Parser *p) {
                                         if (g_properties[pi].ivar_name[0] != '\0') {
                                             InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
                                             if (ivar_var) {
-                                                ivar_var->int_value = new_val.is_int ? new_val.int_val : 0;
-                                                ivar_var->is_int = new_val.is_int;
-                                                ivar_var->float_value = new_val.is_float ? new_val.float_val : 0.0;
-                                                ivar_var->is_float = new_val.is_float;
-                                                ivar_var->value = new_val.obj_val;
-                                                ivar_var->is_id = new_val.is_id;
-                                                ivar_var->cls = new_val.cls_val;
-                                                ivar_var->is_class = new_val.is_class;
-                                                ivar_var->sel = new_val.sel_val;
-                                                ivar_var->is_sel = new_val.is_sel;
+                                                interp_set_var_from_value(ivar_var, new_val);
                                             }
                                         }
                                         break;
@@ -4781,102 +4808,16 @@ static Value parse_primary(Parser *p) {
                     {
                         SEL prop_sel = sel_registerName(prop_name);
                         id receiver = var->is_id ? var->value : (id)var->cls;
+                        Value method_target = value_from_id(receiver);
                         unsigned int mi;
-                        for (mi = 0; mi < g_method_count; mi++) {
-                            if (g_methods[mi].selector == prop_sel && g_methods[mi].source_len > 0 &&
-                                !g_methods[mi].is_class_method) {
-                                break;
-                            }
+                        if (prop_sel == 0) {
+                            parser_error(p, "selector table full (max 4096 selectors)");
+                            return value_void();
                         }
+                        mi = find_interpreter_method(prop_sel, method_target, receiver, 1);
                         if (mi < g_method_count) {
-                            /* Execute getter method body */
-                            unsigned int saved_var_count = g_var_count;
-                            unsigned int saved_scope_base = g_var_scope_base;
-                            Value return_val;
-                            g_var_scope_base = 0; /* allow access to global vars */
-                            InterpVar *self_var = interp_get_or_create_var("self");
-                            if (self_var) {
-                                self_var->is_id = 1;
-                                self_var->value = receiver;
-                            }
-                            {
-                                InterpVar *cmd_var = interp_get_or_create_var("_cmd");
-                                if (cmd_var) {
-                                    cmd_var->is_sel = 1;
-                                    cmd_var->sel = prop_sel;
-                                }
-                            }
-                            /* Inject synthesized ivar values */
-                            {
-                                unsigned int pi;
-                                for (pi = 0; pi < g_property_count; pi++) {
-                                    if (g_properties[pi].synthesized &&
-                                        g_properties[pi].ivar_name[0] != '\0' &&
-                                        property_matches_class(receiver, pi)) {
-                                        InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
-                                        if (ivar_var) {
-                                            Value *stored = instance_var_get(receiver, g_properties[pi].name);
-                                            if (stored) {
-                                                ivar_var->is_id = stored->is_id;
-                                                ivar_var->value = stored->obj_val;
-                                                ivar_var->is_int = stored->is_int;
-                                                ivar_var->int_value = stored->int_val;
-                                                ivar_var->is_float = stored->is_float;
-                                                ivar_var->float_value = stored->float_val;
-                                                ivar_var->is_class = stored->is_class;
-                                                ivar_var->cls = stored->cls_val;
-                                                ivar_var->is_sel = stored->is_sel;
-                                                ivar_var->sel = stored->sel_val;
-                                            } else {
-                                                ivar_var->is_int = g_properties[pi].is_int;
-                                                ivar_var->int_value = 0;
-                                                ivar_var->is_id = !g_properties[pi].is_int;
-                                                ivar_var->value = 0;
-                                                ivar_var->is_class = 0;
-                                                ivar_var->is_sel = 0;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            g_return_pending = 0;
-                            {
-                                Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
-                                (void)v;
-                            }
-                            /* Write back synthesized ivar values */
-                            {
-                                unsigned int pi;
-                                for (pi = 0; pi < g_property_count; pi++) {
-                                    if (g_properties[pi].synthesized &&
-                                        g_properties[pi].ivar_name[0] != '\0' &&
-                                        property_matches_class(receiver, pi)) {
-                                        InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
-                                        if (ivar_var) {
-                                            Value ivar_val;
-                                            ivar_val.obj_val = ivar_var->value;
-                                            ivar_val.cls_val = ivar_var->cls;
-                                            ivar_val.sel_val = ivar_var->sel;
-                                            ivar_val.int_val = ivar_var->int_value;
-                                            ivar_val.is_int = ivar_var->is_int;
-                                            ivar_val.float_val = ivar_var->float_value;
-                                            ivar_val.is_float = ivar_var->is_float;
-                                            ivar_val.is_class = ivar_var->is_class;
-                                            ivar_val.is_sel = ivar_var->is_sel;
-                                            ivar_val.is_id = ivar_var->is_id;
-                                            ivar_val.is_void = 0;
-                                            if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
-                                    parser_error(p, "instance variable table full (max 256)");
-                                }
-                                        }
-                                    }
-                                }
-                            }
-                            return_val = g_return_value;
-                            g_var_count = saved_var_count;
-                            g_var_scope_base = saved_scope_base;
-                            g_return_pending = 0;
-                            return return_val;
+                            return execute_interpreter_method(p, &g_methods[mi], prop_sel,
+                                                              receiver, 0, 0, 0);
                         }
                         /* No interpreter method found — check @synthesize property */
                         {
@@ -5157,6 +5098,9 @@ static Value parse_primary(Parser *p) {
     /* Minus (unary) */
     if (tok.type == TOK_MINUS) {
         parser_advance(p);
+        if (parser_current(p).type == TOK_INT_LITERAL) {
+            return parse_negated_integer_literal(p);
+        }
         {
             Value v = parse_primary(p);
             if (v.is_int) return value_from_int(-v.int_val);
@@ -5545,8 +5489,34 @@ static Value parse_ternary(Parser *p) {
 }
 
 static Value parse_assignment(Parser *p) {
+    if (parser_current(p).type == TOK_IDENTIFIER) {
+        Token ident = parser_current(p);
+        Token saved = p->lex.current;
+        unsigned int saved_pos = p->lex.pos;
+        parser_advance(p);
+        if (parser_current(p).type == TOK_ASSIGN) {
+            InterpVar *var = interp_find_var(ident.text);
+            Value val;
+            parser_advance(p);
+            val = parse_assignment(p);
+            if (p->error) return val;
+            if (var == 0) {
+                parser_error(p, "assignment target is not a variable");
+                return value_void();
+            }
+            interp_set_var_from_value(var, val);
+            return val;
+        }
+        p->lex.current = saved;
+        p->lex.pos = saved_pos;
+    }
+
     Value target = parse_ternary(p);
     if (p->error) return target;
+    if (parser_current(p).type == TOK_ASSIGN) {
+        parser_error(p, "unsupported assignment target");
+        return value_void();
+    }
     return target;
 }
 
@@ -6595,8 +6565,12 @@ static Value eval_source_range(unsigned int start, unsigned int len,
                                const char *source) {
     Parser p;
     Value last = value_void();
+    unsigned int saved_parse_depth = g_parse_depth;
     g_parse_depth = 0;
-    if (len == 0) return value_void();
+    if (len == 0) {
+        g_parse_depth = saved_parse_depth;
+        return value_void();
+    }
     parser_init(&p, source + start, len);
     /* Parse all statements in the source range, not just the first one.
      * This is needed for method bodies with multiple statements.
@@ -6615,6 +6589,7 @@ static Value eval_source_range(unsigned int start, unsigned int len,
             if (p.error) {
                 set_error_from_parser(&p);
                 g_ast_count = saved_ast_count;
+                g_parse_depth = saved_parse_depth;
                 return last;
             }
             if (root) {
@@ -6623,16 +6598,19 @@ static Value eval_source_range(unsigned int start, unsigned int len,
             g_ast_count = saved_ast_count;
             if (p.error) {
                 set_error_from_parser(&p);
+                g_parse_depth = saved_parse_depth;
                 return last;
             }
         } else {
             last = parse_statement(&p);
             if (p.error) {
                 set_error_from_parser(&p);
+                g_parse_depth = saved_parse_depth;
                 return last;
             }
         }
     }
+    g_parse_depth = saved_parse_depth;
     return last;
 }
 
@@ -6973,11 +6951,14 @@ static void format_value(Value v, char *buf, unsigned int capacity) {
 
     if (v.is_int) {
         int val = v.int_val;
+        unsigned int uval;
         if (val < 0) {
             fmt_append_char(buf, capacity, &offset, '-');
-            val = -val;
+            uval = (unsigned int)(-(val + 1)) + 1u;
+        } else {
+            uval = (unsigned int)val;
         }
-        fmt_append_uint(buf, capacity, &offset, (unsigned int)val);
+        fmt_append_uint(buf, capacity, &offset, uval);
     } else if (v.is_float) {
         /* Format float with up to 6 decimal places, trimming trailing zeros */
         double fv = v.float_val;
@@ -7307,6 +7288,7 @@ void objc_interp_gc_strings(void) {
 }
 
 void objc_interp_init(void) {
+    g_interp_initialized = 1;
     g_nslog_offset = 0;
     g_nslog_buffer[0] = '\0';
     g_error_code = OBJC_INTERP_OK;
@@ -7350,6 +7332,14 @@ void objc_interp_init(void) {
 
 int objc_interp(const char *source, unsigned int length) {
     Parser p;
+
+    if (!g_interp_initialized) {
+        g_error_code = OBJC_INTERP_RUNTIME_ERROR;
+        cstr_copy(g_error_buffer, "Objective-C interpreter was not initialized; call objc_kernel_init() first", OBJC_INTERP_ERROR_SIZE);
+        g_error_line = 1;
+        g_error_column = 1;
+        return OBJC_INTERP_RUNTIME_ERROR;
+    }
 
     /* Reset per-execution state */
     g_nslog_offset = 0;
