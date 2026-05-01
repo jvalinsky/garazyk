@@ -1267,5 +1267,111 @@ assert.match(hostStreamText(), /neg = -3\.14/);
 
 console.log('  floats: literal, arithmetic, promotion, comparison, NSNumber, compound, unary — PASS');
 
+// ── C-style for loop tests ──────────────────────────────────────
+
+// Basic counting loop
+const forCountTest = execute([
+  'int sum = 0;',
+  'for (int i = 0; i < 5; i++) {',
+  '  sum = sum + i;',
+  '}',
+  'NSLog(@"sum = %d", sum);'
+].join('\n'), 'for-count-cell');
+assert.equal(forCountTest.status, 'ok');
+assert.match(hostStreamText(), /sum = 10/);
+
+// Decrementing loop
+const forDecTest = execute([
+  'int count = 0;',
+  'for (int i = 10; i > 7; i--) {',
+  '  count++;',
+  '}',
+  'NSLog(@"count = %d", count);'
+].join('\n'), 'for-dec-cell');
+assert.equal(forDecTest.status, 'ok');
+assert.match(hostStreamText(), /count = 3/);
+
+// Single-statement body (no braces)
+const forNoBraceTest = execute([
+  'int total = 0;',
+  'for (int i = 1; i <= 3; i++)',
+  '  total = total + i;',
+  'NSLog(@"total = %d", total);'
+].join('\n'), 'for-nobrace-cell');
+assert.equal(forNoBraceTest.status, 'ok');
+assert.match(hostStreamText(), /total = 6/);
+
+console.log('  for-loop: C-style for, counting, decrement, no-brace body — PASS');
+
+// ── __block capture tests ───────────────────────────────────────
+
+// __block accumulation in enumerateObjectsUsingBlock:
+const blockAccumTest = execute([
+  'NSMutableArray *arr = [NSMutableArray array];',
+  '[arr addObject:[NSNumber numberWithInt:1]];',
+  '[arr addObject:[NSNumber numberWithInt:2]];',
+  '[arr addObject:[NSNumber numberWithInt:3]];',
+  '__block int sum = 0;',
+  '[arr enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {',
+  '  sum = sum + [obj intValue];',
+  '}];',
+  'NSLog(@"sum = %d", sum);'
+].join('\n'), 'block-accum-cell');
+assert.equal(blockAccumTest.status, 'ok');
+assert.match(hostStreamText(), /sum = 6/);
+
+// __block mutation via direct block invocation
+const blockMutTest = execute([
+  '__block int count = 0;',
+  'void (^inc)(void) = ^{ count++; };',
+  'inc();',
+  'inc();',
+  'inc();',
+  'NSLog(@"count = %d", count);'
+].join('\n'), 'block-mut-cell');
+assert.equal(blockMutTest.status, 'ok');
+assert.match(hostStreamText(), /count = 3/);
+
+// Verify non-__block still captures by value (no mutation leak)
+const blockByValTest = execute([
+  'int x = 10;',
+  'void (^snap)(void) = ^{ NSLog(@"x = %d", x); };',
+  'x = 99;',
+  'snap();'
+].join('\n'), 'block-byval-cell');
+assert.equal(blockByValTest.status, 'ok');
+assert.match(hostStreamText(), /x = 10/);  // captured 10, not 99
+
+console.log('  __block: accumulation, mutation, by-value unchanged — PASS');
+
+// ── NSString method tests ───────────────────────────────────────
+
+// substringFromIndex:
+const subFromTest = execute('NSString *s = @"Hello World"; NSString *sub = [s substringFromIndex:6]; NSLog(@"%s", [sub UTF8String]);', 'sub-from-cell');
+assert.equal(subFromTest.status, 'ok');
+assert.match(hostStreamText(), /World/);
+
+// substringToIndex:
+const subToTest = execute('NSString *s = @"Hello World"; NSString *sub = [s substringToIndex:5]; NSLog(@"%s", [sub UTF8String]);', 'sub-to-cell');
+assert.equal(subToTest.status, 'ok');
+assert.match(hostStreamText(), /Hello/);
+
+// characterAtIndex:
+const charAtTest = execute('NSString *s = @"ABC"; int c = [s characterAtIndex:1]; NSLog(@"c = %d", c);', 'char-at-cell');
+assert.equal(charAtTest.status, 'ok');
+assert.match(hostStreamText(), /c = 66/);  // 'B' = 66
+
+// hasPrefix: / hasSuffix:
+const prefixTest = execute('NSString *s = @"Hello World"; int hp = [s hasPrefix:@"Hello"]; int hs = [s hasSuffix:@"World"]; NSLog(@"hp=%d hs=%d", hp, hs);', 'prefix-cell');
+assert.equal(prefixTest.status, 'ok');
+assert.match(hostStreamText(), /hp=1 hs=1/);
+
+// uppercaseString / lowercaseString
+const caseTest = execute('NSString *s = @"Hello"; NSLog(@"upper=%s lower=%s", [[s uppercaseString] UTF8String], [[s lowercaseString] UTF8String]);', 'case-cell');
+assert.equal(caseTest.status, 'ok');
+assert.match(hostStreamText(), /upper=HELLO lower=hello/);
+
+console.log('  NSString: substringFromIndex, substringToIndex, characterAtIndex, hasPrefix, hasSuffix, upper/lower — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
