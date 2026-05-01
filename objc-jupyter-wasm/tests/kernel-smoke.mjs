@@ -1641,5 +1641,45 @@ console.log('  NSMutableArray: replace, insert, removeAt, indexOf + C subscripts
 
 console.log('  Switch/case: basic, default, fall-through, break — PASS');
 
+// ── do/while loops ────────────────────────────────────────────
+
+// Basic do/while
+{
+  const r = execute('int i = 0; do { i++; } while (i < 5); i', 'do-while-basic');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^5$/);
+}
+
+// do/while executes at least once (condition false from start)
+{
+  const r = execute('int x = 10; do { x = 99; } while (0); x', 'do-while-once');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^99$/);
+}
+
+// break in do/while
+{
+  const r = execute('int n = 0; do { n++; if (n >= 3) break; } while (n < 100); n', 'do-while-break');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^3$/);
+}
+
+// continue in do/while
+{
+  hostStreams.length = 0;
+  const r = execute('int sum = 0; int j = 0; do { j++; if (j % 2 == 0) continue; sum += j; } while (j < 6); NSLog(@"sum=%d", sum);', 'do-while-continue');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /sum=9/);  // 1+3+5 = 9
+}
+
+// do/while with no braces
+{
+  const r = execute('int k = 0; do k++; while (k < 4); k', 'do-while-nobrace');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^4$/);
+}
+
+console.log('  do/while: basic, once, break, continue, no-brace — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
