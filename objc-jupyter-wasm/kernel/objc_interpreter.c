@@ -1059,6 +1059,29 @@ static void coll_remove_all(unsigned int coll_id) {
     }
 }
 
+/* Insert an entry at a logical position within a collection.
+ * Shifts existing entries at that position and later to make room.
+ * Returns 0 on success, -1 if table full or position invalid. */
+static int coll_insert_at(unsigned int coll_id, unsigned int pos, Value key, Value value) {
+    int nth = coll_get_nth(coll_id, pos);
+    if (nth < 0) return -1;
+    if (g_coll_entry_count >= MAX_COLL_ENTRIES) return -1;
+    /* Shift entries from nth onward to make room */
+    {
+        unsigned int i;
+        for (i = g_coll_entry_count; i > (unsigned int)nth; i--) {
+            g_coll_entries[i] = g_coll_entries[i - 1];
+        }
+    }
+    g_coll_entries[(unsigned int)nth].coll_id = coll_id;
+    g_coll_entries[(unsigned int)nth].key = key;
+    g_coll_entries[(unsigned int)nth].value = value;
+    g_coll_entry_count++;
+    return 0;
+}
+    }
+}
+
 /* Get the Nth entry for a collection (for array indexing). Returns index or -1. */
 static int coll_get_nth(unsigned int coll_id, unsigned int n) {
     unsigned int i, count = 0;
@@ -2710,6 +2733,49 @@ static Value parse_message_send(Parser *p) {
                         if (idx >= 0) coll_remove_at((unsigned int)idx);
                     }
                     return value_from_id(receiver);
+                }
+
+                /* [mutArr replaceObjectAtIndex:n withObject:obj] → replace element */
+                if (cstr_eq(sel_name, "replaceObjectAtIndex:withObject:") && arg_count >= 2) {
+                    int idx = coll_get_nth(cid, (unsigned int)keyword_args[0].int_val);
+                    if (idx >= 0) {
+                        g_coll_entries[(unsigned int)idx].key = keyword_args[1];
+                    }
+                    return value_from_id(receiver);
+                }
+
+                /* [mutArr insertObject:obj atIndex:n] → insert element at index */
+                if (cstr_eq(sel_name, "insertObject:atIndex:") && arg_count >= 2) {
+                    Value dummy = value_void();
+                    coll_insert_at(cid, (unsigned int)keyword_args[1].int_val, keyword_args[0], dummy);
+                    return value_from_id(receiver);
+                }
+
+                /* [mutArr removeObjectAtIndex:n] → remove element at index */
+                if (cstr_eq(sel_name, "removeObjectAtIndex:") && arg_count >= 1) {
+                    int idx = coll_get_nth(cid, (unsigned int)keyword_args[0].int_val);
+                    if (idx >= 0) coll_remove_at((unsigned int)idx);
+                    return value_from_id(receiver);
+                }
+
+                /* [arr indexOfObject:obj] → find index of object */
+                if (cstr_eq(sel_name, "indexOfObject:") && arg_count >= 1) {
+                    unsigned int i, pos = 0;
+                    for (i = 0; i < g_coll_entry_count; i++) {
+                        if (g_coll_entries[i].coll_id != cid) continue;
+                        if (g_coll_entries[i].key.is_int && keyword_args[0].is_int &&
+                            g_coll_entries[i].key.int_val == keyword_args[0].int_val) {
+                            return value_from_int((int)pos);
+                        }
+                        if (g_coll_entries[i].key.is_id && keyword_args[0].is_id &&
+                            g_coll_entries[i].key.obj_val != 0 && keyword_args[0].obj_val != 0 &&
+                            cstr_eq((const char *)g_coll_entries[i].key.obj_val,
+                                    (const char *)keyword_args[0].obj_val)) {
+                            return value_from_int((int)pos);
+                        }
+                        pos++;
+                    }
+                    return value_from_int(-1); /* NSNotFound */
                 }
 
                 /* [dict objectForKey:key] → value for key */
@@ -4453,6 +4519,73 @@ static Value parse_primary(Parser *p) {
                         }
                         /* No method or property found — return void */
                         return value_void();
+                    }
+                }
+
+                /* Subscript syntax: arr[index] → objectAtIndex:
+                 *                    dict[key] → objectForKey:
+                 *                    arr[index] = obj → replaceObjectAtIndex:withObject:
+                 *                    dict[key] = obj → setObject:forKey: */
+                if (parser_current(p).type == TOK_OPEN_BRACKET && var->is_id && var->value != 0) {
+                    const char *marker = (const char *)var->value;
+                    unsigned int cid = coll_id_from_marker(marker, "NSArr:");
+                    unsigned int cid2 = coll_id_from_marker(marker, "NSMutArr:");
+                    unsigned int cid3 = coll_id_from_marker(marker, "NSDict:");
+                    unsigned int cid4 = coll_id_from_marker(marker, "NSMutDict:");
+
+                    if (cid > 0 || cid2 > 0 || cid3 > 0 || cid4 > 0) {
+                        unsigned int actual_cid = cid > 0 ? cid : cid2 > 0 ? cid2 : cid3 > 0 ? cid3 : cid4;
+                        int is_array = (cid > 0 || cid2 > 0);
+
+                        parser_advance(p); /* consume [ */
+
+                        {
+                            Value index = parse_expression(p);
+                            if (p->error) return index;
+
+                            if (parser_current(p).type != TOK_CLOSE_BRACKET) {
+                                parser_error(p, "Expected ']' after subscript index");
+                                return value_void();
+                            }
+                            parser_advance(p); /* consume ] */
+
+                            /* Check for assignment: arr[index] = value */
+                            if (parser_current(p).type == TOK_ASSIGN) {
+                                parser_advance(p);
+                                {
+                                    Value val = parse_expression_safe(p);
+                                    if (p->error) return val;
+
+                                    if (is_array) {
+                                        /* replaceObjectAtIndex:withObject: */
+                                        int idx = coll_get_nth(actual_cid, (unsigned int)index.int_val);
+                                        if (idx >= 0) {
+                                            g_coll_entries[(unsigned int)idx].key = val;
+                                        }
+                                    } else {
+                                        /* setObject:forKey: */
+                                        int idx = coll_find_by_key(actual_cid, &index);
+                                        if (idx >= 0) {
+                                            g_coll_entries[(unsigned int)idx].value = val;
+                                        } else {
+                                            coll_add(actual_cid, index, val);
+                                        }
+                                    }
+                                    return value_from_id(var->value);
+                                }
+                            }
+
+                            /* Read: objectAtIndex: or objectForKey: */
+                            if (is_array) {
+                                int idx = coll_get_nth(actual_cid, (unsigned int)index.int_val);
+                                if (idx >= 0) return g_coll_entries[(unsigned int)idx].key;
+                                return value_from_id((id)"(nil)");
+                            } else {
+                                int idx = coll_find_by_key(actual_cid, &index);
+                                if (idx >= 0) return g_coll_entries[(unsigned int)idx].value;
+                                return value_from_id((id)"(nil)");
+                            }
+                        }
                     }
                 }
 
