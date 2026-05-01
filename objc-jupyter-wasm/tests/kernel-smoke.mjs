@@ -1532,5 +1532,78 @@ console.log('  Tab completion: @-keywords, class names, selectors, variables —
 
 console.log('  Traceback: line/column in errors, source line, caret — PASS');
 
+// ── NSMutableArray gap fill + C subscripts ────────────────────
+
+// replaceObjectAtIndex:withObject:
+{
+  execute('NSMutableArray *a = [NSMutableArray array]; [a addObject:@"zero"]; [a addObject:@"one"]; [a addObject:@"two"];', 'replacearr-setup');
+  const r = execute('[a replaceObjectAtIndex:1 withObject:@"ONE"]; NSLog(@"%d %@", [a count], [a objectAtIndex:1]);', 'replacearr-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /3/);  // count still 3
+  assert.match(hostStreamText(), /ONE/);
+}
+
+// insertObject:atIndex:
+{
+  execute('NSMutableArray *b = [NSMutableArray array]; [b addObject:@"a"]; [b addObject:@"c"];', 'insertarr-setup');
+  const r = execute('[b insertObject:@"b" atIndex:1]; NSLog(@"%d %@ %@ %@", [b count], [b objectAtIndex:0], [b objectAtIndex:1], [b objectAtIndex:2]);', 'insertarr-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /3/);  // count is 3
+  assert.match(hostStreamText(), /a b c/);
+}
+
+// removeObjectAtIndex:
+{
+  execute('NSMutableArray *c = [NSMutableArray array]; [c addObject:@"x"]; [c addObject:@"y"]; [c addObject:@"z"];', 'remarr-setup');
+  const r = execute('[c removeObjectAtIndex:1]; NSLog(@"%d %@", [c count], [c objectAtIndex:1]);', 'remarr-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /2/);  // count is 2
+  assert.match(hostStreamText(), /z/);  // index 1 is now "z"
+}
+
+// indexOfObject:
+{
+  execute('NSMutableArray *d = [NSMutableArray array]; [d addObject:@"alpha"]; [d addObject:@"beta"]; [d addObject:@"gamma"];', 'idxarr-setup');
+  const r = execute('int idx = [d indexOfObject:@"beta"]; NSLog(@"index=%d", idx);', 'idxarr-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /index=1/);
+}
+
+// C subscript read: arr[0]
+{
+  execute('NSMutableArray *e = [NSMutableArray array]; [e addObject:@"first"]; [e addObject:@"second"];', 'sub-read-setup');
+  const r = execute('NSLog(@"sub0=%@ sub1=%@", e[0], e[1]);', 'sub-read-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /sub0=first/);
+  assert.match(hostStreamText(), /sub1=second/);
+}
+
+// C subscript write: arr[0] = obj
+{
+  execute('NSMutableArray *f = [NSMutableArray array]; [f addObject:@"old"];', 'sub-write-setup');
+  const r = execute('f[0] = @"new"; NSLog(@"val=%@", f[0]);', 'sub-write-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /val=new/);
+}
+
+// Dict subscript read: dict[@"key"]
+{
+  execute('NSMutableDictionary *g = [NSMutableDictionary dictionary]; [g setObject:@"value1" forKey:@"k1"]; [g setObject:@"value2" forKey:@"k2"];', 'dictsub-read-setup');
+  const r = execute('NSLog(@"k1=%@ k2=%@", g[@"k1"], g[@"k2"]);', 'dictsub-read-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /k1=value1/);
+  assert.match(hostStreamText(), /k2=value2/);
+}
+
+// Dict subscript write: dict[@"key"] = obj
+{
+  execute('NSMutableDictionary *h = [NSMutableDictionary dictionary];', 'dictsub-write-setup');
+  const r = execute('h[@"k"] = @"v"; NSLog(@"k=%@", h[@"k"]);', 'dictsub-write-test');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /k=v/);
+}
+
+console.log('  NSMutableArray: replace, insert, removeAt, indexOf + C subscripts — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
