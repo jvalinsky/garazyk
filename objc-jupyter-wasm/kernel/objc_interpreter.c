@@ -90,12 +90,10 @@ static int g_error_code = OBJC_INTERP_OK;
 static unsigned int g_error_line = 0;
 static unsigned int g_error_column = 0;
 
-static void set_error_from_parser(Parser *p) {
-    g_error_code = p->error;
-    cstr_copy(g_error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
-    g_error_line = p->lex.line;
-    g_error_column = p->lex.column;
-}
+/* Forward declaration — Parser struct defined below */
+struct Parser;
+static void set_error_from_parser(struct Parser *p);
+
 static char g_result_buffer[512];
 
 static int interp_should_interrupt(void) {
@@ -562,11 +560,18 @@ static Token lexer_next_token(Lexer *lex) {
 
 /* ── Parser ─────────────────────────────────────────────────────── */
 
-typedef struct {
+typedef struct Parser {
     Lexer lex;
     int error;
     char error_msg[OBJC_INTERP_ERROR_SIZE];
 } Parser;
+
+static void set_error_from_parser(Parser *p) {
+    g_error_code = p->error;
+    cstr_copy(g_error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
+    g_error_line = p->lex.line;
+    g_error_column = p->lex.column;
+}
 
 static void parser_init(Parser *p, const char *source, unsigned int length) {
     lexer_init(&p->lex, source, length);

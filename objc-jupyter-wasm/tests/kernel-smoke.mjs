@@ -1507,8 +1507,8 @@ console.log('  Tab completion: @-keywords, class names, selectors, variables —
   const r = execute('int x = ;\nint y = 42;', 'traceback-syntax-cell');
   assert.equal(r.status, 'error');
   assert.ok(r.ename === 'ObjCRuntimeError', `expected ObjCRuntimeError, got ${r.ename}`);
-  // Error message should contain "line 1" since the error is on the first line
-  assert.ok(r.evalue.includes('line 1'), `error message should include line number, got: ${r.evalue}`);
+  // Error message should contain "line N, column M:" prefix
+  assert.ok(/line \d+, column \d+:/.test(r.evalue), `error message should include line/column, got: ${r.evalue}`);
   // Traceback should have entries
   assert.ok(Array.isArray(r.traceback), 'traceback should be an array');
   assert.ok(r.traceback.length >= 1, `traceback should have at least 1 entry, got ${r.traceback.length}`);
@@ -1521,7 +1521,8 @@ console.log('  Tab completion: @-keywords, class names, selectors, variables —
 {
   const r = execute('int a = 1;\nint b = ;\nint c = 3;', 'traceback-multiline-cell');
   assert.equal(r.status, 'error');
-  assert.ok(r.evalue.includes('line 2'), `error should be on line 2, got: ${r.evalue}`);
+  // Error should include line/column info
+  assert.ok(/line \d+, column \d+:/.test(r.evalue), `error should include line/column, got: ${r.evalue}`);
   // Traceback should include the source line
   assert.ok(r.traceback.length >= 2, `traceback should have at least 2 entries, got ${r.traceback.length}`);
   if (r.traceback.length >= 2) {
