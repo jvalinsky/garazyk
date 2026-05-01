@@ -113,7 +113,10 @@ typedef struct {
     int is_class;   /* 1 if this holds a Class */
     int is_sel;     /* 1 if this holds a SEL */
     int is_id;      /* 1 if this holds an id */
+    int is_block_captured; /* 1 if __block variable — capture by reference */
 } InterpVar;
+
+#define OBJC_INTERP_MAX_BLOCKS_CAPTURED 32
 
 static InterpVar g_vars[OBJC_INTERP_MAX_VARS];
 static unsigned int g_var_count = 0;
@@ -1038,6 +1041,8 @@ static id coll_make_marker(const char *prefix, unsigned int coll_id) {
 typedef struct {
     char name[64];   /* captured variable name */
     Value value;     /* captured value (by-value snapshot) */
+    int is_by_ref;   /* 1 if __block — capture by reference */
+    unsigned int var_index; /* index into g_vars[] for by-reference access */
 } BlockCapture;
 
 typedef struct {
@@ -1884,6 +1889,104 @@ static Value parse_message_send(Parser *p) {
             return value_from_int(cstr_eq(a, b) ? 1 : 0);
         }
 
+        /* NSString: [str substringFromIndex:n] → extract from index to end */
+        if (cstr_eq(sel_name, "substringFromIndex:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            int from = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
+            int slen = (int)cstr_len(s);
+            if (from < 0) from = 0;
+            if (from > slen) from = slen;
+            {
+                unsigned int needed = (unsigned int)(slen - from) + 1;
+                char *result = string_pool_alloc(needed);
+                if (result == 0) return value_from_id(receiver);
+                cstr_copy(result, s + from, needed);
+                return value_from_id((id)result);
+            }
+        }
+
+        /* NSString: [str substringToIndex:n] → extract from start to index */
+        if (cstr_eq(sel_name, "substringToIndex:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            int to = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
+            int slen = (int)cstr_len(s);
+            if (to < 0) to = 0;
+            if (to > slen) to = slen;
+            {
+                unsigned int needed = (unsigned int)to + 1;
+                char *result = string_pool_alloc(needed);
+                if (result == 0) return value_from_id(receiver);
+                cstr_copy(result, s, needed);
+                result[to] = '\0';
+                return value_from_id((id)result);
+            }
+        }
+
+        /* NSString: [str characterAtIndex:n] → return character as int */
+        if (cstr_eq(sel_name, "characterAtIndex:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            int idx = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
+            int slen = (int)cstr_len(s);
+            if (idx < 0 || idx >= slen) return value_from_int(0);
+            return value_from_int((int)(unsigned char)s[idx]);
+        }
+
+        /* NSString: [str hasPrefix:prefix] → check if string starts with prefix */
+        if (cstr_eq(sel_name, "hasPrefix:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            const char *prefix = (const char *)keyword_args[0].obj_val;
+            int slen = (int)cstr_len(s);
+            int plen = (int)cstr_len(prefix);
+            if (plen > slen || plen == 0) return value_from_int(plen == 0 ? 1 : 0);
+            return value_from_int(cstr_starts(s, prefix) ? 1 : 0);
+        }
+
+        /* NSString: [str hasSuffix:suffix] → check if string ends with suffix */
+        if (cstr_eq(sel_name, "hasSuffix:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            const char *suffix = (const char *)keyword_args[0].obj_val;
+            int slen = (int)cstr_len(s);
+            int sfxlen = (int)cstr_len(suffix);
+            if (sfxlen > slen || sfxlen == 0) return value_from_int(sfxlen == 0 ? 1 : 0);
+            return value_from_int(cstr_eq(s + slen - sfxlen, suffix) ? 1 : 0);
+        }
+
+        /* NSString: [str uppercaseString] → ASCII uppercase */
+        if (cstr_eq(sel_name, "uppercaseString") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            int slen = (int)cstr_len(s);
+            char *result = string_pool_alloc((unsigned int)slen + 1);
+            if (result == 0) return value_from_id(receiver);
+            {
+                int i;
+                for (i = 0; i < slen; i++) {
+                    char c = s[i];
+                    if (c >= 'a' && c <= 'z') c = (char)(c - 32);
+                    result[i] = c;
+                }
+                result[slen] = '\0';
+            }
+            return value_from_id((id)result);
+        }
+
+        /* NSString: [str lowercaseString] → ASCII lowercase */
+        if (cstr_eq(sel_name, "lowercaseString") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            int slen = (int)cstr_len(s);
+            char *result = string_pool_alloc((unsigned int)slen + 1);
+            if (result == 0) return value_from_id(receiver);
+            {
+                int i;
+                for (i = 0; i < slen; i++) {
+                    char c = s[i];
+                    if (c >= 'A' && c <= 'Z') c = (char)(c + 32);
+                    result[i] = c;
+                }
+                result[slen] = '\0';
+            }
+            return value_from_id((id)result);
+        }
+
         /* NSNumber: [NSNumber numberWithInt:n] → wrap int as id */
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithInt:") && arg_count >= 1) {
             /* Store the int value in a string pool buffer.
@@ -2294,16 +2397,35 @@ static Value parse_message_send(Parser *p) {
                                 for (ci = 0; ci < blk->capture_count; ci++) {
                                     InterpVar *cap_var = interp_get_or_create_var(blk->captures[ci].name);
                                     if (cap_var) {
-                                        cap_var->is_id = blk->captures[ci].value.is_id;
-                                        cap_var->value = blk->captures[ci].value.obj_val;
-                                        cap_var->is_int = blk->captures[ci].value.is_int;
-                                        cap_var->int_value = blk->captures[ci].value.int_val;
-                                        cap_var->is_float = blk->captures[ci].value.is_float;
-                                        cap_var->float_value = blk->captures[ci].value.float_val;
-                                        cap_var->is_class = blk->captures[ci].value.is_class;
-                                        cap_var->cls = blk->captures[ci].value.cls_val;
-                                        cap_var->is_sel = blk->captures[ci].value.is_sel;
-                                        cap_var->sel = blk->captures[ci].value.sel_val;
+                                        if (blk->captures[ci].is_by_ref) {
+                                            /* __block: read from original variable slot */
+                                            unsigned int vi = blk->captures[ci].var_index;
+                                            if (vi < g_var_count) {
+                                                cap_var->is_id = g_vars[vi].is_id;
+                                                cap_var->value = g_vars[vi].value;
+                                                cap_var->is_int = g_vars[vi].is_int;
+                                                cap_var->int_value = g_vars[vi].int_value;
+                                                cap_var->is_float = g_vars[vi].is_float;
+                                                cap_var->float_value = g_vars[vi].float_value;
+                                                cap_var->is_class = g_vars[vi].is_class;
+                                                cap_var->cls = g_vars[vi].cls;
+                                                cap_var->is_sel = g_vars[vi].is_sel;
+                                                cap_var->sel = g_vars[vi].sel;
+                                                cap_var->is_block_captured = g_vars[vi].is_block_captured;
+                                            }
+                                        } else {
+                                            /* by-value: restore snapshot */
+                                            cap_var->is_id = blk->captures[ci].value.is_id;
+                                            cap_var->value = blk->captures[ci].value.obj_val;
+                                            cap_var->is_int = blk->captures[ci].value.is_int;
+                                            cap_var->int_value = blk->captures[ci].value.int_val;
+                                            cap_var->is_float = blk->captures[ci].value.is_float;
+                                            cap_var->float_value = blk->captures[ci].value.float_val;
+                                            cap_var->is_class = blk->captures[ci].value.is_class;
+                                            cap_var->cls = blk->captures[ci].value.cls_val;
+                                            cap_var->is_sel = blk->captures[ci].value.is_sel;
+                                            cap_var->sel = blk->captures[ci].value.sel_val;
+                                        }
                                     }
                                 }
                             }
@@ -2352,6 +2474,29 @@ static Value parse_message_send(Parser *p) {
                                 InterpVar *stop_var = interp_find_var("stop");
                                 if (stop_var && stop_var->is_int && stop_var->int_value != 0) {
                                     break;
+                                }
+                            }
+
+                            /* Write back __block variables to original slots */
+                            {
+                                unsigned int ci;
+                                for (ci = 0; ci < blk->capture_count; ci++) {
+                                    if (blk->captures[ci].is_by_ref) {
+                                        unsigned int vi = blk->captures[ci].var_index;
+                                        InterpVar *cap_var = interp_find_var(blk->captures[ci].name);
+                                        if (cap_var && vi < g_var_count) {
+                                            g_vars[vi].is_id = cap_var->is_id;
+                                            g_vars[vi].value = cap_var->value;
+                                            g_vars[vi].is_int = cap_var->is_int;
+                                            g_vars[vi].int_value = cap_var->int_value;
+                                            g_vars[vi].is_float = cap_var->is_float;
+                                            g_vars[vi].float_value = cap_var->float_value;
+                                            g_vars[vi].is_class = cap_var->is_class;
+                                            g_vars[vi].cls = cap_var->cls;
+                                            g_vars[vi].is_sel = cap_var->is_sel;
+                                            g_vars[vi].sel = cap_var->sel;
+                                        }
+                                    }
                                 }
                             }
 
@@ -3876,16 +4021,35 @@ static Value parse_primary(Parser *p) {
                             for (ai = 0; ai < blk->capture_count; ai++) {
                                 InterpVar *cap_var = interp_get_or_create_var(blk->captures[ai].name);
                                 if (cap_var) {
-                                    cap_var->is_id = blk->captures[ai].value.is_id;
-                                    cap_var->value = blk->captures[ai].value.obj_val;
-                                    cap_var->is_int = blk->captures[ai].value.is_int;
-                                    cap_var->int_value = blk->captures[ai].value.int_val;
-                                    cap_var->is_float = blk->captures[ai].value.is_float;
-                                    cap_var->float_value = blk->captures[ai].value.float_val;
-                                    cap_var->is_class = blk->captures[ai].value.is_class;
-                                    cap_var->cls = blk->captures[ai].value.cls_val;
-                                    cap_var->is_sel = blk->captures[ai].value.is_sel;
-                                    cap_var->sel = blk->captures[ai].value.sel_val;
+                                    if (blk->captures[ai].is_by_ref) {
+                                        /* __block: read from original variable slot */
+                                        unsigned int vi = blk->captures[ai].var_index;
+                                        if (vi < g_var_count) {
+                                            cap_var->is_id = g_vars[vi].is_id;
+                                            cap_var->value = g_vars[vi].value;
+                                            cap_var->is_int = g_vars[vi].is_int;
+                                            cap_var->int_value = g_vars[vi].int_value;
+                                            cap_var->is_float = g_vars[vi].is_float;
+                                            cap_var->float_value = g_vars[vi].float_value;
+                                            cap_var->is_class = g_vars[vi].is_class;
+                                            cap_var->cls = g_vars[vi].cls;
+                                            cap_var->is_sel = g_vars[vi].is_sel;
+                                            cap_var->sel = g_vars[vi].sel;
+                                            cap_var->is_block_captured = g_vars[vi].is_block_captured;
+                                        }
+                                    } else {
+                                        /* by-value: restore snapshot */
+                                        cap_var->is_id = blk->captures[ai].value.is_id;
+                                        cap_var->value = blk->captures[ai].value.obj_val;
+                                        cap_var->is_int = blk->captures[ai].value.is_int;
+                                        cap_var->int_value = blk->captures[ai].value.int_val;
+                                        cap_var->is_float = blk->captures[ai].value.is_float;
+                                        cap_var->float_value = blk->captures[ai].value.float_val;
+                                        cap_var->is_class = blk->captures[ai].value.is_class;
+                                        cap_var->cls = blk->captures[ai].value.cls_val;
+                                        cap_var->is_sel = blk->captures[ai].value.is_sel;
+                                        cap_var->sel = blk->captures[ai].value.sel_val;
+                                    }
                                 }
                             }
 
@@ -3909,6 +4073,30 @@ static Value parse_primary(Parser *p) {
                                 Value result;
                                 g_return_pending = 0;
                                 result = eval_source_range(0, blk->source_len, blk->source);
+
+                                /* Write back __block variables to original slots */
+                                {
+                                    unsigned int ci;
+                                    for (ci = 0; ci < blk->capture_count; ci++) {
+                                        if (blk->captures[ci].is_by_ref) {
+                                            unsigned int vi = blk->captures[ci].var_index;
+                                            InterpVar *cap_var = interp_find_var(blk->captures[ci].name);
+                                            if (cap_var && vi < g_var_count) {
+                                                g_vars[vi].is_id = cap_var->is_id;
+                                                g_vars[vi].value = cap_var->value;
+                                                g_vars[vi].is_int = cap_var->is_int;
+                                                g_vars[vi].int_value = cap_var->int_value;
+                                                g_vars[vi].is_float = cap_var->is_float;
+                                                g_vars[vi].float_value = cap_var->float_value;
+                                                g_vars[vi].is_class = cap_var->is_class;
+                                                g_vars[vi].cls = cap_var->cls;
+                                                g_vars[vi].is_sel = cap_var->is_sel;
+                                                g_vars[vi].sel = cap_var->sel;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 g_var_count = saved_var_count;
                                 g_return_pending = 0;
                                 /* Restore the block variable's value, which may
@@ -4121,16 +4309,36 @@ static Value parse_primary(Parser *p) {
                 if (is_arg) continue;
                 cstr_copy(blk->captures[blk->capture_count].name,
                           g_vars[vi].name, 64);
-                blk->captures[blk->capture_count].value.is_id = g_vars[vi].is_id;
-                blk->captures[blk->capture_count].value.obj_val = g_vars[vi].value;
-                blk->captures[blk->capture_count].value.is_int = g_vars[vi].is_int;
-                blk->captures[blk->capture_count].value.int_val = g_vars[vi].int_value;
-                blk->captures[blk->capture_count].value.is_float = g_vars[vi].is_float;
-                blk->captures[blk->capture_count].value.float_val = g_vars[vi].float_value;
-                blk->captures[blk->capture_count].value.is_class = g_vars[vi].is_class;
-                blk->captures[blk->capture_count].value.cls_val = g_vars[vi].cls;
-                blk->captures[blk->capture_count].value.is_sel = g_vars[vi].is_sel;
-                blk->captures[blk->capture_count].value.sel_val = g_vars[vi].sel;
+                if (g_vars[vi].is_block_captured) {
+                    /* __block variable: capture by reference (store index) */
+                    blk->captures[blk->capture_count].is_by_ref = 1;
+                    blk->captures[blk->capture_count].var_index = vi;
+                    /* Still snapshot value for fallback / GC marking */
+                    blk->captures[blk->capture_count].value.is_id = g_vars[vi].is_id;
+                    blk->captures[blk->capture_count].value.obj_val = g_vars[vi].value;
+                    blk->captures[blk->capture_count].value.is_int = g_vars[vi].is_int;
+                    blk->captures[blk->capture_count].value.int_val = g_vars[vi].int_value;
+                    blk->captures[blk->capture_count].value.is_float = g_vars[vi].is_float;
+                    blk->captures[blk->capture_count].value.float_val = g_vars[vi].float_value;
+                    blk->captures[blk->capture_count].value.is_class = g_vars[vi].is_class;
+                    blk->captures[blk->capture_count].value.cls_val = g_vars[vi].cls;
+                    blk->captures[blk->capture_count].value.is_sel = g_vars[vi].is_sel;
+                    blk->captures[blk->capture_count].value.sel_val = g_vars[vi].sel;
+                } else {
+                    /* Normal variable: capture by value (snapshot) */
+                    blk->captures[blk->capture_count].is_by_ref = 0;
+                    blk->captures[blk->capture_count].var_index = 0;
+                    blk->captures[blk->capture_count].value.is_id = g_vars[vi].is_id;
+                    blk->captures[blk->capture_count].value.obj_val = g_vars[vi].value;
+                    blk->captures[blk->capture_count].value.is_int = g_vars[vi].is_int;
+                    blk->captures[blk->capture_count].value.int_val = g_vars[vi].int_value;
+                    blk->captures[blk->capture_count].value.is_float = g_vars[vi].is_float;
+                    blk->captures[blk->capture_count].value.float_val = g_vars[vi].float_value;
+                    blk->captures[blk->capture_count].value.is_class = g_vars[vi].is_class;
+                    blk->captures[blk->capture_count].value.cls_val = g_vars[vi].cls;
+                    blk->captures[blk->capture_count].value.is_sel = g_vars[vi].is_sel;
+                    blk->captures[blk->capture_count].value.sel_val = g_vars[vi].sel;
+                }
                 blk->capture_count++;
             }
         }
@@ -4376,7 +4584,14 @@ static Value parse_type_and_var_decl(Parser *p) {
     /* Parse type: int, void, id, Class, SEL, Type* */
     char type_name[64];
     int is_pointer = 0;
+    int is_block_var = 0;  /* 1 if __block qualifier */
     (void)is_pointer; /* may be used later for pointer type tracking */
+
+    /* Check for __block qualifier */
+    if (parser_current(p).type == TOK_IDENTIFIER && cstr_eq(parser_current(p).text, "__block")) {
+        is_block_var = 1;
+        parser_advance(p);
+    }
 
     type_name[0] = '\0';
 
@@ -4482,6 +4697,7 @@ static Value parse_type_and_var_decl(Parser *p) {
             parser_error(p, "variable table full (max 1024)");
             return value_void();
         }
+        var->is_block_captured = is_block_var;
 
         /* Parse initializer */
         if (parser_current(p).type == TOK_ASSIGN) {
