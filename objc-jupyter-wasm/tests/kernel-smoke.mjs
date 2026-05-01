@@ -1373,5 +1373,74 @@ assert.match(hostStreamText(), /upper=HELLO lower=hello/);
 
 console.log('  NSString: substringFromIndex, substringToIndex, characterAtIndex, hasPrefix, hasSuffix, upper/lower — PASS');
 
+// ── Phase 15: Additional Foundation method tests ──────────────────
+
+// stringByReplacingOccurrencesOfString:withString:
+const replaceTest = execute('NSString *s = @"hello world hello"; NSString *r = [s stringByReplacingOccurrencesOfString:@"hello" withString:@"hi"]; NSLog(@"%s", [r UTF8String]);', 'replace-cell');
+assert.equal(replaceTest.status, 'ok');
+assert.match(hostStreamText(), /hi world hi/);
+
+// componentsSeparatedByString:
+const splitTest = execute('NSString *s = @"a,b,c"; NSArray *parts = [s componentsSeparatedByString:@","]; NSLog(@"count=%d", [parts count]);', 'split-cell');
+assert.equal(splitTest.status, 'ok');
+assert.match(hostStreamText(), /count=3/);
+
+// stringByTrimmingWhitespace
+const trimTest = execute('NSString *s = @"  hello  "; NSString *t = [s stringByTrimmingWhitespace]; NSLog(@"[%s]", [t UTF8String]);', 'trim-cell');
+assert.equal(trimTest.status, 'ok');
+assert.match(hostStreamText(), /\[hello\]/);
+
+// NSNumber numberWithBool:
+const boolNumTest = execute('NSNumber *yesNum = [NSNumber numberWithBool:YES]; NSNumber *noNum = [NSNumber numberWithBool:NO]; NSLog(@"yes=%d no=%d", [yesNum boolValue], [noNum boolValue]);', 'boolnum-cell');
+assert.equal(boolNumTest.status, 'ok');
+assert.match(hostStreamText(), /yes=1 no=0/);
+
+// NSNumber stringValue
+const strValTest = execute('NSNumber *n = [NSNumber numberWithInt:42]; NSString *s = [n stringValue]; NSLog(@"s=%s", [s UTF8String]);', 'strval-cell');
+assert.equal(strValTest.status, 'ok');
+assert.match(hostStreamText(), /s=42/);
+
+// NSNumber longValue
+const longValTest = execute('NSNumber *n = [NSNumber numberWithInt:123]; NSLog(@"long=%ld", (long)[n longValue]);', 'longval-cell');
+assert.equal(longValTest.status, 'ok');
+assert.match(hostStreamText(), /long=123/);
+
+// NSDictionary dictionaryWithObject:forKey:
+const dictObjTest = execute('NSDictionary *d = [NSDictionary dictionaryWithObject:@"value" forKey:@"key"]; NSLog(@"val=%s", [[d objectForKey:@"key"] UTF8String]);', 'dictobj-cell');
+assert.equal(dictObjTest.status, 'ok');
+assert.match(hostStreamText(), /val=value/);
+
+// NSDictionary isEqualToDictionary:
+const dictEqTest = execute([
+  'NSDictionary *d1 = [NSDictionary dictionaryWithObject:@"a" forKey:@"k"];',
+  'NSDictionary *d2 = [NSDictionary dictionaryWithObject:@"a" forKey:@"k"];',
+  'NSDictionary *d3 = [NSDictionary dictionaryWithObject:@"b" forKey:@"k"];',
+  'NSLog(@"eq=%d neq=%d", [d1 isEqualToDictionary:d2], [d1 isEqualToDictionary:d3]);'
+].join('\n'), 'dicteq-cell');
+assert.equal(dictEqTest.status, 'ok');
+assert.match(hostStreamText(), /eq=1 neq=0/);
+
+// NSData: [NSData data] → empty
+const emptyDataTest = execute('NSData *d = [NSData data]; NSLog(@"len=%d", [d length]);', 'empty-data-cell');
+assert.equal(emptyDataTest.status, 'ok');
+assert.match(hostStreamText(), /len=0/);
+
+// NSData: dataWithBytes:length:
+const dataTest = execute('NSData *d = [NSData dataWithBytes:@"ABC" length:3]; NSLog(@"len=%d", [d length]);', 'data-cell');
+assert.equal(dataTest.status, 'ok');
+assert.match(hostStreamText(), /len=3/);
+
+// NSData: bytes
+const dataBytesTest = execute('NSData *d = [NSData dataWithBytes:@"Hi" length:2]; const char *b = [d bytes]; NSLog(@"byte0=%d byte1=%d", b[0], b[1]);', 'bytes-cell');
+assert.equal(dataBytesTest.status, 'ok');
+assert.match(hostStreamText(), /byte0=72 byte1=105/);  // 'H'=72, 'i'=105
+
+// NSData: description
+const dataDescTest = execute('NSData *d = [NSData dataWithBytes:@"AB" length:2]; NSLog(@"%@", [d description]);', 'datadesc-cell');
+assert.equal(dataDescTest.status, 'ok');
+assert.match(hostStreamText(), /4142/);  // 'A'=0x41, 'B'=0x42
+
+console.log('  Foundation: stringByReplacing, componentsSeparated, trim, numberWithBool, stringValue, longValue, dictionaryWithObject, isEqualToDictionary, NSData — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
