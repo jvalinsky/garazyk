@@ -159,7 +159,7 @@
             test -f site/js/wasm-loader.js
             test -f site/kernel/kernel.wasm
             ls site/kernel/kernel.*.wasm >/dev/null
-            grep -Eq 'kernel\\.[0-9a-f]{64}\\.wasm' site/runtime-manifest.json
+            grep -Eq 'kernel\.[0-9a-f]{64}\.wasm' site/runtime-manifest.json
             test -f site/files/demo/hello.ipynb
             test -f site/kernelspecs/objective-c/kernel.json
             mkdir -p $out
