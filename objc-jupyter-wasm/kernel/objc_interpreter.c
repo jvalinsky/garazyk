@@ -1569,6 +1569,10 @@ static void eval_nslog(Parser *p) {
                             }
                             if (name == 0) name = "Class";
                             nslog_append(name, cstr_len(name));
+                        } else if (v.is_sel && v.sel_val != 0) {
+                            const char *sel_name = sel_getName(v.sel_val);
+                            if (sel_name) nslog_append(sel_name, cstr_len(sel_name));
+                            else nslog_append("(SEL)null", 9);
                         } else if (v.is_int) {
                             nslog_append_int(v.int_val);
                         } else {
