@@ -1500,5 +1500,36 @@ function doComplete(code, cursorPos) {
 
 console.log('  Tab completion: @-keywords, class names, selectors, variables — PASS');
 
+// ── Traceback tests ────────────────────────────────────────────
+
+// Syntax error should include line/column in error message
+{
+  const r = execute('int x = ;\nint y = 42;', 'traceback-syntax-cell');
+  assert.equal(r.status, 'error');
+  assert.ok(r.ename === 'ObjCRuntimeError', `expected ObjCRuntimeError, got ${r.ename}`);
+  // Error message should contain "line 1" since the error is on the first line
+  assert.ok(r.evalue.includes('line 1'), `error message should include line number, got: ${r.evalue}`);
+  // Traceback should have entries
+  assert.ok(Array.isArray(r.traceback), 'traceback should be an array');
+  assert.ok(r.traceback.length >= 1, `traceback should have at least 1 entry, got ${r.traceback.length}`);
+  // First traceback entry should mention the cell and line
+  assert.ok(r.traceback[0].includes('Cell In[') || r.traceback[0].includes('line'),
+    `first traceback entry should mention cell/line, got: ${r.traceback[0]}`);
+}
+
+// Multi-line error: error on second line
+{
+  const r = execute('int a = 1;\nint b = ;\nint c = 3;', 'traceback-multiline-cell');
+  assert.equal(r.status, 'error');
+  assert.ok(r.evalue.includes('line 2'), `error should be on line 2, got: ${r.evalue}`);
+  // Traceback should include the source line
+  assert.ok(r.traceback.length >= 2, `traceback should have at least 2 entries, got ${r.traceback.length}`);
+  if (r.traceback.length >= 2) {
+    assert.ok(r.traceback[1].includes('int b'), `second traceback entry should include the source line, got: ${r.traceback[1]}`);
+  }
+}
+
+console.log('  Traceback: line/column in errors, source line, caret — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
