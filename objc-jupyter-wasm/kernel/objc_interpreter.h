@@ -107,4 +107,23 @@ void objc_interp_reset(void);
  */
 void objc_interp_gc_strings(void);
 
+/**
+ * Get the number of variables in the interpreter's variable table.
+ * Used by tab completion to suggest variable names.
+ */
+unsigned int objc_interp_get_var_count(void);
+
+/**
+ * Get the name of the variable at the given index.
+ * Returns NULL if index is out of bounds.
+ * Used by tab completion to suggest variable names.
+ */
+const char *objc_interp_get_var_name(unsigned int index);
+
+/**
+ * Check if the variable at the given index is a class variable.
+ * Returns 1 if it's a class, 0 otherwise.
+ */
+int objc_interp_get_var_is_class(unsigned int index);
+
 #endif /* OBJC_INTERPRETER_H */
