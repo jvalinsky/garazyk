@@ -919,6 +919,20 @@ static Value value_void(void) {
     return v;
 }
 
+/* Set all type flags in a variable from a Value, clearing incompatible flags */
+static void interp_set_var_from_value(InterpVar *var, Value v) {
+    var->is_int = v.is_int;
+    var->int_value = v.int_val;
+    var->is_float = v.is_float;
+    var->float_value = v.float_val;
+    var->is_id = v.is_id;
+    var->value = v.obj_val;
+    var->is_class = v.is_class;
+    var->cls = v.cls_val;
+    var->is_sel = v.is_sel;
+    var->sel = v.sel_val;
+}
+
 /* ── Method dispatch state ─────────────────────────────────────── */
 
 /* Return value flag — set by return statement, checked by method dispatch */
@@ -4367,12 +4381,15 @@ static Value parse_primary(Parser *p) {
         long val = 0;
         unsigned int i = 0;
         while (tok.text[i] != '\0') {
-            val = val * 10 + (tok.text[i] - '0');
+            int digit = tok.text[i] - '0';
+            /* Check for overflow before multiplying */
+            if (val > 214748364L || (val == 214748364L && digit > 7)) {
+                val = 2147483647L;
+                break;
+            }
+            val = val * 10 + digit;
             i++;
         }
-        /* Clamp to int range to prevent overflow */
-        if (val > 2147483647L) val = 2147483647;
-        if (val < -2147483648L) val = -2147483648;
         parser_advance(p);
         return value_from_int((int)val);
     }
@@ -5841,15 +5858,7 @@ static Value parse_statement(Parser *p) {
                     parser_advance(p);
                     val = parse_expression(p);
                     if (p->error) return val;
-                    var->value = val.obj_val;
-                    var->cls = val.cls_val;
-                    var->sel = val.sel_val;
-                    var->is_int = val.is_int;
-                    var->int_value = val.int_val;
-                    var->is_float = val.is_float;
-                    var->float_value = val.float_val;
-                    var->is_class = val.is_class;
-                    var->is_sel = val.is_sel;
+                    interp_set_var_from_value(var, val);
                     if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
                     return val;
                 }
