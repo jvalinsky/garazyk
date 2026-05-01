@@ -1058,15 +1058,33 @@ static int instance_var_set(id object, const char *prop_name, Value val) {
     return -1;
 }
 
+/* Check if a property belongs to the receiver's class.
+ * For FDObj: markers, extracts the class name and compares against
+ * g_properties[pi].class_name. For non-FDObj: receivers (Foundation
+ * objects), returns 1 (always match) since Foundation classes don't
+ * have user-defined properties. */
+static int property_matches_class(id receiver, unsigned int pi) {
+    const char *s = (const char *)receiver;
+    if (receiver != 0 && cstr_starts(s, "FDObj:")) {
+        const char *recv_class = s + 6;
+        if (g_properties[pi].class_name[0] != '\0' &&
+            !cstr_eq(recv_class, g_properties[pi].class_name)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 /* Check if a variable name is a synthesized ivar name.
  * Returns the property index if found, or -1 if not.
  * This is used to redirect ivar access in method bodies to the side table. */
-static int find_synthesized_ivar(const char *var_name) {
+static int find_synthesized_ivar(const char *var_name, id receiver) {
     unsigned int pi;
     for (pi = 0; pi < g_property_count; pi++) {
         if (g_properties[pi].synthesized &&
             g_properties[pi].ivar_name[0] != '\0' &&
-            cstr_eq(var_name, g_properties[pi].ivar_name)) {
+            cstr_eq(var_name, g_properties[pi].ivar_name) &&
+            property_matches_class(receiver, pi)) {
             return (int)pi;
         }
     }
@@ -1076,7 +1094,7 @@ static int find_synthesized_ivar(const char *var_name) {
 /* Read a synthesized ivar value from the side table.
  * Returns the value, or value_void() if not found. */
 static Value synthesized_ivar_get(id self, const char *var_name) {
-    int pi = find_synthesized_ivar(var_name);
+    int pi = find_synthesized_ivar(var_name, self);
     if (pi >= 0) {
         Value *val = instance_var_get(self, g_properties[pi].name);
         if (val) return *val;
@@ -1086,7 +1104,7 @@ static Value synthesized_ivar_get(id self, const char *var_name) {
 
 /* Write a synthesized ivar value to the side table. */
 static int synthesized_ivar_set(id self, const char *var_name, Value val) {
-    int pi = find_synthesized_ivar(var_name);
+    int pi = find_synthesized_ivar(var_name, self);
     if (pi >= 0) {
         if (instance_var_set(self, g_properties[pi].name, val) != 0) {
             g_error_code = OBJC_INTERP_RESOURCE_ERROR;
@@ -1604,6 +1622,18 @@ static Value parse_message_send(Parser *p) {
 
         /* Built-in: [obj class] → return the object's class */
         if (cstr_eq(sel_name, "class") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            /* FDObj: markers — return class pointer from variable table */
+            if (cstr_starts(s, "FDObj:")) {
+                const char *recv_class_name = s + 6;
+                unsigned int vi;
+                for (vi = 0; vi < g_var_count; vi++) {
+                    if (g_vars[vi].is_class && cstr_eq(g_vars[vi].name, recv_class_name)) {
+                        return value_from_class(g_vars[vi].cls);
+                    }
+                }
+                return value_from_class((Class)0);
+            }
             Class cls = (Class)0;
             cls = object_getClass(receiver);
             return value_from_class(cls);
@@ -1624,14 +1654,20 @@ static Value parse_message_send(Parser *p) {
                 nslog_append(target_class_name, cstr_len(target_class_name));
                 nslog_append(">", 1);
             } else {
-                /* For real ObjC objects, try object_getClass */
-                Class cls = object_getClass(receiver);
-                if (cls) {
-                    const char *name = class_getName(cls);
-                    if (name) {
-                        nslog_append("<", 1);
-                        nslog_append(name, cstr_len(name));
-                        nslog_append(">", 1);
+                /* For real ObjC objects, try object_getClass.
+                 * Guard against string pool pointers. */
+                const char *ptr = (const char *)receiver;
+                if (ptr >= g_string_pool && ptr < g_string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
+                    nslog_append("<unknown>", 9);
+                } else {
+                    Class cls = object_getClass(receiver);
+                    if (cls) {
+                        const char *name = class_getName(cls);
+                        if (name) {
+                            nslog_append("<", 1);
+                            nslog_append(name, cstr_len(name));
+                            nslog_append(">", 1);
+                        }
                     }
                 }
             }
@@ -2148,10 +2184,14 @@ static Value parse_message_send(Parser *p) {
                         if (recv_cls != g_methods[mi].class_ptr) continue;
                     } else if (target.is_id && receiver != 0) {
                         /* Receiver might be a valid ObjC object — check class.
-                         * If object_getClass returns 0 (e.g., WASM runtime
-                         * doesn't track dynamically allocated classes), we
-                         * still try the method — the selector match is
-                         * usually sufficient for our interpreter. */
+                         * Guard against non-ObjC pointers (string pool, etc.)
+                         * by checking if the pointer is in the string pool range. */
+                        const char *ptr = (const char *)receiver;
+                        if (ptr >= g_string_pool && ptr < g_string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
+                            /* String pool pointer — not a valid ObjC object.
+                             * Skip this method (class mismatch). */
+                            continue;
+                        }
                         Class recv_cls = object_getClass(receiver);
                         if (recv_cls != 0 && g_methods[mi].class_ptr != recv_cls) continue;
                     } else {
@@ -2225,7 +2265,8 @@ static Value parse_message_send(Parser *p) {
                     unsigned int pi;
                     for (pi = 0; pi < g_property_count; pi++) {
                         if (g_properties[pi].synthesized &&
-                            g_properties[pi].ivar_name[0] != '\0') {
+                            g_properties[pi].ivar_name[0] != '\0' &&
+                            property_matches_class(receiver, pi)) {
                             InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
                             if (ivar_var) {
                                 Value *stored = instance_var_get(receiver, g_properties[pi].name);
@@ -2266,7 +2307,8 @@ static Value parse_message_send(Parser *p) {
                     unsigned int pi;
                     for (pi = 0; pi < g_property_count; pi++) {
                         if (g_properties[pi].synthesized &&
-                            g_properties[pi].ivar_name[0] != '\0') {
+                            g_properties[pi].ivar_name[0] != '\0' &&
+                            property_matches_class(receiver, pi)) {
                             InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
                             if (ivar_var) {
                                 Value ivar_val;
@@ -2316,7 +2358,8 @@ static Value parse_message_send(Parser *p) {
             unsigned int pi;
             for (pi = 0; pi < g_property_count; pi++) {
                 if (g_properties[pi].synthesized &&
-                    cstr_eq(sel_name, g_properties[pi].name)) {
+                    cstr_eq(sel_name, g_properties[pi].name) &&
+                    property_matches_class(receiver, pi)) {
                     /* It's a getter — look up in side table */
                     if (target.is_id && receiver != 0) {
                         Value *stored = instance_var_get(receiver, g_properties[pi].name);
@@ -2362,7 +2405,8 @@ static Value parse_message_send(Parser *p) {
                     /* Find matching property */
                     for (pi = 0; pi < g_property_count; pi++) {
                         if (g_properties[pi].synthesized &&
-                            cstr_eq(prop_from_setter, g_properties[pi].name)) {
+                            cstr_eq(prop_from_setter, g_properties[pi].name) &&
+                            property_matches_class(receiver, pi)) {
                             /* It's a setter — store in side table */
                             if (target.is_id && receiver != 0 && arg_count >= 1) {
                                 Value val;
@@ -2373,6 +2417,22 @@ static Value parse_message_send(Parser *p) {
                                 }
                                 if (instance_var_set(receiver, g_properties[pi].name, val) != 0) {
                                     parser_error(p, "instance variable table full (max 256)");
+                                }
+                                /* Also update the ivar variable if we're inside
+                                 * a method body, so the write-back doesn't
+                                 * overwrite with a stale value. */
+                                if (g_properties[pi].ivar_name[0] != '\0') {
+                                    InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                                    if (ivar_var) {
+                                        ivar_var->int_value = val.is_int ? val.int_val : 0;
+                                        ivar_var->is_int = val.is_int;
+                                        ivar_var->value = val.obj_val;
+                                        ivar_var->is_id = val.is_id;
+                                        ivar_var->cls = val.cls_val;
+                                        ivar_var->is_class = val.is_class;
+                                        ivar_var->sel = val.sel_val;
+                                        ivar_var->is_sel = val.is_sel;
+                                    }
                                 }
                             }
                             result = value_from_id(receiver);
@@ -2969,6 +3029,28 @@ static Value parse_implementation(Parser *p) {
         }
     }
 
+    /* Auto-synthesize: mark any unsynthesized properties for this class
+     * as synthesized, matching Objective-C's default behavior.
+     * Also auto-generate ivar name (_propertyName) if not set. */
+    {
+        unsigned int pi;
+        for (pi = 0; pi < g_property_count; pi++) {
+            if (cstr_eq(g_properties[pi].class_name, class_name) &&
+                !g_properties[pi].synthesized) {
+                g_properties[pi].synthesized = 1;
+                if (g_properties[pi].ivar_name[0] == '\0') {
+                    const char *pname = g_properties[pi].name;
+                    unsigned int ppos = 0;
+                    g_properties[pi].ivar_name[ppos++] = '_';
+                    while (*pname && ppos < 62) {
+                        g_properties[pi].ivar_name[ppos++] = *pname++;
+                    }
+                    g_properties[pi].ivar_name[ppos] = '\0';
+                }
+            }
+        }
+    }
+
     /* Expect @end */
     if (parser_current(p).type == TOK_AT_KEYWORD && cstr_eq(parser_current(p).text, "@end")) {
         parser_advance(p);
@@ -3195,7 +3277,8 @@ static Value parse_primary(Parser *p) {
                                         unsigned int pi;
                                         for (pi = 0; pi < g_property_count; pi++) {
                                             if (g_properties[pi].synthesized &&
-                                                g_properties[pi].ivar_name[0] != '\0') {
+                                                g_properties[pi].ivar_name[0] != '\0' &&
+                                                property_matches_class(receiver, pi)) {
                                                 InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
                                                 if (ivar_var) {
                                                     Value *stored = instance_var_get(receiver, g_properties[pi].name);
@@ -3230,7 +3313,8 @@ static Value parse_primary(Parser *p) {
                                         unsigned int pi;
                                         for (pi = 0; pi < g_property_count; pi++) {
                                             if (g_properties[pi].synthesized &&
-                                                g_properties[pi].ivar_name[0] != '\0') {
+                                                g_properties[pi].ivar_name[0] != '\0' &&
+                                                property_matches_class(receiver, pi)) {
                                                 InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
                                                 if (ivar_var) {
                                                     Value ivar_val;
@@ -3258,17 +3342,109 @@ static Value parse_primary(Parser *p) {
                                     unsigned int pi;
                                     for (pi = 0; pi < g_property_count; pi++) {
                                         if (g_properties[pi].synthesized &&
-                                            cstr_eq(prop_name, g_properties[pi].name)) {
+                                            cstr_eq(prop_name, g_properties[pi].name) &&
+                                            property_matches_class(receiver, pi)) {
                                             /* Store in side table */
                                             if (instance_var_set(receiver, g_properties[pi].name, val) != 0) {
                                     parser_error(p, "instance variable table full (max 256)");
                                 }
+                                            /* Also update the ivar variable if inside a method body */
+                                            if (g_properties[pi].ivar_name[0] != '\0') {
+                                                InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                                                if (ivar_var) {
+                                                    ivar_var->int_value = val.is_int ? val.int_val : 0;
+                                                    ivar_var->is_int = val.is_int;
+                                                    ivar_var->value = val.obj_val;
+                                                    ivar_var->is_id = val.is_id;
+                                                    ivar_var->cls = val.cls_val;
+                                                    ivar_var->is_class = val.is_class;
+                                                    ivar_var->sel = val.sel_val;
+                                                    ivar_var->is_sel = val.is_sel;
+                                                }
+                                            }
                                             break;
                                         }
                                     }
                                 }
                                 return val;
                             }
+                        }
+                    }
+
+                    /* Compound assignment on dot syntax: obj.prop += expr, etc. */
+                    if (parser_current(p).type == TOK_PLUS_ASSIGN ||
+                        parser_current(p).type == TOK_MINUS_ASSIGN ||
+                        parser_current(p).type == TOK_STAR_ASSIGN ||
+                        parser_current(p).type == TOK_SLASH_ASSIGN ||
+                        parser_current(p).type == TOK_PERCENT_ASSIGN) {
+                        TokenType compound_op = parser_current(p).type;
+                        parser_advance(p);
+                        {
+                            Value rhs = parse_expression_safe(p);
+                            if (p->error) return rhs;
+
+                            /* Read current value via getter */
+                            id receiver = var->is_id ? var->value : (id)var->cls;
+                            Value current = value_void();
+                            {
+                                unsigned int pi;
+                                for (pi = 0; pi < g_property_count; pi++) {
+                                    if (g_properties[pi].synthesized &&
+                                        cstr_eq(prop_name, g_properties[pi].name) &&
+                                        property_matches_class(receiver, pi)) {
+                                        Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                                        if (stored) current = *stored;
+                                        else if (g_properties[pi].is_int) current = value_from_int(0);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            /* Compute new value */
+                            Value new_val;
+                            if (current.is_int && rhs.is_int) {
+                                switch (compound_op) {
+                                    case TOK_PLUS_ASSIGN: new_val = value_from_int(current.int_val + rhs.int_val); break;
+                                    case TOK_MINUS_ASSIGN: new_val = value_from_int(current.int_val - rhs.int_val); break;
+                                    case TOK_STAR_ASSIGN: new_val = value_from_int(current.int_val * rhs.int_val); break;
+                                    case TOK_SLASH_ASSIGN: new_val = value_from_int(rhs.int_val != 0 ? current.int_val / rhs.int_val : 0); break;
+                                    case TOK_PERCENT_ASSIGN: new_val = value_from_int(rhs.int_val != 0 ? current.int_val % rhs.int_val : 0); break;
+                                    default: new_val = current; break;
+                                }
+                            } else {
+                                new_val = current;
+                            }
+
+                            /* Write back via setter */
+                            {
+                                unsigned int pi;
+                                for (pi = 0; pi < g_property_count; pi++) {
+                                    if (g_properties[pi].synthesized &&
+                                        cstr_eq(prop_name, g_properties[pi].name) &&
+                                        property_matches_class(receiver, pi)) {
+                                        if (instance_var_set(receiver, g_properties[pi].name, new_val) != 0) {
+                                            parser_error(p, "instance variable table full (max 256)");
+                                        }
+                                        /* Also update ivar variable if inside method body */
+                                        if (g_properties[pi].ivar_name[0] != '\0') {
+                                            InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                                            if (ivar_var) {
+                                                ivar_var->int_value = new_val.is_int ? new_val.int_val : 0;
+                                                ivar_var->is_int = new_val.is_int;
+                                                ivar_var->value = new_val.obj_val;
+                                                ivar_var->is_id = new_val.is_id;
+                                                ivar_var->cls = new_val.cls_val;
+                                                ivar_var->is_class = new_val.is_class;
+                                                ivar_var->sel = new_val.sel_val;
+                                                ivar_var->is_sel = new_val.is_sel;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                            if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                            return new_val;
                         }
                     }
 
@@ -3306,7 +3482,8 @@ static Value parse_primary(Parser *p) {
                                 unsigned int pi;
                                 for (pi = 0; pi < g_property_count; pi++) {
                                     if (g_properties[pi].synthesized &&
-                                        g_properties[pi].ivar_name[0] != '\0') {
+                                        g_properties[pi].ivar_name[0] != '\0' &&
+                                        property_matches_class(receiver, pi)) {
                                         InterpVar *ivar_var = interp_get_or_create_var(g_properties[pi].ivar_name);
                                         if (ivar_var) {
                                             Value *stored = instance_var_get(receiver, g_properties[pi].name);
@@ -3341,7 +3518,8 @@ static Value parse_primary(Parser *p) {
                                 unsigned int pi;
                                 for (pi = 0; pi < g_property_count; pi++) {
                                     if (g_properties[pi].synthesized &&
-                                        g_properties[pi].ivar_name[0] != '\0') {
+                                        g_properties[pi].ivar_name[0] != '\0' &&
+                                        property_matches_class(receiver, pi)) {
                                         InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
                                         if (ivar_var) {
                                             Value ivar_val;
@@ -3372,7 +3550,8 @@ static Value parse_primary(Parser *p) {
                             unsigned int pi;
                             for (pi = 0; pi < g_property_count; pi++) {
                                 if (g_properties[pi].synthesized &&
-                                    cstr_eq(prop_name, g_properties[pi].name)) {
+                                    cstr_eq(prop_name, g_properties[pi].name) &&
+                                    property_matches_class(receiver, pi)) {
                                     /* Read from side table */
                                     Value *val = instance_var_get(receiver, g_properties[pi].name);
                                     if (val) return *val;
