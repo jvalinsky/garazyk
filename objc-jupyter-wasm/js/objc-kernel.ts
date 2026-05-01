@@ -768,7 +768,7 @@ function scanObjectiveC(code: string): {
     outsideCode += ch;
   }
 
-  const directiveMatches = outsideCode.match(/@(interface|implementation)\b|@end\b/g) || [];
+  const directiveMatches = outsideCode.match(/@(interface|implementation|protocol)\b|@end\b/g) || [];
   for (const directive of directiveMatches) {
     if (directive === '@end') {
       directiveDepth = Math.max(0, directiveDepth - 1);
