@@ -1445,31 +1445,37 @@ console.log('  Foundation: stringByReplacing, componentsSeparated, trim, numberW
 // ── Tab completion tests ──────────────────────────────────────
 
 // Helper: call complete endpoint with code and cursor position
-function complete(code, cursorPos) {
+function doComplete(code, cursorPos) {
   return callJson('objc_kernel_complete_json', { code, cursorPos });
 }
 
 // @-keyword completion
 {
-  const r = complete('@int', 4);
+  const r = doComplete('@int', 4);
   assert.equal(r.status, 'ok');
   assert.ok(r.matches.includes('@interface'), `@int should complete to @interface, got: ${JSON.stringify(r.matches)}`);
-  assert.ok(r.matches.includes('@implementation'), `@int should complete to @implementation, got: ${JSON.stringify(r.matches)}`);
   assert.equal(r.cursor_start, 0);
   assert.equal(r.cursor_end, 4);
 }
 
+// @-keyword completion: @imp
+{
+  const r = doComplete('@imp', 4);
+  assert.equal(r.status, 'ok');
+  assert.ok(r.matches.includes('@implementation'), `@imp should complete to @implementation, got: ${JSON.stringify(r.matches)}`);
+}
+
 // Class name completion
 {
-  const r = complete('NSSt', 4);
+  const r = doComplete('NSS', 3);
   assert.equal(r.status, 'ok');
-  assert.ok(r.matches.includes('NSString'), `NSSt should complete to NSString, got: ${JSON.stringify(r.matches)}`);
-  assert.ok(r.matches.includes('NSSet'), `NSSt should complete to NSSet, got: ${JSON.stringify(r.matches)}`);
+  assert.ok(r.matches.includes('NSString'), `NSS should complete to NSString, got: ${JSON.stringify(r.matches)}`);
+  assert.ok(r.matches.includes('NSSet'), `NSS should complete to NSSet, got: ${JSON.stringify(r.matches)}`);
 }
 
 // Selector completion inside message send
 {
-  const r = complete('[str sub', 8);
+  const r = doComplete('[str sub', 8);
   assert.equal(r.status, 'ok');
   assert.ok(r.matches.includes('substringFromIndex:'), `[str sub should complete to substringFromIndex:, got: ${JSON.stringify(r.matches)}`);
   assert.ok(r.matches.includes('substringToIndex:'), `[str sub should complete to substringToIndex:, got: ${JSON.stringify(r.matches)}`);
@@ -1478,14 +1484,14 @@ function complete(code, cursorPos) {
 // Variable name completion (after executing code that defines variables)
 {
   execute('int myCounter = 42;', 'vardef-cell');
-  const r = complete('myCo', 4);
+  const r = doComplete('myCo', 4);
   assert.equal(r.status, 'ok');
   assert.ok(r.matches.includes('myCounter'), `myCo should complete to myCounter, got: ${JSON.stringify(r.matches)}`);
 }
 
 // No prefix — returns all class names and type keywords
 {
-  const r = complete('', 0);
+  const r = doComplete('', 0);
   assert.equal(r.status, 'ok');
   assert.ok(r.matches.length > 0, 'empty prefix should return some matches');
   assert.ok(r.matches.includes('NSObject'), `empty prefix should include NSObject, got: ${JSON.stringify(r.matches)}`);
