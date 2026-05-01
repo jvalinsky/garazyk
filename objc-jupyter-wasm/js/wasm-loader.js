@@ -70,7 +70,7 @@ export class ObjcWasmKernel {
     await verifySha256(runtimeManifest, bytes);
 
     const host = ObjcWasmKernel._createHostImports(options.onStream || null);
-    const wasi = ObjcWasmKernel._createWasiImports();
+    const wasi = ObjcWasmKernel._createWasiImports(host);
     const { instance } = await WebAssembly.instantiate(bytes, {
       wasi_snapshot_preview1: wasi.imports,
       objc_kernel_host: host.imports
@@ -114,10 +114,13 @@ export class ObjcWasmKernel {
 
     const emit = (name, text, force = false) => {
       if (text === '') {
-        return;
+        if (!force || pending[name] === '') {
+          return;
+        }
+      } else {
+        pending[name] += text;
       }
 
-      pending[name] += text;
       if (!force && !pending[name].includes('\n') && pending[name].length < STREAM_FLUSH_THRESHOLD) {
         return;
       }
@@ -185,6 +188,9 @@ export class ObjcWasmKernel {
         bufferedStreams = [];
         return streams;
       },
+      emitText(name, text) {
+        emit(name, text);
+      },
       flushPending() {
         emit('stdout', '', true);
         emit('stderr', '', true);
@@ -192,7 +198,7 @@ export class ObjcWasmKernel {
     };
   }
 
-  static _createWasiImports() {
+  static _createWasiImports(host = null) {
     const decoder = new TextDecoder();
     let memory = null;
     let stdout = '';
@@ -224,6 +230,10 @@ export class ObjcWasmKernel {
     };
 
     const appendStream = (fd, text) => {
+      if (host && typeof host.emitText === 'function') {
+        host.emitText(fd === 2 ? 'stderr' : 'stdout', text);
+        return;
+      }
       if (fd === 1) {
         stdout += text;
       } else if (fd === 2) {
@@ -523,6 +533,11 @@ function normalizeRuntimeManifest(runtimeManifestOrUrl) {
 
 async function verifySha256(runtimeManifest, bytes) {
   if (!runtimeManifest.sha256) {
+    if (globalThis.console && typeof globalThis.console.warn === 'function') {
+      globalThis.console.warn(
+        `Skipping SHA-256 verification for ${runtimeManifest.kernelWasmUrl}; runtime manifest has no sha256`
+      );
+    }
     return;
   }
 

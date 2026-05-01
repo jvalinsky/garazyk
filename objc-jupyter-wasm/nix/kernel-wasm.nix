@@ -90,7 +90,6 @@ stdenv.mkDerivation {
       --export=objc_registerClassPair \
       --export=class_addMethod \
       --export=class_addIvar \
-      --export=objc_msgSend \
       --export=objc_msg_lookup_sender \
       --export=class_createInstance \
       --export=objc_retain \

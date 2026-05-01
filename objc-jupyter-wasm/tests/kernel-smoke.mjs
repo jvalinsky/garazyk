@@ -55,7 +55,6 @@ for (const name of [
   'objc_kernel_inspect_json',
   'objc_getClass',
   'sel_registerName',
-  'objc_msgSend',
   'objc_allocateClassPair',
   'class_addMethod'
 ]) {
@@ -557,14 +556,14 @@ assert.match(hostStreamText(), /dot-count=7/);
 
 // Dot setter (simple, unique names)
 const dotSetterTest = execute([
-  '@interface Box : Object',
+  '@interface Box : NSObject',
+  '@property (nonatomic, assign) int boxval;',
   '- (int)boxval;',
   '- (void)setBoxval:(int)v;',
   '@end',
   '@implementation Box',
-  'int _boxval_store;',
-  '- (int)boxval { return _boxval_store; }',
-  '- (void)setBoxval:(int)v { _boxval_store = v; }',
+  '- (int)boxval { return _boxval; }',
+  '- (void)setBoxval:(int)v { _boxval = v; }',
   '@end',
   'Box *b = [[Box alloc] init];',
   'b.boxval = 42;',
@@ -1219,6 +1218,39 @@ console.log('  blocks: simple, params, capture, enum, cross-cell, control flow, 
 
 console.log('  properties: write-back, compound assignment, auto-synthesize — PASS');
 
+// Cross-class dot getter/setter methods with same property names stay isolated
+{
+  const scopedDef = execute([
+    '@interface ScopeA : NSObject',
+    '@property (nonatomic, assign) int count;',
+    '@end',
+    '@interface ScopeB : NSObject',
+    '@property (nonatomic, assign) int count;',
+    '@end',
+    '@implementation ScopeA',
+    '- (void)setCount:(int)v { _count = v; }',
+    '- (int)count { return _count; }',
+    '@end',
+    '@implementation ScopeB',
+    '- (void)setCount:(int)v { _count = v + 100; }',
+    '- (int)count { return _count + 1; }',
+    '@end'
+  ].join('\n'), 'scope-prop-def');
+  assert.equal(scopedDef.status, 'ok');
+
+  const scopedUse = execute([
+    'ScopeA *sa = [[ScopeA alloc] init];',
+    'ScopeB *sb = [[ScopeB alloc] init];',
+    'sa.count = 3;',
+    'sb.count = 7;',
+    'NSLog(@"scoped=%d/%d", sa.count, sb.count);'
+  ].join('\n'), 'scope-prop-use');
+  assert.equal(scopedUse.status, 'ok');
+  assert.match(hostStreamText(), /scoped=3\/108/);
+}
+
+console.log('  properties: cross-class dot getter/setter isolation — PASS');
+
 // ── Float/double tests ──────────────────────────────────────────
 
 // Float literal and variable
@@ -1713,6 +1745,58 @@ console.log('  do/while: basic, once, break, continue, no-brace — PASS');
 }
 
 console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
+
+// ── Hardening regressions ───────────────────────────────────────
+
+{
+  const classOnTagged = execute('NSNumber *n = [NSNumber numberWithBool:YES]; [n class];', 'tagged-class');
+  assert.equal(classOnTagged.status, 'ok');
+  assert.equal(classOnTagged.data['text/plain'], 'NSNumber');
+}
+
+{
+  const chained = execute('int a = 0; int b = 0; a = b = 5; NSLog(@"chain=%d/%d", a, b);', 'chained-assign');
+  assert.equal(chained.status, 'ok');
+  assert.match(hostStreamText(), /chain=5\/5/);
+}
+
+{
+  const intMin = execute('-2147483648;', 'int-min');
+  assert.equal(intMin.status, 'ok');
+  assert.equal(intMin.data['text/plain'], '-2147483648');
+}
+
+{
+  const hex = execute('0xFF;', 'hex-literal');
+  assert.equal(hex.status, 'ok');
+  assert.equal(hex.data['text/plain'], '255');
+}
+
+{
+  const nonIntCase = execute('switch (1) { case 1.5: NSLog(@"bad"); break; }', 'switch-non-int-case');
+  assert.equal(nonIntCase.status, 'error');
+  assert.match(nonIntCase.evalue, /case expression must evaluate to an integer/);
+}
+
+{
+  const longString = execute(`@"${'x'.repeat(260)}";`, 'long-string-literal');
+  assert.equal(longString.status, 'error');
+  assert.match(longString.evalue, /string literal too long/);
+}
+
+{
+  const fmtUnderrun = execute('NSString *s = [NSString stringWithFormat:@"%d"]; NSLog(@"fmt=%@", s);', 'format-underrun');
+  assert.equal(fmtUnderrun.status, 'ok');
+  assert.match(hostStreamText(), /warning: missing argument for format specifier %d/);
+}
+
+{
+  const splitResource = execute('for (int i = 0; i < 200; i++) { NSString *s = @"abcd"; [s componentsSeparatedByString:@""]; }', 'split-resource');
+  assert.equal(splitResource.status, 'error');
+  assert.match(splitResource.evalue, /collection entry table full|string pool exhausted/);
+}
+
+console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');

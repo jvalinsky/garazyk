@@ -116,6 +116,7 @@ stdenv.mkDerivation {
     #include "objc/runtime.h"
     #include "objc/objc-arc.h"
     #include "objc/objc-auto.h"
+    #include <stddef.h>
 
     /* arc.mm stubs — correct signatures from objc-arc.h */
     void objc_release(id obj) { (void)obj; }
@@ -158,15 +159,15 @@ stdenv.mkDerivation {
 
     /* fast_paths.m stubs — all fast paths fall back to sendmsg2.c */
 
-    /* objc_msgSend stub — the real implementation is in assembly,
-       but WASM doesn't have platform assembly. sendmsg2.c provides
-       objc_msg_lookup_sender() which returns struct objc_slot*.
-       We provide a minimal objc_msgSend that uses the lookup. */
+    /* objc_msgSend compatibility stub. The real implementation is in
+       platform assembly, and a variadic C replacement cannot safely
+       call fixed-signature IMPs under WASM's indirect-call checks. */
     id objc_msgSend(id self, SEL _cmd, ...) {
-      struct objc_slot *slot = objc_msg_lookup_sender(&self, _cmd, 0);
-      if (slot && slot->method) {
-        return ((id(*)(id, SEL, ...))slot->method)(self, _cmd);
-      }
+      (void)self;
+      (void)_cmd;
+      /* Link-compatibility only. WASM indirect calls require exact
+         signatures, so a variadic objc_msgSend cannot safely dispatch
+         arbitrary IMPs. Interpreter dispatch bypasses this symbol. */
       return 0;
     }
 
@@ -265,6 +266,13 @@ stdenv.mkDerivation {
       struct objc_cache *method_cache;
       struct objc_protocol_list *protocol_list;
     };
+
+    _Static_assert(offsetof(struct objc_class, isa) == 0,
+      "objc_class isa must remain the first field");
+    _Static_assert(offsetof(struct objc_class, super_class) == sizeof(void *),
+      "objc_class super_class offset changed");
+    _Static_assert(sizeof(Class) == sizeof(void *),
+      "Class must be pointer-sized on wasm32");
 
     #define MAX_CLASSES 256
     static Class g_class_table[MAX_CLASSES];
@@ -484,7 +492,6 @@ stdenv.mkDerivation {
       --export=objc_registerClassPair \
       --export=class_addMethod \
       --export=class_addIvar \
-      --export=objc_msgSend \
       --export=objc_msg_lookup_sender \
       --export=class_createInstance \
       --export=objc_retain \
