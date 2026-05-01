@@ -5,8 +5,9 @@
 static NSString *const kDefaultResendEndpoint = @"https://api.resend.com";
 static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
 
-@interface PDSResendEmailProvider ()
-
+@interface PDSResendEmailProvider () {
+    dispatch_queue_t _initQueue;
+}
 @property (nonatomic, strong) PDSEmailHTTPClient *httpClient;
 
 @end
@@ -25,6 +26,7 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
         _secretsProvider = secretsProvider;
         _fromAddress = [fromAddress copy];
         _apiEndpoint = [apiEndpoint copy] ?: kDefaultResendEndpoint;
+        _initQueue = dispatch_queue_create("com.atproto.resend.init", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -35,9 +37,11 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
 }
 
 - (PDSEmailHTTPClient *)httpClientWithError:(NSError **)error {
-    @synchronized (self) {
+    __block PDSEmailHTTPClient *client = nil;
+    dispatch_sync(_initQueue, ^{
         if (_httpClient) {
-            return _httpClient;
+            client = _httpClient;
+            return;
         }
 
         NSString *apiKey = [self.secretsProvider secretForKey:kResendAPIKeySecretName error:error];
@@ -47,7 +51,7 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
                                              code:1
                                          userInfo:@{NSLocalizedDescriptionKey: @"Missing Resend API Key"}];
             }
-            return nil;
+            return;
         }
 
         NSURL *baseURL = [NSURL URLWithString:self.apiEndpoint];
@@ -57,12 +61,13 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
                                              code:2
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid API Endpoint URL"}];
             }
-            return nil;
+            return;
         }
 
         _httpClient = [[PDSEmailHTTPClient alloc] initWithBaseURL:baseURL apiKey:apiKey];
-        return _httpClient;
-    }
+        client = _httpClient;
+    });
+    return client;
 }
 
 #pragma mark - PDSEmailProvider

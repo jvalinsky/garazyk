@@ -47,9 +47,9 @@
 }
 
 - (void)setValidationMode:(RelayValidationMode)mode {
-    @synchronized (self) {
+    dispatch_barrier_sync(_validationQueue, ^{
         _validationMode = mode;
-    }
+    });
 }
 
 #pragma mark - Validation Methods
