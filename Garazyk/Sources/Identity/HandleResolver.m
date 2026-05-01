@@ -38,7 +38,9 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 @implementation HandleResolutionFailure
 @end
 
-@interface HandleResolver ()
+@interface HandleResolver () {
+    dispatch_queue_t _rateLimitQueue;
+}
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 #if defined(__APPLE__)
 - (void)executeHandleHTTPSRequest:(NSURLRequest *)request
@@ -75,6 +77,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
         if (PDSHandleResolverRunningTests()) {
             _retryPolicy.initialDelay = 0.01;
         }
+        _rateLimitQueue = dispatch_queue_create("com.atproto.handle.ratelimit", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -508,7 +511,8 @@ static BOOL PDSHandleResolverRunningTests(void) {
 }
 
 - (BOOL)checkRateLimit {
-    @synchronized(self.requestTimestamps) {
+    __block BOOL allowed = NO;
+    dispatch_sync(_rateLimitQueue, ^{
         NSDate *now = [NSDate date];
         NSTimeInterval oneMinuteAgo = [now timeIntervalSince1970] - 60.0;
 
@@ -526,13 +530,15 @@ static BOOL PDSHandleResolverRunningTests(void) {
 
         // Check if we're under the limit
         if (self.requestTimestamps.count >= self.rateLimitPerMinute) {
-            return NO;
+            allowed = NO;
+            return;
         }
 
         // Add current timestamp
         [self.requestTimestamps addObject:now];
-        return YES;
-    }
+        allowed = YES;
+    });
+    return allowed;
 }
 
 @end
