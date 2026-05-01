@@ -126,4 +126,16 @@ const char *objc_interp_get_var_name(unsigned int index);
  */
 int objc_interp_get_var_is_class(unsigned int index);
 
+/**
+ * Get the line number where the last error occurred.
+ * Returns 0 if no error or line is unknown.
+ */
+unsigned int objc_interp_get_error_line(void);
+
+/**
+ * Get the column number where the last error occurred.
+ * Returns 0 if no error or column is unknown.
+ */
+unsigned int objc_interp_get_error_column(void);
+
 #endif /* OBJC_INTERPRETER_H */
