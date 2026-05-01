@@ -1681,5 +1681,38 @@ console.log('  Switch/case: basic, default, fall-through, break — PASS');
 
 console.log('  do/while: basic, once, break, continue, no-brace — PASS');
 
+// ── @selector() expressions ───────────────────────────────────
+
+// @selector with simple name
+{
+  const r = execute('SEL s = @selector(count); s', 'selector-simple');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /count/);
+}
+
+// @selector with multi-keyword
+{
+  const r = execute('SEL s = @selector(replaceObjectAtIndex:withObject:); s', 'selector-multi');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /replaceObjectAtIndex:withObject:/);
+}
+
+// @selector in NSLog %@
+{
+  hostStreams.length = 0;
+  const r = execute('SEL action = @selector(length); NSLog(@"sel=%@", action);', 'selector-nslog');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /sel=length/);
+}
+
+// SEL comparison (same selector registered twice should be equal)
+{
+  const r = execute('SEL a = @selector(count); SEL b = @selector(count); a == b', 'selector-eq');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /count/);
+}
+
+console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
