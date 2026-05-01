@@ -51,7 +51,8 @@
       "Bash(make -C build_test -j1)",
       "Bash(make -C build -j4)",
       "Bash(make -C build AllTests -j4)",
-      "Bash(/Users/jack/Software/garazyk/build/tests/AllTests)"
+      "Bash(/Users/jack/Software/garazyk/build/tests/AllTests)",
+      "Bash(npm run *)"
     ]
   }
 }

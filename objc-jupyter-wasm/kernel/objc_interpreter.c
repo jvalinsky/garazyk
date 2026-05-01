@@ -2248,6 +2248,32 @@ static Value parse_message_send(Parser *p) {
             if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
                 fmt = (const char *)keyword_args[0].obj_val;
             }
+            /* Validate format string argument count */
+            if (fmt) {
+                int format_count = 0, i = 0;
+                while (fmt[i] != '\0') {
+                    if (fmt[i] == '%' && fmt[i+1] != '\0' && fmt[i+1] != '%') {
+                        format_count++;
+                        i += 2;
+                    } else {
+                        i++;
+                    }
+                }
+                int args_available = (int)arg_count - 1;
+                if (format_count > args_available) {
+                    nslog_append("Warning: stringWithFormat has ", 30);
+                    { char buf[12]; int len = 0; int fc = format_count;
+                      while (fc > 0 || len == 0) { buf[len++] = '0' + (fc % 10); fc /= 10; }
+                      while (len > 0) nslog_append(buf + --len, 1);
+                    }
+                    nslog_append(" format specifiers but only ", 28);
+                    { char buf[12]; int len = 0; int aa = args_available;
+                      while (aa > 0 || len == 0) { buf[len++] = '0' + (aa % 10); aa /= 10; }
+                      while (len > 0) nslog_append(buf + --len, 1);
+                    }
+                    nslog_append(" arguments\n", 11);
+                }
+            }
             return format_values_to_pool(fmt, keyword_args + 1, arg_count - 1);
         }
 
@@ -2420,7 +2446,11 @@ static Value parse_message_send(Parser *p) {
                         si++;
                     }
                 }
-                unsigned int needed = (unsigned int)(src_len + match_count * (repl_len - find_len)) + 1;
+                /* Calculate needed size carefully to avoid underflow on shrinking replacements */
+                int size_delta = match_count * (repl_len - find_len);
+                int final_size = src_len + size_delta;
+                if (final_size < 0) final_size = 0;
+                unsigned int needed = (unsigned int)final_size + 1;
                 char *result = string_pool_alloc(needed);
                 if (result == 0) return value_from_id(receiver);
                 {
@@ -2718,7 +2748,8 @@ static Value parse_message_send(Parser *p) {
 
         /* NSNumber: [NSNumber numberWithBool:b] → wrap bool as NSNumber */
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithBool:") && arg_count >= 1) {
-            int v = keyword_args[0].is_int ? (keyword_args[0].int_val ? 1 : 0) : 0;
+            /* Convert argument to boolean using is_truthy for all value types */
+            int v = is_truthy(keyword_args[0]) ? 1 : 0;
             char *buf = string_pool_alloc(14);
             if (buf == 0) return value_from_int(v);
             cstr_copy(buf, "NSNumber:", 14);
@@ -4303,14 +4334,17 @@ static Value parse_primary(Parser *p) {
 
     /* Integer literal */
     if (tok.type == TOK_INT_LITERAL) {
-        int val = 0;
+        long val = 0;
         unsigned int i = 0;
         while (tok.text[i] != '\0') {
             val = val * 10 + (tok.text[i] - '0');
             i++;
         }
+        /* Clamp to int range to prevent overflow */
+        if (val > 2147483647L) val = 2147483647;
+        if (val < -2147483648L) val = -2147483648;
         parser_advance(p);
-        return value_from_int(val);
+        return value_from_int((int)val);
     }
 
     /* Float literal */
@@ -5462,19 +5496,45 @@ static Value parse_ternary(Parser *p) {
 }
 
 static Value parse_assignment(Parser *p) {
-    Value target = parse_ternary(p);
-    if (p->error) return target;
+    /* Check for identifier assignment (a = value) by peeking ahead */
+    if (parser_current(p).type == TOK_IDENTIFIER) {
+        Token saved = p->lex.current;
+        unsigned int saved_pos = p->lex.pos;
+        const char *var_name = p->lex.current.text;
 
-    if (parser_current(p).type == TOK_ASSIGN) {
         parser_advance(p);
-        {
+        if (parser_current(p).type == TOK_ASSIGN) {
+            parser_advance(p);
             Value value = parse_assignment(p);
             if (p->error) return value;
-            /* Assignment to variable */
+
+            /* Perform the assignment */
+            InterpVar *var = interp_find_var(var_name);
+            if (!var) {
+                var = interp_get_or_create_var(var_name);
+            }
+            if (var) {
+                var->value = value.obj_val;
+                var->cls = value.cls_val;
+                var->sel = value.sel_val;
+                var->is_int = value.is_int;
+                var->int_value = value.int_val;
+                var->is_float = value.is_float;
+                var->float_value = value.float_val;
+                var->is_class = value.is_class;
+                var->is_sel = value.is_sel;
+                var->is_id = value.is_id;
+            }
             return value;
         }
+
+        /* Not an assignment — restore and parse as normal ternary */
+        p->lex.current = saved;
+        p->lex.pos = saved_pos;
     }
 
+    Value target = parse_ternary(p);
+    if (p->error) return target;
     return target;
 }
 
@@ -6346,6 +6406,10 @@ static AstNode *parse_statement_ast(Parser *p) {
                 {
                     Value case_val = parse_expression(p);
                     if (p->error) return 0;
+                    if (!case_val.is_int) {
+                        parser_error(p, "case expression must evaluate to an integer");
+                        return 0;
+                    }
                     node->switch_stmt.case_values[ci] = case_val.int_val;
                 }
 
