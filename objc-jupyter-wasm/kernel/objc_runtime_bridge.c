@@ -933,7 +933,8 @@ static const char *foundation_class_names[] = {
 
 static const char *at_keywords[] = {
     "@interface", "@implementation", "@end", "@class",
-    "@protocol", "@property", "@synthesize", "@dynamic"
+    "@protocol", "@property", "@synthesize", "@dynamic",
+    "@selector"
 };
 #define AT_KEYWORD_COUNT (sizeof(at_keywords) / sizeof(at_keywords[0]))
 
