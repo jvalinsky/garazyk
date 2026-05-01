@@ -1728,7 +1728,7 @@ static void eval_nslog(Parser *p) {
  * the trailing newline and host stream output. Returns the string pool
  * pointer as an id value. */
 static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
-    char buf[4096];
+    char buf[1024];
     unsigned int pos = 0;
     unsigned int fi = 0;
     int arg_idx = 0;
@@ -1745,7 +1745,7 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
             fi++;
             switch (fmt[fi]) {
                 case '%':
-                    buf[pos++] = '%';
+                    if (pos < sizeof(buf)-1) buf[pos++] = '%';
                     break;
                 case '@':
                     if (arg_idx < arg_count) {
@@ -1755,9 +1755,9 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                             if (cstr_eq_n(s, "NSData:", 7)) {
                                 const char *hex = s + 7;
                                 int hex_len = (int)cstr_len(hex);
-                                buf[pos++] = '<';
+                                if (pos < sizeof(buf)-1) buf[pos++] = '<';
                                 { int i; for (i = 0; i < hex_len && pos < sizeof(buf)-2; i++) buf[pos++] = hex[i]; }
-                                buf[pos++] = '>';
+                                if (pos < sizeof(buf)-1) buf[pos++] = '>';
                             } else if (cstr_eq_n(s, "NSNumber:", 9)) {
                                 const char *val = s + 9;
                                 while (*val && pos < sizeof(buf)-1) buf[pos++] = *val++;
@@ -1765,9 +1765,9 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                                 const char *val = s + 8;
                                 while (*val && pos < sizeof(buf)-1) buf[pos++] = *val++;
                             } else if (cstr_eq_n(s, "FDObj:", 6)) {
-                                buf[pos++] = '<';
+                                if (pos < sizeof(buf)-1) buf[pos++] = '<';
                                 { const char *cn = s + 6; while (*cn && pos < sizeof(buf)-2) buf[pos++] = *cn++; }
-                                buf[pos++] = '>';
+                                if (pos < sizeof(buf)-1) buf[pos++] = '>';
                             } else {
                                 while (*s && pos < sizeof(buf)-1) buf[pos++] = *s++;
                             }
@@ -1856,21 +1856,21 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                     }
                     break;
                 case 'f': {
-                    if (arg_idx < arg_count) {
+                    if (arg_idx < arg_count && pos < sizeof(buf) - 10) {
                         Value v = args[arg_idx++];
                         double fv = v.is_float ? v.float_val : (v.is_int ? (double)v.int_val : 0.0);
                         int neg = fv < 0.0;
                         if (neg) fv = -fv;
                         unsigned long ipart = (unsigned long)fv;
                         double fpart = fv - (double)ipart;
-                        if (neg) buf[pos++] = '-';
-                        if (ipart == 0) buf[pos++] = '0';
+                        if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                        if (ipart == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
                         else {
                             char ibuf[20]; int ii = 0;
                             while (ipart > 0) { ibuf[ii++] = '0' + (int)(ipart % 10); ipart /= 10; }
                             while (ii > 0 && pos < sizeof(buf)-1) buf[pos++] = ibuf[--ii];
                         }
-                        buf[pos++] = '.';
+                        if (pos < sizeof(buf)-1) buf[pos++] = '.';
                         { int d; for (d = 0; d < 6 && pos < sizeof(buf)-2; d++) {
                             fpart *= 10.0;
                             int digit = (int)fpart;
@@ -1878,7 +1878,7 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                             fpart -= digit;
                         }}
                         while (pos > 1 && buf[pos-1] == '0') pos--;
-                        if (buf[pos-1] == '.') buf[pos++] = '0';
+                        if (pos > 0 && buf[pos-1] == '.' && pos < sizeof(buf)-1) buf[pos++] = '0';
                     }
                     break;
                 }
@@ -1892,13 +1892,14 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                     }
                     break;
                 case 'p':
-                    if (arg_idx < arg_count) {
+                    if (arg_idx < arg_count && pos < sizeof(buf) - 3) {
                         Value v = args[arg_idx++];
-                        buf[pos++] = '0'; buf[pos++] = 'x';
+                        if (pos < sizeof(buf)-1) buf[pos++] = '0';
+                        if (pos < sizeof(buf)-1) buf[pos++] = 'x';
                         if (v.is_id) {
                             unsigned long ptr = (unsigned long)v.obj_val;
                             char hex[17]; int hi = 0;
-                            if (ptr == 0) buf[pos++] = '0';
+                            if (ptr == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
                             else {
                                 while (ptr > 0 && hi < 16) { hex[hi++] = "0123456789abcdef"[ptr % 16]; ptr /= 16; }
                                 while (hi > 0 && pos < sizeof(buf)-1) buf[pos++] = hex[--hi];
@@ -2113,6 +2114,16 @@ static Value parse_message_send(Parser *p) {
                 }
                 return value_from_class((Class)0);
             }
+            /* Tagged Foundation string pool objects — return their sentinel class */
+            if (cstr_starts(s, "NSNumber:")) return value_from_class((Class)3);
+            if (cstr_starts(s, "NSFloat:")) return value_from_class((Class)3);
+            if (cstr_starts(s, "NSArr:")) return value_from_class((Class)4);
+            if (cstr_starts(s, "NSMutArr:")) return value_from_class((Class)4);
+            if (cstr_starts(s, "NSDict:")) return value_from_class((Class)5);
+            if (cstr_starts(s, "NSMutDict:")) return value_from_class((Class)5);
+            if (cstr_starts(s, "NSSet:")) return value_from_class((Class)6);
+            if (cstr_starts(s, "NSData:")) return value_from_class((Class)7);
+            if (cstr_starts(s, "NSBlock:")) return value_from_class((Class)8);
             Class cls = (Class)0;
             cls = object_getClass(receiver);
             return value_from_class(cls);
@@ -3362,11 +3373,13 @@ static Value parse_message_send(Parser *p) {
                 unsigned int saved_scope_base = g_var_scope_base;
                 Value return_val;
 
-                /* Set scope base to 0 so methods can access global variables
-                 * (including ivars declared in @implementation bodies).
-                 * Method-local variables are still isolated because we
-                 * restore g_var_count after the method returns. */
-                g_var_scope_base = 0;
+                /* Limit scope to method-local variables only (self, _cmd, args, synthesized ivars).
+                 * This prevents cross-call and cross-class variable contamination.
+                 * Previously set to 0, allowing methods to see any variable in g_vars[],
+                 * which caused stale variables from prior calls to be found instead of
+                 * creating fresh ones. For example, on the second call to a method,
+                 * interp_get_or_create_var would find the stale variable from the first call. */
+                g_var_scope_base = g_var_count;
 
                 /* Set up self and _cmd as NEW variables in the method scope */
                 {
@@ -6623,7 +6636,7 @@ static Value eval_ast(AstNode *node, const char *source) {
 
         while (1) {
             /* Check condition (empty condition = always true) */
-            if (node->for_stmt.condition->source_range.source_len > 0) {
+            if (node->for_stmt.condition != 0 && node->for_stmt.condition->source_range.source_len > 0) {
                 Value cond = eval_ast(node->for_stmt.condition, source);
                 if (!is_truthy(cond)) break;
             }
@@ -7006,11 +7019,21 @@ void objc_interp_gc_strings(void) {
             }
         }
     }
+    /* Mark the static g_return_value if it holds a string pool pointer */
+    if (g_return_value.is_id && g_return_value.obj_val != 0 && reloc_count < MAX_STRING_POOL_MARKS) {
+        const char *ptr = (const char *)g_return_value.obj_val;
+        if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+            relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
+            relocs[reloc_count].new_off = 0;
+            reloc_count++;
+        }
+    }
     for (i = 0; i < g_instance_var_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
         /* Mark the object key (FDObj: marker) if it's in the string pool */
         {
             const char *obj_ptr = (const char *)g_instance_vars[i].object;
             if ((unsigned long)obj_ptr >= pool_start && (unsigned long)obj_ptr < pool_end) {
+                if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)obj_ptr - pool_start);
                 relocs[reloc_count].new_off = 0;
                 reloc_count++;
@@ -7020,6 +7043,7 @@ void objc_interp_gc_strings(void) {
         if (g_instance_vars[i].value.is_id && g_instance_vars[i].value.obj_val != 0) {
             const char *ptr = (const char *)g_instance_vars[i].value.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
                 relocs[reloc_count].new_off = 0;
                 reloc_count++;
@@ -7031,6 +7055,7 @@ void objc_interp_gc_strings(void) {
         if (g_coll_entries[i].key.is_id && g_coll_entries[i].key.obj_val != 0) {
             const char *ptr = (const char *)g_coll_entries[i].key.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
                 relocs[reloc_count].new_off = 0;
                 reloc_count++;
@@ -7039,6 +7064,7 @@ void objc_interp_gc_strings(void) {
         if (g_coll_entries[i].value.is_id && g_coll_entries[i].value.obj_val != 0) {
             const char *ptr = (const char *)g_coll_entries[i].value.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
                 relocs[reloc_count].new_off = 0;
                 reloc_count++;
@@ -7049,10 +7075,11 @@ void objc_interp_gc_strings(void) {
     /* Mark block captured values that are string pool pointers */
     for (i = 0; i < g_block_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
         unsigned int ci;
-        for (ci = 0; ci < g_blocks[i].capture_count; ci++) {
+        for (ci = 0; ci < g_blocks[i].capture_count && reloc_count < MAX_STRING_POOL_MARKS; ci++) {
             if (g_blocks[i].captures[ci].value.is_id && g_blocks[i].captures[ci].value.obj_val != 0) {
                 const char *ptr = (const char *)g_blocks[i].captures[ci].value.obj_val;
                 if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+                    if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                     relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
                     relocs[reloc_count].new_off = 0;
                     reloc_count++;
@@ -7113,6 +7140,20 @@ void objc_interp_gc_strings(void) {
                         g_vars[i].value = (id)(g_string_pool + relocs[r].new_off);
                         break;
                     }
+                }
+            }
+        }
+    }
+    /* Update g_return_value if it holds a string pool pointer */
+    if (g_return_value.is_id && g_return_value.obj_val != 0) {
+        const char *ptr = (const char *)g_return_value.obj_val;
+        if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
+            unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
+            unsigned int r;
+            for (r = 0; r < reloc_count; r++) {
+                if (relocs[r].old_off == off) {
+                    g_return_value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                    break;
                 }
             }
         }

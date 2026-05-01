@@ -62,10 +62,13 @@ stdenv.mkDerivation {
       -o objc_interpreter.o
 
     # Link: kernel + libobjc2 runtime + wasi-libc
+    # Stack configuration: 1 MB stack with stack-first placement to trap on overflow rather than silently corrupt heap
     ${llvmPackages.lld}/bin/wasm-ld \
       --no-entry \
       --allow-undefined \
       --export-memory \
+      -z stack-size=1048576 \
+      --stack-first \
       --export=objc_kernel_init \
       --export=objc_kernel_max_request_bytes \
       --export=objc_kernel_max_response_bytes \
