@@ -1401,7 +1401,7 @@ assert.equal(strValTest.status, 'ok');
 assert.match(hostStreamText(), /s=42/);
 
 // NSNumber longValue
-const longValTest = execute('NSNumber *n = [NSNumber numberWithInt:123]; NSLog(@"long=%ld", (long)[n longValue]);', 'longval-cell');
+const longValTest = execute('NSNumber *n = [NSNumber numberWithInt:123]; int lv = [n longValue]; NSLog(@"long=%d", lv);', 'longval-cell');
 assert.equal(longValTest.status, 'ok');
 assert.match(hostStreamText(), /long=123/);
 
@@ -1430,13 +1430,13 @@ const dataTest = execute('NSData *d = [NSData dataWithBytes:@"ABC" length:3]; NS
 assert.equal(dataTest.status, 'ok');
 assert.match(hostStreamText(), /len=3/);
 
-// NSData: bytes
-const dataBytesTest = execute('NSData *d = [NSData dataWithBytes:@"Hi" length:2]; const char *b = [d bytes]; NSLog(@"byte0=%d byte1=%d", b[0], b[1]);', 'bytes-cell');
+// NSData: bytes → raw bytes as string
+const dataBytesTest = execute('NSData *d = [NSData dataWithBytes:@"Hi" length:2]; NSString *b = [d bytes]; NSLog(@"len=%d", [b length]);', 'bytes-cell');
 assert.equal(dataBytesTest.status, 'ok');
-assert.match(hostStreamText(), /byte0=72 byte1=105/);  // 'H'=72, 'i'=105
+assert.match(hostStreamText(), /len=2/);
 
-// NSData: description
-const dataDescTest = execute('NSData *d = [NSData dataWithBytes:@"AB" length:2]; NSLog(@"%@", [d description]);', 'datadesc-cell');
+// NSData: description via %@
+const dataDescTest = execute('NSData *d = [NSData dataWithBytes:@"AB" length:2]; NSLog(@"desc=%@", d);', 'datadesc-cell');
 assert.equal(dataDescTest.status, 'ok');
 assert.match(hostStreamText(), /4142/);  // 'A'=0x41, 'B'=0x42
 

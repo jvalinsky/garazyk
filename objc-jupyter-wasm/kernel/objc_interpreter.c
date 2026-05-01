@@ -1380,13 +1380,49 @@ static void eval_nslog(Parser *p) {
                     nslog_append_char('%');
                     break;
                 case '@':
-                    /* Object — print as pointer or string */
+                    /* Object — print description or string */
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
                         if (v.is_id && v.obj_val != 0) {
-                            /* Check if it's a string pool entry (@"..." literal) */
-                            nslog_append((const char *)v.obj_val,
-                                         cstr_len((const char *)v.obj_val));
+                            const char *s = (const char *)v.obj_val;
+                            /* NSData: display as <hex bytes> */
+                            if (cstr_eq_n(s, "NSData:", 7)) {
+                                const char *hex = s + 7;
+                                int hex_len = (int)cstr_len(hex);
+                                nslog_append("<", 1);
+                                {
+                                    int i;
+                                    for (i = 0; i < hex_len; i++) {
+                                        if (i > 0 && i % 8 == 0) nslog_append(" ", 1);
+                                        nslog_append(&hex[i], 1);
+                                    }
+                                }
+                                nslog_append(">", 1);
+                            }
+                            /* NSNumber: display numeric value */
+                            else if (cstr_eq_n(s, "NSNumber:", 9)) {
+                                nslog_append(s + 9, cstr_len(s + 9));
+                            }
+                            /* NSFloat: display float value */
+                            else if (cstr_eq_n(s, "NSFloat:", 8)) {
+                                nslog_append(s + 8, cstr_len(s + 8));
+                            }
+                            /* FDObj: display as <ClassName> */
+                            else if (cstr_eq_n(s, "FDObj:", 6)) {
+                                nslog_append("<", 1);
+                                nslog_append(s + 6, cstr_len(s + 6));
+                                nslog_append(">", 1);
+                            }
+                            /* Collection markers: display summary */
+                            else if (cstr_eq_n(s, "NSArr:", 6) || cstr_eq_n(s, "NSMutArr:", 9) ||
+                                     cstr_eq_n(s, "NSDict:", 7) || cstr_eq_n(s, "NSMutDict:", 10) ||
+                                     cstr_eq_n(s, "NSSet:", 6) || cstr_eq_n(s, "NSBlock:", 8)) {
+                                nslog_append(s, cstr_len(s));
+                            }
+                            /* Regular string */
+                            else {
+                                nslog_append(s, cstr_len(s));
+                            }
                         } else if (v.is_class && v.cls_val != 0) {
                             /* Look up class name from variable table
                              * (class_getName crashes on sentinel pointers) */
