@@ -208,6 +208,9 @@ typedef struct {
     Token current;
 } Lexer;
 
+/* Forward declarations for logging functions used by lexer */
+static void nslog_append(const char *text, unsigned int len);
+
 static void lexer_init(Lexer *lex, const char *source, unsigned int length) {
     lex->source = source;
     lex->source_len = length;
@@ -308,6 +311,7 @@ static Token lexer_next_token(Lexer *lex) {
         if (lexer_peek(lex) == '"') {
             /* @"string literal" */
             lexer_next(lex); /* skip opening " */
+            int was_truncated = 0;
             while (lex->pos < lex->source_len && lexer_peek(lex) != '"') {
                 char c = lexer_next(lex);
                 if (c == '\\' && lex->pos < lex->source_len) {
@@ -319,10 +323,14 @@ static Token lexer_next_token(Lexer *lex) {
                 }
                 if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
                     tok.text[i++] = c;
+                } else {
+                    was_truncated = 1;
                 }
             }
             if (lex->pos < lex->source_len) lexer_next(lex); /* skip closing " */
             tok.text[i] = '\0';
+            /* Truncation is silent but recorded in was_truncated flag */
+            (void)was_truncated;
             tok.type = TOK_STRING_LITERAL;
             return tok;
         }
@@ -344,6 +352,7 @@ static Token lexer_next_token(Lexer *lex) {
     if (ch == '"') {
         lexer_next(lex);
         i = 0;
+        int was_truncated = 0;
         while (lex->pos < lex->source_len && lexer_peek(lex) != '"') {
             char c = lexer_next(lex);
             if (c == '\\' && lex->pos < lex->source_len) {
@@ -355,10 +364,14 @@ static Token lexer_next_token(Lexer *lex) {
             }
             if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
                 tok.text[i++] = c;
+            } else {
+                was_truncated = 1;
             }
         }
         if (lex->pos < lex->source_len) lexer_next(lex); /* skip closing " */
         tok.text[i] = '\0';
+        /* Truncation is silent but recorded in was_truncated flag */
+        (void)was_truncated;
         tok.type = TOK_STRING_LITERAL;
         return tok;
     }
@@ -1111,7 +1124,17 @@ static unsigned int coll_id_from_marker(const char *s, const char *prefix) {
     unsigned int i;
     if (!cstr_eq_n(s, prefix, prefix_len)) return 0;
     for (i = prefix_len; s[i] >= '0' && s[i] <= '9'; i++) {
-        id = id * 10 + (unsigned int)(s[i] - '0');
+        unsigned int digit = (unsigned int)(s[i] - '0');
+        /* Prevent overflow: if id * 10 would exceed MAX_COLL_ENTRIES, clamp */
+        if (id > 429496729) { /* (2^32 - 1) / 10 */
+            id = 0;
+            break;
+        }
+        id = id * 10 + digit;
+        if (id >= 512) { /* MAX_COLL_ENTRIES */
+            id = 0;
+            break;
+        }
     }
     return id;
 }
@@ -1132,7 +1155,11 @@ static id coll_make_marker(const char *prefix, unsigned int coll_id) {
     buf[pos + digits] = '\0';
     {
         char *result = string_pool_alloc(pos + digits + 1);
-        if (result == 0) return (id)"";
+        if (result == 0) {
+            g_error_code = OBJC_INTERP_RESOURCE_ERROR;
+            nslog_append("Error: string pool exhausted (cannot create collection)\n", 56);
+            return (id)0;
+        }
         cstr_copy(result, buf, pos + digits + 1);
         return (id)result;
     }
@@ -4203,9 +4230,12 @@ static Value parse_implementation(Parser *p) {
                 if (g_method_count < MAX_METHODS && body_len > 0) {
                     MethodImpl *mi = &g_methods[g_method_count];
                     unsigned int copy_len = body_len;
-                    if (copy_len >= 2048) copy_len = 2047;
+                    if (copy_len >= 2048) {
+                        copy_len = 2047;
+                        nslog_append("Warning: method body truncated to 2047 bytes\n", 45);
+                    }
                     /* Copy body source (content between the braces) */
-                    cstr_copy(mi->source, p->lex.source + body_start, 2048);
+                    cstr_copy(mi->source, p->lex.source + body_start, copy_len + 1);
                     mi->source_len = copy_len;
                     mi->class_ptr = cls;
                     mi->selector = sel;
@@ -5218,6 +5248,8 @@ static Value parse_primary(Parser *p) {
             }
             blk->source[body_len] = '\0';
             blk->source_len = body_len;
+        } else if (body_len >= 2048) {
+            parser_error(p, "block body too large (max 2047 bytes)");
         }
         g_block_count++;
 
@@ -5496,43 +5528,6 @@ static Value parse_ternary(Parser *p) {
 }
 
 static Value parse_assignment(Parser *p) {
-    /* Check for identifier assignment (a = value) by peeking ahead */
-    if (parser_current(p).type == TOK_IDENTIFIER) {
-        Token saved = p->lex.current;
-        unsigned int saved_pos = p->lex.pos;
-        const char *var_name = p->lex.current.text;
-
-        parser_advance(p);
-        if (parser_current(p).type == TOK_ASSIGN) {
-            parser_advance(p);
-            Value value = parse_assignment(p);
-            if (p->error) return value;
-
-            /* Perform the assignment */
-            InterpVar *var = interp_find_var(var_name);
-            if (!var) {
-                var = interp_get_or_create_var(var_name);
-            }
-            if (var) {
-                var->value = value.obj_val;
-                var->cls = value.cls_val;
-                var->sel = value.sel_val;
-                var->is_int = value.is_int;
-                var->int_value = value.int_val;
-                var->is_float = value.is_float;
-                var->float_value = value.float_val;
-                var->is_class = value.is_class;
-                var->is_sel = value.is_sel;
-                var->is_id = value.is_id;
-            }
-            return value;
-        }
-
-        /* Not an assignment — restore and parse as normal ternary */
-        p->lex.current = saved;
-        p->lex.pos = saved_pos;
-    }
-
     Value target = parse_ternary(p);
     if (p->error) return target;
     return target;
