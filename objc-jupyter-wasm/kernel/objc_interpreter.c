@@ -4807,7 +4807,10 @@ static Value parse_statement(Parser *p) {
     }
 
     /* Type declaration: int, void, id, Class, SEL, or registered class name */
+    /* Also __block qualifier before type */
     if (tok.type == TOK_IDENTIFIER) {
+        /* Check for __block qualifier */
+        int is_block_qualifier = cstr_eq(tok.text, "__block");
         /* Check if this is a type name followed by a variable name.
          * Built-in types are always recognized. Registered class names
          * (from @implementation) are also recognized as types when
@@ -4832,28 +4835,36 @@ static Value parse_statement(Parser *p) {
             }
         }
 
-        if (is_builtin_type || is_class_type) {
+        if (is_builtin_type || is_class_type || is_block_qualifier) {
+            if (is_block_qualifier) {
+                /* __block is always followed by a type — call directly */
+                Value v = parse_type_and_var_decl(p);
+                if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                return v;
+            }
             /* Look ahead to see if next token is * or an identifier */
-            Token saved = p->lex.current;
-            unsigned int saved_pos = p->lex.pos;
-            parser_advance(p);
+            {
+                Token saved = p->lex.current;
+                unsigned int saved_pos = p->lex.pos;
+                parser_advance(p);
 
-            if (parser_current(p).type == TOK_STAR ||
-                parser_current(p).type == TOK_IDENTIFIER ||
-                parser_current(p).type == TOK_OPEN_PAREN) {
-                /* Restore and parse as type+variable declaration */
+                if (parser_current(p).type == TOK_STAR ||
+                    parser_current(p).type == TOK_IDENTIFIER ||
+                    parser_current(p).type == TOK_OPEN_PAREN) {
+                    /* Restore and parse as type+variable declaration */
+                    p->lex.current = saved;
+                    p->lex.pos = saved_pos;
+                    {
+                        Value v = parse_type_and_var_decl(p);
+                        if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                        return v;
+                    }
+                }
+
+                /* Restore — this was just an expression starting with a type name */
                 p->lex.current = saved;
                 p->lex.pos = saved_pos;
-                {
-                    Value v = parse_type_and_var_decl(p);
-                    if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
-                    return v;
-                }
             }
-
-            /* Restore — this was just an expression starting with a type name */
-            p->lex.current = saved;
-            p->lex.pos = saved_pos;
         }
 
         /* Variable assignment: name = expr; */
