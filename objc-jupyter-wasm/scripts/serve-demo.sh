@@ -60,41 +60,26 @@ PATH="$(dirname "$JUPYTER_BIN"):$PATH" python3 -m jupyterlite build \
 
 # ── 5. Patch jupyter-lite.json with federated extension ─────────
 # The build fails to populate federated_extensions due to the
-# _output merge bug. We patch it manually.
+# _output merge bug. We patch it manually using the _build metadata
+# from the extension's package.json (load path is relative to the
+# extension directory, not the site root).
 echo ">> Patching jupyter-lite.json with kernel extension..."
-
-# Find the remoteEntry.js path from the extension's _build metadata
-REMOTE_ENTRY=""
-PKG_JSON="$DIST/extensions/$EXT_NAME/package.json"
-if [ -f "$PKG_JSON" ]; then
-  REMOTE_ENTRY=$(python3 -c "
-import json, sys
-pkg = json.load(open('$PKG_JSON'))
-build = pkg.get('jupyterlab', {}).get('_build', {})
-load = build.get('load', '')
-if not load:
-    sys.exit(1)
-print(load)
-" 2>/dev/null || true)
-fi
-
-if [ -z "$REMOTE_ENTRY" ]; then
-  echo "ERROR: Could not find remoteEntry.js in extension" >&2
-  exit 1
-fi
 
 python3 -c "
 import json, glob, os
 
 ext_name = '$EXT_NAME'
-remote_entry = '$REMOTE_ENTRY'
 dist_dir = '$DIST'
-load_path = f'extensions/{ext_name}/{remote_entry}'
+
+# Read the _build metadata from the extension's package.json to get
+# the correct load path (relative to extension dir) and module path.
+pkg_json = os.path.join(dist_dir, 'extensions', ext_name, 'package.json')
+pkg = json.load(open(pkg_json))
+build = pkg.get('jupyterlab', {}).get('_build', {})
 
 ext_entry = {
     'name': ext_name,
-    'extension': True,
-    'load': load_path,
+    **build,
 }
 
 for f in glob.glob(os.path.join(dist_dir, '**/jupyter-lite.json'), recursive=True):
