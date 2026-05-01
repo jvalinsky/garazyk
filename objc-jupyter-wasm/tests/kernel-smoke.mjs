@@ -1605,5 +1605,41 @@ console.log('  Traceback: line/column in errors, source line, caret — PASS');
 
 console.log('  NSMutableArray: replace, insert, removeAt, indexOf + C subscripts — PASS');
 
+// ── Switch/case statements ───────────────────────────────────
+
+// Basic switch with matching case
+{
+  const r = execute('int x = 2;\nswitch (x) { case 1: NSLog(@"one"); break; case 2: NSLog(@"two"); break; case 3: NSLog(@"three"); break; }', 'switch-basic');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /two/);
+  assert.ok(!hostStreamText().includes('one'), 'should not print one');
+  assert.ok(!hostStreamText().includes('three'), 'should not print three');
+}
+
+// Switch with default
+{
+  const r = execute('int y = 99;\nswitch (y) { case 1: NSLog(@"one"); break; default: NSLog(@"other"); break; }', 'switch-default');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /other/);
+}
+
+// Switch with fall-through
+{
+  const r = execute('int z = 1;\nswitch (z) { case 1: NSLog(@"one"); case 2: NSLog(@"two"); break; case 3: NSLog(@"three"); break; }', 'switch-fallthrough');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /one/);
+  assert.match(hostStreamText(), /two/);  // fall-through from case 1 to case 2
+  assert.ok(!hostStreamText().includes('three'), 'should not print three');
+}
+
+// Switch with break in loop
+{
+  const r = execute('int sum = 0;\nfor (int i = 0; i < 4; i++) { switch (i) { case 0: sum += 10; break; case 1: sum += 20; break; case 2: sum += 30; break; default: sum += 100; break; } }\nNSLog(@"sum=%d", sum);', 'switch-in-loop');
+  assert.equal(r.status, 'ok');
+  assert.match(hostStreamText(), /sum=160/);  // 10+20+30+100 = 160
+}
+
+console.log('  Switch/case: basic, default, fall-through, break — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');

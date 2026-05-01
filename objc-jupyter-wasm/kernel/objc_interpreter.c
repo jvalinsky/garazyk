@@ -183,6 +183,9 @@ typedef enum {
     TOK_PLUS_PLUS,     /* ++ */
     TOK_MINUS_MINUS,   /* -- */
     TOK_CARET,         /* ^ (block literal) */
+    TOK_SWITCH,        /* switch keyword */
+    TOK_CASE,          /* case keyword */
+    TOK_DEFAULT,       /* default keyword */
     TOK_UNKNOWN
 } TokenType;
 
@@ -390,6 +393,12 @@ static Token lexer_next_token(Lexer *lex) {
             tok.type = TOK_CONTINUE;
         } else if (cstr_eq(tok.text, "in")) {
             tok.type = TOK_IN;
+        } else if (cstr_eq(tok.text, "switch")) {
+            tok.type = TOK_SWITCH;
+        } else if (cstr_eq(tok.text, "case")) {
+            tok.type = TOK_CASE;
+        } else if (cstr_eq(tok.text, "default")) {
+            tok.type = TOK_DEFAULT;
         } else if (cstr_eq(tok.text, "YES") || cstr_eq(tok.text, "TRUE")) {
             /* Boolean true → integer 1 */
             tok.text[0] = '1'; tok.text[1] = '\0';
@@ -1288,7 +1297,8 @@ typedef enum {
     AST_VAR_DECL,
     AST_RETURN,
     AST_BREAK,
-    AST_CONTINUE
+    AST_CONTINUE,
+    AST_SWITCH
 } AstNodeType;
 
 typedef struct AstNode AstNode;
@@ -1317,6 +1327,15 @@ struct AstNode {
             unsigned int collection_len;
             AstNode *body;
         } for_in;
+        struct { /* AST_SWITCH */
+            unsigned int expr_start;  /* source range for switch expression */
+            unsigned int expr_len;
+            int case_values[32];      /* integer values for each case */
+            AstNode *case_bodies[32]; /* body block for each case */
+            unsigned int case_count;
+            int has_default;
+            AstNode *default_body;
+        } switch_stmt;
         struct { /* AST_BLOCK */
             AstNode *children[128];
             unsigned int count;
@@ -5943,6 +5962,131 @@ static AstNode *parse_statement_ast(Parser *p) {
         }
     }
 
+    /* switch statement */
+    if (tok.type == TOK_SWITCH) {
+        AstNode *node = ast_alloc();
+        if (!node) {
+            parser_error(p, "AST node limit reached (max 1024)");
+            return 0;
+        }
+        node->type = AST_SWITCH;
+        node->switch_stmt.case_count = 0;
+        node->switch_stmt.has_default = 0;
+        node->switch_stmt.default_body = 0;
+
+        parser_advance(p); /* consume 'switch' */
+
+        /* Expect (expr) */
+        if (parser_current(p).type != TOK_OPEN_PAREN) {
+            parser_error(p, "Expected '(' after 'switch'");
+            return 0;
+        }
+        parser_advance(p); /* consume ( */
+
+        /* Capture switch expression as source range */
+        node->switch_stmt.expr_start = (unsigned int)(p->lex.pos - p->lex.source);
+        {
+            int depth = 1;
+            while (depth > 0 && parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_OPEN_PAREN) depth++;
+                else if (parser_current(p).type == TOK_CLOSE_PAREN) depth--;
+                if (depth > 0) parser_advance(p);
+            }
+        }
+        node->switch_stmt.expr_len = (unsigned int)(p->lex.pos - p->lex.source) - node->switch_stmt.expr_start;
+
+        if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+
+        /* Expect { */
+        if (parser_current(p).type != TOK_OPEN_BRACE) {
+            parser_error(p, "Expected '{' after switch expression");
+            return 0;
+        }
+        parser_advance(p); /* consume { */
+
+        /* Parse case/default clauses */
+        while (parser_current(p).type != TOK_CLOSE_BRACE &&
+               parser_current(p).type != TOK_EOF &&
+               !p->error) {
+            if (parser_current(p).type == TOK_CASE) {
+                unsigned int ci = node->switch_stmt.case_count;
+                if (ci >= 32) {
+                    parser_error(p, "Too many case labels (max 32)");
+                    return 0;
+                }
+                parser_advance(p); /* consume 'case' */
+
+                /* Parse case value (integer constant) */
+                {
+                    Value case_val = parse_expression(p);
+                    if (p->error) return 0;
+                    node->switch_stmt.case_values[ci] = case_val.int_val;
+                }
+
+                if (parser_current(p).type == TOK_COLON) parser_advance(p);
+
+                /* Parse case body (statements until next case/default/}) */
+                {
+                    AstNode *body = ast_alloc();
+                    if (!body) {
+                        parser_error(p, "AST node limit reached");
+                        return 0;
+                    }
+                    body->type = AST_BLOCK;
+                    body->block.count = 0;
+
+                    while (parser_current(p).type != TOK_CASE &&
+                           parser_current(p).type != TOK_DEFAULT &&
+                           parser_current(p).type != TOK_CLOSE_BRACE &&
+                           parser_current(p).type != TOK_EOF &&
+                           !p->error) {
+                        AstNode *stmt = parse_statement_ast(p);
+                        if (!stmt) break;
+                        if (body->block.count < 128) {
+                            body->block.children[body->block.count++] = stmt;
+                        }
+                    }
+                    node->switch_stmt.case_bodies[ci] = body;
+                }
+                node->switch_stmt.case_count++;
+            } else if (parser_current(p).type == TOK_DEFAULT) {
+                parser_advance(p); /* consume 'default' */
+                if (parser_current(p).type == TOK_COLON) parser_advance(p);
+
+                node->switch_stmt.has_default = 1;
+                {
+                    AstNode *body = ast_alloc();
+                    if (!body) {
+                        parser_error(p, "AST node limit reached");
+                        return 0;
+                    }
+                    body->type = AST_BLOCK;
+                    body->block.count = 0;
+
+                    while (parser_current(p).type != TOK_CASE &&
+                           parser_current(p).type != TOK_DEFAULT &&
+                           parser_current(p).type != TOK_CLOSE_BRACE &&
+                           parser_current(p).type != TOK_EOF &&
+                           !p->error) {
+                        AstNode *stmt = parse_statement_ast(p);
+                        if (!stmt) break;
+                        if (body->block.count < 128) {
+                            body->block.children[body->block.count++] = stmt;
+                        }
+                    }
+                    node->switch_stmt.default_body = body;
+                }
+            } else {
+                /* Unexpected token inside switch body */
+                parser_advance(p);
+            }
+        }
+
+        if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+
+        return node;
+    }
+
     /* break statement */
     if (tok.type == TOK_BREAK) {
         parser_advance(p);
@@ -6067,7 +6211,7 @@ static Value eval_source_range(unsigned int start, unsigned int len,
     while (p.lex.current.type != TOK_EOF && !p.error) {
         Token tok = parser_current(&p);
         if (tok.type == TOK_IF || tok.type == TOK_WHILE ||
-            tok.type == TOK_FOR) {
+            tok.type == TOK_FOR || tok.type == TOK_SWITCH) {
             /* Control flow: use two-phase AST approach.
              * Save and restore AST count to avoid corrupting
              * the outer AST arena. */
@@ -6287,6 +6431,52 @@ static Value eval_ast(AstNode *node, const char *source) {
     case AST_CONTINUE:
         g_continue_pending = 1;
         break;
+
+    case AST_SWITCH: {
+        /* Evaluate the switch expression */
+        Value switch_val = eval_source_range(
+            node->switch_stmt.expr_start,
+            node->switch_stmt.expr_len, source);
+        if (g_error_code != OBJC_INTERP_OK) return switch_val;
+
+        /* Find matching case */
+        int matched_case = -1;
+        {
+            unsigned int ci;
+            for (ci = 0; ci < node->switch_stmt.case_count; ci++) {
+                if (switch_val.is_int && node->switch_stmt.case_values[ci] == switch_val.int_val) {
+                    matched_case = (int)ci;
+                    break;
+                }
+            }
+        }
+
+        /* Execute from matched case (fall-through) or from default */
+        if (matched_case >= 0) {
+            unsigned int ci;
+            for (ci = (unsigned int)matched_case; ci < node->switch_stmt.case_count; ci++) {
+                g_break_pending = 0;
+                eval_ast(node->switch_stmt.case_bodies[ci], source);
+                if (g_break_pending) {
+                    g_break_pending = 0;
+                    break;
+                }
+                if (g_return_pending) return last;
+            }
+            /* Fall through to default if no break */
+            if (!g_break_pending && !g_return_pending &&
+                node->switch_stmt.has_default && node->switch_stmt.default_body) {
+                g_break_pending = 0;
+                eval_ast(node->switch_stmt.default_body, source);
+                if (g_break_pending) g_break_pending = 0;
+            }
+        } else if (node->switch_stmt.has_default && node->switch_stmt.default_body) {
+            g_break_pending = 0;
+            eval_ast(node->switch_stmt.default_body, source);
+            if (g_break_pending) g_break_pending = 0;
+        }
+        break;
+    }
     }
 
     return last;
