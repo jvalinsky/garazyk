@@ -1219,5 +1219,53 @@ console.log('  blocks: simple, params, capture, enum, cross-cell, control flow, 
 
 console.log('  properties: write-back, compound assignment, auto-synthesize — PASS');
 
+// ── Float/double tests ──────────────────────────────────────────
+
+// Float literal and variable
+const floatLiteralTest = execute('double x = 3.14; NSLog(@"x = %f", x);', 'float-literal-cell');
+assert.equal(floatLiteralTest.status, 'ok');
+assert.match(hostStreamText(), /x = 3\.14/);
+
+// Float + int promotion
+const floatIntPromoTest = execute('double y = 3.14 + 1; NSLog(@"y = %f", y);', 'float-int-promo-cell');
+assert.equal(floatIntPromoTest.status, 'ok');
+assert.match(hostStreamText(), /y = 4\.14/);
+
+// Float arithmetic
+const floatArithTest = execute('double z = 10.0 / 3.0; NSLog(@"z = %f", z);', 'float-arith-cell');
+assert.equal(floatArithTest.status, 'ok');
+assert.match(hostStreamText(), /z = 3\.33333/);
+
+// Float comparison
+const floatCmpTest = execute('int cmp = 3.14 > 2.71; NSLog(@"3.14>2.71 = %d", cmp);', 'float-cmp-cell');
+assert.equal(floatCmpTest.status, 'ok');
+assert.match(hostStreamText(), /3\.14>2\.71 = 1/);
+
+// NSNumber float round-trip
+const nsnumberFloatTest = execute([
+  'NSNumber *n = [NSNumber numberWithFloat:2.5];',
+  'double v = [n doubleValue];',
+  'NSLog(@"2.5 = %f", v);'
+].join('\n'), 'nsnumber-float-cell');
+assert.equal(nsnumberFloatTest.status, 'ok');
+assert.match(hostStreamText(), /2\.5 = 2\.5/);
+
+// Float expression result display
+const floatExprTest = execute('3.14;', 'float-expr-cell');
+assert.equal(floatExprTest.status, 'ok');
+assert.equal(floatExprTest.data['text/plain'], '3.14');
+
+// Float compound assignment
+const floatCompoundTest = execute('double a = 1.5; a += 0.5; NSLog(@"a = %f", a);', 'float-compound-cell');
+assert.equal(floatCompoundTest.status, 'ok');
+assert.match(hostStreamText(), /a = 2\.0/);
+
+// Unary minus on float
+const floatUnaryTest = execute('double neg = -3.14; NSLog(@"neg = %f", neg);', 'float-unary-cell');
+assert.equal(floatUnaryTest.status, 'ok');
+assert.match(hostStreamText(), /neg = -3\.14/);
+
+console.log('  floats: literal, arithmetic, promotion, comparison, NSNumber, compound, unary — PASS');
+
 exports.objc_kernel_free(0);
 console.log('objc-jupyter-wasm kernel smoke passed');
