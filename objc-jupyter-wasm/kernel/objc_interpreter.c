@@ -1724,6 +1724,208 @@ static void eval_nslog(Parser *p) {
 
 /* ── Message send evaluation ────────────────────────────────────── */
 
+/* Format values into a string pool entry, similar to NSLog but without
+ * the trailing newline and host stream output. Returns the string pool
+ * pointer as an id value. */
+static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
+    char buf[4096];
+    unsigned int pos = 0;
+    unsigned int fi = 0;
+    int arg_idx = 0;
+
+    if (fmt == 0) {
+        char *r = string_pool_alloc(7);
+        if (r == 0) return value_from_id(0);
+        cstr_copy(r, "(null)", 7);
+        return value_from_id((id)r);
+    }
+
+    while (fmt[fi] != '\0' && pos < sizeof(buf) - 1) {
+        if (fmt[fi] == '%' && fmt[fi + 1] != '\0') {
+            fi++;
+            switch (fmt[fi]) {
+                case '%':
+                    buf[pos++] = '%';
+                    break;
+                case '@':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_id && v.obj_val != 0) {
+                            const char *s = (const char *)v.obj_val;
+                            if (cstr_eq_n(s, "NSData:", 7)) {
+                                const char *hex = s + 7;
+                                int hex_len = (int)cstr_len(hex);
+                                buf[pos++] = '<';
+                                { int i; for (i = 0; i < hex_len && pos < sizeof(buf)-2; i++) buf[pos++] = hex[i]; }
+                                buf[pos++] = '>';
+                            } else if (cstr_eq_n(s, "NSNumber:", 9)) {
+                                const char *val = s + 9;
+                                while (*val && pos < sizeof(buf)-1) buf[pos++] = *val++;
+                            } else if (cstr_eq_n(s, "NSFloat:", 8)) {
+                                const char *val = s + 8;
+                                while (*val && pos < sizeof(buf)-1) buf[pos++] = *val++;
+                            } else if (cstr_eq_n(s, "FDObj:", 6)) {
+                                buf[pos++] = '<';
+                                { const char *cn = s + 6; while (*cn && pos < sizeof(buf)-2) buf[pos++] = *cn++; }
+                                buf[pos++] = '>';
+                            } else {
+                                while (*s && pos < sizeof(buf)-1) buf[pos++] = *s++;
+                            }
+                        } else if (v.is_class && v.cls_val != 0) {
+                            const char *name = 0;
+                            unsigned int vi;
+                            for (vi = 0; vi < g_var_count; vi++) {
+                                if (g_vars[vi].is_class && g_vars[vi].cls == v.cls_val) {
+                                    name = g_vars[vi].name; break;
+                                }
+                            }
+                            if (name == 0) name = "Class";
+                            while (*name && pos < sizeof(buf)-1) buf[pos++] = *name++;
+                        } else if (v.is_sel && v.sel_val != 0) {
+                            const char *sel_name = sel_getName(v.sel_val);
+                            if (sel_name) { while (*sel_name && pos < sizeof(buf)-1) buf[pos++] = *sel_name++; }
+                        } else if (v.is_int) {
+                            /* Format int as decimal */
+                            int val = v.int_val;
+                            int neg = val < 0;
+                            if (neg) val = -val;
+                            char tmp[12]; int ti = 0;
+                            if (val == 0) tmp[ti++] = '0';
+                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
+                            if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                            while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                        } else {
+                            const char *nil_s = "(nil)";
+                            while (*nil_s && pos < sizeof(buf)-1) buf[pos++] = *nil_s++;
+                        }
+                    }
+                    break;
+                case 'd': case 'i':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_int) {
+                            int val = v.int_val;
+                            int neg = val < 0;
+                            if (neg) val = -val;
+                            char tmp[12]; int ti = 0;
+                            if (val == 0) tmp[ti++] = '0';
+                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
+                            if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                            while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                        } else if (v.is_id) {
+                            int val = (int)(long)v.obj_val;
+                            int neg = val < 0;
+                            if (neg) val = -val;
+                            char tmp[12]; int ti = 0;
+                            if (val == 0) tmp[ti++] = '0';
+                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
+                            if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                            while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                        }
+                    }
+                    break;
+                case 'l':
+                    if (fmt[fi + 1] == 'd' || fmt[fi + 1] == 'i') {
+                        fi++;
+                        if (arg_idx < arg_count) {
+                            Value v = args[arg_idx++];
+                            if (v.is_int) {
+                                long val = (long)v.int_val;
+                                int neg = val < 0;
+                                if (neg) val = -val;
+                                char tmp[20]; int ti = 0;
+                                if (val == 0) tmp[ti++] = '0';
+                                else { while (val > 0) { tmp[ti++] = '0' + (int)(val % 10); val /= 10; } }
+                                if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                                while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                            }
+                        }
+                    }
+                    break;
+                case 'u':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_int) {
+                            int val = v.int_val;
+                            if (val < 0) val = 0;
+                            char tmp[12]; int ti = 0;
+                            if (val == 0) tmp[ti++] = '0';
+                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
+                            while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                        }
+                    }
+                    break;
+                case 'f': {
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        double fv = v.is_float ? v.float_val : (v.is_int ? (double)v.int_val : 0.0);
+                        int neg = fv < 0.0;
+                        if (neg) fv = -fv;
+                        unsigned long ipart = (unsigned long)fv;
+                        double fpart = fv - (double)ipart;
+                        if (neg) buf[pos++] = '-';
+                        if (ipart == 0) buf[pos++] = '0';
+                        else {
+                            char ibuf[20]; int ii = 0;
+                            while (ipart > 0) { ibuf[ii++] = '0' + (int)(ipart % 10); ipart /= 10; }
+                            while (ii > 0 && pos < sizeof(buf)-1) buf[pos++] = ibuf[--ii];
+                        }
+                        buf[pos++] = '.';
+                        { int d; for (d = 0; d < 6 && pos < sizeof(buf)-2; d++) {
+                            fpart *= 10.0;
+                            int digit = (int)fpart;
+                            buf[pos++] = '0' + digit;
+                            fpart -= digit;
+                        }}
+                        while (pos > 1 && buf[pos-1] == '0') pos--;
+                        if (buf[pos-1] == '.') buf[pos++] = '0';
+                    }
+                    break;
+                }
+                case 's':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        if (v.is_id && v.obj_val != 0) {
+                            const char *s = (const char *)v.obj_val;
+                            while (*s && pos < sizeof(buf)-1) buf[pos++] = *s++;
+                        }
+                    }
+                    break;
+                case 'p':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        buf[pos++] = '0'; buf[pos++] = 'x';
+                        if (v.is_id) {
+                            unsigned long ptr = (unsigned long)v.obj_val;
+                            char hex[17]; int hi = 0;
+                            if (ptr == 0) buf[pos++] = '0';
+                            else {
+                                while (ptr > 0 && hi < 16) { hex[hi++] = "0123456789abcdef"[ptr % 16]; ptr /= 16; }
+                                while (hi > 0 && pos < sizeof(buf)-1) buf[pos++] = hex[--hi];
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    if (pos < sizeof(buf)-2) { buf[pos++] = '%'; buf[pos++] = fmt[fi]; }
+                    break;
+            }
+            fi++;
+        } else {
+            buf[pos++] = fmt[fi++];
+        }
+    }
+    buf[pos] = '\0';
+
+    {
+        unsigned int needed = pos + 1;
+        char *result = string_pool_alloc(needed);
+        if (result == 0) return value_from_id(0);
+        cstr_copy(result, buf, needed);
+        return value_from_id((id)result);
+    }
+}
+
 /* Parse a message send: [target selector:arg1 key2:arg2 ...]
  * We've already consumed the [.
  */
@@ -2031,7 +2233,11 @@ static Value parse_message_send(Parser *p) {
 
         /* NSString: [NSString stringWithFormat:@"..." args...] */
         if (IS_FOUNDATION_CLASS("NSString") && target.is_class && cstr_eq(sel_name, "stringWithFormat:") && arg_count >= 1) {
-            return keyword_args[0];
+            const char *fmt = 0;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                fmt = (const char *)keyword_args[0].obj_val;
+            }
+            return format_values_to_pool(fmt, keyword_args + 1, arg_count - 1);
         }
 
         /* NSString: [str length] → string length */
