@@ -219,13 +219,18 @@ export class ObjcKernel extends BaseKernel {
   }
 
   private _initializeWorker(): Promise<void> {
+    console.log(">>>>>>>>>>> _initializeWorker STARTING <<<<<<<<<<<");
     return this._request(
       'kernel_info_request',
       {},
       'kernel_info_reply',
       READY_TIMEOUT_MS
     ).then(info => {
+      console.log(">>>>>>>>>>> _initializeWorker SUCCESS! <<<<<<<<<<<", info);
       this._infoReply = { ...FALLBACK_KERNEL_INFO, ...info };
+    }).catch(err => {
+      console.error(">>>>>>>>>>> _initializeWorker FAILED! <<<<<<<<<<<", err);
+      throw err;
     });
   }
 
