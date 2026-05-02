@@ -185,6 +185,12 @@ static int is_hex(char value) {
         (value >= 'A' && value <= 'F');
 }
 
+static int is_alphanum(char value) {
+    return (value >= '0' && value <= '9') ||
+           (value >= 'a' && value <= 'z') ||
+           (value >= 'A' && value <= 'Z');
+}
+
 static void skip_space(const char **cursor) {
     while (*cursor != 0 && is_space(**cursor)) {
         *cursor += 1;
@@ -1175,6 +1181,179 @@ static int build_complete_response(unsigned int *out_ptr_ptr, unsigned int *out_
     return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
 }
 
+static int parse_kernel_request_inspect(
+    const char *json,
+    char *code,
+    unsigned int code_capacity,
+    unsigned int *code_length,
+    unsigned int *cursor_pos
+) {
+    const char *cursor = json;
+    int found_code = 0;
+    int found_cursor = 0;
+
+    *code_length = 0u;
+    *cursor_pos = 0u;
+    if (code_capacity > 0u) {
+        code[0] = '\0';
+    }
+
+    if (json == 0) {
+        return OBJC_JSON_INVALID;
+    }
+
+    skip_space(&cursor);
+    if (*cursor != '{') {
+        return OBJC_JSON_INVALID;
+    }
+    cursor++;
+    skip_space(&cursor);
+
+    if (*cursor == '}') {
+        cursor++;
+        skip_space(&cursor);
+        return *cursor == '\0' ? OBJC_JSON_MISSING_CODE : OBJC_JSON_INVALID;
+    }
+
+    while (*cursor != '\0') {
+        char key[32];
+        unsigned int key_length = 0u;
+        int status = parse_json_string(&cursor, key, 32u, &key_length);
+        (void)key_length;
+        if (status != OBJC_JSON_OK) {
+            return status;
+        }
+
+        skip_space(&cursor);
+        if (*cursor != ':') {
+            return OBJC_JSON_INVALID;
+        }
+        cursor++;
+        skip_space(&cursor);
+
+        if (match_literal(key, "code")) {
+            if (*cursor != '"') {
+                if (*cursor == '\0' || *cursor == ',' || *cursor == '}') {
+                    return OBJC_JSON_INVALID;
+                }
+                return OBJC_JSON_CODE_NOT_STRING;
+            }
+            status = parse_json_string(&cursor, code, code_capacity, code_length);
+            if (status != OBJC_JSON_OK) {
+                return status;
+            }
+            found_code = 1;
+        } else if (match_literal(key, "cursorPos") || match_literal(key, "cursor_pos")) {
+            if (*cursor == '-' || is_digit(*cursor)) {
+                if (*cursor == '-') {
+                    skip_json_number(&cursor);
+                    *cursor_pos = 0u;
+                } else {
+                    status = parse_json_uint(&cursor, cursor_pos);
+                    if (status != OBJC_JSON_OK) {
+                        return status;
+                    }
+                }
+            } else {
+                status = skip_json_value(&cursor);
+                if (status != OBJC_JSON_OK) {
+                    return status;
+                }
+            }
+            found_cursor = 1;
+        } else {
+            status = skip_json_value(&cursor);
+            if (status != OBJC_JSON_OK) {
+                return status;
+            }
+        }
+
+        skip_space(&cursor);
+        if (*cursor == '}') {
+            cursor++;
+            skip_space(&cursor);
+            if (*cursor != '\0') {
+                return OBJC_JSON_INVALID;
+            }
+            return found_code ? OBJC_JSON_OK : OBJC_JSON_MISSING_CODE;
+        }
+
+        if (*cursor != ',') {
+            return OBJC_JSON_INVALID;
+        }
+        cursor++;
+        skip_space(&cursor);
+    }
+
+    return OBJC_JSON_INVALID;
+}
+
+static int build_inspect_response_impl(const char *code, unsigned int code_length, unsigned int cursor_pos, unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
+    JsonBuilder builder;
+    char *response_buffer = 0;
+    int status = allocate_response(&builder, OBJC_KERNEL_SMALL_RESPONSE_BYTES, &response_buffer);
+    if (status != OBJC_KERNEL_TRANSPORT_OK) {
+        return status;
+    }
+
+    /* Find the identifier at cursor_pos */
+    unsigned int start = cursor_pos;
+    unsigned int end = cursor_pos;
+    const char *identifier = 0;
+    char ident_buf[64];
+
+    if (code && cursor_pos < code_length) {
+        /* Scan backwards to find start of identifier */
+        while (start > 0 && (is_alphanum(code[start - 1]) || code[start - 1] == '_')) {
+            start--;
+        }
+        /* Scan forwards to find end of identifier */
+        while (end < code_length && (is_alphanum(code[end]) || code[end] == '_')) {
+            end++;
+        }
+
+        /* Extract identifier if it's in the expected range */
+        if (end > start && end - start < 64) {
+            unsigned int i;
+            for (i = 0; i < end - start; i++) {
+                ident_buf[i] = code[start + i];
+            }
+            ident_buf[end - start] = '\0';
+            identifier = ident_buf;
+        }
+    }
+
+    /* Look up identifier in variable table */
+    int found = 0;
+    unsigned int i;
+    if (identifier && identifier[0] != '\0') {
+        for (i = 0; i < objc_interp_get_var_count(); i++) {
+            const char *var_name = objc_interp_get_var_name(i);
+            if (var_name && cstr_eq(var_name, identifier)) {
+                found = 1;
+                break;
+            }
+        }
+    }
+
+    builder_append_literal(&builder, "{");
+    builder_append_literal(&builder, "\"status\":\"ok\",");
+
+    if (found) {
+        builder_append_literal(&builder, "\"found\":true,");
+        builder_append_literal(&builder, "\"data\":{\"text/plain\":\"Variable: ");
+        builder_append_json_escaped_range(&builder, identifier, cstr_len(identifier));
+        builder_append_literal(&builder, "\"},");
+        builder_append_literal(&builder, "\"metadata\":{}");
+    } else {
+        builder_append_literal(&builder, "\"found\":false,\"data\":{},\"metadata\":{}");
+    }
+
+    builder_append_literal(&builder, "}");
+
+    return finalize_response_buffer(response_buffer, &builder, out_ptr_ptr, out_len_ptr);
+}
+
 static int build_inspect_response(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr) {
     JsonBuilder builder;
     char *response_buffer = 0;
@@ -1393,15 +1572,47 @@ int objc_kernel_inspect_json(
     unsigned int *out_ptr_ptr,
     unsigned int *out_len_ptr
 ) {
+    char *request_json = 0;
+    unsigned int code_length = 0u;
+    unsigned int cursor_pos = 0u;
+    int parse_status;
+    int transport_status;
+
     int status = validate_output_args(out_ptr_ptr, out_len_ptr);
     if (status != OBJC_KERNEL_TRANSPORT_OK) {
         return status;
     }
-    return handle_request_without_code(
-        request_bytes,
-        request_len,
+
+    request_json = copy_request_json(request_bytes, request_len, &transport_status);
+    if (transport_status != OBJC_KERNEL_TRANSPORT_OK) {
+        return transport_status;
+    }
+
+    parse_status = parse_kernel_request_inspect(
+        request_json,
+        parsed_code_buffer,
+        OBJC_KERNEL_MAX_CODE_BYTES,
+        &code_length,
+        &cursor_pos
+    );
+    free(request_json);
+
+    if (parse_status != OBJC_JSON_OK) {
+        return write_domain_error_json(
+            json_error_name(parse_status),
+            json_error_value(parse_status),
+            0u,
+            0,
+            out_ptr_ptr,
+            out_len_ptr
+        );
+    }
+
+    return build_inspect_response_impl(
+        parsed_code_buffer,
+        code_length,
+        cursor_pos,
         out_ptr_ptr,
-        out_len_ptr,
-        build_inspect_response
+        out_len_ptr
     );
 }
