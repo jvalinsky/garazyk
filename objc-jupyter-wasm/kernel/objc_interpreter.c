@@ -138,6 +138,15 @@ static InterpVar g_vars[OBJC_INTERP_MAX_VARS];
 static unsigned int g_var_count = 0;
 static unsigned int g_var_scope_base = 0; /* base index for variable scoping during method execution */
 
+/* Typedef table for type aliases (e.g., typedef NSInteger MyInt;) */
+#define OBJC_INTERP_MAX_TYPEDEFS 64
+typedef struct {
+    char alias[64];     /* e.g., "MyInt" */
+    char base_type[64]; /* e.g., "NSInteger" or "int" */
+} TypeDef;
+static TypeDef g_typedefs[OBJC_INTERP_MAX_TYPEDEFS];
+static unsigned int g_typedef_count = 0;
+
 /* ── Token types ────────────────────────────────────────────────── */
 
 typedef enum {
@@ -773,6 +782,18 @@ static InterpVar *interp_get_or_create_var(const char *name) {
     InterpVar *v = interp_find_var(name);
     if (v) return v;
     return interp_create_var(name);
+}
+
+/* Look up a typedef alias and return the base type, or the original name if not found */
+static const char *typedef_resolve(const char *name) {
+    if (!name) return 0;
+    unsigned int i;
+    for (i = 0; i < g_typedef_count; i++) {
+        if (cstr_eq(g_typedefs[i].alias, name)) {
+            return g_typedefs[i].base_type;
+        }
+    }
+    return name; /* Return original if not found */
 }
 
 /* ── NSLog implementation ────────────────────────────────────────── */
@@ -6091,7 +6112,8 @@ static Value parse_statement(Parser *p) {
         /* Check if this is a type name followed by a variable name.
          * Built-in types are always recognized. Registered class names
          * (from @implementation) are also recognized as types when
-         * followed by * (pointer) or another identifier. */
+         * followed by * (pointer) or another identifier.
+         * Also check if this is a typedef alias. */
         int is_builtin_type = (
             cstr_eq(tok.text, "int") || cstr_eq(tok.text, "NSInteger") ||
             cstr_eq(tok.text, "NSUInteger") || cstr_eq(tok.text, "void") ||
@@ -6100,7 +6122,10 @@ static Value parse_statement(Parser *p) {
             cstr_eq(tok.text, "long") || cstr_eq(tok.text, "char") ||
             cstr_eq(tok.text, "float") || cstr_eq(tok.text, "double")
         );
-        int is_class_type = (!is_builtin_type && objc_lookUpClass(tok.text) != 0);
+        /* Check if it's a typedef alias */
+        const char *resolved_type = typedef_resolve(tok.text);
+        int is_typedef = (resolved_type != tok.text);
+        int is_class_type = (!is_builtin_type && !is_typedef && objc_lookUpClass(tok.text) != 0);
         /* Also check variable table for Foundation class names (which are
          * registered as variables with is_class=1, not in the runtime). */
         if (!is_class_type && !is_builtin_type) {
@@ -6113,7 +6138,7 @@ static Value parse_statement(Parser *p) {
             }
         }
 
-        if (is_builtin_type || is_class_type || is_block_qualifier) {
+        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier) {
             if (is_block_qualifier) {
                 /* __block is always followed by a type — call directly */
                 Value v = parse_type_and_var_decl(p);
