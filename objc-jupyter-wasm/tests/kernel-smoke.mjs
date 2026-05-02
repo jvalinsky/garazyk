@@ -1843,6 +1843,24 @@ console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
   assert.match(hostStreamText(), /rshift=2/);
 }
 
+{
+  const nsInteger = execute('NSInteger x = 42; NSLog(@"nsint=%ld", x);', 'nsinteger');
+  assert.equal(nsInteger.status, 'ok');
+  assert.match(hostStreamText(), /nsint=/);
+}
+
+{
+  const nsUInteger = execute('NSUInteger y = 100; NSLog(@"nsuint=%lu", y);', 'nsuinteger');
+  assert.equal(nsUInteger.status, 'ok');
+  assert.match(hostStreamText(), /nsuint=/);
+}
+
+{
+  const nsIntArith = execute('NSInteger a = 10; NSInteger b = 20; a + b;', 'nsint-arith');
+  assert.equal(nsIntArith.status, 'ok');
+  assert.equal(nsIntArith.data['text/plain'], '30');
+}
+
 console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);
