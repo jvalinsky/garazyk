@@ -59,11 +59,16 @@ PATH="$(dirname "$JUPYTER_BIN"):$PATH" python3 -m jupyterlite build \
   || true  # JupyterLite 0.6.4 bug: _output/tree/ merge fails — non-fatal
 
 # ── 5. Patch jupyter-lite.json with federated extension ─────────
-# The build fails to populate federated_extensions due to the
-# _output merge bug. We patch it manually using the _build metadata
-# from the extension's package.json (load path is relative to the
-# extension directory, not the site root).
-echo ">> Patching jupyter-lite.json with kernel extension..."
+# When the JupyterLite build succeeds (with --lite-dir .), the
+# federated_extensions:patch step already populates the extension list.
+# Our patch is only needed when the build's patch step fails (the
+# _output merge bug). We check first and only patch if missing.
+#
+# CRITICAL: We must also deduplicate — JupyterLite merges configs from
+# root + subdirectory jupyter-lite.json files. If the extension appears
+# in both root and a subdirectory, it gets loaded twice, causing
+# "Plugin 'objc-jupyter-wasm:kernel' is already registered".
+echo ">> Checking federated extension registration..."
 
 python3 -c "
 import json, glob, os
@@ -71,8 +76,7 @@ import json, glob, os
 ext_name = '$EXT_NAME'
 dist_dir = '$DIST'
 
-# Read the _build metadata from the extension's package.json to get
-# the correct load path (relative to extension dir) and module path.
+# Read the _build metadata from the extension's package.json
 pkg_json = os.path.join(dist_dir, 'extensions', ext_name, 'package.json')
 pkg = json.load(open(pkg_json))
 build = pkg.get('jupyterlab', {}).get('_build', {})
@@ -82,31 +86,74 @@ ext_entry = {
     **build,
 }
 
-for f in glob.glob(os.path.join(dist_dir, '**/jupyter-lite.json'), recursive=True):
+# Collect all jupyter-lite.json files (root + subdirectories)
+all_configs = []
+for f in sorted(glob.glob(os.path.join(dist_dir, '**/jupyter-lite.json'), recursive=True)):
     if 'extensions' in f:
         continue
-    try:
-        config = json.load(open(f))
-    except Exception:
-        continue
-    jcd = config.setdefault('jupyter-config-data', {})
-    fe = jcd.get('federated_extensions', None)
-    if fe is not None:
-        # Replace or append
-        existing = [e for e in fe if e.get('name') != ext_name]
-        existing.append(ext_entry)
-        jcd['federated_extensions'] = existing
+    all_configs.append(f)
+
+# Check if root config already has the extension
+root_config = os.path.join(dist_dir, 'jupyter-lite.json')
+root_data = json.load(open(root_config))
+root_fe = root_data.get('jupyter-config-data', {}).get('federated_extensions', [])
+already_registered = any(e.get('name') == ext_name for e in root_fe)
+
+if already_registered:
+    # Build succeeded — deduplicate: keep extension ONLY in root config,
+    # remove from subdirectory configs to prevent double-loading.
+    patched = 0
+    for f in all_configs:
+        if f == root_config:
+            continue  # keep root as-is
+        try:
+            config = json.load(open(f))
+        except Exception:
+            continue
+        jcd = config.get('jupyter-config-data', {})
+        fe = jcd.get('federated_extensions', None)
+        if fe is not None and any(e.get('name') == ext_name for e in fe):
+            jcd['federated_extensions'] = [e for e in fe if e.get('name') != ext_name]
+            with open(f, 'w') as fh:
+                json.dump(config, fh, indent=2)
+            patched += 1
+    if patched > 0:
+        print(f'  Deduplicated: removed extension from {patched} subdirectory configs')
     else:
-        jcd['federated_extensions'] = [ext_entry]
+        print(f'  Already registered (no duplicates)')
+else:
+    # Build failed to register — patch all configs
+    patched = 0
+    for f in all_configs:
+        try:
+            config = json.load(open(f))
+        except Exception:
+            continue
+        jcd = config.setdefault('jupyter-config-data', {})
+        fe = jcd.get('federated_extensions', None)
+        if fe is not None:
+            existing = [e for e in fe if e.get('name') != ext_name]
+            existing.append(ext_entry)
+            jcd['federated_extensions'] = existing
+        else:
+            jcd['federated_extensions'] = [ext_entry]
 
-    # Set default kernel
-    if 'defaultKernelName' not in jcd or jcd['defaultKernelName'] == 'python':
-        jcd['defaultKernelName'] = 'objective-c'
+        if 'defaultKernelName' not in jcd or jcd['defaultKernelName'] == 'python':
+            jcd['defaultKernelName'] = 'objective-c'
 
-    with open(f, 'w') as fh:
-        json.dump(config, fh, indent=2)
+        with open(f, 'w') as fh:
+            json.dump(config, fh, indent=2)
+        patched += 1
+    print(f'  Patched {patched} jupyter-lite.json files with {ext_name} extension')
 
-print(f'  Patched jupyter-lite.json files with {ext_name} extension')
+# Always ensure defaultKernelName is set on root
+root_data = json.load(open(root_config))
+jcd = root_data.setdefault('jupyter-config-data', {})
+if 'defaultKernelName' not in jcd or jcd['defaultKernelName'] == 'python':
+    jcd['defaultKernelName'] = 'objective-c'
+    with open(root_config, 'w') as fh:
+        json.dump(root_data, fh, indent=2)
+    print(f'  Set defaultKernelName to objective-c')
 "
 
 # ── 6. Verify ────────────────────────────────────────────────────
