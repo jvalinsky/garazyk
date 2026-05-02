@@ -4497,6 +4497,76 @@ static Value parse_primary(Parser *p) {
         }
     }
 
+    /* Numeric object literals: @42, @3.14, @YES, @NO */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
+        parser_advance(p); /* consume @ first */
+        Token next = parser_current(p);
+        if (next.type == TOK_INT_LITERAL) {
+            Value num_val = parse_primary(p); /* parse the integer */
+            if (num_val.is_int) {
+                /* Convert to [NSNumber numberWithInt:value] */
+                unsigned int i;
+                InterpVar *num_var = 0;
+                /* Find or create NSNumber in Foundation */
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
+                        num_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!num_var) {
+                    /* Create NSNumber class variable */
+                    num_var = interp_get_or_create_var("NSNumber");
+                    if (num_var) {
+                        num_var->is_class = 1;
+                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
+                    }
+                }
+                if (num_var && num_var->cls) {
+                    /* Dispatch [NSNumber numberWithInt:value] */
+                    SEL sel = sel_registerName("numberWithInt:");
+                    Value method_target = value_from_id((id)num_var->cls);
+                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
+                    if (mi < g_method_count) {
+                        Value args[1] = { num_val };
+                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
+                    }
+                }
+            }
+            return num_val;
+        } else if (next.type == TOK_FLOAT_LITERAL) {
+            Value num_val = parse_primary(p); /* parse the float */
+            if (num_val.is_float) {
+                /* Convert to [NSNumber numberWithDouble:value] */
+                unsigned int i;
+                InterpVar *num_var = 0;
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
+                        num_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!num_var) {
+                    num_var = interp_get_or_create_var("NSNumber");
+                    if (num_var) {
+                        num_var->is_class = 1;
+                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
+                    }
+                }
+                if (num_var && num_var->cls) {
+                    SEL sel = sel_registerName("numberWithDouble:");
+                    Value method_target = value_from_id((id)num_var->cls);
+                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
+                    if (mi < g_method_count) {
+                        Value args[1] = { num_val };
+                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
+                    }
+                }
+            }
+            return num_val;
+        }
+    }
+
     /* @selector() expression */
     if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@selector")) {
         parser_advance(p); /* consume @selector */
