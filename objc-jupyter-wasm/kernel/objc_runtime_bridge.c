@@ -1109,13 +1109,36 @@ static int build_complete_response_contextual(
             unsigned int var_count = objc_interp_get_var_count();
             for (vi = 0; vi < var_count && match_count < MAX_COMPLETE_MATCHES; vi++) {
                 const char *name = objc_interp_get_var_name(vi);
+                int is_class = objc_interp_get_var_is_class(vi);
                 if (name && cstr_starts(name, prefix)) {
-                    unsigned int mi;
-                    int dup = 0;
-                    for (mi = 0; mi < match_count; mi++) {
-                        if (cstr_eq(matches[mi], name)) { dup = 1; break; }
+                    /* Only include user-defined classes (is_class == 1) */
+                    if (is_class) {
+                        unsigned int mi;
+                        int dup = 0;
+                        for (mi = 0; mi < match_count; mi++) {
+                            if (cstr_eq(matches[mi], name)) { dup = 1; break; }
+                        }
+                        if (!dup) matches[match_count++] = name;
                     }
-                    if (!dup) matches[match_count++] = name;
+                }
+            }
+        }
+        {
+            unsigned int vi;
+            unsigned int var_count = objc_interp_get_var_count();
+            for (vi = 0; vi < var_count && match_count < MAX_COMPLETE_MATCHES; vi++) {
+                const char *name = objc_interp_get_var_name(vi);
+                int is_class = objc_interp_get_var_is_class(vi);
+                if (name && cstr_starts(name, prefix)) {
+                    /* Include non-class variables */
+                    if (!is_class) {
+                        unsigned int mi;
+                        int dup = 0;
+                        for (mi = 0; mi < match_count; mi++) {
+                            if (cstr_eq(matches[mi], name)) { dup = 1; break; }
+                        }
+                        if (!dup) matches[match_count++] = name;
+                    }
                 }
             }
         }
