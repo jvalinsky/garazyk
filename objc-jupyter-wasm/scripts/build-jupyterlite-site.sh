@@ -23,7 +23,7 @@ npm run build:lib --prefix "$PROJECT_ROOT" --silent 2>/dev/null
 
 # Step 2: Build JupyterLab federated extension
 echo "[2/5] Building JupyterLab federated extension..."
-jupyter labextension build "$PROJECT_ROOT" 2>/dev/null
+npm run build:labextension
 
 # Step 3: Copy WASM assets into the labextension static dir
 echo "[3/5] Copying WASM assets into labextension..."

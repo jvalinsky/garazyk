@@ -7,7 +7,7 @@ function defaultRuntimeManifest() {
     const workerUrl = new URL(self.location.href);
     const workerDir = workerUrl.href.substring(0, workerUrl.href.lastIndexOf('/') + 1);
     return {
-      kernelWasmUrl: new URL('../kernel/kernel.wasm', workerDir).toString(),
+      kernelWasmUrl: new URL('kernel/kernel.wasm', workerDir).toString(),
       runtimeVersion: 'auto',
       sha256: '',
       maxRequestBytes: 64 * 1024,
@@ -106,7 +106,9 @@ self.onmessage = async event => {
       return;
     }
 
+    console.log(`[Worker] Received ${type}, getting kernel...`);
     const kernel = await getKernel(id, generation);
+    console.log(`[Worker] Kernel instantiated successfully!`);
     kernel.setInterruptBuffer(interruptBuffer);
     kernel.setStreamListener(stream => {
       postReply(id, generation, 'stream', stream);
@@ -150,6 +152,7 @@ self.onmessage = async event => {
       traceback: []
     });
   } catch (error) {
+    console.error("[Worker] CAUGHT ERROR:", error);
     if (
       error &&
       (error.name === 'WasiProcExitError' ||

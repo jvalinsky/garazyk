@@ -26,7 +26,8 @@
     "@jupyterlab/coreutils": "^6.4.5",
     "@jupyterlab/observables": "^5.4.5",
     "@jupyterlab/services": "^7.4.5",
-    "@jupyterlite/kernel": "^0.6.4"
+    "@jupyterlite/kernel": "^0.6.4",
+    "serve-handler": "^6.1.7"
   },
   "devDependencies": {
     "@jupyterlab/builder": "^4.4.5",
@@ -39,7 +40,8 @@
     "outputDir": "objc_jupyter_wasm/labextension",
     "sharedPackages": {
       "@jupyterlite/kernel": {
-        "requiredVersion": "~0.6.4",
+        "requiredVersion": false,
+        "import": false,
         "singleton": true
       },
       "@jupyterlab/services": {

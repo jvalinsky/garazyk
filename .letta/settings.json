@@ -281,7 +281,9 @@
       "Bash(nix build .#kernel-wasm --out-link /tmp/objc-jupyter-wasm-kernel-result 2)",
       "Bash(deciduous link 799 796)",
       "Bash(deciduous link 799 800)",
-      "Bash(deciduous status 2)"
+      "Bash(deciduous status 2)",
+      "Bash(python3 -c \"\nimport json\nconfig = json.load(open('/Users/jack/Software/garazyk/objc-jupyter-wasm/dist/jupyterlite/jupyter-lite.json'))\nfe = config.get('jupyter-config-data', {}).get('federated_extensions', [])\nprint(f'Extensions count: {len(fe)}')\nfor e in fe:\n    print(json.dumps(e, indent=2))\n\")",
+      "Bash(python3 -c \"\nimport re\njs = open('/Users/jack/Software/garazyk/objc-jupyter-wasm/dist/jupyterlite/extensions/objc-jupyter-wasm/static/517.d14fb83a328637b0602e.js').read()\nidx = js.find('new Worker')\nif idx >= 0:\n    print('Worker creation:', js[idx:idx+150])\n\")"
     ]
   }
 }

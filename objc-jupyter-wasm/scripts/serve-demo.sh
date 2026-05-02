@@ -53,7 +53,7 @@ npm --prefix "$PROJ_ROOT" run build:assets --silent
 echo ">> Building JupyterLite site..."
 rm -rf "$DIST"
 cd "$PROJ_ROOT"
-PATH="$(dirname "$JUPYTER_BIN"):$PATH" python3 -m jupyterlite build \
+PATH="$(dirname "$JUPYTER_BIN"):$PATH" jupyter lite build \
   --config jupyterlite_config.py \
   --lite-dir . \
   || true  # JupyterLite 0.6.4 bug: _output/tree/ merge fails — non-fatal
