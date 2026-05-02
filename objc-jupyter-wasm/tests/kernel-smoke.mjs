@@ -1916,6 +1916,7 @@ console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
   assert.match(hostStreamText(), /ptr=0x/);
 }
 
+
 console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);
