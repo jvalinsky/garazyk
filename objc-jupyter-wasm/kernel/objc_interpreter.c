@@ -195,6 +195,7 @@ typedef enum {
     TOK_SWITCH,        /* switch keyword */
     TOK_CASE,          /* case keyword */
     TOK_DEFAULT,       /* default keyword */
+    TOK_NIL,           /* nil keyword */
     TOK_UNKNOWN
 } TokenType;
 
@@ -430,6 +431,8 @@ static Token lexer_next_token(Lexer *lex) {
             /* Boolean false → integer 0 */
             tok.text[0] = '0'; tok.text[1] = '\0';
             tok.type = TOK_INT_LITERAL;
+        } else if (cstr_eq(tok.text, "nil")) {
+            tok.type = TOK_NIL;
         }
         return tok;
     }
@@ -4442,6 +4445,12 @@ static Value parse_primary(Parser *p) {
             if (v.is_float) return value_from_float(-v.float_val);
             return v;
         }
+    }
+
+    /* nil literal */
+    if (tok.type == TOK_NIL) {
+        parser_advance(p);
+        return value_from_id(0);
     }
 
     /* String literal @"..." */

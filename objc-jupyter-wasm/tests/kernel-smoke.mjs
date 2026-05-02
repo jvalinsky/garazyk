@@ -1796,6 +1796,23 @@ console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
   assert.match(splitResource.evalue, /collection entry table full|string pool exhausted/);
 }
 
+{
+  const nilLiteral = execute('NSLog(@"nil=%@", nil);', 'nil-literal');
+  assert.equal(nilLiteral.status, 'ok');
+  assert.match(hostStreamText(), /nil=/);
+}
+
+{
+  const nilAssign = execute('id x = nil; NSLog(@"assigned");', 'nil-assign');
+  assert.equal(nilAssign.status, 'ok');
+  assert.match(hostStreamText(), /assigned/);
+}
+
+{
+  const nilMessageSend = execute('id x = nil; [x class];', 'nil-message-send');
+  assert.equal(nilMessageSend.status, 'ok');
+}
+
 console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);

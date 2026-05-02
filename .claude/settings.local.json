@@ -52,7 +52,10 @@
       "Bash(make -C build -j4)",
       "Bash(make -C build AllTests -j4)",
       "Bash(/Users/jack/Software/garazyk/build/tests/AllTests)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(pip3 show *)",
+      "Bash(pip show *)",
+      "Bash(python3 -m pip show jupyterlite)"
     ]
   }
 }
