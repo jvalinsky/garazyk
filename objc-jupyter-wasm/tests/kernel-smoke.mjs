@@ -1879,6 +1879,19 @@ console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
   assert.match(hostStreamText(), /value=/);
 }
 
+{
+  const largeMethodBody = `@interface TestClass : NSObject
+  @end
+  @implementation TestClass
+  - (void)largeMethod {
+    ${'int x = 0; '.repeat(200)}
+  }
+  @end`;
+  const result = execute(largeMethodBody, 'large-method-body');
+  assert.equal(result.status, 'error');
+  assert.match(result.evalue, /method body too long|method table full/);
+}
+
 console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);
