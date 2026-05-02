@@ -1892,6 +1892,30 @@ console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
   assert.match(result.evalue, /method body too long|method table full/);
 }
 
+{
+  const hexFormat = execute('int x = 255; NSLog(@"hex=%x", x);', 'hex-format');
+  assert.equal(hexFormat.status, 'ok');
+  assert.match(hostStreamText(), /hex=ff/);
+}
+
+{
+  const octalFormat = execute('int x = 64; NSLog(@"oct=%o", x);', 'octal-format');
+  assert.equal(octalFormat.status, 'ok');
+  assert.match(hostStreamText(), /oct=100/);
+}
+
+{
+  const llFormat = execute('int x = 12345; NSLog(@"lld=%lld", x);', 'lld-format');
+  assert.equal(llFormat.status, 'ok');
+  assert.match(hostStreamText(), /lld=12345/);
+}
+
+{
+  const pointerFormat = execute('id obj = [NSString stringWithFormat:@"test"]; NSLog(@"ptr=%p", obj);', 'pointer-format');
+  assert.equal(pointerFormat.status, 'ok');
+  assert.match(hostStreamText(), /ptr=0x/);
+}
+
 console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);
