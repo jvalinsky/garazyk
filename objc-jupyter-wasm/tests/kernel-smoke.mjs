@@ -1813,6 +1813,36 @@ console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
   assert.equal(nilMessageSend.status, 'ok');
 }
 
+{
+  const bitwiseOr = execute('int x = 3 | 5; NSLog(@"or=%d", x);', 'bitwise-or');
+  assert.equal(bitwiseOr.status, 'ok');
+  assert.match(hostStreamText(), /or=7/);
+}
+
+{
+  const bitwiseAnd = execute('int x = 7 & 5; NSLog(@"and=%d", x);', 'bitwise-and');
+  assert.equal(bitwiseAnd.status, 'ok');
+  assert.match(hostStreamText(), /and=5/);
+}
+
+{
+  const bitwiseXor = execute('int x = 7 ^ 5; NSLog(@"xor=%d", x);', 'bitwise-xor');
+  assert.equal(bitwiseXor.status, 'ok');
+  assert.match(hostStreamText(), /xor=2/);
+}
+
+{
+  const leftShift = execute('int x = 1 << 3; NSLog(@"lshift=%d", x);', 'left-shift');
+  assert.equal(leftShift.status, 'ok');
+  assert.match(hostStreamText(), /lshift=8/);
+}
+
+{
+  const rightShift = execute('int x = 8 >> 2; NSLog(@"rshift=%d", x);', 'right-shift');
+  assert.equal(rightShift.status, 'ok');
+  assert.match(hostStreamText(), /rshift=2/);
+}
+
 console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);
