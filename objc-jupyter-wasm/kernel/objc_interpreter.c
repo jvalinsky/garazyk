@@ -6023,6 +6023,66 @@ static Value parse_statement(Parser *p) {
         return value_void();
     }
 
+    /* @try ... @catch ... @finally ... (no-op semantics for now) */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@try")) {
+        parser_advance(p);
+        /* Parse the try body { ... } */
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            int brace_depth = 1;
+            parser_advance(p);
+            while (brace_depth > 0 && parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_BRACE) brace_depth--;
+                if (brace_depth > 0) parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        }
+        /* Parse @catch blocks */
+        while (parser_current(p).type == TOK_AT_KEYWORD &&
+               cstr_eq(parser_current(p).text, "@catch")) {
+            parser_advance(p);
+            /* Skip (Exception *e) or similar */
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                int paren_depth = 1;
+                parser_advance(p);
+                while (paren_depth > 0 && parser_current(p).type != TOK_EOF) {
+                    if (parser_current(p).type == TOK_OPEN_PAREN) paren_depth++;
+                    else if (parser_current(p).type == TOK_CLOSE_PAREN) paren_depth--;
+                    if (paren_depth > 0) parser_advance(p);
+                }
+                if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+            }
+            /* Parse the catch body { ... } */
+            if (parser_current(p).type == TOK_OPEN_BRACE) {
+                int brace_depth = 1;
+                parser_advance(p);
+                while (brace_depth > 0 && parser_current(p).type != TOK_EOF) {
+                    if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                    else if (parser_current(p).type == TOK_CLOSE_BRACE) brace_depth--;
+                    if (brace_depth > 0) parser_advance(p);
+                }
+                if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+            }
+        }
+        /* Parse optional @finally block */
+        if (parser_current(p).type == TOK_AT_KEYWORD &&
+            cstr_eq(parser_current(p).text, "@finally")) {
+            parser_advance(p);
+            /* Parse the finally body { ... } */
+            if (parser_current(p).type == TOK_OPEN_BRACE) {
+                int brace_depth = 1;
+                parser_advance(p);
+                while (brace_depth > 0 && parser_current(p).type != TOK_EOF) {
+                    if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                    else if (parser_current(p).type == TOK_CLOSE_BRACE) brace_depth--;
+                    if (brace_depth > 0) parser_advance(p);
+                }
+                if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+            }
+        }
+        return value_void();
+    }
+
     /* Type declaration: int, void, id, Class, SEL, or registered class name */
     /* Also __block qualifier before type */
     if (tok.type == TOK_IDENTIFIER) {
