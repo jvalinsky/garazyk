@@ -1861,10 +1861,19 @@ static void eval_nslog(Parser *p) {
                     }
                     break;
                 case 'l':
-                    /* Long — check for %ld */
-                    if (fmt[fi + 1] == 'd' || fmt[fi + 1] == 'i') {
+                    /* Long or long long — check for %ld or %lld */
+                    if (fmt[fi + 1] == 'l' && (fmt[fi + 2] == 'd' || fmt[fi + 2] == 'i')) {
+                        /* %lld — long long */
+                        fi += 2; /* skip 'll' */
+                        if (arg_idx < arg_count) {
+                            Value v = args[arg_idx++];
+                            if (v.is_int) {
+                                nslog_append_long((long)v.int_val);
+                            }
+                        }
+                    } else if (fmt[fi + 1] == 'd' || fmt[fi + 1] == 'i') {
+                        /* %ld */
                         fi++; /* skip 'l' */
-                        /* %ld — same as %d for our purposes */
                         if (arg_idx < arg_count) {
                             Value v = args[arg_idx++];
                             if (v.is_int) {
@@ -1970,6 +1979,48 @@ static void eval_nslog(Parser *p) {
                                     hi--;
                                     nslog_append_char(hex[hi]);
                                 }
+                            }
+                        }
+                    }
+                    break;
+                case 'x':
+                    /* Hexadecimal */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        unsigned int val = (unsigned int)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
+                        if (val == 0) {
+                            nslog_append("0", 1);
+                        } else {
+                            char hex[17];
+                            int hi = 0;
+                            while (val > 0 && hi < 16) {
+                                hex[hi++] = "0123456789abcdef"[val % 16];
+                                val /= 16;
+                            }
+                            while (hi > 0) {
+                                hi--;
+                                nslog_append_char(hex[hi]);
+                            }
+                        }
+                    }
+                    break;
+                case 'o':
+                    /* Octal */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        unsigned int val = (unsigned int)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
+                        if (val == 0) {
+                            nslog_append("0", 1);
+                        } else {
+                            char oct[32];
+                            int oi = 0;
+                            while (val > 0 && oi < 31) {
+                                oct[oi++] = '0' + (val % 8);
+                                val /= 8;
+                            }
+                            while (oi > 0) {
+                                oi--;
+                                nslog_append_char(oct[oi]);
                             }
                         }
                     }
@@ -2103,7 +2154,26 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                     }
                     break;
                 case 'l':
-                    if (fmt[fi + 1] == 'd' || fmt[fi + 1] == 'i') {
+                    if (fmt[fi + 1] == 'l' && (fmt[fi + 2] == 'd' || fmt[fi + 2] == 'i')) {
+                        /* %lld — long long */
+                        fi += 2;
+                        if (arg_idx < arg_count) {
+                            Value v = args[arg_idx++];
+                            if (v.is_int) {
+                                long val = (long)v.int_val;
+                                int neg = val < 0;
+                                if (neg) val = -val;
+                                char tmp[20]; int ti = 0;
+                                if (val == 0) tmp[ti++] = '0';
+                                else { while (val > 0) { tmp[ti++] = '0' + (int)(val % 10); val /= 10; } }
+                                if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                                while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                            }
+                        } else {
+                            format_warn_missing_argument('d');
+                        }
+                    } else if (fmt[fi + 1] == 'd' || fmt[fi + 1] == 'i') {
+                        /* %ld */
                         fi++;
                         if (arg_idx < arg_count) {
                             Value v = args[arg_idx++];
@@ -2118,7 +2188,7 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                                 while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
                             }
                         } else {
-                            format_warn_missing_argument(fmt[fi]);
+                            format_warn_missing_argument('d');
                         }
                     }
                     break;
@@ -2193,6 +2263,34 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                         }
                     } else if (arg_idx >= arg_count) {
                         format_warn_missing_argument('p');
+                    }
+                    break;
+                case 'x':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        unsigned int val = (unsigned int)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
+                        if (val == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
+                        else {
+                            char hex[17]; int hi = 0;
+                            while (val > 0 && hi < 16) { hex[hi++] = "0123456789abcdef"[val % 16]; val /= 16; }
+                            while (hi > 0 && pos < sizeof(buf)-1) buf[pos++] = hex[--hi];
+                        }
+                    } else {
+                        format_warn_missing_argument('x');
+                    }
+                    break;
+                case 'o':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        unsigned int val = (unsigned int)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
+                        if (val == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
+                        else {
+                            char oct[32]; int oi = 0;
+                            while (val > 0 && oi < 31) { oct[oi++] = '0' + (val % 8); val /= 8; }
+                            while (oi > 0 && pos < sizeof(buf)-1) buf[pos++] = oct[--oi];
+                        }
+                    } else {
+                        format_warn_missing_argument('o');
                     }
                     break;
                 default:
