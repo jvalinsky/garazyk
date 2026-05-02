@@ -23,16 +23,17 @@ let runtimeStatePromise: Promise<RuntimeState> | null = null;
  * element at runtime and resolve relative to its directory.
  */
 function getExtensionStaticUrl(): string {
-  // Look for the remoteEntry script tag that Module Federation loaded
-  const scripts = document.querySelectorAll('script[src*="remoteEntry"]');
+  // Look for the remoteEntry script tag that Module Federation loaded.
+  // Use script.src (DOM property) not getAttribute('src') — the DOM
+  // property returns the browser-resolved absolute URL, while
+  // getAttribute returns the raw relative value which resolves
+  // incorrectly against document.baseURI when the user navigates
+  // to a sub-page like /lab/tree/files/hello.ipynb.
+  const scripts = document.querySelectorAll<HTMLScriptElement>('script[src*="remoteEntry"]');
   for (const script of scripts) {
-    const src = script.getAttribute('src');
+    const src = script.src;
     if (src && src.includes('objc-jupyter-wasm')) {
-      // src is like "extensions/objc-jupyter-wasm/static/remoteEntry.*.js"
-      // or an absolute URL — resolve to get the full URL
-      const url = new URL(src, document.baseURI);
-      // Return the directory (strip the filename)
-      return url.toString().replace(/[^/]+$/, '');
+      return src.substring(0, src.lastIndexOf('/') + 1);
     }
   }
   throw new Error('objc-jupyter-wasm: cannot determine extension static URL — remoteEntry script not found');
@@ -65,6 +66,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
   autoStart: true,
   requires: [IKernelSpecs],
   activate: (app: JupyterFrontEnd, kernelspecs: IKernelSpecs) => {
+    console.log("==========================================");
+    console.log("OBJC KERNEL PLUGIN ACTIVATING!");
+    console.log("kernelspecs:", kernelspecs);
+    console.log("==========================================");
     if (!app.commands.hasCommand(CLEAR_RUNTIME_CACHE_COMMAND)) {
       app.commands.addCommand(CLEAR_RUNTIME_CACHE_COMMAND, {
         label: 'Clear Objective-C WASM Runtime Cache',
@@ -81,22 +86,34 @@ const plugin: JupyterFrontEndPlugin<void> = {
       });
     }
 
-    kernelspecs.register({
-      spec: {
-        name: 'objective-c',
-        display_name: 'Objective-C',
-        language: 'objective-c',
-        argv: [],
-        resources: {}
-      },
-      create: async (options: IKernel.IOptions): Promise<IKernel> => {
-        const { runtimeManifest, runtimeManifestUrl } = await getRuntimeState();
-        return new ObjcKernel(options, {
-          runtimeManifest,
-          runtimeManifestUrl
-        }) as unknown as IKernel;
-      }
-    });
+          kernelspecs.register({
+            spec: {
+              name: 'objective-c',
+              display_name: 'Objective-C',
+              language: 'objective-c',
+              argv: [],
+              resources: {}
+            },
+            create: async (options: IKernel.IOptions): Promise<IKernel> => {
+              console.log(">>>>>>>>>>> OBJECTIVE-C KERNEL CREATE CALLED!!! <<<<<<<<<<<");
+              const { runtimeManifest, runtimeManifestUrl } = await getRuntimeState();
+              console.log(">>>>>>>>>>> RUNTIME STATE FETCHED", runtimeManifestUrl, "<<<<<<<<<<<");
+              try {
+                const kernel = new ObjcKernel(options, {
+                  runtimeManifest,
+                  runtimeManifestUrl
+                }) as unknown as IKernel;
+                console.log(">>>>>>>>>>> ObjcKernel INSTANTIATED SUCCESS <<<<<<<<<<<");
+                return kernel;
+              } catch (err) {
+                console.error(">>>>>>>>>>> ObjcKernel INSTANTIATION ERROR", err, "<<<<<<<<<<<");
+                throw err;
+              }
+            }
+          });
+          console.log("==========================================");
+          console.log("kernelspecs.register COMPLETED!");
+          console.log("==========================================");
   }
 };
 
