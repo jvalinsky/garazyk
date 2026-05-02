@@ -196,6 +196,9 @@ typedef enum {
     TOK_CASE,          /* case keyword */
     TOK_DEFAULT,       /* default keyword */
     TOK_NIL,           /* nil keyword */
+    TOK_BITWISE_OR,    /* | (bitwise OR) */
+    TOK_LEFT_SHIFT,    /* << */
+    TOK_RIGHT_SHIFT,   /* >> */
     TOK_UNKNOWN
 } TokenType;
 
@@ -533,10 +536,22 @@ static Token lexer_next_token(Lexer *lex) {
             tok.type = TOK_MINUS_MINUS;
             return tok;
         }
+        if (ch == '<' && next == '<') {
+            lexer_next(lex);
+            tok.text[0] = '<'; tok.text[1] = '<'; tok.text[2] = '\0';
+            tok.type = TOK_LEFT_SHIFT;
+            return tok;
+        }
         if (ch == '<' && next == '=') {
             lexer_next(lex);
             tok.text[0] = '<'; tok.text[1] = '='; tok.text[2] = '\0';
             tok.type = TOK_LE;
+            return tok;
+        }
+        if (ch == '>' && next == '>') {
+            lexer_next(lex);
+            tok.text[0] = '>'; tok.text[1] = '>'; tok.text[2] = '\0';
+            tok.type = TOK_RIGHT_SHIFT;
             return tok;
         }
         if (ch == '>' && next == '=') {
@@ -607,7 +622,7 @@ static Token lexer_next_token(Lexer *lex) {
         case '!': tok.type = TOK_NOT; break;
         case '?': tok.type = TOK_QUESTION; break;
         case '^': tok.type = TOK_CARET; break;
-        case '|': tok.type = TOK_UNKNOWN; break; /* || handled above, bare | not supported */
+        case '|': tok.type = TOK_BITWISE_OR; break;
         default: tok.type = TOK_UNKNOWN; break;
     }
 
@@ -5356,8 +5371,29 @@ static Value parse_multiplicative(Parser *p) {
     return left;
 }
 
-static Value parse_additive(Parser *p) {
+static Value parse_shift(Parser *p) {
     Value left = parse_multiplicative(p);
+    if (p->error) return left;
+
+    while (parser_current(p).type == TOK_LEFT_SHIFT ||
+           parser_current(p).type == TOK_RIGHT_SHIFT) {
+        TokenType op = parser_current(p).type;
+        parser_advance(p);
+        {
+            Value right = parse_multiplicative(p);
+            if (p->error) return right;
+            if (left.is_int && right.is_int) {
+                if (op == TOK_LEFT_SHIFT) left.int_val = left.int_val << right.int_val;
+                else if (op == TOK_RIGHT_SHIFT) left.int_val = left.int_val >> right.int_val;
+            }
+        }
+    }
+
+    return left;
+}
+
+static Value parse_additive(Parser *p) {
+    Value left = parse_shift(p);
     if (p->error) return left;
 
     while (parser_current(p).type == TOK_PLUS ||
@@ -5365,7 +5401,7 @@ static Value parse_additive(Parser *p) {
         TokenType op = parser_current(p).type;
         parser_advance(p);
         {
-            Value right = parse_multiplicative(p);
+            Value right = parse_shift(p);
             if (p->error) return right;
             if (left.is_int && right.is_int) {
                 if (op == TOK_PLUS) left.int_val += right.int_val;
@@ -5437,14 +5473,68 @@ static int is_truthy(Value v) {
 
 /* ── Logical operators ───────────────────────────────────────────── */
 
-static Value parse_logical_and(Parser *p) {
+static Value parse_bitwise_and(Parser *p) {
     Value left = parse_comparison(p);
+    if (p->error) return left;
+
+    while (parser_current(p).type == TOK_AMPERSAND) {
+        parser_advance(p);
+        {
+            Value right = parse_comparison(p);
+            if (p->error) return right;
+            if (left.is_int && right.is_int) {
+                left = value_from_int(left.int_val & right.int_val);
+            }
+        }
+    }
+
+    return left;
+}
+
+static Value parse_bitwise_xor(Parser *p) {
+    Value left = parse_bitwise_and(p);
+    if (p->error) return left;
+
+    while (parser_current(p).type == TOK_CARET) {
+        parser_advance(p);
+        {
+            Value right = parse_bitwise_and(p);
+            if (p->error) return right;
+            if (left.is_int && right.is_int) {
+                left = value_from_int(left.int_val ^ right.int_val);
+            }
+        }
+    }
+
+    return left;
+}
+
+static Value parse_bitwise_or(Parser *p) {
+    Value left = parse_bitwise_xor(p);
+    if (p->error) return left;
+
+    while (parser_current(p).type == TOK_BITWISE_OR) {
+        parser_advance(p);
+        {
+            Value right = parse_bitwise_xor(p);
+            if (p->error) return right;
+            if (left.is_int && right.is_int) {
+                left = value_from_int(left.int_val | right.int_val);
+            }
+        }
+    }
+
+    return left;
+}
+
+static Value parse_logical_and(Parser *p) {
+    Value left = parse_bitwise_or(p);
     if (p->error) return left;
 
     while (parser_current(p).type == TOK_AND) {
         parser_advance(p);
         {
-            Value right = parse_comparison(p);
+            Value right = parse_bitwise_or(p);
             if (p->error) return right;
             left = value_from_int(is_truthy(left) && is_truthy(right) ? 1 : 0);
         }
