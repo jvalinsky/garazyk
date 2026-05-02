@@ -40,7 +40,6 @@
     "sharedPackages": {
       "@jupyterlite/kernel": {
         "requiredVersion": "~0.6.4",
-        "import": false,
         "singleton": true
       },
       "@jupyterlab/services": {

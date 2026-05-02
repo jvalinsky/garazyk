@@ -14,17 +14,38 @@ const CLEAR_RUNTIME_CACHE_COMMAND = 'objc-jupyter-wasm:clear-runtime-cache';
 
 let runtimeStatePromise: Promise<RuntimeState> | null = null;
 
-function runtimeManifestUrlFromModule(moduleUrl: string): string {
-  const url = new URL(moduleUrl);
-  url.search = '';
-  url.hash = '';
-  url.pathname = url.pathname.replace(/[^/]+$/, 'runtime-manifest.json');
-  return url.toString();
+/**
+ * Derive the runtime manifest URL from the extension's static directory.
+ *
+ * Webpack 5 replaces `import.meta.url` with the build-time file path
+ * (e.g. file:///Users/.../lib/src/index.js), which is not a valid
+ * fetch target in a browser. Instead, we find the remoteEntry script
+ * element at runtime and resolve relative to its directory.
+ */
+function getExtensionStaticUrl(): string {
+  // Look for the remoteEntry script tag that Module Federation loaded
+  const scripts = document.querySelectorAll('script[src*="remoteEntry"]');
+  for (const script of scripts) {
+    const src = script.getAttribute('src');
+    if (src && src.includes('objc-jupyter-wasm')) {
+      // src is like "extensions/objc-jupyter-wasm/static/remoteEntry.*.js"
+      // or an absolute URL — resolve to get the full URL
+      const url = new URL(src, document.baseURI);
+      // Return the directory (strip the filename)
+      return url.toString().replace(/[^/]+$/, '');
+    }
+  }
+  throw new Error('objc-jupyter-wasm: cannot determine extension static URL — remoteEntry script not found');
+}
+
+function runtimeManifestUrlFromStaticUrl(staticUrl: string): string {
+  return staticUrl + 'runtime-manifest.json';
 }
 
 async function getRuntimeState(): Promise<RuntimeState> {
   if (!runtimeStatePromise) {
-    const runtimeManifestUrl = runtimeManifestUrlFromModule(import.meta.url);
+    const staticUrl = getExtensionStaticUrl();
+    const runtimeManifestUrl = runtimeManifestUrlFromStaticUrl(staticUrl);
     runtimeStatePromise = fetchRuntimeManifest(runtimeManifestUrl)
       .then(runtimeManifest => ({
         runtimeManifest,
@@ -48,7 +69,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       app.commands.addCommand(CLEAR_RUNTIME_CACHE_COMMAND, {
         label: 'Clear Objective-C WASM Runtime Cache',
         execute: async () => {
-          const runtimeManifestUrl = runtimeManifestUrlFromModule(import.meta.url);
+          const staticUrl = getExtensionStaticUrl();
+          const runtimeManifestUrl = runtimeManifestUrlFromStaticUrl(staticUrl);
           const removed = await clearRuntimeCache(runtimeManifestUrl);
           runtimeStatePromise = null;
           console.info(
