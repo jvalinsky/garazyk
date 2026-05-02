@@ -4331,12 +4331,12 @@ static Value parse_implementation(Parser *p) {
 
                 /* Store method body and argument names for trampoline execution */
                 if (g_method_count < MAX_METHODS && body_len > 0) {
+                    if (body_len >= 2048) {
+                        parser_error(p, "method body too long (max 2047 bytes)");
+                        return value_void();
+                    }
                     MethodImpl *mi = &g_methods[g_method_count];
                     unsigned int copy_len = body_len;
-                    if (copy_len >= 2048) {
-                        copy_len = 2047;
-                        nslog_append("Warning: method body truncated to 2047 bytes\n", 45);
-                    }
                     /* Copy body source (content between the braces) */
                     cstr_copy(mi->source, p->lex.source + body_start, copy_len + 1);
                     mi->source_len = copy_len;
