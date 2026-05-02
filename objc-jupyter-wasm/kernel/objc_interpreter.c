@@ -3885,6 +3885,8 @@ static Value parse_interface(Parser *p) {
                 PropertyDecl *prop = &g_properties[g_property_count];
                 cstr_copy(prop->type_name, parser_current(p).text, 64);
                 prop->is_int = cstr_eq(prop->type_name, "int") ||
+                               cstr_eq(prop->type_name, "NSInteger") ||
+                               cstr_eq(prop->type_name, "NSUInteger") ||
                                cstr_eq(prop->type_name, "BOOL") ||
                                cstr_eq(prop->type_name, "long") ||
                                cstr_eq(prop->type_name, "char");
@@ -4171,6 +4173,8 @@ static Value parse_implementation(Parser *p) {
             {
                 int is_builtin = (
                     cstr_eq(parser_current(p).text, "int") ||
+                    cstr_eq(parser_current(p).text, "NSInteger") ||
+                    cstr_eq(parser_current(p).text, "NSUInteger") ||
                     cstr_eq(parser_current(p).text, "void") ||
                     cstr_eq(parser_current(p).text, "id") ||
                     cstr_eq(parser_current(p).text, "Class") ||
@@ -5767,7 +5771,7 @@ static Value parse_type_and_var_decl(Parser *p) {
 
         /* Default initialization */
         if (var) {
-            if (cstr_eq(type_name, "int")) {
+            if (cstr_eq(type_name, "int") || cstr_eq(type_name, "NSInteger") || cstr_eq(type_name, "NSUInteger")) {
                 var->is_int = 1;
                 var->int_value = 0;
             } else if (cstr_eq(type_name, "float") || cstr_eq(type_name, "double")) {
@@ -5861,7 +5865,8 @@ static Value parse_statement(Parser *p) {
          * (from @implementation) are also recognized as types when
          * followed by * (pointer) or another identifier. */
         int is_builtin_type = (
-            cstr_eq(tok.text, "int") || cstr_eq(tok.text, "void") ||
+            cstr_eq(tok.text, "int") || cstr_eq(tok.text, "NSInteger") ||
+            cstr_eq(tok.text, "NSUInteger") || cstr_eq(tok.text, "void") ||
             cstr_eq(tok.text, "id") || cstr_eq(tok.text, "Class") ||
             cstr_eq(tok.text, "SEL") || cstr_eq(tok.text, "BOOL") ||
             cstr_eq(tok.text, "long") || cstr_eq(tok.text, "char") ||
