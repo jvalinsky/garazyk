@@ -1861,6 +1861,24 @@ console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');
   assert.equal(nsIntArith.data['text/plain'], '30');
 }
 
+{
+  const numLitInt = execute('@42;', 'num-lit-int');
+  assert.equal(numLitInt.status, 'ok');
+  assert.equal(numLitInt.data['text/plain'], '42');
+}
+
+{
+  const numLitFloat = execute('@3.14;', 'num-lit-float');
+  assert.equal(numLitFloat.status, 'ok');
+  assert.equal(numLitFloat.data['text/plain'], '3.14');
+}
+
+{
+  const numLitMethod = execute('NSLog(@"value=%@", @42);', 'num-lit-method');
+  assert.equal(numLitMethod.status, 'ok');
+  assert.match(hostStreamText(), /value=/);
+}
+
 console.log('  hardening: tagged class, assignment, literals, diagnostics — PASS');
 
 exports.objc_kernel_free(0);
