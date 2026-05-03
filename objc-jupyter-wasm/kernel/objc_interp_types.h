@@ -463,8 +463,12 @@ struct AstNode {
 
 #define OBJC_INTERP_STRING_POOL_SIZE 65536
 
-/* ── Forward declarations ───────────────────────────────────────── */
+/* ── Parser ────────────────────────────────────────────────────── */
 
-struct Parser;  /* defined in objc_interp_parser.h */
+typedef struct Parser {
+    Lexer lex;
+    int error;
+    char error_msg[OBJC_INTERP_ERROR_SIZE];
+} Parser;
 
 #endif /* OBJC_INTERP_TYPES_H */

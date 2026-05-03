@@ -16,11 +16,6 @@
 #include "objc_interp_class.h"
 
 /* Parser layout must match the definition in objc_interpreter.c. */
-typedef struct Parser {
-    Lexer lex;
-    int error;
-    char error_msg[OBJC_INTERP_ERROR_SIZE];
-} Parser;
 
 /* Externs for functions still in objc_interpreter.c or other modules. */
 extern Token parser_current(struct Parser *p);

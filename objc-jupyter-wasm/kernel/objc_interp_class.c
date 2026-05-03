@@ -34,11 +34,6 @@ extern InterpVar *interp_find_var(const char *name);
 extern InterpVar *interp_get_or_create_var(const char *name);
 
 /* Parser layout must match the definition in objc_interpreter.c. */
-typedef struct Parser {
-    Lexer lex;
-    int error;
-    char error_msg[OBJC_INTERP_ERROR_SIZE];
-} Parser;
 
 /* Parse @interface Name : SuperClass { ivars } methodDecls @end */
 Value parse_interface(struct Parser *p) {

@@ -718,6 +718,7 @@ assert.match(hostStreamText(), /widget-size=42/);
 // Array literal @[]
 {
   const r = execute('NSArray *a = @[@1, @2, @3]; (int)[a count]', 'array-literal');
+  if (r.status !== 'ok') console.log('array-literal error:', JSON.stringify(r));
   assert.equal(r.status, 'ok');
   assert.match(r.data['text/plain'], /^3$/);
 }

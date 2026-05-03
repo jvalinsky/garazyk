@@ -25,11 +25,6 @@ extern Value eval_source_range(unsigned int start, unsigned int len, const char 
                                unsigned int line_offset);
 
 /* Parser layout must match the definition in objc_interpreter.c. */
-typedef struct Parser {
-    Lexer lex;
-    int error;
-    char error_msg[OBJC_INTERP_ERROR_SIZE];
-} Parser;
 
 static InterpVar *dispatch_find_var(const char *name) {
     unsigned int i;
