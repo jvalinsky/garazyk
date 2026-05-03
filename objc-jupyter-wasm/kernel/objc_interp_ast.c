@@ -1072,4 +1072,5 @@ Value eval_ast(AstNode *node, const char *source) {
     }
     }
 
+    return last;
 }

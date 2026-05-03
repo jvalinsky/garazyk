@@ -1734,6 +1734,18 @@ Value parse_message_send(Parser *p) {
             }
         }
 
+        /* Class method dispatch: [ClassName userDefinedMethod:]
+         * When the target is a class (not an instance), check for
+         * interpreter-registered class methods (+ methods) before
+         * falling through to the error. */
+        if (target.is_class && target_class_name) {
+            unsigned int mi = find_interpreter_method(sel, target, receiver, 0);
+            if (mi < g_method_count) {
+                return execute_interpreter_method(p, &g_methods[mi], sel, receiver,
+                                                  keyword_args, arg_count, 1);
+            }
+        }
+
         /* Fall through: no built-in, interpreter method, or property matched.
          * Runtime IMP dispatch is not used because WASM enforces exact
          * function signatures — variadic IMP calls cause signature
