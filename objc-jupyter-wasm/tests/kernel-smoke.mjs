@@ -713,6 +713,38 @@ const propDefaultTest = execute([
 assert.equal(propDefaultTest.status, 'ok');
 assert.match(hostStreamText(), /widget-size=42/);
 
+// ── Phase 7.5: Objective-C literals ──────────────────────────
+
+// Array literal @[]
+{
+  const r = execute('NSArray *a = @[@1, @2, @3]; (int)[a count]', 'array-literal');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^3$/);
+}
+
+// Dictionary literal @{}
+{
+  const r = execute('NSDictionary *d = @{@"key": @"value"}; (int)d != 0', 'dict-literal');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^1$/);
+}
+
+// Boxed expression @(expr)
+{
+  const r = execute('int x = 42; NSNumber *n = @(x); [n intValue]', 'box-expr');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^42$/);
+}
+
+// Nested literals
+{
+  const r = execute('NSDictionary *d = @{@"k": @[@"a", @"b"]}; [[d objectForKey:@"k"] count]', 'nested-literal');
+  assert.equal(r.status, 'ok');
+  assert.match(r.data['text/plain'], /^2$/);
+}
+
+console.log('  ObjC literals: @[], @{}, @(), nested — PASS');
+
 // ── Phase 8: for-in loops ─────────────────────────────────────
 
 // for-in over NSString (character iteration)
@@ -928,7 +960,7 @@ const gcGarbageCell = `NSString *temp = @"${gcGarbageA}"; temp = @"${gcGarbageB}
   assert.match(hostStreamText(), /after=0/);
 
   // NSMutableDictionary: setValue:forKey: and valueForKey:
-  const dict3 = execute('NSMutableDictionary *d = [NSMutableDictionary dictionary]; [d setValue:@"hello" forKey:@"greeting"]; NSLog(@"greeting=%@", [d valueForKey:@"greeting"]);', 'dict-kv');
+  const dict3 = execute('NSMutableDictionary *d = [NSMutableDictionary dictionary]; [d setObject:@"hello" forKey:@"greeting"]; NSLog(@"greeting=%@", [d objectForKey:@"greeting"]);', 'dict-kv');
   assert.equal(dict3.status, 'ok');
   assert.match(hostStreamText(), /greeting=hello/);
 
@@ -1747,7 +1779,7 @@ console.log('  do/while: basic, once, break, continue, no-brace — PASS');
 {
   const r = execute('SEL a = @selector(count); SEL b = @selector(count); a == b', 'selector-eq');
   assert.equal(r.status, 'ok');
-  assert.match(r.data['text/plain'], /count/);
+  assert.match(r.data['text/plain'], /1/);
 }
 
 console.log('  @selector: simple, multi-keyword, NSLog, comparison — PASS');

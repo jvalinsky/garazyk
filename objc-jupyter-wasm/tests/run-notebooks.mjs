@@ -7,7 +7,7 @@
 //   node tests/run-notebooks.mjs --dir demo/
 //
 // Options:
-//   --kernel <path>   Path to kernel.wasm (default: kernel/kernel.wasm)
+//   --kernel <path>   Path to kernel.wasm (default: result/wasm/kernel.wasm)
 //   --dir <path>      Run all .ipynb files in a directory
 //   --bail            Stop after the first failed cell in any notebook
 //   --verbose         Show passing cells and their NSLog output
@@ -30,7 +30,7 @@ const C = isTTY
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 
-let kernelPath = resolve(__dirname, '../kernel/kernel.wasm');
+let kernelPath = resolve(__dirname, '../result/wasm/kernel.wasm');
 let dirPath = null;
 let bail = false;
 let verbose = false;
@@ -62,7 +62,7 @@ if (notebookPaths.length === 0) {
     'Examples:',
     '  node tests/run-notebooks.mjs demo/hello.ipynb demo/algorithms.ipynb',
     '  node tests/run-notebooks.mjs --dir demo/',
-    '  node tests/run-notebooks.mjs --kernel result/wasm/kernel.wasm --dir demo/',
+    '  node tests/run-notebooks.mjs --dir demo/',
   ].join('\n'));
   process.exit(2);
 }
