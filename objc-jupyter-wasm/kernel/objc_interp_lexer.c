@@ -242,7 +242,7 @@ Token lexer_next_token(Lexer *lex) {
             cstr_copy(tok.text, "double", 64);
             tok.type = TOK_IDENTIFIER;
         } else if (cstr_eq(tok.text, "static")) {
-            tok.type = TOK_IDENTIFIER; /* treat as普通 identifier, handle in var decl */
+            tok.type = TOK_IDENTIFIER; /* treat as ordinary identifier, handle in var decl */
         } else if (cstr_eq(tok.text, "super")) {
             tok.type = TOK_SUPER;
         } else if (cstr_eq(tok.text, "typedef")) {
